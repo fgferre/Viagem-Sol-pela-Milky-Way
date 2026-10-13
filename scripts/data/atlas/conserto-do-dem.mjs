@@ -39,13 +39,14 @@
 //     (1,6 km: ondas ≳ 8 km), tirada SÓ dos texels ruins — a banda 3 do
 //     remendo já tem a encosta do terreno bom (1,06° × 1,04°), a banda 2 ainda
 //     tem 30–45 % a mais (o ruído).
-//  2. INVENTADO POR EXEMPLO: o fino que saiu (< σ `corteKm`) volta copiado
+//  2. O FINO: com `fino: 'liso'` (o PADRÃO desde 13/10/2026 — a colcha por
+//     exemplo foi julgada um retalho agitado) nada volta: o ruim fica só com o
+//     largo medido. Com `fino: 'exemplo'`, INVENTADO POR EXEMPLO: o fino que saiu (< σ `corteKm`) volta copiado
 //     dos ladrilhos BONS do próprio Encélado (`bandaFinaPorExemplo`): retalhos
 //     de 16 km da banda fina medida, da mesma faixa de latitude e de encosta
 //     larga parecida, girados para o rumo que a FOTO mostra ali, escolhidos
 //     pelo menor erro na sobreposição e emendados em rampa — o caráter vem do
-//     terreno medido, não de ruído sintético. Com `fino:
-//     'liso'` nada volta: o ruim fica só com o largo medido.
+//     terreno medido, não de ruído sintético.
 //  3. DERIVADO: crateras que a foto vê (`detectaCrateras`, rareadas pela regra
 //     de Reia na mesma grade) entram por `completaCratera` — só a profundidade
 //     que falta —, com o d/D medido nas crateras dos ladrilhos bons
@@ -56,6 +57,11 @@
 //     na faixa de 6 km) que a leva para dentro do remendo: nenhum degrau na
 //     emenda, nem o desnível de ladrilho.
 // A cobertura (medido / inventado / derivado) sai junto, com as frações.
+// ONDE OUTRO DADO MEDIDO ENTRA (o SPC do polo sul, `relevo-spc.mjs`): os texels
+// `protegido` contam como BONS (nada se conserta ali; quem os troca é a fusão)
+// e as listras do traço da foto entram multiplicadas por `pesoDasListras`: 0
+// onde o SPC cobre (ele mede as listras de verdade), subindo em rampa fora
+// dele (a ponta da listra não vira parede). A máscara original sai em `qualidade`.
 // ============================================================
 
 import {
@@ -1195,11 +1201,17 @@ export function consertaNaGrade({
   vazio = null,
   p = CONSERTO_DE_ENCELADO,
   listras = true,
-  fino = "exemplo",
+  fino = "liso",
+  protegido = null,
+  pesoDasListras = null,
 }) {
   const n = W * H;
   const raioKm = raioM / 1000;
-  const { classe, nota, foto } = mascaraDeQualidade({
+  const {
+    classe: qualidade,
+    nota,
+    foto,
+  } = mascaraDeQualidade({
     h,
     fotoLog,
     W,
@@ -1208,6 +1220,10 @@ export function consertaNaGrade({
     vazio,
     p,
   });
+  // onde outro dado medido substitui o DEM (o SPC do polo sul), nada a consertar
+  const classe = protegido
+    ? Uint8Array.from(qualidade, (c, k) => (protegido[k] ? BOM : c))
+    : qualidade;
   const ruim = new Uint8Array(n);
   const bom = new Uint8Array(n);
   for (let k = 0; k < n; k += 1) {
@@ -1255,7 +1271,7 @@ export function consertaNaGrade({
   const lei = leiDasCraterasBoas(
     vistas,
     Float32Array.from(h, (m) => m / 1000),
-    classe,
+    qualidade,
     W,
     H,
     raioKm,
@@ -1326,11 +1342,12 @@ export function consertaNaGrade({
     const { campo, corredor } = relevoDasListras(traco.linhas, W, H, raioM, p);
     let noCorredor = 0;
     for (let k = 0; k < n; k += 1) {
-      if (!corredor[k]) continue;
+      const peso = pesoDasListras ? pesoDasListras[k] : 1;
+      if (!corredor[k] || !(peso > 0)) continue;
       noCorredor += 1;
       if (!ruim[k]) continue;
       listrasNoRuim += 1;
-      R[k] += campo[k];
+      R[k] += peso * campo[k];
       cobertura[k] = DERIVADO;
     }
     listrasNoRuim = noCorredor ? listrasNoRuim / noCorredor : 0;
@@ -1403,6 +1420,7 @@ export function consertaNaGrade({
   return {
     campo,
     classe,
+    qualidade,
     cobertura,
     colcha: { retalhos: colcha.retalhos, rampa: colcha.rampa },
     relatorio: {
@@ -1447,7 +1465,9 @@ export function consertaDem({
   raioM,
   p = CONSERTO_DE_ENCELADO,
   listras = true,
-  fino = "exemplo",
+  fino = "liso",
+  protegido = null,
+  pesoDasListras = null,
 }) {
   const W = p.larguraDeTrabalho;
   const H = W / 2;
@@ -1463,6 +1483,8 @@ export function consertaDem({
     p,
     listras,
     fino,
+    protegido,
+    pesoDasListras,
   });
   const saida = Float32Array.from(metros);
   for (let j = 0; j < Hf; j += 1) {

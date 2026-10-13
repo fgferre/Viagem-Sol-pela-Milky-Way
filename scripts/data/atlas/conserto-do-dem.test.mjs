@@ -144,6 +144,7 @@ describe("o conserto do DEM (Encélado, R4)", () => {
       raioM: RAIO_M,
       p: P,
       listras: false,
+      fino: "exemplo",
     });
     liso = consertaDem({
       metros: dem,

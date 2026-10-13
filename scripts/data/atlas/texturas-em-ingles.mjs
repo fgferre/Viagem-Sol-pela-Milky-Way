@@ -550,10 +550,10 @@ export const EM_INGLES = new Map([
     'é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor',
     'this is the cloud tops, not the ground: the surface of Venus has no photograph in visible light — what exists is radar, and radar is not color',
   ],
-  // 13/10/2026 — Encélado com o relevo assado do DEM de 200 m (R4)
+  // 13/10/2026 — Encélado com o relevo assado do DEM de 200 m e o polo sul do SPC de 100 m (R4)
   [
-    'relevo medido pelo DEM de 200 m, com a altura em 1024 px e a luz em 4096 px (~0,4 km por texel): o detalhe menor que ~1 km sai liso (a confirmar pela medida)',
-    'relief measured by the 200 m DEM, with the height at 1024 px and the light at 4096 px (~0.4 km per texel): detail smaller than ~1 km comes out smooth (to be confirmed by the measurement)',
+    'relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 15 % alisado onde o DEM tinha ruído; 0,5 % derivado da foto',
+    'relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024) and 2 % by the 100 m model of the south pole (Park et al. 2024); 15 % smoothed where the DEM was noisy; 0.5 % derived from the photo',
   ],
   // 10/10/2026 — Mimas, Tétis e Dione ganham a nota do relevo (R3)
   [

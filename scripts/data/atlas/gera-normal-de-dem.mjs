@@ -209,6 +209,13 @@
 // pelo fluxo da altura nas quatro bordas, na direção leste/norte do texel
 // (o leste corrigido pelo esticamento θ/sen θ da projeção). Entre
 // `deGraus` e `ateGraus` as duas encostas se misturam por smoothstep.
+//
+// O SPC DO POLO SUL (Encélado, R4). Onde o modelo de placas de 100 m da JPL
+// (Park et al. 2024; `spcDoPolo` na tabela, `relevo-spc.mjs`) cobre o terreno
+// das listras de tigre, ele SUBSTITUI o DEM antes da altura, da normal e das
+// calotas: lido do DSK pinado, levado à casa pelo giro medido, registrado no
+// largo do DEM nos ladrilhos bons e fundido por rampa + membrana. O conserto
+// dos ladrilhos ruins segue valendo fora do núcleo do SPC.
 // ============================================================
 
 import { createHash } from 'node:crypto';
@@ -218,13 +225,25 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { DERIVADO, INVENTADO, LISO, MEDIDO, RUIDO, consertaDem } from './conserto-do-dem.mjs';
+import { BOM, CONSERTO_DE_ENCELADO, LISO, RUIDO, consertaDem } from './conserto-do-dem.mjs';
 import { luminanciaDoRgb } from './crateras-pela-foto.mjs';
 import { pesosDaCaixa } from './gera-horizonte.mjs';
 import { giraColunasDeImagem } from './lib-texturas.mjs';
 import { inventaRelevoDoCorpo } from './relevo-inventado.mjs';
 import { escalaEViesDaFaixa, quantizaNaFaixa } from './relevo-por-foto.mjs';
 import { leTiffFloat32, reamostraParaACasa } from './relevo-reia.mjs';
+import {
+  SPC_DE_ENCELADO,
+  amostraNaCasa,
+  aplicaPlano,
+  fundeNoDem,
+  leDsk,
+  mascarasDoSpc,
+  partilhaDaArea,
+  rasterizaNoPolo,
+  registraNoDem,
+  spcNaCasa,
+} from './relevo-spc.mjs';
 
 const rootDirectory = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -259,6 +278,9 @@ const rootDirectory = path.resolve(
  * MiB (Plutão, Caronte): as alturas lidas ficam em `.cache/relevo/` e as
  * rodadas seguintes as releem de lá, conferidas por sha256 (ver o
  * cabeçalho).
+ *
+ * `spcDoPolo` só existe em Encélado: o modelo de placas do polo sul (DSK
+ * pinado por sha256) que substitui o DEM onde cobre (ver o cabeçalho).
  *
  * `mapaDeAltura`, `ganhoDoShader` e `calotasPolares` só existem em Encélado (ver
  * o cabeçalho): a altura do vértice (largura, faixa do byte em km e o raio
@@ -539,14 +561,25 @@ export const CORPOS = {
     // o DEM é colcha: ladrilhos de bolhas de estéreo e lisos ao lado do polo
     // sul, as listras de tigre dentro deles. `conserto-do-dem.mjs` os acha
     // contra o retrato da cor (o mosaico de Schenk, ainda com a sombra), deixa
-    // neles só o que tem ≥ 8 km, devolve o fino POR EXEMPLO (retalhos dos
-    // ladrilhos bons de Encélado) e as listras e crateras do traço na foto;
-    // os ladrilhos bons saem byte a byte (13/10/2026). `fino`: 'exemplo' (o
-    // padrão) ou 'liso' (o ruim fica só com o largo medido, listras e crateras)
+    // neles só o que tem ≥ 8 km e as listras e crateras do traço na foto; os
+    // ladrilhos bons saem byte a byte (13/10/2026). `fino`: 'liso' (o ruim
+    // fica só com o largo medido, listras e crateras; a colcha por exemplo foi
+    // julgada um retalho agitado) ou 'exemplo'
     consertoDoDem: {
       foto: 'scripts/data/atlas/fonte/enceladus-cor.jpg',
       sha256: '1bacd2c1dcf5581ecf60fde29e02bbb4b31b551733d1887ee7ea2fa2b976ddca',
-      fino: 'exemplo',
+      fino: 'liso',
+    },
+    // o polo sul MEDIDO a 100 m: o modelo de placas por estereofotoclinometria
+    // da JPL (Park et al. 2024, JGR Planets 129, e2023JE008054), versão 2 de
+    // 2025; cobre 20 100 km² do terreno das listras (três das quatro), de 90°S
+    // a 58–80°S. Substitui o DEM onde cobre (`relevo-spc.mjs`); o arquivo
+    // baixado em 13/10/2026 (64 934 912 B), outro é recusado
+    spcDoPolo: {
+      nome: 'cas_enceladus_ssd_spc_south100m_v2.bds',
+      url: 'https://naif.jpl.nasa.gov/pub/naif/CASSINI/misc/enceladus_park2023/cas_enceladus_ssd_spc_south100m_v2.bds',
+      arquivo: '.cache/relevo/cas_enceladus_ssd_spc_south100m_v2.bds',
+      sha256: '5f4e1fec2291b2dbb33eb61b39ffab017dc573eeae844c2dcebc383aeb6689ee',
     },
     fonte: {
       tipo: 'tif-local',
@@ -1647,10 +1680,103 @@ function encostaPorFaixa(rgb, largura, altura, ganho, faixas) {
 }
 
 /**
- * O DEM CONSERTADO (`consertaDem`, `conserto-do-dem.mjs`): lê o retrato da
- * cor pinado em `consertoDoDem`, leva a grade fina à casa, conserta e a traz
- * de volta à orientação da fonte — o resto da cadeia não muda. Conta as
- * frações medido / derivado / inventado.
+ * O SPC DO POLO SUL (`spcDoPolo`): lê o DSK do cache, confere o sha256
+ * pinado e o que o descritor diz (Encélado, IAU_ENCELADUS, placas, raios de
+ * 247 a 251 km), e rasteriza as placas na grade polar de `SPC_DE_ENCELADO`.
+ */
+async function lerSpcDoPolo(corpo) {
+  const { spcDoPolo: fonte, raioM } = corpo;
+  const caminho = path.join(rootDirectory, fonte.arquivo);
+  if (!existsSync(caminho)) {
+    throw new Error(`sem o SPC em ${fonte.arquivo} — baixe-o antes: curl -L --fail -o ${fonte.arquivo} ${fonte.url}`);
+  }
+  const bytes = await readFile(caminho);
+  if (sha256(bytes) !== fonte.sha256) throw new Error(`o sha256 do SPC não é o pinado (${fonte.sha256}) — não asso.`);
+  const { segmentos, formato } = leDsk(bytes);
+  const placas = segmentos.filter((s) => s.tipo === 2);
+  if (placas.length !== 1 || placas[0].centro !== 602 || placas[0].quadro !== 10040) {
+    throw new Error('o DSK não é um segmento de placas de Encélado no IAU_ENCELADUS — não asso.');
+  }
+  const s = placas[0];
+  const [rMin, rMax] = s.limites.slice(4);
+  if (!(rMin > 247 && rMax < 251)) throw new Error(`raios de ${rMin} a ${rMax} km fora do polo sul de Encélado — não asso.`);
+  const p = SPC_DE_ENCELADO;
+  const grade = rasterizaNoPolo({ vertices: s.vertices, placas: s.placas, raioKm: raioM / 1000, passoKm: p.passoKm, ateGraus: p.ateGraus });
+  const cheias = grade.alturaM.reduce((n, h) => n + (Number.isFinite(h) ? 1 : 0), 0);
+  console.log(
+    `SPC do polo sul (${formato}): ${s.nv} vértices, ${s.np} placas, raios ${rMin.toFixed(2)}–${rMax.toFixed(2)} km; ` +
+      `${Math.round(cheias * p.passoKm * p.passoKm)} km² cobertos na grade polar de ${1000 * p.passoKm} m.`
+  );
+  return grade;
+}
+
+/**
+ * O CONSERTO E O SPC NA CASA (puro; `casa` o DEM fino em m, `luminancia` a
+ * foto na grade de trabalho, `grade` a do SPC ou null): o conserto dos
+ * ladrilhos ruins com o núcleo do SPC protegido e as listras da foto fora do
+ * SPC (em rampa até a borda dele); o registro (a guarda do giro e o plano nos ladrilhos bons) e a
+ * fusão. Devolve `{ metros, conserto, spc, partilha }` — a partilha da área
+ * da esfera em SPC, Schenk medido, alisado e derivado da foto.
+ */
+export function consertaComSpc({ casa, largura, altura, luminancia, corpo, grade = null }) {
+  const p = SPC_DE_ENCELADO;
+  const W = CONSERTO_DE_ENCELADO.larguraDeTrabalho;
+  const Ht = W / 2;
+  const raioM = corpo.raioM;
+  const fino = grade ? spcNaCasa(grade, largura, altura, p.giroGraus) : null;
+  const mascaras = fino ? mascarasDoSpc(fino, largura, altura, W, Ht, raioM, p) : null;
+  const conserto = consertaDem({
+    metros: casa,
+    largura,
+    altura,
+    luminancia,
+    raioM,
+    fino: corpo.consertoDoDem.fino,
+    protegido: mascaras?.nucleo,
+    pesoDasListras: mascaras?.listras,
+  });
+  if (!grade) return { metros: conserto.metros, conserto, spc: null, partilha: partilhaDaArea(conserto.cobertura, null, W, Ht) };
+  const texel = (lat, lonE) => {
+    const j = Math.min(Ht - 1, Math.floor(((90 - lat) / 180) * Ht));
+    return j * W + (Math.floor(((((lonE - 180) % 360) + 360) % 360) / 360 * W) % W);
+  };
+  const registro = registraNoDem({
+    grade,
+    demEm: (lat, lonE) => amostraNaCasa(casa, largura, altura, lat, lonE),
+    bomEm: (lat, lonE) => conserto.qualidade[texel(lat, lonE)] === BOM,
+    p,
+  });
+  const { declarado, semGiro, espelho } = registro.correlacao;
+  if (!(declarado > Math.max(semGiro, espelho) + p.registro.margem)) {
+    throw new Error(
+      `o SPC no giro declarado de ${p.giroGraus}° casa com o DEM em ${declarado.toFixed(3)}, sem giro em ` +
+        `${semGiro.toFixed(3)}, espelhado em ${espelho.toFixed(3)} — o registro não confere. Não asso.`
+    );
+  }
+  const f = fundeNoDem({
+    metros: conserto.metros,
+    spcFino: spcNaCasa(aplicaPlano(grade, registro.plano), largura, altura, p.giroGraus),
+    Wf: largura,
+    Hf: altura,
+    mascaras,
+    W,
+    H: Ht,
+    raioM,
+    p,
+  });
+  return {
+    metros: f.metros,
+    conserto,
+    spc: { registro, mascaras, correcao: f.correcao },
+    partilha: partilhaDaArea(conserto.cobertura, mascaras.peso, W, Ht),
+  };
+}
+
+/**
+ * O DEM CONSERTADO (`consertaComSpc`): lê o retrato da cor pinado em
+ * `consertoDoDem` e o SPC de `spcDoPolo`, leva a grade fina à casa, conserta
+ * e funde, e a traz de volta à orientação da fonte — o resto da cadeia não
+ * muda. Conta a partilha da área.
  */
 async function consertarODem(corpo, fina) {
   const { foto, sha256: pinado, fino } = corpo.consertoDoDem;
@@ -1661,16 +1787,30 @@ async function consertarODem(corpo, fina) {
   const giro = LONGITUDE_ESQUERDA_DA_CASA - corpo.longitudeDaBordaEsquerdaGraus;
   const { largura, altura } = fina;
   const casa = giraColunasDeImagem(fina.metros, largura, altura, 1, giro);
-  const r = consertaDem({ metros: casa, largura, altura, luminancia, raioM: corpo.raioM, fino });
+  const grade = corpo.spcDoPolo ? await lerSpcDoPolo(corpo) : null;
+  const r = consertaComSpc({ casa, largura, altura, luminancia, corpo, grade });
   const pct = (x) => `${(100 * x).toFixed(1)} %`;
-  const { cobertura: c, classes, lei, crateras, listras } = r.relatorio;
+  const { classes, lei, crateras, listras } = r.conserto.relatorio;
   console.log(
-    `conserto (fino ${fino}): ruído ${pct(classes[RUIDO])}, liso ${pct(classes[LISO])} da área; ` +
-      `medido ${pct(c[MEDIDO])}, derivado da foto ${pct(c[DERIVADO])}, inventado ${pct(c[INVENTADO])}.`
+    `conserto (fino ${fino}): ruído ${pct(classes[RUIDO])}, liso ${pct(classes[LISO])} da área fora do núcleo do SPC; ` +
+      `crateras: d/D ${lei.dD.toFixed(3)} (${lei.n} nos ladrilhos bons), ${crateras.noRuim} completadas no ruim; ` +
+      `listras da foto: ${listras.linhas.length} traços, ${pct(listras.fracaoNoRuim)} do corredor fora do SPC entra.`
   );
+  if (r.spc) {
+    const { registro } = r.spc;
+    const c = registro.correlacao;
+    console.log(
+      `SPC registrado: giro ${SPC_DE_ENCELADO.giroGraus}° (banda média ${c.declarado.toFixed(3)}, sem giro ` +
+        `${c.semGiro.toFixed(3)}, espelho ${c.espelho.toFixed(3)}); plano ${registro.plano.map((v) => v.toFixed(2)).join(', ')} ` +
+        `(m, m/km${registro.inclinacao ? '' : '; só o nível, os bons não sustentam inclinação'}) em ` +
+        `${Math.round(registro.areaBonsKm2)} km² de ladrilhos bons, resíduo do largo ` +
+        `${registro.rmsAntesM.toFixed(0)} → ${registro.rmsDepoisM.toFixed(0)} m.`
+    );
+  }
+  const a = r.partilha;
   console.log(
-    `  crateras: d/D ${lei.dD.toFixed(3)} (${lei.n} nos ladrilhos bons), ${crateras.noRuim} completadas no ruim; ` +
-      `listras: ${listras.linhas.length} traços, ${pct(listras.fracaoNoRuim)} no ruim.`
+    `área da esfera: medido ${pct(a.schenk)} (Schenk & McKinnon 2024) + ${pct(a.spc)} (SPC, Park et al. 2024), ` +
+      `derivado da foto ${pct(a.derivado)}, alisado ${pct(a.alisado)}.`
   );
   return { ...fina, metros: giraColunasDeImagem(r.metros, largura, altura, 1, -giro) };
 }
