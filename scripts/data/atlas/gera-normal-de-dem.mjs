@@ -498,9 +498,13 @@ export const CORPOS = {
     // vira metro aqui
     offsetDoDado: 0,
     metrosPorUnidade: 1000,
-    // −180…180 (meridiano central 0°), a convenção da casa: giro 0. É a
-    // DECLARAÇÃO; a georreferência do GeoTIFF a confere e recusa se divergir
-    longitudeDaBordaEsquerdaGraus: 180,
+    // 0…360: o layout Schenk põe o sub-Saturno na emenda e a casa o põe no
+    // meio (a meia volta do item 138). Medido em 13/10 contra a altura de
+    // antes (correlação 0,997 com a meia volta, 0,303 sem) e contra a borda
+    // da foto (0,221 × 0,024). É a DECLARAÇÃO; a georreferência do GeoTIFF a
+    // confere e recusa se divergir — e diz o mesmo: meridiano central 180°,
+    // âncora em −805 000 m na esfera de 256,2 km, borda em −0,03° (0,6 px)
+    longitudeDaBordaEsquerdaGraus: 0,
     // as listras de tigre passam de 80°S: a trava subestimaria a encosta
     // leste-oeste delas (metade a 85°S, um décimo a 89°S)
     travaNoSul: false,
@@ -520,9 +524,8 @@ export const CORPOS = {
       altura: 4025,
       // o sem-dado de float do GDAL é o menor negativo; NaN também conta
       semDado: -1e30,
-      // nulo até a primeira corrida: o gerador imprime o sha256 e, com a
-      // palavra dele, o número entra aqui e passa a ser cobrado
-      sha256: null,
+      // o arquivo baixado em 13/10/2026 (129 613 723 B): outro é recusado
+      sha256: '7c08c46238cde6528c9143f0c667d42cd3bc6ac60c572595a7e6cad2d6775f91',
     },
   },
 };

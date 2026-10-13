@@ -306,9 +306,12 @@ describe('4. a tabela dos corpos (o que muda de um para o outro)', () => {
     expect(CORPOS.pluto).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 0 });
     expect(CORPOS.charon).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 180 });
     // Encélado (R4): o float32 é altura em KM sobre o elipsoide de Thomas
-    // 2016, e o GeoTIFF vai de −180 a 180° (giro 0) — a georreferência confere
-    expect(CORPOS.enceladus).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1000, longitudeDaBordaEsquerdaGraus: 180 });
+    // 2016, e o GeoTIFF vai de 0 a 360° (o layout Schenk, a meia volta da
+    // casa) — medido contra a altura de antes e a foto, e é o que a
+    // georreferência dele diz; o arquivo é o pinado
+    expect(CORPOS.enceladus).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1000, longitudeDaBordaEsquerdaGraus: 0 });
     expect(CORPOS.enceladus.eixosDaCasaKm).toBeUndefined();
+    expect(CORPOS.enceladus.fonte.sha256).toMatch(/^[0-9a-f]{64}$/);
     // e só os dois DEMs parciais ligam a máscara do vazio e o relevo
     // inventado nela: os cinco de antes assam sem ela, byte a byte como antes
     expect(Object.keys(CORPOS).filter((id) => CORPOS[id].vazioInventado)).toEqual(['pluto', 'charon']);
@@ -576,9 +579,15 @@ describe('9. Encélado (R4): o DEM local vira altura e normal', () => {
   const ENCELADO = { ...CORPOS.enceladus, raioM: R, fonte: { ...CORPOS.enceladus.fonte, largura: Wf, altura: Hf } };
   const opcoes = { larguraDaNormal: 32, larguraDaAltura: 16 };
 
+  /** a borda que a tabela declara (0°: o layout Schenk, a meia volta da casa) */
+  const BORDA = CORPOS.enceladus.longitudeDaBordaEsquerdaGraus;
+
   /** a rampa LESTE de encosta física S, em metros, na grade da casa (a coluna 0 em −180°) */
   const rampa = () =>
     grade((i, j) => S * R * Math.cos(latDe(j, Hf)) * (((i + 0.5) / Wf) * 2 * Math.PI - Math.PI), Wf, Hf);
+
+  /** um campo da casa no layout da FONTE: a coluna 0 em `borda` (o gerador desfaz o giro) */
+  const naFonte = (campo, borda = BORDA) => giraColunasDeImagem(campo, Wf, Hf, 1, borda - 180);
 
   /** a encosta leste FÍSICA que a tela vê: o mapa × o ganho do shader */
   const leste = (rgb, i, j, largura = 32) => {
@@ -589,20 +598,21 @@ describe('9. Encélado (R4): o DEM local vira altura e normal', () => {
   /**
    * UM GeoTIFF float32 MÍNIMO, por tiras de uma linha, clássico little-endian:
    * as tags que `leTiffFloat32` e `georreferenciaDoTiff` leem, equirretangular
-   * em metros na esfera de `raioM`, PixelIsArea, meridiano central 0° e a
-   * borda esquerda em `bordaGraus`.
+   * em metros na esfera de `raioM`, PixelIsArea. Como o arquivo real: o
+   * meridiano central a meia volta da borda esquerda (`bordaGraus` + 180°) e
+   * a âncora em −π·raio.
    */
-  function geoTiff(valores, { raioM = R, bordaGraus = 180 } = {}) {
+  function geoTiff(valores, { raioM = R, bordaGraus = BORDA } = {}) {
     const tam = { 3: 2, 4: 4, 12: 8 };
-    const x0 = ((((bordaGraus + 180) % 360) - 180) * Math.PI * raioM) / 180;
+    const central = (bordaGraus + 180) % 360;
     const tags = [
       [256, 4, [Wf]], [257, 4, [Hf]], [258, 3, [32]], [259, 3, [1]], [262, 3, [1]],
       [273, 4, new Array(Hf).fill(0)], [277, 3, [1]], [278, 4, [1]], [279, 4, new Array(Hf).fill(4 * Wf)],
       [339, 3, [3]],
       [33550, 12, [(2 * Math.PI * raioM) / Wf, (Math.PI * raioM) / Hf, 0]],
-      [33922, 12, [0, 0, 0, x0, (Math.PI * raioM) / 2, 0]],
+      [33922, 12, [0, 0, 0, -Math.PI * raioM, (Math.PI * raioM) / 2, 0]],
       [34735, 3, [1, 1, 0, 4, 1024, 0, 1, 1, 1025, 0, 1, 1, 2057, 34736, 1, 0, 3088, 34736, 1, 1]],
-      [34736, 12, [raioM, 0]],
+      [34736, 12, [raioM, central]],
     ];
     let fim = 8 + 2 + 12 * tags.length + 4;
     const fora = tags.map(([, tipo, v]) => {
@@ -637,7 +647,7 @@ describe('9. Encélado (R4): o DEM local vira altura e normal', () => {
 
   it('a trava do sul está DESLIGADA: a encosta leste perto do polo sul sai física, a do norte segue presa', () => {
     expect(CORPOS.enceladus.travaNoSul).toBe(false);
-    const { normal } = relevoDoDem({ metros: rampa(), largura: Wf, altura: Hf }, ENCELADO, opcoes);
+    const { normal } = relevoDoDem({ metros: naFonte(rampa()), largura: Wf, altura: Hf }, ENCELADO, opcoes);
     // a coluna 16 cai em ~6°E, onde a rampa quase não inclina para o norte
     for (const j of [4, 8, 11]) expect(leste(normal.rgb, 16, j), `linha ${j}`).toBeCloseTo(S, 1);
     // a última linha (78,75–90°S): o passo leste é a média de cos φ da célula
@@ -666,9 +676,11 @@ describe('9. Encélado (R4): o DEM local vira altura e normal', () => {
   it('um GeoTIFF float32 sintético volta como a normal e a altura esperadas, e a borda errada é recusada', () => {
     const casa = rampa();
     const km = casa.map((m) => m / 1000);
-    const fina = lerDemLocal(geoTiff(km), ENCELADO);
+    // o DEM no layout declarado (0…360), lido e levado de volta à casa
+    const fina = lerDemLocal(geoTiff(naFonte(km)), ENCELADO);
     expect(fina).toMatchObject({ largura: Wf, altura: Hf, semDado: 0 });
-    expect(fina.geo.bordaEsquerdaGraus).toBeCloseTo(-180, 9);
+    expect(fina.geo.bordaEsquerdaGraus).toBeCloseTo(BORDA, 9);
+    expect(fina.geo.centralGraus).toBe(180);
     const r = relevoDoDem(fina, ENCELADO, opcoes);
     // A NORMAL: longe da emenda, a encosta física da rampa, no mapa ÷ 1,2
     for (const j of [4, 8, 11]) {
@@ -684,15 +696,15 @@ describe('9. Encélado (R4): o DEM local vira altura e normal', () => {
     }
     expect(r.altura.abaixo + r.altura.acima).toBe(0);
 
-    // O MESMO DEM com a borda em 0° (meia volta): declarado, sai byte a byte igual
-    const meia = giraColunasDeImagem(km, Wf, Hf, 1, 180);
-    const em0 = { ...ENCELADO, longitudeDaBordaEsquerdaGraus: 0 };
-    const r0 = relevoDoDem(lerDemLocal(geoTiff(meia, { bordaGraus: 0 }), em0), em0, opcoes);
-    expect(Buffer.from(r0.normal.rgb).equals(Buffer.from(r.normal.rgb))).toBe(true);
-    expect(Buffer.from(r0.altura.bytes).equals(Buffer.from(r.altura.bytes))).toBe(true);
-    // e NÃO declarado: a georreferência recusa e diz o número
-    expect(() => lerDemLocal(geoTiff(meia, { bordaGraus: 0 }), ENCELADO)).toThrow(/longitudeDaBordaEsquerdaGraus: 0\b/);
+    // O MESMO relevo já no layout da casa (borda em 180°): declarado, sai byte a byte igual
+    const em180 = { ...ENCELADO, longitudeDaBordaEsquerdaGraus: 180 };
+    const r180 = relevoDoDem(lerDemLocal(geoTiff(km, { bordaGraus: 180 }), em180), em180, opcoes);
+    expect(Buffer.from(r180.normal.rgb).equals(Buffer.from(r.normal.rgb))).toBe(true);
+    expect(Buffer.from(r180.altura.bytes).equals(Buffer.from(r.altura.bytes))).toBe(true);
+    // e NÃO declarado — o engano da primeira versão da tabela, ao contrário: a
+    // georreferência recusa e diz o número
+    expect(() => lerDemLocal(geoTiff(km, { bordaGraus: 180 }), ENCELADO)).toThrow(/longitudeDaBordaEsquerdaGraus: 180\b/);
     // e o dado em metros no lugar de km também não passa
-    expect(() => lerDemLocal(geoTiff(casa), ENCELADO)).toThrow(/unidade declarada/);
+    expect(() => lerDemLocal(geoTiff(naFonte(casa)), ENCELADO)).toThrow(/unidade declarada/);
   });
 });
