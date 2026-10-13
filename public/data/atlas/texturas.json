@@ -5,55 +5,68 @@
   "formas": {
     "atlas": {
       "pt": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
-      "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural"
+      "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural",
+      "seloDaNota": "inventado"
     },
     "daphnis": {
       "pt": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
-      "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural"
+      "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural",
+      "seloDaNota": "inventado"
     },
     "deimos": {
       "pt": "elipsoide, sem malha: só os três eixos medidos (15 × 12 × 11 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega",
-      "en": "an ellipsoid, no mesh: only the three measured axes (15 × 12 × 11 km) — the irregular shape model (Viking/MRO, NASA PDS) is published, and this house does not load it yet"
+      "en": "an ellipsoid, no mesh: only the three measured axes (15 × 12 × 11 km) — the irregular shape model (Viking/MRO, NASA PDS) is published, and this house does not load it yet",
+      "seloDaNota": "derivado"
     },
     "epimetheus": {
       "pt": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
-      "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural"
+      "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural",
+      "seloDaNota": "inventado"
     },
     "haumea": {
       "pt": "elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e esta casa ainda não a carrega",
-      "en": "an ellipsoid, no mesh: the irregular shape measured by occultation is published, and this house does not load it yet"
+      "en": "an ellipsoid, no mesh: the irregular shape measured by occultation is published, and this house does not load it yet",
+      "seloDaNota": "derivado"
     },
     "hygiea": {
-      "pt": "elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega",
-      "en": "an ellipsoid, no mesh: the irregular shape from DAMIT is published, and this house does not load it yet"
+      "pt": "esfera do raio médio, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega",
+      "en": "a sphere of the mean radius, no mesh: the irregular shape from DAMIT is published, and this house does not load it yet",
+      "seloDaNota": "derivado"
     },
     "janus": {
       "pt": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
-      "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural"
+      "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural",
+      "seloDaNota": "inventado"
     },
     "pallas": {
-      "pt": "elipsoide, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega",
-      "en": "an ellipsoid, no mesh: the irregular shape from DAMIT is published, and this house does not load it yet"
+      "pt": "esfera do raio médio, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega",
+      "en": "a sphere of the mean radius, no mesh: the irregular shape from DAMIT is published, and this house does not load it yet",
+      "seloDaNota": "derivado"
     },
     "pandora": {
       "pt": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
-      "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural"
+      "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural",
+      "seloDaNota": "inventado"
     },
     "phobos": {
       "pt": "elipsoide, sem malha: só os três eixos medidos (27 × 22 × 18 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega",
-      "en": "an ellipsoid, no mesh: only the three measured axes (27 × 22 × 18 km) — the irregular shape model (Viking/MRO, NASA PDS) is published, and this house does not load it yet"
+      "en": "an ellipsoid, no mesh: only the three measured axes (27 × 22 × 18 km) — the irregular shape model (Viking/MRO, NASA PDS) is published, and this house does not load it yet",
+      "seloDaNota": "derivado"
     },
     "phoebe": {
       "pt": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
-      "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural"
+      "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural",
+      "seloDaNota": "inventado"
     },
     "prometheus": {
       "pt": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
-      "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural"
+      "en": "geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural",
+      "seloDaNota": "inventado"
     },
     "vesta": {
       "pt": "elipsoide, sem malha: a forma irregular medida pela Dawn existe publicada e esta casa ainda não a carrega",
-      "en": "an ellipsoid, no mesh: the irregular shape measured by Dawn is published, and this house does not load it yet"
+      "en": "an ellipsoid, no mesh: the irregular shape measured by Dawn is published, and this house does not load it yet",
+      "seloDaNota": "derivado"
     }
   },
   "entradas": [
