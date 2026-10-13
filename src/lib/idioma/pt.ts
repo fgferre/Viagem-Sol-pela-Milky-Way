@@ -468,23 +468,26 @@ export const PT = {
   'ficha.campo.brilho': 'brilho',
   // AS FRASES GERADAS das quatro linhas da imagem (R3, `secaoImagem`):
   // onde a bancada não escreveu nota, a ficha diz o que a régua e os
-  // eixos dizem. `{fonte}` é a fonte da tabela da régua, citada como está.
+  // eixos dizem. `{fonte}` é a fonte da tabela da régua, citada depois do
+  // travessão e com a vírgula decimal; `{ressalvas}` são as do brilho
+  // (a média estimada, o contraste), ditas antes da fonte.
   'ficha.forma.elipsoide': 'elipsoide dos eixos medidos',
   'ficha.forma.elipsoideComAltura':
     'elipsoide dos eixos medidos, deformado pelo mapa de altura do relevo',
   'ficha.relevo.naoSeAplica': 'não se aplica: o que se vê é atmosfera',
-  'ficha.relevo.liso': 'liso: falta um mapa de relevo',
+  'ficha.relevo.liso':
+    'sem mapa de relevo: a esfera é lisa, e as sombras que se veem estão na própria imagem',
   'ficha.relevo.semMapa': 'sem mapa de relevo: o que se vê é a malha feita por código, sem medida',
   'ficha.relevo.semDefeito': 'mapa de relevo medido; a bancada não achou defeito',
-  'ficha.cor.foto': 'foto em cor verdadeira, média medida ({fonte})',
-  'ficha.cor.tinta': 'desenho da foto em cinza, tingido com a cor medida ({fonte})',
-  'ficha.cor.esculpido': 'cor da família de regolito, sem mapa ({fonte})',
+  'ficha.cor.foto': 'foto em cor verdadeira, média medida — {fonte}',
+  'ficha.cor.tinta': 'desenho da foto em cinza, tingido com a cor medida — {fonte}',
+  'ficha.cor.esculpido': 'cor da família de regolito, sem mapa — {fonte}',
   'ficha.cor.foraDaRegua':
     'a cor das fotos, sem nivelar: a Terra composta (superfície, nuvens, mar) fica fora da régua que nivela os outros corpos',
-  'ficha.brilho.medido': 'albedo medido p0 = {p0} ({fonte})',
+  'ficha.brilho.medido': 'albedo medido p0 = {p0}{ressalvas} — {fonte}',
   'ficha.brilho.picoPorModelo':
-    'albedo p0 = {p0}, com o pico de oposição tirado por modelo ({fonte})',
-  'ficha.brilho.estimado': 'albedo p0 = {p0}, estimado a partir das medidas ({fonte})',
+    'albedo p0 = {p0}, com o pico de oposição tirado por modelo{ressalvas} — {fonte}',
+  'ficha.brilho.estimado': 'albedo p0 = {p0}, estimado a partir das medidas{ressalvas} — {fonte}',
   'ficha.brilho.mediaEstimada': '; a família de regolito chega a ele por uma média estimada',
   'ficha.brilho.gama': '; contraste do mapa ×{gama} para não estourar',
   'ficha.brilho.foraDaRegua':

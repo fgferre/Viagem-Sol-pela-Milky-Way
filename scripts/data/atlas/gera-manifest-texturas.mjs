@@ -80,7 +80,7 @@ const ATRIBUICAO_SSS =
 // A citação que a NOAA pede para o ETOPO 2022 (`.cache/terra/FONTES.json`).
 const ATRIBUICAO_ETOPO =
   'Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. ' +
-  'https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).';
+  'https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado pelo app.';
 const ORIGENS = {
   'earth/map': {
     fonte: 'Solar System Scope — 8k_earth_daymap',
@@ -110,8 +110,8 @@ const ORIGENS = {
   // cadeia). A confissão mora no ASSETS.md.
   'earth/normal': {
     fonte:
-      'ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa ' +
-      '(relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS',
+      'ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área pelo app, ' +
+      'com a água no nível do espelho — mapa de NORMAIS',
     url: 'https://doi.org/10.25921/fd45-gt74',
     licenca: 'CC0 1.0 (domínio público)',
     atribuicao: ATRIBUICAO_ETOPO,
@@ -119,8 +119,8 @@ const ORIGENS = {
   },
   'earth/horizon': {
     fonte:
-      'ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa ' +
-      '(relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+      'ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área pelo app, ' +
+      'com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
     url: 'https://doi.org/10.25921/fd45-gt74',
     licenca: 'CC0 1.0 (domínio público)',
     atribuicao: ATRIBUICAO_ETOPO,
@@ -128,8 +128,8 @@ const ORIGENS = {
   },
   'earth/horizon2': {
     fonte:
-      'ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa ' +
-      '(relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+      'ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área pelo app, ' +
+      'com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
     url: 'https://doi.org/10.25921/fd45-gt74',
     licenca: 'CC0 1.0 (domínio público)',
     atribuicao: ATRIBUICAO_ETOPO,
@@ -139,7 +139,7 @@ const ORIGENS = {
     fonte:
       'Solar System Scope — 8k_earth_specular_map.tif via Wayback Machine, ' +
       'INVERTIDO (negate) para roughness — o SSS pinta oceano claro ' +
-      '(=reflexivo) e o roughnessMap espera 0=espelho (checklist item 14)',
+      '(=reflexivo) e o roughnessMap espera 0=espelho',
     url: 'https://web.archive.org/web/2025/https://www.solarsystemscope.com/textures/download/8k_earth_specular_map.tif',
     licenca: 'CC BY 4.0',
     atribuicao: ATRIBUICAO_SSS,
@@ -234,11 +234,11 @@ const ORIGENS = {
   },
   'europa/map': {
     fonte:
-      'Voyager e Galileo SSI — mosaico global de Europa a 500 m (USGS Astrogeology, 19631×9816, em cinza), com a cor inferida nesta casa a partir da foto em cor da Galileo PIA19048',
+      'Voyager e Galileo SSI — mosaico global de Europa a 500 m (USGS Astrogeology, 19631×9816, em cinza), com a cor inferida pelo app a partir da foto em cor da Galileo PIA19048',
     url: 'https://planetarymaps.usgs.gov/mosaic/Europa_Voyager_GalileoSSI_global_mosaic_500m.tif',
     licenca: 'domínio público (NASA/USGS)',
     atribuicao:
-      'Imagens: Voyager e Galileo SSI (NASA/JPL-Caltech); mosaico do USGS Astrogeology Science Center. Cor de referência: PIA19048 (NASA/JPL-Caltech/SETI Institute) e PIA00502 (NASA/JPL/DLR). Redução para 4096 px, giro de longitude, preenchimento do sul sem dado e cor inferida do brilho nesta casa (baixa-texturas.mjs, cor-europa.mjs).',
+      'Imagens: Voyager e Galileo SSI (NASA/JPL-Caltech); mosaico do USGS Astrogeology Science Center. Cor de referência: PIA19048 (NASA/JPL-Caltech/SETI Institute) e PIA00502 (NASA/JPL/DLR). Redução para 4096 px, giro de longitude, preenchimento do sul sem dado e cor inferida do brilho pelo app.',
     proveniencia: 'derivado',
   },
   'ganymede/map': {
@@ -301,7 +301,7 @@ const ORIGENS = {
     proveniencia: 'derivado',
   },
   'titan/map': {
-    fonte: 'NASA 3D Resources — Titã (720×360, névoa; mosaico Cassini fica pendente da bancada)',
+    fonte: 'NASA 3D Resources — Titã (720×360, só a névoa; o mosaico Cassini ainda não entrou)',
     url: 'https://github.com/nasa/NASA-3D-Resources/tree/master/Images%20and%20Textures/Saturn%20-%20Titan',
     licenca: 'NASA 3D Resources (uso livre)',
     atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
@@ -368,7 +368,7 @@ const ORIGENS = {
     url: 'https://science.nasa.gov/photojournal/pluto-color-map/',
     licenca: 'domínio público (NASA)',
     atribuicao:
-      'Imagens: Ralph/MVIC da New Horizons no sobrevoo de 14 de julho de 2015 (NASA/Johns Hopkins APL/Southwest Research Institute). Giro de longitude e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).',
+      'Imagens: Ralph/MVIC da New Horizons no sobrevoo de 14 de julho de 2015 (NASA/Johns Hopkins APL/Southwest Research Institute). Giro de longitude e preenchimento do sul sem dado pelo app.',
     proveniencia: 'derivado',
   },
   'charon/map': {
@@ -377,7 +377,7 @@ const ORIGENS = {
     url: 'https://astrogeology.usgs.gov/search/map/charon_new_horizons_lorri_mvic_global_mosaic_300m',
     licenca: 'domínio público (NASA/USGS)',
     atribuicao:
-      'Imagens: LORRI e Ralph/MVIC da New Horizons (NASA/Johns Hopkins APL/Southwest Research Institute); mosaico do USGS Astrogeology Science Center. Reamostragem para 8192 px e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).',
+      'Imagens: LORRI e Ralph/MVIC da New Horizons (NASA/Johns Hopkins APL/Southwest Research Institute); mosaico do USGS Astrogeology Science Center. Reamostragem para 8192 px e preenchimento do sul sem dado pelo app.',
     proveniencia: 'derivado',
   },
   'ceres/map': {
@@ -385,17 +385,17 @@ const ORIGENS = {
     url: 'https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_global_mosaic_20ppd',
     licenca: 'domínio público (NASA/DLR/USGS)',
     atribuicao:
-      'Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaico do DLR Institute of Planetary Research, distribuído pelo USGS Astrogeology. Giro de longitude, tingimento uniforme e preenchimento do polo sul nesta casa (baixa-texturas.mjs).',
+      'Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaico do DLR Institute of Planetary Research, distribuído pelo USGS Astrogeology. Giro de longitude, tingimento uniforme e preenchimento do polo sul pelo app.',
     proveniencia: 'derivado',
   },
   // ---- F7 (asteroides). Vesta Dawn (NASA Science 3D model).
   'vesta/map': {
     fonte:
-      'NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D, girado 150° do sistema "Claudia" da sonda para o meridiano da IAU (item 141, 3ª fase)',
+      'NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D, girado 150° do sistema "Claudia" da sonda para o meridiano da IAU',
     url: 'https://science.nasa.gov/resource/vesta-3d-model/',
     licenca: 'NASA images and media usage guidelines',
     atribuicao:
-      'Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Giro de longitude nesta casa (baixa-texturas.mjs).',
+      'Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Giro de longitude pelo app.',
     proveniencia: 'derivado',
   },
   // ---- Os seis sem foto de superfície (item 151): Hígia, Palas, Haumea,
@@ -518,38 +518,38 @@ const ORIGENS = {
   // crateras menores de perfil ESTIMADO: híbrido, por isso 'derivado'. A
   // confissão do que é cada coisa mora no ASSETS.md.
   'rhea/height': {
-    fonte: 'Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado nesta casa por relevo-reia.mjs com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de ALTURA',
+    fonte: 'Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado pelo app com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de ALTURA',
     url: 'https://doi.org/10.26033/tqxb-q714',
     licenca: 'dado NASA PDS, com citação obrigatória; montagem: código do autor (Felipe Ferreira)',
     atribuicao:
-      'Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Rhea shape model and maps, Cassini ISS SPC, NASA PDS Small Bodies Node, doi 10.26033/tqxb-q714. Crateras menores que ~30 km: lugar e diâmetro pelo mosaico global Cassini de Paul Schenk (PIA18438, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute); profundidade ESTIMADA pela lei de Aponte-Hernández et al. 2021. Montagem nesta casa (relevo-reia.mjs, crateras-pela-foto.mjs).',
+      'Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Rhea shape model and maps, Cassini ISS SPC, NASA PDS Small Bodies Node, doi 10.26033/tqxb-q714. Crateras menores que ~30 km: lugar e diâmetro pelo mosaico global Cassini de Paul Schenk (PIA18438, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute); profundidade ESTIMADA pela lei de Aponte-Hernández et al. 2021. Montagem pelo app.',
     proveniencia: 'derivado',
   },
   'rhea/normal': {
-    fonte: 'Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado nesta casa por relevo-reia.mjs com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de NORMAIS derivado da altura',
+    fonte: 'Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado pelo app com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de NORMAIS derivado da altura',
     url: 'https://doi.org/10.26033/tqxb-q714',
     licenca: 'dado NASA PDS, com citação obrigatória; montagem: código do autor (Felipe Ferreira)',
     atribuicao:
-      'Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Rhea shape model and maps, Cassini ISS SPC, NASA PDS Small Bodies Node, doi 10.26033/tqxb-q714. Crateras menores que ~30 km: lugar e diâmetro pelo mosaico global Cassini de Paul Schenk (PIA18438, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute); profundidade ESTIMADA pela lei de Aponte-Hernández et al. 2021. Montagem nesta casa (relevo-reia.mjs, crateras-pela-foto.mjs).',
+      'Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Rhea shape model and maps, Cassini ISS SPC, NASA PDS Small Bodies Node, doi 10.26033/tqxb-q714. Crateras menores que ~30 km: lugar e diâmetro pelo mosaico global Cassini de Paul Schenk (PIA18438, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute); profundidade ESTIMADA pela lei de Aponte-Hernández et al. 2021. Montagem pelo app.',
     proveniencia: 'derivado',
   },
   // item 230 (07/10/2026): o relevo de Jápeto sai do projeto Saturn e passa
   // a nascer nesta casa (`relevo-japeto.mjs`, pela cadeia), inventado mas
   // ancorado no medido — a confissão do que é cada coisa mora no ASSETS.md.
   'iapetus/height': {
-    fonte: 'Relevo de Jápeto gerado nesta casa por relevo-japeto.mjs a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de ALTURA',
+    fonte: 'Relevo de Jápeto gerado pelo app a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de ALTURA',
     url: 'https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/IAPETUS_nomenclature_center_pts.zip',
     licenca: 'código do autor (Felipe Ferreira); posições do Gazetteer da IAU e mosaico Cassini em domínio público',
     atribuicao:
-      'Crista e crateras com nome: Gazetteer of Planetary Nomenclature (IAU/USGS). Altura da crista: Porco et al. 2005 e Giese et al. 2008; perfis: Lopez Garcia et al. 2014; profundidade das crateras ancorada em White et al. 2013. Caminho da crista e crateras sem nome: mosaico global Cassini de Paul Schenk (PIA18436, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute). Relevo gerado nesta casa (relevo-japeto.mjs, crateras-pela-foto.mjs) — não é medida.',
+      'Crista e crateras com nome: Gazetteer of Planetary Nomenclature (IAU/USGS). Altura da crista: Porco et al. 2005 e Giese et al. 2008; perfis: Lopez Garcia et al. 2014; profundidade das crateras ancorada em White et al. 2013. Caminho da crista e crateras sem nome: mosaico global Cassini de Paul Schenk (PIA18436, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute). Relevo gerado pelo app — não é medida.',
     proveniencia: 'derivado',
   },
   'iapetus/normal': {
-    fonte: 'Relevo de Jápeto gerado nesta casa por relevo-japeto.mjs a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de NORMAIS derivado da altura',
+    fonte: 'Relevo de Jápeto gerado pelo app a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de NORMAIS derivado da altura',
     url: 'https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/IAPETUS_nomenclature_center_pts.zip',
     licenca: 'código do autor (Felipe Ferreira); posições do Gazetteer da IAU e mosaico Cassini em domínio público',
     atribuicao:
-      'Crista e crateras com nome: Gazetteer of Planetary Nomenclature (IAU/USGS). Altura da crista: Porco et al. 2005 e Giese et al. 2008; perfis: Lopez Garcia et al. 2014; profundidade das crateras ancorada em White et al. 2013. Caminho da crista e crateras sem nome: mosaico global Cassini de Paul Schenk (PIA18436, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute). Relevo gerado nesta casa (relevo-japeto.mjs, crateras-pela-foto.mjs) — não é medida.',
+      'Crista e crateras com nome: Gazetteer of Planetary Nomenclature (IAU/USGS). Altura da crista: Porco et al. 2005 e Giese et al. 2008; perfis: Lopez Garcia et al. 2014; profundidade das crateras ancorada em White et al. 2013. Caminho da crista e crateras sem nome: mosaico global Cassini de Paul Schenk (PIA18436, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute). Relevo gerado pelo app — não é medida.',
     proveniencia: 'derivado',
   },
 
@@ -571,7 +571,7 @@ const ORIGENS = {
     url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
     licenca: 'domínio público (NASA PDS); os poços: imagem do autor (Felipe Ferreira), gerada com IA',
     atribuicao:
-      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado nesta casa (Felipe Ferreira), com os poços da pintura por IA do autor.',
+      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), com os poços da pintura por IA do autor.',
     proveniencia: 'derivado',
   },
   'hyperion/normal': {
@@ -580,7 +580,7 @@ const ORIGENS = {
     url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
     licenca: 'domínio público (NASA PDS); os poços: imagem do autor (Felipe Ferreira), gerada com IA',
     atribuicao:
-      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado nesta casa (Felipe Ferreira), com os poços da pintura por IA do autor.',
+      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), com os poços da pintura por IA do autor.',
     proveniencia: 'derivado',
   },
   // item 226: o horizonte, 3 azimutes por canal em RGB (0/120/240° e
@@ -591,7 +591,7 @@ const ORIGENS = {
     url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
     licenca: 'domínio público (NASA PDS); os poços: imagem do autor (Felipe Ferreira), gerada com IA',
     atribuicao:
-      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado nesta casa (Felipe Ferreira), com os poços da pintura por IA do autor.',
+      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), com os poços da pintura por IA do autor.',
     proveniencia: 'derivado',
   },
   'hyperion/horizon2': {
@@ -600,7 +600,7 @@ const ORIGENS = {
     url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
     licenca: 'domínio público (NASA PDS); os poços: imagem do autor (Felipe Ferreira), gerada com IA',
     atribuicao:
-      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado nesta casa (Felipe Ferreira), com os poços da pintura por IA do autor.',
+      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), com os poços da pintura por IA do autor.',
     proveniencia: 'derivado',
   },
 
@@ -616,7 +616,7 @@ const ORIGENS = {
     url: 'https://science.nasa.gov/saturn/moons/pan/',
     licenca: 'imagem do autor (Felipe Ferreira), gerada com IA; fotos da Cassini em domínio público (NASA)',
     atribuicao:
-      'Pintura: imagem do autor (Felipe Ferreira), gerada com IA. Albedo fino e cor: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111) e Buratti et al. 2019 (Science). Montagem nesta casa.',
+      'Pintura: imagem do autor (Felipe Ferreira), gerada com IA. Albedo fino e cor: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111) e Buratti et al. 2019 (Science). Montagem pelo app.',
     proveniencia: 'derivado',
   },
   'pan/height': {
@@ -625,7 +625,7 @@ const ORIGENS = {
     url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
     licenca: 'domínio público (NASA PDS)',
     atribuicao:
-      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.',
+      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.',
     proveniencia: 'derivado',
   },
   'pan/normal': {
@@ -634,7 +634,7 @@ const ORIGENS = {
     url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
     licenca: 'domínio público (NASA PDS)',
     atribuicao:
-      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.',
+      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.',
     proveniencia: 'derivado',
   },
   'pan/horizon': {
@@ -643,7 +643,7 @@ const ORIGENS = {
     url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
     licenca: 'domínio público (NASA PDS)',
     atribuicao:
-      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.',
+      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.',
     proveniencia: 'derivado',
   },
   'pan/horizon2': {
@@ -652,7 +652,7 @@ const ORIGENS = {
     url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
     licenca: 'domínio público (NASA PDS)',
     atribuicao:
-      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.',
+      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.',
     proveniencia: 'derivado',
   },
 
@@ -672,7 +672,7 @@ const ORIGENS = {
     atribuicao:
       'Topografia: NASA/Goddard Space Flight Center Scientific Visualization ' +
       'Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de ' +
-      'normais assado nesta casa (gera-normal-de-dem.mjs).',
+      'normais assado pelo app.',
     proveniencia: 'derivado',
   },
 
@@ -689,7 +689,7 @@ const ORIGENS = {
     atribuicao:
       'Topografia: USGS Astrogeology Science Center, a partir das imagens ' +
       'estéreo da MDIS (MESSENGER, NASA/JHUAPL/Carnegie). Mapa de normais ' +
-      'assado nesta casa (gera-normal-de-dem.mjs).',
+      'assado pelo app.',
     proveniencia: 'derivado',
   },
   'mars/normal': {
@@ -700,7 +700,7 @@ const ORIGENS = {
     licenca: 'domínio público (NASA)',
     atribuicao:
       'Topografia: MGS MOLA Science Team (D. E. Smith, NASA/GSFC), MEGDR ' +
-      'v2. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).',
+      'v2. Mapa de normais assado pelo app.',
     proveniencia: 'derivado',
   },
   // ITEM 141, segunda fase: os dois corpos da Dawn. Ceres ganha relevo
@@ -715,8 +715,7 @@ const ORIGENS = {
     atribuicao:
       'Topografia: DLR Institute of Planetary Research, a partir das ' +
       'imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), ' +
-      'distribuída pelo USGS Astrogeology. Mapa de normais assado nesta ' +
-      'casa (gera-normal-de-dem.mjs).',
+      'distribuída pelo USGS Astrogeology. Mapa de normais assado pelo app.',
     proveniencia: 'derivado',
   },
   'vesta/normal': {
@@ -728,8 +727,7 @@ const ORIGENS = {
     atribuicao:
       'Topografia: DLR Institute of Planetary Research, a partir das ' +
       'imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), ' +
-      'distribuída pelo USGS Astrogeology. Mapa de normais assado nesta ' +
-      'casa (gera-normal-de-dem.mjs).',
+      'distribuída pelo USGS Astrogeology. Mapa de normais assado pelo app.',
     proveniencia: 'derivado',
   },
   // 01/10/2026: a mesma técnica em PLUTÃO e CARONTE, com os DEMs de 300 m
@@ -746,7 +744,7 @@ const ORIGENS = {
       'Topografia: Schenk et al. 2018, Icarus 314, 400, a partir das imagens ' +
       'LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), ' +
       'distribuída pelo USGS Astrogeology Science Center. Mapa de normais ' +
-      'assado nesta casa (gera-normal-de-dem.mjs).',
+      'assado pelo app.',
     proveniencia: 'derivado',
   },
   'charon/normal': {
@@ -759,7 +757,7 @@ const ORIGENS = {
       'Topografia: Schenk et al. 2018, Icarus 315, 124, a partir das imagens ' +
       'LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), ' +
       'distribuída pelo USGS Astrogeology Science Center. Mapa de normais ' +
-      'assado nesta casa (gera-normal-de-dem.mjs).',
+      'assado pelo app.',
     proveniencia: 'derivado',
   },
 };

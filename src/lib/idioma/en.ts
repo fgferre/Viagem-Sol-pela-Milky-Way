@@ -445,18 +445,19 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.forma.elipsoideComAltura':
     'ellipsoid of the measured axes, deformed by the relief height map',
   'ficha.relevo.naoSeAplica': 'does not apply: what you see is atmosphere',
-  'ficha.relevo.liso': 'smooth: a relief map is missing',
+  'ficha.relevo.liso':
+    'no relief map: the sphere is smooth, and the shading you see is in the image itself',
   'ficha.relevo.semMapa': 'no relief map: what you see is the code-made mesh, not a measurement',
   'ficha.relevo.semDefeito': 'measured relief map; the workbench found no flaw',
-  'ficha.cor.foto': 'true-color photo, measured mean ({fonte})',
-  'ficha.cor.tinta': "the photo's pattern in gray, tinted with the measured color ({fonte})",
-  'ficha.cor.esculpido': 'regolith-family color, no map ({fonte})',
+  'ficha.cor.foto': 'true-color photo, measured mean — {fonte}',
+  'ficha.cor.tinta': "the photo's pattern in gray, tinted with the measured color — {fonte}",
+  'ficha.cor.esculpido': 'regolith-family color, no map — {fonte}',
   'ficha.cor.foraDaRegua':
     "the photos' color, not leveled: the composite Earth (surface, clouds, sea) stays outside the ruler that levels the other bodies",
-  'ficha.brilho.medido': 'measured albedo p0 = {p0} ({fonte})',
+  'ficha.brilho.medido': 'measured albedo p0 = {p0}{ressalvas} — {fonte}',
   'ficha.brilho.picoPorModelo':
-    'albedo p0 = {p0}, with the opposition surge removed by a model ({fonte})',
-  'ficha.brilho.estimado': 'albedo p0 = {p0}, estimated from the measurements ({fonte})',
+    'albedo p0 = {p0}, with the opposition surge removed by a model{ressalvas} — {fonte}',
+  'ficha.brilho.estimado': 'albedo p0 = {p0}, estimated from the measurements{ressalvas} — {fonte}',
   'ficha.brilho.mediaEstimada': '; the regolith family reaches it through an estimated mean',
   'ficha.brilho.gama': '; map contrast ×{gama} so it does not blow out',
   'ficha.brilho.foraDaRegua':

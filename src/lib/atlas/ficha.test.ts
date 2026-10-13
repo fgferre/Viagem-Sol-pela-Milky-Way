@@ -473,7 +473,7 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
       expect(relevo.procedencia, id).toBeUndefined();
     }
     expect(linhaDe('miranda', 'relevo')).toMatchObject({
-      valor: 'liso: falta um mapa de relevo',
+      valor: 'sem mapa de relevo: a esfera é lisa, e as sombras que se veem estão na própria imagem',
       procedencia: 'artistico',
     });
     // a esculpida não tem mapa nenhum: o relevo é o da malha feita por código
@@ -495,7 +495,7 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
     const venus = linhaDe('venus', 'cor');
     expect(venus.procedencia).toBe('derivado');
     expect(venus.valor).toContain('luz visível');
-    expect(venus.valor).toContain('tingido com a cor medida (Mallama+2017)');
+    expect(venus.valor).toContain('tingido com a cor medida — Mallama+2017');
     // Europa: a nota deriva (cor inferida), a foto mede — vence a nota, sozinha
     const europa = linhaDe('europa', 'cor');
     expect(europa.procedencia).toBe('derivado');
@@ -503,7 +503,7 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
     expect(europa.valor).not.toContain('foto em cor verdadeira');
     // sem nota, só a régua, citando a fonte da cor
     expect(linhaDe('jupiter', 'cor')).toMatchObject({
-      valor: 'foto em cor verdadeira, média medida (Mallama+2017)',
+      valor: 'foto em cor verdadeira, média medida — Mallama+2017',
       procedencia: 'medido',
     });
     expect(linhaDe('daphnis', 'cor').procedencia).toBe('artistico');
@@ -518,7 +518,7 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
   it('brilho: o p0 da régua, derivado quando o pico é modelo ou a média é estimada, e o γ < 1 dito', () => {
     expect(linhaDe('enceladus', 'brilho')).toMatchObject({
       valor:
-        'albedo medido p0 = 0,89 (Filacchione+2022, VIMS equigonal 0.55 µm); contraste do mapa ×0,07 para não estourar',
+        'albedo medido p0 = 0,89; contraste do mapa ×0,07 para não estourar — Filacchione+2022, VIMS equigonal 0,55 µm',
       procedencia: 'medido',
     });
     const vesta = linhaDe('vesta', 'brilho');
@@ -535,6 +535,18 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
       expect(linhaDe('earth', rotulo).valor, rotulo).toContain('fora da régua');
       expect(linhaDe('earth', rotulo).procedencia, rotulo).toBeUndefined();
     }
+  });
+
+  it('a fonte citada leva a vírgula decimal da língua, e só ela muda', () => {
+    // em pt, todo dígito-ponto-dígito da fonte da régua vira vírgula, ao lado do "0,31"
+    expect(linhaDe('enceladus', 'brilho').valor).toMatch(/— Filacchione\+2022, VIMS equigonal 0,55 µm$/);
+    expect(linhaDe('miranda', 'brilho').valor).toContain('— Buratti & Mosher 1991 (0,30–0,37)');
+    expect(linhaDe('vesta', 'brilho').valor).toContain('(p, Dawn FC 554 nm); S(H,G), G = 0,32');
+    expect(linhaDe('phobos', 'cor').valor).toContain('— Fornasier+2024 (7,9 %/100 nm)');
+    // em inglês a fonte fica como está escrita
+    definirIdioma('en');
+    expect(linhaDe('enceladus', 'brightness').valor).toMatch(/— Filacchione\+2022, VIMS equigonal 0\.55 µm$/);
+    expect(linhaDe('vesta', 'brightness').valor).toContain('G = 0.32');
   });
 
   it('brilho: o nível que repousa numa suposição ou numa média (nivelDerivado) é derivado; o medido segue medido', () => {

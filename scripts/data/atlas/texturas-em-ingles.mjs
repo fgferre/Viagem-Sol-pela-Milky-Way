@@ -79,8 +79,8 @@ export const EM_INGLES = new Map([
     'Solar System Scope — 2k_neptune (incumbent; SSS has no 8k)',
   ],
   [
-    'Solar System Scope — 8k_earth_specular_map.tif via Wayback Machine, INVERTIDO (negate) para roughness — o SSS pinta oceano claro (=reflexivo) e o roughnessMap espera 0=espelho (checklist item 14)',
-    'Solar System Scope — 8k_earth_specular_map.tif via the Wayback Machine, INVERTED (negate) into roughness — SSS paints the ocean light (= reflective) and roughnessMap expects 0 = mirror (checklist item 14)',
+    'Solar System Scope — 8k_earth_specular_map.tif via Wayback Machine, INVERTIDO (negate) para roughness — o SSS pinta oceano claro (=reflexivo) e o roughnessMap espera 0=espelho',
+    'Solar System Scope — 8k_earth_specular_map.tif via the Wayback Machine, INVERTED (negate) into roughness — SSS paints the ocean light (= reflective) and roughnessMap expects 0 = mirror',
   ],
 
   // ---- fontes: NASA 3D Resources -----------------------------------
@@ -148,12 +148,12 @@ export const EM_INGLES = new Map([
   ['NASA 3D Resources — Tritão', 'NASA 3D Resources — Triton'],
   // ---- o defeito: Plutão e Caronte (item 149; a cor inventada, PLAN-COR.md) ----
   [
-    'mapa em cor real da New Horizons; o polo sul estava em noite polar no sobrevoo de 2015, e os 30 % nunca fotografados levam cor INVENTADA por código, não medida: pedaços da cor real das planícies crateradas fotografadas, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto',
-    'real-color New Horizons map; the south pole was in polar night during the 2015 flyby, and the 30 % never imaged carry color INVENTED by code, not a measurement: pieces of the real color of the imaged cratered plains, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app\'s light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image',
+    'mapa em cor real da New Horizons; os 30 % nunca fotografados (o polo sul, em noite polar) levam cor INVENTADA por código; no lado de trás, visto de longe, o detalhe fino também é inventado; a sombra das fotos saiu onde o relevo medido a explica',
+    "real-color New Horizons map; the 30 % never imaged (the south pole, in polar night) carry color INVENTED by code; on the far side, seen from afar, the fine detail is invented too; the images' shading was removed where the measured relief explains it",
   ],
   [
-    'mosaico real da New Horizons, e sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar no sobrevoo, leva cor INVENTADA por código, não medida: pedaços da planície real fotografada, escolhidos pelo relevo inventado, sobre um tom que continua o da borda fotografada; no lado de trás, visto só de longe, a foto fica na escala em que a sonda a resolveu e o detalhe mais fino é inventado da mesma forma; a sombra do relevo que as fotos traziam saiu onde o relevo medido a explica (a luz do app faz a sombra), e a mais fina, que o relevo medido não alcança, continua na foto',
-    'real New Horizons mosaic, and without color: no global color map of Charon exists; the southern third, in polar night during the flyby, carries color INVENTED by code, not a measurement: pieces of the real imaged plain, chosen by the invented relief, over a tone that continues the imaged edge; on the far side, seen only from afar, the image stays at the scale the probe resolved it and the finer detail is invented the same way; the relief shading the images carried was removed where the measured relief explains it (the app\'s light casts the shading), and the finest shading, beyond what the measured relief resolves, stays in the image',
+    'mosaico real da New Horizons, sem cor: não existe mapa global em cor de Caronte; o terço sul, em noite polar, leva cor INVENTADA por código, e o detalhe fino do lado de trás também é inventado; a sombra das fotos saiu onde o relevo medido a explica',
+    "real New Horizons mosaic, without color: no global color map of Charon exists; the southern third, in polar night, carries color INVENTED by code, and the fine detail of the far side is invented too; the images' shading was removed where the measured relief explains it",
   ],
 
   // ---- fontes: New Horizons (item 149) ------------------------------
@@ -166,12 +166,12 @@ export const EM_INGLES = new Map([
     'New Horizons LORRI+MVIC — global mosaic of Charon at 300 m (USGS Astrogeology, 12693×6347)',
   ],
   [
-    'Imagens: Ralph/MVIC da New Horizons no sobrevoo de 14 de julho de 2015 (NASA/Johns Hopkins APL/Southwest Research Institute). Giro de longitude e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).',
-    'Images: New Horizons Ralph/MVIC on the July 14, 2015 flyby (NASA/Johns Hopkins APL/Southwest Research Institute). Longitude rotation and filling of the south with no data done here (baixa-texturas.mjs).',
+    'Imagens: Ralph/MVIC da New Horizons no sobrevoo de 14 de julho de 2015 (NASA/Johns Hopkins APL/Southwest Research Institute). Giro de longitude e preenchimento do sul sem dado pelo app.',
+    'Images: New Horizons Ralph/MVIC on the July 14, 2015 flyby (NASA/Johns Hopkins APL/Southwest Research Institute). Longitude rotation and filling of the south with no data done by the app.',
   ],
   [
-    'Imagens: LORRI e Ralph/MVIC da New Horizons (NASA/Johns Hopkins APL/Southwest Research Institute); mosaico do USGS Astrogeology Science Center. Reamostragem para 8192 px e preenchimento do sul sem dado nesta casa (baixa-texturas.mjs).',
-    'Images: New Horizons LORRI and Ralph/MVIC (NASA/Johns Hopkins APL/Southwest Research Institute); mosaic by the USGS Astrogeology Science Center. Resampling to 8192 px and filling of the south with no data done here (baixa-texturas.mjs).',
+    'Imagens: LORRI e Ralph/MVIC da New Horizons (NASA/Johns Hopkins APL/Southwest Research Institute); mosaico do USGS Astrogeology Science Center. Reamostragem para 8192 px e preenchimento do sul sem dado pelo app.',
+    'Images: New Horizons LORRI and Ralph/MVIC (NASA/Johns Hopkins APL/Southwest Research Institute); mosaic by the USGS Astrogeology Science Center. Resampling to 8192 px and filling of the south with no data done by the app.',
   ],
   [
     'NASA 3D Resources — modelo 3D de Fobos (textura)',
@@ -182,23 +182,23 @@ export const EM_INGLES = new Map([
     'NASA 3D Resources — 3D model of Deimos (texture)',
   ],
   [
-    'NASA 3D Resources — Titã (720×360, névoa; mosaico Cassini fica pendente da bancada)',
-    'NASA 3D Resources — Titan (720×360, haze only; the Cassini mosaic is still pending on the bench)',
+    'NASA 3D Resources — Titã (720×360, só a névoa; o mosaico Cassini ainda não entrou)',
+    'NASA 3D Resources — Titan (720×360, haze only; the Cassini mosaic is not in yet)',
   ],
 
   // ---- Europa (item 230, PLAN-EUROPA-JAPETO.md): o mosaico USGS de 500 m
   // e a cor inferida do brilho — fonte, atribuição e o defeito
   [
-    'Voyager e Galileo SSI — mosaico global de Europa a 500 m (USGS Astrogeology, 19631×9816, em cinza), com a cor inferida nesta casa a partir da foto em cor da Galileo PIA19048',
-    'Voyager and Galileo SSI — global mosaic of Europa at 500 m (USGS Astrogeology, 19631×9816, grayscale), with the color inferred here from the Galileo color image PIA19048',
+    'Voyager e Galileo SSI — mosaico global de Europa a 500 m (USGS Astrogeology, 19631×9816, em cinza), com a cor inferida pelo app a partir da foto em cor da Galileo PIA19048',
+    'Voyager and Galileo SSI — global mosaic of Europa at 500 m (USGS Astrogeology, 19631×9816, grayscale), with the color inferred by the app from the Galileo color image PIA19048',
   ],
   [
-    'Imagens: Voyager e Galileo SSI (NASA/JPL-Caltech); mosaico do USGS Astrogeology Science Center. Cor de referência: PIA19048 (NASA/JPL-Caltech/SETI Institute) e PIA00502 (NASA/JPL/DLR). Redução para 4096 px, giro de longitude, preenchimento do sul sem dado e cor inferida do brilho nesta casa (baixa-texturas.mjs, cor-europa.mjs).',
-    'Images: Voyager and Galileo SSI (NASA/JPL-Caltech); mosaic by the USGS Astrogeology Science Center. Reference color: PIA19048 (NASA/JPL-Caltech/SETI Institute) and PIA00502 (NASA/JPL/DLR). Reduction to 4096 px, longitude rotation, filling of the south with no data, and color inferred from the brightness done here (baixa-texturas.mjs, cor-europa.mjs).',
+    'Imagens: Voyager e Galileo SSI (NASA/JPL-Caltech); mosaico do USGS Astrogeology Science Center. Cor de referência: PIA19048 (NASA/JPL-Caltech/SETI Institute) e PIA00502 (NASA/JPL/DLR). Redução para 4096 px, giro de longitude, preenchimento do sul sem dado e cor inferida do brilho pelo app.',
+    'Images: Voyager and Galileo SSI (NASA/JPL-Caltech); mosaic by the USGS Astrogeology Science Center. Reference color: PIA19048 (NASA/JPL-Caltech/SETI Institute) and PIA00502 (NASA/JPL/DLR). Reduction to 4096 px, longitude rotation, filling of the south with no data, and color inferred from the brightness, done by the app.',
   ],
   [
-    'mosaico real da Voyager e da Galileo a 500 m, mas em cinza: o brilho é medido e a cor não — não existe mapa global em cor de Europa; a cor é INFERIDA do brilho nesta casa: o gelo claro quase neutro e o material escuro avermelhado das linhas, os dois medidos na foto em cor da Galileo de um hemisfério, misturados conforme o brilho de cada ponto, mais o amarelado do hemisfério que vem atrás na órbita; o hemisfério da frente nunca foi fotografado em cor, e a calota sul sem imagem (a partir de 77 a 84° sul) foi preenchida com o tom da faixa vizinha',
-    'real Voyager and Galileo mosaic at 500 m, but in gray: the brightness is measured and the color is not — no global color map of Europa exists; the color is INFERRED from the brightness here: the nearly neutral bright ice and the reddish dark material of the lines, both measured in a Galileo color image of one hemisphere, blended according to the brightness of each point, plus the yellowish tint of the hemisphere that trails in its orbit; the leading hemisphere was never imaged in color, and the south cap with no images (from 77 to 84° south) was filled with the tone of the neighboring band',
+    'mosaico real da Voyager e da Galileo, em cinza: não existe mapa global em cor de Europa, e a cor é INFERIDA do brilho pelo app, com os tons medidos numa foto em cor da Galileo de um só hemisfério; a calota sul sem imagem leva o tom da faixa vizinha',
+    'real Voyager and Galileo mosaic, in gray: no global color map of Europa exists, and the color is INFERRED from the brightness by the app, with the tones measured in a Galileo color image of one hemisphere only; the south cap with no images takes the tone of the neighboring band',
   ],
 
   // ---- fontes: mosaicos Cassini graduados no projeto Saturn ---------
@@ -233,8 +233,8 @@ export const EM_INGLES = new Map([
     'Dawn FC — global mosaic of Ceres at 20 px/degree (DLR, via USGS Astrogeology)',
   ],
   [
-    'NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D, girado 150° do sistema "Claudia" da sonda para o meridiano da IAU (item 141, 3ª fase)',
-    'NASA Science / Dawn — Vesta mosaic embedded in the 3D model, rotated 150° from the spacecraft\'s "Claudia" system to the IAU prime meridian (item 141, 3rd phase)',
+    'NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D, girado 150° do sistema "Claudia" da sonda para o meridiano da IAU',
+    'NASA Science / Dawn — Vesta mosaic embedded in the 3D model, rotated 150° from the spacecraft\'s "Claudia" system to the IAU prime meridian',
   ],
 
   // ---- fontes: Hipérion (item 134/S3 → relevo medido, 23/09/2026) ---
@@ -259,8 +259,8 @@ export const EM_INGLES = new Map([
     "public domain (NASA PDS); the pits: the author's image (Felipe Ferreira), generated with AI",
   ],
   [
-    'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado nesta casa (Felipe Ferreira), com os poços da pintura por IA do autor.',
-    "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked in this house (Felipe Ferreira), with the pits from the author's AI painting.",
+    'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), com os poços da pintura por IA do autor.',
+    "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), with the pits from the author's AI painting.",
   ],
 
   // ---- fontes: Pã (08/10/2026, PLAN-LUAS-PEQUENAS.md → relevo medido) ---
@@ -273,8 +273,8 @@ export const EM_INGLES = new Map([
     "the author's image (Felipe Ferreira), generated with AI; Cassini images in the public domain (NASA)",
   ],
   [
-    'Pintura: imagem do autor (Felipe Ferreira), gerada com IA. Albedo fino e cor: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111) e Buratti et al. 2019 (Science). Montagem nesta casa.',
-    "Painting: the author's image (Felipe Ferreira), generated with AI. Fine albedo and color: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111) and Buratti et al. 2019 (Science). Assembled in this house.",
+    'Pintura: imagem do autor (Felipe Ferreira), gerada com IA. Albedo fino e cor: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111) e Buratti et al. 2019 (Science). Montagem pelo app.',
+    "Painting: the author's image (Felipe Ferreira), generated with AI. Fine albedo and color: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111) and Buratti et al. 2019 (Science). Assembled by the app.",
   ],
   [
     'Modelo de forma de Pã (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — mapa de ALTURA, com o relevo fino de 28 fotos calibradas da Cassini e as 4 crateras que elas mostram',
@@ -289,23 +289,23 @@ export const EM_INGLES = new Map([
     'Shape model of Pan (Thomas, Joseph & Ansty 2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 28 calibrated Cassini images and the 4 craters they show',
   ],
   [
-    'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado nesta casa (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.',
-    'Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief and craters: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Equirectangular map baked in this house (Felipe Ferreira); where no image sees, the fine relief is invented by code.',
+    'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino e crateras: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.',
+    'Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief and craters: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2111). Equirectangular map baked by the app (Felipe Ferreira); where no image sees, the fine relief is invented by code.',
   ],
 
   // ---- o relevo medido da Terra (07/10/2026): ETOPO 2022 da NOAA -----
   [
-    'ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de NORMAIS',
-    'ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — NORMAL map',
+    'ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área pelo app, com a água no nível do espelho — mapa de NORMAIS',
+    'ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged by the app, with the water at the level of its surface — NORMAL map',
   ],
   [
-    'ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área nesta casa (relevo-terra.mjs), com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
-    'ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged in this house (relevo-terra.mjs), with the water at the level of its surface — HORIZON map (baked relief shadow, six azimuths in RGB)',
+    'ETOPO 2022 (NOAA NCEI), grade de 60″ da superfície — altura medida, reduzida por média de área pelo app, com a água no nível do espelho — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+    'ETOPO 2022 (NOAA NCEI), 60″ surface grid — measured height, area-averaged by the app, with the water at the level of its surface — HORIZON map (baked relief shadow, six azimuths in RGB)',
   ],
   ['CC0 1.0 (domínio público)', 'CC0 1.0 (public domain)'],
   [
-    'Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado nesta casa (relevo-terra.mjs).',
-    'Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked in this house (relevo-terra.mjs).',
+    'Relevo: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — a grade de 60″ da superfície. Mapa assado pelo app.',
+    'Relief: NOAA National Centers for Environmental Information. 2022: ETOPO 2022 15 Arc-Second Global Relief Model. https://doi.org/10.25921/fd45-gt74 — the 60″ surface grid. Map baked by the app.',
   ],
 
   // ---- fontes: os seis sem foto de superfície, ilustrados por IA
@@ -374,21 +374,21 @@ export const EM_INGLES = new Map([
   ],
   // PLAN-REIA.md: o relevo de Reia é o modelo medido da Cassini, completado nesta casa
   [
-    'Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado nesta casa por relevo-reia.mjs com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de ALTURA',
-    'SPC shape model of Rhea — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completed here by relevo-reia.mjs with the smaller craters from the Cassini mosaic and the Aponte-Hernández et al. 2021 law — HEIGHT map',
+    'Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado pelo app com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de ALTURA',
+    'SPC shape model of Rhea — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completed by the app with the smaller craters from the Cassini mosaic and the Aponte-Hernández et al. 2021 law — HEIGHT map',
   ],
   [
-    'Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado nesta casa por relevo-reia.mjs com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de NORMAIS derivado da altura',
-    'SPC shape model of Rhea — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completed here by relevo-reia.mjs with the smaller craters from the Cassini mosaic and the Aponte-Hernández et al. 2021 law — NORMAL map derived from the height',
+    'Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado pelo app com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de NORMAIS derivado da altura',
+    'SPC shape model of Rhea — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completed by the app with the smaller craters from the Cassini mosaic and the Aponte-Hernández et al. 2021 law — NORMAL map derived from the height',
   ],
   // item 230: o relevo de Jápeto nasce nesta casa, inventado e ancorado no medido
   [
-    'Relevo de Jápeto gerado nesta casa por relevo-japeto.mjs a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de ALTURA',
-    'Relief of Iapetus generated here by relevo-japeto.mjs from the IAU Gazetteer, Porco 2005, Giese 2008, Lopez Garcia 2014, and the Cassini mosaic (no public DTM exists) — HEIGHT map',
+    'Relevo de Jápeto gerado pelo app a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de ALTURA',
+    'Relief of Iapetus generated by the app from the IAU Gazetteer, Porco 2005, Giese 2008, Lopez Garcia 2014, and the Cassini mosaic (no public DTM exists) — HEIGHT map',
   ],
   [
-    'Relevo de Jápeto gerado nesta casa por relevo-japeto.mjs a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de NORMAIS derivado da altura',
-    'Relief of Iapetus generated here by relevo-japeto.mjs from the IAU Gazetteer, Porco 2005, Giese 2008, Lopez Garcia 2014, and the Cassini mosaic (no public DTM exists) — NORMAL map derived from the height',
+    'Relevo de Jápeto gerado pelo app a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de NORMAIS derivado da altura',
+    'Relief of Iapetus generated by the app from the IAU Gazetteer, Porco 2005, Giese 2008, Lopez Garcia 2014, and the Cassini mosaic (no public DTM exists) — NORMAL map derived from the height',
   ],
   [
     'LDEM do LOLA/LRO a 16 pixels por grau (CGI Moon Kit, NASA SVS) — mapa de NORMAIS derivado da altura, em amplitude física',
@@ -429,12 +429,12 @@ export const EM_INGLES = new Map([
     'Texture: NASA 3D Resources — NASA/JPL-Caltech.',
   ],
   [
-    'Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Giro de longitude nesta casa (baixa-texturas.mjs).',
-    'Texture: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Longitude rotation done in this house (baixa-texturas.mjs).',
+    'Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Giro de longitude pelo app.',
+    'Texture: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Longitude rotation done by the app.',
   ],
   [
-    'Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaico do DLR Institute of Planetary Research, distribuído pelo USGS Astrogeology. Giro de longitude, tingimento uniforme e preenchimento do polo sul nesta casa (baixa-texturas.mjs).',
-    'Images: Dawn Framing Camera (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaic by the DLR Institute of Planetary Research, distributed by USGS Astrogeology. Longitude rotation, uniform tinting and south-pole infill done in this house (baixa-texturas.mjs).',
+    'Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaico do DLR Institute of Planetary Research, distribuído pelo USGS Astrogeology. Giro de longitude, tingimento uniforme e preenchimento do polo sul pelo app.',
+    'Images: Dawn Framing Camera (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaic by the DLR Institute of Planetary Research, distributed by USGS Astrogeology. Longitude rotation, uniform tinting and south-pole infill done by the app.',
   ],
   [
     'Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18437). Graduação de cor: projeto Saturn (Felipe Ferreira).',
@@ -477,52 +477,52 @@ export const EM_INGLES = new Map([
     'Topography: Weirich et al. 2025 (NASA PDS SBN). Map baked in the Saturn project (Felipe Ferreira).',
   ],
   [
-    'Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Rhea shape model and maps, Cassini ISS SPC, NASA PDS Small Bodies Node, doi 10.26033/tqxb-q714. Crateras menores que ~30 km: lugar e diâmetro pelo mosaico global Cassini de Paul Schenk (PIA18438, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute); profundidade ESTIMADA pela lei de Aponte-Hernández et al. 2021. Montagem nesta casa (relevo-reia.mjs, crateras-pela-foto.mjs).',
-    'Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Rhea shape model and maps, Cassini ISS SPC, NASA PDS Small Bodies Node, doi 10.26033/tqxb-q714. Craters smaller than ~30 km: position and diameter from the Cassini global mosaic by Paul Schenk (PIA18438, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute); depth ESTIMATED from the Aponte-Hernández et al. 2021 law. Assembled here (relevo-reia.mjs, crateras-pela-foto.mjs).',
+    'Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Rhea shape model and maps, Cassini ISS SPC, NASA PDS Small Bodies Node, doi 10.26033/tqxb-q714. Crateras menores que ~30 km: lugar e diâmetro pelo mosaico global Cassini de Paul Schenk (PIA18438, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute); profundidade ESTIMADA pela lei de Aponte-Hernández et al. 2021. Montagem pelo app.',
+    'Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Rhea shape model and maps, Cassini ISS SPC, NASA PDS Small Bodies Node, doi 10.26033/tqxb-q714. Craters smaller than ~30 km: position and diameter from the Cassini global mosaic by Paul Schenk (PIA18438, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute); depth ESTIMATED from the Aponte-Hernández et al. 2021 law. Assembled by the app.',
   ],
   [
-    'Crista e crateras com nome: Gazetteer of Planetary Nomenclature (IAU/USGS). Altura da crista: Porco et al. 2005 e Giese et al. 2008; perfis: Lopez Garcia et al. 2014; profundidade das crateras ancorada em White et al. 2013. Caminho da crista e crateras sem nome: mosaico global Cassini de Paul Schenk (PIA18436, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute). Relevo gerado nesta casa (relevo-japeto.mjs, crateras-pela-foto.mjs) — não é medida.',
-    'Ridge and named craters: Gazetteer of Planetary Nomenclature (IAU/USGS). Ridge height: Porco et al. 2005 and Giese et al. 2008; profiles: Lopez Garcia et al. 2014; crater depth anchored on White et al. 2013. Ridge path and unnamed craters: Cassini global mosaic by Paul Schenk (PIA18436, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute). Relief generated here (relevo-japeto.mjs, crateras-pela-foto.mjs) — not a measurement.',
+    'Crista e crateras com nome: Gazetteer of Planetary Nomenclature (IAU/USGS). Altura da crista: Porco et al. 2005 e Giese et al. 2008; perfis: Lopez Garcia et al. 2014; profundidade das crateras ancorada em White et al. 2013. Caminho da crista e crateras sem nome: mosaico global Cassini de Paul Schenk (PIA18436, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute). Relevo gerado pelo app — não é medida.',
+    'Ridge and named craters: Gazetteer of Planetary Nomenclature (IAU/USGS). Ridge height: Porco et al. 2005 and Giese et al. 2008; profiles: Lopez Garcia et al. 2014; crater depth anchored on White et al. 2013. Ridge path and unnamed craters: Cassini global mosaic by Paul Schenk (PIA18436, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute). Relief generated by the app — not a measurement.',
   ],
   [
-    'Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).',
-    'Topography: NASA/Goddard Space Flight Center Scientific Visualization Studio, from LOLA (Lunar Reconnaissance Orbiter). Normal map baked in this house (gera-normal-de-dem.mjs).',
+    'Topografia: NASA/Goddard Space Flight Center Scientific Visualization Studio, a partir do LOLA (Lunar Reconnaissance Orbiter). Mapa de normais assado pelo app.',
+    'Topography: NASA/Goddard Space Flight Center Scientific Visualization Studio, from LOLA (Lunar Reconnaissance Orbiter). Normal map baked by the app.',
   ],
   [
-    'Topografia: USGS Astrogeology Science Center, a partir das imagens estéreo da MDIS (MESSENGER, NASA/JHUAPL/Carnegie). Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).',
-    'Topography: USGS Astrogeology Science Center, from the MDIS stereo imaging (MESSENGER, NASA/JHUAPL/Carnegie). Normal map baked in this house (gera-normal-de-dem.mjs).',
+    'Topografia: USGS Astrogeology Science Center, a partir das imagens estéreo da MDIS (MESSENGER, NASA/JHUAPL/Carnegie). Mapa de normais assado pelo app.',
+    'Topography: USGS Astrogeology Science Center, from the MDIS stereo imaging (MESSENGER, NASA/JHUAPL/Carnegie). Normal map baked by the app.',
   ],
   [
-    'Topografia: MGS MOLA Science Team (D. E. Smith, NASA/GSFC), MEGDR v2. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).',
-    'Topography: MGS MOLA Science Team (D. E. Smith, NASA/GSFC), MEGDR v2. Normal map baked in this house (gera-normal-de-dem.mjs).',
+    'Topografia: MGS MOLA Science Team (D. E. Smith, NASA/GSFC), MEGDR v2. Mapa de normais assado pelo app.',
+    'Topography: MGS MOLA Science Team (D. E. Smith, NASA/GSFC), MEGDR v2. Normal map baked by the app.',
   ],
   [
-    'Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).',
-    'Topography: DLR Institute of Planetary Research, from the Framing Camera imaging (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distributed by USGS Astrogeology. Normal map baked in this house (gera-normal-de-dem.mjs).',
+    'Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado pelo app.',
+    'Topography: DLR Institute of Planetary Research, from the Framing Camera imaging (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distributed by USGS Astrogeology. Normal map baked by the app.',
   ],
   [
-    'Topografia: Schenk et al. 2018, Icarus 314, 400, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).',
-    'Topography: Schenk et al. 2018, Icarus 314, 400, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked in this house (gera-normal-de-dem.mjs).',
+    'Topografia: Schenk et al. 2018, Icarus 314, 400, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado pelo app.',
+    'Topography: Schenk et al. 2018, Icarus 314, 400, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked by the app.',
   ],
   [
-    'Topografia: Schenk et al. 2018, Icarus 315, 124, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado nesta casa (gera-normal-de-dem.mjs).',
-    'Topography: Schenk et al. 2018, Icarus 315, 124, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked in this house (gera-normal-de-dem.mjs).',
+    'Topografia: Schenk et al. 2018, Icarus 315, 124, a partir das imagens LORRI e Ralph/MVIC da equipe New Horizons (NASA/JHUAPL/SwRI/LPI), distribuída pelo USGS Astrogeology Science Center. Mapa de normais assado pelo app.',
+    'Topography: Schenk et al. 2018, Icarus 315, 124, from the LORRI and Ralph/MVIC imaging of the New Horizons Team (NASA/JHUAPL/SwRI/LPI), distributed by the USGS Astrogeology Science Center. Normal map baked by the app.',
   ],
 
   // ---- "o defeito" e "o relevo admite" (tabela `a imagem` do ASSETS)
   // A vírgula decimal do português vira PONTO aqui: "2,7 km" é "2.7 km".
   // o relevo medido da Terra (07/10/2026)
   [
-    'relevo MEDIDO na escala real, sem exagero: a altura da superfície (no gelo da Antártida e da Groenlândia, o topo do gelo) pelo ETOPO 2022 da NOAA, e cada texel do mapa de 8192 px (~4,9 km no equador) guarda a inclinação MÉDIA da sua célula, medida nas células de ~1,85 km da fonte, sem alisar; a água é um espelho: o oceano, o Cáspio, o Mar Morto e as depressões secas abaixo do mar (Qattara, Turpan, Danakil) foram achatados no nível do mar, e os cinco lagos que a fonte traz com o fundo (o Baikal e os Grandes Lagos) subiram até o nível da água',
-    "relief MEASURED at real scale, with no exaggeration: the surface height (on the Antarctic and Greenland ice, the top of the ice) from NOAA's ETOPO 2022, and each texel of the 8192 px map (~4.9 km at the equator) holds the MEAN slope of its cell, measured on the source's ~1.85 km cells, without smoothing; the water is a mirror: the ocean, the Caspian, the Dead Sea, and the dry depressions below sea level (Qattara, Turpan, Danakil) were flattened to sea level, and the five lakes the source carries with their beds (Baikal and the Great Lakes) were raised to their water level",
+    'relevo MEDIDO pelo ETOPO 2022 da NOAA, na escala real e sem exagero (no gelo polar, o topo do gelo); cada texel de ~4,9 km guarda a inclinação média medida a ~1,85 km; a água é um espelho, e as depressões secas abaixo do mar ficam no nível do mar',
+    "relief MEASURED by NOAA's ETOPO 2022, at real scale and with no exaggeration (on the polar ice, the top of the ice); each ~4.9 km texel holds the mean slope measured at ~1.85 km; the water is a mirror, and the dry depressions below sea level sit at sea level",
   ],
   [
     'a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água',
     "the mountain shadow, in six azimuths, is baked from the same MEASURED relief (NOAA's ETOPO 2022) at real scale, with no exaggeration, with the horizon measured on the source's ~1.85 km cells and stored as the mean of each 4096 px texel (~9.8 km); the shadow is PARTIAL, the fraction of the cell in shadow, by a law drawn from the data itself (the spread of the fine horizons grows with their mean); the water is a mirror, as in the normal map: the ocean, the Caspian, the Dead Sea, and the dry depressions at sea level, and the five lakes with beds at their water level",
   ],
   [
-    'mosaico real da Dawn, mas fotografado no filtro claro: a cor é um tingimento uniforme desta casa, e o polo sul, que a sonda pegou em noite polar, foi preenchido com a média da faixa de latitude vizinha',
-    'a real Dawn mosaic, but shot through the clear filter: the color is a uniform tint applied in this house, and the south pole, which the spacecraft caught in polar night, was filled in with the average of the neighboring latitude band',
+    'mosaico real da Dawn, mas fotografado no filtro claro: a cor é um tingimento uniforme do app, e o polo sul, que a sonda pegou em noite polar, foi preenchido com a média da faixa de latitude vizinha',
+    'a real Dawn mosaic, but shot through the clear filter: the color is a uniform tint applied by the app, and the south pole, which the spacecraft caught in polar night, was filled in with the average of the neighboring latitude band',
   ],
   [
     '720×360, só a névoa laranja: o mosaico Cassini de mais resolução mostra emendas de longitude na esfera e não entrou',
@@ -568,17 +568,17 @@ export const EM_INGLES = new Map([
     'an SPC DTM baked into a 1024 px map: what you see is the overall shape, not detail smaller than a texel',
   ],
   [
-    'relevo MEDIDO pelo modelo de forma da Cassini (Weirich, Gaskell, Palmer & Domingue 2025) nas escalas acima de ~30 km — as bacias, as crateras grandes e os vales largos do terreno claro; as crateras menores estão onde a foto da Cassini as mostra, mas a profundidade, a borda e o desgaste delas são ESTIMADOS por uma regra pelo tamanho (Aponte-Hernández et al. 2021), não medidos; as escarpas finas do terreno claro não estão no relevo, só na cor',
-    'relief MEASURED by the Cassini shape model (Weirich, Gaskell, Palmer & Domingue 2025) at scales above ~30 km — the basins, the large craters, and the broad valleys of the bright terrain; the smaller craters sit where the Cassini image shows them, but their depth, rim, and wear are ESTIMATED by a rule from their size (Aponte-Hernández et al. 2021), not measured; the fine scarps of the bright terrain are not in the relief, only in the color',
+    'relevo MEDIDO pela Cassini nas escalas acima de ~30 km; as crateras menores estão onde a foto da Cassini as mostra, mas a profundidade, a borda e o desgaste delas são ESTIMADOS por uma regra pelo tamanho; as escarpas finas estão só na cor, não no relevo',
+    'relief MEASURED by Cassini at scales above ~30 km; the smaller craters sit where the Cassini image shows them, but their depth, rim, and wear are ESTIMATED by a rule from their size; the fine scarps are only in the color, not in the relief',
   ],
   [
-    'não existe mapa de altura medido de Jápeto: este relevo é INVENTADO por código nesta casa, ancorado no que foi medido — a crista do equador está nas longitudes do catálogo da IAU e no caminho que a foto da Cassini mostra, com até 20 km, a altura medida pelas sondas; as 55 crateras com nome estão no lugar e no tamanho do catálogo, e as outras onde a foto da Cassini as mostra; o perfil da crista, a profundidade de cada cratera (dada por uma regra pelo tamanho) e o chão liso entre elas são inventados',
-    'no measured height map of Iapetus exists: this relief is INVENTED by code here, anchored on what was measured — the equatorial ridge sits at the longitudes of the IAU catalog and along the path the Cassini image shows, up to 20 km high, the height the spacecraft measured; the 55 named craters sit at the place and size given by the catalog, and the others where the Cassini image shows them; the ridge profile, the depth of each crater (set by a rule from its size), and the smooth ground between them are invented',
+    'não existe mapa de altura medido de Jápeto: o relevo é INVENTADO pelo app, ancorado no medido — a crista, de até 20 km, e as crateras estão onde o catálogo da IAU e as fotos da Cassini mostram; o perfil da crista, a profundidade das crateras e o chão liso são inventados',
+    'no measured height map of Iapetus exists: the relief is INVENTED by the app, anchored on measurements — the ridge, up to 20 km high, and the craters sit where the IAU catalog and the Cassini images show them; the ridge profile, the crater depths, and the smooth ground are invented',
   ],
   // item 134/S3 → relevo medido de Hipérion (23/09/2026)
   [
-    'não existe mapa de cor de Hipérion publicado (ela gira de modo caótico): o mapa é uma pintura por IA generativa sobre o relevo medido, com uma mancha em estrela apagada e as encostas íngremes clareadas nesta casa — nada na cor é medida',
-    'there is no published color map of Hyperion (it spins chaotically): the map is a generative-AI painting over the measured relief, with one star-shaped blotch erased and the steep slopes brightened here — nothing in the color is a measurement',
+    'não existe mapa de cor de Hipérion publicado (ela gira de modo caótico): o mapa é uma pintura por IA generativa sobre o relevo medido, com uma mancha em estrela apagada e as encostas íngremes clareadas pelo app — nada na cor é medida',
+    'there is no published color map of Hyperion (it spins chaotically): the map is a generative-AI painting over the measured relief, with one star-shaped blotch erased and the steep slopes brightened by the app — nothing in the color is a measurement',
   ],
   [
     'a forma é medida pela Cassini, mas os 3.488 poços cavados nela não são: saem das manchas escuras da pintura por IA',
@@ -592,12 +592,12 @@ export const EM_INGLES = new Map([
   // 08/10/2026 — Pã: forma medida, relevo fino das fotos onde elas veem e
   // inventado no resto (a mesma frase na altura e na normal)
   [
-    'não existe mapa de cor de Pã publicado: a cor é uma pintura por IA generativa sobre o relevo medido, calibrada pelo espectro medido em 4 filtros da Cassini e por Buratti et al. 2019; o detalhe claro e escuro vem de 28 fotos da Cassini só nos 40,5 % da superfície que elas veem — no resto, é o da pintura',
-    'there is no published color map of Pan: the color is a generative-AI painting over the measured relief, calibrated to the spectrum measured in 4 Cassini filters and by Buratti et al. 2019; the light and dark detail comes from 28 Cassini images only on the 40.5% of the surface they see — elsewhere, it is the painting\'s',
+    'não existe mapa de cor de Pã publicado: a cor é uma pintura por IA generativa, calibrada pelo espectro medido pela Cassini; o claro e escuro vem de 28 fotos da Cassini nos 40,5 % da superfície que elas veem — no resto, é o da pintura',
+    "there is no published color map of Pan: the color is a generative-AI painting, calibrated to the spectrum measured by Cassini; the light and dark detail comes from 28 Cassini images on the 40.5% of the surface they see — elsewhere, it is the painting's",
   ],
   [
-    'a forma é medida pela Cassini; o relevo fino vem de 28 fotos calibradas da Cassini, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código com retalhos do lado visto, do mesmo terreno; das 14 crateras, só 4 são reais, vistas nas fotos — as outras 10 foram postas pela densidade medida, onde nenhuma foto vê',
-    'the shape is measured by Cassini; the fine relief comes from 28 calibrated Cassini images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code from patches of the seen side, of the same terrain; of the 14 craters, only 4 are real, seen in the images — the other 10 were placed at the measured density, where no image sees',
+    'a forma é medida pela Cassini; o relevo fino vem de 28 fotos, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código; das 14 crateras, só 4 são reais — as outras 10 foram postas pela densidade medida',
+    'the shape is measured by Cassini; the fine relief comes from 28 images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code; of the 14 craters, only 4 are real — the other 10 were placed at the measured density',
   ],
   [
     'a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida',
@@ -616,36 +616,36 @@ export const EM_INGLES = new Map([
     'real MOLA topography at 16 pixels per degree: each texel covers ~5.2 km, so what the light draws is the volcano and the canyon, never the dune',
   ],
   [
-    'topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino da casa, e a média de latitude usou 2 das 5,3 linhas de origem',
-    'real Dawn topography resampled from 137 m to 4096 px: each texel covers 0.73 km, the finest in the house, and the latitude average used 2 of the 5.3 source rows',
+    'topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino do app, e a média de latitude usou 2 das 5,3 linhas de origem',
+    'real Dawn topography resampled from 137 m to 4096 px: each texel covers 0.73 km, the finest in the app, and the latitude average used 2 of the 5.3 source rows',
   ],
   [
-    'topografia real da Dawn sobre um elipsoide de revolução: Vesta tem três eixos diferentes, e os 9 km entre os dois equatoriais ficam na luz como rampa suave',
-    'real Dawn topography over an ellipsoid of revolution: Vesta has three different axes, and the 9 km between the two equatorial ones sit in the light as a gentle ramp',
+    'topografia real da Dawn, sobre um elipsoide de dois eixos iguais: Vesta tem três eixos diferentes, e os 9 km entre os dois do equador aparecem na luz como uma rampa suave',
+    'real Dawn topography, over an ellipsoid with two equal axes: Vesta has three different axes, and the 9 km between the two equatorial ones show in the light as a gentle ramp',
   ],
   // 01–02/10/2026 — o relevo da New Horizons: medido em menos da metade do
   // globo, inventado por código no resto (PLAN-RELEVO.md)
   [
-    'topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~1,8 km, a média de latitude usou 2 das 6,1 linhas de origem, e só o hemisfério do sobrevoo e a calota norte têm mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos onde o mapa geológico das fotos da aproximação põe cada terreno, com as crateras reais do catálogo no lugar (Simonelli com o perfil medido da bacia Burney) e as menores sorteadas pela estatística do lado medido; o sul, quase sem imagem, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida, e o grão de ruído da planície Sputnik foi alisado',
-    'real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~1.8 km, the latitude average used 2 of the 6.1 source rows, and only the flyby hemisphere and the north cap have a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed where the geological map from the approach images puts each terrain, with the real catalog craters in place (Simonelli with the measured profile of the Burney basin) and the smaller ones drawn from the statistics of the measured side; the south, almost unimaged, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape, and the noise grain of Sputnik Planitia was smoothed',
+    'topografia real da New Horizons em menos da metade do globo, o hemisfério do sobrevoo e a calota norte; o resto é relevo INVENTADO por código, com pedaços do terreno medido postos pelo mapa geológico e as crateras do catálogo no lugar; o sul é palpite',
+    'real New Horizons topography on less than half the globe, the flyby hemisphere and the north cap; the rest is relief INVENTED by code, with pieces of measured terrain placed by the geological map and the catalog craters in place; the south is a guess',
   ],
   [
-    'topografia real da New Horizons reamostrada de 300 m para 4096 px: cada texel cobre ~0,9 km, a média de latitude usou 2 das 3,1 linhas de origem, e só o hemisfério voltado para Plutão tem mapa de altura — menos da metade do globo; o resto é relevo INVENTADO por código, não medida: pedaços do terreno medido do mesmo tipo, postos por um mapa de terrenos que é palpite guiado pelas escarpas e crateras vistas nas fotos da aproximação, com as crateras reais do catálogo no lugar, as menores sorteadas pela estatística do lado medido e as escarpas e crateras candidatas do artigo traçadas; o sul, sem imagem de dia, é palpite; no lado medido, as emendas e o detalhe fino do dado borrado ou ruim foram refeitos sobre a forma medida',
-    'real New Horizons topography resampled from 300 m to 4096 px: each texel covers ~0.9 km, the latitude average used 2 of the 3.1 source rows, and only the Pluto-facing hemisphere has a height map — less than half the globe; the rest is relief INVENTED by code, not a measurement: pieces of measured terrain of the same kind, placed by a terrain map that is a guess guided by the scarps and craters seen in the approach images, with the real catalog craters in place, the smaller ones drawn from the statistics of the measured side, and the scarps and candidate craters of the paper traced; the south, never imaged in daylight, is a guess; on the measured side, the seams and the fine detail of blurred or bad data were redone over the measured shape',
+    'topografia real da New Horizons só no hemisfério voltado para Plutão, menos da metade do globo; o resto é relevo INVENTADO por código, com pedaços do terreno medido postos por um mapa de terrenos que é palpite e as crateras do catálogo no lugar; o sul é palpite',
+    'real New Horizons topography only on the Pluto-facing hemisphere, less than half the globe; the rest is relief INVENTED by code, with pieces of measured terrain placed by a terrain map that is a guess and the catalog craters in place; the south is a guess',
   ],
 
   // ---- "a forma" (tabela `a forma` do ASSETS) ----------------------
   [
-    'elipsoide, sem malha: a forma irregular medida pela Dawn existe publicada e esta casa ainda não a carrega',
-    'an ellipsoid, no mesh: the irregular shape measured by Dawn is published, and this house does not load it yet',
+    'elipsoide, sem malha: a forma irregular medida pela Dawn existe publicada e o app ainda não a carrega',
+    'an ellipsoid, no mesh: the irregular shape measured by Dawn is published, and the app does not load it yet',
   ],
   [
-    'esfera do raio médio, sem malha: a forma irregular do DAMIT existe publicada e esta casa ainda não a carrega',
-    'a sphere of the mean radius, no mesh: the irregular shape from DAMIT is published, and this house does not load it yet',
+    'esfera do raio médio, sem malha: a forma irregular do DAMIT existe publicada e o app ainda não a carrega',
+    'a sphere of the mean radius, no mesh: the irregular shape from DAMIT is published, and the app does not load it yet',
   ],
   [
-    'elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e esta casa ainda não a carrega',
-    'an ellipsoid, no mesh: the irregular shape measured by occultation is published, and this house does not load it yet',
+    'elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e o app ainda não a carrega',
+    'an ellipsoid, no mesh: the irregular shape measured by occultation is published, and the app does not load it yet',
   ],
   [
     'geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais',
@@ -654,12 +654,12 @@ export const EM_INGLES = new Map([
   // 30/09/2026 — Fobos e Deimos confessam o elipsoide (erro achado na
   // pesquisa de 22/09: o manifesto `formas` não os cobria)
   [
-    'elipsoide, sem malha: só os três eixos medidos (27 × 22 × 18 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega',
-    'an ellipsoid, no mesh: only the three measured axes (27 × 22 × 18 km) — the irregular shape model (Viking/MRO, NASA PDS) is published, and this house does not load it yet',
+    'elipsoide, sem malha: só os três eixos medidos (27 × 22 × 18 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e o app ainda não o carrega',
+    'an ellipsoid, no mesh: only the three measured axes (27 × 22 × 18 km) — the irregular shape model (Viking/MRO, NASA PDS) is published, and the app does not load it yet',
   ],
   [
-    'elipsoide, sem malha: só os três eixos medidos (15 × 12 × 11 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e esta casa ainda não o carrega',
-    'an ellipsoid, no mesh: only the three measured axes (15 × 12 × 11 km) — the irregular shape model (Viking/MRO, NASA PDS) is published, and this house does not load it yet',
+    'elipsoide, sem malha: só os três eixos medidos (15 × 12 × 11 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e o app ainda não o carrega',
+    'an ellipsoid, no mesh: only the three measured axes (15 × 12 × 11 km) — the irregular shape model (Viking/MRO, NASA PDS) is published, and the app does not load it yet',
   ],
 ]);
 

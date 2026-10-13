@@ -605,6 +605,16 @@ function noIdioma(texto: TextoBilingue | null | undefined): string | null {
   return idiomaAtual() === 'en' ? (texto.en ?? texto.pt) : texto.pt;
 }
 
+/**
+ * OS DECIMAIS DE UMA CITAÇÃO na língua de agora: a fonte da régua é escrita
+ * com ponto ("0.55 µm", "G = 0.32"), e na ficha em português ela sai ao lado
+ * de "0,31". Todo dígito-ponto-dígito vira dígito-vírgula-dígito — o
+ * `decimalDoIdioma` para um texto inteiro, não para um número só.
+ */
+function decimaisDoIdioma(texto: string): string {
+  return idiomaAtual() === 'en' ? texto : texto.replace(/(\d)\.(\d)/g, '$1,$2');
+}
+
 /** O crédito de uma imagem: a fonte e a largura da variante citada. */
 function comLargura(fonte: string | null, px: number): string | null {
   return fonte && `${fonte} · ${t('ficha.fonte.larguraPx', { px: numeroDoIdioma(px) })}`;
@@ -663,7 +673,9 @@ function linhaDaCor(
       : linha(rotulo, t('ficha.cor.foraDaRegua'), null);
   }
   const politica = TIER_DA_POLITICA[regua.matiz];
-  const daRegua = t(`ficha.cor.${regua.matiz}` as 'ficha.cor.foto', { fonte: regua.fonteDaCor });
+  const daRegua = t(`ficha.cor.${regua.matiz}` as 'ficha.cor.foto', {
+    fonte: decimaisDoIdioma(regua.fonteDaCor),
+  });
   if (!nota) return linha(rotulo, daRegua, politica);
   const frase =
     FORCA_DO_TIER[politica] < FORCA_DO_TIER[nota.tier] ? `${nota.frase}; ${daRegua}` : nota.frase;
@@ -687,13 +699,17 @@ function linhaDoBrilho(id: string, regua: MedidaDoCorpo | undefined): LinhaDaFic
     : regua.nivelDerivado
       ? 'ficha.brilho.estimado'
       : 'ficha.brilho.medido';
-  let frase = t(chave, {
-    p0: decimalDoIdioma(alvoDoMapa(id).p0.toPrecision(2)),
-    fonte: regua.fonteDoNivel,
-  });
-  if (esculpida) frase += t('ficha.brilho.mediaEstimada');
+  // as ressalvas vêm antes da fonte, que fecha a frase depois do travessão
+  let ressalvas = esculpida ? t('ficha.brilho.mediaEstimada') : '';
   const gama = GAMA_DA_REGUA[id]?.gama;
-  if (gama !== undefined && gama < 1) frase += t('ficha.brilho.gama', { gama: comCasas(gama, 2) });
+  if (gama !== undefined && gama < 1) {
+    ressalvas += t('ficha.brilho.gama', { gama: comCasas(gama, 2) });
+  }
+  const frase = t(chave, {
+    p0: decimalDoIdioma(alvoDoMapa(id).p0.toPrecision(2)),
+    ressalvas,
+    fonte: decimaisDoIdioma(regua.fonteDoNivel),
+  });
   return linha(
     rotulo,
     frase,

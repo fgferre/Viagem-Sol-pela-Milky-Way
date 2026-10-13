@@ -15,6 +15,7 @@ import {
   preencherVazioSemDado,
   webpCompensa,
 } from './lib-texturas.mjs';
+import { EM_INGLES } from './texturas-em-ingles.mjs';
 
 describe('degrausDaEscada (emenda T-E7: reamostragem declarada, nunca upscale)', () => {
   it('desce a escada inteira declarada no desenho', () => {
@@ -165,5 +166,18 @@ describe('lerTabelasDaConfissao (itens 19 e 20: a nota e o selo saem do ASSETS.m
     const { forma } = lerTabelasDaConfissao(doc.replace('| janus |', '| jnaus |'));
     expect(() => conferirCorposDaForma(forma, new Set(['phobos', 'janus']))).toThrow(/"jnaus"/);
     expect(() => conferirCorposDaForma(forma, new Set(['phobos', 'jnaus']))).not.toThrow();
+  });
+});
+
+describe('o que o manifesto leva à ficha fala com o visitante (R3)', () => {
+  // Toda frase do manifesto — fonte, licença, atribuição, nota e forma —
+  // passa por `bilingue`, que exige o par em EM_INGLES: o mapa é o conjunto
+  // fechado do que pode chegar à tela, nas duas línguas.
+  it('nenhuma frase cita script, número de item ou "esta casa"', () => {
+    for (const [pt, en] of EM_INGLES) {
+      for (const frase of [pt, en]) {
+        expect(frase).not.toMatch(/\.mjs\b|\bitem \d|\bcasa\b|\bhouse\b/i);
+      }
+    }
   });
 });
