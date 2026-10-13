@@ -58,7 +58,7 @@ Palavras dele (08/10): *"precisamos ter uma regra única que trate todos os obje
     a graduação por lua tirada do shader, a cadeia rodada no terminal dele; corpos a menos de 20 % da medida, 10 → 37 de 46.
     Encélado ficou lisa (o desenho era sombra gravada na foto; o relevo medido é fraco): ele escolheu consertar na R4.
 - **R3 — Confissão** (sonnet, mecânico): um formato, o selo certo na ficha, as lacunas preenchidas.
-  **Em curso (12/10, conversa "Coordenação entre agentes"; ramo `r3-confissao`, cópia `../Viagem-r3`).** Já feito antes:
+  **FEITA e aprovada (12–13/10, `main` 02b9f29f; detalhes e restos no bastão).** Já feito antes:
   a coluna `selo` da tabela "a imagem" (bc2e8938). Decisões:
   - A ficha mostra quatro linhas fixas — forma, relevo, cor, brilho — cada uma com UM selo (medido / derivado /
     artístico) e uma frase (pt/en); o selo é o do mais fraco que a linha confessa. A fonte, a licença e a atribuição

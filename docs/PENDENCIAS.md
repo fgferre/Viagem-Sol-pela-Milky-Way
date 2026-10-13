@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 234.**
 
-## O BASTÃO — onde a rodada parou (12/10) — A R1 E A R2 DA RÉGUA ÚNICA (O TOM NEUTRO E A COR DOS MAPAS) NO `main`, NÃO PUBLICADAS (publicar é dele)
+## O BASTÃO — onde a rodada parou (13/10) — A R1, A R2 E A R3 DA RÉGUA ÚNICA (O TOM NEUTRO, A COR DOS MAPAS E A CONFISSÃO) NO `main`, NÃO PUBLICADAS (publicar é dele)
 
 **Feito em 09–10/10 (conversa "Coordenação de trabalhos em fila"):** a R0 (tabela de medidas,
 `docs/reference/MEDIDAS-DOS-CORPOS.md`) e a R1 de `PLAN-REGUA-UNICA.md` — o tom neutro da Khronos é o padrão, com a
@@ -55,9 +55,21 @@ segmentado "Curva de tom" fica como está: ele viu a prancha hoje × todos iguai
 seguem largura pelo nome, como as outras 12; botões iguais pediriam a gaveta ~96 px mais larga; não olhado num iPhone de
 verdade.
 
-**A próxima rodada — a ordem é dele:** a R3 da régua (confissão: um formato por canal — forma, relevo, cor, brilho —
-crescendo da coluna `selo`; a ficha conta o γ e o 2/3 global da R2), depois a R4 (relevo, Encélado primeiro, com a fila
-de assets). As cópias de trabalho já foram apagadas (sobra `../Viagem-por-do-sol`); os ramos seguem no git.
+**R3 da régua FEITA (12–13/10, mesma conversa, `main` 02b9f29f, NÃO PUBLICADA):** a ficha abre "A imagem" com quatro
+linhas fixas — forma, relevo, cor, brilho —, cada uma com UM selo (o do mais fraco que confessa) e uma frase pt/en; a
+fonte, a licença e a atribuição ficam como crédito, sem selo. Forma: a tabela "a forma" ganhou `selo` (o elipsoide ou a
+esfera no lugar de uma forma irregular medida é `derivado`); cor e brilho saem da régua (`reguaDosMapas.ts`, citações
+neutras, `nivelDerivado` em Jápeto, Miranda e nos galileanos), com o γ dito ("contraste do mapa ×γ"); o 2/3 global
+confessado uma vez no `ASSETS.md`; saiu o texto dos níveis velhos e o jargão interno das notas (item, script, "esta
+casa"). O catálogo foi refeito duas vezes só pelo gerador do manifesto, com a palavra dele. Palavras dele: *"pode
+juntar"*. Prova: `capturas/r3-confissao/ficha-quatro-linhas-v2.jpg`. Restos: "Dafnis" sem acento vem de
+`corpos-fonte.json` (outro gerador); na ficha em pt a licença da NASA tem o nome oficial em inglês; a linha curta da
+licença fica em duas colunas, como antes; a 820 px o caminho do topo encosta no botão da viagem galáctica (de antes).
+
+**A próxima rodada — a ordem é dele:** a R4 da régua (relevo, corpo a corpo, com a fila de assets): **Encélado
+primeiro** (o mapa ficou certo e liso na R2; derivar das fotos o detalhe que o relevo medido não mostra); o relevo falso
+da cor (item 144, a chave "relevo inventado") sai. As cópias de trabalho já foram apagadas (sobra
+`../Viagem-por-do-sol`); os ramos seguem no git.
 
 ## O BASTÃO anterior (09/10) — O SOL EM CADA DISTÂNCIA: A REGRA NOVA PUBLICADA (`main` `d89e684c`, enviada por ele no terminal)
 
