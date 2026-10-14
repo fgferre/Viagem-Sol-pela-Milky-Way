@@ -42,7 +42,12 @@
 //     tem 30–45 % a mais (o ruído).
 //  2. O FINO: com `fino: 'liso'` (o PADRÃO desde 13/10/2026 — a colcha por
 //     exemplo foi julgada um retalho agitado) nada volta: o ruim fica só com o
-//     largo medido. Com `fino: 'exemplo'`, INVENTADO POR EXEMPLO: o fino que saiu (< σ `corteKm`) volta copiado
+//     largo medido. Com `fino: 'foto'`, DERIVADO pela fotoclinometria linear
+//     (`bandaFinaPelaFoto`); REPROVADO na validação de 14/10/2026
+//     (capturas/r4-encelado/foto/: contra o fino do DEM em 20 ladrilhos bons,
+//     a encosta de 2–8 km correlaciona 0,14 na mediana — a porta pedia 0,5 —,
+//     e contra o SPC é ≤ 0 ao longo do sol em 1–4 km), por isso não é o
+//     padrão. Com `fino: 'exemplo'`, INVENTADO POR EXEMPLO: o fino que saiu (< σ `corteKm`) volta copiado
 //     dos ladrilhos BONS do próprio Encélado (`bandaFinaPorExemplo`): retalhos
 //     de 16 km da banda fina medida, da mesma faixa de latitude e de encosta
 //     larga parecida, girados para o rumo que a FOTO mostra ali, escolhidos
@@ -138,6 +143,17 @@ export const CONSERTO_DE_ENCELADO = Object.freeze({
     candidatos: 160,
     preSelecao: 24,
     melhores: 3,
+  }),
+  /** o fino pela foto (`bandaFinaPelaFoto`) */
+  foto: Object.freeze({
+    ladoPx: 128,
+    pixelKm: 0.4,
+    solKm: Object.freeze([1.6, 3.2]),
+    r2Min: 0.05,
+    r2Cheio: 0.2,
+    ganhoMin: 0.4,
+    regularizacao: 0.1,
+    derivadoDesde: 0.5,
   }),
   semente: 20261013,
   margemKm: 4,
@@ -777,6 +793,317 @@ export function bandaFinaPorExemplo({
 }
 
 // ------------------------------------------------------------
+// O fino pela foto (fotoclinometria linear por janela)
+// ------------------------------------------------------------
+
+/** FFT complexa 1D in-place (raiz 2); a inversa já divide por n. */
+function fft1(re, im, n, inversa) {
+  for (let i = 1, j = 0; i < n; i += 1) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) {
+      [re[i], re[j]] = [re[j], re[i]];
+      [im[i], im[j]] = [im[j], im[i]];
+    }
+  }
+  for (let len = 2; len <= n; len <<= 1) {
+    const ang = ((inversa ? 2 : -2) * Math.PI) / len;
+    const [wr, wi] = [Math.cos(ang), Math.sin(ang)];
+    for (let i = 0; i < n; i += len) {
+      let [cr, ci] = [1, 0];
+      for (let j = 0; j < len / 2; j += 1) {
+        const a = i + j;
+        const b = a + len / 2;
+        const tr = re[b] * cr - im[b] * ci;
+        const ti = re[b] * ci + im[b] * cr;
+        re[b] = re[a] - tr;
+        im[b] = im[a] - ti;
+        re[a] += tr;
+        im[a] += ti;
+        [cr, ci] = [cr * wr - ci * wi, cr * wi + ci * wr];
+      }
+    }
+  }
+  if (inversa)
+    for (let i = 0; i < n; i += 1) [re[i], im[i]] = [re[i] / n, im[i] / n];
+}
+
+/** FFT 2D in-place de um plano n×n (linhas, depois colunas). */
+function fft2(re, im, n, inversa = false) {
+  const r = new Float64Array(n);
+  const i = new Float64Array(n);
+  for (const [passo, salto] of [
+    [1, n],
+    [n, 1],
+  ]) {
+    for (let a = 0; a < n; a += 1) {
+      for (let b = 0; b < n; b += 1) {
+        r[b] = re[a * salto + b * passo];
+        i[b] = im[a * salto + b * passo];
+      }
+      fft1(r, i, n, inversa);
+      for (let b = 0; b < n; b += 1) {
+        re[a * salto + b * passo] = r[b];
+        im[a * salto + b * passo] = i[b];
+      }
+    }
+  }
+}
+
+/**
+ * O SOL DE UMA JANELA: a regressão de `y` em (gx, gy) — e, com `extra`, num
+ * terceiro regressor — pesada por `w`. Devolve `{ c: [cx, cy, α], r2 }`: c o
+ * ganho × o rumo do sol (log da luz por unidade de encosta, leste e norte).
+ */
+export function solDaJanela(y, gx, gy, w, extra = null) {
+  const xs = extra ? [gx, gy, extra] : [gx, gy];
+  const m = xs.length;
+  const A = Array.from({ length: m }, () => new Float64Array(m + 1));
+  let yy = 0;
+  for (let k = 0; k < y.length; k += 1) {
+    if (!(w[k] > 0)) continue;
+    yy += w[k] * y[k] * y[k];
+    for (let a = 0; a < m; a += 1) {
+      A[a][m] += w[k] * xs[a][k] * y[k];
+      for (let b = 0; b < m; b += 1) A[a][b] += w[k] * xs[a][k] * xs[b][k];
+    }
+  }
+  const b = A.map((l) => l[m]);
+  for (let a = 0; a < m; a += 1) {
+    let piv = a;
+    for (let l = a + 1; l < m; l += 1)
+      if (Math.abs(A[l][a]) > Math.abs(A[piv][a])) piv = l;
+    [A[a], A[piv]] = [A[piv], A[a]];
+    if (!(Math.abs(A[a][a]) > 1e-30)) return { c: [0, 0, 0], r2: 0 };
+    for (let l = 0; l < m; l += 1) {
+      if (l === a) continue;
+      const f = A[l][a] / A[a][a];
+      for (let q = a; q <= m; q += 1) A[l][q] -= f * A[a][q];
+    }
+  }
+  const c = A.map((l, a) => l[m] / l[a]);
+  const explicado = c.reduce((s, v, a) => s + v * b[a], 0);
+  return { c: [c[0], c[1], c[2] ?? 0], r2: yy > 0 ? explicado / yy : 0 };
+}
+
+/**
+ * O FINO DERIVADO DA FOTO (`fino: 'foto'`), por fotoclinometria linear em
+ * janelas do plano tangente (`p.foto`): `ladoPx` × `pixelKm` (51 km), centros a
+ * meio lado, cada uma pesada por hann² e pela confiança. Em cada janela:
+ *  1. o SOL: o brilho da foto (log) na banda larga σ `solKm` (ondas de 8–16
+ *     km) contra a encosta do DEM na MESMA banda — a banda que o conserto
+ *     guarda como medida, nos ladrilhos bons e nos ruins (o fino do DEM não
+ *     entra: medido em capturas/r4-encelado/foto/, nos ladrilhos bons ele é
+ *     em boa parte ruído de estéreo). Sai c = ganho × rumo do sol;
+ *  2. a CONFIANÇA: suave em r² (`r2Min`–`r2Cheio`) × suave no ganho
+ *     (`ganhoMin`–2·`ganhoMin`): luz rasante fraca ou mosaico sem sombra → 0,
+ *     e ali o ruim fica liso;
+ *  3. a INVERSÃO: o fino da foto (log − G σ `corteKm`, com borda cossenoidal
+ *     e o dobro de lado em zeros) vira altura por mínimos quadrados com
+ *     prior isotrópico, no espaço de Fourier: Ĥ = −i(c·k)·P̂ ÷ ((c·k)² +
+ *     `regularizacao`·|c|²·|k|²) — integra ao longo do sol e amortece o rumo
+ *     que a luz não vê (perpendicular a ele) —; o largo (acima de σ
+ *     `corteKm`) é o medido.
+ * O albedo que não é relevo: as listras de tigre saem no conserto (no
+ * corredor do traço o perfil medido substitui o fino da foto); com `cor` (log
+ * B/R), a parte do brilho que acompanha a cor, medida na banda larga junto
+ * com o sol, sai do fino antes da inversão. Devolve `{ fina, confianca,
+ * janelas }` — `confianca` a fração do peso que veio de janelas confiáveis.
+ */
+export function bandaFinaPelaFoto({
+  h,
+  fotoLog,
+  cor = null,
+  W,
+  H,
+  raioM,
+  regiao,
+  p = CONSERTO_DE_ENCELADO,
+}) {
+  const f = p.foto;
+  const R = raioM / 1000;
+  const n = W * H;
+  const N = f.ladoPx;
+  const d = f.pixelKm;
+  const M = 2 * N;
+  const meio = (N * d) / 2;
+  const texelKm = (R * Math.PI) / H;
+  const hann = Float64Array.from(
+    { length: N },
+    (_, x) => Math.sin((Math.PI * (x + 0.5)) / N) ** 2,
+  );
+  const borda = Float64Array.from({ length: N }, (_, x) =>
+    suave(0, N / 8, Math.min(x + 0.5, N - x - 0.5)),
+  );
+  const onda = Float64Array.from(
+    { length: M },
+    (_, q) => (2 * Math.PI * (q < M / 2 ? q : q - M)) / (M * d * 1000),
+  );
+  const num = new Float32Array(n);
+  const conf = new Float32Array(n);
+  const den = new Float32Array(n);
+  const janelas = [];
+  const ponto = (lat, lon) => {
+    const [a, b] = [lat * RADIANOS, lon * RADIANOS];
+    return [Math.cos(a) * Math.cos(b), Math.cos(a) * Math.sin(b), Math.sin(a)];
+  };
+  const latLon = (q) => [
+    Math.asin(Math.max(-1, Math.min(1, q[2]))) / RADIANOS,
+    (((Math.atan2(q[1], q[0]) / RADIANOS) % 360) + 360) % 360,
+  ];
+  const dog = (campo) => {
+    const a = borraPlano(campo, N, f.solKm[0] / d);
+    const b = borraPlano(campo, N, f.solKm[1] / d);
+    return a.map((v, k) => v - b[k]);
+  };
+  const janela = (lat, lon) => {
+    const base = planoTangente(lat, lon);
+    const [hp, lp, cp] = [h, fotoLog, cor].map(
+      (c) => c && new Float32Array(N * N),
+    );
+    for (let y = 0; y < N; y += 1) {
+      for (let x = 0; x < N; x += 1) {
+        const [la, lo] = latLon(
+          pontoDoPlano(base, (x + 0.5) * d - meio, meio - (y + 0.5) * d, R),
+        );
+        const k = y * N + x;
+        hp[k] = amostra(h, W, H, la, lo);
+        lp[k] = amostra(fotoLog, W, H, la, lo);
+        if (cp) cp[k] = amostra(cor, W, H, la, lo);
+      }
+    }
+    // 1. o sol na banda larga (encosta em m/m, x leste e y norte)
+    const bh = dog(hp);
+    const gx = new Float32Array(N * N);
+    const gy = new Float32Array(N * N);
+    const w = new Float32Array(N * N);
+    for (let y = 0; y < N; y += 1) {
+      for (let x = 0; x < N; x += 1) {
+        const k = y * N + x;
+        const [xe, xw] = [Math.min(N - 1, x + 1), Math.max(0, x - 1)];
+        const [yn, ys] = [Math.max(0, y - 1), Math.min(N - 1, y + 1)];
+        gx[k] = (bh[y * N + xe] - bh[y * N + xw]) / ((xe - xw) * d * 1000);
+        gy[k] = (bh[yn * N + x] - bh[ys * N + x]) / ((ys - yn) * d * 1000);
+        w[k] = hann[x] * hann[y];
+      }
+    }
+    const sol = solDaJanela(dog(lp), gx, gy, w, cp && dog(cp));
+    const [cx, cy, alfa] = sol.c;
+    const ganho = Math.hypot(cx, cy);
+    // 2. a confiança
+    const confianca =
+      suave(f.r2Min, f.r2Cheio, sol.r2) *
+      suave(f.ganhoMin, 2 * f.ganhoMin, ganho);
+    janelas.push({
+      lat,
+      lon,
+      r2: sol.r2,
+      ganho,
+      rumoGraus: Math.atan2(cy, cx) / RADIANOS,
+      alfa,
+      confianca,
+    });
+    // 3. a inversão no espaço de Fourier (o plano M×M, a janela no canto)
+    let saida = null;
+    if (confianca > 0) {
+      const lisa = borraPlano(lp, N, p.corteKm / d);
+      const corLisa = cp && borraPlano(cp, N, p.corteKm / d);
+      const re = new Float64Array(M * M);
+      const im = new Float64Array(M * M);
+      for (let y = 0; y < N; y += 1) {
+        for (let x = 0; x < N; x += 1) {
+          const k = y * N + x;
+          const albedo = cp ? alfa * (cp[k] - corLisa[k]) : 0;
+          re[y * M + x] = (lp[k] - lisa[k] - albedo) * borda[x] * borda[y];
+        }
+      }
+      fft2(re, im, M);
+      for (let v = 0; v < M; v += 1) {
+        const kn = -onda[v];
+        for (let u = 0; u < M; u += 1) {
+          const k = v * M + u;
+          const ck = cx * onda[u] + cy * kn;
+          const k2 = onda[u] * onda[u] + kn * kn;
+          const den2 = ck * ck + f.regularizacao * ganho * ganho * k2;
+          // o fino já veio sem o largo (log − G σ `corteKm`): só a inversão
+          const filtro = den2 > 0 ? 1 / den2 : 0;
+          [re[k], im[k]] = [ck * im[k] * filtro, -ck * re[k] * filtro];
+        }
+      }
+      fft2(re, im, M, true);
+      saida = new Float32Array(N * N);
+      for (let y = 0; y < N; y += 1)
+        for (let x = 0; x < N; x += 1) saida[y * N + x] = re[y * M + x];
+    }
+    // a pegada: os texels da região dentro do quadrado do plano
+    const kc = texelDe(lat, lon, W, H);
+    const jc = (kc / W) | 0;
+    const ic = kc - jc * W;
+    const raio = meio * Math.SQRT2;
+    const dj = Math.ceil(raio / texelKm) + 1;
+    for (let j = Math.max(0, jc - dj); j <= Math.min(H - 1, jc + dj); j += 1) {
+      const fj = latitudeDaLinha(j, H);
+      const di =
+        Math.cos(fj) * W < 4 * (raio / texelKm)
+          ? W / 2
+          : Math.ceil(raio / (texelKm * Math.cos(fj))) + 1;
+      for (let t = -di; t < di; t += 1) {
+        const i = (((ic + t) % W) + W) % W;
+        const k = j * W + i;
+        if (!regiao[k]) continue;
+        const xy = noPlano(
+          base,
+          ponto(fj / RADIANOS, longitudeDaColuna(i, W)),
+          R,
+        );
+        if (!xy) continue;
+        const px = (xy[0] + meio) / d - 0.5;
+        const py = (meio - xy[1]) / d - 0.5;
+        if (!(px >= 0 && px <= N - 1 && py >= 0 && py <= N - 1)) continue;
+        const x0 = Math.min(N - 2, Math.floor(px));
+        const y0 = Math.min(N - 2, Math.floor(py));
+        const [fx, fy] = [px - x0, py - y0];
+        const peso =
+          (hann[x0] * (1 - fx) + hann[x0 + 1] * fx) *
+          (hann[y0] * (1 - fy) + hann[y0 + 1] * fy);
+        den[k] += peso;
+        if (!saida) continue;
+        const q = y0 * N + x0;
+        const v =
+          (saida[q] * (1 - fx) + saida[q + 1] * fx) * (1 - fy) +
+          (saida[q + N] * (1 - fx) + saida[q + N + 1] * fx) * fy;
+        num[k] += peso * confianca * v;
+        conf[k] += peso * confianca;
+      }
+    }
+  };
+  const perto = dilata(regiao, W, H, raioM, meio * Math.SQRT2);
+  const faixas = Math.ceil((Math.PI * R) / meio);
+  for (let b = 0; b <= faixas; b += 1) {
+    const lat = 90 - (180 * b) / faixas;
+    const nLon = Math.max(
+      1,
+      Math.ceil((2 * Math.PI * R * Math.cos(lat * RADIANOS)) / meio),
+    );
+    for (let a = 0; a < nLon; a += 1) {
+      const lon = (360 * a) / nLon;
+      if (perto[texelDe(lat, lon, W, H)]) janela(lat, lon);
+    }
+  }
+  const fina = new Float32Array(n);
+  const confianca = new Float32Array(n);
+  // a média das janelas confiáveis, com amplitude cheia onde a confiança passa
+  // de `derivadoDesde` e esvaindo até o liso abaixo disso
+  for (let k = 0; k < n; k += 1) {
+    if (!(conf[k] > 0)) continue;
+    confianca[k] = conf[k] / den[k];
+    fina[k] = (num[k] / conf[k]) * suave(0, f.derivadoDesde, confianca[k]);
+  }
+  return { fina, confianca, janelas };
+}
+
+// ------------------------------------------------------------
 // O derivado da foto: crateras e listras de tigre
 // ------------------------------------------------------------
 
@@ -1239,18 +1566,24 @@ export function consertaNaGrade({
   const colcha =
     fino === "liso"
       ? { fina: new Float32Array(n), retalhos: [], rampa: new Uint8Array(n) }
-      : bandaFinaPorExemplo({
-          h,
-          W,
-          H,
-          raioM,
-          regiao,
-          ruim,
-          base,
-          foto,
-          nota,
-          p,
-        });
+      : fino === "foto"
+        ? {
+            ...bandaFinaPelaFoto({ h, fotoLog, W, H, raioM, regiao, p }),
+            retalhos: [],
+            rampa: new Uint8Array(n),
+          }
+        : bandaFinaPorExemplo({
+            h,
+            W,
+            H,
+            raioM,
+            regiao,
+            ruim,
+            base,
+            foto,
+            nota,
+            p,
+          });
   const { fina } = colcha;
   // o fino entra em rampa de `rampaKm` a partir da borda com o medido: lá quem
   // emenda é a membrana, e o fino de lá não briga com o medido do lado
@@ -1261,6 +1594,11 @@ export function consertaNaGrade({
   for (let k = 0; k < n; k += 1) R[k] = regiao[k] ? base[k] + fina[k] : h[k];
   const cobertura = new Uint8Array(n);
   for (let k = 0; k < n; k += 1) cobertura[k] = ruim[k] ? INVENTADO : MEDIDO;
+  // o fino da foto conta como DERIVADO onde a confiança das janelas o sustenta
+  if (colcha.confianca)
+    for (let k = 0; k < n; k += 1)
+      if (ruim[k] && colcha.confianca[k] >= p.foto.derivadoDesde)
+        cobertura[k] = DERIVADO;
   // 3a. as crateras que a foto vê, sobre o ruim
   const pc = p.crateras;
   // o detector infla a contagem acima de 30° nesta grade (4096 × 2048, medido em Reia): rareadas antes de tudo
@@ -1348,7 +1686,8 @@ export function consertaNaGrade({
       noCorredor += 1;
       if (!ruim[k]) continue;
       listrasNoRuim += 1;
-      R[k] += peso * campo[k];
+      // o perfil medido da listra substitui o fino da foto (o escuro da listra é albedo, não relevo)
+      R[k] += peso * (campo[k] - (colcha.confianca ? fina[k] : 0));
       cobertura[k] = DERIVADO;
     }
     listrasNoRuim = noCorredor ? listrasNoRuim / noCorredor : 0;
@@ -1427,6 +1766,14 @@ export function consertaNaGrade({
     relatorio: {
       fino,
       retalhos: colcha.retalhos.length,
+      janelasDaFoto: colcha.janelas
+        ? {
+            n: colcha.janelas.length,
+            confiaveis:
+              colcha.janelas.filter((j) => j.confianca >= p.foto.derivadoDesde)
+                .length / Math.max(1, colcha.janelas.length),
+          }
+        : null,
       lei,
       crateras: {
         vistas: vistas.length,

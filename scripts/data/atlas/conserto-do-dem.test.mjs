@@ -1,4 +1,4 @@
-// Serve: lei — o conserto do DEM (Encélado, R4): os ladrilhos bons saem byte a byte, o remendo de bolhas ganha o fino POR EXEMPLO dos bons (retalhos só de ladrilho bom, sem degrau entre eles), a opção só-liso não põe fino, e a membrana não deixa degrau na emenda
+// Serve: lei — o conserto do DEM (Encélado, R4): os ladrilhos bons saem byte a byte, o remendo de bolhas ganha o fino POR EXEMPLO dos bons (retalhos só de ladrilho bom, sem degrau entre eles) ou PELA FOTO (fotoclinometria: o relevo iluminado de um rumo conhecido volta com o sinal e a escala), a opção só-liso não põe fino, e a membrana não deixa degrau na emenda
 // ============================================================
 // Um corpo pequeno (texel de 0,39 km como o de Encélado na grade de 4096) com
 // terreno de cristas paralelas em toda parte e, no meio, um ladrilho de
@@ -9,6 +9,8 @@ import { beforeAll, describe, expect, it } from "vitest";
 import {
   BOM,
   CONSERTO_DE_ENCELADO,
+  DERIVADO,
+  bandaFinaPelaFoto,
   consertaDem,
   gradiente,
   media,
@@ -33,6 +35,8 @@ const P = {
   membranaSigmaKm: 32,
   margemKm: 3,
 };
+/** a janela da fotoclinometria encolhida ao corpo: 64 px de 0,4 km */
+const P_FOTO = { ...P, foto: { ...CONSERTO_DE_ENCELADO.foto, ladoPx: 64 } };
 const GRAUS = 180 / Math.PI;
 /** o remendo: lat −25…25°, lon 30…100°E */
 const noRemendo = (lat, lon) => Math.abs(lat) < 25 && lon > 30 && lon < 100;
@@ -45,10 +49,10 @@ const xy = (lat, lon) => {
   return [RKM * (-p[0] * Math.sin(l0) + p[1] * Math.cos(l0)), RKM * p[2]];
 };
 
-/** cristas a 30°, ondas de 16 a 1 km, encosta 0,1 em cada uma */
-function cristas(lat, lon) {
+/** cristas a 30° (ou `rumo` rad), ondas de 16 a 1 km, encosta 0,1 em cada uma */
+function cristas(lat, lon, rumo = 0.52) {
   const [x, y] = xy(lat, lon);
-  const s = x * Math.cos(0.52) + y * Math.sin(0.52);
+  const s = x * Math.cos(rumo) + y * Math.sin(rumo);
   let h = 0;
   for (const [k, l] of [16, 8, 4, 2, 1].entries())
     h +=
@@ -117,6 +121,7 @@ describe("o conserto do DEM (Encélado, R4)", () => {
   let r;
   let liso;
   let antes;
+  let pelaFoto;
   beforeAll(() => {
     dem = gradeFina(
       (lat, lon) =>
@@ -155,6 +160,16 @@ describe("o conserto do DEM (Encélado, R4)", () => {
       p: P,
       listras: false,
       fino: "liso",
+    });
+    pelaFoto = consertaDem({
+      metros: dem,
+      largura: Wf,
+      altura: Hf,
+      luminancia,
+      raioM: RAIO_M,
+      p: P_FOTO,
+      listras: false,
+      fino: "foto",
     });
   }, 240_000);
 
@@ -320,5 +335,78 @@ describe("o conserto do DEM (Encélado, R4)", () => {
     expect(
       fino(r.campo, texels(6)) / fino(r.campo, texels(-6)),
     ).toBeGreaterThan(0.75);
+  });
+  it("o fino pela foto recupera o relevo iluminado do leste: o rumo do sol, o sinal e a escala", () => {
+    // duas famílias de cristas (a 30° e a −40°: com uma só o rumo do sol não
+    // se separa do das cristas), a foto o sombreado delas com sol do leste
+    const verdade = new Float32Array(W * H);
+    const regiao = new Uint8Array(W * H);
+    for (let j = 0; j < H; j += 1) {
+      const lat = latitudeDaLinha(j, H) * GRAUS;
+      for (let i = 0; i < W; i += 1) {
+        const lon = longitudeDaColuna(i, W);
+        verdade[j * W + i] = cristas(lat, lon) + cristas(lat, lon, -0.7);
+        regiao[j * W + i] = noRemendo(lat, lon) ? 1 : 0;
+      }
+    }
+    const fotoLog = new Float32Array(W * H);
+    for (let j = 0; j < H; j += 1) {
+      const passoL =
+        (2 * Math.PI * RAIO_M * Math.cos(latitudeDaLinha(j, H))) / W;
+      for (let i = 0; i < W; i += 1) {
+        const encosta =
+          (verdade[j * W + ((i + 1) % W)] -
+            verdade[j * W + ((i + W - 1) % W)]) /
+          (2 * passoL);
+        fotoLog[j * W + i] = Math.log(
+          0.3 + 0.25 * Math.tanh(3 * encosta) + 0.003,
+        );
+      }
+    }
+    const r = bandaFinaPelaFoto({
+      h: verdade,
+      fotoLog,
+      W,
+      H,
+      raioM: RAIO_M,
+      regiao,
+      p: P_FOTO,
+    });
+    const confiaveis = r.janelas.filter((j) => j.confianca > 0.5);
+    expect(confiaveis.length).toBeGreaterThan(4);
+    for (const j of confiaveis) expect(Math.abs(j.rumoGraus)).toBeLessThan(15);
+    const lisa = media(verdade, W, H, RAIO_M, P.corteKm);
+    let [tf, tt, ff] = [0, 0, 0];
+    for (const k of texels(5)) {
+      const t = verdade[k] - lisa[k];
+      tf += t * r.fina[k];
+      tt += t * t;
+      ff += r.fina[k] * r.fina[k];
+    }
+    expect(tf / Math.sqrt(tt * ff)).toBeGreaterThan(0.8);
+    expect(tf / tt).toBeGreaterThan(0.6);
+    expect(tf / tt).toBeLessThan(1.3);
+  });
+
+  it("com o fino pela foto, os bons saem byte a byte e o remendo vira derivado", () => {
+    let mudados = 0;
+    for (let j = 0; j < Hf; j += 1) {
+      for (let i = 0; i < Wf; i += 1) {
+        const k = j * Wf + i;
+        if (
+          pelaFoto.classe[(j >> 1) * W + (i >> 1)] === BOM &&
+          pelaFoto.metros[k] !== antes[k] &&
+          !Number.isNaN(antes[k])
+        )
+          mudados += 1;
+      }
+    }
+    expect(mudados).toBe(0);
+    const dentro = texels(5);
+    expect(
+      dentro.filter((k) => pelaFoto.cobertura[k] === DERIVADO).length /
+        dentro.length,
+    ).toBeGreaterThan(0.8);
+    expect(liso.relatorio.fino).toBe("liso");
   });
 });

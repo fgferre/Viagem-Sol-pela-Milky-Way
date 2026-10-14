@@ -564,7 +564,8 @@ export const CORPOS = {
     // neles só o que tem ≥ 8 km e as listras e crateras do traço na foto; os
     // ladrilhos bons saem byte a byte (13/10/2026). `fino`: 'liso' (o ruim
     // fica só com o largo medido, listras e crateras; a colcha por exemplo foi
-    // julgada um retalho agitado) ou 'exemplo'. O sha256 é o dos bytes do
+    // julgada um retalho agitado), 'exemplo' ou 'foto' (fotoclinometria,
+    // reprovada na validação de 14/10/2026 — ver o cabeçalho do conserto). O sha256 é o dos bytes do
     // arquivo; `latitude`: a foto vem planetográfica e é lida na latitude da
     // casa com o MESMO k do mapa de cor (14/10/2026), antes de tudo o que a usa
     consertoDoDem: {
