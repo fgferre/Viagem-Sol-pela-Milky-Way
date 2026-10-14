@@ -83,7 +83,8 @@ export function useEspelhoDaUrl(dep: {
   const [tom, setTom] = useState<ToneMapMode>(
     () => lerPortaTom(new URLSearchParams(window.location.search).get('tone')) ?? TOM_PADRAO
   );
-  const [lente, setLente] = useState<ModoDaLente>(() =>
+  // a lente ESCOLHIDA (`null` = a do tier, que o painel resolve com o tier vivo)
+  const [lente, setLente] = useState<ModoDaLente | null>(() =>
     lerPortaLente(new URLSearchParams(window.location.search).get('lente'))
   );
   const [forcaDaLente, setForcaDaLente] = useState(() =>
@@ -368,10 +369,11 @@ export function useEspelhoDaUrl(dep: {
     window.history.replaceState(null, '', comParam('tone', t === TOM_PADRAO ? null : t));
   };
 
+  /** tocar numa lente a FORÇA (vale em qualquer tier); a URL espelha a escolha — `?lente=nenhuma` também */
   const trocarLente = (modo: ModoDaLente) => {
     setLente(modo);
     directorRef.current?.definirLente(modo);
-    window.history.replaceState(null, '', comParam('lente', modo === 'nenhuma' ? null : modo));
+    window.history.replaceState(null, '', comParam('lente', modo));
   };
 
   /** a força da lente (decisão do dono, 09/10): no molde da lente, a URL espelha só fora de 100 */
@@ -455,6 +457,9 @@ export function useEspelhoDaUrl(dep: {
     // então apagar a chave da URL a ressuscitaria na recarga. A volta
     // escreve `?luz=real` — a URL vira espelho do estado escolhido.
     if (desvios.some((c) => c.chave === 'luz')) url.searchParams.set('luz', 'real');
+    // A LENTE: idem — sem `?lente=` quem manda é a lente do tier, e a volta
+    // ao real a desliga; sem `?lente=nenhuma` a recarga a ligaria de novo.
+    if (desvios.some((c) => c.chave === 'lente')) url.searchParams.set('lente', 'nenhuma');
     if (desvios.some((c) => c.volta === 'recarregar')) {
       window.location.assign(url.toString());
       return;

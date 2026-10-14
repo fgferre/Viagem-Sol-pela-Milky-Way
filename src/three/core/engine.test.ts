@@ -35,6 +35,7 @@ import {
   medidaDeResizeValida,
   nearPlanePc,
   PISO_DO_NEAR_EM_RAIOS,
+  PRESETS,
   tierMedido,
 } from './engine';
 import type { QualityLevel, ToneMapMode } from './engine';
@@ -374,14 +375,21 @@ describe('?tone= — só um modo que existe de verdade atravessa', () => {
   });
 });
 
-describe('?lente= — só redonda, anamorfica e hollywood atravessam, o resto é nenhuma', () => {
-  it('os três modos de lente passam; ausente ou lixo é nenhuma, até o herdado do objeto', () => {
+describe('?lente= — os quatro modos atravessam, ausente ou lixo é null (segue o tier)', () => {
+  it('os quatro modos passam (nenhuma desliga); ausente ou lixo é null, até o herdado do objeto', () => {
+    expect(lerPortaLente('nenhuma')).toBe('nenhuma');
     expect(lerPortaLente('redonda')).toBe('redonda');
     expect(lerPortaLente('anamorfica')).toBe('anamorfica');
     expect(lerPortaLente('hollywood')).toBe('hollywood');
-    for (const ruim of ['foo', 'Redonda', 'Hollywood', '', 'constructor', '__proto__', null, undefined]) {
-      expect(lerPortaLente(ruim), String(ruim)).toBe('nenhuma');
+    for (const ruim of ['foo', 'Redonda', 'Hollywood', 'Nenhuma', '', 'constructor', '__proto__', null, undefined]) {
+      expect(lerPortaLente(ruim), String(ruim)).toBeNull();
     }
+  });
+
+  it('a lente do tier: hollywood em cinema e alta, nenhuma em performance', () => {
+    expect(PRESETS.cinema.lente).toBe('hollywood');
+    expect(PRESETS.alta.lente).toBe('hollywood');
+    expect(PRESETS.performance.lente).toBe('nenhuma');
   });
 });
 

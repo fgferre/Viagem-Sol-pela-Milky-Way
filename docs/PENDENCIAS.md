@@ -55,6 +55,13 @@ segmentado "Curva de tom" fica como está: ele viu a prancha hoje × todos iguai
 seguem largura pelo nome, como as outras 12; botões iguais pediriam a gaveta ~96 px mais larga; não olhado num iPhone de
 verdade.
 
+**Lente Hollywood por padrão para o visitante (Atlas e voo livre), 14/10, `main` c935f598, NÃO PUBLICADA (conversa
+"Efeitos de lente padrão Hollywood"):** a do tier (cinema/alta Hollywood, Performance nenhuma) ou a escolhida no menu;
+filmes seguem a lente de cada plano. A lente inteira some junto e devagar quando o Sol vira o assunto do quadro (disco
+de 1/12 a 1/4 da altura) — palavras dele: *"quando olho de perto o sol... atrapalha um pouco"*; os raios deixaram de
+sumir já perto da Terra (caminho B, escolha dele). Os juízes pinam `lente=nenhuma`; para fotografar como o visitante
+vê, pôr `lente=hollywood` no link. O selo declara a lente por padrão. Provas: `capturas/lente/padrao/`.
+
 **R3 da régua FEITA (12–13/10, mesma conversa, `main` 02b9f29f, NÃO PUBLICADA):** a ficha abre "A imagem" com quatro
 linhas fixas — forma, relevo, cor, brilho —, cada uma com UM selo (o do mais fraco que confessa) e uma frase pt/en; a
 fonte, a licença e a atribuição ficam como crédito, sem selo. Forma: a tabela "a forma" ganhou `selo` (o elipsoide ou a

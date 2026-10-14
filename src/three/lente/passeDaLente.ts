@@ -31,9 +31,10 @@
 // limbo; entre 1 e 3 px de raio o disco entra em rampa); o lóbulo justo do brilho
 // cai como s1/(s1+R) e os raios como k/(k+R). O clarão do Sol fica como é.
 //
-// OS RAIOS SÃO DO SOL-PONTO: a força deles é a soltura do clarão (`solturaDoClarao`,
-// estrela.ts) — plenos com o disco ≤ 2 px, zero com ≥ 10 px; com o Sol resolvido os
-// efeitos do próprio Sol 3D são os donos. E A LUZ INTEIRA DA LENTE atravessa o ar da
+// A LENTE INTEIRA SOME JUNTO quando o Sol vira o assunto do quadro (`DISCO_ASSUNTO`):
+// raios, reflexos, anéis, risco, brilho e sujeira na mesma rampa suave, e de perto os
+// efeitos do próprio Sol 3D são os donos (dono, 13/10: caminho B — os raios deixaram
+// de seguir a soltura do clarão, que os apagava já perto da Terra). E A LUZ INTEIRA DA LENTE atravessa o ar da
 // Terra como o disco: × a transmitância do Sol visto (`transmitanciaDoSolVisto`,
 // lib/atlas/arMedido.ts), (1, 1, 1) exato longe da Terra.
 // ============================================================
@@ -67,6 +68,17 @@ export const G_DA_LENTE = 65;
 
 /** Até aqui (UA) a lente vê o Sol como na Terra; além, ele vira estrela: (50/d)². */
 export const UA_DO_FIM_DA_LENTE = 50;
+
+/** O Sol vira o ASSUNTO do quadro: a lente começa a sumir quando o diâmetro do disco passa de 1/12
+ *  da altura da tela e some de vez em 1/4 (pedido do dono, 13/10: de perto ela atrapalha). */
+export const DISCO_ASSUNTO: readonly [number, number] = [1 / 12, 1 / 4];
+
+/** Quanto da lente fica com o disco do Sol deste raio (frações da altura da tela): 1 com o Sol
+ *  pequeno, 0 com ele assunto do quadro; em escala logarítmica, como o disco cresce na aproximação. */
+export function lenteComOSolDeRaio(raio: number): number {
+  const [a, b] = DISCO_ASSUNTO;
+  return 1 - suave(Math.log2(a / 2), Math.log2(b / 2), Math.log2(raio));
+}
 
 /**
  * O FATOR DE CADA RECEITA: o look development somou o reflexo DEPOIS do
@@ -494,7 +506,6 @@ const FRAGMENTO_FINOS = /* glsl */ `
   uniform vec3 uRaiosCor;
   // por raio: jitterAngulo·(h1 − 0,5), 1 − jitterComprimento·h2, 1 − jitterBrilho·h3
   uniform vec3 uRaiosTabela[${MAX_RAIOS}];
-  uniform float uSolturaDosRaios; // a soltura do clarão do Sol: 1 ponto, 0 resolvido
   uniform bool uTemRisco;
   uniform vec4 uRiscoForma; // comprimento, queda, larguraNucleo, larguraAsas
   uniform vec3 uRiscoInt;   // nucleo, asas, paralelas
@@ -564,7 +575,7 @@ const FRAGMENTO_FINOS = /* glsl */ `
     float largura = max(uRaiosForma.z, uLarguraMinima);
     // disco resolvido: cada ponto do disco faz seu raio e eles se borram; os finos enfraquecem com o disco
     float m = uG * uRaiosLuz.y * (uRaiosLuz.z / (uRaiosLuz.z + uRaioDisco)) * h.z * limpo
-      * (uRaiosForma.z / largura) * uSolturaDosRaios;
+      * (uRaiosForma.z / largura);
     vec3 ao = max(0.0, d - uRaioDisco) / (lk * uRaiosCroma);
     vec3 w = largura * (1.0 + ao * uRaiosForma.w);
     vec3 atravessa = exp(-(perp / w) * (perp / w));
@@ -601,7 +612,7 @@ const FRAGMENTO_FINOS = /* glsl */ `
     float limpo = mascaraDisco(uv);
     vec3 c = vec3(0.0);
     if (uTemBrilho) c += min(brilho(dv, d, limpo), vec3(1.0e3));
-    if (uTemRaios && uSolturaDosRaios > 0.0) c += min(raios(dv, d, limpo), vec3(1.0e3));
+    if (uTemRaios) c += min(raios(dv, d, limpo), vec3(1.0e3));
     if (uTemRisco) c += min(risco(dv, limpo), vec3(1.0e3));
 #ifndef LUZ
     // a regra do disco vale também para os fantasmas, os anéis e a sujeira: com o Sol
@@ -795,7 +806,6 @@ export class PasseDaLente extends Pass {
       uRaiosCroma: v3(),
       uRaiosCor: v3(),
       uRaiosTabela: { value: Array.from({ length: MAX_RAIOS }, () => new THREE.Vector3()) },
-      uSolturaDosRaios: { value: 1 },
       uTemRisco: { value: false },
       uRiscoForma: v4(),
       uRiscoInt: v3(),
@@ -932,20 +942,18 @@ export class PasseDaLente extends Pass {
   }
 
   /**
-   * A luz deste quadro (o Director, ao lado de `setWarp`). `soltura` e
-   * `transmitancia` são as do Sol deste quadro, calculadas uma vez para o
-   * disco, o ponto e o clarão (director/solNoQuadro.ts) — aqui só consumidas.
+   * A luz deste quadro (o Director, ao lado de `setWarp`). `transmitancia` é a
+   * do Sol deste quadro, calculada uma vez para o disco, o ponto e o clarão
+   * (director/solNoQuadro.ts) — aqui só consumida.
    */
   atualizar(
     dUA: number,
     politica: PoliticaDeLuz,
     roteiro: number,
     visibilidade: number,
-    soltura: number,
     transmitancia: readonly [number, number, number]
   ) {
     this.amplitude = amplitudeDaLente(dUA, politica, roteiro, visibilidade);
-    this.u.uSolturaDosRaios.value = soltura;
     (this.u.uTransmitancia.value as THREE.Vector3).set(transmitancia[0], transmitancia[1], transmitancia[2]);
     if (this.modo === 'nenhuma') {
       this.enabled = false;
@@ -996,18 +1004,21 @@ export class PasseDaLente extends Pass {
     if (!(sai > 0)) return false;
     const perto = 1 - suave(0, b.zona, db);
     const borda = (1 + (b.ganhoBrilho - 1) * perto) * sai;
-    const fator = porCurva(curva, gpu.fator[0], gpu.fator[1]);
-    const g = (this.amplitude / G_DA_LENTE) * borda * fator * this.multiplicador;
-    const t = this.u.uTransmitancia.value as THREE.Vector3;
-    const ar = Math.max(t.x, t.y, t.z);
-    const limiar = porCurva(curva, LIMIAR_NA_EXPOSICAO_1[0], LIMIAR_NA_EXPOSICAO_1[1]);
-    if (!(g * gpu.pico * ar >= limiar / Math.max(exposicao, 1e-6))) return false;
     // o disco do Sol: o raio angular e, para as formas, o raio no eixo em frações da altura; abaixo
     // de ~1 px ele é ponto (como no look development) e entre 1 e 3 px de raio o disco entra em
     // rampa — um degrau aqui fazia o miolo saltar ~16 % (~3 UA)
     const alfa = Math.asin(Math.min(0.999, RAIO_DO_SOL_NA_CENA / dist));
     const raio = Math.tan(alfa) / (2 * T);
     const forca = suave(1, 3, raio * this.altura);
+    // o Sol como ASSUNTO do quadro: de perto ele tem os próprios efeitos (coroa, raios da coroa)
+    // e a lente atrapalha — ela some aos poucos (DISCO_ASSUNTO)
+    const assunto = lenteComOSolDeRaio(raio);
+    const fator = porCurva(curva, gpu.fator[0], gpu.fator[1]);
+    const g = (this.amplitude / G_DA_LENTE) * borda * fator * this.multiplicador * assunto;
+    const t = this.u.uTransmitancia.value as THREE.Vector3;
+    const ar = Math.max(t.x, t.y, t.z);
+    const limiar = porCurva(curva, LIMIAR_NA_EXPOSICAO_1[0], LIMIAR_NA_EXPOSICAO_1[1]);
+    if (!(g * gpu.pico * ar >= limiar / Math.max(exposicao, 1e-6))) return false;
     const u = this.u;
     (u.uL.value as THREE.Vector2).set(lx, ly);
     (u.uTanPorUnidade.value as THREE.Vector2).set((2 * T * cam.aspect) / aspecto, 2 * T);

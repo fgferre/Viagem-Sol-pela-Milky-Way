@@ -247,11 +247,24 @@ export function passosDoConvite(nome) {
  * a vista não pede língua nenhuma. A porta não grava nada no perfil e
  * está declarada no selo como instrumento; o inglês se julga de
  * propósito (`filme-smoke` com `?lang=en`, lista do §19 do 130).
+ *
+ * A LENTE DO JUIZ. O app abre com a lente do tier ligada para o
+ * visitante (Hollywood em cinema e alta, `PRESETS` em engine.ts), mas toda referência pinada dos juízes foi
+ * tirada SEM lente — então o mesmo ponto põe `lente=nenhuma` quando a
+ * vista não pede lente nenhuma. Quem quer julgar a lente escreve
+ * `lente=` na própria vista e o pedido dele vale. O nome do helper é
+ * de quando só a língua era pinada; é UM helper para os dois pinos.
  */
 export const LINGUA_DO_JUIZ = 'pt-BR';
+export const LENTE_DO_JUIZ = 'nenhuma';
 export function comLinguaDoJuizNaUrl(url) {
-  if (/[?&]lang=/.test(url)) return url;
-  return `${url}${url.includes('?') ? '&' : '?'}lang=${LINGUA_DO_JUIZ}`;
+  let pinada = url;
+  for (const [chave, valor] of [['lang', LINGUA_DO_JUIZ], ['lente', LENTE_DO_JUIZ]]) {
+    if (!new RegExp(`[?&]${chave}=`).test(pinada)) {
+      pinada = `${pinada}${pinada.includes('?') ? '&' : '?'}${chave}=${valor}`;
+    }
+  }
+  return pinada;
 }
 
 // `localhost` e `127.0.0.1` na mesma porta são o MESMO dev server; quem

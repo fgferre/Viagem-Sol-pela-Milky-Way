@@ -990,8 +990,9 @@ export class Director {
   /** ?exp= na query desliga a auto-exposição (App.tsx aplica o valor fixo) */
   private expOverride = false;
   /** a lente de cinema que o VISITANTE escolheu (Ajustes · Lente, ?lente=):
-   *  vale fora do filme; no filme manda a da cena (`aplicarLente`) */
-  private lenteDoVisitante: ModoDaLente = 'nenhuma';
+   *  `null` = a do tier (`preset.lente`), no mesmo contrato de `gasForcado`.
+   *  Vale fora do filme; no filme manda a da cena (`aplicarLente`) */
+  private lenteForcada: ModoDaLente | null = null;
   /** ?fps=1 (E2, PLAN.md): quadros/s e os custos de `window.__poeira` na
    *  tela — `null` = porta desligada, `contadorDeFps.ts` nunca criado */
   private contadorFps: { atualizar: (agora: number) => void; descartar: () => void } | null =
@@ -3042,24 +3043,28 @@ export class Director {
   }
 
   /**
-   * a lente de cinema escolhida em Ajustes · Lente. Ela é do VISITANTE e
-   * fica guardada aqui; a que a tela mostra (`post.lente`, que o selo
-   * lê) é a efetiva — no filme, a do roteiro (`aplicarLente`)
+   * a lente de cinema escolhida em Ajustes · Lente (ou `?lente=`); `null`
+   * volta à do tier. Ela é do VISITANTE e fica guardada aqui; a que a tela
+   * mostra (`post.lente`, que o selo lê) é a efetiva — no filme, a do
+   * roteiro (`aplicarLente`)
    */
-  definirLente(modo: ModoDaLente) {
-    this.lenteDoVisitante = modo;
+  definirLente(modo: ModoDaLente | null) {
+    this.lenteForcada = modo;
     this.aplicarLente();
   }
 
   /**
    * A LENTE NO AR (decisão do dono, 09/10): no filme, a da cena; fora
-   * dele, a do visitante — a regra é `lenteEfetiva`, pura. Roda a cada
-   * quadro, depois do ramo da fase, e só fala com o Post quando a lente
-   * efetiva MUDA: o corte do plano, o fim do filme, a saída dele.
+   * dele, a do visitante (a escolhida, senão a do tier) — a regra é
+   * `lenteEfetiva`, pura. Roda a cada quadro, depois do ramo da fase, e só
+   * fala com o Post quando a lente efetiva MUDA: o corte do plano, o fim do
+   * filme, a saída dele — e a troca de tier, Auto incluído, que por isso
+   * não precisa de gancho no `onQuality` nem de semente no construtor: o
+   * primeiro quadro já sai com a lente do tier.
    */
   private aplicarLente() {
     const daCena = this.phase === 'journey' ? this.rig.metaAt(this.journeyT).lenteDeCinema : undefined;
-    const modo = lenteEfetiva(this.phase, daCena, this.lenteDoVisitante);
+    const modo = lenteEfetiva(this.phase, daCena, this.lenteForcada ?? this.engine.preset.lente);
     if (modo !== this.post.lente) this.post.definirLente(modo);
   }
 
@@ -4402,7 +4407,6 @@ export class Director {
       this.politicaDeLuz,
       this.luzDoRoteiro,
       this.visibilidadeDoSol,
-      this.solNoQuadro.solturaDoSol,
       this.solNoQuadro.transmitanciaDoSolVisto
     );
     // A PIRÂMIDE DA POEIRA (E3c): a fonte que o pedido quer agora, o
