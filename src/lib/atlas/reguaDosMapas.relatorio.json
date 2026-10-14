@@ -116,14 +116,14 @@
       "RG": 1,
       "matiz": "tinta"
     },
-    "gama": 0.2594,
+    "gama": 0.2661,
     "gamaAntesDoTeto": 1,
-    "fracaoComprimida": 0.15959,
+    "fracaoComprimida": 0.15593,
     "fracaoNoTeto": 0.001,
     "g": [
-      1.0157,
-      1.0157,
-      0.9344
+      1.0261,
+      1.0261,
+      0.944
     ],
     "medias": [
       0.65,
@@ -138,14 +138,14 @@
       "RG": 1,
       "matiz": "tinta"
     },
-    "gama": 0.0713,
+    "gama": 0.0728,
     "gamaAntesDoTeto": 1,
-    "fracaoComprimida": 0.31834,
+    "fracaoComprimida": 0.31726,
     "fracaoNoTeto": 0.001,
     "g": [
-      1.0049,
-      1.0049,
-      0.9245
+      1.007,
+      1.007,
+      0.9265
     ],
     "medias": [
       0.89,
@@ -292,21 +292,21 @@
       "RG": 1.03,
       "matiz": "tinta"
     },
-    "gama": 0.9119,
-    "gamaAntesDoTeto": 1.5587,
-    "fracaoComprimida": 0.02375,
+    "gama": 0.9468,
+    "gamaAntesDoTeto": 1.7318,
+    "fracaoComprimida": 0.02645,
     "fracaoNoTeto": 0.001,
     "g": [
-      1.1614,
-      1.1276,
-      1.0148
+      1.188,
+      1.1534,
+      1.038
     ],
     "medias": [
-      0.2163,
+      0.2162,
       0.21,
       0.189
     ],
-    "razaoDaAncora": 5.057,
+    "razaoDaAncora": 4.875,
     "razaoMedida": 9.5
   },
   "io": {
@@ -426,14 +426,14 @@
       "RG": 0.98,
       "matiz": "tinta"
     },
-    "gama": 0.3035,
+    "gama": 0.3009,
     "gamaAntesDoTeto": 1,
-    "fracaoComprimida": 0.12328,
+    "fracaoComprimida": 0.12606,
     "fracaoNoTeto": 0.001,
     "g": [
-      0.9946,
-      1.0149,
-      0.9033
+      0.9968,
+      1.0172,
+      0.9053
     ],
     "medias": [
       0.6174,
@@ -648,14 +648,14 @@
       "RG": 1,
       "matiz": "tinta"
     },
-    "gama": 0.302,
+    "gama": 0.3067,
     "gamaAntesDoTeto": 1,
-    "fracaoComprimida": 0.12251,
+    "fracaoComprimida": 0.11951,
     "fracaoNoTeto": 0.001,
     "g": [
-      1.0422,
-      1.0422,
-      0.938
+      1.0503,
+      1.0503,
+      0.9453
     ],
     "medias": [
       0.6,
@@ -692,14 +692,14 @@
       "RG": 1,
       "matiz": "tinta"
     },
-    "gama": 0.1687,
+    "gama": 0.1737,
     "gamaAntesDoTeto": 1,
-    "fracaoComprimida": 0.2535,
+    "fracaoComprimida": 0.25059,
     "fracaoNoTeto": 0.001,
     "g": [
-      1.0086,
-      1.0086,
-      0.938
+      1.0158,
+      1.0158,
+      0.9447
     ],
     "medias": [
       0.74,
