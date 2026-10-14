@@ -183,7 +183,8 @@ import { inventaCorDoCorpo } from './cor-inventada.mjs';
 import { PARAMETROS_DA_DETECCAO, detectaCrateras, luminanciaDoRgb } from './crateras-pela-foto.mjs';
 import { decideGravacao, lerCacheDeAlturas } from './gera-normal-de-dem.mjs';
 import {
-  CANAIS_DE_DADO, giraColunasDeImagem, hostPermitido, paraLatitudePlanetocentrica, preencherVazioSemDado,
+  CANAIS_DE_DADO, LATITUDE_DE_SCHENK, giraColunasDeImagem, hostPermitido, paraLatitudePlanetocentrica,
+  preencherVazioSemDado,
 } from './lib-texturas.mjs';
 import { nivelaMapa } from './regua-dos-mapas.mjs';
 import {
@@ -209,25 +210,6 @@ const WAYBACK = 'https://web.archive.org/web';
 // astrogeology.usgs.gov; os arquivos saem daqui) — o mesmo de onde
 // `gera-normal-de-dem.mjs` lê os DEMs.
 const USGS_BYTES = 'https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic';
-
-// A LATITUDE DOS MOSAICOS DE SCHENK (14/10/2026, capturas/latitude/): os seis
-// vêm em latitude PLANETOGRÁFICA, tan φg = k·tan φc, e a casa lê
-// planetocêntrica — a feição saía mais perto do polo, 4,9° a 45° em Mimas. As
-// páginas PIA não dizem o sistema; quem diz é a medida. k = (a/c)² dos eixos da
-// IAU (`BODY_AXES`), que o registro da foto contra o relevo medido confirma
-// (Mimas 1,1907, Encélado 1,0675 contra o DEM de Schenk & McKinnon 2024, Tétis
-// 1,0444) e que as crateras do Gazetteer não distinguem do medido em Dione
-// (1,021 ± 0,01) e Jápeto (1,04 a 1,14). Em Reia, o DTM de Weirich 2025
-// (planetocêntrico pelo rótulo PDS, 1254 janelas) mede 1,0102 contra 1,0068 da
-// IAU, uniforme em longitude — vale o medido.
-const LATITUDE_DE_SCHENK = {
-  mimas: { sistema: 'planetografica', k: 1.1886 },
-  enceladus: { sistema: 'planetografica', k: 1.0680 },
-  tethys: { sistema: 'planetografica', k: 1.0465 },
-  dione: { sistema: 'planetografica', k: 1.0136 },
-  rhea: { sistema: 'planetografica', k: 1.0102 },
-  iapetus: { sistema: 'planetografica', k: 1.0966 },
-};
 
 // O RELEVO APROVADO DE JÁPETO, que as duas entradas `iapetus/height` e
 // `iapetus/normal` dividem (um conjunto só: as duas gravam ou nenhuma).

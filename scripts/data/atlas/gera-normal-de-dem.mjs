@@ -228,7 +228,7 @@ import sharp from 'sharp';
 import { BOM, CONSERTO_DE_ENCELADO, LISO, RUIDO, consertaDem } from './conserto-do-dem.mjs';
 import { luminanciaDoRgb } from './crateras-pela-foto.mjs';
 import { pesosDaCaixa } from './gera-horizonte.mjs';
-import { giraColunasDeImagem } from './lib-texturas.mjs';
+import { LATITUDE_DE_SCHENK, giraColunasDeImagem, paraLatitudePlanetocentrica } from './lib-texturas.mjs';
 import { inventaRelevoDoCorpo } from './relevo-inventado.mjs';
 import { escalaEViesDaFaixa, quantizaNaFaixa } from './relevo-por-foto.mjs';
 import { leTiffFloat32, reamostraParaACasa } from './relevo-reia.mjs';
@@ -564,10 +564,13 @@ export const CORPOS = {
     // neles só o que tem ≥ 8 km e as listras e crateras do traço na foto; os
     // ladrilhos bons saem byte a byte (13/10/2026). `fino`: 'liso' (o ruim
     // fica só com o largo medido, listras e crateras; a colcha por exemplo foi
-    // julgada um retalho agitado) ou 'exemplo'
+    // julgada um retalho agitado) ou 'exemplo'. O sha256 é o dos bytes do
+    // arquivo; `latitude`: a foto vem planetográfica e é lida na latitude da
+    // casa com o MESMO k do mapa de cor (14/10/2026), antes de tudo o que a usa
     consertoDoDem: {
       foto: 'scripts/data/atlas/fonte/enceladus-cor.jpg',
       sha256: '1bacd2c1dcf5581ecf60fde29e02bbb4b31b551733d1887ee7ea2fa2b976ddca',
+      latitude: LATITUDE_DE_SCHENK.enceladus,
       fino: 'liso',
     },
     // o polo sul MEDIDO a 100 m: o modelo de placas por estereofotoclinometria
@@ -1774,16 +1777,19 @@ export function consertaComSpc({ casa, largura, altura, luminancia, corpo, grade
 
 /**
  * O DEM CONSERTADO (`consertaComSpc`): lê o retrato da cor pinado em
- * `consertoDoDem` e o SPC de `spcDoPolo`, leva a grade fina à casa, conserta
+ * `consertoDoDem`, na latitude da casa (`paraLatitudePlanetocentrica` com a
+ * `latitude` declarada: a máscara, as crateras e o traço das listras leem a
+ * foto daqui), e o SPC de `spcDoPolo`, leva a grade fina à casa, conserta
  * e funde, e a traz de volta à orientação da fonte — o resto da cadeia não
  * muda. Conta a partilha da área.
  */
 async function consertarODem(corpo, fina) {
-  const { foto, sha256: pinado, fino } = corpo.consertoDoDem;
+  const { foto, sha256: pinado, latitude, fino } = corpo.consertoDoDem;
   const bytes = await readFile(path.join(rootDirectory, foto));
   if (sha256(bytes) !== pinado) throw new Error(`o retrato ${foto} não é o pinado (${pinado}) — não conserto.`);
   const { data, info } = await sharp(bytes).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-  const luminancia = luminanciaDoRgb(data, info.width, info.height, info.channels);
+  const naCasa = paraLatitudePlanetocentrica(data, info.width, info.height, info.channels, latitude);
+  const luminancia = luminanciaDoRgb(naCasa, info.width, info.height, info.channels);
   const giro = LONGITUDE_ESQUERDA_DA_CASA - corpo.longitudeDaBordaEsquerdaGraus;
   const { largura, altura } = fina;
   const casa = giraColunasDeImagem(fina.metros, largura, altura, 1, giro);

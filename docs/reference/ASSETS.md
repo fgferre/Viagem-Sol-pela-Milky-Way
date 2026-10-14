@@ -308,7 +308,12 @@ em até 0,4 km): a altura em 1024 px com a faixa inteira, −2,73 a +2,34 km em
 a normal em 4096 px (0,39 km por texel) pela média de área da grade fina,
 com a encosta física (a altura ÷ 1,2 contra o ganho do shader) e sem a trava
 de 80° no sul, onde estão as listras. Quanto do detalhe fino o DEM tem de
-verdade é a medida de `capturas/r4-encelado/` (a confirmar).
+verdade é a medida de `capturas/r4-encelado/` (a confirmar). O conserto do
+DEM (a máscara, as crateras e o traço das listras) lê a foto na latitude da
+casa com o MESMO k do mapa de cor (`consertoDoDem.latitude`, 14/10/2026):
+a borda da foto contra o SPC do polo sul caiu de 3,1 para 0,8 km RMS, e a
+encosta do DEM passou a explicar 12 % do brilho da foto nas ondas de 2–4 km
+dos ladrilhos bons (era 0,7 %; `capturas/r4-encelado/latitude/`).
 
 ## As nove luas esculpidas de Saturno (item 134, S3)
 

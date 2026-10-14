@@ -1,7 +1,8 @@
 // ============================================================
 // O CONSERTO DO DEM — o passo 3 da linha `completar-corpo` sobre um DEM MEDIDO
 // que é colcha de retalhos (Encélado, R4, 13/10/2026). Puro e sem E/S: quem
-// chama (`assaDoDemLocal`) lê o DEM e a foto e grava o resultado.
+// chama (`assaDoDemLocal`) lê o DEM e a foto — esta já na latitude
+// planetocêntrica da casa (`paraLatitudePlanetocentrica`) — e grava o resultado.
 //
 // O DEFEITO. O DEM de 200 m de Schenk & McKinnon 2024 junta ladrilhos de
 // estéreo de qualidade diferente. Uns trazem o terreno; outros são "bolhas":
@@ -1455,7 +1456,7 @@ export function consertaNaGrade({
  * trabalho (`larguraDeTrabalho`, média de área) passa por `consertaNaGrade`;
  * cada texel fino cujo texel de trabalho é BOM sai BYTE A BYTE igual, e os
  * outros recebem o campo consertado por interpolação bilinear. `luminancia`
- * já na grade de trabalho. Devolve `{ metros, ...consertaNaGrade }`.
+ * já na grade de trabalho e na latitude da casa. Devolve `{ metros, ...consertaNaGrade }`.
  */
 export function consertaDem({
   metros,
