@@ -55,6 +55,15 @@ segmentado "Curva de tom" fica como está: ele viu a prancha hoje × todos iguai
 seguem largura pelo nome, como as outras 12; botões iguais pediriam a gaveta ~96 px mais larga; não olhado num iPhone de
 verdade.
 
+**Latitude das fotos de Schenk, 14/10, `main` 47d857de, NÃO PUBLICADA (conversa "Coordenação entre agentes"):** os
+mosaicos de Mimas, Encélado, Tétis, Dione, Reia e Jápeto estão em latitude planetográfica e o app os lia como
+planetocêntricos — tudo ia para o polo (Mimas até 4°, Jápeto ~2,4°, Encélado 1,6°, Tétis 1°, Dione e Reia < 0,5°), medido
+contra o relevo medido e as crateras do Gazetteer. Conserto único na cadeia (`paraLatitudePlanetocentrica`,
+`LATITUDE_DE_SCHENK`), antes da régua. Os relevos de Jápeto e Reia, que tiram crateras da foto, foram refeitos (Jápeto
+andou ~25 km) e aprovados por ele pela imagem (*"Ok me parece bom"*; `capturas/latitude/celular/japeto-celular-v2.jpg`).
+Lua, Mercúrio, Marte, Ceres e Vesta conferidos: certos. **Achados, não feitos:** Júpiter e Saturno podem ter o mesmo
+defeito (sem relevo para medir); Mimas também está ~3,8° girada em longitude contra o relevo.
+
 **Lente Hollywood por padrão para o visitante (Atlas e voo livre), 14/10, `main` c935f598, NÃO PUBLICADA (conversa
 "Efeitos de lente padrão Hollywood"):** a do tier (cinema/alta Hollywood, Performance nenhuma) ou a escolhida no menu;
 filmes seguem a lente de cada plano. A lente inteira some junto e devagar quando o Sol vira o assunto do quadro (disco
