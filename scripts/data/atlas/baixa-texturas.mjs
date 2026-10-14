@@ -109,6 +109,11 @@
 // comprimida de cada corpo vão para `reguaDosMapas.relatorio.json`, ao lado da
 // tabela. A Terra fica fora desta etapa.
 //
+// A LATITUDE DAS FOTOS (14/10/2026, capturas/latitude/): a fonte que declara
+// `latitude` (os seis mosaicos de Schenk, `LATITUDE_DE_SCHENK`) é reamostrada
+// para a latitude planetocêntrica da casa (`paraLatitudePlanetocentrica`)
+// ANTES da régua; sem a declaração, os mesmos bytes de antes.
+//
 // AS FONTES QUE NÃO SE REFAZEM: o doador Saturn não está no disco, e
 // Ganimedes, Calisto e Titã não estão no doador atlas-orbital. O mapa dessas
 // nove entra pelo RETRATO do map.jpg de public/ de antes da régua
@@ -177,7 +182,7 @@ import { inventaCorDoCorpo } from './cor-inventada.mjs';
 import { PARAMETROS_DA_DETECCAO, detectaCrateras, luminanciaDoRgb } from './crateras-pela-foto.mjs';
 import { decideGravacao, lerCacheDeAlturas } from './gera-normal-de-dem.mjs';
 import {
-  CANAIS_DE_DADO, giraColunasDeImagem, hostPermitido, preencherVazioSemDado,
+  CANAIS_DE_DADO, giraColunasDeImagem, hostPermitido, paraLatitudePlanetocentrica, preencherVazioSemDado,
 } from './lib-texturas.mjs';
 import { nivelaMapa } from './regua-dos-mapas.mjs';
 import {
@@ -282,6 +287,25 @@ const RELEVO_DA_TERRA = {
     horizon2: 'eba55c85dc54e3635ca8fb1687e18b56a303b5a0dd75b43e9032e2e2b98a8969',
     parametros: 'a80b463f1edbeedabe939e8522516b07fd0b5887f43d286263abcae2280344a7',
   },
+};
+
+// A LATITUDE DOS MOSAICOS DE SCHENK (14/10/2026, capturas/latitude/): os seis
+// vêm em latitude PLANETOGRÁFICA, tan φg = k·tan φc, e a casa lê
+// planetocêntrica — a feição saía mais perto do polo, 4,9° a 45° em Mimas. As
+// páginas PIA não dizem o sistema; quem diz é a medida. k = (a/c)² dos eixos da
+// IAU (`BODY_AXES`), que o registro da foto contra o relevo medido confirma
+// (Mimas 1,1907, Encélado 1,0675 contra o DEM de Schenk & McKinnon 2024, Tétis
+// 1,0444) e que as crateras do Gazetteer não distinguem do medido em Dione
+// (1,021 ± 0,01) e Jápeto (1,04 a 1,14). Em Reia, o DTM de Weirich 2025
+// (planetocêntrico pelo rótulo PDS, 1254 janelas) mede 1,0102 contra 1,0068 da
+// IAU, uniforme em longitude — vale o medido.
+const LATITUDE_DE_SCHENK = {
+  mimas: { sistema: 'planetografica', k: 1.1886 },
+  enceladus: { sistema: 'planetografica', k: 1.0680 },
+  tethys: { sistema: 'planetografica', k: 1.0465 },
+  dione: { sistema: 'planetografica', k: 1.0136 },
+  rhea: { sistema: 'planetografica', k: 1.0102 },
+  iapetus: { sistema: 'planetografica', k: 1.0966 },
 };
 
 // ---- A tabela de fontes desta rodada (F2a: Terra + Lua). As fases
@@ -485,6 +509,7 @@ export const FONTES = [
     canal: 'map',
     url: 'https://github.com/fgferre/Saturn',
     arquivoLocal: `fonte/${corpo}-cor.jpg`,
+    latitude: LATITUDE_DE_SCHENK[corpo],
   })),
   {
     corpo: 'titan',
@@ -498,6 +523,7 @@ export const FONTES = [
     canal: 'map',
     url: 'https://github.com/fgferre/Saturn',
     arquivoLocal: 'fonte/iapetus-cor.jpg',
+    latitude: LATITUDE_DE_SCHENK.iapetus,
   },
   // O RELEVO DAS SEIS (item 134/S2): `height` e `normal` de cada uma, em
   // 1024×512 — o mesmo `public/textures/relief/` do projeto Saturn, a
@@ -1044,14 +1070,16 @@ async function registraNoRelatorio(corpo, linha) {
  * O PASSO DA RÉGUA de uma entrada `naRegua`: os pixels de antes dela — o
  * mosaico de Ceres, ou os de `pixelsDoMapa` com as opções da entrada (o
  * giro, a largura, o tapa-buraco, a cor inventada e a de Europa, com os
- * portões delas) —, `nivelaMapa` com o alvo da tabela, o jpg e a linha do
- * corpo no relatório.
+ * portões delas) —, a latitude da casa (`paraLatitudePlanetocentrica`, só
+ * na fonte que declara `latitude`), `nivelaMapa` com o alvo da tabela, o jpg
+ * e a linha do corpo no relatório.
  */
 async function gravaMapaNaRegua(cru, destino, fonte) {
   const rotulo = `${fonte.corpo}/${fonte.canal}`;
-  const { pixels, info } = fonte.bake === 'mosaico-ceres'
+  const { pixels: daFonte, info } = fonte.bake === 'mosaico-ceres'
     ? await pixelsDoMosaicoDeCeres(cru)
     : await pixelsDoMapa(cru, opcoesDoMapa(fonte));
+  const pixels = paraLatitudePlanetocentrica(daFonte, info.width, info.height, info.channels, fonte.latitude);
   const alvo = alvoDoMapa(fonte.corpo);
   const r = nivelaMapa({ pixels, largura: info.width, altura: info.height, canais: info.channels, alvo, rotulo });
   const linha = linhaDoRelatorio(alvo, r);

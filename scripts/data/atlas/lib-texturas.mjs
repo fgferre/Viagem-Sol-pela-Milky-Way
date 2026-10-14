@@ -160,6 +160,63 @@ export function giraColunasDeImagem(pixels, largura, altura, canais, giroGraus) 
 }
 
 /**
+ * A LATITUDE DA FOTO NA LATITUDE DA CASA. A casa lê toda grade
+ * equiretangular em latitude PLANETOCÊNTRICA (a linha j cobre de
+ * 90 − j·180/altura a 90 − (j+1)·180/altura graus do ângulo visto do
+ * centro). Os mosaicos globais de Schenk das seis luas de Saturno vêm em
+ * latitude PLANETOGRÁFICA — a da normal de um elipsoide de dois eixos —,
+ * tan φg = k·tan φc com k = (a/c)²: a feição sai mais perto do polo, 4,9°
+ * a 45° em Mimas. Medido contra relevo planetocêntrico e contra o Gazetteer
+ * da IAU (docs/reference/ASSETS.md, seção das seis luas).
+ *
+ * `latitude`: a declaração da fonte, `{ sistema: 'planetografica', k }`.
+ * Sem ela, devolve os MESMOS pixels — fonte não declarada não muda um byte.
+ *
+ * A REAMOSTRAGEM É POR ÁREA, linha a linha (a coluna não muda: a longitude
+ * de um elipsoide de dois eixos é a mesma nos dois sistemas). Cada linha de
+ * saída é a faixa planetocêntrica [c1, c0], que na foto é a faixa
+ * planetográfica [g(c1), g(c0)]; as linhas da foto que a cortam entram com o
+ * peso da área que cobrem na esfera, sen φc(topo) − sen φc(base). Os polos
+ * são exatos (`atan2`), e nenhuma linha fica sem fonte: as duas latitudes
+ * vão de −90 a +90 juntas. Inteiros saem arredondados; Float32Array, como é.
+ */
+export function paraLatitudePlanetocentrica(pixels, largura, altura, canais, latitude) {
+  if (latitude === undefined) return pixels;
+  const { sistema, k } = latitude;
+  if (sistema !== 'planetografica' || !(k > 0) || !Number.isFinite(k)) {
+    throw new Error(`Latitude da fonte mal declarada: ${JSON.stringify(latitude)} (vale { sistema: 'planetografica', k > 0 }).`);
+  }
+  const passo = Math.PI / altura;
+  const grafica = (c) => Math.atan2(k * Math.sin(c), Math.cos(c));
+  const centrica = (g) => Math.atan2(Math.sin(g), k * Math.cos(g));
+  const inteiro = Buffer.isBuffer(pixels) || pixels instanceof Uint8Array || pixels instanceof Uint16Array;
+  const saida = Buffer.isBuffer(pixels) ? Buffer.alloc(pixels.length) : new pixels.constructor(pixels.length);
+  const linha = new Float64Array(largura * canais);
+  for (let j = 0; j < altura; j += 1) {
+    const g0 = grafica(Math.PI / 2 - j * passo);
+    const g1 = grafica(Math.PI / 2 - (j + 1) * passo);
+    const i0 = Math.max(0, Math.floor((Math.PI / 2 - g0) / passo));
+    const i1 = Math.min(altura - 1, Math.ceil((Math.PI / 2 - g1) / passo) - 1);
+    linha.fill(0);
+    let soma = 0;
+    for (let i = i0; i <= i1; i += 1) {
+      const topo = Math.min(g0, Math.PI / 2 - i * passo);
+      const base = Math.max(g1, Math.PI / 2 - (i + 1) * passo);
+      if (topo <= base) continue;
+      const peso = Math.sin(centrica(topo)) - Math.sin(centrica(base));
+      soma += peso;
+      const de = i * largura * canais;
+      for (let p = 0; p < largura * canais; p += 1) linha[p] += peso * pixels[de + p];
+    }
+    const para = j * largura * canais;
+    for (let p = 0; p < largura * canais; p += 1) {
+      saida[para + p] = inteiro ? Math.round(linha[p] / soma) : linha[p] / soma;
+    }
+  }
+  return saida;
+}
+
+/**
  * O VAZIO SEM DADO DE UM MAPA (item 147) — o hemisfério que a sonda não
  * viu. A Voyager 2 passou por Urano em 1986 com o polo sul virado para o
  * Sol e fotografou SÓ o sul de Miranda, Ariel, Umbriel, Titânia e Oberon;
