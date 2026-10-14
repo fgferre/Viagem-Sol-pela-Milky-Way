@@ -1176,8 +1176,8 @@
       "arquivo": "textures/atlas/dione/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 90833,
-      "sha256": "07d7e97b89f75e7544390b0046c3bbc9927f5ebb27c7f98223a0eec1c4241ee7",
+      "bytes": 91701,
+      "sha256": "5d10946895cb3e5e0fd83407d02fffe24336decac57ec1b2dbd0da389ee123f8",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Dione (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -1201,8 +1201,8 @@
       "arquivo": "textures/atlas/dione/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 86240,
-      "sha256": "8d47c9895cabb0a7ef8cc08d85cd7a392422b8fb107d6af4282f290dad563caa",
+      "bytes": 88020,
+      "sha256": "4bba07896265b2cf6d9587914ca4a004f548cc8e707c8b726cbbc88ccf1ef37e",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Dione (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -1226,8 +1226,8 @@
       "arquivo": "textures/atlas/dione/map_2048.jpg",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 391740,
-      "sha256": "4226fae27b78bc1ff2a64b435cbf023b50957544934c524e8b986c1e7ffc98ac",
+      "bytes": 387049,
+      "sha256": "bebebba9a641d69134286337a8883054da8c9ba1c79687c1357dbbe05ea41763",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Dione (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -1251,8 +1251,8 @@
       "arquivo": "textures/atlas/dione/map_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 376934,
-      "sha256": "ddf423140159e9e9e160f680af8ab6966c246e5169a91620b98c746c74275671",
+      "bytes": 367162,
+      "sha256": "1f0bf07c7e9f9ee571539facbe122a7a9899b2a2d5974a8e007db18127f62674",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Dione (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -1276,8 +1276,8 @@
       "arquivo": "textures/atlas/dione/map.jpg",
       "larguraPx": 3840,
       "alturaPx": 1920,
-      "bytes": 1687026,
-      "sha256": "5001f98bfe184bd38cdde312cb3f6f31f7fbe2634a699c0cc3eab2b5299768ca",
+      "bytes": 1551168,
+      "sha256": "885aa4e9d93f84763da7853546413a3bd824a7bebc15212d0748f04629c96828",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Dione (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -1301,8 +1301,8 @@
       "arquivo": "textures/atlas/dione/map.webp",
       "larguraPx": 3840,
       "alturaPx": 1920,
-      "bytes": 1331264,
-      "sha256": "00cca83c0af2de08e1da7c57dcf6c23cb083aeaff226f1860cf8ccfe49f9faed",
+      "bytes": 1171764,
+      "sha256": "035ee8da94d157b435ec65695962c884faee025e03a2c319b615fe2caac3246a",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Dione (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -2761,8 +2761,8 @@
       "arquivo": "textures/atlas/enceladus/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 46965,
-      "sha256": "b116c81e2893ca552862c6d22ca0221490d9c3c77c758937561fa73de7e8bd03",
+      "bytes": 46349,
+      "sha256": "1b8832f0173ef803f9b14e27f5ef66274f425ba4566d8042330f0576196bdd3f",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Encélado (Paul Schenk, PIA18435) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -2786,8 +2786,8 @@
       "arquivo": "textures/atlas/enceladus/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 35842,
-      "sha256": "da713b99c47f8294120f9d9a7a6b20129919635c2f635eb702f0876171b108fa",
+      "bytes": 34304,
+      "sha256": "abf316d8dbac188f8ba7fd2f2ff9e36318b39d490177d7cf6fff036d9e422bfb",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Encélado (Paul Schenk, PIA18435) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -2811,8 +2811,8 @@
       "arquivo": "textures/atlas/enceladus/map_2048.jpg",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 238766,
-      "sha256": "18cb09e7d4782a97de3fcbe39d614edeecf8df79bf206ed3e08536b3d2045bfa",
+      "bytes": 232116,
+      "sha256": "d5cd7e8e7c66aab5fb721d562cd7396235c3f5b4e20062bf384ec105950f440a",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Encélado (Paul Schenk, PIA18435) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -2836,8 +2836,8 @@
       "arquivo": "textures/atlas/enceladus/map_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 186518,
-      "sha256": "b5db3ca28b660b2a7527f61602f9fe0de2c7e1c03bcc755abaca55867d2d0fb4",
+      "bytes": 173720,
+      "sha256": "b841b59dc34ad0347160e96bb7f31e79b80843f6024a6365e94947b1ca8192f2",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Encélado (Paul Schenk, PIA18435) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -2861,8 +2861,8 @@
       "arquivo": "textures/atlas/enceladus/map.jpg",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 1155703,
-      "sha256": "fd1225d468860d7ad1fe49ba9e387cd5ca90d990f27328055256ffb711911eae",
+      "bytes": 1067757,
+      "sha256": "a3d872ce6f18301f46af1ed8f9887888bb7308c3f8af656875d6594edc6c3425",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Encélado (Paul Schenk, PIA18435) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -2886,8 +2886,8 @@
       "arquivo": "textures/atlas/enceladus/map.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 674432,
-      "sha256": "ec4cee5db3ec1c2d4a59ce4d0c39b0d449eb6bef03a22f9d801ea8684014355e",
+      "bytes": 592028,
+      "sha256": "26aad3325c15238a8b6623599513cd8715cd2f17c2e18bc9cf018f41d4b7e0fb",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Encélado (Paul Schenk, PIA18435) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -4091,8 +4091,8 @@
       "arquivo": "textures/atlas/iapetus/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 82869,
-      "sha256": "c7797850d4a90914b031a865e46a241f236f24900763f4a5889bc595d409153a",
+      "bytes": 80789,
+      "sha256": "f06dc9f647b9ddcb9741541eee150d577de43a03a6905627f9e82e6ea6a49891",
       "origem": {
         "fonte": {
           "pt": "Relevo de Jápeto gerado pelo app a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de ALTURA",
@@ -4121,8 +4121,8 @@
       "arquivo": "textures/atlas/iapetus/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 56460,
-      "sha256": "451e03457647a487606351b244e559f4a3f2bf105482bffa2853d94f46257f2e",
+      "bytes": 54776,
+      "sha256": "b832533cde2cd7da3d0bbc57947285797cdc01a46628f07dc1f8a7a408fd7b9c",
       "origem": {
         "fonte": {
           "pt": "Relevo de Jápeto gerado pelo app a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de ALTURA",
@@ -4151,8 +4151,8 @@
       "arquivo": "textures/atlas/iapetus/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 114614,
-      "sha256": "733948d7c5482d737c3ba9e677c6f0c8231606c38d8f739cb8e63674b95d2167",
+      "bytes": 114267,
+      "sha256": "21837737642c4a584093f487242cef8b58424ae2679bf831cd25d10173f56f59",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Jápeto (Paul Schenk, PIA18436) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -4176,8 +4176,8 @@
       "arquivo": "textures/atlas/iapetus/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 112736,
-      "sha256": "e977c129eca99d6f519092775af05f877151828f94bc3c2b2afb7fbe4bf8adac",
+      "bytes": 110574,
+      "sha256": "8c02a42bc87a8a0ef0a32c6d5db9037d2c7c365903e9cae4fd91c5801c889c63",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Jápeto (Paul Schenk, PIA18436) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -4201,8 +4201,8 @@
       "arquivo": "textures/atlas/iapetus/map_2048.jpg",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 447101,
-      "sha256": "ef2e7f3aaa13beac2316fbe0c5c2ded505cdb17ef4f47d79c25ef0414cf57d7d",
+      "bytes": 436599,
+      "sha256": "36fb0be1f5feae9ba9e5a02b1f9eaea01ee5df0027a88404dd6c67e870b37c86",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Jápeto (Paul Schenk, PIA18436) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -4226,8 +4226,8 @@
       "arquivo": "textures/atlas/iapetus/map_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 429306,
-      "sha256": "841542c89a340584ffb00601440e09346d9d832dedbbf16c643ea54903fe8fb4",
+      "bytes": 416408,
+      "sha256": "5b8c6b6ce1d9175f2422019955ef4f173f5df2c3119f14160287cdae227aae00",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Jápeto (Paul Schenk, PIA18436) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -4251,8 +4251,8 @@
       "arquivo": "textures/atlas/iapetus/map.jpg",
       "larguraPx": 3840,
       "alturaPx": 1920,
-      "bytes": 1718403,
-      "sha256": "b196b2c104cffba1741e0e150d27a26bcba1b65fbcf362c2f43ea92c952376bc",
+      "bytes": 1639704,
+      "sha256": "2138b33cdbf905309f08bd3d65bde4a652cbb5ed7389856404639b9143605103",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Jápeto (Paul Schenk, PIA18436) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -4276,8 +4276,8 @@
       "arquivo": "textures/atlas/iapetus/map.webp",
       "larguraPx": 3840,
       "alturaPx": 1920,
-      "bytes": 1359974,
-      "sha256": "25a24805a6488d54b5e54ddaf65845bd94371c09c5c020d7a974ea808dc0471b",
+      "bytes": 1230256,
+      "sha256": "5b9f83e2aaf1362cbba4c892c6b281cdb0f43ccf4dbc342cbfe2b8804f1ed0ec",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Jápeto (Paul Schenk, PIA18436) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -4301,8 +4301,8 @@
       "arquivo": "textures/atlas/iapetus/normal.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 229058,
-      "sha256": "1ad2b48bbf3128c834a4c906d0557e6f67f34202711a36219d1506305c31aff3",
+      "bytes": 221393,
+      "sha256": "d7a8ef3973739cff129ccdcf6f53da93ae42db501d333c1e221697be6082083c",
       "origem": {
         "fonte": {
           "pt": "Relevo de Jápeto gerado pelo app a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de NORMAIS derivado da altura",
@@ -4331,8 +4331,8 @@
       "arquivo": "textures/atlas/iapetus/normal.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 138694,
-      "sha256": "f627cb99572560ed15d18321d4157eb2872025bd38549ef1157d9ddfd3683df8",
+      "bytes": 133994,
+      "sha256": "3ab677048168bbcaf370ec89b798b976f339231b6dfcdf1c9e031ab389c2ce69",
       "origem": {
         "fonte": {
           "pt": "Relevo de Jápeto gerado pelo app a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de NORMAIS derivado da altura",
@@ -5551,8 +5551,8 @@
       "arquivo": "textures/atlas/mimas/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 106522,
-      "sha256": "1f137eb0bf3d283d6b0f0efd9706b74b0e2e0466ed744752cc492ddab3574201",
+      "bytes": 104948,
+      "sha256": "29b8ea6420ed190ac2863fa2cf12feae05af0e88bd370c8f735cd0cc73968c85",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -5576,8 +5576,8 @@
       "arquivo": "textures/atlas/mimas/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 96646,
-      "sha256": "0649503be64036cd0e63a069fd2d7ec8851283f412b186deb625121006d912dd",
+      "bytes": 93458,
+      "sha256": "395d7447a92d42157abbb8af905b6920c14ef542017b222905b0f88edff15e4f",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -5601,8 +5601,8 @@
       "arquivo": "textures/atlas/mimas/map_2048.jpg",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 315165,
-      "sha256": "55a4433fb59f07da5ed71b5dade5e1c8e65f672d04a24b02a5c75c9ca8049937",
+      "bytes": 307989,
+      "sha256": "faddab211b275135b805a8d470b24f6189e79331a8903ecc3ca419e97ed7388c",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -5626,8 +5626,8 @@
       "arquivo": "textures/atlas/mimas/map_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 249970,
-      "sha256": "eb3cf55c922c325b11b0502805121c15bd5f5897436fcf915b741bb240a517de",
+      "bytes": 241228,
+      "sha256": "a8bab70d796750712b6f72feb44c3ed5ba7caed76af85aeb72161fcd0814e8a3",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -5651,8 +5651,8 @@
       "arquivo": "textures/atlas/mimas/map.jpg",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 1037140,
-      "sha256": "a0c9d3bfb495736e2edf14fd4e92bb34e97fc44036ff943641170fda87d2d349",
+      "bytes": 992774,
+      "sha256": "185d895613bc942e0243ebb2072a2494a79deada511ed0bd3f8e33bb6205cec0",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -5676,8 +5676,8 @@
       "arquivo": "textures/atlas/mimas/map.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 566614,
-      "sha256": "46d945c9e9cda23c509d4f99a08b906d3aea0c15e8887b38ecbb5b2294bc9b00",
+      "bytes": 554706,
+      "sha256": "458b2bc3433b809e574c384eba68d7feaab3fc6e5c637b1ebe585d3f26b07699",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -7681,8 +7681,8 @@
       "arquivo": "textures/atlas/rhea/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 341431,
-      "sha256": "e78cdc2be98d94ac0b8428524c52d38c98f6328869b60956da4671fb01e2de64",
+      "bytes": 341032,
+      "sha256": "bb7b79630c54f7cc16428a00dfc27bf4b42cbddae45bc3d3da56caae7e4964fc",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado pelo app com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de ALTURA",
@@ -7711,8 +7711,8 @@
       "arquivo": "textures/atlas/rhea/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 222298,
-      "sha256": "91a04801fc011c67e4088e1e9b14d9315a5c305c636d45850309a8d0c9b5aeee",
+      "bytes": 222064,
+      "sha256": "b910cdb0af60eaed7f651904cac36e06eebcf7ea632fcad8ed19ac7bef7cf254",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado pelo app com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de ALTURA",
@@ -7741,8 +7741,8 @@
       "arquivo": "textures/atlas/rhea/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 122068,
-      "sha256": "020b0b37ab5a1ec30059ad89f013761fad742a7ed15e39c7c4cb3b94105874f8",
+      "bytes": 122114,
+      "sha256": "2f051ecb4dc4af7babcb4b117b3ecfc6e2b7e4cb029046f92de551f7fc67ddb6",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Reia (Paul Schenk, PIA18438) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -7766,8 +7766,8 @@
       "arquivo": "textures/atlas/rhea/map_2048.jpg",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 496661,
-      "sha256": "2aa1051535506b5353010130016a0d8ec81857d7ca22e8ac74ca9b231999d219",
+      "bytes": 489005,
+      "sha256": "cb8c479284c18a720bcc487c0892288a59f5ea5790c63a1a603f819ce4424008",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Reia (Paul Schenk, PIA18438) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -7791,8 +7791,8 @@
       "arquivo": "textures/atlas/rhea/map.jpg",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 2092203,
-      "sha256": "95992eecac97f8bb7f2558b334da8483afbf2fd54db2f198435dbe6990652bb4",
+      "bytes": 1950616,
+      "sha256": "f6bb384f0312d43af4e05c6a403a9bc2f97cd77e91d7630860725c640a563aa8",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Reia (Paul Schenk, PIA18438) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -7816,8 +7816,8 @@
       "arquivo": "textures/atlas/rhea/map.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 1656534,
-      "sha256": "33982ca2525fea83ef57c720393a05343ae054f2b4f7c0e99818ac385227d994",
+      "bytes": 1525532,
+      "sha256": "27a04ac371ae4abd6d6ecae8fab36f5dac7058283df4ace46be99a6e9a1f8d95",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Reia (Paul Schenk, PIA18438) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -7841,8 +7841,8 @@
       "arquivo": "textures/atlas/rhea/normal.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 794687,
-      "sha256": "a75572b70befef50c1b740e9320fb6d69a141b9e8605be114cf32920d93abb0f",
+      "bytes": 793915,
+      "sha256": "8f5f082101dd6d73f468b58101858a8bf04d6e7646d303ea3850aef225dcee07",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado pelo app com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de NORMAIS derivado da altura",
@@ -7871,8 +7871,8 @@
       "arquivo": "textures/atlas/rhea/normal.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 516090,
-      "sha256": "c37eeb7a02f3497e22e88cd62d42ca3afc53ef6c86c3eb34c7371bca3f89cb00",
+      "bytes": 515772,
+      "sha256": "915bcb36c65a790bf53a8f9b212652ee14f5958f5438fe2d62a8a92911055261",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado pelo app com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de NORMAIS derivado da altura",
@@ -8111,8 +8111,33 @@
       "arquivo": "textures/atlas/tethys/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 99482,
-      "sha256": "a4859e723f3234da29a55dd6f6ab1fb2c4d07c47a0dd41880d99784dd55ca736",
+      "bytes": 99291,
+      "sha256": "e828c784c601ff2c6254c7eaa569c4388416d73516cb3e2e79e2a606bb220bfa",
+      "origem": {
+        "fonte": {
+          "pt": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
+          "en": "Cassini global mosaic of Tethys (Paul Schenk, PIA18439) — IR/UV enhanced color, graded to natural color in the Saturn project"
+        },
+        "url": "https://github.com/fgferre/Saturn",
+        "licenca": {
+          "pt": "domínio público (NASA/JPL-Caltech/SSI/LPI)",
+          "en": "public domain (NASA/JPL-Caltech/SSI/LPI)"
+        },
+        "atribuicao": {
+          "pt": "Mosaico: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18439). Graduação de cor: projeto Saturn (Felipe Ferreira).",
+          "en": "Mosaic: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18439). Color grading: Saturn project (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "map",
+      "arquivo": "textures/atlas/tethys/map_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 98668,
+      "sha256": "536190e672ccb6a0f9eee3bba5a8614991d182d52cc9a33a23607814ba8c2502",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -8136,8 +8161,8 @@
       "arquivo": "textures/atlas/tethys/map_2048.jpg",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 415841,
-      "sha256": "c6b89e65a3358cc8b99e735db4151af2f84d619a7d2a885cee233f6918c54803",
+      "bytes": 406554,
+      "sha256": "b380e802e5a7c24d2179a5850d475d345664fa38c840d27f516cb030fb360b72",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -8161,8 +8186,8 @@
       "arquivo": "textures/atlas/tethys/map_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 400232,
-      "sha256": "0e0cd6e9eaae92120393da70ec810110770a11fecbbbef0f340c7151b4b2a519",
+      "bytes": 392814,
+      "sha256": "e3b73a1ee9a193261dcba138b067afecf860b53bbc82c92871eb2ca694d429bb",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -8186,8 +8211,8 @@
       "arquivo": "textures/atlas/tethys/map.jpg",
       "larguraPx": 3840,
       "alturaPx": 1920,
-      "bytes": 1703928,
-      "sha256": "26d56f47835ac082c223daf70a3f511f2df0bb30ca075998b247c9990c431ff1",
+      "bytes": 1569310,
+      "sha256": "c50a7f150725a73c0b2c9c56a604e20b01b64a7ffbc512f77d7b92a06646c993",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -8211,8 +8236,8 @@
       "arquivo": "textures/atlas/tethys/map.webp",
       "larguraPx": 3840,
       "alturaPx": 1920,
-      "bytes": 1307742,
-      "sha256": "03f5e6a6d17448c12b5ba3eff17663dbfcd8069cd057fdc435a304c0f91ea67c",
+      "bytes": 1152710,
+      "sha256": "6620530b706d33cc09bdcea6c1bb63010b90e30fffcecbffb00584a1a800d7db",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",

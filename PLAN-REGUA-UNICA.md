@@ -85,6 +85,16 @@ Palavras dele (08/10): *"precisamos ter uma regra única que trate todos os obje
   liso, crateras pela foto com a lei tirada do próprio DEM (selo "derivado"); (4) prancha: a pose dele (fase 30°), o
   terminador e o polo sul — no centro do disco a 30° Encélado segue quase branca, que é o real. Abertos para depois: a
   lei de luz (LS × Lambert) em corpo de gelo muito claro; rever o γ da R2 quando o relevo estiver certo.
+  **Estado (13/10, ramo `r4-encelado`, cópia `../Viagem-r4-encelado`, nada no main):** altura e normal assadas do DEM
+  (borda esquerda 0°, polos num quadro polar, margem vazia cortada); máscara de qualidade + conserto (`conserto-do-dem.mjs`:
+  82 % do DEM bom; 15–18 % ruído de estéreo com bordas retas, inclusive quase todo o polo sul); o modelo SPC do JPL para o
+  polo sul (Park et al. 2024, 100 m, `relevo-spc.mjs`, leitor DAS/DSK) cobre só ~35 % da calota e 3 das 4 listras —
+  medidas batem com Schenk (sulcos 200–300 m, cristas 100–150 m). O resultado ainda é colcha (quadrado bom num mar liso);
+  o preenchimento por exemplo e o Gabor foram rejeitados no olho. Palavra dele (13/10): *"faça direito, começa pelo
+  deslocamento da foto"* — (1) a foto colorida das luas de Schenk parece estar em latitude planetográfica (Encélado até
+  ~7 km fora do relevo; Mimas pode chegar a ~15 km): medir e reprojetar na cadeia (ramo `latitude-das-fotos`, cópia
+  `../Viagem-latitude`); (2) depois, a ferramenta de relevo pela foto (fotoclinometria) para o resto do polo sul e dos
+  remendos — o passo "a foto vê → derivar" da skill `completar-corpo`.
 
 ## Fora deste plano
 O Sol, as estrelas, a galáxia, as órbitas e o eclipse (emissores e guias, já com regra física própria); a Terra com nuvens e luzes entra na régua de cor só se a prancha da R2 mostrar desvio.

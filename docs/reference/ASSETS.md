@@ -167,6 +167,38 @@ vem da razão medida entre as duas metades. A graduação por lua do projeto
 dele (`GRADUACAO_DO_MOSAICO`, ganhos calibrados para outra exposição) saiu
 do shader na R2.
 
+**A LATITUDE (14/10/2026, `capturas/latitude/`).** Os seis mosaicos vêm em
+latitude **planetográfica** — o ângulo da normal de um elipsoide de dois
+eixos, tan φg = (a/c)²·tan φc —, e o app lê toda textura em latitude
+**planetocêntrica**: cada feição saía mais perto do polo, até 4,9° em Mimas,
+2,6° em Jápeto, 1,9° em Encélado, 1,3° em Tétis, 0,4° em Dione e 0,3° em Reia
+(a 45°). As páginas PIA não dizem o sistema; a medida diz. Contra relevo
+planetocêntrico, em janelas de sombreado: Mimas (k livre 1,1907; RMS 4,0° →
+0,3°) e Tétis (1,0444; 1,0° → 0,26°) pelo mapa de altura do projeto Saturn,
+Encélado (1,0675; 1,6° → 0,13°) pelo DEM de Schenk & McKinnon 2024 e pelo SPC
+do polo sul (Park et al. 2024), Reia (1,0102; 0,23° → 0,05°) pelo DTM de
+Weirich 2025, planetocêntrico pelo rótulo PDS. Contra as crateras do
+Gazetteer da IAU — que se rotula planetográfico mas está sobre uma esfera, e se
+comporta como planetocêntrico —: Dione (42 crateras, 0,53° → 0,32°) e Jápeto
+(20, mediana 2,3° → 1,1°). A cadeia reamostra por área cada mosaico para a
+latitude planetocêntrica antes da régua (`paraLatitudePlanetocentrica`), com
+k = (a/c)² dos eixos da IAU em cinco e o medido em Reia. Os relevos de
+Jápeto e de Reia, que tiram da foto as crateras (e, em Jápeto, o caminho da
+crista), leem-na pela mesma função e com o mesmo k (`mapaDeCor.latitude`):
+as crateras deles andaram até 34 km em Jápeto (mediana 25) e até 4 km em Reia
+(mediana 3), e as bordas do relevo, que ficavam 2,4° para o polo das da cor
+em Jápeto, caem nelas (`capturas/latitude/relevos/`).
+
+**As outras fontes.** Lua, Mercúrio, Marte, Ceres e Vesta foram medidos do
+mesmo jeito contra a normal do relevo medido de cada um (LOLA, MESSENGER,
+MOLA, Dawn): planetocêntricos (k de 0,999 a 1,006). Ganimedes, Calisto,
+Tritão, Plutão, Caronte, Umbriel, Titânia e Oberon são esferas na casa, e a
+diferença não existe; Europa é quase esfera (0,1° no máximo). Ficam sem
+medida, com o que custariam se fossem planetográficos: Io (0,4°), Ariel
+(0,3°, a amostra da imagem gerada veio de Schenk 2020), Miranda (1,8°) e os
+gigantes, cujos mapas de atmosfera costumam ser planetográficos (Júpiter
+3,8°, Saturno 5,9°).
+
 ## Relevo das seis luas de Saturno (item 134, S2)
 
 Dois canais novos por lua — `height` (mapa de altura equiretangular, que
@@ -230,7 +262,9 @@ entre elas. Altura em 8 bits de −14 a +22 km (141 m por degrau; escala
 0,0483 e viés −0,0188 em `RELEVO_DA_LUA`), normal do mesmo campo; o
 portão da cadeia aprova o conjunto — altura, normal e esses números — por
 sha256, e o `parametros.json` do candidato em
-`capturas/europa-japeto/j1c/b-20km/` lista cada escolha.
+`capturas/latitude/relevos/japeto/b-20km/` (o B da J1c,
+`capturas/europa-japeto/j1c/b-20km/`, refeito com a foto na latitude da
+casa) lista cada escolha.
 
 **Reia refeita nesta casa (PLAN-REIA.md, 07/10/2026).** O sintético do
 Saturn não acertava nem Mamaldi nem Tirawa — nenhuma das crateras com nome
@@ -259,7 +293,9 @@ até 0,34 % do próprio relevo. Altura em 8 bits de −7 a +6 km (51 m por
 degrau; escala 0,0170 e viés −0,0092 em `RELEVO_DA_LUA`), normal do mesmo
 campo; o portão da cadeia aprova o conjunto — altura, normal e esses números
 — por sha256, e os dois canais são gravados juntos. O `parametros.json` do
-candidato em `capturas/reia/r2b/a-1024/` lista cada escolha.
+candidato em `capturas/latitude/relevos/reia/a-1024/` (o A da R2b,
+`capturas/reia/r2b/a-1024/`, refeito com a foto na latitude da casa) lista
+cada escolha.
 
 **Encélado refeito nesta casa (R4 da régua, 13/10/2026, PLAN-REGUA-UNICA.md).**
 O do Saturn era o mesmo DEM reduzido a 1024 px (1,57 km por texel), o que

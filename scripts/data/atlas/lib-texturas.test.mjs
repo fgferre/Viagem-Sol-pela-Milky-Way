@@ -12,6 +12,7 @@ import {
   degrausDaEscada,
   hostPermitido,
   lerTabelasDaConfissao,
+  paraLatitudePlanetocentrica,
   preencherVazioSemDado,
   webpCompensa,
 } from './lib-texturas.mjs';
@@ -138,6 +139,37 @@ describe('preencherVazioSemDado (item 147: o hemisfério que a Voyager não viu)
     const conta = preencherVazioSemDado(px, largura, altura, 3);
     expect(conta.preenchidos).toBe(0);
     expect(px.equals(antes)).toBe(true);
+  });
+});
+
+describe('paraLatitudePlanetocentrica (a foto de Schenk em latitude planetográfica)', () => {
+  // 2×180, 3 canais, linhas de 1°; o elipsoide de Mimas, k = (207,8/190,6)².
+  const largura = 2;
+  const altura = 180;
+  const latitude = { sistema: 'planetografica', k: 1.1886 };
+  const linhaDe = (px, j) => px[j * largura * 3];
+
+  it('a cratera a 45,5° planetocêntricos, na foto a 50,4° planetográficos, cai na linha 44', () => {
+    const g = (180 / Math.PI) * Math.atan(latitude.k * Math.tan((45.5 * Math.PI) / 180));
+    const naFoto = Math.floor(90 - g);
+    expect(naFoto).toBe(39);
+    const px = Buffer.alloc(largura * altura * 3, 0);
+    px.fill(255, naFoto * largura * 3, (naFoto + 1) * largura * 3);
+    const saida = paraLatitudePlanetocentrica(px, largura, altura, 3, latitude);
+    const linhas = Array.from({ length: altura }, (_, j) => linhaDe(saida, j));
+    expect(linhas.indexOf(Math.max(...linhas))).toBe(44);
+    expect(linhas[44]).toBeGreaterThan(200);
+    // o mapa liso continua liso, polos inclusive: os pesos somam a faixa inteira
+    const liso = paraLatitudePlanetocentrica(Buffer.alloc(largura * altura * 3, 77), largura, altura, 3, latitude);
+    expect(liso.every((v) => v === 77)).toBe(true);
+  });
+
+  it('sem a declaração, os pixels saem os mesmos, byte a byte; declaração torta falha', () => {
+    const px = Buffer.from(Array.from({ length: largura * altura * 3 }, (_, i) => (i * 37) % 256));
+    const copia = Buffer.from(px);
+    expect(paraLatitudePlanetocentrica(px, largura, altura, 3, undefined)).toBe(px);
+    expect(px.equals(copia)).toBe(true);
+    expect(() => paraLatitudePlanetocentrica(px, largura, altura, 3, { sistema: 'planetocentrica', k: 1 })).toThrow(/mal declarada/);
   });
 });
 

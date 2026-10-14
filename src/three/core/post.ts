@@ -1274,7 +1274,9 @@ export class Post {
     this.claraoDoCampo.enabled = ligado;
   }
 
-  /** a lente de cinema escolhida em Ajustes; o passe da lente lê este campo */
+  /** a lente de cinema no ar; o passe da lente lê este campo. Nasce em
+   *  `nenhuma`, como o passe: quem a liga é o Director, que a cada quadro
+   *  entrega a efetiva (a escolhida, a do tier ou a do filme). */
   lente: ModoDaLente = 'nenhuma';
 
   definirLente(modo: ModoDaLente) {
@@ -1294,10 +1296,9 @@ export class Post {
     politica: PoliticaDeLuz,
     roteiro: number,
     visibilidade: number,
-    soltura: number,
     transmitancia: readonly [number, number, number]
   ) {
-    this.passeDaLente.atualizar(dUA, politica, roteiro, visibilidade, soltura, transmitancia);
+    this.passeDaLente.atualizar(dUA, politica, roteiro, visibilidade, transmitancia);
   }
 
   private galaxyMode = 0;

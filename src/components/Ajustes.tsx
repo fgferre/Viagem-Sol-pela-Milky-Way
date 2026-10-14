@@ -309,8 +309,9 @@ export function Ajustes({
   onPoeira: (variante: TipoDePoeira | null) => void;
   tom: ToneMapMode;
   onTom: (t: ToneMapMode) => void;
-  /** a lente de cinema (`?lente=`) — só muda os reflexos, nunca o céu */
-  lente: ModoDaLente;
+  /** a lente de cinema ESCOLHIDA (`?lente=`) — só muda os reflexos, nunca o
+   *  céu; `null` = a do tier vivo (`PRESETS[tier].lente`) */
+  lente: ModoDaLente | null;
   onLente: (m: ModoDaLente) => void;
   /** a força da lente (`?forcadalente=`), em % — 100 é a lente aprovada */
   forcaDaLente: number;
@@ -373,6 +374,11 @@ export function Ajustes({
   // só existe no seletor.
   const presetVivo = PRESETS[qualidade.tier];
   const amostrasEfetivas = AMOSTRAS_POR_TIER[qualidade.tier];
+  // A LENTE QUE A TELA TEM: a escolhida, senão a do tier vivo (em Auto ela
+  // acompanha a troca de tier). A fileira marca essa — não há "Preset"
+  // entre as quatro, e `.efetivo` sobre o segmento já selecionado só
+  // empilharia o pontilhado no filete.
+  const lenteAtual = lente ?? presetVivo.lente;
 
   // A CADA FALHA, o campo recebe foco com a URL selecionada — quem não
   // conseguiu copiar automaticamente já sai com o texto pronto para Ctrl+C
@@ -538,7 +544,7 @@ export function Ajustes({
       >
         <Segmentado
           aria={t('ajustes.lente')}
-          valor={lente}
+          valor={lenteAtual}
           opcoes={MODOS_DA_LENTE.map((modo) => ({ valor: modo, nome: t(`ajustes.lente.${modo}`) }))}
           onEscolher={onLente}
           // quatro lentes com nome comprido ("Anamórfica", "Hollywood") não cabem numa
@@ -549,7 +555,7 @@ export function Ajustes({
       {/* A FORÇA DA LENTE (o dono, 09/10: "os estilos mais uma barra de força"):
           com "Nenhuma" não há reflexo a fortalecer, e o painel não tem controle
           desabilitado em lugar nenhum — então a linha some, e o valor fica guardado */}
-      {lente !== 'nenhuma' && (
+      {lenteAtual !== 'nenhuma' && (
         <LinhaDeAjuste
           id="forcaDaLente"
           rotulo={t('ajustes.forcaDaLente')}

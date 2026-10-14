@@ -110,6 +110,11 @@
 // comprimida de cada corpo vão para `reguaDosMapas.relatorio.json`, ao lado da
 // tabela. A Terra fica fora desta etapa.
 //
+// A LATITUDE DAS FOTOS (14/10/2026, capturas/latitude/): a fonte que declara
+// `latitude` (os seis mosaicos de Schenk, `LATITUDE_DE_SCHENK`) é reamostrada
+// para a latitude planetocêntrica da casa (`paraLatitudePlanetocentrica`)
+// ANTES da régua; sem a declaração, os mesmos bytes de antes.
+//
 // AS FONTES QUE NÃO SE REFAZEM: o doador Saturn não está no disco, e
 // Ganimedes, Calisto e Titã não estão no doador atlas-orbital. O mapa dessas
 // nove entra pelo RETRATO do map.jpg de public/ de antes da régua
@@ -178,7 +183,7 @@ import { inventaCorDoCorpo } from './cor-inventada.mjs';
 import { PARAMETROS_DA_DETECCAO, detectaCrateras, luminanciaDoRgb } from './crateras-pela-foto.mjs';
 import { decideGravacao, lerCacheDeAlturas } from './gera-normal-de-dem.mjs';
 import {
-  CANAIS_DE_DADO, giraColunasDeImagem, hostPermitido, preencherVazioSemDado,
+  CANAIS_DE_DADO, giraColunasDeImagem, hostPermitido, paraLatitudePlanetocentrica, preencherVazioSemDado,
 } from './lib-texturas.mjs';
 import { nivelaMapa } from './regua-dos-mapas.mjs';
 import {
@@ -205,46 +210,70 @@ const WAYBACK = 'https://web.archive.org/web';
 // `gera-normal-de-dem.mjs` lê os DEMs.
 const USGS_BYTES = 'https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic';
 
+// A LATITUDE DOS MOSAICOS DE SCHENK (14/10/2026, capturas/latitude/): os seis
+// vêm em latitude PLANETOGRÁFICA, tan φg = k·tan φc, e a casa lê
+// planetocêntrica — a feição saía mais perto do polo, 4,9° a 45° em Mimas. As
+// páginas PIA não dizem o sistema; quem diz é a medida. k = (a/c)² dos eixos da
+// IAU (`BODY_AXES`), que o registro da foto contra o relevo medido confirma
+// (Mimas 1,1907, Encélado 1,0675 contra o DEM de Schenk & McKinnon 2024, Tétis
+// 1,0444) e que as crateras do Gazetteer não distinguem do medido em Dione
+// (1,021 ± 0,01) e Jápeto (1,04 a 1,14). Em Reia, o DTM de Weirich 2025
+// (planetocêntrico pelo rótulo PDS, 1254 janelas) mede 1,0102 contra 1,0068 da
+// IAU, uniforme em longitude — vale o medido.
+const LATITUDE_DE_SCHENK = {
+  mimas: { sistema: 'planetografica', k: 1.1886 },
+  enceladus: { sistema: 'planetografica', k: 1.0680 },
+  tethys: { sistema: 'planetografica', k: 1.0465 },
+  dione: { sistema: 'planetografica', k: 1.0136 },
+  rhea: { sistema: 'planetografica', k: 1.0102 },
+  iapetus: { sistema: 'planetografica', k: 1.0966 },
+};
+
 // O RELEVO APROVADO DE JÁPETO, que as duas entradas `iapetus/height` e
 // `iapetus/normal` dividem (um conjunto só: as duas gravam ou nenhuma).
 // `candidato` é a pasta da prévia que ele escolheu, com o `parametros.json`
 // que o portão confronta; `mapaDeCor` e `gazetteer` são as entradas do
 // gerador, pinadas por sha256 (outro mapa daria outra crista e outras
 // crateras) — o mapa é o retrato de ANTES da régua, os mesmos bytes do
-// map.jpg da prévia, para a régua nunca mudar o relevo; `sha256Aprovado`: os
-// pixels decodificados da altura (1 canal), o RGB da normal e o JSON canônico
-// dos números (`numerosDoRelevoDeJapeto`).
+// map.jpg da prévia, para a régua nunca mudar o relevo, lido na latitude da
+// casa com o MESMO k do mapa de cor (`latitude`; a crista e as crateras saíam
+// até 2,6° para o polo); `sha256Aprovado`: os pixels decodificados da altura
+// (1 canal), o RGB da normal e o JSON canônico dos números
+// (`numerosDoRelevoDeJapeto`).
 const RELEVO_DE_JAPETO = {
-  candidato: 'capturas/europa-japeto/j1c/b-20km',
+  candidato: 'capturas/latitude/relevos/japeto/b-20km',
   semente: 230,
   alturaMaximaKm: 20,
   mapaDeCor: {
     arquivo: 'scripts/data/atlas/fonte/iapetus-cor.jpg',
     sha256: '104a1d8780e0d8dad58c2d617ed554680774cefdb65cce8f2149d1c7886468fb',
+    latitude: LATITUDE_DE_SCHENK.iapetus,
   },
   gazetteer: {
     arquivo: '.cache/japeto/iapetus-gazetteer.json',
     sha256: '425c9fc6eb806e81a42b49c8b7abf1548b6356066606d56a400ee3fb8433af1f',
   },
   sha256Aprovado: {
-    height: 'f52c3753fbec8431fedd7c2b338c3c03d6b4ae0d6daf2bd962bb03c17d528b2f',
-    normal: '86ae58035a9594e87c18a00c156a7b7338133cd43fc538f954fa47dd222f72b0',
-    parametros: '4cf4ccf3375e677cef80a9a3fe003b3741710dd10fc6b872505e8857d75ddf11',
+    height: 'f35dc68ddcf1c858a432e24df093cfa0988d5f1beea9cc9c96855e516d86db9b',
+    normal: '960526418109ed49164fa78fc650d5c18d1a6c2f7c77cf7e29f591df3487dd3d',
+    parametros: '98b037585239ae747f10a559e4783fca66ee9409b5db0dc20067015439eb1842',
   },
 };
 
 // O RELEVO APROVADO DE REIA (PLAN-REIA.md, etapa F), que `rhea/height` e
 // `rhea/normal` dividem. `candidato`: a pasta da prévia (`previa-reia.mjs`,
-// passada R2b) com o `parametros.json` que o portão confronta — A, `…/a-1024`
+// passada R2b, refeita na latitude da casa em 14/10/2026) com o
+// `parametros.json` que o portão confronta — A, `…/a-1024`
 // (1024×512), ou B, `…/b-2048` (2048×1024); `largura`/`altura`: a grade dele (outra
 // grade, outros números: o portão recusa). `dtm`: o modelo de forma da
 // Cassini no cache (o sha256 de `.cache/reia/FONTES.json`); `mapaDeCor`: de
 // onde saem as crateras finas (outro mapa, outras crateras) — o retrato de
-// ANTES da régua, os mesmos bytes do map.jpg da prévia; os dois
-// pinados. `sha256Aprovado`: os pixels da altura (1 canal), o RGB da normal e
+// ANTES da régua, os mesmos bytes do map.jpg da prévia, lido na latitude da
+// casa com o MESMO k do mapa de cor (`latitude`); os dois pinados.
+// `sha256Aprovado`: os pixels da altura (1 canal), o RGB da normal e
 // o JSON canônico dos números (`numerosDoRelevoDeReia`).
 const RELEVO_DE_REIA = {
-  candidato: 'capturas/reia/r2b/a-1024',
+  candidato: 'capturas/latitude/relevos/reia/a-1024',
   largura: 1024,
   altura: 512,
   dtm: {
@@ -254,11 +283,12 @@ const RELEVO_DE_REIA = {
   mapaDeCor: {
     arquivo: 'scripts/data/atlas/fonte/rhea-cor.jpg',
     sha256: 'be6556d01ce5d02fca72895e72e45d591833b19345c9e96b554a52b82ebf0212',
+    latitude: LATITUDE_DE_SCHENK.rhea,
   },
   sha256Aprovado: {
-    height: 'e30720c34adc452428fcfeee19ec2cd345637f0ee64be5e4d50ce83bf4d097e1',
-    normal: '7cf17052d9b4aa32fe420679ab68601bdc87b2eb76bfc4f15d6c43f152205d4e',
-    parametros: '92db84afa13152a98e6476bb1042ba3ee77ab854b34b8fb800918f3b4c1078cb',
+    height: 'e200429468f6dca31e81f68c05c027b909044b57927ef465f5a78c45b01319ca',
+    normal: 'dc8f1e79d4591a706f581ef1eb4573b34f8b329a42aa10af6b060e53e4a35311',
+    parametros: 'c379b60470a56524896aeb358c080aec770b6cec978ddf8664f3918e9cb32f88',
   },
 };
 
@@ -486,6 +516,7 @@ export const FONTES = [
     canal: 'map',
     url: 'https://github.com/fgferre/Saturn',
     arquivoLocal: `fonte/${corpo}-cor.jpg`,
+    latitude: LATITUDE_DE_SCHENK[corpo],
   })),
   {
     corpo: 'titan',
@@ -499,6 +530,7 @@ export const FONTES = [
     canal: 'map',
     url: 'https://github.com/fgferre/Saturn',
     arquivoLocal: 'fonte/iapetus-cor.jpg',
+    latitude: LATITUDE_DE_SCHENK.iapetus,
   },
   // O RELEVO DAS SEIS (item 134/S2): `height` e `normal` de cada uma, em
   // 1024×512 — o mesmo `public/textures/relief/` do projeto Saturn, a
@@ -1045,14 +1077,16 @@ async function registraNoRelatorio(corpo, linha) {
  * O PASSO DA RÉGUA de uma entrada `naRegua`: os pixels de antes dela — o
  * mosaico de Ceres, ou os de `pixelsDoMapa` com as opções da entrada (o
  * giro, a largura, o tapa-buraco, a cor inventada e a de Europa, com os
- * portões delas) —, `nivelaMapa` com o alvo da tabela, o jpg e a linha do
- * corpo no relatório.
+ * portões delas) —, a latitude da casa (`paraLatitudePlanetocentrica`, só
+ * na fonte que declara `latitude`), `nivelaMapa` com o alvo da tabela, o jpg
+ * e a linha do corpo no relatório.
  */
 async function gravaMapaNaRegua(cru, destino, fonte) {
   const rotulo = `${fonte.corpo}/${fonte.canal}`;
-  const { pixels, info } = fonte.bake === 'mosaico-ceres'
+  const { pixels: daFonte, info } = fonte.bake === 'mosaico-ceres'
     ? await pixelsDoMosaicoDeCeres(cru)
     : await pixelsDoMapa(cru, opcoesDoMapa(fonte));
+  const pixels = paraLatitudePlanetocentrica(daFonte, info.width, info.height, info.channels, fonte.latitude);
   const alvo = alvoDoMapa(fonte.corpo);
   const r = nivelaMapa({ pixels, largura: info.width, altura: info.height, canais: info.channels, alvo, rotulo });
   const linha = linhaDoRelatorio(alvo, r);
@@ -1326,12 +1360,14 @@ export function opcoesDoMapa(fonte) {
  * mapa, as crateras com nome do Gazetteer, `geraRelevo` com a semente e a
  * altura aprovadas, a altura em 8 bits (`quantiza`) e a normal do MESMO
  * campo (`normalDoCampo`). `rgb`: o map.jpg decodificado (`{ data, info }`
- * do sharp); `gazetteer`: as feições do JSON do cache. Antes, confere que a
+ * do sharp), que a crista e o detector leem na latitude da casa
+ * (`paraLatitudePlanetocentrica` com `latitude`, a declaração do mapa de cor);
+ * `gazetteer`: as feições do JSON do cache. Antes, confere que a
  * crista e os montes do módulo são os do Gazetteer (outra tabela, outra
  * crista) e que o rareamento por latitude para onde o detector para.
  * Pura; `{ height, normal, numeros, relevo, deteccao }`.
  */
-export function relevoDeJapeto({ rgb, gazetteer, semente, alturaMaximaKm, largura = 1024, altura = 512 }) {
+export function relevoDeJapeto({ rgb, latitude, gazetteer, semente, alturaMaximaKm, largura = 1024, altura = 512 }) {
   if (PARAMETROS_DA_DETECCAO.latMaxGraus !== RAREAMENTO_POR_LATITUDE.latMaxDaDeteccaoGraus) {
     throw new Error('relevo de Jápeto: o detector para em outra latitude que o rareamento (latMaxGraus ≠ latMaxDaDeteccaoGraus).');
   }
@@ -1357,13 +1393,14 @@ export function relevoDeJapeto({ rgb, gazetteer, semente, alturaMaximaKm, largur
     .filter((f) => f.tipo === 'crater')
     .map((f) => ({ nome: f.nome, lat: f.lat, lonE: f.lonE, diametroKm: f.diametro_km }));
   const { width: W, height: H, channels } = rgb.info;
-  const caminho = caminhoDaCristaPeloMapa({ rgb: rgb.data, largura: W, altura: H, canais: channels, larguraDaGrade: largura });
-  const deteccao = detectaCrateras(luminanciaDoRgb(rgb.data, W, H, channels), { W, H, raioKm: RAIO_KM });
+  const foto = paraLatitudePlanetocentrica(rgb.data, W, H, channels, latitude);
+  const caminho = caminhoDaCristaPeloMapa({ rgb: foto, largura: W, altura: H, canais: channels, larguraDaGrade: largura });
+  const deteccao = detectaCrateras(luminanciaDoRgb(foto, W, H, channels), { W, H, raioKm: RAIO_KM });
   const relevo = geraRelevo({ largura, altura, semente, alturaMaximaKm, caminho: caminho.lat, nomeadas, detectadas: deteccao.crateras });
   return {
     height: quantiza(relevo.km),
     normal: normalDoCampo(relevo.km, largura, altura),
-    numeros: numerosDoRelevoDeJapeto({ semente, alturaMaximaKm, largura, altura, deteccao: deteccao.parametros }),
+    numeros: numerosDoRelevoDeJapeto({ semente, alturaMaximaKm, largura, altura, latitudeDaFoto: latitude, deteccao: deteccao.parametros }),
     relevo,
     deteccao,
   };
@@ -1374,10 +1411,10 @@ export function relevoDeJapeto({ rgb, gazetteer, semente, alturaMaximaKm, largur
  * carrega e mudam a silhueta (a escala e o viés do vértice, a faixa do byte,
  * o raio) e os que refazem o campo (semente, alvo, grade, as escolhas da
  * crista, as frequências dos perfis, a forma gasta das crateras com nome e
- * das detectadas, o rareamento por latitude e os parâmetros do detector).
- * O sha256 é o do `jsonCanonico` disto.
+ * das detectadas, o rareamento por latitude, os parâmetros do detector e a
+ * latitude em que a foto é lida). O sha256 é o do `jsonCanonico` disto.
  */
-export function numerosDoRelevoDeJapeto({ semente, alturaMaximaKm, largura, altura, deteccao }) {
+export function numerosDoRelevoDeJapeto({ semente, alturaMaximaKm, largura, altura, latitudeDaFoto, deteccao }) {
   const { escala, vies } = escalaEVies();
   return {
     escala,
@@ -1385,6 +1422,7 @@ export function numerosDoRelevoDeJapeto({ semente, alturaMaximaKm, largura, altu
     semente,
     alturaMaximaKm,
     grade: { largura, altura, raioKm: RAIO_KM },
+    latitudeDaFoto,
     faixaKm: { min: FAIXA_KM.min, max: FAIXA_KM.max },
     leis: {
       crista: ESCOLHAS_DA_CRISTA,
@@ -1410,6 +1448,7 @@ export function numerosDoCandidato(p) {
     semente: p.semente,
     alturaMaximaKm: p.alvo.alturaDaCristaKm,
     grade: { largura: p.grade.largura, altura: p.grade.altura, raioKm: p.grade.raioKm },
+    latitudeDaFoto: p.fontes.mapaDeCor.latitude,
     faixaKm: { min: p.quantizacao.hminKm, max: p.quantizacao.hmaxKm },
     leis: {
       crista: p.leis.crista.escolhas,
@@ -1525,7 +1564,13 @@ async function fazConjuntoDeJapeto(config, rotulo) {
       `V8 ${process.versions.v8}, sharp ${sharp.versions.sharp}, libvips ${sharp.versions.vips}`
   );
   const rgb = await sharp(bytesDoMapa).raw().toBuffer({ resolveWithObject: true });
-  const r = relevoDeJapeto({ rgb, gazetteer: JSON.parse(bytesDoGazetteer.toString('utf8')), semente: config.semente, alturaMaximaKm: config.alturaMaximaKm });
+  const r = relevoDeJapeto({
+    rgb,
+    latitude: config.mapaDeCor.latitude,
+    gazetteer: JSON.parse(bytesDoGazetteer.toString('utf8')),
+    semente: config.semente,
+    alturaMaximaKm: config.alturaMaximaKm,
+  });
   const { largura: W, altura: H } = r.numeros.grade;
   const ultima = r.relevo.passadas[r.relevo.passadas.length - 1];
   console.log(
@@ -1628,13 +1673,16 @@ const GRADES_DA_FAIXA_DE_REIA = [[2048, 1024], [1024, 512]];
  * completadas (`geraRelevo`) e a faixa dele (`faixaDoCampo`); a faixa do
  * byte é a união; na grade pedida, a altura em 8 bits (`quantiza`) e a
  * normal do MESMO campo (`normalDoCampo`). `tif`: os bytes do TIFF do DTM;
- * `rgb`: o map.jpg decodificado (`{ data, info }` do sharp); `dtmSha256`: o
- * sha256 conferido do TIFF, que vai aos números. Pura; `{ height, normal,
- * numeros, relevo, faixa, saturados, deteccao }`.
+ * `rgb`: o map.jpg decodificado (`{ data, info }` do sharp), que o detector
+ * lê na latitude da casa (`paraLatitudePlanetocentrica` com `latitude`, a
+ * declaração do mapa de cor); `dtmSha256`: o sha256 conferido do TIFF, que
+ * vai aos números. Pura; `{ height, normal, numeros, relevo, faixa,
+ * saturados, deteccao }`.
  */
-export function relevoDeReia({ tif, rgb, dtmSha256, largura, altura }) {
+export function relevoDeReia({ tif, rgb, latitude, dtmSha256, largura, altura }) {
   const { width: W, height: H, channels } = rgb.info;
-  const deteccao = detectaCrateras(luminanciaDoRgb(rgb.data, W, H, channels), { W, H, raioKm: Reia.RAIO_KM });
+  const foto = paraLatitudePlanetocentrica(rgb.data, W, H, channels, latitude);
+  const deteccao = detectaCrateras(luminanciaDoRgb(foto, W, H, channels), { W, H, raioKm: Reia.RAIO_KM });
   const campos = GRADES_DA_FAIXA_DE_REIA.map(([w, h]) => {
     const relevo = Reia.geraRelevo({ largura: w, altura: h, dtmKm: Reia.relevoDoDtm(tif, w, h), detectadas: deteccao.crateras });
     return { relevo, faixa: Reia.faixaDoCampo(relevo.km, w, h) };
@@ -1648,7 +1696,9 @@ export function relevoDeReia({ tif, rgb, dtmSha256, largura, altura }) {
   return {
     height: Reia.quantiza(km, faixa),
     normal: Reia.normalDoCampo(km, largura, altura, faixa),
-    numeros: numerosDoRelevoDeReia({ largura, altura, faixa, regraDaFaixa: escolhido.faixa.medida, dtmSha256, deteccao: deteccao.parametros }),
+    numeros: numerosDoRelevoDeReia({
+      largura, altura, faixa, regraDaFaixa: escolhido.faixa.medida, dtmSha256, latitudeDaFoto: latitude, deteccao: deteccao.parametros,
+    }),
     relevo: escolhido.relevo,
     faixa,
     saturados: Reia.saturacoes(km, largura, altura, faixa),
@@ -1662,11 +1712,11 @@ export function relevoDeReia({ tif, rgb, dtmSha256, largura, altura }) {
  * byte e a regra que a derivou, o raio e os eixos — o relevo em km ÷ a, a
  * exceção ASSUMIDA) e os que refazem o campo: o DTM (sha256, grade, borda
  * esquerda, os 360/2222 °/px que contrariam o rótulo, a latitude
- * planetocêntrica — as exceções cartográficas), o X, a lei de forma, o
- * desgaste, o completar, a duplicata, o rareamento e o detector. O sha256 é
- * o do `jsonCanonico` disto.
+ * planetocêntrica — as exceções cartográficas), a latitude em que a foto é
+ * lida, o X, a lei de forma, o desgaste, o completar, a duplicata, o
+ * rareamento e o detector. O sha256 é o do `jsonCanonico` disto.
  */
-export function numerosDoRelevoDeReia({ largura, altura, faixa, regraDaFaixa, dtmSha256, deteccao }) {
+export function numerosDoRelevoDeReia({ largura, altura, faixa, regraDaFaixa, dtmSha256, latitudeDaFoto, deteccao }) {
   const { escala, vies } = Reia.escalaEVies(faixa);
   const { margemKm, passoKm, poloGraus } = regraDaFaixa;
   const { bordaEsquerdaLonE, grausPorPixel, latitude } = Reia.DTM;
@@ -1675,6 +1725,7 @@ export function numerosDoRelevoDeReia({ largura, altura, faixa, regraDaFaixa, dt
     vies,
     grade: { largura, altura, raioKm: Reia.RAIO_KM, eixosKm: Reia.EIXOS_KM },
     dtm: { sha256: dtmSha256, largura: Reia.DTM.largura, altura: Reia.DTM.altura, bordaEsquerdaLonE, grausPorPixel, latitude },
+    latitudeDaFoto,
     faixaKm: { min: faixa.min, max: faixa.max, margemKm, passoKm, poloGraus },
     xKm: Reia.X_KM,
     leis: {
@@ -1697,6 +1748,7 @@ export function numerosDoCandidatoDeReia(p) {
     vies: p.quantizacao.rochosoTs.vies,
     grade: { largura: p.grade.largura, altura: p.grade.altura, raioKm: p.grade.raioKm, eixosKm: p.grade.eixosKm },
     dtm: { sha256: sha256Conferido, largura, altura, bordaEsquerdaLonE, grausPorPixel, latitude },
+    latitudeDaFoto: p.crateras.detector.mapaDeCor.latitude,
     faixaKm: { min: p.quantizacao.hminKm, max: p.quantizacao.hmaxKm, margemKm, passoKm, poloGraus },
     xKm: p.crateras.X_km,
     leis: {
@@ -1734,7 +1786,9 @@ async function fazConjuntoDeReia(fonte) {
       `versões: node ${process.version}, V8 ${process.versions.v8}, sharp ${sharp.versions.sharp}, libvips ${sharp.versions.vips}`
   );
   const rgb = await sharp(bytesDoMapa).raw().toBuffer({ resolveWithObject: true });
-  const r = relevoDeReia({ tif, rgb, dtmSha256: config.dtm.sha256, largura: config.largura, altura: config.altura });
+  const r = relevoDeReia({
+    tif, rgb, latitude: config.mapaDeCor.latitude, dtmSha256: config.dtm.sha256, largura: config.largura, altura: config.altura,
+  });
   console.log(
     `  ${r.deteccao.crateras.length} crateras detectadas, ${r.relevo.completadas.length} completadas sobre o DTM; faixa ${r.faixa.min}..${r.faixa.max} km; ` +
       `${r.saturados.abaixo + r.saturados.acima} texels saturados (${r.saturados.foraDoPolo} fora do polo)`
