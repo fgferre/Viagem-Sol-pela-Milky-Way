@@ -106,12 +106,13 @@ export function lerPortaTom(bruto: string | null | undefined): ToneMapMode | nul
 }
 
 /**
- * A porta `?lente=`: só 'redonda', 'anamorfica' e 'hollywood' passam; ausente ou
- * qualquer outra coisa é 'nenhuma' (a imagem de sempre), então o painel
- * e o Director nunca recebem um modo que a lente não conhece.
+ * A porta `?lente=`, no mesmo contrato de `lerPortaGas`: os quatro modos
+ * passam (`nenhuma` desliga a lente); ausente ou qualquer outra coisa é
+ * `null` — e aí quem manda é a lente do tier (`PRESETS[tier].lente`). O
+ * painel e o Director nunca recebem um modo que a lente não conhece.
  */
-export function lerPortaLente(bruto: string | null | undefined): ModoDaLente {
-  return MODOS_DA_LENTE.find((m) => m === bruto) ?? 'nenhuma';
+export function lerPortaLente(bruto: string | null | undefined): ModoDaLente | null {
+  return MODOS_DA_LENTE.find((m) => m === bruto) ?? null;
 }
 
 /**
@@ -133,7 +134,7 @@ export function lerPortaForcaDaLente(bruto: string | null | undefined): number {
   return Math.min(maxima, Math.max(minima, Math.round(v / passo) * passo));
 }
 
-/** O espelho de `?forcadalente=`: escrito só fora de 100, como `?lente=` só fora de `nenhuma`. */
+/** O espelho de `?forcadalente=`: escrito só fora de 100, como `?lente=` só enquanto a lente é forçada. */
 export function escreverPortaForcaDaLente(forca: number): string | null {
   return forca === FORCA_DA_LENTE.padrao ? null : String(forca);
 }
@@ -357,6 +358,10 @@ export interface QualityPreset {
   /** a variante da Terra de perto (rodada das nuvens, 07/10) — mesma
    *  regra do gás: todo preset aponta uma, `null` é só da porta. */
   terra: VarianteDaTerra;
+  /** a lente de cinema do visitante neste tier (Atlas e voo livre; no filme
+   *  manda a da cena) — mesma regra do gás: todo preset aponta uma, `null`
+   *  é só da porta `?lente=` e da fileira de Ajustes. */
+  lente: ModoDaLente;
 }
 
 // grain agora é DISPLAY-space (film pass pós-tonemap): 0.055 era
@@ -379,6 +384,9 @@ export interface QualityPreset {
 // TERRA (rodada das nuvens, 07/10): cinema e alta apontam `profundidade`,
 // performance fica na `classica` — distribuição PROVISÓRIA, até a
 // medição de quadro e o olho do dono decidirem.
+// LENTE (lente padrão por tier, 13/10): cinema e alta abrem na `hollywood`;
+// performance abre sem lente (`nenhuma`), a imagem de sempre. `?lente=` e
+// a fileira de Ajustes sempre vencem.
 // EXPORTADO (redesenho do painel de Ajustes): o painel precisa mostrar
 // qual valor da gaveta o preset RESOLVE, para marcar o segmento efetivo
 // quando o controle está em "do preset" — sem isso ele lê `null` e não
@@ -392,6 +400,7 @@ export const PRESETS: Record<QualityLevel, QualityPreset> = {
     particulas: 'todas',
     poeira: 'hoje',
     terra: 'profundidade',
+    lente: 'hollywood',
   },
   alta: {
     pixelRatio: 1.5,
@@ -401,6 +410,7 @@ export const PRESETS: Record<QualityLevel, QualityPreset> = {
     particulas: 'metade',
     poeira: 'hoje',
     terra: 'profundidade',
+    lente: 'hollywood',
   },
   performance: {
     pixelRatio: 1.0,
@@ -410,6 +420,7 @@ export const PRESETS: Record<QualityLevel, QualityPreset> = {
     particulas: 'todas',
     poeira: 'hoje',
     terra: 'classica',
+    lente: 'nenhuma',
   },
 };
 

@@ -2,7 +2,14 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
 import { irradianciaRelativa } from '../../lib/atlas/luz';
-import { G_DA_LENTE, PasseDaLente, amplitudeDaLente, multiplicadorDaForca } from './passeDaLente';
+import {
+  DISCO_ASSUNTO,
+  G_DA_LENTE,
+  PasseDaLente,
+  amplitudeDaLente,
+  lenteComOSolDeRaio,
+  multiplicadorDaForca,
+} from './passeDaLente';
 
 describe('o passe da lente', () => {
   it('a amplitude: assistida constante até 50 UA e (50/d)² além; real = E(d); visibilidade zero apaga', () => {
@@ -24,13 +31,28 @@ describe('o passe da lente', () => {
     for (const ruim of [NaN, Infinity, -Infinity]) expect(multiplicadorDaForca(ruim)).toBe(1);
   });
 
+  it('o Sol assunto do quadro: lente inteira com o disco pequeno, nenhuma com ele grande, sem degrau no meio', () => {
+    const [a, b] = DISCO_ASSUNTO;
+    expect(lenteComOSolDeRaio(0.005)).toBe(1); // ~1 UA a 50°: disco de 1 % da altura
+    expect(lenteComOSolDeRaio(a / 2)).toBe(1);
+    expect(lenteComOSolDeRaio(b / 2)).toBe(0);
+    expect(lenteComOSolDeRaio(0.5)).toBe(0);
+    let antes = 1;
+    for (let k = 0; k <= 40; k++) {
+      const v = lenteComOSolDeRaio((a / 2) * (b / a) ** (k / 40));
+      expect(v).toBeLessThanOrEqual(antes);
+      expect(antes - v).toBeLessThan(0.1);
+      antes = v;
+    }
+  });
+
   it('com "nenhuma" o passe fica desligado, com a luz cheia', () => {
     const passe = new PasseDaLente(new THREE.PerspectiveCamera(50, 16 / 9));
     passe.definirLente('redonda');
-    passe.atualizar(1, 'assistida', 0, 1, 1, [1, 1, 1]);
+    passe.atualizar(1, 'assistida', 0, 1, [1, 1, 1]);
     expect(passe.enabled).toBe(true);
     passe.definirLente('nenhuma');
-    passe.atualizar(1, 'assistida', 0, 1, 1, [1, 1, 1]);
+    passe.atualizar(1, 'assistida', 0, 1, [1, 1, 1]);
     expect(passe.enabled).toBe(false);
     passe.dispose();
   });
