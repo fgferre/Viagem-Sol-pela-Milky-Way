@@ -23,13 +23,21 @@ resolução, data) e, para forma, relevo e cor, onde cada pixel cai: medido nít
 visto. Comparar sempre com o que a tela pede (o degrau 4096 px). Medir, não supor:
 - relevo × foto por janela (ρ = energia fina do DEM ÷ energia de borda da foto, janelas azimutais): o modelo é
   `capturas/r4-encelado/mede-dem.mjs` — promover para `scripts/data/atlas/` no primeiro reuso;
-- máscaras prontas: `mascarasDoDado` (`relevo-inventado.mjs`), `mascarasDaCor` e `vazioDoMosaico` (`cor-inventada.mjs`).
+- máscaras prontas: `mascarasDoDado` (`relevo-inventado.mjs`), `mascarasDaCor` e `vazioDoMosaico` (`cor-inventada.mjs`);
+- a LATITUDE de cada foto (planetográfica × planetocêntrica) medida contra o relevo ou as crateras do Gazetteer antes de
+  usar a foto para qualquer coisa — os mosaicos de Schenk são planetográficos (`LATITUDE_DE_SCHENK`, `lib-texturas.mjs`);
+  sem isso a foto e o relevo "não conversam" e todo passo pela foto falha;
+- ruído de estéreo no DEM: o ρ sozinho não acha; a ORIENTAÇÃO acha (relevo forte sem direção onde a foto tem direção,
+  ladrilhos de borda reta) — `conserto-do-dem.mjs`;
+- procurar dado REGIONAL melhor antes de inventar (ex.: o modelo SPC do JPL para o polo sul de Encélado, `relevo-spc.mjs`,
+  leitor DAS/DSK da NAIF).
 
 **2. Medido primeiro, na melhor resolução que o dado sustenta.** DEM → `gera-normal-de-dem.mjs` (tabela `CORPOS`);
 modelo de placas → `relevo-medido.mjs`; Terra → `relevo-terra.mjs`. Guardas obrigatórias: georreferência conferida,
 sha256 da fonte pinado, alinhamento contra a foto (`conferirAlinhamento`: meia volta e espelho — o layout Schenk põe o
-sub-planeta na emenda). Polos calculados num quadro polar, nunca derivada leste-oeste em linha equiretangular perto do
-polo; nenhuma trava que jogue dado fora.
+sub-planeta na emenda). Polos calculados num quadro polar (`calotaPolar`), nunca derivada leste-oeste em linha
+equiretangular perto do polo; nenhuma trava que jogue dado fora; linha ou coluna vazia na borda do GeoTIFF é margem,
+não altura zero. Olhar o resultado numa vista POLAR e numa equatorial antes de seguir.
 
 **3. Relevo que falta (vazio, liso ou ruído), por ordem de honestidade:**
 - a foto vê → derivar da foto: crateras por `crateras-pela-foto.mjs` (posição e tamanho) + `relevo-por-foto.mjs`
@@ -39,7 +47,10 @@ polo; nenhuma trava que jogue dado fora.
   `inclinacaoRms`, `leiDeCrateras`, a lei profundidade/diâmetro ajustada no DEM dele) por `condicionaOitava`/`colcha`
   (`relevo-inventado.mjs`) — selo **inventado** (na tela, "artístico");
 - ruído do DEM (ρ ≫ 1 sem feição na foto) → suavizar até a escala que a foto confirma e completar como acima;
-- costura sem emenda: `membranaHarmonica`/`costura` (`relevo-inventado.mjs`).
+- costura sem emenda: `membranaHarmonica`/`costura` (`relevo-inventado.mjs`);
+- bater a estatística (RMS, espectro) NÃO basta: em Encélado o ruído Gabor saiu "penteado" e os retalhos por exemplo
+  saíram "colcha agitada"; o juiz é o olho contra a foto. Relevo pela foto só entra depois de VALIDADO em ladrilhos bons
+  (esconder o fino medido, reconstruir pela foto, comparar banda a banda) — sem passar, fica liso e confessado.
 
 **4. Imagem que falta.**
 - foto em cinza ou realçada → a cor vem da régua (tinta medida) ou de `cor-inventada.mjs` (transferência guiada pelo
