@@ -1002,8 +1002,8 @@ tocar num `.mjs`.
 | titan/map | medido | 720×360, só a névoa laranja: o mosaico Cassini de mais resolução mostra emendas de longitude na esfera e não entrou |
 | europa/map | derivado | mosaico real da Voyager e da Galileo, em cinza: não existe mapa global em cor de Europa, e a cor é INFERIDA do brilho pelo app, com os tons medidos numa foto em cor da Galileo de um só hemisfério; a calota sul sem imagem leva o tom da faixa vizinha |
 | venus/map | medido | é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor |
-| enceladus/height | medido | relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 15 % alisado onde o DEM tinha ruído; 0,5 % derivado da foto |
-| enceladus/normal | medido | relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 15 % alisado onde o DEM tinha ruído; 0,5 % derivado da foto |
+| enceladus/height | medido | relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos |
+| enceladus/normal | medido | relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos |
 | mimas/height | medido | modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, como a bacia de Herschel, não o detalhe menor que um texel |
 | tethys/height | medido | modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel |
 | dione/height | medido | DTM SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel |

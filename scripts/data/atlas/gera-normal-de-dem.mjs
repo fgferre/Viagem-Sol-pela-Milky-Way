@@ -215,7 +215,10 @@
 // das listras de tigre, ele SUBSTITUI o DEM antes da altura, da normal e das
 // calotas: lido do DSK pinado, levado à casa pelo giro medido, registrado no
 // largo do DEM nos ladrilhos bons e fundido por rampa + membrana. O conserto
-// dos ladrilhos ruins segue valendo fora do núcleo do SPC.
+// dos ladrilhos ruins segue valendo fora do núcleo do SPC; no terreno das
+// listras (SPT, até 55°S) o que o SPC não cobre e o DEM tem como ruído ou liso
+// ganha o fino do próprio SPC por exemplo, e as listras fora dele as fatias
+// medidas nas do SPC (`preencheSpt`).
 // ============================================================
 
 import { createHash } from 'node:crypto';
@@ -225,7 +228,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { BOM, CONSERTO_DE_ENCELADO, LISO, RUIDO, consertaDem } from './conserto-do-dem.mjs';
+import { BOM, CONSERTO_DE_ENCELADO, LISO, RUIDO, consertaDem, tracaListras } from './conserto-do-dem.mjs';
 import { luminanciaDoRgb } from './crateras-pela-foto.mjs';
 import { pesosDaCaixa } from './gera-horizonte.mjs';
 import { LATITUDE_DE_SCHENK, giraColunasDeImagem, paraLatitudePlanetocentrica } from './lib-texturas.mjs';
@@ -240,6 +243,7 @@ import {
   leDsk,
   mascarasDoSpc,
   partilhaDaArea,
+  preencheSpt,
   rasterizaNoPolo,
   registraNoDem,
   spcNaCasa,
@@ -1717,10 +1721,11 @@ async function lerSpcDoPolo(corpo) {
 /**
  * O CONSERTO E O SPC NA CASA (puro; `casa` o DEM fino em m, `luminancia` a
  * foto na grade de trabalho, `grade` a do SPC ou null): o conserto dos
- * ladrilhos ruins com o núcleo do SPC protegido e as listras da foto fora do
- * SPC (em rampa até a borda dele); o registro (a guarda do giro e o plano nos ladrilhos bons) e a
- * fusão. Devolve `{ metros, conserto, spc, partilha }` — a partilha da área
- * da esfera em SPC, Schenk medido, alisado e derivado da foto.
+ * ladrilhos ruins com o núcleo do SPC protegido; o registro (a guarda do giro
+ * e o plano nos ladrilhos bons), a fusão e o SPT por exemplo do SPC, com as
+ * listras pelo traço da foto (`preencheSpt`). Devolve `{ metros, conserto,
+ * spc, spt, partilha }` — a partilha da área da esfera em SPC, Schenk medido,
+ * alisado, derivado da foto e inventado por exemplo do SPC.
  */
 export function consertaComSpc({ casa, largura, altura, luminancia, corpo, grade = null }) {
   const p = SPC_DE_ENCELADO;
@@ -1737,7 +1742,6 @@ export function consertaComSpc({ casa, largura, altura, luminancia, corpo, grade
     raioM,
     fino: corpo.consertoDoDem.fino,
     protegido: mascaras?.nucleo,
-    pesoDasListras: mascaras?.listras,
   });
   if (!grade) return { metros: conserto.metros, conserto, spc: null, partilha: partilhaDaArea(conserto.cobertura, null, W, Ht) };
   const texel = (lat, lonE) => {
@@ -1757,22 +1761,29 @@ export function consertaComSpc({ casa, largura, altura, luminancia, corpo, grade
         `${semGiro.toFixed(3)}, espelhado em ${espelho.toFixed(3)} — o registro não confere. Não asso.`
     );
   }
-  const f = fundeNoDem({
-    metros: conserto.metros,
-    spcFino: spcNaCasa(aplicaPlano(grade, registro.plano), largura, altura, p.giroGraus),
+  const spcFino = spcNaCasa(aplicaPlano(grade, registro.plano), largura, altura, p.giroGraus);
+  const f = fundeNoDem({ metros: conserto.metros, spcFino, Wf: largura, Hf: altura, mascaras, W, H: Ht, raioM, p });
+  const traco = tracaListras({ fotoLog: Float32Array.from(luminancia, (l) => Math.log(l + 0.003)), W, H: Ht, raioM });
+  const spt = preencheSpt({
+    metros: f.metros,
+    spcFino,
     Wf: largura,
     Hf: altura,
     mascaras,
+    qualidade: conserto.qualidade,
+    cobertura: conserto.cobertura,
+    luminancia,
+    linhas: traco.linhas,
     W,
     H: Ht,
     raioM,
-    p,
   });
   return {
-    metros: f.metros,
+    metros: spt.metros,
     conserto,
     spc: { registro, mascaras, correcao: f.correcao },
-    partilha: partilhaDaArea(conserto.cobertura, mascaras.peso, W, Ht),
+    spt: spt.relatorio,
+    partilha: partilhaDaArea(spt.cobertura, spt.pesoDoSpc, W, Ht),
   };
 }
 
@@ -1797,11 +1808,10 @@ async function consertarODem(corpo, fina) {
   const grade = corpo.spcDoPolo ? await lerSpcDoPolo(corpo) : null;
   const r = consertaComSpc({ casa, largura, altura, luminancia, corpo, grade });
   const pct = (x) => `${(100 * x).toFixed(1)} %`;
-  const { classes, lei, crateras, listras } = r.conserto.relatorio;
+  const { classes, lei, crateras } = r.conserto.relatorio;
   console.log(
     `conserto (fino ${fino}): ruído ${pct(classes[RUIDO])}, liso ${pct(classes[LISO])} da área fora do núcleo do SPC; ` +
-      `crateras: d/D ${lei.dD.toFixed(3)} (${lei.n} nos ladrilhos bons), ${crateras.noRuim} completadas no ruim; ` +
-      `listras da foto: ${listras.linhas.length} traços, ${pct(listras.fracaoNoRuim)} do corredor fora do SPC entra.`
+      `crateras: d/D ${lei.dD.toFixed(3)} (${lei.n} nos ladrilhos bons), ${crateras.noRuim} completadas no ruim.`
   );
   if (r.spc) {
     const { registro } = r.spc;
@@ -1814,10 +1824,19 @@ async function consertarODem(corpo, fina) {
         `${registro.rmsAntesM.toFixed(0)} → ${registro.rmsDepoisM.toFixed(0)} m.`
     );
   }
+  if (r.spt) {
+    const { alvoKm2, retalhos, origens, desvioDoRumoGraus, concordanciaDoRumo, asperezaPelaFoto, listras: l } = r.spt;
+    console.log(
+      `SPT por exemplo do SPC: ${Math.round(alvoKm2)} km² de alvo, ${retalhos} retalhos de ${origens} origens; rumo da ` +
+        `foto − relevo ${desvioDoRumoGraus}° (concordância ${concordanciaDoRumo}); aspereza pela foto r ${asperezaPelaFoto.r}; ` +
+        `listras: ${l.fatias} fatias medidas, sulco ${l.sulcoM} m na média (${l.sulcoDaFatiaM} m fatia a fatia), ` +
+        `crista ${l.cristaM} m, ${l.cristaACristaKm} km de crista a crista.`
+    );
+  }
   const a = r.partilha;
   console.log(
     `área da esfera: medido ${pct(a.schenk)} (Schenk & McKinnon 2024) + ${pct(a.spc)} (SPC, Park et al. 2024), ` +
-      `derivado da foto ${pct(a.derivado)}, alisado ${pct(a.alisado)}.`
+      `inventado por exemplo do SPC ${pct(a.exemplo)}, derivado da foto ${pct(a.derivado)}, alisado ${pct(a.alisado)}.`
   );
   return { ...fina, metros: giraColunasDeImagem(r.metros, largura, altura, 1, -giro) };
 }

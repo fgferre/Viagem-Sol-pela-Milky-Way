@@ -56,18 +56,17 @@
 //  3. DERIVADO: crateras que a foto vê (`detectaCrateras`, rareadas pela regra
 //     de Reia na mesma grade) entram por `completaCratera` — só a profundidade
 //     que falta —, com o d/D medido nas crateras dos ladrilhos bons
-//     (recentradas no DEM); as listras de tigre saem do traço na foto
-//     (`tracaListras`) com o perfil medido (sulco 373 m, cristas 157 m).
+//     (recentradas no DEM). As listras de tigre: o traço na foto
+//     (`tracaListras`); quem as cava, no SPT, é `preencheSpt` (relevo-spc.mjs),
+//     com as fatias medidas das listras do SPC.
 //  4. COSTURA: a diferença entre o medido e o consertado nos texels bons vira
 //     a borda de uma membrana harmônica (`membranaHarmonica`, e Gauss–Seidel
 //     na faixa de 6 km) que a leva para dentro do remendo: nenhum degrau na
 //     emenda, nem o desnível de ladrilho.
 // A cobertura (medido / inventado / derivado) sai junto, com as frações.
 // ONDE OUTRO DADO MEDIDO ENTRA (o SPC do polo sul, `relevo-spc.mjs`): os texels
-// `protegido` contam como BONS (nada se conserta ali; quem os troca é a fusão)
-// e as listras do traço da foto entram multiplicadas por `pesoDasListras`: 0
-// onde o SPC cobre (ele mede as listras de verdade), subindo em rampa fora
-// dele (a ponta da listra não vira parede). A máscara original sai em `qualidade`.
+// `protegido` contam como BONS (nada se conserta ali; quem os troca é a fusão).
+// A máscara original sai em `qualidade`.
 // ============================================================
 
 import {
@@ -193,11 +192,6 @@ export const CONSERTO_DE_ENCELADO = Object.freeze({
     fimRelativo: 0.25,
     maxAoLongoKm: 95,
     suavizaPontos: 4,
-    sulcoM: 373,
-    cristaM: 157,
-    larguraKm: 2,
-    cristaAKm: 2.2,
-    pontaKm: 6,
   }),
 });
 
@@ -905,8 +899,7 @@ export function solDaJanela(y, gx, gy, w, extra = null) {
  *     `regularizacao`·|c|²·|k|²) — integra ao longo do sol e amortece o rumo
  *     que a luz não vê (perpendicular a ele) —; o largo (acima de σ
  *     `corteKm`) é o medido.
- * O albedo que não é relevo: as listras de tigre saem no conserto (no
- * corredor do traço o perfil medido substitui o fino da foto); com `cor` (log
+ * O albedo que não é relevo: com `cor` (log
  * B/R), a parte do brilho que acompanha a cor, medida na banda larga junto
  * com o sol, sai do fino antes da inversão. Devolve `{ fina, confianca,
  * janelas }` — `confianca` a fração do peso que veio de janelas confiáveis.
@@ -1396,118 +1389,6 @@ export function tracaListras({
   return { linhas, rumoGraus: rumo / RADIANOS };
 }
 
-/**
- * Os pesos do perfil da listra: o sulco gaussiano de largura total a meia
- * altura `larguraKm` e as duas cristas iguais a ±`cristaAKm`, com as
- * amplitudes que dão a crista `cristaM` acima do entorno e `sulcoM` da crista
- * ao fundo. Devolve d (km) → metros.
- */
-export function perfilDaListra(L) {
-  const s = L.larguraKm / 2.3548;
-  const g = (d) => Math.exp(-0.5 * (d / s) ** 2);
-  const e = g(L.cristaAKm);
-  const e2 = g(2 * L.cristaAKm);
-  // crista: Ac·(1 + e2) − As·e = cristaM; fundo: 2·Ac·e − As; crista − fundo = sulcoM
-  const [a11, a12, a21, a22] = [1 + e2, -e, 1 + e2 - 2 * e, 1 - e];
-  const det = a11 * a22 - a12 * a21;
-  const Ac = (L.cristaM * a22 - a12 * L.sulcoM) / det;
-  const As = (a11 * L.sulcoM - a21 * L.cristaM) / det;
-  return (d) => Ac * (g(d - L.cristaAKm) + g(d + L.cristaAKm)) - As * g(d);
-}
-
-/**
- * O RELEVO DAS LISTRAS na grade da casa (m): o perfil pela distância ao traço
- * mais próximo (no plano polar), afinado nas pontas em `pontaKm`, e o
- * `corredor` (1 onde o perfil passa de 1 m).
- */
-export function relevoDasListras(
-  linhas,
-  W,
-  H,
-  raioM,
-  p = CONSERTO_DE_ENCELADO,
-) {
-  const L = p.listras;
-  const R = raioM / 1000;
-  const perfil = perfilDaListra(L);
-  const alcance = L.cristaAKm + 3 * (L.larguraKm / 2.3548);
-  const segmentos = [];
-  for (const linha of linhas) {
-    let s0 = 0;
-    const total = linha
-      .slice(1)
-      .reduce(
-        (t, q, k) => t + Math.hypot(q.x - linha[k].x, q.y - linha[k].y),
-        0,
-      );
-    for (let k = 0; k + 1 < linha.length; k += 1) {
-      const [a, b] = [linha[k], linha[k + 1]];
-      const len = Math.hypot(b.x - a.x, b.y - a.y);
-      segmentos.push({ a, b, len, s0, total });
-      s0 += len;
-    }
-  }
-  const campo = new Float32Array(W * H);
-  const corredor = new Uint8Array(W * H);
-  for (
-    let j = Math.max(
-      0,
-      Math.floor(H * (1 - L.raioDoPlanoKm / (Math.PI * R))) - 1,
-    );
-    j < H;
-    j += 1
-  ) {
-    const lat = 90 - ((j + 0.5) / H) * 180;
-    const rho = (90 + lat) * RADIANOS * R;
-    if (rho > L.raioDoPlanoKm) continue;
-    for (let i = 0; i < W; i += 1) {
-      const lon = longitudeDaColuna(i, W) * RADIANOS;
-      const x = rho * Math.sin(lon);
-      const y = rho * Math.cos(lon);
-      let melhor = Infinity;
-      let ponta = 0;
-      for (const sg of segmentos) {
-        const { a, b, len } = sg;
-        if (
-          x < Math.min(a.x, b.x) - alcance ||
-          x > Math.max(a.x, b.x) + alcance
-        )
-          continue;
-        if (
-          y < Math.min(a.y, b.y) - alcance ||
-          y > Math.max(a.y, b.y) + alcance
-        )
-          continue;
-        const t =
-          len > 0
-            ? Math.min(
-                1,
-                Math.max(
-                  0,
-                  ((x - a.x) * (b.x - a.x) + (y - a.y) * (b.y - a.y)) /
-                    (len * len),
-                ),
-              )
-            : 0;
-        const d = Math.hypot(
-          x - a.x - t * (b.x - a.x),
-          y - a.y - t * (b.y - a.y),
-        );
-        if (d < melhor) {
-          melhor = d;
-          const s = sg.s0 + t * len;
-          ponta = suave(0, L.pontaKm, Math.min(s, sg.total - s));
-        }
-      }
-      if (melhor > alcance) continue;
-      const v = ponta * perfil(melhor);
-      campo[j * W + i] = v;
-      if (Math.abs(v) > 1) corredor[j * W + i] = 1;
-    }
-  }
-  return { campo, corredor };
-}
-
 // ------------------------------------------------------------
 // O conserto inteiro
 // ------------------------------------------------------------
@@ -1528,10 +1409,8 @@ export function consertaNaGrade({
   raioM,
   vazio = null,
   p = CONSERTO_DE_ENCELADO,
-  listras = true,
   fino = "liso",
   protegido = null,
-  pesoDasListras = null,
 }) {
   const n = W * H;
   const raioKm = raioM / 1000;
@@ -1673,25 +1552,6 @@ export function consertaNaGrade({
       }
     }
   }
-  // 3b. as listras de tigre pelo traço da foto, só onde o DEM é ruim
-  let traco = null;
-  let listrasNoRuim = 0;
-  if (listras) {
-    traco = tracaListras({ fotoLog, W, H, raioM, p });
-    const { campo, corredor } = relevoDasListras(traco.linhas, W, H, raioM, p);
-    let noCorredor = 0;
-    for (let k = 0; k < n; k += 1) {
-      const peso = pesoDasListras ? pesoDasListras[k] : 1;
-      if (!corredor[k] || !(peso > 0)) continue;
-      noCorredor += 1;
-      if (!ruim[k]) continue;
-      listrasNoRuim += 1;
-      // o perfil medido da listra substitui o fino da foto (o escuro da listra é albedo, não relevo)
-      R[k] += peso * (campo[k] - (colcha.confianca ? fina[k] : 0));
-      cobertura[k] = DERIVADO;
-    }
-    listrasNoRuim = noCorredor ? listrasNoRuim / noCorredor : 0;
-  }
   // 4. a costura: a diferença medido − consertado nos bons, levada pela membrana
   const anel = dilata(ruim, W, H, raioM, 1.2);
   const dif = new Float32Array(n);
@@ -1780,13 +1640,6 @@ export function consertaNaGrade({
         noRuim: completadas.length,
         completadas,
       },
-      listras: traco
-        ? {
-            rumoGraus: traco.rumoGraus,
-            linhas: traco.linhas.map((l) => l.length),
-            fracaoNoRuim: listrasNoRuim,
-          }
-        : null,
       classes: fracoesDeArea(classe, W, H, raioM, [BOM, RUIDO, LISO, VAZIO]),
       cobertura: fracoesDeArea(cobertura, W, H, raioM, [
         MEDIDO,
@@ -1794,7 +1647,6 @@ export function consertaNaGrade({
         DERIVADO,
       ]),
     },
-    traco,
   };
 }
 
@@ -1812,10 +1664,8 @@ export function consertaDem({
   luminancia,
   raioM,
   p = CONSERTO_DE_ENCELADO,
-  listras = true,
   fino = "liso",
   protegido = null,
-  pesoDasListras = null,
 }) {
   const W = p.larguraDeTrabalho;
   const H = W / 2;
@@ -1829,10 +1679,8 @@ export function consertaDem({
     H,
     raioM,
     p,
-    listras,
     fino,
     protegido,
-    pesoDasListras,
   });
   const saida = Float32Array.from(metros);
   for (let j = 0; j < Hf; j += 1) {

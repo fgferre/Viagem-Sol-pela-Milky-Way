@@ -552,8 +552,8 @@ export const EM_INGLES = new Map([
   ],
   // 13/10/2026 — Encélado com o relevo assado do DEM de 200 m e o polo sul do SPC de 100 m (R4)
   [
-    'relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 15 % alisado onde o DEM tinha ruído; 0,5 % derivado da foto',
-    'relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024) and 2 % by the 100 m model of the south pole (Park et al. 2024); 15 % smoothed where the DEM was noisy; 0.5 % derived from the photo',
+    'relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos',
+    'relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos',
   ],
   // 10/10/2026 — Mimas, Tétis e Dione ganham a nota do relevo (R3)
   [

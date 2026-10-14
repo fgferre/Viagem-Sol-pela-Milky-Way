@@ -1128,7 +1128,7 @@ export function corteDeErroMinimo(geo, custoDoTexel, coberto, fixo) {
 }
 
 /** O raio do corte (texels) no ângulo de (x, y), interpolado entre os raios. */
-function raioDoCorte(geo, x, y) {
+export function raioDoCorte(geo, x, y) {
   let th = Math.atan2(y, x);
   if (th < 0) th += 2 * Math.PI;
   const ft = (th / (2 * Math.PI)) * geo.nTheta;

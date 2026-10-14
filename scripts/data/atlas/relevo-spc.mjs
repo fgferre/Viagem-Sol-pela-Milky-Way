@@ -31,8 +31,17 @@
 //     faixa na borda norte (59–62°S) e em volta dos buracos, a passagem é em
 //     rampa suave sobre o SPC já levado ao largo do DEM por uma membrana
 //     harmônica (`membranaHarmonica`): nenhum degrau, nem de nível nem de fino.
+//  5. O SPT POR EXEMPLO (`preencheSpt`, 14/10/2026): no terreno das listras
+//     (até 55°S), o que o SPC não cobre e o DEM tem como ruído ou liso ganha o
+//     fino do PRÓPRIO SPC — o mesmo tipo de terreno, medido a 100 m — em
+//     retalhos girados para o rumo da foto, escolhidos pela encosta larga,
+//     pela aspereza que a foto prevê e pelo erro na sobreposição, emendados
+//     por corte de erro mínimo e membrana; as listras fora do SPC levam as
+//     fatias medidas nas três do SPC ao longo do traço da foto.
 // ============================================================
 
+import { sorteador } from './conserto-do-dem.mjs';
+import { corteDeErroMinimo, geometriaDoCorte, raioDoCorte } from './cor-inventada.mjs';
 import {
   desfocaComMascara,
   distanciaAoVazioKm,
@@ -296,7 +305,6 @@ export const SPC_DE_ENCELADO = Object.freeze({
   /** a rampa da borda (3° de arco, a faixa 59–62°S do plano) e o anel onde a membrana prende o largo do DEM */
   bandaKm: 13.2,
   anelKm: 2,
-  rampaDasListrasKm: 6,
   sigmaLargoKm: 8,
   membranaSigmaKm: 64,
 });
@@ -513,10 +521,7 @@ function mediaDeArea(fino, Wf, Hf, W, H) {
 /**
  * AS MÁSCARAS DA COBERTURA na grade de trabalho W×H: `dentro` (o texel inteiro
  * coberto pelo SPC fino), `distKm` (até o fora), o `peso` da rampa (suave de 0
- * na borda a 1 em `bandaKm`), o `nucleo` (peso 1: lá o SPC é tudo) e o peso
- * das `listras` traçadas na foto: 0 dentro, de 0 na borda a 1 a
- * `rampaDasListrasKm` fora — a listra do traço acaba antes do SPC, sem parede
- * e sem dobrar a listra medida (o traço da foto erra a posição em alguns km).
+ * na borda a 1 em `bandaKm`) e o `nucleo` (peso 1: lá o SPC é tudo).
  */
 export function mascarasDoSpc(spcFino, Wf, Hf, W, H, raioM, p = SPC_DE_ENCELADO) {
   const media = mediaDeArea(spcFino, Wf, Hf, W, H);
@@ -528,19 +533,14 @@ export function mascarasDoSpc(spcFino, Wf, Hf, W, H, raioM, p = SPC_DE_ENCELADO)
     fora[k] = 1 - dentro[k];
   }
   const distKm = distanciaAoVazioKm(fora, W, H, raioM);
-  const foraKm = distanciaAoVazioKm(dentro, W, H, raioM);
   const peso = new Float32Array(n);
   const nucleo = new Uint8Array(n);
-  const listras = new Float32Array(n);
   for (let k = 0; k < n; k += 1) {
-    if (!dentro[k]) {
-      listras[k] = suave(0, p.rampaDasListrasKm, foraKm[k]);
-      continue;
-    }
+    if (!dentro[k]) continue;
     peso[k] = suave(0, p.bandaKm, distKm[k]);
     nucleo[k] = distKm[k] >= p.bandaKm ? 1 : 0;
   }
-  return { dentro, distKm, peso, nucleo, listras };
+  return { dentro, distKm, peso, nucleo };
 }
 
 const suave = (a, b, x) => {
@@ -618,13 +618,14 @@ export function fundeNoDem({ metros, spcFino, Wf, Hf, mascaras, W, H, raioM, p =
 }
 
 /**
- * A PARTILHA DA ÁREA para a confissão: o SPC pelo peso da rampa; o resto, pela
- * `cobertura` do conserto (MEDIDO 0 → DEM de Schenk, INVENTADO 1 → alisado,
- * DERIVADO 2 → derivado da foto). Frações da esfera.
+ * A PARTILHA DA ÁREA para a confissão: o SPC pelo `peso` (o da fusão, ou o de
+ * `preencheSpt`); o resto, pela `cobertura` (MEDIDO 0 → DEM de Schenk,
+ * INVENTADO 1 → alisado, DERIVADO 2 → derivado da foto, EXEMPLO_DO_SPC 3 →
+ * inventado por exemplo do SPC). Frações da esfera.
  */
 export function partilhaDaArea(cobertura, peso, W, H) {
-  const soma = { spc: 0, schenk: 0, alisado: 0, derivado: 0 };
-  const nomes = ['schenk', 'alisado', 'derivado'];
+  const soma = { spc: 0, schenk: 0, alisado: 0, derivado: 0, exemplo: 0 };
+  const nomes = ['schenk', 'alisado', 'derivado', 'exemplo'];
   let total = 0;
   for (let j = 0; j < H; j += 1) {
     const area = Math.cos(latitudeDaLinha(j, H));
@@ -638,4 +639,947 @@ export function partilhaDaArea(cobertura, peso, W, H) {
   }
   for (const nome of Object.keys(soma)) soma[nome] /= total;
   return soma;
+}
+
+// ------------------------------------------------------------
+// 4. O terreno das listras (SPT) por exemplo do SPC
+// ------------------------------------------------------------
+
+/**
+ * Os números do SPT de Encélado (de onde vêm: `capturas/r4-encelado/spt/`).
+ * O plano polar é o do SPC (azimutal equidistante, u à direita, v para baixo,
+ * o meridiano 0 para cima) na longitude DA CASA.
+ */
+export const SPT_DE_ENCELADO = Object.freeze({
+  passoKm: 0.2,
+  ateGraus: 40,
+  /** o limite do SPT (`limiteDoSpt`) */
+  limite: Object.freeze({ latGraus: -55, rampaKm: 8 }),
+  /**
+   * o largo que fica (σ da média que o separa do fino trocado). No núcleo do SPC o DEM ruim correlaciona 0,15–0,30
+   * com o SPC em todas as bandas de 0,4 a 12,8 km; até σ 3,2 km tem a energia do SPC, acima 1,5–4× menos. Com 4 km
+   * a colcha saiu amassada (o retalho que leva ondas de ~25 km não cabe entre as listras): fica o corte do conserto
+   */
+  corteKm: 1.6,
+  rumo: Object.freeze({ bandaKm: Object.freeze([0.8, 1.6]), janelaKm: 8, coerenciaMin: 0.1 }),
+  encostaKm: 6,
+  /** a aspereza (a energia local do fino) que a foto prevê: no SPC, ln E do relevo × ln E da foto correlacionam 0,88 */
+  aspereza: Object.freeze({ bandaKm: Object.freeze([0.4, 1.6]), janelaKm: 4 }),
+  retalho: Object.freeze({
+    larguraKm: 8,
+    sobreposicaoKm: 2,
+    candidatos: 600,
+    preSelecao: 120,
+    melhores: 3,
+    folgaKm: 1,
+    repeticaoKm: 20,
+    mesmaOrigemKm: 8,
+    pesoDaFoto: 0.5,
+    pesoLivre: 0.25,
+    passadas: 300,
+  }),
+  listras: Object.freeze({
+    meiaLarguraKm: 12,
+    alinhaKm: 2,
+    foraKm: Object.freeze([8, 12]),
+    cristaKm: Object.freeze([1, 5]),
+    corredorKm: 4,
+    rampaForaDoSpcKm: 6,
+    rampaDoMedidoKm: 3,
+    pontaKm: 6,
+    nucleoKm: 4,
+    passoDaSequenciaKm: 2,
+  }),
+  semente: 20261014,
+});
+
+/** A classe nova da cobertura: inventado por exemplo do SPC (as outras são as de `conserto-do-dem.mjs`). */
+export const EXEMPLO_DO_SPC = 3;
+
+/** O plano polar do SPT: N×N células de `passoKm` até `ateGraus` do polo. */
+export function planoDoSpt(raioKm, p = SPT_DE_ENCELADO) {
+  return { N: 2 * Math.ceil((raioKm * p.ateGraus * RADIANOS) / p.passoKm), passoKm: p.passoKm, raioKm };
+}
+
+/** A célula fracionária (centro da célula k em x = k) do ponto (u, v) km do plano. */
+const celula = (plano, u) => u / plano.passoKm + plano.N / 2 - 0.5;
+/** O km do plano do centro da célula x. */
+const kmDaCelula = (plano, x) => (x + 0.5 - plano.N / 2) * plano.passoKm;
+
+/** Bilinear num campo do plano N×N na célula fracionária (x, y); NaN fora. */
+export function noPlanoPolarBilinear(f, N, x, y) {
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  if (x0 < 0 || y0 < 0 || x0 >= N - 1 || y0 >= N - 1) return NaN;
+  const fx = x - x0;
+  const fy = y - y0;
+  const k = y0 * N + x0;
+  return (f[k] * (1 - fx) + f[k + 1] * fx) * (1 - fy) + (f[k + N] * (1 - fx) + f[k + N + 1] * fx) * fy;
+}
+
+/** Um campo Wc×Hc da casa levado ao plano: bilinear, ou o texel que contém o ponto (`vizinho`). */
+export function casaNoPlano(campo, Wc, Hc, plano, vizinho = false) {
+  const { N, raioKm } = plano;
+  const saida = new Float32Array(N * N);
+  for (let y = 0; y < N; y += 1) {
+    const v = kmDaCelula(plano, y);
+    for (let x = 0; x < N; x += 1) {
+      const [lat, lon] = doPlanoPolar(kmDaCelula(plano, x), v, raioKm);
+      if (!vizinho) {
+        saida[y * N + x] = amostraNaCasa(campo, Wc, Hc, lat, lon);
+        continue;
+      }
+      const j = Math.min(Hc - 1, Math.floor(((90 - lat) / 180) * Hc));
+      const i = Math.floor((((((lon - 180) % 360) + 360) % 360) / 360) * Wc) % Wc;
+      saida[y * N + x] = campo[j * Wc + i];
+    }
+  }
+  return saida;
+}
+
+/** Os raios das três caixas que imitam a gaussiana de σ (células) (Kovesi). */
+function caixasDaGaussiana(sigma) {
+  const ideal = Math.sqrt(4 * sigma * sigma + 1);
+  let wl = Math.floor(ideal);
+  if (wl % 2 === 0) wl -= 1;
+  const m = Math.round((12 * sigma * sigma - 3 * wl * wl - 12 * wl - 9) / (-4 * wl - 4));
+  return [0, 1, 2].map((i) => ((i < m ? wl : wl + 2) - 1) / 2);
+}
+
+/** Uma passada de caixa de raio r (média; fora do plano conta zero), nas linhas ou nas colunas. */
+function passaCaixa(a, N, r, horizontal) {
+  const o = new Float64Array(N * N);
+  const w = 1 / (2 * r + 1);
+  for (let l = 0; l < N; l += 1) {
+    const at = (t) => (horizontal ? a[l * N + t] : a[t * N + l]);
+    let s = 0;
+    for (let t = 0; t <= Math.min(r, N - 1); t += 1) s += at(t);
+    for (let t = 0; t < N; t += 1) {
+      o[horizontal ? l * N + t : t * N + l] = s * w;
+      if (t + r + 1 < N) s += at(t + r + 1);
+      if (t - r >= 0) s -= at(t - r);
+    }
+  }
+  return o;
+}
+
+/** A média gaussiana (três caixas) de σ `sigmaCel` células de um campo do plano; com `mascara`, só dela (NaN onde não alcança). */
+export function borraNoPlano(v, N, sigmaCel, mascara = null) {
+  let num = new Float64Array(N * N);
+  let den = new Float64Array(N * N);
+  for (let k = 0; k < N * N; k += 1) {
+    if ((mascara && !mascara[k]) || !Number.isFinite(v[k])) continue;
+    num[k] = v[k];
+    den[k] = 1;
+  }
+  for (const r of caixasDaGaussiana(sigmaCel)) {
+    for (const h of [true, false]) {
+      num = passaCaixa(num, N, r, h);
+      den = passaCaixa(den, N, r, h);
+    }
+  }
+  return Float32Array.from(num, (s, k) => (den[k] > 1e-3 ? s / den[k] : NaN));
+}
+
+/** A distância (células) de cada célula à mais próxima de `alvo` (transformada exata de Felzenszwalb & Huttenlocher). */
+export function distanciaNoPlano(alvo, N) {
+  const INF = 1e20;
+  const f = Float64Array.from(alvo, (a) => (a ? 0 : INF));
+  const linha = new Float64Array(N);
+  const d = new Float64Array(N);
+  const vv = new Int32Array(N);
+  const z = new Float64Array(N + 1);
+  const passa = (le, escreve) => {
+    for (let l = 0; l < N; l += 1) {
+      for (let t = 0; t < N; t += 1) linha[t] = f[le(l, t)];
+      let k = 0;
+      vv[0] = 0;
+      z[0] = -INF;
+      z[1] = INF;
+      for (let q = 1; q < N; q += 1) {
+        let s = (linha[q] + q * q - (linha[vv[k]] + vv[k] * vv[k])) / (2 * q - 2 * vv[k]);
+        while (s <= z[k]) {
+          k -= 1;
+          s = (linha[q] + q * q - (linha[vv[k]] + vv[k] * vv[k])) / (2 * q - 2 * vv[k]);
+        }
+        k += 1;
+        vv[k] = q;
+        z[k] = s;
+        z[k + 1] = INF;
+      }
+      k = 0;
+      for (let q = 0; q < N; q += 1) {
+        while (z[k + 1] < q) k += 1;
+        d[q] = (q - vv[k]) ** 2 + linha[vv[k]];
+      }
+      for (let t = 0; t < N; t += 1) f[escreve(l, t)] = d[t];
+    }
+  };
+  passa((l, t) => l * N + t, (l, t) => l * N + t);
+  passa((l, t) => t * N + l, (l, t) => t * N + l);
+  return Float32Array.from(f, (x) => Math.sqrt(x));
+}
+
+/**
+ * O RUMO no plano: o tensor de estrutura da banda `rumo.bandaKm` de `campo`
+ * (o log da foto, ou a altura), médio a σ `rumo.janelaKm`: `theta` (o rumo
+ * do gradiente, rad, no quadro u→, v↓ do plano; as feições correm a theta +
+ * 90°), `coh` e a `banda`.
+ */
+export function rumoNoPlano(campo, plano, p = SPT_DE_ENCELADO) {
+  const { N, passoKm } = plano;
+  const [a, b] = p.rumo.bandaKm.map((s) => borraNoPlano(campo, N, s / passoKm));
+  const banda = Float32Array.from(a, (x, k) => x - b[k]);
+  const xx = new Float32Array(N * N);
+  const xy = new Float32Array(N * N);
+  const yy = new Float32Array(N * N);
+  for (let y = 1; y < N - 1; y += 1) {
+    for (let x = 1; x < N - 1; x += 1) {
+      const k = y * N + x;
+      const gx = banda[k + 1] - banda[k - 1];
+      const gy = banda[k + N] - banda[k - N];
+      if (!Number.isFinite(gx + gy)) continue;
+      xx[k] = gx * gx;
+      xy[k] = gx * gy;
+      yy[k] = gy * gy;
+    }
+  }
+  const [A, B, C] = [xx, xy, yy].map((f) => borraNoPlano(f, N, p.rumo.janelaKm / passoKm));
+  const theta = new Float32Array(N * N);
+  const coh = new Float32Array(N * N);
+  for (let k = 0; k < N * N; k += 1) {
+    const tr = A[k] + C[k];
+    const d = Math.hypot(A[k] - C[k], 2 * B[k]);
+    theta[k] = 0.5 * Math.atan2(2 * B[k], A[k] - C[k]);
+    coh[k] = tr > 0 ? d / tr : 0;
+  }
+  return { theta, coh, banda };
+}
+
+/**
+ * O LIMITE DO SPT: a cadeia circumpolar de escarpas e dobras a ~55°S que
+ * cerca o terreno renovado do polo sul (Porco et al. 2006, Science 311, 1393)
+ * — `limite.latGraus`, numa rampa de `limite.rampaKm` centrada nele: o peso
+ * no plano, 1 dentro, 0 fora. Procurado na foto como o anel de lineamentos
+ * circunferenciais por longitude, o pico se espalhou pela faixa inteira de
+ * 50–62°S (capturas/r4-encelado/spt/): fica a latitude da literatura.
+ */
+export function limiteDoSpt(plano, p = SPT_DE_ENCELADO) {
+  const { N, raioKm } = plano;
+  const rhoLim = (p.limite.latGraus + 90) * RADIANOS * raioKm;
+  const meia = p.limite.rampaKm / 2;
+  const peso = new Float32Array(N * N);
+  for (let y = 0; y < N; y += 1) {
+    const v = kmDaCelula(plano, y);
+    for (let x = 0; x < N; x += 1) peso[y * N + x] = 1 - suave(-meia, meia, Math.hypot(kmDaCelula(plano, x), v) - rhoLim);
+  }
+  return peso;
+}
+
+/** Os traços (pontos com lat, lonE) no plano: [[{ u, v, s }]], s o comprimento de arco (km) desde o 1º ponto. */
+export function tracosNoPlano(linhas, raioKm) {
+  return linhas.map((linha) => {
+    let s = 0;
+    return linha.map((q, k) => {
+      const [u, v] = noPlanoPolar(q.lat, q.lonE, raioKm);
+      if (k > 0) {
+        const [u0, v0] = noPlanoPolar(linha[k - 1].lat, linha[k - 1].lonE, raioKm);
+        s += Math.hypot(u - u0, v - v0);
+      }
+      return { u, v, s };
+    });
+  });
+}
+
+/** A normal unitária (através) do traço no ponto q: a tangente pelos vizinhos, girada de 90°. */
+function normalDoTraco(traco, q) {
+  const a = traco[Math.max(0, q - 1)];
+  const b = traco[Math.min(traco.length - 1, q + 1)];
+  const l = Math.hypot(b.u - a.u, b.v - a.v) || 1;
+  return [-(b.v - a.v) / l, (b.u - a.u) / l];
+}
+
+/**
+ * UMA FATIA ATRAVÉS do traço no ponto q: `campo` (plano) amostrado de −D a
+ * +D (D = `meiaLarguraKm`) no passo do plano, deslocada para pôr o mínimo
+ * dentro de ±`alinhaKm` no centro (se `alinha`), sem a reta ajustada nas
+ * pontas (`foraKm`). `aceita(x, y)` diz se a célula pode entrar. Devolve a
+ * fatia (Float64Array 2D/passo + 1) ou null.
+ */
+export function fatiaDaListra(campo, plano, traco, q, p = SPT_DE_ENCELADO, { alinha = true, aceita = null } = {}) {
+  const L = p.listras;
+  const { N, passoKm } = plano;
+  const n = Math.round(L.meiaLarguraKm / passoKm);
+  const a = alinha ? Math.round(L.alinhaKm / passoKm) : 0;
+  const [nu, nv] = normalDoTraco(traco, q);
+  const { u, v } = traco[q];
+  const crua = new Float64Array(2 * (n + a) + 1);
+  for (let t = -(n + a); t <= n + a; t += 1) {
+    const x = celula(plano, u + t * passoKm * nu);
+    const y = celula(plano, v + t * passoKm * nv);
+    if (aceita && !aceita(Math.round(x), Math.round(y))) return null;
+    const h = noPlanoPolarBilinear(campo, N, x, y);
+    if (!Number.isFinite(h)) return null;
+    crua[t + n + a] = h;
+  }
+  let desvio = 0;
+  if (alinha) {
+    let menor = Infinity;
+    for (let t = -a; t <= a; t += 1) {
+      const m = (crua[n + a + t - 1] + crua[n + a + t] + crua[n + a + t + 1]) / 3;
+      if (m < menor) {
+        menor = m;
+        desvio = t;
+      }
+    }
+  }
+  const fatia = new Float64Array(2 * n + 1);
+  for (let t = -n; t <= n; t += 1) fatia[t + n] = crua[t + desvio + n + a];
+  // a reta das pontas
+  const [f0, f1] = L.foraKm.map((d) => Math.round(d / passoKm));
+  let [s0, s1, s2, s3, s4] = [0, 0, 0, 0, 0];
+  for (let t = -n; t <= n; t += 1) {
+    if (Math.abs(t) < f0 || Math.abs(t) > f1) continue;
+    s0 += 1;
+    s1 += t;
+    s2 += t * t;
+    s3 += fatia[t + n];
+    s4 += t * fatia[t + n];
+  }
+  const b = (s0 * s4 - s1 * s3) / (s0 * s2 - s1 * s1);
+  const c = (s3 - b * s1) / s0;
+  for (let t = -n; t <= n; t += 1) fatia[t + n] -= c + b * t;
+  return fatia;
+}
+
+/** A profundidade da fatia: a média das duas cristas (máximo de cada lado entre `cristaKm`) menos o centro. */
+function profundidadeDaFatia(fatia, passoKm, p) {
+  const n = (fatia.length - 1) / 2;
+  const [c0, c1] = p.listras.cristaKm.map((d) => Math.round(d / passoKm));
+  let [e, d] = [-Infinity, -Infinity];
+  for (let t = c0; t <= c1; t += 1) {
+    e = Math.max(e, fatia[n - t]);
+    d = Math.max(d, fatia[n + t]);
+  }
+  return { crista: (e + d) / 2, sulco: (e + d) / 2 - fatia[n] };
+}
+
+/**
+ * O PERFIL MEDIDO DAS LISTRAS no SPC: em cada ponto dos traços cuja fatia
+ * inteira cai na cobertura (`cobre`; `campo` a altura registrada), a fatia
+ * alinhada no sulco, sem a reta das pontas. Devolve `{ perfil (a média de
+ * todas: as três listras do SPC), sequencia: [{ s, fatia }] (as fatias de
+ * cada traço na ordem, em sequência; s o arco acumulado, `passoDaSequenciaKm`
+ * entre um traço e o seguinte), fatias, porTraco, sulcoM, cristaM,
+ * cristaACristaKm, larguraKm (do perfil médio), sulcoDaFatiaM (a mediana
+ * fatia a fatia) }`, ou null sem fatia.
+ */
+export function perfilMedidoDasListras({ campo, cobre, plano, tracos, p = SPT_DE_ENCELADO }) {
+  const { N, passoKm } = plano;
+  const aceita = (x, y) => x >= 0 && y >= 0 && x < N && y < N && cobre[y * N + x] === 1;
+  const n = Math.round(p.listras.meiaLarguraKm / passoKm);
+  const soma = new Float64Array(2 * n + 1);
+  const sequencia = [];
+  const porTraco = [];
+  const sulcos = [];
+  let s0 = 0;
+  for (const traco of tracos) {
+    let m = 0;
+    let ultimo = null;
+    for (let q = 0; q < traco.length; q += 1) {
+      const fatia = fatiaDaListra(campo, plano, traco, q, p, { aceita });
+      if (!fatia) continue;
+      for (let t = 0; t <= 2 * n; t += 1) soma[t] += fatia[t];
+      if (ultimo !== null) s0 += traco[q].s - ultimo;
+      ultimo = traco[q].s;
+      sequencia.push({ s: s0, fatia });
+      sulcos.push(profundidadeDaFatia(fatia, passoKm, p).sulco);
+      m += 1;
+    }
+    porTraco.push(m);
+    if (m) s0 += p.listras.passoDaSequenciaKm;
+  }
+  if (!sequencia.length) return null;
+  const perfil = Float64Array.from(soma, (v) => v / sequencia.length);
+  const { crista, sulco } = profundidadeDaFatia(perfil, passoKm, p);
+  const [c0, c1] = p.listras.cristaKm.map((d) => Math.round(d / passoKm));
+  let [ie, id] = [c0, c0];
+  for (let t = c0; t <= c1; t += 1) {
+    if (perfil[n - t] > perfil[n - ie]) ie = t;
+    if (perfil[n + t] > perfil[n + id]) id = t;
+  }
+  let [me, md] = [0, 0];
+  while (me < n && perfil[n - me] < perfil[n] + sulco / 2) me += 1;
+  while (md < n && perfil[n + md] < perfil[n] + sulco / 2) md += 1;
+  return {
+    perfil,
+    sequencia,
+    fatias: sequencia.length,
+    porTraco,
+    sulcoM: sulco,
+    cristaM: crista,
+    cristaACristaKm: (ie + id) * passoKm,
+    larguraKm: (me + md) * passoKm,
+    sulcoDaFatiaM: [...sulcos].sort((a, b) => a - b)[sulcos.length >> 1],
+    comprimentoKm: s0,
+  };
+}
+
+/** O valor de uma fatia (Float64Array de −D a +D no passo do plano) em d km (com sinal); 0 além. */
+function naFatia(fatia, passoKm, d) {
+  const n = (fatia.length - 1) / 2;
+  const t = d / passoKm + n;
+  if (t <= 0 || t >= 2 * n) return 0;
+  const t0 = Math.floor(t);
+  return fatia[t0] * (1 - (t - t0)) + fatia[t0 + 1] * (t - t0);
+}
+
+/**
+ * AS LISTRAS POR EXEMPLO DAS DO SPC, no plano: para cada traço, onde ele
+ * passa no que se troca (`pode`, peso 0–1 por célula), a fatia através no
+ * arco s é a das listras MEDIDAS (`medido.sequencia`, a partir de um ponto
+ * sorteado, interpolada entre fatias vizinhas: a variação ao longo é a delas)
+ * até `nucleoKm` do traço, e o perfil médio além (a textura em volta é da
+ * colcha) — menos o perfil médio que o `campo` já tem ali (as fatias sem
+ * alinhar nos pontos de peso > ½): na média ao longo, o resultado é o
+ * perfil medido. Afinado a zero entre `foraKm` e nas pontas (`pontaKm`).
+ * Devolve `{ corte (m, a somar), corredor (Uint8: |d| < cristaKm[1]), base: [perfil já presente por traço] }`.
+ */
+export function cortaListras({ campo, pode, plano, tracos, medido, p = SPT_DE_ENCELADO, sorteia = Math.random }) {
+  const { N, passoKm } = plano;
+  const L = p.listras;
+  const corte = new Float32Array(N * N);
+  const corredor = new Uint8Array(N * N);
+  const { sequencia, perfil } = medido;
+  const total = medido.comprimentoKm;
+  const base = [];
+  /** a fatia medida no arco f (km) da sequência, com a volta; d com sinal */
+  const daSequencia = (f, d) => {
+    const g = ((f % total) + total) % total;
+    let q = 0;
+    while (q + 1 < sequencia.length && sequencia[q + 1].s <= g) q += 1;
+    const [a, b] = [sequencia[q], sequencia[(q + 1) % sequencia.length]];
+    const vao = (q + 1 < sequencia.length ? b.s : total) - a.s;
+    const t = vao > 0 ? Math.min(1, (g - a.s) / vao) : 0;
+    const v = naFatia(a.fatia, passoKm, d) * (1 - t) + naFatia(b.fatia, passoKm, d) * t;
+    const m = naFatia(perfil, passoKm, d);
+    return m + (v - m) * (1 - suave(L.nucleoKm - 1, L.nucleoKm + 1, Math.abs(d)));
+  };
+  const afina = (d) => 1 - suave(L.foraKm[0], L.foraKm[1], Math.abs(d));
+  for (const traco of tracos) {
+    if (traco.length < 2) {
+      base.push(null);
+      continue;
+    }
+    const comprimento = traco[traco.length - 1].s;
+    const pesoNoPonto = (q) => {
+      const x = Math.round(celula(plano, traco[q].u));
+      const y = Math.round(celula(plano, traco[q].v));
+      return x >= 0 && y >= 0 && x < N && y < N ? pode[y * N + x] : 0;
+    };
+    // o perfil que o campo já tem onde o traço entra
+    const n = Math.round(L.meiaLarguraKm / passoKm);
+    const soma = new Float64Array(2 * n + 1);
+    let fatias = 0;
+    for (let q = 0; q < traco.length; q += 1) {
+      if (pesoNoPonto(q) <= 0.5) continue;
+      const fatia = fatiaDaListra(campo, plano, traco, q, p, { alinha: false });
+      if (!fatia) continue;
+      for (let t = 0; t <= 2 * n; t += 1) soma[t] += fatia[t];
+      fatias += 1;
+    }
+    if (!fatias) {
+      base.push(null);
+      continue;
+    }
+    const presente = Float64Array.from(soma, (v) => v / fatias);
+    base.push(presente);
+    const inicio = sorteia() * total;
+    // cada célula perto do traço: o segmento mais perto, d com sinal (a normal de `normalDoTraco`) e s
+    const alcance = L.meiaLarguraKm;
+    let [uMin, uMax, vMin, vMax] = [Infinity, -Infinity, Infinity, -Infinity];
+    for (const q of traco) {
+      uMin = Math.min(uMin, q.u);
+      uMax = Math.max(uMax, q.u);
+      vMin = Math.min(vMin, q.v);
+      vMax = Math.max(vMax, q.v);
+    }
+    const x0 = Math.max(0, Math.floor(celula(plano, uMin - alcance)));
+    const x1 = Math.min(N - 1, Math.ceil(celula(plano, uMax + alcance)));
+    const y0 = Math.max(0, Math.floor(celula(plano, vMin - alcance)));
+    const y1 = Math.min(N - 1, Math.ceil(celula(plano, vMax + alcance)));
+    for (let y = y0; y <= y1; y += 1) {
+      const v = kmDaCelula(plano, y);
+      for (let x = x0; x <= x1; x += 1) {
+        const k = y * N + x;
+        if (!(pode[k] > 0)) continue;
+        const u = kmDaCelula(plano, x);
+        let melhor = Infinity;
+        let s = 0;
+        let d = 0;
+        for (let q = 0; q + 1 < traco.length; q += 1) {
+          const A = traco[q];
+          const B = traco[q + 1];
+          const du = B.u - A.u;
+          const dv = B.v - A.v;
+          const l2 = du * du + dv * dv;
+          const t = l2 > 0 ? Math.min(1, Math.max(0, ((u - A.u) * du + (v - A.v) * dv) / l2)) : 0;
+          const dist = Math.hypot(u - A.u - t * du, v - A.v - t * dv);
+          if (dist < melhor) {
+            melhor = dist;
+            s = A.s + t * (B.s - A.s);
+            d = l2 > 0 ? ((u - A.u) * -dv + (v - A.v) * du) / Math.sqrt(l2) : dist;
+          }
+        }
+        if (melhor >= alcance) continue;
+        const w = pode[k] * suave(0, L.pontaKm, Math.min(s, comprimento - s));
+        if (!(w > 0)) continue;
+        corte[k] += w * afina(d) * (daSequencia(inicio + s, d) - naFatia(presente, passoKm, d));
+        if (melhor < L.cristaKm[1]) corredor[k] = 1;
+      }
+    }
+  }
+  return { corte, corredor, base };
+}
+
+/**
+ * A COLCHA DO SPT (Efros & Freeman 2001, como `colcha` e a transferência de
+ * `cor-inventada.mjs`) no plano: o `fino` (h − largo) nas células `alvo` vem
+ * em retalhos quadrados de `retalho.larguraKm`, a cada largura −
+ * `sobreposicaoKm`, dos que estão mais perto do conhecido para longe. Cada um
+ * copia o fino do SPC (`doador`) de uma das `origens` (células cujo retalho
+ * girado inteiro + `folgaKm` cai no SPC e longe das listras), girado para que
+ * o rumo da foto na origem caia no do alvo (`rumo.theta`; meia volta
+ * sorteada; sem coerência, giro sorteado). A escolha: `candidatos` origens
+ * sorteadas (fora as já usadas a menos de `mesmaOrigemKm` por um retalho a
+ * menos de `repeticaoKm` daqui); delas as `preSelecao` de encosta larga
+ * (`encLog`) e de ASPEREZA (`asperezaLog`: a energia local do fino; no alvo,
+ * a que a foto prevê) mais parecidas, cada uma em unidades do seu desvio no
+ * conjunto; delas, sorteada entre as `melhores` de menor erro
+ * na sobreposição (Σ(velho − novo)² ÷ Σ(velho² + novo²)) com o que já está
+ * (o fino conhecido — o SPC, os ladrilhos bons — e os retalhos postos;
+ * `preposto`: alvo que já começa coberto, que o corte pode atravessar). A
+ * emenda: o corte de erro mínimo em curva fechada (`corteDeErroMinimo`), e
+ * dentro dele uma membrana (Laplace, SOR) que leva a diferença velho − novo
+ * da borda para dentro: nenhum degrau. `conhecido` é o fino fora do alvo
+ * (nunca muda). Devolve `{ fino, retalhos: [{ alvo: [u, v], origem: [u, v], giro, erro }] }`.
+ */
+export function colchaDoSpt({ conhecido, alvo, preposto = null, informa, doador, origens, rumo, encLog, asperezaLog, guia, plano, p = SPT_DE_ENCELADO, sorteia }) {
+  const { N, passoKm } = plano;
+  const e = p.retalho;
+  const meio = e.larguraKm / 2 / passoKm;
+  const Hh = Math.ceil(meio) + 2;
+  const G = 2 * Hh + 1;
+  const geo = geometriaDoCorte(meio, Hh);
+  const fino = Float32Array.from(conhecido);
+  const posto = Uint8Array.from(alvo, (a, k) => (a && !(preposto && preposto[k]) ? 0 : 1));
+  const custo = new Float64Array(G * G);
+  const coberto = new Uint8Array(G * G);
+  const fixo = new Uint8Array(G * G);
+  const conta = new Uint8Array(G * G);
+  const novo = new Float64Array(G * G);
+  const velho = new Float64Array(G * G);
+  const omega = new Uint8Array(G * G);
+  const corr = new Float64Array(G * G);
+  const retalhos = [];
+  /** os retalhos postos, por balde de `repeticaoKm` (a regra de repetição só olha os vizinhos) */
+  const baldes = new Map();
+  const { theta, coh } = rumo;
+  const desvioPadrao = (f) => {
+    const m = origens.reduce((s, o) => s + f[o], 0) / origens.length;
+    return Math.sqrt(origens.reduce((s, o) => s + (f[o] - m) ** 2, 0) / origens.length) || 1;
+  };
+  const [dpEnc, dpAsp] = [desvioPadrao(encLog), desvioPadrao(asperezaLog)];
+  const poe = (kc) => {
+    const cx = kc % N;
+    const cy = (kc / N) | 0;
+    let falta = false;
+    for (let b = 0; b < G; b += 1) {
+      for (let a = 0; a < G; a += 1) {
+        const q = b * G + a;
+        const x = cx + a - Hh;
+        const y = cy + b - Hh;
+        if (x < 0 || y < 0 || x >= N || y >= N) {
+          [coberto[q], fixo[q], conta[q], velho[q]] = [1, 1, 0, 0];
+          continue;
+        }
+        const k = y * N + x;
+        fixo[q] = alvo[k] ? 0 : 1;
+        coberto[q] = posto[k];
+        conta[q] = posto[k] && (alvo[k] || informa[k]) ? 1 : 0;
+        velho[q] = fino[k];
+        if (!posto[k] && Math.abs(a - Hh) <= meio && Math.abs(b - Hh) <= meio) falta = true;
+      }
+    }
+    if (!falta) return;
+    const [uc, vc] = [kmDaCelula(plano, cx), kmDaCelula(plano, cy)];
+    // os candidatos, fora as origens usadas por retalhos a menos de `repeticaoKm` daqui
+    const [bu, bv] = [Math.floor(uc / e.repeticaoKm), Math.floor(vc / e.repeticaoKm)];
+    const vizinhos = [];
+    for (let a = -1; a <= 1; a += 1) {
+      for (let b = -1; b <= 1; b += 1) {
+        for (const r of baldes.get(`${bu + a},${bv + b}`) ?? []) {
+          if (Math.hypot(r.alvo[0] - uc, r.alvo[1] - vc) < e.repeticaoKm) vizinhos.push(r.origem);
+        }
+      }
+    }
+    const lista = [];
+    for (let t = 0; t < e.candidatos; t += 1) {
+      const o = origens[Math.floor(sorteia() * origens.length)];
+      const [uo, vo] = [kmDaCelula(plano, o % N), kmDaCelula(plano, (o / N) | 0)];
+      if (!vizinhos.some(([u, v]) => Math.hypot(u - uo, v - vo) < e.mesmaOrigemKm)) lista.push(o);
+    }
+    if (!lista.length) for (let t = 0; t < e.melhores; t += 1) lista.push(origens[Math.floor(sorteia() * origens.length)]);
+    const distancia = (o) => Math.abs(encLog[o] - encLog[kc]) / dpEnc + Math.abs(asperezaLog[o] - asperezaLog[kc]) / dpAsp;
+    lista.sort((x, y) => distancia(x) - distancia(y));
+    const opcoes = lista.slice(0, e.preSelecao).map((o) => {
+      const giro =
+        coh[kc] >= p.rumo.coerenciaMin && coh[o] >= p.rumo.coerenciaMin
+          ? theta[o] - theta[kc] + (sorteia() < 0.5 ? Math.PI : 0)
+          : sorteia() * 2 * Math.PI;
+      const [c, s] = [Math.cos(giro), Math.sin(giro)];
+      const [ox, oy] = [o % N, (o / N) | 0];
+      let [erro, energia, erroG, energiaG] = [0, 0, 0, 0];
+      for (let b = 0; b < G; b += 2) {
+        for (let a = 0; a < G; a += 2) {
+          const q = b * G + a;
+          if (Math.abs(a - Hh) > meio || Math.abs(b - Hh) > meio) continue;
+          const [dx, dy] = [a - Hh, b - Hh];
+          const [xo, yo] = [ox + c * dx - s * dy, oy + s * dx + c * dy];
+          const gt = guia[(cy + b - Hh) * N + cx + a - Hh];
+          const gd = noPlanoPolarBilinear(guia, N, xo, yo);
+          if (Number.isFinite(gt + gd)) {
+            erroG += (gt - gd) ** 2;
+            energiaG += gt * gt + gd * gd;
+          }
+          if (!conta[q]) continue;
+          const n = noPlanoPolarBilinear(doador, N, xo, yo);
+          erro += (n - velho[q]) ** 2;
+          energia += n * n + velho[q] * velho[q];
+        }
+      }
+      const eG = energiaG > 0 ? erroG / energiaG : 1;
+      return { o, giro, erro: energia > 0 ? (1 - e.pesoDaFoto) * (erro / energia) + e.pesoDaFoto * eG : eG };
+    });
+    opcoes.sort((x, y) => x.erro - y.erro);
+    const escolha = opcoes[Math.floor(sorteia() * Math.min(e.melhores, opcoes.length))];
+    const [c, s] = [Math.cos(escolha.giro), Math.sin(escolha.giro)];
+    const [ox, oy] = [escolha.o % N, (escolha.o / N) | 0];
+    for (let b = 0; b < G; b += 1) {
+      for (let a = 0; a < G; a += 1) {
+        const [dx, dy] = [a - Hh, b - Hh];
+        const v = noPlanoPolarBilinear(doador, N, ox + c * dx - s * dy, oy + s * dx + c * dy);
+        novo[b * G + a] = Number.isFinite(v) ? v : 0;
+        custo[b * G + a] = coberto[b * G + a] ? (novo[b * G + a] - velho[b * G + a]) ** 2 : 0;
+      }
+    }
+    // o corte de erro mínimo e a região nova
+    corteDeErroMinimo(geo, custo, coberto, fixo);
+    const dentro = [];
+    for (let b = 1; b < G - 1; b += 1) {
+      for (let a = 1; a < G - 1; a += 1) {
+        const q = b * G + a;
+        const [dx, dy] = [a - Hh, b - Hh];
+        omega[q] = 0;
+        if (fixo[q] || Math.abs(dx) > meio || Math.abs(dy) > meio) continue;
+        if (!coberto[q] || Math.hypot(dx, dy) < raioDoCorte(geo, dx, dy)) {
+          omega[q] = 1;
+          dentro.push(q);
+        }
+      }
+    }
+    // a membrana: Laplace em Ω com a diferença velho − novo na borda coberta (Neumann no descoberto)
+    let soma = 0;
+    let nb = 0;
+    for (const q of dentro) {
+      for (const r of [q - 1, q + 1, q - G, q + G]) {
+        if (omega[r] || !coberto[r]) continue;
+        soma += velho[r] - novo[r];
+        nb += 1;
+      }
+    }
+    const inicio = nb ? soma / nb : 0;
+    for (const q of dentro) corr[q] = inicio;
+    if (nb) {
+      for (let it = 0; it < e.passadas; it += 1) {
+        for (const q of dentro) {
+          let t = 0;
+          let m = 0;
+          for (const r of [q - 1, q + 1, q - G, q + G]) {
+            if (omega[r]) {
+              t += corr[r];
+              m += 1;
+            } else if (coberto[r]) {
+              t += velho[r] - novo[r];
+              m += 1;
+            }
+          }
+          if (m) corr[q] += 1.9 * (t / m - corr[q]);
+        }
+      }
+    }
+    for (const q of dentro) {
+      const k = (cy + ((q / G) | 0) - Hh) * N + cx + (q % G) - Hh;
+      if (!alvo[k]) continue;
+      fino[k] = novo[q] + corr[q];
+      posto[k] = 1;
+    }
+    const feito = { alvo: [uc, vc], origem: [kmDaCelula(plano, ox), kmDaCelula(plano, oy)], giro: escolha.giro, erro: escolha.erro };
+    retalhos.push(feito);
+    const chave = `${bu},${bv}`;
+    if (!baldes.has(chave)) baldes.set(chave, []);
+    baldes.get(chave).push(feito);
+  };
+  // os centros: a grade de passo largura − sobreposição sobre o alvo, do mais perto do conhecido para longe
+  const doAlvo = distanciaNoPlano(alvo, N);
+  const doConhecido = distanciaNoPlano(posto, N);
+  const passo = Math.round((e.larguraKm - e.sobreposicaoKm) / passoKm);
+  const x0 = Math.floor(sorteia() * passo);
+  const y0 = Math.floor(sorteia() * passo);
+  const centros = [];
+  for (let y = y0; y < N; y += passo) for (let x = x0; x < N; x += passo) if (doAlvo[y * N + x] <= meio) centros.push(y * N + x);
+  centros.sort((a, b) => doConhecido[a] - doConhecido[b]);
+  for (const k of centros) poe(k);
+  for (let k = 0; k < N * N; k += 1) if (alvo[k] && !posto[k]) poe(k);
+  return { fino, retalhos };
+}
+
+/** A reta y = a + b·x de mínimos quadrados e a correlação r. */
+function retaDeMinimosQuadrados(xs, ys) {
+  const n = xs.length;
+  const mx = xs.reduce((s, v) => s + v, 0) / n;
+  const my = ys.reduce((s, v) => s + v, 0) / n;
+  let [sxy, sxx, syy] = [0, 0, 0];
+  for (let i = 0; i < n; i += 1) {
+    sxy += (xs[i] - mx) * (ys[i] - my);
+    sxx += (xs[i] - mx) ** 2;
+    syy += (ys[i] - my) ** 2;
+  }
+  const b = sxy / sxx;
+  return { a: my - b * mx, b, r: sxy / Math.sqrt(sxx * syy) };
+}
+
+/** As células do plano a menos de meia célula de algum traço (para a distância às listras). */
+function celulasDosTracos(tracos, plano) {
+  const { N, passoKm } = plano;
+  const m = new Uint8Array(N * N);
+  for (const traco of tracos) {
+    for (let q = 0; q + 1 < traco.length; q += 1) {
+      const [A, B] = [traco[q], traco[q + 1]];
+      const passos = Math.ceil((2 * Math.hypot(B.u - A.u, B.v - A.v)) / passoKm) + 1;
+      for (let t = 0; t <= passos; t += 1) {
+        const x = Math.round(celula(plano, A.u + ((B.u - A.u) * t) / passos));
+        const y = Math.round(celula(plano, A.v + ((B.v - A.v) * t) / passos));
+        if (x >= 0 && y >= 0 && x < N && y < N) m[y * N + x] = 1;
+      }
+    }
+  }
+  return m;
+}
+
+/**
+ * O SPT POR EXEMPLO (o passo 3 da linha `completar-corpo`, "nada vê →
+ * inventar com as estatísticas do PRÓPRIO corpo"), depois da fusão: no plano
+ * polar do SPT, o terreno das listras que o SPC NÃO cobre e que o DEM só tem
+ * como ruído ou liso ganha o fino do próprio SPC — o mesmo tipo de terreno,
+ * medido a 100 m. Convenção da casa: `metros` e `spcFino` Wf×Hf (o SPC
+ * registrado, NaN fora), as `mascaras` do SPC, a `qualidade` do DEM, a
+ * `cobertura` do conserto e a `luminancia` da foto W×H; `linhas` os traços
+ * das listras na foto (`tracaListras`).
+ *  1. O LIMITE do SPT (`limiteDoSpt`) e, nele, o ALVO: ruim no DEM, fora da
+ *     cobertura do SPC (e na beira dela, onde a fusão pesa < `pesoLivre`).
+ *  2. O LARGO que fica: a média de σ `corteKm` do que a fusão deu. O fino
+ *     conhecido: o do SPC dentro da cobertura (também na rampa da fusão, onde
+ *     o DEM é ruim: lá ele entra inteiro, não em rampa), o resto do que está.
+ *  3. A COLCHA (`colchaDoSpt`) só com origens no SPC, longe das listras.
+ *  4. AS LISTRAS (`perfilMedidoDasListras`, `cortaListras`): o perfil medido
+ *     nas três do SPC, ao longo dos traços da foto, onde o alvo está.
+ * Fora do ruim e no núcleo do SPC nada muda, byte a byte. Devolve `{ metros,
+ * cobertura (com EXEMPLO_DO_SPC), pesoDoSpc (o peso da partilha: o da fusão,
+ * 1 no ruim coberto), relatorio }`.
+ */
+export function preencheSpt({ metros, spcFino, Wf, Hf, mascaras, qualidade, cobertura, luminancia, linhas, W, H, raioM, p = SPT_DE_ENCELADO }) {
+  const raioKm = raioM / 1000;
+  const plano = planoDoSpt(raioKm, p);
+  const { N, passoKm } = plano;
+  const n = N * N;
+  const sorteia = sorteador(p.semente);
+  const cur = casaNoPlano(metros, Wf, Hf, plano);
+  const spc = casaNoPlano(spcFino, Wf, Hf, plano);
+  const dentro = casaNoPlano(mascaras.dentro, W, H, plano, true);
+  const pesoDaFusao = casaNoPlano(mascaras.peso, W, H, plano);
+  const nucleo = casaNoPlano(mascaras.nucleo, W, H, plano, true);
+  const ruim = Uint8Array.from(casaNoPlano(qualidade, W, H, plano, true), (q) => (q !== 0 ? 1 : 0));
+  const fotoLog = casaNoPlano(Float32Array.from(luminancia, (l) => Math.log(l + 0.003)), W, H, plano);
+  const daFoto = rumoNoPlano(fotoLog, plano, p);
+  const spt = limiteDoSpt(plano, p);
+  // 2. o largo e o fino conhecido
+  const sigma = p.corteKm / passoKm;
+  const largo = borraNoPlano(cur, N, sigma);
+  const cobre = Uint8Array.from(spc, (v) => (Number.isFinite(v) ? 1 : 0));
+  const largoDoSpc = borraNoPlano(spc, N, sigma, cobre);
+  const conhecido = new Float32Array(n);
+  for (let k = 0; k < n; k += 1) {
+    const f = spc[k] - largoDoSpc[k];
+    conhecido[k] = dentro[k] && Number.isFinite(f) ? f : Number.isFinite(cur[k] - largo[k]) ? cur[k] - largo[k] : 0;
+  }
+  // o alvo: o ruim fora da cobertura e, na beira dela (peso da fusão < `retalho.pesoLivre`), o que o corte pode
+  // atravessar (começa com o fino do SPC): a emenda não fica na borda reta do modelo
+  const alvo = new Uint8Array(n);
+  const preposto = new Uint8Array(n);
+  const informa = new Uint8Array(n);
+  for (let k = 0; k < n; k += 1) {
+    const beira = dentro[k] && pesoDaFusao[k] < p.retalho.pesoLivre;
+    alvo[k] = spt[k] > 0 && ruim[k] && (!dentro[k] || beira) ? 1 : 0;
+    preposto[k] = alvo[k] && dentro[k] ? 1 : 0;
+    informa[k] = spt[k] > 0 ? 1 : 0;
+  }
+  // 3. as origens: o retalho girado inteiro + folga no SPC, longe das listras
+  const tracos = tracosNoPlano(linhas, raioKm);
+  const doTraco = distanciaNoPlano(celulasDosTracos(tracos, plano), N);
+  const invalido = new Uint8Array(n);
+  for (let k = 0; k < n; k += 1) {
+    invalido[k] = !cobre[k] || !dentro[k] || doTraco[k] * passoKm < p.listras.corredorKm ? 1 : 0;
+  }
+  const doInvalido = distanciaNoPlano(invalido, N);
+  const raioDoRetalho = (p.retalho.larguraKm / 2) * Math.SQRT2 + p.retalho.folgaKm;
+  const origens = [];
+  for (let y = 0; y < N; y += 3) {
+    for (let x = 0; x < N; x += 3) if (doInvalido[y * N + x] * passoKm >= raioDoRetalho) origens.push(y * N + x);
+  }
+  if (!origens.length) throw new Error('nenhuma origem no SPC longe das listras: o retalho não cabe.');
+  const doador = Float32Array.from(spc, (v, k) => (cobre[k] ? v - largoDoSpc[k] : NaN));
+  // o rumo: na origem o do RELEVO do SPC (medido); no alvo o da foto menos o desvio foto − relevo medido no SPC
+  const doRelevo = rumoNoPlano(Float32Array.from(spc, (v) => (Number.isFinite(v) ? v : 0)), plano, p);
+  const longeDaBorda = distanciaNoPlano(Uint8Array.from(cobre, (c) => 1 - c), N);
+  let [dc, ds, dn] = [0, 0, 0];
+  for (let k = 0; k < n; k += 1) {
+    if (longeDaBorda[k] * passoKm < 2 * p.rumo.janelaKm) continue;
+    const d = 2 * (daFoto.theta[k] - doRelevo.theta[k]);
+    dc += daFoto.coh[k] * doRelevo.coh[k] * Math.cos(d);
+    ds += daFoto.coh[k] * doRelevo.coh[k] * Math.sin(d);
+    dn += daFoto.coh[k] * doRelevo.coh[k];
+  }
+  const desvio = 0.5 * Math.atan2(ds, dc);
+  const rumo = {
+    theta: Float32Array.from(daFoto.theta, (t, k) => (cobre[k] && dentro[k] ? doRelevo.theta[k] : t - desvio)),
+    coh: Float32Array.from(daFoto.coh, (c, k) => (cobre[k] && dentro[k] ? doRelevo.coh[k] : c)),
+  };
+  // a encosta larga (o largo que fica), média a σ `encostaKm`, em log
+  const enc = new Float32Array(n);
+  for (let y = 1; y < N - 1; y += 1) {
+    for (let x = 1; x < N - 1; x += 1) {
+      const k = y * N + x;
+      enc[k] = ((largo[k + 1] - largo[k - 1]) ** 2 + (largo[k + N] - largo[k - N]) ** 2) / (2 * passoKm * 1000) ** 2;
+    }
+  }
+  const encLog = Float32Array.from(borraNoPlano(enc, N, p.encostaKm / passoKm), (v) => Math.log(Math.max(v, 1e-12)));
+  // a aspereza: a energia local do fino do SPC (σ `aspereza.janelaKm`) e, fora dele, a que a energia local da foto
+  // (banda `aspereza.bandaKm`) prevê pela reta ajustada no SPC (log × log)
+  const A = p.aspereza;
+  const [fa, fb] = A.bandaKm.map((s) => borraNoPlano(fotoLog, N, s / passoKm));
+  const energiaDaFoto = borraNoPlano(Float32Array.from(fa, (v, k) => (v - fb[k]) ** 2), N, A.janelaKm / passoKm);
+  const energiaDoSpc = borraNoPlano(Float32Array.from(doador, (v) => v * v), N, A.janelaKm / passoKm, cobre);
+  const xs = [];
+  const ys = [];
+  for (let k = 0; k < n; k += 7) {
+    if (!cobre[k] || longeDaBorda[k] * passoKm < 3 * A.janelaKm) continue;
+    xs.push(Math.log(energiaDaFoto[k]));
+    ys.push(Math.log(energiaDoSpc[k]));
+  }
+  const ajuste = retaDeMinimosQuadrados(xs, ys);
+  const asperezaLog = new Float32Array(n);
+  for (let k = 0; k < n; k += 1) {
+    asperezaLog[k] =
+      cobre[k] && dentro[k] ? Math.log(Math.max(energiaDoSpc[k], 1e-12)) : ajuste.a + ajuste.b * Math.log(Math.max(energiaDaFoto[k], 1e-12));
+  }
+  const guia = Float32Array.from(fa, (v, k) => v - fb[k]);
+  const colcha = colchaDoSpt({ conhecido, alvo, preposto, informa, doador, origens, rumo, encLog, asperezaLog, guia, plano, p, sorteia });
+  // 4. as listras
+  const medido = perfilMedidoDasListras({ campo: spc, cobre: Uint8Array.from(cobre, (c, k) => c & dentro[k]), plano, tracos, p });
+  const doDentro = distanciaNoPlano(dentro, N);
+  const doBom = distanciaNoPlano(Uint8Array.from(ruim, (r) => 1 - r), N);
+  const pode = new Float32Array(n);
+  for (let k = 0; k < n; k += 1) {
+    if (!alvo[k]) continue;
+    pode[k] =
+      spt[k] *
+      suave(0, p.listras.rampaForaDoSpcKm, doDentro[k] * passoKm) *
+      suave(0, p.listras.rampaDoMedidoKm, doBom[k] * passoKm);
+  }
+  const campo = Float32Array.from(largo, (v, k) => v + colcha.fino[k]);
+  const listras = medido
+    ? cortaListras({ campo, pode, plano, tracos, medido, p, sorteia })
+    : { corte: new Float32Array(n), corredor: new Uint8Array(n), base: [] };
+  // a diferença a somar no que se troca: ruim, fora do núcleo, dentro do SPT
+  const delta = new Float32Array(n);
+  for (let k = 0; k < n; k += 1) {
+    if (!ruim[k] || nucleo[k] || !(spt[k] > 0)) continue;
+    delta[k] = spt[k] * (campo[k] + listras.corte[k] - cur[k]);
+  }
+  const saida = Float32Array.from(metros);
+  const ateLat = p.ateGraus - 90;
+  for (let j = 0; j < Hf; j += 1) {
+    const lat = latitudeDaLinha(j, Hf) / RADIANOS;
+    if (lat > ateLat) continue;
+    const jw = Math.min(H - 1, Math.floor(((j + 0.5) * H) / Hf));
+    for (let i = 0; i < Wf; i += 1) {
+      const kw = jw * W + Math.min(W - 1, Math.floor(((i + 0.5) * W) / Wf));
+      if (qualidade[kw] === 0 || mascaras.nucleo[kw]) continue;
+      const [u, v] = noPlanoPolar(lat, longitudeDaColuna(i, Wf), raioKm);
+      const d = noPlanoPolarBilinear(delta, N, celula(plano, u), celula(plano, v));
+      if (Number.isFinite(d)) saida[j * Wf + i] = metros[j * Wf + i] + d;
+    }
+  }
+  // a cobertura e o peso da partilha na grade de trabalho
+  const novaCobertura = Uint8Array.from(cobertura);
+  const pesoDoSpc = Float32Array.from(mascaras.peso);
+  let alvoKm2 = 0;
+  for (let j = 0; j < H; j += 1) {
+    const lat = latitudeDaLinha(j, H) / RADIANOS;
+    if (lat > ateLat) continue;
+    for (let i = 0; i < W; i += 1) {
+      const kw = j * W + i;
+      if (qualidade[kw] === 0 || mascaras.nucleo[kw]) continue;
+      if (mascaras.dentro[kw] && mascaras.peso[kw] >= p.retalho.pesoLivre) {
+        pesoDoSpc[kw] = 1;
+        continue;
+      }
+      pesoDoSpc[kw] = 0;
+      const [u, v] = noPlanoPolar(lat, longitudeDaColuna(i, W), raioKm);
+      const [x, y] = [Math.round(celula(plano, u)), Math.round(celula(plano, v))];
+      if (x < 0 || y < 0 || x >= N || y >= N) continue;
+      const k = y * N + x;
+      if (listras.corredor[k]) novaCobertura[kw] = 2;
+      else if (spt[k] >= 0.5) novaCobertura[kw] = EXEMPLO_DO_SPC;
+    }
+  }
+  for (let k = 0; k < n; k += 1) if (alvo[k]) alvoKm2 += passoKm * passoKm;
+  return {
+    metros: saida,
+    cobertura: novaCobertura,
+    pesoDoSpc,
+    plano: { antes: cur, delta, alvo, spt, fino: colcha.fino, largo, corte: listras.corte, tracos, medido },
+    relatorio: {
+      corteKm: p.corteKm,
+      alvoKm2,
+      origens: origens.length,
+      desvioDoRumoGraus: +((desvio * 180) / Math.PI).toFixed(1),
+      concordanciaDoRumo: +(Math.hypot(dc, ds) / dn).toFixed(2),
+      asperezaPelaFoto: { r: +ajuste.r.toFixed(2), inclinacao: +ajuste.b.toFixed(2) },
+      retalhos: colcha.retalhos.length,
+      erroMediano: [...colcha.retalhos.map((r) => r.erro)].sort((a, b) => a - b)[colcha.retalhos.length >> 1],
+      listras: medido && {
+        fatias: medido.fatias,
+        porTraco: medido.porTraco,
+        sulcoM: Math.round(medido.sulcoM),
+        sulcoDaFatiaM: Math.round(medido.sulcoDaFatiaM),
+        cristaM: Math.round(medido.cristaM),
+        cristaACristaKm: +medido.cristaACristaKm.toFixed(1),
+        larguraKm: +medido.larguraKm.toFixed(1),
+        presente: listras.base.map((b) => (b ? Math.round(profundidadeDaFatia(b, passoKm, p).sulco) : null)),
+      },
+      retalhosDetalhe: colcha.retalhos,
+    },
+  };
 }
