@@ -182,7 +182,12 @@ Gazetteer da IAU — que se rotula planetográfico mas está sobre uma esfera, e
 comporta como planetocêntrico —: Dione (42 crateras, 0,53° → 0,32°) e Jápeto
 (20, mediana 2,3° → 1,1°). A cadeia reamostra por área cada mosaico para a
 latitude planetocêntrica antes da régua (`paraLatitudePlanetocentrica`), com
-k = (a/c)² dos eixos da IAU em cinco e o medido em Reia.
+k = (a/c)² dos eixos da IAU em cinco e o medido em Reia. Os relevos de
+Jápeto e de Reia, que tiram da foto as crateras (e, em Jápeto, o caminho da
+crista), leem-na pela mesma função e com o mesmo k (`mapaDeCor.latitude`):
+as crateras deles andaram até 34 km em Jápeto (mediana 25) e até 4 km em Reia
+(mediana 3), e as bordas do relevo, que ficavam 2,4° para o polo das da cor
+em Jápeto, caem nelas (`capturas/latitude/relevos/`).
 
 **As outras fontes.** Lua, Mercúrio, Marte, Ceres e Vesta foram medidos do
 mesmo jeito contra a normal do relevo medido de cada um (LOLA, MESSENGER,
@@ -257,7 +262,9 @@ entre elas. Altura em 8 bits de −14 a +22 km (141 m por degrau; escala
 0,0483 e viés −0,0188 em `RELEVO_DA_LUA`), normal do mesmo campo; o
 portão da cadeia aprova o conjunto — altura, normal e esses números — por
 sha256, e o `parametros.json` do candidato em
-`capturas/europa-japeto/j1c/b-20km/` lista cada escolha.
+`capturas/latitude/relevos/japeto/b-20km/` (o B da J1c,
+`capturas/europa-japeto/j1c/b-20km/`, refeito com a foto na latitude da
+casa) lista cada escolha.
 
 **Reia refeita nesta casa (PLAN-REIA.md, 07/10/2026).** O sintético do
 Saturn não acertava nem Mamaldi nem Tirawa — nenhuma das crateras com nome
@@ -286,7 +293,9 @@ até 0,34 % do próprio relevo. Altura em 8 bits de −7 a +6 km (51 m por
 degrau; escala 0,0170 e viés −0,0092 em `RELEVO_DA_LUA`), normal do mesmo
 campo; o portão da cadeia aprova o conjunto — altura, normal e esses números
 — por sha256, e os dois canais são gravados juntos. O `parametros.json` do
-candidato em `capturas/reia/r2b/a-1024/` lista cada escolha.
+candidato em `capturas/latitude/relevos/reia/a-1024/` (o A da R2b,
+`capturas/reia/r2b/a-1024/`, refeito com a foto na latitude da casa) lista
+cada escolha.
 
 ## As nove luas esculpidas de Saturno (item 134, S3)
 

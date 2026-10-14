@@ -1,14 +1,19 @@
-// Serve: lei — o relevo de Jápeto (item 230, J1): a crista no lugar e na altura do alvo, a cratera que a corta e a semente que se repete
+// Serve: lei — o relevo de Jápeto (item 230, J1): a crista no lugar e na altura do alvo, a cratera que a corta, a semente que se repete e a foto lida na latitude da casa
 // ============================================================
 // Grade de 512×256 (o dobro do texel do app) para o juiz correr rápido; as
 // bacias com nome que mais mexem na faixa equatorial vão inline, com o
 // lugar e o diâmetro do Gazetteer (°E); as detectadas no mosaico vão como
 // a detecção as entrega (uma em cima de Malprimis, que cede a ela; uma
-// menor que 2 texels), longe da faixa da crista.
+// menor que 2 texels), longe da faixa da crista. A latitude da foto: um
+// mosaico sintético de 2048×1024, planetográfico como os de Schenk, com uma
+// cratera de fundo escuro e borda clara em 45°, pelo passo da cadeia.
 // ============================================================
 import { describe, expect, it } from 'vitest';
+import { FONTES, relevoDeJapeto } from './baixa-texturas.mjs';
 import {
+  CRISTA_DO_GAZETTEER,
   LEI_DE_FORMA,
+  MONTES_DO_GAZETTEER,
   RAIO_KM,
   alturaDaCrista,
   camadaDaCrista,
@@ -95,4 +100,48 @@ describe('relevo de Jápeto', () => {
     // longe da cratera a crista fica como estava
     expect(campo[k(0, 215)]).toBe(antes[k(0, 215)]);
   });
+
+  it('lê a foto na latitude da casa com o k do mapa de cor: a cratera da foto em 45° planetográfico cai no relevo na planetocêntrica', () => {
+    const doRelevo = (corpo, campo) => FONTES.find((f) => f.corpo === corpo && f[campo])[campo].mapaDeCor.latitude;
+    const daCor = (corpo) => FONTES.find((f) => f.corpo === corpo && f.canal === 'map').latitude;
+    expect(doRelevo('rhea', 'relevoReia')).toBe(daCor('rhea'));
+    const latitude = doRelevo('iapetus', 'relevoJapeto');
+    expect(latitude).toBe(daCor('iapetus'));
+    const [Wf, Hf, D, RAD] = [2048, 1024, 110, Math.PI / 180];
+    const centro = { lat: 45, lonE: 60 };
+    const data = Buffer.alloc(Wf * Hf * 3);
+    for (let j = 0; j < Hf; j++) {
+      const lat = (90 - ((j + 0.5) * 180) / Hf) * RAD;
+      for (let i = 0; i < Wf; i++) {
+        const dLon = ((180 + ((i + 0.5) * 360) / Wf - centro.lonE) % 360) * RAD;
+        const cosA = Math.sin(lat) * Math.sin(45 * RAD) + Math.cos(lat) * Math.cos(45 * RAD) * Math.cos(dLon);
+        const r = (Math.acos(Math.min(1, cosA)) * RAIO_KM) / (D / 2);
+        const ruido = ((Math.imul(j * Wf + i, 0x9e3779b1) >>> 0) % 1000) / 1000 - 0.5;
+        const v = Math.round(255 * 0.3 * (1 + 0.15 * ruido) * (r < 0.92 ? 0.55 : r < 1.06 ? 1.3 : 1));
+        data.fill(v, 3 * (j * Wf + i), 3 * (j * Wf + i) + 3);
+      }
+    }
+    const gazetteer = [
+      ...Object.entries(CRISTA_DO_GAZETTEER).map(([n, [a, b]]) => ({ nome: `${n[0].toUpperCase()}${n.slice(1)} Montes`, ext_lonE_min: a, ext_lonE_max: b })),
+      ...MONTES_DO_GAZETTEER.map((m) => ({ nome: m.nome, lonE: m.lonE, diametro_km: m.diametroKm })),
+    ];
+    const { deteccao, relevo } = relevoDeJapeto({ rgb: { data, info: { width: Wf, height: Hf, channels: 3 } }, latitude, gazetteer, semente: 230, alturaMaximaKm: 20, largura: W, altura: H });
+    const centrica = Math.atan(Math.tan(45 * RAD) / latitude.k) / RAD;
+    expect(45 - centrica).toBeGreaterThan(2.5);
+    const achada = deteccao.crateras.filter((c) => Math.abs(c.lonE - 60) < 5 && Math.abs(c.lat - 44) < 6);
+    expect(achada).toHaveLength(1);
+    expect(Math.abs(achada[0].lat - centrica)).toBeLessThan(0.5);
+    const posta = relevo.detectadas.filter((c) => Math.abs(c.lonE - 60) < 5);
+    expect(posta.map((c) => c.lat)).toEqual([achada[0].lat]);
+    // a cavidade no campo: o centro de massa do que fica abaixo do chão, em latitude
+    let [soma, peso] = [0, 0];
+    for (let j = 0; j < H; j++) {
+      const lat = 90 - ((j + 0.5) * 180) / H;
+      for (let i = 0; i < W && lat > 25 && lat < 62; i++) {
+        const cava = -relevo.km[j * W + i];
+        if (Math.abs((180 + ((i + 0.5) * 360) / W) % 360 - 60) < 8 && cava > 0) [soma, peso] = [soma + cava * lat, peso + cava];
+      }
+    }
+    expect(Math.abs(soma / peso - centrica)).toBeLessThan(0.5);
+  }, 60000);
 });
