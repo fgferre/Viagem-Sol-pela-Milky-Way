@@ -253,9 +253,9 @@ const RELEVO_DE_JAPETO = {
     sha256: '425c9fc6eb806e81a42b49c8b7abf1548b6356066606d56a400ee3fb8433af1f',
   },
   sha256Aprovado: {
-    height: 'f52c3753fbec8431fedd7c2b338c3c03d6b4ae0d6daf2bd962bb03c17d528b2f',
-    normal: '86ae58035a9594e87c18a00c156a7b7338133cd43fc538f954fa47dd222f72b0',
-    parametros: '4cf4ccf3375e677cef80a9a3fe003b3741710dd10fc6b872505e8857d75ddf11',
+    height: 'f35dc68ddcf1c858a432e24df093cfa0988d5f1beea9cc9c96855e516d86db9b',
+    normal: '960526418109ed49164fa78fc650d5c18d1a6c2f7c77cf7e29f591df3487dd3d',
+    parametros: '98b037585239ae747f10a559e4783fca66ee9409b5db0dc20067015439eb1842',
   },
 };
 
@@ -285,9 +285,9 @@ const RELEVO_DE_REIA = {
     latitude: LATITUDE_DE_SCHENK.rhea,
   },
   sha256Aprovado: {
-    height: 'e30720c34adc452428fcfeee19ec2cd345637f0ee64be5e4d50ce83bf4d097e1',
-    normal: '7cf17052d9b4aa32fe420679ab68601bdc87b2eb76bfc4f15d6c43f152205d4e',
-    parametros: '92db84afa13152a98e6476bb1042ba3ee77ab854b34b8fb800918f3b4c1078cb',
+    height: 'e200429468f6dca31e81f68c05c027b909044b57927ef465f5a78c45b01319ca',
+    normal: 'dc8f1e79d4591a706f581ef1eb4573b34f8b329a42aa10af6b060e53e4a35311',
+    parametros: 'c379b60470a56524896aeb358c080aec770b6cec978ddf8664f3918e9cb32f88',
   },
 };
 

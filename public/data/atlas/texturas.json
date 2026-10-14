@@ -4091,8 +4091,8 @@
       "arquivo": "textures/atlas/iapetus/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 82869,
-      "sha256": "c7797850d4a90914b031a865e46a241f236f24900763f4a5889bc595d409153a",
+      "bytes": 80789,
+      "sha256": "f06dc9f647b9ddcb9741541eee150d577de43a03a6905627f9e82e6ea6a49891",
       "origem": {
         "fonte": {
           "pt": "Relevo de Jápeto gerado pelo app a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de ALTURA",
@@ -4121,8 +4121,8 @@
       "arquivo": "textures/atlas/iapetus/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 56460,
-      "sha256": "451e03457647a487606351b244e559f4a3f2bf105482bffa2853d94f46257f2e",
+      "bytes": 54776,
+      "sha256": "b832533cde2cd7da3d0bbc57947285797cdc01a46628f07dc1f8a7a408fd7b9c",
       "origem": {
         "fonte": {
           "pt": "Relevo de Jápeto gerado pelo app a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de ALTURA",
@@ -4301,8 +4301,8 @@
       "arquivo": "textures/atlas/iapetus/normal.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 229058,
-      "sha256": "1ad2b48bbf3128c834a4c906d0557e6f67f34202711a36219d1506305c31aff3",
+      "bytes": 221393,
+      "sha256": "d7a8ef3973739cff129ccdcf6f53da93ae42db501d333c1e221697be6082083c",
       "origem": {
         "fonte": {
           "pt": "Relevo de Jápeto gerado pelo app a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de NORMAIS derivado da altura",
@@ -4331,8 +4331,8 @@
       "arquivo": "textures/atlas/iapetus/normal.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 138694,
-      "sha256": "f627cb99572560ed15d18321d4157eb2872025bd38549ef1157d9ddfd3683df8",
+      "bytes": 133994,
+      "sha256": "3ab677048168bbcaf370ec89b798b976f339231b6dfcdf1c9e031ab389c2ce69",
       "origem": {
         "fonte": {
           "pt": "Relevo de Jápeto gerado pelo app a partir do Gazetteer da IAU, Porco 2005, Giese 2008, Lopez Garcia 2014 e do mosaico Cassini (não existe DTM público) — mapa de NORMAIS derivado da altura",
@@ -7681,8 +7681,8 @@
       "arquivo": "textures/atlas/rhea/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 341431,
-      "sha256": "e78cdc2be98d94ac0b8428524c52d38c98f6328869b60956da4671fb01e2de64",
+      "bytes": 341032,
+      "sha256": "bb7b79630c54f7cc16428a00dfc27bf4b42cbddae45bc3d3da56caae7e4964fc",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado pelo app com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de ALTURA",
@@ -7711,8 +7711,8 @@
       "arquivo": "textures/atlas/rhea/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 222298,
-      "sha256": "91a04801fc011c67e4088e1e9b14d9315a5c305c636d45850309a8d0c9b5aeee",
+      "bytes": 222064,
+      "sha256": "b910cdb0af60eaed7f651904cac36e06eebcf7ea632fcad8ed19ac7bef7cf254",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado pelo app com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de ALTURA",
@@ -7841,8 +7841,8 @@
       "arquivo": "textures/atlas/rhea/normal.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 794687,
-      "sha256": "a75572b70befef50c1b740e9320fb6d69a141b9e8605be114cf32920d93abb0f",
+      "bytes": 793915,
+      "sha256": "8f5f082101dd6d73f468b58101858a8bf04d6e7646d303ea3850aef225dcee07",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado pelo app com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de NORMAIS derivado da altura",
@@ -7871,8 +7871,8 @@
       "arquivo": "textures/atlas/rhea/normal.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 516090,
-      "sha256": "c37eeb7a02f3497e22e88cd62d42ca3afc53ef6c86c3eb34c7371bca3f89cb00",
+      "bytes": 515772,
+      "sha256": "915bcb36c65a790bf53a8f9b212652ee14f5958f5438fe2d62a8a92911055261",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma SPC de Reia — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — completado pelo app com as crateras menores do mosaico Cassini e a lei de Aponte-Hernández et al. 2021 — mapa de NORMAIS derivado da altura",
