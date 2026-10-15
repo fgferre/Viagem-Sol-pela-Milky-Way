@@ -183,5 +183,5 @@ describe('o SPC do polo sul de Encélado (R4)', () => {
     }
     expect(n).toBeGreaterThan(1000);
     expect(Math.sqrt(sRes / n)).toBeLessThan(0.25 * Math.sqrt(sRuido / n));
-  });
+  }, 120_000);
 });

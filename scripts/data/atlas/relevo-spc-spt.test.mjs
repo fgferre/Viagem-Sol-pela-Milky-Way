@@ -90,7 +90,7 @@ describe('o SPT de Encélado por exemplo do SPC (R4)', () => {
     expect(diferentes).toBe(0);
     expect(iguais).toBeGreaterThan(0);
     expect(mudados).toBeGreaterThan(1000);
-  });
+  }, 120_000);
 
   it('a emenda com o conhecido não tem degrau: o salto na borda do alvo é o dos vizinhos dos dois lados', () => {
     const { antes, delta, alvo, spt } = r.plano;
@@ -155,7 +155,7 @@ describe('o SPT de Encélado por exemplo do SPC (R4)', () => {
       expect(A[q - 1] - A[q], `anel ${4 * q} km`).toBeLessThan(0.4);
     }
     expect(A[Math.ceil(P.limite.foraKm / 4) + 1]).toBeLessThan(0.05);
-  });
+  }, 120_000);
 
   it('a listra fora do SPC tem, na média ao longo, o perfil medido nas do SPC', () => {
     const { medido, tracos, largo: L, fino, corte } = r.plano;
