@@ -218,7 +218,11 @@
 // dos ladrilhos ruins segue valendo fora do núcleo do SPC; no terreno das
 // listras (SPT, até 55°S) o que o SPC não cobre e o DEM tem como ruído ou liso
 // ganha o fino do próprio SPC por exemplo, e as listras fora dele as fatias
-// medidas nas do SPC (`preencheSpt`).
+// medidas nas do SPC (`preencheSpt`); o ladrilho ruim que cruza os 55°S segue
+// preenchido e se apaga em 24 km, e perto do DEM bom mais calmo o preenchido
+// desce à energia dele. Por último, as bordas retas de ladrilho entre dois
+// ladrilhos bons são recosturadas (`recosturaBordas`, 14/10/2026: a única
+// mudança no Schenk bom, ~0,8 % da esfera em faixas de ±5 km).
 // ============================================================
 
 import { createHash } from 'node:crypto';
@@ -228,7 +232,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
-import { BOM, CONSERTO_DE_ENCELADO, LISO, RUIDO, consertaDem, tracaListras } from './conserto-do-dem.mjs';
+import { BOM, CONSERTO_DE_ENCELADO, LISO, RUIDO, consertaDem, recosturaBordas, tracaListras } from './conserto-do-dem.mjs';
 import { luminanciaDoRgb } from './crateras-pela-foto.mjs';
 import { pesosDaCaixa } from './gera-horizonte.mjs';
 import { LATITUDE_DE_SCHENK, giraColunasDeImagem, paraLatitudePlanetocentrica } from './lib-texturas.mjs';
@@ -566,7 +570,8 @@ export const CORPOS = {
     // sul, as listras de tigre dentro deles. `conserto-do-dem.mjs` os acha
     // contra o retrato da cor (o mosaico de Schenk, ainda com a sombra), deixa
     // neles só o que tem ≥ 8 km e as listras e crateras do traço na foto; os
-    // ladrilhos bons saem byte a byte (13/10/2026). `fino`: 'liso' (o ruim
+    // ladrilhos bons saem byte a byte (13/10/2026), menos a faixa das bordas
+    // retas de ladrilho recosturadas (14/10/2026). `fino`: 'liso' (o ruim
     // fica só com o largo medido, listras e crateras; a colcha por exemplo foi
     // julgada um retalho agitado), 'exemplo' ou 'foto' (fotoclinometria,
     // reprovada na validação de 14/10/2026 — ver o cabeçalho do conserto). O sha256 é o dos bytes do
@@ -1723,9 +1728,11 @@ async function lerSpcDoPolo(corpo) {
  * foto na grade de trabalho, `grade` a do SPC ou null): o conserto dos
  * ladrilhos ruins com o núcleo do SPC protegido; o registro (a guarda do giro
  * e o plano nos ladrilhos bons), a fusão e o SPT por exemplo do SPC, com as
- * listras pelo traço da foto (`preencheSpt`). Devolve `{ metros, conserto,
- * spc, spt, partilha }` — a partilha da área da esfera em SPC, Schenk medido,
- * alisado, derivado da foto e inventado por exemplo do SPC.
+ * listras pelo traço da foto (`preencheSpt`); por último, as bordas retas de
+ * ladrilho entre dois ladrilhos bons recosturadas (`recosturaBordas`: a única
+ * mudança no Schenk bom). Devolve `{ metros, conserto, spc, spt, recostura,
+ * partilha }` — a partilha da área da esfera em SPC, Schenk medido, alisado,
+ * derivado da foto e inventado por exemplo do SPC.
  */
 export function consertaComSpc({ casa, largura, altura, luminancia, corpo, grade = null }) {
   const p = SPC_DE_ENCELADO;
@@ -1743,7 +1750,30 @@ export function consertaComSpc({ casa, largura, altura, luminancia, corpo, grade
     fino: corpo.consertoDoDem.fino,
     protegido: mascaras?.nucleo,
   });
-  if (!grade) return { metros: conserto.metros, conserto, spc: null, partilha: partilhaDaArea(conserto.cobertura, null, W, Ht) };
+  // as bordas retas de ladrilho entre dois bons (fora do SPC), recosturadas por último, sobre o que ficou em volta
+  const recostura = (metros) =>
+    conserto.bordas
+      ? recosturaBordas({
+          metros,
+          Wf: largura,
+          Hf: altura,
+          bordas: conserto.bordas,
+          livre: Uint8Array.from(conserto.qualidade, (c, k) => (c === BOM && !mascaras?.dentro[k] ? 1 : 0)),
+          W,
+          H: Ht,
+          raioM,
+        })
+      : { metros, texels: 0, km2: 0 };
+  if (!grade) {
+    const r = recostura(conserto.metros);
+    return {
+      metros: r.metros,
+      conserto,
+      spc: null,
+      recostura: { texels: r.texels, km2: r.km2 },
+      partilha: partilhaDaArea(conserto.cobertura, null, W, Ht),
+    };
+  }
   const texel = (lat, lonE) => {
     const j = Math.min(Ht - 1, Math.floor(((90 - lat) / 180) * Ht));
     return j * W + (Math.floor(((((lonE - 180) % 360) + 360) % 360) / 360 * W) % W);
@@ -1778,11 +1808,13 @@ export function consertaComSpc({ casa, largura, altura, luminancia, corpo, grade
     H: Ht,
     raioM,
   });
+  const r = recostura(spt.metros);
   return {
-    metros: spt.metros,
+    metros: r.metros,
     conserto,
     spc: { registro, mascaras, correcao: f.correcao },
     spt: spt.relatorio,
+    recostura: { texels: r.texels, km2: r.km2 },
     partilha: partilhaDaArea(spt.cobertura, spt.pesoDoSpc, W, Ht),
   };
 }
@@ -1837,6 +1869,11 @@ async function consertarODem(corpo, fina) {
   console.log(
     `área da esfera: medido ${pct(a.schenk)} (Schenk & McKinnon 2024) + ${pct(a.spc)} (SPC, Park et al. 2024), ` +
       `inventado por exemplo do SPC ${pct(a.exemplo)}, derivado da foto ${pct(a.derivado)}, alisado ${pct(a.alisado)}.`
+  );
+  console.log(
+    `bordas de ladrilho recosturadas no Schenk bom: ${Math.round(r.recostura.km2)} km² ` +
+      `(${pct(r.recostura.km2 / (4 * Math.PI * (corpo.raioM / 1000) ** 2))} da esfera, ${r.recostura.texels} texels finos) — ` +
+      'a única mudança no DEM bom.'
   );
   return { ...fina, metros: giraColunasDeImagem(r.metros, largura, altura, 1, -giro) };
 }

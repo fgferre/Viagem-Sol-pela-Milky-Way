@@ -313,7 +313,15 @@ DEM (a máscara, as crateras e o traço das listras) lê a foto na latitude da
 casa com o MESMO k do mapa de cor (`consertoDoDem.latitude`, 14/10/2026):
 a borda da foto contra o SPC do polo sul caiu de 3,1 para 0,8 km RMS, e a
 encosta do DEM passou a explicar 12 % do brilho da foto nas ondas de 2–4 km
-dos ladrilhos bons (era 0,7 %; `capturas/r4-encelado/latitude/`).
+dos ladrilhos bons (era 0,7 %; `capturas/r4-encelado/latitude/`). As emendas
+do terreno das listras (14/10/2026, `capturas/r4-encelado/emendas/`): a borda
+do ruído do polo sul se encaixa nos ladrilhos de estéreo pela energia de 1
+pixel do DEM; o ladrilho ruim que cruza os 55°S segue preenchido e se apaga em
+24 km, e perto de um ladrilho bom mais calmo o preenchido desce à aspereza
+dele; e as bordas retas de ladrilho entre dois ladrilhos bons (uma risca de
+1–2 pixels e degraus de até ~500 m) são recosturadas numa faixa de ±5 km — a
+única mudança no DEM bom, ~6 100 km² (0,8 % da esfera); a reta que a foto
+confirma, ou que é vale ou crista, fica como está.
 
 ## As nove luas esculpidas de Saturno (item 134, S3)
 

@@ -1,6 +1,6 @@
 // Serve: lei — o SPT de Encélado por exemplo do SPC (R4): num polo sintético, as origens dos retalhos só saem do SPC,
-// o SPC e o DEM bom saem byte a byte, a emenda com o conhecido não tem degrau, e a listra fora do SPC tem, na média ao
-// longo, o perfil medido nas do SPC
+// o SPC e o DEM bom saem byte a byte, a emenda com o conhecido não tem degrau, a listra fora do SPC tem, na média ao
+// longo, o perfil medido nas do SPC, e o ladrilho ruim que cruza o limite segue preenchido e se apaga devagar
 // ============================================================
 import { beforeAll, describe, expect, it } from 'vitest';
 import { latitudeDaLinha, longitudeDaColuna } from './relevo-inventado.mjs';
@@ -109,6 +109,52 @@ describe('o SPT de Encélado por exemplo do SPC (R4)', () => {
     expect(razoes.length).toBeGreaterThan(50);
     expect(q(0.5)).toBeLessThan(1.3);
     expect(q(0.9)).toBeLessThan(2.5);
+  });
+
+  it('o ladrilho ruim que cruza o limite segue preenchido e se apaga devagar: nada liso encostado no preenchido', () => {
+    // como o conserto deixa o DEM: o ruim só com o largo (liso); a oeste, o ladrilho ruim passa 45 km do limite
+    const raioDoLimite = (SPT_DE_ENCELADO.limite.latGraus + 90) * (Math.PI / 180) * RKM;
+    const metros = Float32Array.from(entrada.metros);
+    for (let j = 0; j < Hf; j += 1) {
+      for (let i = 0; i < Wf; i += 1) {
+        const [u, v] = uvDoTexel(j, i, Wf, Hf);
+        if (Math.hypot(u, v) >= RAIO_DO_SPC) metros[j * Wf + i] = largo(u, v);
+      }
+    }
+    const qualidade = Uint8Array.from(entrada.qualidade);
+    for (let j = 0; j < H; j += 1) {
+      for (let i = 0; i < W; i += 1) {
+        const [u, v] = uvDoTexel(j, i, W, H);
+        if (u < -20 && Math.hypot(u, v) < raioDoLimite + 45) qualidade[j * W + i] = 1;
+      }
+    }
+    const s = preencheSpt({ ...entrada, metros, qualidade, Wf, Hf, cobertura: new Uint8Array(W * H), W, H, raioM: R, p: P });
+    // a amplitude do que entrou (o fino), em anéis de 4 km além do limite, no ladrilho do oeste
+    const aneis = new Float64Array(12);
+    const contas = new Float64Array(12);
+    let [dentro, nDentro] = [0, 0];
+    for (let j = 0; j < Hf; j += 1) {
+      for (let i = 0; i < Wf; i += 1) {
+        const [u, v] = uvDoTexel(j, i, Wf, Hf);
+        if (u > -25 || Math.abs(v) > 60) continue;
+        const d = Math.hypot(u, v) - raioDoLimite;
+        const f = (s.metros[j * Wf + i] - metros[j * Wf + i]) ** 2;
+        if (d > -20 && d < 0) {
+          dentro += f;
+          nDentro += 1;
+        } else if (d >= 0 && d < 48) {
+          aneis[Math.floor(d / 4)] += f;
+          contas[Math.floor(d / 4)] += 1;
+        }
+      }
+    }
+    const A = Array.from(aneis, (a, q) => Math.sqrt(a / contas[q]) / Math.sqrt(dentro / nDentro));
+    expect(A[0]).toBeGreaterThan(0.6);
+    for (let q = 1; q < A.length; q += 1) {
+      expect(A[q], `anel ${4 * q} km`).toBeLessThan(A[q - 1] + 0.1);
+      expect(A[q - 1] - A[q], `anel ${4 * q} km`).toBeLessThan(0.4);
+    }
+    expect(A[Math.ceil(P.limite.foraKm / 4) + 1]).toBeLessThan(0.05);
   });
 
   it('a listra fora do SPC tem, na média ao longo, o perfil medido nas do SPC', () => {

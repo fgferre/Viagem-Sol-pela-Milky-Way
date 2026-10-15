@@ -1,4 +1,4 @@
-// Serve: lei — o conserto do DEM (Encélado, R4): os ladrilhos bons saem byte a byte, o remendo de bolhas ganha o fino POR EXEMPLO dos bons (retalhos só de ladrilho bom, sem degrau entre eles) ou PELA FOTO (fotoclinometria: o relevo iluminado de um rumo conhecido volta com o sinal e a escala), a opção só-liso não põe fino, e a membrana não deixa degrau na emenda
+// Serve: lei — o conserto do DEM (Encélado, R4): os ladrilhos bons saem byte a byte, o remendo de bolhas ganha o fino POR EXEMPLO dos bons (retalhos só de ladrilho bom, sem degrau entre eles) ou PELA FOTO (fotoclinometria: o relevo iluminado de um rumo conhecido volta com o sinal e a escala), a opção só-liso não põe fino, a membrana não deixa degrau na emenda, e a borda reta de ladrilho é achada e recosturada sem degrau, só na faixa dela
 // ============================================================
 // Um corpo pequeno (texel de 0,39 km como o de Encélado na grade de 4096) com
 // terreno de cristas paralelas em toda parte e, no meio, um ladrilho de
@@ -11,9 +11,12 @@ import {
   CONSERTO_DE_ENCELADO,
   DERIVADO,
   bandaFinaPelaFoto,
+  bordasDeLadrilho,
   consertaDem,
+  energiaDoPixel,
   gradiente,
   media,
+  recosturaBordas,
   sorteador,
 } from "./conserto-do-dem.mjs";
 import { latitudeDaLinha, longitudeDaColuna } from "./relevo-inventado.mjs";
@@ -408,5 +411,150 @@ describe("o conserto do DEM (Encélado, R4)", () => {
         dentro.length,
     ).toBeGreaterThan(0.8);
     expect(liso.relatorio.fino).toBe("liso");
+  });
+});
+
+describe("as bordas retas de ladrilho (Encélado, R4)", () => {
+  // o terreno de 200 ondas de 4–10 km em rumos sorteados (sem reta nenhuma: a crista de uma onda forte seria uma) e, no
+  // meridiano 60°E de 35°S a 65°S, a costura de dois ladrilhos como as de
+  // Schenk: um degrau de 150 m (o leste acima, que se apaga devagar para leste e nas pontas) e uma risca pontilhada
+  // de 1 pixel (±40 m a cada 2 linhas). No meridiano 200°E, a mesma coisa, mas a foto a vê: é uma escarpa de verdade
+  const ESCARPA = 200;
+  const LON = 60;
+  const DEGRAU = 150;
+  const naCostura = (lat) => lat < -35 && lat > -65;
+  const sorteiaOndas = sorteador(11);
+  /** ondas planas no espaço (rumo 3D sorteado): a textura é a mesma em toda a esfera, sem o achatamento de um plano */
+  const ONDAS = Array.from({ length: 200 }, () => {
+    const [z, t] = [2 * sorteiaOndas() - 1, 2 * Math.PI * sorteiaOndas()];
+    const r = Math.sqrt(1 - z * z);
+    return [[r * Math.cos(t), r * Math.sin(t), z], 4 + 6 * sorteiaOndas(), sorteiaOndas() * 2 * Math.PI];
+  });
+  const terreno = (lat, lon) => {
+    const [f, l] = [lat / GRAUS, lon / GRAUS];
+    const q = [RKM * Math.cos(f) * Math.cos(l), RKM * Math.cos(f) * Math.sin(l), RKM * Math.sin(f)];
+    let h = 0;
+    for (const [d, c, fase] of ONDAS) h += 5.4 * Math.sin((2 * Math.PI * (q[0] * d[0] + q[1] * d[1] + q[2] * d[2])) / c + fase);
+    return h;
+  };
+  const colunaDaCostura = Math.round(((LON + 180) / 360) * Wf) % Wf;
+  const colunaDaEscarpa = Math.round(((ESCARPA - 180) / 360) * Wf) % Wf;
+  /** a distância (km) pela esfera do texel fino (j, i) ao meridiano da costura no trecho dela, com a janela do
+   * detector (`meioKm`) além de cada ponta: lá a reta ainda acende metade dela */
+  const alem = (P.bordas.meioKm / RKM) * GRAUS;
+  const aCostura = (j, i) => {
+    const lat = latitudeDaLinha(j, Hf) * GRAUS;
+    const f = Math.max(-65 - alem, Math.min(-35 + alem, lat)) / GRAUS;
+    const c =
+      Math.sin(latitudeDaLinha(j, Hf)) * Math.sin(f) +
+      Math.cos(latitudeDaLinha(j, Hf)) * Math.cos(f) * Math.cos((longitudeDaColuna(i, Wf) - LON) / GRAUS);
+    return Math.acos(Math.min(1, c)) * RKM;
+  };
+  /** o oeste da faixa que não pode mudar (`livre` = 0): de 46°E a 54°E */
+  const preso = (lon) => lon > 46 && lon < 54;
+  let liso;
+  let dem;
+  let borda;
+  let r;
+  let livre;
+  beforeAll(() => {
+    liso = gradeFina(terreno);
+    dem = Float32Array.from(liso);
+    for (let j = 0; j < Hf; j += 1) {
+      const lat = latitudeDaLinha(j, Hf) * GRAUS;
+      if (!naCostura(lat)) continue;
+      for (let i = 0; i < Wf; i += 1) {
+        const k = j * Wf + i;
+        const lon = longitudeDaColuna(i, Wf);
+        const ponta = Math.sin((Math.PI / 2) * Math.min(1, Math.min(lat + 65, -35 - lat) / 5)) ** 2;
+        for (const [l0, coluna] of [
+          [LON, colunaDaCostura],
+          [ESCARPA, colunaDaEscarpa],
+        ]) {
+          if (lon > l0 && lon < l0 + 60) dem[k] += DEGRAU * ponta * Math.cos(((lon - l0) / 60) * (Math.PI / 2)) ** 2;
+          if (i === coluna) dem[k] += (j >> 1) % 2 ? 40 : -40;
+        }
+      }
+    }
+    // a foto: o sombreado do terreno, e o degrau de brilho da escarpa (nenhum na costura)
+    const fotoLog = new Float32Array(W * H);
+    for (let j = 0; j < H; j += 1) {
+      const lat = latitudeDaLinha(j, H) * GRAUS;
+      for (let i = 0; i < W; i += 1) {
+        const lon = longitudeDaColuna(i, W);
+        const escarpa = naCostura(lat) && lon > ESCARPA && lon < ESCARPA + 30 ? 0.1 : 0;
+        fotoLog[j * W + i] = Math.log(0.3 + 0.0005 * terreno(lat, lon) + escarpa);
+      }
+    }
+    borda = bordasDeLadrilho({ e1: energiaDoPixel(dem, Wf, Hf, W, H), W, H, raioM: RAIO_M, p: P, fotoLog }).borda;
+    livre = new Uint8Array(W * H).fill(1);
+    for (let j = 0; j < H; j += 1) for (let i = 0; i < W; i += 1) if (preso(longitudeDaColuna(i, W))) livre[j * W + i] = 0;
+    r = recosturaBordas({ metros: dem, Wf, Hf, bordas: borda, livre, W, H, raioM: RAIO_M, p: P });
+  }, 120_000);
+
+  it("a costura é achada ao longo, e nada longe dela — nem a escarpa que a foto confirma", () => {
+    let linhas = 0;
+    let achadas = 0;
+    let longe = 0;
+    const coluna = Math.round(((LON + 180) / 360) * W) % W;
+    for (let j = 0; j < H; j += 1) {
+      const lat = latitudeDaLinha(j, H) * GRAUS;
+      for (let i = 0; i < W; i += 1) if (borda[j * W + i] && aCostura(2 * j, 2 * i) > 2) longe += 1;
+      if (lat > -62 && lat < -38) {
+        linhas += 1;
+        if ([-1, 0, 1].some((d) => borda[j * W + coluna + d])) achadas += 1;
+      }
+    }
+    expect(achadas / linhas).toBeGreaterThan(0.8);
+    expect(longe).toBe(0);
+    // sem a foto, a escarpa passaria por costura: é a foto que a deixa de fora
+    const semFoto = bordasDeLadrilho({ e1: energiaDoPixel(dem, Wf, Hf, W, H), W, H, raioM: RAIO_M, p: P }).borda;
+    const naEscarpa = Math.round(((ESCARPA - 180) / 360) * W) % W;
+    expect(semFoto.filter((b, k) => b && Math.abs((k % W) - naEscarpa) <= 1).length).toBeGreaterThan(20);
+  });
+
+  it("recosturada, a costura não deixa degrau nem risca", () => {
+    const salto = (f, j) => f[j * Wf + colunaDaCostura + 2] - f[j * Wf + colunaDaCostura - 2];
+    const lap = (f, j) => {
+      const k = j * Wf + colunaDaCostura;
+      return Math.abs(f[k] - 0.25 * (f[k - 1] + f[k + 1] + f[k - Wf] + f[k + Wf]));
+    };
+    let [antes, depois, risca, fundo, n] = [0, 0, 0, 0, 0];
+    for (let j = 0; j < Hf; j += 1) {
+      const lat = latitudeDaLinha(j, Hf) * GRAUS;
+      if (!(lat > -60 && lat < -40)) continue;
+      antes += Math.abs(salto(dem, j) - salto(liso, j));
+      depois += Math.abs(salto(r.metros, j) - salto(liso, j));
+      risca += lap(r.metros, j);
+      fundo += lap(liso, j);
+      n += 1;
+    }
+    expect(antes / n).toBeGreaterThan(0.9 * DEGRAU);
+    expect(depois / n).toBeLessThan(0.1 * DEGRAU);
+    expect(risca / n).toBeLessThan(2 * (fundo / n) + 1);
+  });
+
+  it("fora da faixa da costura e no que não está livre, byte a byte", () => {
+    let [fora, mudaFora, presos, mudaPreso, mudados] = [0, 0, 0, 0, 0];
+    for (let j = 0; j < Hf; j += 1) {
+      for (let i = 0; i < Wf; i += 1) {
+        const k = j * Wf + i;
+        const igual = Object.is(r.metros[k], dem[k]);
+        if (!igual) mudados += 1;
+        if (preso(longitudeDaColuna(i, Wf))) {
+          presos += 1;
+          if (!igual) mudaPreso += 1;
+        } else if (aCostura(j, i) > P.bordas.faixaKm + 2) {
+          fora += 1;
+          if (!igual) mudaFora += 1;
+        }
+      }
+    }
+    expect(fora).toBeGreaterThan(0.9 * Wf * Hf);
+    expect(presos).toBeGreaterThan(0);
+    expect(mudaFora).toBe(0);
+    expect(mudaPreso).toBe(0);
+    expect(mudados).toBeGreaterThan(1000);
+    expect(r.texels).toBe(mudados);
   });
 });

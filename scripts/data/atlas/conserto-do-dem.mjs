@@ -34,6 +34,20 @@
 // brilho da foto NÃO entra por correlação: medida em janelas de 8 km, a
 // encosta do DEM explica < 1 % dele nas bandas finas (registro de km).
 //
+// O ENCAIXE E AS BORDAS DE LADRILHO (14/10/2026, capturas/r4-encelado/emendas/).
+// Mesmo assim a borda do ruído errava a do ladrilho por até ~10 km: no SPT
+// ficava uma baía de bolhas "boa" (cópia crua ao lado do preenchido) e um
+// pedaço do ladrilho liso vizinho "ruído" (uma placa chapada). O que separa
+// os ladrilhos é a ENERGIA DE 1 PIXEL do DEM fino (`energiaDoPixel`): cada
+// ladrilho de estéreo tem o seu nível (o de bolhas 1,2 em ln acima dos lisos
+// a 60–130°E), e o terreno de 200 m quase não tem energia nessa escala. Na borda do
+// ruído do polo sul, ±15 km, cada texel vai para o lado cujo nível ele tem
+// (`encaixaNosLadrilhos`). As costuras entre ladrilhos são riscas retas dela
+// (1–2 pixels, muitas com degrau de 100–200 m), em meridiano, paralelo,
+// diagonal ou arco: `bordasDeLadrilho` as acha pela fração acesa ao longo de
+// uma reta de 16 km contra as paralelas. Junto do ruído a borda vai com ele;
+// entre dois ladrilhos bons, `recosturaBordas` tira a risca e espalha o degrau
+// em rampa de ±5 km, depois de tudo — a única mudança no DEM bom, declarada.
 // O CONSERTO (`consertaNaGrade`), pela ordem de honestidade da linha:
 //  1. MEDIDO: fora da máscara nada muda, byte a byte. Dentro, fica só a
 //     escala que confere com o terreno bom: a média gaussiana de σ `corteKm`
@@ -124,6 +138,41 @@ export const CONSERTO_DE_ENCELADO = Object.freeze({
   ilhaMinimaKm2: 1000,
   bordaKm: 8,
   bordaJanelaKm: 1.5,
+  /**
+   * o ENCAIXE da borda do ruído do polo sul nas bordas de ladrilho (`encaixaNosLadrilhos`): as componentes de ruído
+   * que passam de `poloSulGraus`; na faixa de ±`faixaKm` da borda delas, o nível de ln E₁ (a energia de 1 pixel do
+   * DEM fino, média a σ `sigmaKm`) decide o lado, se os dois lados diferem de `margem` (medido, emendas/: a 50–64°S e
+   * 60–130°E o ruído fica 1,2 acima do bom; nas outras longitudes os dois empatam e nada muda)
+   */
+  encaixe: Object.freeze({ poloSulGraus: 60, faixaKm: 15, sigmaKm: 1, margem: 0.7 }),
+  /**
+   * as BORDAS RETAS DE LADRILHO (`bordasDeLadrilho`) entre `latitudes` e a recostura delas no bom (`recosturaBordas`):
+   * `rumos` retas por meia volta, a janela de ±`meioKm` ao longo, as paralelas a ±`ladoPx`, o texel "aceso"
+   * acima de `tau` vezes a E₁ média de σ `referenciaKm`; a borda nasce em contraste ≥ `contrasteMin`, segue por
+   * ≥ `contrasteFraco` e fica se tem `comprimentoMinKm` (medido em emendas/: as costuras de 30–100 km medem 0,55–0,85;
+   * o fundo do terreno, 0,2–0,35), se a `foto` não a confirma e se o `perfil` não é de vale ou crista (ver
+   * `bordasDeLadrilho`). A `ruimPertoKm` do ruído a
+   * borda vira ruído, com `folgaKm` em volta;
+   * no bom, o miolo de ±`nucleoKm` perde a encosta e a faixa de ±`faixaKm` leva o degrau (`passadas` de SOR)
+   */
+  bordas: Object.freeze({
+    latitudes: Object.freeze([-75, -30]),
+    rumos: 48,
+    meioKm: 8,
+    ladoPx: 3,
+    tau: 2,
+    referenciaKm: 3,
+    contrasteMin: 0.5,
+    contrasteFraco: 0.35,
+    comprimentoMinKm: 10,
+    foto: Object.freeze({ sigmasKm: Object.freeze([0.4, 1.6]), ladoPx: Object.freeze([4, 6]), maxima: 1.3 }),
+    perfil: Object.freeze({ sigmaKm: 0.4, ladoKm: 1.5, sulcoMaxM: 80 }),
+    ruimPertoKm: 2,
+    folgaKm: 1,
+    nucleoKm: 0.5,
+    faixaKm: 5,
+    passadas: 400,
+  }),
   corteKm: 1.6,
   vizinhancaKm: Object.freeze([30, 120]),
   /** a colcha do fino por exemplo (`bandaFinaPorExemplo`) */
@@ -423,11 +472,318 @@ export function estatisticaVizinha(campo, bom, W, H, raioM, vizinhancaKm) {
   return o;
 }
 
+// ------------------------------------------------------------
+// Os ladrilhos: a energia de 1 pixel, as bordas retas e o encaixe
+// ------------------------------------------------------------
+
+/**
+ * A ENERGIA DE 1 PIXEL do DEM fino (Wf×Hf, m): o laplaciano de 4 vizinhos (os
+ * de leste e oeste a ~1 pixel norte–sul em km) ao quadrado, em média de área na
+ * grade de trabalho W×H (m²). Cada ladrilho de
+ * estéreo tem o seu nível (o de bolhas muito acima dos lisos) e as costuras
+ * entre eles são riscas finas dela: o terreno do DEM de 200 m quase não tem
+ * energia nessa escala.
+ */
+export function energiaDoPixel(metros, Wf, Hf, W, H) {
+  const e = new Float32Array(Wf * Hf);
+  for (let j = 1; j < Hf - 1; j += 1) {
+    // os vizinhos leste e oeste à mesma distância em km que os de norte e sul (interpolados entre colunas): perto do
+    // polo a coluna encolhe, e o laplaciano de vizinhos colados veria só a curvatura norte–sul (riscas leste–oeste em
+    // todo terreno); com o passo arredondado, o nível pularia nas latitudes da troca (faixas retas em paralelo)
+    const o = Math.min(Wf / 4, 1 / Math.max(Math.cos(latitudeDaLinha(j, Hf)), 1e-3));
+    const [o0, f] = [Math.floor(o), o - Math.floor(o)];
+    const linha = j * Wf;
+    const em = (i) => metros[linha + (((i % Wf) + Wf) % Wf)];
+    for (let i = 0; i < Wf; i += 1) {
+      const k = linha + i;
+      const leste = (1 - f) * em(i + o0) + f * em(i + o0 + 1);
+      const oeste = (1 - f) * em(i - o0) + f * em(i - o0 - 1);
+      const l = metros[k] - 0.25 * (leste + oeste + metros[k - Wf] + metros[k + Wf]);
+      e[k] = l * l;
+    }
+  }
+  return Float32Array.from(reamostraParaACasa(e, Wf, Hf, W, H, 180));
+}
+
+/**
+ * AS BORDAS RETAS DE LADRILHO na grade de trabalho, entre `bordas.latitudes`:
+ * um texel está "aceso" se a energia de 1 pixel `e1` passa de `tau` vezes a
+ * média dela a σ `referenciaKm`. Para cada um de `rumos` rumos (no espaço do
+ * pixel), a fração acesa numa janela de ±`meioKm` ao longo da reta digital
+ * desse rumo, menos a média das duas paralelas a ±`ladoPx`: a costura é
+ * longa, reta e fina; os lineamentos do terreno (e as listras) são curtos,
+ * curvos ou largos. Pega as retas em qualquer rumo (as costuras de Schenk
+ * correm em meridiano, em paralelo e em diagonal; algumas são arcos, retas
+ * no quadro polar). Com a foto (`fotoLog`), a reta que ela confirma — uma
+ * escarpa de verdade, afiada também no DEM — fica de fora; com o DEM da grade
+ * de trabalho (`h`), também o vale ou a crista de verdade. Devolve `{ borda
+ * (a histerese, ver abaixo), contraste (o maior nos rumos), rumo (o índice
+ * dele) }`.
+ */
+export function bordasDeLadrilho({ e1, W, H, raioM, p = CONSERTO_DE_ENCELADO, fotoLog = null, h = null }) {
+  const b = p.bordas;
+  const ref = media(e1, W, H, raioM, b.referenciaKm);
+  const jIni = Math.max(1, Math.floor(((90 - b.latitudes[1]) / 180) * H));
+  const jFim = Math.min(H - 1, Math.ceil(((90 - b.latitudes[0]) / 180) * H));
+  const NH = jFim - jIni;
+  const aceso = new Uint8Array(NH * W);
+  for (let y = 0; y < NH; y += 1)
+    for (let i = 0; i < W; i += 1) {
+      const k = (y + jIni) * W + i;
+      aceso[y * W + i] = e1[k] > b.tau * ref[k] ? 1 : 0;
+    }
+  // a janela é de ±`meioKm` pela esfera (em pixel, a reta deitada perto do polo seria curta em km e acharia o
+  // esticamento leste–oeste da grade): o passo de cada amostra em km, e dois ponteiros
+  const pxKm = (Math.PI * raioM) / H / 1000;
+  const cosDaLinha = Float64Array.from({ length: NH }, (_, y) => Math.cos(latitudeDaLinha(y + jIni, H)));
+  const cosMin = Math.min(cosDaLinha[0], cosDaLinha[NH - 1]);
+  const ext = Math.ceil(b.meioKm / (pxKm * cosMin)) + 1;
+  const F = new Float32Array(NH * W);
+  const contraste = new Float32Array(W * H);
+  const rumo = new Uint8Array(W * H);
+  const tam = W + 2 * ext + 2;
+  const seq = new Uint8Array(tam);
+  const vale = new Uint8Array(tam);
+  const idx = new Int32Array(tam);
+  const km = new Float64Array(tam);
+  // a fração acesa entre as amostras válidas a ±meioKm de cada uma, gravada em F onde idx ≥ 0
+  const janela = (n) => {
+    let [lo, hi, s, m] = [0, 0, 0, 0];
+    for (let q = 0; q < n; q += 1) {
+      while (hi < n && km[hi] - km[q] <= b.meioKm) {
+        if (vale[hi]) {
+          s += seq[hi];
+          m += 1;
+        }
+        hi += 1;
+      }
+      while (km[q] - km[lo] > b.meioKm) {
+        if (vale[lo]) {
+          s -= seq[lo];
+          m -= 1;
+        }
+        lo += 1;
+      }
+      if (idx[q] >= 0) F[idx[q]] = m ? s / m : 0;
+    }
+  };
+  for (let t = 0; t < b.rumos; t += 1) {
+    const th = (t * Math.PI) / b.rumos;
+    const [ci, cj] = [Math.cos(th), Math.sin(th)];
+    F.fill(0);
+    if (Math.abs(ci) >= Math.abs(cj)) {
+      // retas "deitadas": uma célula por coluna, com a volta em longitude (a janela atravessa a emenda)
+      const m = cj / ci;
+      const c0 = Math.floor(Math.min(0, -m * W)) - ext - 1;
+      const c1 = Math.ceil(NH + Math.max(0, -m * W)) + ext + 1;
+      for (let c = c0; c <= c1; c += 1) {
+        let n = 0;
+        let alguma = false;
+        for (let i = -ext; i < W + ext; i += 1) {
+          const y = Math.round(c + m * i);
+          const dentro = y >= 0 && y < NH;
+          const x = ((i % W) + W) % W;
+          seq[n] = dentro ? aceso[y * W + x] : 0;
+          vale[n] = dentro ? 1 : 0;
+          idx[n] = dentro && i >= 0 && i < W ? y * W + x : -1;
+          const cy = cosDaLinha[Math.min(NH - 1, Math.max(0, y))];
+          km[n] = n ? km[n - 1] + pxKm * Math.hypot(cy, m) : 0;
+          if (idx[n] >= 0) alguma = true;
+          n += 1;
+        }
+        if (alguma) janela(n);
+      }
+    } else {
+      const m = ci / cj;
+      for (let c = 0; c < W; c += 1) {
+        for (let y = 0; y < NH; y += 1) {
+          const x = (((Math.round(c + m * y)) % W) + W) % W;
+          seq[y] = aceso[y * W + x];
+          vale[y] = 1;
+          idx[y] = y * W + x;
+          km[y] = y ? km[y - 1] + pxKm * Math.hypot(1, m * cosDaLinha[y]) : 0;
+        }
+        janela(NH);
+      }
+    }
+    const [oi, oj] = [Math.round(-cj * b.ladoPx), Math.round(ci * b.ladoPx)];
+    for (let y = Math.abs(oj); y < NH - Math.abs(oj); y += 1) {
+      for (let i = 0; i < W; i += 1) {
+        const lados =
+          0.5 *
+          (F[(y + oj) * W + ((i + oi + W) % W)] +
+            F[(y - oj) * W + ((i - oi + W) % W)]);
+        const k = (y + jIni) * W + i;
+        const c = F[y * W + i] - lados;
+        if (c > contraste[k]) {
+          contraste[k] = c;
+          rumo[k] = t;
+        }
+      }
+    }
+  }
+  // a foto na borda: a energia de borda dela (banda `foto.sigmasKm`) através da reta, no texel e nas paralelas
+  let bandaDaFoto = null;
+  if (fotoLog) {
+    const [g1, g2] = b.foto.sigmasKm.map((s) => media(fotoLog, W, H, raioM, s));
+    bandaDaFoto = Float32Array.from(g1, (v, k) => v - g2[k]);
+  }
+  const fotoAtraves = (j, i, o, ni, nj) => {
+    const jj = Math.round(j + o * nj);
+    if (jj < 1 || jj >= H - 1) return NaN;
+    const ii = (((Math.round(i + o * ni)) % W) + W) % W;
+    const k = jj * W + ii;
+    const gx = bandaDaFoto[jj * W + ((ii + 1) % W)] - bandaDaFoto[jj * W + ((ii + W - 1) % W)];
+    const gy = bandaDaFoto[k + W] - bandaDaFoto[k - W];
+    return (gx * ni + gy * nj) ** 2;
+  };
+  // o perfil do DEM através da reta (média de σ `perfil.sigmaKm`): o sulco (ou a crista) é a média dos dois lados a
+  // ±`perfil.ladoKm` menos o centro
+  const largoDoDem = h ? media(h, W, H, raioM, b.perfil.sigmaKm) : null;
+  const sulcoEm = (j, i, ni, nj) => {
+    const kmPorPx = pxKm * Math.hypot(ni * Math.cos(latitudeDaLinha(j, H)), nj);
+    const em = (km) => {
+      const o = km / kmPorPx;
+      const jj = Math.round(j + o * nj);
+      if (jj < 0 || jj >= H) return NaN;
+      return largoDoDem[jj * W + ((((Math.round(i + o * ni)) % W) + W) % W)];
+    };
+    return 0.5 * (em(b.perfil.ladoKm) + em(-b.perfil.ladoKm)) - em(0);
+  };
+  // a histerese: a partir dos texels de contraste ≥ `contrasteMin`, os vizinhos (8) de contraste ≥ `contrasteFraco`;
+  // fica a componente que se estende por `comprimentoMinKm` (a risca de ladrilho é longa, o lineamento solto não) e
+  // que a foto não confirma: a energia de borda da foto na reta ÷ a das paralelas abaixo de `foto.maxima` (as costuras
+  // de Schenk medem 0,7–1,1; as escarpas de verdade, que o DEM também tem afiadas, 2–6). E que não é sulco nem
+  // crista: a costura é degrau e risca fina (sulco mediano de 5–50 m); um vale ou uma crista de verdade no meio de um
+  // campo de lineamentos (a foto não o separa dos vizinhos) tem sulco mediano de 130–450 m
+  const n = W * H;
+  const borda = new Uint8Array(n);
+  const visto = new Uint8Array(n);
+  const fila = new Int32Array(n);
+  const raioKm = raioM / 1000;
+  for (let s = 0; s < n; s += 1) {
+    if (visto[s] || contraste[s] < b.contrasteMin) continue;
+    let [ini, fim] = [0, 0];
+    fila[fim++] = s;
+    visto[s] = 1;
+    let [jMin, jMax, iMin, iMax] = [H, -1, W, -1];
+    let [naReta, nasParalelas] = [0, 0];
+    const sulcos = [];
+    while (ini < fim) {
+      const k = fila[ini++];
+      const j = (k / W) | 0;
+      const i = k - j * W;
+      [jMin, jMax, iMin, iMax] = [Math.min(jMin, j), Math.max(jMax, j), Math.min(iMin, i), Math.max(iMax, i)];
+      const th = (rumo[k] * Math.PI) / b.rumos;
+      const [ni, nj] = [-Math.sin(th), Math.cos(th)];
+      if (largoDoDem) {
+        const v = sulcoEm(j, i, ni, nj);
+        if (Number.isFinite(v)) sulcos.push(v);
+      }
+      if (bandaDaFoto) {
+        const [l0, l1] = b.foto.ladoPx;
+        const pico = (de, ate) => {
+          let m = -Infinity;
+          for (let o = de; o <= ate; o += 1) m = Math.max(m, fotoAtraves(j, i, o, ni, nj));
+          return m;
+        };
+        const reta = pico(-1, 1);
+        const lados = 0.5 * (pico(l0, l1) + pico(-l1, -l0));
+        if (Number.isFinite(reta + lados)) {
+          naReta += reta;
+          nasParalelas += lados;
+        }
+      }
+      for (let dj = -1; dj <= 1; dj += 1) {
+        if (j + dj < 0 || j + dj >= H) continue;
+        for (let di = -1; di <= 1; di += 1) {
+          const q = (j + dj) * W + ((i + di + W) % W);
+          if (!visto[q] && contraste[q] >= b.contrasteFraco) {
+            visto[q] = 1;
+            fila[fim++] = q;
+          }
+        }
+      }
+    }
+    const lat = latitudeDaLinha(Math.round((jMin + jMax) / 2), H);
+    const km = Math.hypot(
+      ((jMax - jMin) * Math.PI * raioKm) / H,
+      ((iMax - iMin) * 2 * Math.PI * raioKm * Math.cos(lat)) / W,
+    );
+    const confirmada = bandaDaFoto && nasParalelas > 0 && naReta / nasParalelas >= b.foto.maxima;
+    sulcos.sort((x, y) => x - y);
+    const sulco = sulcos.length ? Math.abs(sulcos[sulcos.length >> 1]) > b.perfil.sulcoMaxM : false;
+    if (km >= b.comprimentoMinKm && !confirmada && !sulco) for (let t = 0; t < fim; t += 1) borda[fila[t]] = 1;
+  }
+  return { borda, contraste, rumo };
+}
+
+/**
+ * O ENCAIXE NOS LADRILHOS (no lugar): a nota média de 12 km e a faixa de
+ * `bordaKm` erram a borda reta do ladrilho de bolhas por até ~10 km — uma
+ * baía dele fica "boa" e um pedaço do ladrilho liso vizinho fica "ruído".
+ * Nas componentes de ruído que passam de `encaixe.poloSulGraus` (o polo sul),
+ * na faixa de ±`faixaKm` da borda delas, cada texel vai para o lado cujo nível
+ * de ln E₁ (`e1` média a σ `sigmaKm`) ele tem — o meio dos níveis de cada lado
+ * (média a σ `vizinhancaKm[0]`), só onde eles diferem de `margem`. Como cada
+ * ladrilho tem o seu nível, a borda cai na costura dele.
+ */
+function encaixaNosLadrilhos(classe, e1, W, H, raioM, p) {
+  const n = W * H;
+  const { poloSulGraus, faixaKm, sigmaKm, margem } = p.encaixe;
+  const nivel = Float32Array.from(media(e1, W, H, raioM, sigmaKm), (v) =>
+    Math.log(v + 1e-2),
+  );
+  const comp = new Uint8Array(n);
+  const fila = new Int32Array(n);
+  let fim = 0;
+  for (let j = 0; j < H; j += 1) {
+    if (latitudeDaLinha(j, H) > -poloSulGraus * RADIANOS) continue;
+    for (let i = 0; i < W; i += 1) {
+      const k = j * W + i;
+      if (classe[k] === RUIDO) {
+        comp[k] = 1;
+        fila[fim++] = k;
+      }
+    }
+  }
+  for (let ini = 0; ini < fim; ini += 1) {
+    const k = fila[ini];
+    const j = (k / W) | 0;
+    const i = k - j * W;
+    for (const q of [
+      j * W + (i + 1 === W ? 0 : i + 1),
+      j * W + (i === 0 ? W - 1 : i - 1),
+      j > 0 ? k - W : -1,
+      j < H - 1 ? k + W : -1,
+    ]) {
+      if (q >= 0 && !comp[q] && classe[q] === RUIDO) {
+        comp[q] = 1;
+        fila[fim++] = q;
+      }
+    }
+  }
+  if (!fim) return;
+  const bom = Uint8Array.from(classe, (c) => (c === BOM ? 1 : 0));
+  const doBom = distanciaAoVazioKm(bom, W, H, raioM);
+  const doComp = distanciaAoVazioKm(comp, W, H, raioM);
+  const nRuim = desfocaComMascara(nivel, comp, W, H, raioM, p.vizinhancaKm[0]).valor;
+  const nBom = desfocaComMascara(nivel, bom, W, H, raioM, p.vizinhancaKm[0]).valor;
+  for (let k = 0; k < n; k += 1) {
+    const naFaixa = (comp[k] && doBom[k] < faixaKm) || (bom[k] && doComp[k] < faixaKm);
+    if (!naFaixa || !(nRuim[k] - nBom[k] > margem)) continue;
+    classe[k] = nivel[k] > 0.5 * (nRuim[k] + nBom[k]) ? RUIDO : BOM;
+  }
+}
+
 /**
  * A MÁSCARA DE QUALIDADE do DEM `h` (m) contra a foto `fotoLog` (log da
  * luminância), na mesma grade W×H da casa: `classe` (BOM, RUIDO, LISO, VAZIO
  * onde `vazio`), a `nota` do ruído e a orientação da foto na banda 1 (`foto`,
- * de `tensor`), que a síntese reaproveita. Ver o cabeçalho.
+ * de `tensor`), que a síntese reaproveita. Com a `energiaDoPixel` do DEM fino
+ * (`energiaDoPixel`), a borda do ruído do polo sul se encaixa nos ladrilhos
+ * (`encaixaNosLadrilhos`); com as `bordas` retas de ladrilho
+ * (`bordasDeLadrilho`), a que corre junto do ruído vai com ele. Ver o cabeçalho.
  */
 export function mascaraDeQualidade({
   h,
@@ -437,6 +793,8 @@ export function mascaraDeQualidade({
   raioM,
   vazio = null,
   p = CONSERTO_DE_ENCELADO,
+  energiaDoPixel = null,
+  bordas = null,
 }) {
   const n = W * H;
   const [, b1, , b3] = bandas(h, W, H, raioM, p.sigmasKm);
@@ -520,6 +878,22 @@ export function mascaraDeQualidade({
   }
   engoleIlhas(classe, W, H, raioM, (c) => c !== BOM, BOM, p.ilhaMinimaKm2);
   engoleIlhas(classe, W, H, raioM, (c) => c === BOM, RUIDO, p.ilhaMinimaKm2);
+  if (energiaDoPixel && p.encaixe) {
+    encaixaNosLadrilhos(classe, energiaDoPixel, W, H, raioM, p);
+    engoleIlhas(classe, W, H, raioM, (c) => c !== BOM, BOM, p.ilhaMinimaKm2);
+    engoleIlhas(classe, W, H, raioM, (c) => c === BOM, RUIDO, p.ilhaMinimaKm2);
+  }
+  // a borda reta de ladrilho junto do ruído vai com ele, e uma folga em volta: a costura do ladrilho fica no conserto
+  if (bordas) {
+    const ruim = Uint8Array.from(classe, (c) => (c === RUIDO ? 1 : 0));
+    const doRuim = distanciaAoVazioKm(ruim, W, H, raioM);
+    const junto = Uint8Array.from(bordas, (b, k) =>
+      b && classe[k] === BOM && doRuim[k] < p.bordas.ruimPertoKm ? 1 : 0,
+    );
+    const folga = dilata(junto, W, H, raioM, p.bordas.folgaKm);
+    for (let k = 0; k < n; k += 1)
+      if (folga[k] && classe[k] === BOM) classe[k] = RUIDO;
+  }
   if (vazio) for (let k = 0; k < n; k += 1) if (vazio[k]) classe[k] = VAZIO;
   return { classe, nota, foto };
 }
@@ -1411,6 +1785,8 @@ export function consertaNaGrade({
   p = CONSERTO_DE_ENCELADO,
   fino = "liso",
   protegido = null,
+  energiaDoPixel = null,
+  bordas = null,
 }) {
   const n = W * H;
   const raioKm = raioM / 1000;
@@ -1426,6 +1802,8 @@ export function consertaNaGrade({
     raioM,
     vazio,
     p,
+    energiaDoPixel,
+    bordas,
   });
   // onde outro dado medido substitui o DEM (o SPC do polo sul), nada a consertar
   const classe = protegido
@@ -1655,7 +2033,8 @@ export function consertaNaGrade({
  * trabalho (`larguraDeTrabalho`, média de área) passa por `consertaNaGrade`;
  * cada texel fino cujo texel de trabalho é BOM sai BYTE A BYTE igual, e os
  * outros recebem o campo consertado por interpolação bilinear. `luminancia`
- * já na grade de trabalho e na latitude da casa. Devolve `{ metros, ...consertaNaGrade }`.
+ * já na grade de trabalho e na latitude da casa. Com `encaixe` e `bordas` em `p`, a energia de 1 pixel do fino
+ * encaixa a máscara nos ladrilhos e acha as bordas retas deles. Devolve `{ metros, ...consertaNaGrade, bordas }`.
  */
 export function consertaDem({
   metros,
@@ -1671,6 +2050,9 @@ export function consertaDem({
   const H = W / 2;
   const h = Float32Array.from(reamostraParaACasa(metros, Wf, Hf, W, H, 180));
   const fotoLog = Float32Array.from(luminancia, (l) => Math.log(l + 0.003));
+  // os ladrilhos pela energia de 1 pixel do DEM fino: o encaixe da máscara e as bordas retas
+  const e1 = p.encaixe || p.bordas ? energiaDoPixel(metros, Wf, Hf, W, H) : null;
+  const bordas = p.bordas ? bordasDeLadrilho({ e1, W, H, raioM, p, fotoLog, h }).borda : null;
   const r = consertaNaGrade({
     h,
     fotoLog,
@@ -1681,6 +2063,8 @@ export function consertaDem({
     p,
     fino,
     protegido,
+    energiaDoPixel: e1,
+    bordas,
   });
   const saida = Float32Array.from(metros);
   for (let j = 0; j < Hf; j += 1) {
@@ -1701,5 +2085,148 @@ export function consertaDem({
         (c[(y0 + 1) * W + a] * (1 - fx) + c[(y0 + 1) * W + b] * fx) * fy;
     }
   }
-  return { metros: saida, ...r };
+  return { metros: saida, ...r, bordas };
+}
+
+/**
+ * A RECOSTURA DAS BORDAS DE LADRILHO NO BOM (depois de tudo, sobre o DEM fino
+ * final `metros`, Wf×Hf): onde uma borda reta de ladrilho (`bordas`, grade de
+ * trabalho) corre entre dois ladrilhos bons, o DEM tem uma risca de 1–2
+ * pixels e um degrau de 100–200 m — sob luz rasante, uma linha reta. Na faixa
+ * de ±`bordas.faixaKm` dela, só nos texels `livre` (W×H): a altura que guarda
+ * a encosta medida em toda parte menos no miolo de ±`nucleoKm` (lá ela é
+ * zero) e vale o que está na borda da faixa (Poisson por SOR, `passadas`, com
+ * o passo leste da latitude). A risca some e o degrau vira rampa pela faixa
+ * (1–2°); o fino dos dois lados fica. Fora da faixa, nada muda. Devolve
+ * `{ metros, texels, km2 }` (o que mudou).
+ */
+export function recosturaBordas({
+  metros,
+  Wf,
+  Hf,
+  bordas,
+  livre,
+  W,
+  H,
+  raioM,
+  p = CONSERTO_DE_ENCELADO,
+}) {
+  const b = p.bordas;
+  const saida = Float32Array.from(metros);
+  const sementes = Uint8Array.from(bordas, (x, k) => (x && livre[k] ? 1 : 0));
+  if (!sementes.some((x) => x)) return { metros: saida, texels: 0, km2: 0 };
+  const dist = Float32Array.from(distanciaAoVazioKm(sementes, W, H, raioM), (d) =>
+    Math.min(d, 1e3),
+  );
+  const raioKm = raioM / 1000;
+  // o estado de cada texel fino: 0 fixo, 1 na faixa, 2 no miolo
+  const estado = new Uint8Array(Wf * Hf);
+  const lista = [];
+  const jIni = Math.max(1, Math.floor(((90 - b.latitudes[1] - 1) / 180) * Hf));
+  const jFim = Math.min(Hf - 1, Math.ceil(((90 - b.latitudes[0] + 1) / 180) * Hf));
+  for (let j = jIni; j < jFim; j += 1) {
+    const jw = Math.min(H - 1, Math.floor(((j + 0.5) * H) / Hf));
+    const lat = latitudeDaLinha(j, Hf) / RADIANOS;
+    for (let i = 0; i < Wf; i += 1) {
+      const kw = jw * W + Math.min(W - 1, Math.floor(((i + 0.5) * W) / Wf));
+      if (!livre[kw] || dist[kw] > b.faixaKm + 1) continue;
+      const d = amostra(dist, W, H, lat, longitudeDaColuna(i, Wf));
+      if (!(d < b.faixaKm)) continue;
+      const k = j * Wf + i;
+      estado[k] = d < b.nucleoKm ? 2 : 1;
+      lista.push(k);
+    }
+  }
+  const c = new Float32Array(Wf * Hf);
+  const pesoLeste = new Float64Array(Hf);
+  for (let j = 0; j < Hf; j += 1) {
+    const dx = raioKm * Math.max(Math.cos(latitudeDaLinha(j, Hf)), 1e-3) * ((2 * Math.PI) / Wf);
+    pesoLeste[j] = 1 / (dx * dx);
+  }
+  const pesoNorte = 1 / (raioKm * (Math.PI / Hf)) ** 2;
+  const vizinhos = (k) => {
+    const j = (k / Wf) | 0;
+    const i = k - j * Wf;
+    return [j * Wf + (i + 1 === Wf ? 0 : i + 1), j * Wf + (i === 0 ? Wf - 1 : i - 1), k - Wf, k + Wf];
+  };
+  // a encosta-alvo das arestas que tocam o miolo: a medida em volta, levada para dentro por Laplace (a do terreno
+  // atravessa o miolo; o degrau e a risca, que só existem nele, ficam de fora). `de[k]` é a de k para o leste, `dn[k]`
+  // a de k para o norte, nas linhas da faixa
+  const base = (jIni - 1) * Wf;
+  const nb = (jFim - jIni + 2) * Wf;
+  const de = new Float32Array(nb);
+  const dn = new Float32Array(nb);
+  const arestaLeste = [];
+  const arestaNorte = [];
+  for (const k of lista) {
+    const [l, o, no, su] = vizinhos(k);
+    for (const [a, v, lado] of [
+      [k, l, arestaLeste],
+      [o, k, arestaLeste],
+      [k, no, arestaNorte],
+      [su, k, arestaNorte],
+    ]) {
+      if (estado[a] === 2 || estado[v] === 2) lado.push(a);
+    }
+  }
+  const [emE, emN] = [[...new Set(arestaLeste)], [...new Set(arestaNorte)]];
+  const desconhecida = new Uint8Array(nb);
+  for (const a of emE) desconhecida[a - base] |= 1;
+  for (const a of emN) desconhecida[a - base] |= 2;
+  for (let k = base; k < base + nb; k += 1) {
+    if (k < Wf || k >= Wf * (Hf - 1)) continue;
+    const [l, , no] = vizinhos(k);
+    if (!(desconhecida[k - base] & 1)) de[k - base] = metros[l] - metros[k];
+    if (!(desconhecida[k - base] & 2)) dn[k - base] = metros[no] - metros[k];
+  }
+  for (let passada = 0; passada < b.passadas; passada += 1) {
+    for (const [lista, campo] of [
+      [emE, de],
+      [emN, dn],
+    ]) {
+      for (const k of lista) {
+        const j = (k / Wf) | 0;
+        let [soma, peso] = [0, 0];
+        for (const [q, v] of vizinhos(k).entries()) {
+          if (v < base || v >= base + nb) continue;
+          const w = q < 2 ? pesoLeste[j] : pesoNorte;
+          soma += w * campo[v - base];
+          peso += w;
+        }
+        campo[k - base] += 1.5 * (soma / peso - campo[k - base]);
+      }
+    }
+  }
+  // o Poisson: c = u − medido, 0 fora da faixa; nas arestas do miolo a encosta-alvo no lugar da medida
+  for (let passada = 0; passada < b.passadas; passada += 1) {
+    for (const k of lista) {
+      const j = (k / Wf) | 0;
+      const viz = vizinhos(k);
+      let soma = 0;
+      let peso = 0;
+      for (let q = 0; q < 4; q += 1) {
+        const v = viz[q];
+        const w = q < 2 ? pesoLeste[j] : pesoNorte;
+        let salto = 0;
+        if (estado[k] === 2 || estado[v] === 2) {
+          const alvo = [-de[k - base], de[v - base], -dn[k - base], dn[v - base]][q];
+          salto = metros[v] - metros[k] + alvo;
+        }
+        soma += w * (c[v] + salto);
+        peso += w;
+      }
+      c[k] += 1.9 * (soma / peso - c[k]);
+    }
+  }
+  let km2 = 0;
+  let texels = 0;
+  for (const k of lista) {
+    saida[k] = metros[k] + c[k];
+    if (saida[k] !== metros[k]) {
+      texels += 1;
+      const j = (k / Wf) | 0;
+      km2 += raioKm * raioKm * Math.cos(latitudeDaLinha(j, Hf)) * (Math.PI / Hf) * ((2 * Math.PI) / Wf);
+    }
+  }
+  return { metros: saida, texels, km2 };
 }

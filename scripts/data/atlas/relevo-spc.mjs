@@ -652,9 +652,14 @@ export function partilhaDaArea(cobertura, peso, W, H) {
  */
 export const SPT_DE_ENCELADO = Object.freeze({
   passoKm: 0.2,
-  ateGraus: 40,
-  /** o limite do SPT (`limiteDoSpt`) */
-  limite: Object.freeze({ latGraus: -55, rampaKm: 8 }),
+  /** o plano cobre o limite, a saída do preenchimento e meio retalho (55° + 24 km + 8 km do polo ≈ 42,3°) */
+  ateGraus: 43,
+  /**
+   * o limite do SPT (`limiteDoSpt`, o das listras) e a SAÍDA do preenchimento (`pesoDoPreenchimento`): o ruim
+   * segue preenchido além do limite e se apaga em `foraKm` (o ladrilho de bolhas cruza os 55°S; em círculo de 8 km,
+   * o pedaço de fora ficava liso, uma placa chapada ao lado da textura)
+   */
+  limite: Object.freeze({ latGraus: -55, rampaKm: 8, foraKm: 24 }),
   /**
    * o largo que fica (σ da média que o separa do fino trocado). No núcleo do SPC o DEM ruim correlaciona 0,15–0,30
    * com o SPC em todas as bandas de 0,4 a 12,8 km; até σ 3,2 km tem a energia do SPC, acima 1,5–4× menos. Com 4 km
@@ -663,8 +668,12 @@ export const SPT_DE_ENCELADO = Object.freeze({
   corteKm: 1.6,
   rumo: Object.freeze({ bandaKm: Object.freeze([0.8, 1.6]), janelaKm: 8, coerenciaMin: 0.1 }),
   encostaKm: 6,
-  /** a aspereza (a energia local do fino) que a foto prevê: no SPC, ln E do relevo × ln E da foto correlacionam 0,88 */
-  aspereza: Object.freeze({ bandaKm: Object.freeze([0.4, 1.6]), janelaKm: 4 }),
+  /**
+   * a aspereza (a energia local do fino) que a foto prevê: no SPC, ln E do relevo × ln E da foto correlacionam 0,88.
+   * Perto do DEM bom mais calmo que ela, o alvo desce até a dele (a média dela a σ `doBomKm`) e sobe de volta à da
+   * foto em `aoBomKm`: o preenchido não encosta cheio num ladrilho liso (a costura reta viraria troca de textura)
+   */
+  aspereza: Object.freeze({ bandaKm: Object.freeze([0.4, 1.6]), janelaKm: 4, aoBomKm: 24, doBomKm: 6 }),
   retalho: Object.freeze({
     larguraKm: 8,
     sobreposicaoKm: 2,
@@ -872,6 +881,22 @@ export function limiteDoSpt(plano, p = SPT_DE_ENCELADO) {
   for (let y = 0; y < N; y += 1) {
     const v = kmDaCelula(plano, y);
     for (let x = 0; x < N; x += 1) peso[y * N + x] = 1 - suave(-meia, meia, Math.hypot(kmDaCelula(plano, x), v) - rhoLim);
+  }
+  return peso;
+}
+
+/**
+ * O PESO DO PREENCHIMENTO no plano: 1 dentro do limite do SPT, e fora dele um
+ * smoothstep de 1 a 0 em `limite.foraKm` — o ruim que cruza o limite segue
+ * preenchido e se apaga numa faixa larga, sem borda em círculo.
+ */
+export function pesoDoPreenchimento(plano, p = SPT_DE_ENCELADO) {
+  const { N, raioKm } = plano;
+  const rhoLim = (p.limite.latGraus + 90) * RADIANOS * raioKm;
+  const peso = new Float32Array(N * N);
+  for (let y = 0; y < N; y += 1) {
+    const v = kmDaCelula(plano, y);
+    for (let x = 0; x < N; x += 1) peso[y * N + x] = 1 - suave(0, p.limite.foraKm, Math.hypot(kmDaCelula(plano, x), v) - rhoLim);
   }
   return peso;
 }
@@ -1162,9 +1187,11 @@ export function cortaListras({ campo, pode, plano, tracos, medido, p = SPT_DE_EN
  * emenda: o corte de erro mínimo em curva fechada (`corteDeErroMinimo`), e
  * dentro dele uma membrana (Laplace, SOR) que leva a diferença velho − novo
  * da borda para dentro: nenhum degrau. `conhecido` é o fino fora do alvo
- * (nunca muda). Devolve `{ fino, retalhos: [{ alvo: [u, v], origem: [u, v], giro, erro }] }`.
+ * (nunca muda). Com `energiaAlvo` (NaN onde não vale) e a `energiaDoDoador`
+ * por célula, o retalho entra multiplicado por √(alvo ÷ doador), nunca acima
+ * de 1. Devolve `{ fino, retalhos: [{ alvo: [u, v], origem: [u, v], giro, erro }] }`.
  */
-export function colchaDoSpt({ conhecido, alvo, preposto = null, informa, doador, origens, rumo, encLog, asperezaLog, guia, plano, p = SPT_DE_ENCELADO, sorteia }) {
+export function colchaDoSpt({ conhecido, alvo, preposto = null, informa, doador, origens, rumo, encLog, asperezaLog, guia, plano, p = SPT_DE_ENCELADO, sorteia, energiaAlvo = null, energiaDoDoador = null }) {
   const { N, passoKm } = plano;
   const e = p.retalho;
   const meio = e.larguraKm / 2 / passoKm;
@@ -1232,7 +1259,11 @@ export function colchaDoSpt({ conhecido, alvo, preposto = null, informa, doador,
     if (!lista.length) for (let t = 0; t < e.melhores; t += 1) lista.push(origens[Math.floor(sorteia() * origens.length)]);
     const distancia = (o) => Math.abs(encLog[o] - encLog[kc]) / dpEnc + Math.abs(asperezaLog[o] - asperezaLog[kc]) / dpAsp;
     lista.sort((x, y) => distancia(x) - distancia(y));
+    // perto do DEM bom o alvo pede menos energia que a do doador: o retalho entra escalado para ela (nunca acima de 1)
+    const ganhoDe = (o) =>
+      energiaAlvo && Number.isFinite(energiaAlvo[kc]) ? Math.min(1, Math.sqrt(energiaAlvo[kc] / Math.max(energiaDoDoador[o], 1e-6))) : 1;
     const opcoes = lista.slice(0, e.preSelecao).map((o) => {
+      const ganho = ganhoDe(o);
       const giro =
         coh[kc] >= p.rumo.coerenciaMin && coh[o] >= p.rumo.coerenciaMin
           ? theta[o] - theta[kc] + (sorteia() < 0.5 ? Math.PI : 0)
@@ -1253,13 +1284,13 @@ export function colchaDoSpt({ conhecido, alvo, preposto = null, informa, doador,
             energiaG += gt * gt + gd * gd;
           }
           if (!conta[q]) continue;
-          const n = noPlanoPolarBilinear(doador, N, xo, yo);
+          const n = ganho * noPlanoPolarBilinear(doador, N, xo, yo);
           erro += (n - velho[q]) ** 2;
           energia += n * n + velho[q] * velho[q];
         }
       }
       const eG = energiaG > 0 ? erroG / energiaG : 1;
-      return { o, giro, erro: energia > 0 ? (1 - e.pesoDaFoto) * (erro / energia) + e.pesoDaFoto * eG : eG };
+      return { o, giro, ganho, erro: energia > 0 ? (1 - e.pesoDaFoto) * (erro / energia) + e.pesoDaFoto * eG : eG };
     });
     opcoes.sort((x, y) => x.erro - y.erro);
     const escolha = opcoes[Math.floor(sorteia() * Math.min(e.melhores, opcoes.length))];
@@ -1269,7 +1300,7 @@ export function colchaDoSpt({ conhecido, alvo, preposto = null, informa, doador,
       for (let a = 0; a < G; a += 1) {
         const [dx, dy] = [a - Hh, b - Hh];
         const v = noPlanoPolarBilinear(doador, N, ox + c * dx - s * dy, oy + s * dx + c * dy);
-        novo[b * G + a] = Number.isFinite(v) ? v : 0;
+        novo[b * G + a] = Number.isFinite(v) ? escolha.ganho * v : 0;
         custo[b * G + a] = coberto[b * G + a] ? (novo[b * G + a] - velho[b * G + a]) ** 2 : 0;
       }
     }
@@ -1386,12 +1417,16 @@ function celulasDosTracos(tracos, plano) {
  * registrado, NaN fora), as `mascaras` do SPC, a `qualidade` do DEM, a
  * `cobertura` do conserto e a `luminancia` da foto W×H; `linhas` os traços
  * das listras na foto (`tracaListras`).
- *  1. O LIMITE do SPT (`limiteDoSpt`) e, nele, o ALVO: ruim no DEM, fora da
- *     cobertura do SPC (e na beira dela, onde a fusão pesa < `pesoLivre`).
+ *  1. O ALVO: ruim no DEM, fora da cobertura do SPC (e na beira dela, onde a
+ *     fusão pesa < `pesoLivre`), dentro do limite do SPT e, além dele, onde o
+ *     ruim continua, até `limite.foraKm` (`pesoDoPreenchimento`: lá o
+ *     preenchido se apaga no liso devagar).
  *  2. O LARGO que fica: a média de σ `corteKm` do que a fusão deu. O fino
  *     conhecido: o do SPC dentro da cobertura (também na rampa da fusão, onde
  *     o DEM é ruim: lá ele entra inteiro, não em rampa), o resto do que está.
- *  3. A COLCHA (`colchaDoSpt`) só com origens no SPC, longe das listras.
+ *  3. A COLCHA (`colchaDoSpt`) só com origens no SPC, longe das listras; perto
+ *     do DEM bom mais calmo que a foto pede, o alvo desce à energia dele e o
+ *     retalho entra escalado para ela, voltando à da foto em `aspereza.aoBomKm`.
  *  4. AS LISTRAS (`perfilMedidoDasListras`, `cortaListras`): o perfil medido
  *     nas três do SPC, ao longo dos traços da foto, onde o alvo está.
  * Fora do ruim e no núcleo do SPC nada muda, byte a byte. Devolve `{ metros,
@@ -1413,6 +1448,7 @@ export function preencheSpt({ metros, spcFino, Wf, Hf, mascaras, qualidade, cobe
   const fotoLog = casaNoPlano(Float32Array.from(luminancia, (l) => Math.log(l + 0.003)), W, H, plano);
   const daFoto = rumoNoPlano(fotoLog, plano, p);
   const spt = limiteDoSpt(plano, p);
+  const preenche = pesoDoPreenchimento(plano, p);
   // 2. o largo e o fino conhecido
   const sigma = p.corteKm / passoKm;
   const largo = borraNoPlano(cur, N, sigma);
@@ -1424,15 +1460,15 @@ export function preencheSpt({ metros, spcFino, Wf, Hf, mascaras, qualidade, cobe
     conhecido[k] = dentro[k] && Number.isFinite(f) ? f : Number.isFinite(cur[k] - largo[k]) ? cur[k] - largo[k] : 0;
   }
   // o alvo: o ruim fora da cobertura e, na beira dela (peso da fusão < `retalho.pesoLivre`), o que o corte pode
-  // atravessar (começa com o fino do SPC): a emenda não fica na borda reta do modelo
+  // atravessar (começa com o fino do SPC): a emenda não fica na borda reta do modelo. Na escolha do retalho conta
+  // todo o conhecido em volta — o SPC, o DEM bom e o liso de fora, que puxa o retalho da saída para o calmo
   const alvo = new Uint8Array(n);
   const preposto = new Uint8Array(n);
-  const informa = new Uint8Array(n);
+  const informa = new Uint8Array(n).fill(1);
   for (let k = 0; k < n; k += 1) {
     const beira = dentro[k] && pesoDaFusao[k] < p.retalho.pesoLivre;
-    alvo[k] = spt[k] > 0 && ruim[k] && (!dentro[k] || beira) ? 1 : 0;
+    alvo[k] = preenche[k] > 0 && ruim[k] && (!dentro[k] || beira) ? 1 : 0;
     preposto[k] = alvo[k] && dentro[k] ? 1 : 0;
-    informa[k] = spt[k] > 0 ? 1 : 0;
   }
   // 3. as origens: o retalho girado inteiro + folga no SPC, longe das listras
   const tracos = tracosNoPlano(linhas, raioKm);
@@ -1493,8 +1529,37 @@ export function preencheSpt({ metros, spcFino, Wf, Hf, mascaras, qualidade, cobe
     asperezaLog[k] =
       cobre[k] && dentro[k] ? Math.log(Math.max(energiaDoSpc[k], 1e-12)) : ajuste.a + ajuste.b * Math.log(Math.max(energiaDaFoto[k], 1e-12));
   }
+  // perto do DEM bom (fora do SPC): a energia dele, e o alvo puxado para ela onde ela é menor que a da foto
+  const bomFora = Uint8Array.from(ruim, (r, k) => (!r && !dentro[k] ? 1 : 0));
+  const doBomFora = distanciaNoPlano(bomFora, N);
+  const energiaDoBom = borraNoPlano(Float32Array.from(conhecido, (v) => v * v), N, A.doBomKm / passoKm, bomFora);
+  const energiaAlvo = new Float32Array(n).fill(NaN);
+  for (let k = 0; k < n; k += 1) {
+    if (!alvo[k] || !(energiaDoBom[k] > 0)) continue;
+    const a = suave(0, A.aoBomKm, doBomFora[k] * passoKm);
+    const alvoLog = a * asperezaLog[k] + (1 - a) * Math.min(asperezaLog[k], Math.log(energiaDoBom[k]));
+    if (alvoLog >= asperezaLog[k] - 1e-6) continue;
+    asperezaLog[k] = alvoLog;
+    energiaAlvo[k] = Math.exp(alvoLog);
+  }
   const guia = Float32Array.from(fa, (v, k) => v - fb[k]);
-  const colcha = colchaDoSpt({ conhecido, alvo, preposto, informa, doador, origens, rumo, encLog, asperezaLog, guia, plano, p, sorteia });
+  const colcha = colchaDoSpt({
+    conhecido,
+    alvo,
+    preposto,
+    informa,
+    doador,
+    origens,
+    rumo,
+    encLog,
+    asperezaLog,
+    guia,
+    plano,
+    p,
+    sorteia,
+    energiaAlvo,
+    energiaDoDoador: energiaDoSpc,
+  });
   // 4. as listras
   const medido = perfilMedidoDasListras({ campo: spc, cobre: Uint8Array.from(cobre, (c, k) => c & dentro[k]), plano, tracos, p });
   const doDentro = distanciaNoPlano(dentro, N);
@@ -1511,11 +1576,11 @@ export function preencheSpt({ metros, spcFino, Wf, Hf, mascaras, qualidade, cobe
   const listras = medido
     ? cortaListras({ campo, pode, plano, tracos, medido, p, sorteia })
     : { corte: new Float32Array(n), corredor: new Uint8Array(n), base: [] };
-  // a diferença a somar no que se troca: ruim, fora do núcleo, dentro do SPT
+  // a diferença a somar no que se troca: ruim, fora do núcleo, pelo peso do preenchimento
   const delta = new Float32Array(n);
   for (let k = 0; k < n; k += 1) {
-    if (!ruim[k] || nucleo[k] || !(spt[k] > 0)) continue;
-    delta[k] = spt[k] * (campo[k] + listras.corte[k] - cur[k]);
+    if (!ruim[k] || nucleo[k] || !(preenche[k] > 0)) continue;
+    delta[k] = preenche[k] * (campo[k] + listras.corte[k] - cur[k]);
   }
   const saida = Float32Array.from(metros);
   const ateLat = p.ateGraus - 90;
@@ -1551,7 +1616,7 @@ export function preencheSpt({ metros, spcFino, Wf, Hf, mascaras, qualidade, cobe
       if (x < 0 || y < 0 || x >= N || y >= N) continue;
       const k = y * N + x;
       if (listras.corredor[k]) novaCobertura[kw] = 2;
-      else if (spt[k] >= 0.5) novaCobertura[kw] = EXEMPLO_DO_SPC;
+      else if (preenche[k] >= 0.5) novaCobertura[kw] = EXEMPLO_DO_SPC;
     }
   }
   for (let k = 0; k < n; k += 1) if (alvo[k]) alvoKm2 += passoKm * passoKm;
@@ -1559,7 +1624,7 @@ export function preencheSpt({ metros, spcFino, Wf, Hf, mascaras, qualidade, cobe
     metros: saida,
     cobertura: novaCobertura,
     pesoDoSpc,
-    plano: { antes: cur, delta, alvo, spt, fino: colcha.fino, largo, corte: listras.corte, tracos, medido },
+    plano: { antes: cur, delta, alvo, spt, preenche, fino: colcha.fino, largo, corte: listras.corte, tracos, medido },
     relatorio: {
       corteKm: p.corteKm,
       alvoKm2,
