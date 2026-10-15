@@ -4,7 +4,46 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 234.**
 
-## O BASTÃO — onde a rodada parou (13/10) — A R1, A R2 E A R3 DA RÉGUA ÚNICA (O TOM NEUTRO, A COR DOS MAPAS E A CONFISSÃO) NO `main`, NÃO PUBLICADAS (publicar é dele)
+## O BASTÃO — onde a rodada parou (14/10) — A LATITUDE DAS FOTOS, A LINHA DE PRODUÇÃO E O RELEVO DE ENCÉLADO NO `main` (55b021eb), NÃO PUBLICADOS (publicar é dele)
+
+**No ar desde 14/10** (push dele, `origin/main` 1c3ac6d5, conferido por sha256): R1 (tom neutro), R2 (cor dos mapas pela
+régua), R3 (a ficha confessa forma, relevo, cor e brilho), a lente Hollywood por padrão.
+
+**No `main` e ainda não no ar** (conversa "Coordenação entre agentes", 13–14/10):
+- a latitude das fotos de Schenk (seis luas) e os relevos de Jápeto e Reia refeitos — ver o bloco "Latitude das fotos"
+  logo abaixo;
+- a skill `completar-corpo` (`.claude/skills/completar-corpo/SKILL.md`): a linha de produção para completar um corpo
+  onde falta dado, pedida por ele (*"queria que isso virasse uma linha de produção"*); toda rodada de asset segue ela, e
+  ela já traz as lições de Encélado;
+- **a R4 de Encélado** (palavras dele: *"faça direito, começa pelo deslocamento da foto"*; *"Ok"* à prancha final): o
+  relevo sai do DEM global de 200 m (Schenk & McKinnon 2024) e, no polo sul, do modelo SPC do JPL (Park et al. 2024,
+  100 m, leitor DAS/DSK em `relevo-spc.mjs`); o ruído de estéreo do DEM (achado pela orientação, `conserto-do-dem.mjs`)
+  fica liso fora do polo e, no polo sul, é completado com terreno medido do próprio polo (`preencheSpt`), com a 4ª
+  listra pelo perfil medido das outras três; costuras de ladrilho achadas e recosturadas. Conta: medido 84,3 %,
+  inventado por exemplo do SPC 4,8 %, derivado da foto 0,6 %, liso 10,3 %. Normal 4096 px, polos num quadro polar.
+  Rejeitados no olho ou na prova (ficam como opção ou só no histórico): ruído Gabor, retalhos do Schenk, relevo pela
+  foto (falhou a validação em ladrilhos bons). Provas: `capturas/r4-encelado/` (`prancha-relevo-v5.jpg`, `spt/`,
+  `emendas/`, `medida.md`).
+
+**Publicar é dele:** `git push origin main`; depois conferir no ar por imagem e sha256.
+
+**Restos de Encélado:** terreno de bolhas ainda marcado "bom" a ~140–175°E e ~300–350°E (50–60°S) e riscos finos que
+só aparecem de perto com luz rasante; o selo da linha do relevo na ficha diz "medido" com a proporção, mas a regra do
+mais fraco da R3 daria "artístico" — **decisão dele**; a rever depois: o γ da R2 em Encélado e a lei de luz (LS ×
+Lambert) em gelo muito claro. `capturas/r4-encelado/emendas/saida/` guarda ~640 MB de cache recriável (não apagar sem ele).
+
+**Achados abertos:** Júpiter e Saturno talvez em latitude planetográfica (sem relevo para medir); Mimas ~3,8° girada em
+longitude; Vesta com a face preta; Deimos com costura; "Dafnis" sem acento (`corpos-fonte.json`); no retrato de família
+a Lua +46 %, Plutão +37 %, Caronte −36 %; a cor das órbitas e o brilho do ponto ainda pelos mapas velhos; a 820 px o
+caminho do topo encosta no botão da viagem galáctica.
+
+**A próxima rodada — a ordem é dele:** seguir a R4 pela skill, corpo a corpo (a fila de assets: as luas pequenas de
+Saturno com forma medida, os 16 corpos com relevo falso da cor — a chave do item 144 sai —, as luas de Urano,
+Urano/Netuno/Titã/Vênus como decisões de produto). Sugestão: antes, medir a latitude de Júpiter e Saturno e a longitude
+de Mimas, porque erro de posição contamina tudo o que vem depois. Nenhuma outra frente aberta neste projeto; cópia que
+sobra: `../Viagem-por-do-sol`.
+
+## O BASTÃO anterior (13–14/10) — R1, R2, R3 E A LENTE PADRÃO, PUBLICADAS EM 14/10 (`origin/main` 1c3ac6d5)
 
 **Feito em 09–10/10 (conversa "Coordenação de trabalhos em fila"):** a R0 (tabela de medidas,
 `docs/reference/MEDIDAS-DOS-CORPOS.md`) e a R1 de `PLAN-REGUA-UNICA.md` — o tom neutro da Khronos é o padrão, com a

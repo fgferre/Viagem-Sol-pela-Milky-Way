@@ -85,6 +85,7 @@ Palavras dele (08/10): *"precisamos ter uma regra única que trate todos os obje
   liso, crateras pela foto com a lei tirada do próprio DEM (selo "derivado"); (4) prancha: a pose dele (fase 30°), o
   terminador e o polo sul — no centro do disco a 30° Encélado segue quase branca, que é o real. Abertos para depois: a
   lei de luz (LS × Lambert) em corpo de gelo muito claro; rever o γ da R2 quando o relevo estiver certo.
+  **FEITA e aprovada (14/10, `main` 55b021eb; detalhes, conta e restos no bastão).** Histórico do caminho:
   **Estado (13/10, ramo `r4-encelado`, cópia `../Viagem-r4-encelado`, nada no main):** altura e normal assadas do DEM
   (borda esquerda 0°, polos num quadro polar, margem vazia cortada); máscara de qualidade + conserto (`conserto-do-dem.mjs`:
   82 % do DEM bom; 15–18 % ruído de estéreo com bordas retas, inclusive quase todo o polo sul); o modelo SPC do JPL para o
