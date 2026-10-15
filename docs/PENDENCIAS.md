@@ -4,12 +4,13 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 234.**
 
-## O BASTÃO — onde a rodada parou (14/10) — A LATITUDE DAS FOTOS, A LINHA DE PRODUÇÃO E O RELEVO DE ENCÉLADO NO `main` (55b021eb), NÃO PUBLICADOS (publicar é dele)
+## O BASTÃO — onde a rodada parou (15/10) — A LATITUDE DAS FOTOS, A LINHA DE PRODUÇÃO E O RELEVO DE ENCÉLADO NO AR (`main` a75998f6)
 
-**No ar desde 14/10** (push dele, `origin/main` 1c3ac6d5, conferido por sha256): R1 (tom neutro), R2 (cor dos mapas pela
-régua), R3 (a ficha confessa forma, relevo, cor e brilho), a lente Hollywood por padrão.
+**No ar:** desde 14/10 (push dele, 1c3ac6d5) R1 (tom neutro), R2 (cor dos mapas pela régua), R3 (a ficha confessa
+forma, relevo, cor e brilho) e a lente Hollywood por padrão; desde 15/10 (`origin/main` a75998f6, publicado pelo
+assistente no terminal do Mac a pedido dele pelo celular, deploy verde, conferido por sha256) tudo o que vem abaixo.
 
-**No `main` e ainda não no ar** (conversa "Coordenação entre agentes", 13–14/10):
+**Feito em 13–15/10** (conversa "Coordenação entre agentes"):
 - a latitude das fotos de Schenk (seis luas) e os relevos de Jápeto e Reia refeitos — ver o bloco "Latitude das fotos"
   logo abaixo;
 - a skill `completar-corpo` (`.claude/skills/completar-corpo/SKILL.md`): a linha de produção para completar um corpo
@@ -25,7 +26,9 @@ régua), R3 (a ficha confessa forma, relevo, cor e brilho), a lente Hollywood po
   foto (falhou a validação em ladrilhos bons). Provas: `capturas/r4-encelado/` (`prancha-relevo-v5.jpg`, `spt/`,
   `emendas/`, `medida.md`).
 
-**Publicar é dele:** `git push origin main`; depois conferir no ar por imagem e sha256.
+**Publicar é com a palavra dele** (pode ser pelo celular: o assistente roda o push no terminal do Mac, acompanha o
+deploy e confere por sha256). A primeira tentativa de 15/10 caiu porque dois testes novos passaram de 5 s no GitHub —
+teste novo acima de ~1 s leva folga (`}, 120_000);`).
 
 **Restos de Encélado:** terreno de bolhas ainda marcado "bom" a ~140–175°E e ~300–350°E (50–60°S) e riscos finos que
 só aparecem de perto com luz rasante; o selo da linha do relevo na ficha diz "medido" com a proporção, mas a regra do
