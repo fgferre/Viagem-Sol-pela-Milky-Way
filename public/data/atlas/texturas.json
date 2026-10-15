@@ -2701,27 +2701,27 @@
       "arquivo": "textures/atlas/enceladus/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 450401,
-      "sha256": "73a8b6b6c015182531164199e320281963d42cecaff3df7132415a6e2e1cce8b",
+      "bytes": 389215,
+      "sha256": "138fea2818eac8d2e8552e4623dcf08fda1eca4dc52539b51b41c1a96f24c342",
       "origem": {
         "fonte": {
           "pt": "DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de ALTURA",
           "en": "Global DEM of Enceladus at 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — HEIGHT map"
         },
-        "url": "https://astrogeology.usgs.gov/search/map/enceladus_dem_global_200m",
+        "url": "https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-dem-200m-schenk",
         "licenca": {
           "pt": "domínio público, com citação obrigatória",
           "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Topografia: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Mapa assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Topography: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distribuída pelo USGS Astrogeology (Astropedia). Mapa assado pelo app.",
+          "en": "Topography: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distributed by USGS Astrogeology (Astropedia). Map baked by the app."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "DEM de 200 m reamostrado para 1024 px: o que se vê é a forma geral, não a fratura individual do polo sul",
-        "en": "a 200 m DEM resampled to 1024 px: what you see is the overall shape, not the individual fracture at the south pole"
+        "pt": "relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos",
+        "en": "relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos"
       },
       "seloDaNota": "medido"
     },
@@ -2731,27 +2731,27 @@
       "arquivo": "textures/atlas/enceladus/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 303410,
-      "sha256": "0f42db576a9f24fb6d2076059ab37d4cb8922eb67e8256f88a07c2fb00759028",
+      "bytes": 230370,
+      "sha256": "62cb276878b7d86bcdee147e0e25d3fdbab4724e49c47b5921bfa28459b7581f",
       "origem": {
         "fonte": {
           "pt": "DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de ALTURA",
           "en": "Global DEM of Enceladus at 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — HEIGHT map"
         },
-        "url": "https://astrogeology.usgs.gov/search/map/enceladus_dem_global_200m",
+        "url": "https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-dem-200m-schenk",
         "licenca": {
           "pt": "domínio público, com citação obrigatória",
           "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Topografia: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Mapa assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Topography: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distribuída pelo USGS Astrogeology (Astropedia). Mapa assado pelo app.",
+          "en": "Topography: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distributed by USGS Astrogeology (Astropedia). Map baked by the app."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "DEM de 200 m reamostrado para 1024 px: o que se vê é a forma geral, não a fratura individual do polo sul",
-        "en": "a 200 m DEM resampled to 1024 px: what you see is the overall shape, not the individual fracture at the south pole"
+        "pt": "relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos",
+        "en": "relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos"
       },
       "seloDaNota": "medido"
     },
@@ -2908,52 +2908,182 @@
     {
       "corpo": "enceladus",
       "canal": "normal",
-      "arquivo": "textures/atlas/enceladus/normal.png",
+      "arquivo": "textures/atlas/enceladus/normal_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 855270,
-      "sha256": "efb2691ad0c3e719ef6c03681a7f7743752ac58ee9c577a37e145e05e610839d",
+      "bytes": 980178,
+      "sha256": "0dcbe5dc00dd843ad49e5858469da07abf93db47259b0c88ca33be79c9f284f0",
       "origem": {
         "fonte": {
           "pt": "DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de NORMAIS derivado da altura",
           "en": "Global DEM of Enceladus at 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — NORMAL map derived from the height"
         },
-        "url": "https://astrogeology.usgs.gov/search/map/enceladus_dem_global_200m",
+        "url": "https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-dem-200m-schenk",
         "licenca": {
           "pt": "domínio público, com citação obrigatória",
           "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Topografia: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Mapa assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Topography: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distribuída pelo USGS Astrogeology (Astropedia). Mapa assado pelo app.",
+          "en": "Topography: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distributed by USGS Astrogeology (Astropedia). Map baked by the app."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos",
+        "en": "relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos"
+      },
+      "seloDaNota": "medido"
+    },
+    {
+      "corpo": "enceladus",
+      "canal": "normal",
+      "arquivo": "textures/atlas/enceladus/normal_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 744060,
+      "sha256": "2cb15991673ef6e2dd796a21b1e01167536bc08758a1ff930509a5937fb9111d",
+      "origem": {
+        "fonte": {
+          "pt": "DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de NORMAIS derivado da altura",
+          "en": "Global DEM of Enceladus at 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — NORMAL map derived from the height"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-dem-200m-schenk",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distribuída pelo USGS Astrogeology (Astropedia). Mapa assado pelo app.",
+          "en": "Topography: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distributed by USGS Astrogeology (Astropedia). Map baked by the app."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos",
+        "en": "relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos"
+      },
+      "seloDaNota": "medido"
+    },
+    {
+      "corpo": "enceladus",
+      "canal": "normal",
+      "arquivo": "textures/atlas/enceladus/normal_2048.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 4033547,
+      "sha256": "8e12d623eaea9f3e3685564d7da34ccfe687e1bb2f7d251fd8369edc31a36d26",
+      "origem": {
+        "fonte": {
+          "pt": "DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de NORMAIS derivado da altura",
+          "en": "Global DEM of Enceladus at 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — NORMAL map derived from the height"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-dem-200m-schenk",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distribuída pelo USGS Astrogeology (Astropedia). Mapa assado pelo app.",
+          "en": "Topography: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distributed by USGS Astrogeology (Astropedia). Map baked by the app."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos",
+        "en": "relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos"
+      },
+      "seloDaNota": "medido"
+    },
+    {
+      "corpo": "enceladus",
+      "canal": "normal",
+      "arquivo": "textures/atlas/enceladus/normal_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 2927296,
+      "sha256": "dce5de926266c76eb5382f1cff4f17c638b3d1f21855e373b459f12284a82e19",
+      "origem": {
+        "fonte": {
+          "pt": "DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de NORMAIS derivado da altura",
+          "en": "Global DEM of Enceladus at 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — NORMAL map derived from the height"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-dem-200m-schenk",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distribuída pelo USGS Astrogeology (Astropedia). Mapa assado pelo app.",
+          "en": "Topography: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distributed by USGS Astrogeology (Astropedia). Map baked by the app."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos",
+        "en": "relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos"
+      },
+      "seloDaNota": "medido"
+    },
+    {
+      "corpo": "enceladus",
+      "canal": "normal",
+      "arquivo": "textures/atlas/enceladus/normal.png",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 14861769,
+      "sha256": "bfc33f5ec7fce8603af09d6898597f2ec74d28525172470522b83e470e9fe1ed",
+      "origem": {
+        "fonte": {
+          "pt": "DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de NORMAIS derivado da altura",
+          "en": "Global DEM of Enceladus at 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — NORMAL map derived from the height"
+        },
+        "url": "https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-dem-200m-schenk",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distribuída pelo USGS Astrogeology (Astropedia). Mapa assado pelo app.",
+          "en": "Topography: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distributed by USGS Astrogeology (Astropedia). Map baked by the app."
+        }
+      },
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos",
+        "en": "relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "enceladus",
       "canal": "normal",
       "arquivo": "textures/atlas/enceladus/normal.webp",
-      "larguraPx": 1024,
-      "alturaPx": 512,
-      "bytes": 745598,
-      "sha256": "491e6859520de4cd260350195295397d792998228eb868c2495c6cd64b6b2906",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 9628080,
+      "sha256": "bb124dc8e8a05fd709cfd5bf91fd6c8fe9c459c2c31078cb67a504a2044aec1f",
       "origem": {
         "fonte": {
           "pt": "DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de NORMAIS derivado da altura",
           "en": "Global DEM of Enceladus at 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — NORMAL map derived from the height"
         },
-        "url": "https://astrogeology.usgs.gov/search/map/enceladus_dem_global_200m",
+        "url": "https://astrogeology.usgs.gov/search/map/enceladus-cassini-global-dem-200m-schenk",
         "licenca": {
           "pt": "domínio público, com citação obrigatória",
           "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Topografia: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Mapa assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Topography: Schenk & McKinnon 2024, Icarus 408, 115827 (USGS Astropedia). Map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distribuída pelo USGS Astrogeology (Astropedia). Mapa assado pelo app.",
+          "en": "Topography: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distributed by USGS Astrogeology (Astropedia). Map baked by the app."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos",
+        "en": "relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "eris",
