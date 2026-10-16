@@ -1049,6 +1049,16 @@ tocar num `.mjs`.
 | pan/normal | inventado | a forma é medida pela Cassini; o relevo fino vem de 28 fotos, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código; das 14 crateras, só 4 são reais — as outras 10 foram postas pela densidade medida |
 | pan/horizon | inventado | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida |
 | pan/horizon2 | inventado | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida |
+| phobos/map | derivado | a foto do Viking (mosaico global da USGS, 40 pixels por grau), em cinza, cobre 99,6 % do corpo; a cor é tingida pelo app a partir do albedo e das razões de cor medidos |
+| phobos/height | medido | a forma inteira, medida pelo modelo de Gaskell (3,1 milhões de placas, NASA PDS); o relevo fino não mora aqui, mora na luz |
+| phobos/normal | inventado | relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo |
+| phobos/horizon | inventado | a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos |
+| phobos/horizon2 | inventado | a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos |
+| deimos/map | inventado | 14 % é foto nítida do Viking, 79 % é foto vista só de longe com o detalhe fino pintado por IA a partir de números medidos, 7 % (a faixa nunca vista de perto) é pintura por IA; a cor segue as medidas |
+| deimos/height | derivado | a forma, medida pelo modelo de Thomas (Viking, grade de 5°), suavizada a 2° e com ~10 % interpolado entre as medidas; o relevo fino não mora aqui, mora na luz |
+| deimos/normal | inventado | relevo fino (20–80 m), por área: 0 % medido, 13 % derivado da foto nítida do Viking, 87 % inventado com a densidade de crateras de Deimos e a profundidade das de Fobos, pois Deimos não tem relevo fino medido |
+| deimos/horizon | inventado | a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos |
+| deimos/horizon2 | inventado | a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos |
 | earth/normal | medido | relevo MEDIDO pelo ETOPO 2022 da NOAA, na escala real e sem exagero (no gelo polar, o topo do gelo); cada texel de ~4,9 km guarda a inclinação média medida a ~1,85 km; a água é um espelho, e as depressões secas abaixo do mar ficam no nível do mar |
 | earth/horizon | derivado | a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água |
 | earth/horizon2 | derivado | a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água |
@@ -1074,13 +1084,16 @@ tocar num `.mjs`.
 
 ### a forma (item 20)
 
-Duas famílias. Primeiro, os seis corpos cujo modelo de forma IRREGULAR
+Três famílias. Primeiro, os quatro corpos cujo modelo de forma IRREGULAR
 existe publicado e **não** é carregado: a casa não tem
 `GLTFLoader`/`OBJLoader` (pendência **P-F7-MESH**, acima) e desenha o
 elipsoide de `BODY_AXES`. Depois, as sete luas de Saturno da S3 que seguem
 esculpidas, o caso oposto — têm malha, e a malha é INVENTADA a partir das
 dimensões publicadas (item 134/S3, seção acima); Hipérion e Pã saíram (forma
-medida, tabela de cima). O selo segue a regra da tabela de cima: o corpo
+medida, tabela de cima). Por fim, Fobos e Deimos, que têm a forma MEDIDA por
+mapa de altura (modelos de Gaskell e de Thomas, sobre o elipsoide) e ficam
+aqui porque a nota diz a proporção: `medido` se toda a forma é medida,
+`derivado` se parte é interpolada entre medidas. O selo segue a regra da tabela de cima: o corpo
 redondo de verdade, desenhado pelo elipsoide dos eixos medidos, é `medido`; o
 elipsoide ou a esfera no lugar de uma forma irregular medida que a casa ainda
 não carrega é `derivado` (um ajuste das medidas, não a forma); a malha
@@ -1093,8 +1106,8 @@ elipsoide dos eixos medidos, `medido`.
 | pallas | derivado | esfera do raio médio, sem malha: a forma irregular do DAMIT existe publicada e o app ainda não a carrega |
 | hygiea | derivado | esfera do raio médio, sem malha: a forma irregular do DAMIT existe publicada e o app ainda não a carrega |
 | haumea | derivado | elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e o app ainda não a carrega |
-| phobos | derivado | elipsoide, sem malha: só os três eixos medidos (27 × 22 × 18 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e o app ainda não o carrega |
-| deimos | derivado | elipsoide, sem malha: só os três eixos medidos (15 × 12 × 11 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e o app ainda não o carrega |
+| phobos | medido | 100 % medida pelo modelo de forma de Gaskell (3,1 milhões de placas, NASA PDS), posto sobre o elipsoide da IAU |
+| deimos | derivado | ~90 % medida pelo modelo de forma de Thomas (Viking; grade de 5°, suavizada a 2°) e ~10 % interpolada entre as medidas |
 | daphnis | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
 | atlas | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
 | prometheus | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |

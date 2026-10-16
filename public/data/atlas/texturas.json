@@ -14,8 +14,8 @@
       "seloDaNota": "inventado"
     },
     "deimos": {
-      "pt": "elipsoide, sem malha: só os três eixos medidos (15 × 12 × 11 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e o app ainda não o carrega",
-      "en": "an ellipsoid, no mesh: only the three measured axes (15 × 12 × 11 km) — the irregular shape model (Viking/MRO, NASA PDS) is published, and the app does not load it yet",
+      "pt": "~90 % medida pelo modelo de forma de Thomas (Viking; grade de 5°, suavizada a 2°) e ~10 % interpolada entre as medidas",
+      "en": "~90% measured by the Thomas shape model (Viking; 5° grid, smoothed to 2°) and ~10% interpolated between measurements",
       "seloDaNota": "derivado"
     },
     "epimetheus": {
@@ -49,9 +49,9 @@
       "seloDaNota": "inventado"
     },
     "phobos": {
-      "pt": "elipsoide, sem malha: só os três eixos medidos (27 × 22 × 18 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e o app ainda não o carrega",
-      "en": "an ellipsoid, no mesh: only the three measured axes (27 × 22 × 18 km) — the irregular shape model (Viking/MRO, NASA PDS) is published, and the app does not load it yet",
-      "seloDaNota": "derivado"
+      "pt": "100 % medida pelo modelo de forma de Gaskell (3,1 milhões de placas, NASA PDS), posto sobre o elipsoide da IAU",
+      "en": "100% measured by the Gaskell shape model (3.1 million plates, NASA PDS), laid over the IAU ellipsoid",
+      "seloDaNota": "medido"
     },
     "phoebe": {
       "pt": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
@@ -1033,7 +1033,12 @@
           "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "a forma, medida pelo modelo de Thomas (Viking, grade de 5°), suavizada a 2° e com ~10 % interpolado entre as medidas; o relevo fino não mora aqui, mora na luz",
+        "en": "the shape, measured by the Thomas model (Viking, 5° grid), smoothed to 2° with ~10% interpolated between measurements; the fine relief does not live here, it lives in the lighting"
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "deimos",
@@ -1058,7 +1063,12 @@
           "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a forma, medida pelo modelo de Thomas (Viking, grade de 5°), suavizada a 2° e com ~10 % interpolado entre as medidas; o relevo fino não mora aqui, mora na luz",
+        "en": "the shape, measured by the Thomas model (Viking, 5° grid), smoothed to 2° with ~10% interpolated between measurements; the fine relief does not live here, it lives in the lighting"
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "deimos",
@@ -1083,7 +1093,12 @@
           "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Thomas) and the fine relief, which by area is 13% derived from the sharp photograph and 87% invented, with the crater depth taken from Phobos"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1108,7 +1123,12 @@
           "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Thomas) and the fine relief, which by area is 13% derived from the sharp photograph and 87% invented, with the crater depth taken from Phobos"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1133,7 +1153,12 @@
           "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Thomas) and the fine relief, which by area is 13% derived from the sharp photograph and 87% invented, with the crater depth taken from Phobos"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1158,7 +1183,12 @@
           "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Thomas) and the fine relief, which by area is 13% derived from the sharp photograph and 87% invented, with the crater depth taken from Phobos"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1183,7 +1213,12 @@
           "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Thomas) and the fine relief, which by area is 13% derived from the sharp photograph and 87% invented, with the crater depth taken from Phobos"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1208,7 +1243,12 @@
           "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Thomas) and the fine relief, which by area is 13% derived from the sharp photograph and 87% invented, with the crater depth taken from Phobos"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1233,7 +1273,12 @@
           "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Thomas) and the fine relief, which by area is 13% derived from the sharp photograph and 87% invented, with the crater depth taken from Phobos"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1258,7 +1303,12 @@
           "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Thomas) and the fine relief, which by area is 13% derived from the sharp photograph and 87% invented, with the crater depth taken from Phobos"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1283,7 +1333,12 @@
           "en": "Images: Viking Orbiter (NASA/JPL) and MRO HiRISE (NASA/JPL/University of Arizona), mosaic by P. Stooke (NASA PDS Small Bodies Node). Reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "14 % é foto nítida do Viking, 79 % é foto vista só de longe com o detalhe fino pintado por IA a partir de números medidos, 7 % (a faixa nunca vista de perto) é pintura por IA; a cor segue as medidas",
+        "en": "14% is a sharp Viking photograph, 79% is a photograph seen only from afar with the fine detail painted by AI from measured numbers, 7% (the strip never seen up close) is an AI painting; the color follows the measurements"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1308,7 +1363,12 @@
           "en": "Images: Viking Orbiter (NASA/JPL) and MRO HiRISE (NASA/JPL/University of Arizona), mosaic by P. Stooke (NASA PDS Small Bodies Node). Reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "14 % é foto nítida do Viking, 79 % é foto vista só de longe com o detalhe fino pintado por IA a partir de números medidos, 7 % (a faixa nunca vista de perto) é pintura por IA; a cor segue as medidas",
+        "en": "14% is a sharp Viking photograph, 79% is a photograph seen only from afar with the fine detail painted by AI from measured numbers, 7% (the strip never seen up close) is an AI painting; the color follows the measurements"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1333,7 +1393,12 @@
           "en": "Images: Viking Orbiter (NASA/JPL) and MRO HiRISE (NASA/JPL/University of Arizona), mosaic by P. Stooke (NASA PDS Small Bodies Node). Reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "14 % é foto nítida do Viking, 79 % é foto vista só de longe com o detalhe fino pintado por IA a partir de números medidos, 7 % (a faixa nunca vista de perto) é pintura por IA; a cor segue as medidas",
+        "en": "14% is a sharp Viking photograph, 79% is a photograph seen only from afar with the fine detail painted by AI from measured numbers, 7% (the strip never seen up close) is an AI painting; the color follows the measurements"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1358,7 +1423,12 @@
           "en": "Images: Viking Orbiter (NASA/JPL) and MRO HiRISE (NASA/JPL/University of Arizona), mosaic by P. Stooke (NASA PDS Small Bodies Node). Reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "14 % é foto nítida do Viking, 79 % é foto vista só de longe com o detalhe fino pintado por IA a partir de números medidos, 7 % (a faixa nunca vista de perto) é pintura por IA; a cor segue as medidas",
+        "en": "14% is a sharp Viking photograph, 79% is a photograph seen only from afar with the fine detail painted by AI from measured numbers, 7% (the strip never seen up close) is an AI painting; the color follows the measurements"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1383,7 +1453,12 @@
           "en": "Images: Viking Orbiter (NASA/JPL) and MRO HiRISE (NASA/JPL/University of Arizona), mosaic by P. Stooke (NASA PDS Small Bodies Node). Reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "14 % é foto nítida do Viking, 79 % é foto vista só de longe com o detalhe fino pintado por IA a partir de números medidos, 7 % (a faixa nunca vista de perto) é pintura por IA; a cor segue as medidas",
+        "en": "14% is a sharp Viking photograph, 79% is a photograph seen only from afar with the fine detail painted by AI from measured numbers, 7% (the strip never seen up close) is an AI painting; the color follows the measurements"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1408,7 +1483,12 @@
           "en": "Images: Viking Orbiter (NASA/JPL) and MRO HiRISE (NASA/JPL/University of Arizona), mosaic by P. Stooke (NASA PDS Small Bodies Node). Reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "14 % é foto nítida do Viking, 79 % é foto vista só de longe com o detalhe fino pintado por IA a partir de números medidos, 7 % (a faixa nunca vista de perto) é pintura por IA; a cor segue as medidas",
+        "en": "14% is a sharp Viking photograph, 79% is a photograph seen only from afar with the fine detail painted by AI from measured numbers, 7% (the strip never seen up close) is an AI painting; the color follows the measurements"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1433,7 +1513,12 @@
           "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo fino (20–80 m), por área: 0 % medido, 13 % derivado da foto nítida do Viking, 87 % inventado com a densidade de crateras de Deimos e a profundidade das de Fobos, pois Deimos não tem relevo fino medido",
+        "en": "fine relief (20–80 m), by area: 0% measured, 13% derived from the sharp Viking photograph, 87% invented with Deimos's crater density and the depth of Phobos's craters, since Deimos has no measured fine relief"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1458,7 +1543,12 @@
           "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo fino (20–80 m), por área: 0 % medido, 13 % derivado da foto nítida do Viking, 87 % inventado com a densidade de crateras de Deimos e a profundidade das de Fobos, pois Deimos não tem relevo fino medido",
+        "en": "fine relief (20–80 m), by area: 0% measured, 13% derived from the sharp Viking photograph, 87% invented with Deimos's crater density and the depth of Phobos's craters, since Deimos has no measured fine relief"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1483,7 +1573,12 @@
           "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo fino (20–80 m), por área: 0 % medido, 13 % derivado da foto nítida do Viking, 87 % inventado com a densidade de crateras de Deimos e a profundidade das de Fobos, pois Deimos não tem relevo fino medido",
+        "en": "fine relief (20–80 m), by area: 0% measured, 13% derived from the sharp Viking photograph, 87% invented with Deimos's crater density and the depth of Phobos's craters, since Deimos has no measured fine relief"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1508,7 +1603,12 @@
           "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo fino (20–80 m), por área: 0 % medido, 13 % derivado da foto nítida do Viking, 87 % inventado com a densidade de crateras de Deimos e a profundidade das de Fobos, pois Deimos não tem relevo fino medido",
+        "en": "fine relief (20–80 m), by area: 0% measured, 13% derived from the sharp Viking photograph, 87% invented with Deimos's crater density and the depth of Phobos's craters, since Deimos has no measured fine relief"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1533,7 +1633,12 @@
           "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "relevo fino (20–80 m), por área: 0 % medido, 13 % derivado da foto nítida do Viking, 87 % inventado com a densidade de crateras de Deimos e a profundidade das de Fobos, pois Deimos não tem relevo fino medido",
+        "en": "fine relief (20–80 m), by area: 0% measured, 13% derived from the sharp Viking photograph, 87% invented with Deimos's crater density and the depth of Phobos's craters, since Deimos has no measured fine relief"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "deimos",
@@ -1558,7 +1663,12 @@
           "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo fino (20–80 m), por área: 0 % medido, 13 % derivado da foto nítida do Viking, 87 % inventado com a densidade de crateras de Deimos e a profundidade das de Fobos, pois Deimos não tem relevo fino medido",
+        "en": "fine relief (20–80 m), by area: 0% measured, 13% derived from the sharp Viking photograph, 87% invented with Deimos's crater density and the depth of Phobos's craters, since Deimos has no measured fine relief"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "dione",
@@ -7638,7 +7748,12 @@
           "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "a forma inteira, medida pelo modelo de Gaskell (3,1 milhões de placas, NASA PDS); o relevo fino não mora aqui, mora na luz",
+        "en": "the whole shape, measured by the Gaskell model (3.1 million plates, NASA PDS); the fine relief does not live here, it lives in the lighting"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "phobos",
@@ -7663,7 +7778,12 @@
           "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a forma inteira, medida pelo modelo de Gaskell (3,1 milhões de placas, NASA PDS); o relevo fino não mora aqui, mora na luz",
+        "en": "the whole shape, measured by the Gaskell model (3.1 million plates, NASA PDS); the fine relief does not live here, it lives in the lighting"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "phobos",
@@ -7688,7 +7808,12 @@
           "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Gaskell) and the fine relief, which by area is 21% measured, 41% derived from the Viking images and 38% invented with Phobos's own statistics"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "phobos",
@@ -7713,7 +7838,12 @@
           "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Gaskell) and the fine relief, which by area is 21% measured, 41% derived from the Viking images and 38% invented with Phobos's own statistics"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "phobos",
@@ -7738,7 +7868,12 @@
           "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Gaskell) and the fine relief, which by area is 21% measured, 41% derived from the Viking images and 38% invented with Phobos's own statistics"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "phobos",
@@ -7763,7 +7898,12 @@
           "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Gaskell) and the fine relief, which by area is 21% measured, 41% derived from the Viking images and 38% invented with Phobos's own statistics"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "phobos",
@@ -7788,7 +7928,12 @@
           "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Gaskell) and the fine relief, which by area is 21% measured, 41% derived from the Viking images and 38% invented with Phobos's own statistics"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "phobos",
@@ -7813,7 +7958,12 @@
           "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Gaskell) and the fine relief, which by area is 21% measured, 41% derived from the Viking images and 38% invented with Phobos's own statistics"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "phobos",
@@ -7838,7 +7988,12 @@
           "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Gaskell) and the fine relief, which by area is 21% measured, 41% derived from the Viking images and 38% invented with Phobos's own statistics"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "phobos",
@@ -7863,7 +8018,12 @@
           "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Gaskell) and the fine relief, which by area is 21% measured, 41% derived from the Viking images and 38% invented with Phobos's own statistics"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "phobos",
@@ -7888,7 +8048,12 @@
           "en": "Images: Viking Orbiter (NASA/JPL), mosaic by P. Stooke with DLR control (USGS Astrogeology Science Center). Registration to the shape, reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a foto do Viking (mosaico global da USGS, 40 pixels por grau), em cinza, cobre 99,6 % do corpo; a cor é tingida pelo app a partir do albedo e das razões de cor medidos",
+        "en": "the Viking photograph (USGS global mosaic, 40 pixels per degree), in gray, covers 99.6% of the body; the color is tinted by the app from the measured albedo and color ratios"
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "phobos",
@@ -7913,7 +8078,12 @@
           "en": "Images: Viking Orbiter (NASA/JPL), mosaic by P. Stooke with DLR control (USGS Astrogeology Science Center). Registration to the shape, reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a foto do Viking (mosaico global da USGS, 40 pixels por grau), em cinza, cobre 99,6 % do corpo; a cor é tingida pelo app a partir do albedo e das razões de cor medidos",
+        "en": "the Viking photograph (USGS global mosaic, 40 pixels per degree), in gray, covers 99.6% of the body; the color is tinted by the app from the measured albedo and color ratios"
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "phobos",
@@ -7938,7 +8108,12 @@
           "en": "Images: Viking Orbiter (NASA/JPL), mosaic by P. Stooke with DLR control (USGS Astrogeology Science Center). Registration to the shape, reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a foto do Viking (mosaico global da USGS, 40 pixels por grau), em cinza, cobre 99,6 % do corpo; a cor é tingida pelo app a partir do albedo e das razões de cor medidos",
+        "en": "the Viking photograph (USGS global mosaic, 40 pixels per degree), in gray, covers 99.6% of the body; the color is tinted by the app from the measured albedo and color ratios"
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "phobos",
@@ -7963,7 +8138,12 @@
           "en": "Images: Viking Orbiter (NASA/JPL), mosaic by P. Stooke with DLR control (USGS Astrogeology Science Center). Registration to the shape, reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a foto do Viking (mosaico global da USGS, 40 pixels por grau), em cinza, cobre 99,6 % do corpo; a cor é tingida pelo app a partir do albedo e das razões de cor medidos",
+        "en": "the Viking photograph (USGS global mosaic, 40 pixels per degree), in gray, covers 99.6% of the body; the color is tinted by the app from the measured albedo and color ratios"
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "phobos",
@@ -7988,7 +8168,12 @@
           "en": "Images: Viking Orbiter (NASA/JPL), mosaic by P. Stooke with DLR control (USGS Astrogeology Science Center). Registration to the shape, reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "a foto do Viking (mosaico global da USGS, 40 pixels por grau), em cinza, cobre 99,6 % do corpo; a cor é tingida pelo app a partir do albedo e das razões de cor medidos",
+        "en": "the Viking photograph (USGS global mosaic, 40 pixels per degree), in gray, covers 99.6% of the body; the color is tinted by the app from the measured albedo and color ratios"
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "phobos",
@@ -8013,7 +8198,12 @@
           "en": "Images: Viking Orbiter (NASA/JPL), mosaic by P. Stooke with DLR control (USGS Astrogeology Science Center). Registration to the shape, reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a foto do Viking (mosaico global da USGS, 40 pixels por grau), em cinza, cobre 99,6 % do corpo; a cor é tingida pelo app a partir do albedo e das razões de cor medidos",
+        "en": "the Viking photograph (USGS global mosaic, 40 pixels per degree), in gray, covers 99.6% of the body; the color is tinted by the app from the measured albedo and color ratios"
+      },
+      "seloDaNota": "derivado"
     },
     {
       "corpo": "phobos",
@@ -8038,7 +8228,12 @@
           "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo",
+        "en": "fine relief (35–140 m), by area: 21% measured (Gaskell), 41% derived from the Viking images (craters and pits), 38% invented with Phobos's own statistics; the grooves are only in the image, not in the relief"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "phobos",
@@ -8063,7 +8258,12 @@
           "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo",
+        "en": "fine relief (35–140 m), by area: 21% measured (Gaskell), 41% derived from the Viking images (craters and pits), 38% invented with Phobos's own statistics; the grooves are only in the image, not in the relief"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "phobos",
@@ -8088,7 +8288,12 @@
           "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo",
+        "en": "fine relief (35–140 m), by area: 21% measured (Gaskell), 41% derived from the Viking images (craters and pits), 38% invented with Phobos's own statistics; the grooves are only in the image, not in the relief"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "phobos",
@@ -8113,7 +8318,12 @@
           "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo",
+        "en": "fine relief (35–140 m), by area: 21% measured (Gaskell), 41% derived from the Viking images (craters and pits), 38% invented with Phobos's own statistics; the grooves are only in the image, not in the relief"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "phobos",
@@ -8138,7 +8348,12 @@
           "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo",
+        "en": "fine relief (35–140 m), by area: 21% measured (Gaskell), 41% derived from the Viking images (craters and pits), 38% invented with Phobos's own statistics; the grooves are only in the image, not in the relief"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "phobos",
@@ -8163,7 +8378,12 @@
           "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo",
+        "en": "fine relief (35–140 m), by area: 21% measured (Gaskell), 41% derived from the Viking images (craters and pits), 38% invented with Phobos's own statistics; the grooves are only in the image, not in the relief"
+      },
+      "seloDaNota": "inventado"
     },
     {
       "corpo": "pluto",

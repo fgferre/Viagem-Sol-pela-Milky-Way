@@ -431,13 +431,22 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
   });
 
   it('forma: sem linha na tabela é o elipsoide dos eixos medidos; com linha, o selo é o da tabela', () => {
-    // A tabela "a forma" do ASSETS.md: os seis elipsoides (ou esferas) no
-    // lugar da malha publicada e as sete esculpidas por código.
-    const COM_MALHA_PUBLICADA = ['vesta', 'pallas', 'hygiea', 'haumea', 'phobos', 'deimos'];
+    // A tabela "a forma" do ASSETS.md: os quatro elipsoides (ou esferas) no
+    // lugar da malha publicada, as sete esculpidas por código e as duas luas
+    // de Marte com o modelo de forma medido no mapa de altura (16/10/2026).
+    const COM_MALHA_PUBLICADA = ['vesta', 'pallas', 'hygiea', 'haumea'];
     const ESCULPIDAS = ['daphnis', 'atlas', 'prometheus', 'pandora', 'janus', 'epimetheus', 'phoebe'];
+    const FORMA_MEDIDA: Record<string, [string, string]> = {
+      phobos: ['Gaskell', 'medido'],
+      deimos: ['Thomas', 'derivado'],
+    };
     for (const id of ALVOS.filter((i) => i !== 'sun')) {
       const forma = linhaDe(id, 'forma');
-      if (COM_MALHA_PUBLICADA.includes(id)) expect(forma.valor, id).toContain('sem malha');
+      const medida = FORMA_MEDIDA[id];
+      if (medida) {
+        expect(forma.valor, id).toContain(medida[0]);
+        expect(forma.procedencia, id).toBe(medida[1]);
+      } else if (COM_MALHA_PUBLICADA.includes(id)) expect(forma.valor, id).toContain('sem malha');
       else if (ESCULPIDAS.includes(id)) {
         expect(forma.valor, id).toContain('geometria esculpida por código');
       } else {
@@ -542,7 +551,8 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
     expect(linhaDe('enceladus', 'brilho').valor).toMatch(/— Filacchione\+2022, VIMS equigonal 0,55 µm$/);
     expect(linhaDe('miranda', 'brilho').valor).toContain('— Buratti & Mosher 1991 (0,30–0,37)');
     expect(linhaDe('vesta', 'brilho').valor).toContain('(p, Dawn FC 554 nm); S(H,G), G = 0,32');
-    expect(linhaDe('phobos', 'cor').valor).toContain('— Fornasier+2024 (7,9 %/100 nm)');
+    // (Fobos, o exemplo até 16/10/2026, ganhou a nota da foto do Viking no lugar da fonte)
+    expect(linhaDe('phoebe', 'cor').valor).toContain('— Grav & Bauer 2007 (−2,5 %/100 nm)');
     // em inglês a fonte fica como está escrita
     definirIdioma('en');
     expect(linhaDe('enceladus', 'brightness').valor).toMatch(/— Filacchione\+2022, VIMS equigonal 0\.55 µm$/);

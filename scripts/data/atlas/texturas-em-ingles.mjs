@@ -644,6 +644,40 @@ export const EM_INGLES = new Map([
     'a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida',
     'the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density',
   ],
+  // 16/10/2026 — Fobos e Deimos: forma medida (a altura), relevo fino medido
+  // só em parte (a normal e os dois horizontes)
+  [
+    'a forma inteira, medida pelo modelo de Gaskell (3,1 milhões de placas, NASA PDS); o relevo fino não mora aqui, mora na luz',
+    'the whole shape, measured by the Gaskell model (3.1 million plates, NASA PDS); the fine relief does not live here, it lives in the lighting',
+  ],
+  [
+    'a forma, medida pelo modelo de Thomas (Viking, grade de 5°), suavizada a 2° e com ~10 % interpolado entre as medidas; o relevo fino não mora aqui, mora na luz',
+    'the shape, measured by the Thomas model (Viking, 5° grid), smoothed to 2° with ~10% interpolated between measurements; the fine relief does not live here, it lives in the lighting',
+  ],
+  [
+    'a foto do Viking (mosaico global da USGS, 40 pixels por grau), em cinza, cobre 99,6 % do corpo; a cor é tingida pelo app a partir do albedo e das razões de cor medidos',
+    'the Viking photograph (USGS global mosaic, 40 pixels per degree), in gray, covers 99.6% of the body; the color is tinted by the app from the measured albedo and color ratios',
+  ],
+  [
+    'relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo',
+    "fine relief (35–140 m), by area: 21% measured (Gaskell), 41% derived from the Viking images (craters and pits), 38% invented with Phobos's own statistics; the grooves are only in the image, not in the relief",
+  ],
+  [
+    'a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos',
+    "the shadow, in six azimuths, is baked from the measured shape (Gaskell) and the fine relief, which by area is 21% measured, 41% derived from the Viking images and 38% invented with Phobos's own statistics",
+  ],
+  [
+    '14 % é foto nítida do Viking, 79 % é foto vista só de longe com o detalhe fino pintado por IA a partir de números medidos, 7 % (a faixa nunca vista de perto) é pintura por IA; a cor segue as medidas',
+    '14% is a sharp Viking photograph, 79% is a photograph seen only from afar with the fine detail painted by AI from measured numbers, 7% (the strip never seen up close) is an AI painting; the color follows the measurements',
+  ],
+  [
+    'relevo fino (20–80 m), por área: 0 % medido, 13 % derivado da foto nítida do Viking, 87 % inventado com a densidade de crateras de Deimos e a profundidade das de Fobos, pois Deimos não tem relevo fino medido',
+    "fine relief (20–80 m), by area: 0% measured, 13% derived from the sharp Viking photograph, 87% invented with Deimos's crater density and the depth of Phobos's craters, since Deimos has no measured fine relief",
+  ],
+  [
+    'a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos',
+    'the shadow, in six azimuths, is baked from the measured shape (Thomas) and the fine relief, which by area is 13% derived from the sharp photograph and 87% invented, with the crater depth taken from Phobos',
+  ],
   [
     'topografia real do LRO reamostrada para 4096 px: cada texel cobre ~2,7 km, então o que a luz desenha é a cratera, não a pedra dentro dela',
     'real LRO topography resampled to 4096 px: each texel covers ~2.7 km, so what the light draws is the crater, not the rock inside it',
@@ -692,15 +726,15 @@ export const EM_INGLES = new Map([
     'geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais',
     'geometry sculpted by code from the Cassini dimensions — not measured point by point: the craters are procedural',
   ],
-  // 30/09/2026 — Fobos e Deimos confessam o elipsoide (erro achado na
-  // pesquisa de 22/09: o manifesto `formas` não os cobria)
+  // 16/10/2026 — Fobos e Deimos saem do elipsoide: a forma é medida, e a
+  // nota diz a proporção
   [
-    'elipsoide, sem malha: só os três eixos medidos (27 × 22 × 18 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e o app ainda não o carrega',
-    'an ellipsoid, no mesh: only the three measured axes (27 × 22 × 18 km) — the irregular shape model (Viking/MRO, NASA PDS) is published, and the app does not load it yet',
+    '100 % medida pelo modelo de forma de Gaskell (3,1 milhões de placas, NASA PDS), posto sobre o elipsoide da IAU',
+    '100% measured by the Gaskell shape model (3.1 million plates, NASA PDS), laid over the IAU ellipsoid',
   ],
   [
-    'elipsoide, sem malha: só os três eixos medidos (15 × 12 × 11 km) — o modelo de forma irregular (Viking/MRO, NASA PDS) existe publicado e o app ainda não o carrega',
-    'an ellipsoid, no mesh: only the three measured axes (15 × 12 × 11 km) — the irregular shape model (Viking/MRO, NASA PDS) is published, and the app does not load it yet',
+    '~90 % medida pelo modelo de forma de Thomas (Viking; grade de 5°, suavizada a 2°) e ~10 % interpolada entre as medidas',
+    '~90% measured by the Thomas shape model (Viking; 5° grid, smoothed to 2°) and ~10% interpolated between measurements',
   ],
 ]);
 
