@@ -391,11 +391,18 @@ export const FONTES = [
     url: `${SSS}/8k_jupiter.jpg`,
     nomeNoDoador: '8k_jupiter.jpg',
   },
+  // O Saturno do SSS é pintado, e a única marca é o hexágono: a borda da
+  // calota a 78,2° contra o jato do hexágono a 75,2° planetocêntrico / 77,9°
+  // planetográfico (García-Melendo 2011, PDS) dá k = 1,27 ± 0,11 — a 2,4σ
+  // de planetocêntrico e a 0,3σ de planetográfico. Vale o k dos eixos da
+  // IAU, como nas seis luas (capturas/latitude/gigantes/saturno-v2/). O
+  // Júpiter do SSS é o PIA07782, planetocêntrico pela legenda e pela medida.
   {
     corpo: 'saturn',
     canal: 'map',
     url: `${SSS}/8k_saturn.jpg`,
     nomeNoDoador: '8k_saturn.jpg',
+    latitude: { sistema: 'planetografica', k: (60268 / 54364) ** 2 },
   },
   {
     corpo: 'uranus',
@@ -493,12 +500,17 @@ export const FONTES = [
   // cabeçalho), que JÁ traz a meia volta e a largura da casa — o mosaico de
   // Mimas, o único fora dela, veio de 6356 px a 4096 (108 MB de VRAM contra
   // 45; a 1080 px de disco o 4096 já dá 1,9 texel por pixel, ASSETS.md).
+  // A foto de Mimas está 3,86° a oeste do relevo (registro de 938 janelas,
+  // uniforme em longitude) e ~4° a oeste das crateras do Gazetteer, que o
+  // relevo acerta (0,1°): o giro a põe no lugar. As outras quatro ficam a
+  // menos de 0,5° (capturas/latitude/mimas-longitude/).
   ...['mimas', 'enceladus', 'tethys', 'dione', 'rhea'].map((corpo) => ({
     corpo,
     canal: 'map',
     url: 'https://github.com/fgferre/Saturn',
     arquivoLocal: `fonte/${corpo}-cor.jpg`,
     latitude: LATITUDE_DE_SCHENK[corpo],
+    ...(corpo === 'mimas' ? { giroDeLongitudeGraus: -3.86 } : {}),
   })),
   {
     corpo: 'titan',

@@ -195,9 +195,30 @@ MOLA, Dawn): planetocêntricos (k de 0,999 a 1,006). Ganimedes, Calisto,
 Tritão, Plutão, Caronte, Umbriel, Titânia e Oberon são esferas na casa, e a
 diferença não existe; Europa é quase esfera (0,1° no máximo). Ficam sem
 medida, com o que custariam se fossem planetográficos: Io (0,4°), Ariel
-(0,3°, a amostra da imagem gerada veio de Schenk 2020), Miranda (1,8°) e os
-gigantes, cujos mapas de atmosfera costumam ser planetográficos (Júpiter
-3,8°, Saturno 5,9°).
+(0,3°, a amostra da imagem gerada veio de Schenk 2020) e Miranda (1,8°).
+
+**Os gigantes (15/10/2026, `capturas/latitude/gigantes/`).** O Júpiter do SSS
+é o mosaico Cassini PIA07782 retocado, planetocêntrico pela legenda e pela
+medida (k = 0,996 ± 0,013: a Mancha Vermelha a 20,2°S, o Oval BA e os ovais
+do SSTB); a faixa de 35–50°S foi repintada no SSS, com ovais inventados. O
+Saturno do SSS é pintado e a única marca é a calota hexagonal: a borda a
+78,2° contra o jato do hexágono (75,2° planetocêntrico, García-Melendo 2011)
+dá k = 1,27 ± 0,11, a 2,4σ de planetocêntrico — a cadeia o declara
+planetográfico com o k dos eixos (1,229), e a escolha é por evidência, não
+prova.
+
+**A longitude da foto de Mimas (15/10/2026,
+`capturas/latitude/mimas-longitude/`).** A foto estava 3,86° a oeste do
+relevo (938 janelas, uniforme) e ~4° a oeste de 20 crateras do Gazetteer,
+que o relevo acerta (0,1°); a cadeia a gira (`giroDeLongitudeGraus: -3.86`).
+Causa provável, não conferida: o meridiano antigo da IAU para Mimas.
+
+**A casa lê mesmo em planetocêntrica desde 15/10/2026.** Até então a esfera
+unitária escalada nos eixos levava a linha do mapa à latitude paramétrica
+(e, no triaxial, a coluna à longitude paramétrica) — até 10° em Fobos, 3°
+em Saturno, 2,5° em Mimas e Ceres; `esferaNoPlanetocentrico`
+(`orientacaoNaCena.ts`) move os vértices para que cada uv caia na
+lat/lon planetocêntrica (fotos antes/depois em `capturas/elipsoide/`).
 
 ## Relevo das seis luas de Saturno (item 134, S2)
 

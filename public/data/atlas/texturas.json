@@ -5681,8 +5681,8 @@
       "arquivo": "textures/atlas/mimas/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 104948,
-      "sha256": "29b8ea6420ed190ac2863fa2cf12feae05af0e88bd370c8f735cd0cc73968c85",
+      "bytes": 104950,
+      "sha256": "f2e2cc399e24728ef96974a4f502cd9e007ae669d6f1aea9df732314f5c1d743",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -5706,8 +5706,8 @@
       "arquivo": "textures/atlas/mimas/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 93458,
-      "sha256": "395d7447a92d42157abbb8af905b6920c14ef542017b222905b0f88edff15e4f",
+      "bytes": 93946,
+      "sha256": "5431260f1e66be10dbf652e358c7c942cf9b018e362fd66fe87ce5cf41f75263",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -5731,8 +5731,8 @@
       "arquivo": "textures/atlas/mimas/map_2048.jpg",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 307989,
-      "sha256": "faddab211b275135b805a8d470b24f6189e79331a8903ecc3ca419e97ed7388c",
+      "bytes": 307134,
+      "sha256": "1e95cc4c377019e1c1053cb792cc60b6cfeabeec7e7328496ba831414baca90e",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -5756,8 +5756,8 @@
       "arquivo": "textures/atlas/mimas/map_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 241228,
-      "sha256": "a8bab70d796750712b6f72feb44c3ed5ba7caed76af85aeb72161fcd0814e8a3",
+      "bytes": 240910,
+      "sha256": "834625ddfc35ebfb34d206388682fc17a8635d136fd95ee9767eb30535a319ad",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -5781,8 +5781,8 @@
       "arquivo": "textures/atlas/mimas/map.jpg",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 992774,
-      "sha256": "185d895613bc942e0243ebb2072a2494a79deada511ed0bd3f8e33bb6205cec0",
+      "bytes": 990580,
+      "sha256": "cd4a2c2643b56905714d173b06db0f80f272087a99e23ea443ec0e950f1549e7",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -5806,8 +5806,8 @@
       "arquivo": "textures/atlas/mimas/map.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 554706,
-      "sha256": "458b2bc3433b809e574c384eba68d7feaab3fc6e5c637b1ebe585d3f26b07699",
+      "bytes": 558534,
+      "sha256": "42a070a9faf14073a73f7872b6f2348460d437817d9fe6ae47dab940cd561220",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -8031,8 +8031,8 @@
       "arquivo": "textures/atlas/saturn/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 31966,
-      "sha256": "970b7c51ff9a74271662696d148f5e3b975c1fed7b2a68fc81c2e69dd8f9edcd",
+      "bytes": 32506,
+      "sha256": "e69eb454f32aa58afdb659c4659feb1560ebce20cec5f0d688b01b08d9bb54fe",
       "origem": {
         "fonte": {
           "pt": "Solar System Scope — 8k_saturn",
@@ -8056,8 +8056,8 @@
       "arquivo": "textures/atlas/saturn/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 14180,
-      "sha256": "2280e697335f29907635eb0ef964f228a771bcbaa5ff5ecaefc8b16d748b7825",
+      "bytes": 15116,
+      "sha256": "4210c50d07a5b21eb8c6a054fa10bca22110f9c85799b8cffae0bcf13b98d4ec",
       "origem": {
         "fonte": {
           "pt": "Solar System Scope — 8k_saturn",
@@ -8081,8 +8081,8 @@
       "arquivo": "textures/atlas/saturn/map_2048.jpg",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 99098,
-      "sha256": "c073d5f70fd2570c22f13ad2864531c96173f5288979c16ae32976ae43adddd7",
+      "bytes": 107554,
+      "sha256": "32ce79e93b5940919dddf30e45d19b78884bc6367efdc327d17d154a326ea200",
       "origem": {
         "fonte": {
           "pt": "Solar System Scope — 8k_saturn",
@@ -8106,8 +8106,8 @@
       "arquivo": "textures/atlas/saturn/map_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 46976,
-      "sha256": "5b925f9d514ee47c544499ce204d6c0d25ef81d70a709830aeeaaab6acf21930",
+      "bytes": 48070,
+      "sha256": "930933e242fda6614c670c666ab782b8f276555c63a1409d5bb051895e934342",
       "origem": {
         "fonte": {
           "pt": "Solar System Scope — 8k_saturn",
@@ -8131,8 +8131,8 @@
       "arquivo": "textures/atlas/saturn/map.jpg",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 462575,
-      "sha256": "2eb9f63c023a9157a545db18101f46bb78ce1d132c074a5c9dfd12ee1f1d7aea",
+      "bytes": 448273,
+      "sha256": "076e407f04ef996d9e4ee354623e4c30387f797cf47b9330ef1d391589b3410a",
       "origem": {
         "fonte": {
           "pt": "Solar System Scope — 8k_saturn",
@@ -8156,8 +8156,8 @@
       "arquivo": "textures/atlas/saturn/map.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 140784,
-      "sha256": "891857572fd2ecb1b19ac6b002652bd3aecfea895927280a02ab5b3b69702c23",
+      "bytes": 139290,
+      "sha256": "061beefdf6ce72a1db85f9f423c271ec99f6c6a2f87bd8a653eba6cdb3aefa11",
       "origem": {
         "fonte": {
           "pt": "Solar System Scope — 8k_saturn",
