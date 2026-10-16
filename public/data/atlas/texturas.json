@@ -7421,8 +7421,8 @@
       "arquivo": "textures/atlas/phobos/horizon_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 866150,
-      "sha256": "e1dc99f5b7a748ab567cea589afaf217127acef421e0fddc30759d5d74a50240",
+      "bytes": 921587,
+      "sha256": "9eca041a14f2c6865fb97a08278edd2931fbac260f8ce2ed1c3ac1eeaf301dbe",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -7446,8 +7446,8 @@
       "arquivo": "textures/atlas/phobos/horizon_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 372570,
-      "sha256": "91c6656a8da418c19b1123ca74830269ad4df195ceec41d30d1cf604f75b5c62",
+      "bytes": 500966,
+      "sha256": "db0e7565d35fe2912327d0f1ad31fc67917a12ad21254cc9a9a3f9ffb6a7705c",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -7471,8 +7471,8 @@
       "arquivo": "textures/atlas/phobos/horizon.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 2928607,
-      "sha256": "3b14011665ae5d2888f12c87e132c629dfd1f1b20603d0c299de0cac7f801ce7",
+      "bytes": 3021094,
+      "sha256": "29254c732580c0fee0f824c45b4c4a92a669030207e97258df25e6a771734f9f",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -7496,8 +7496,8 @@
       "arquivo": "textures/atlas/phobos/horizon.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 1082374,
-      "sha256": "704d3d4ba55cbcef2e823dca914c3976ccc1dda86d7c0ae9c47c66e5d2f13bef",
+      "bytes": 1407376,
+      "sha256": "fc3d8eb7e73befca30b3745c8a80495f10a366aeed3f175189de1ca6e15dc6dc",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -7521,8 +7521,8 @@
       "arquivo": "textures/atlas/phobos/horizon2_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 868050,
-      "sha256": "2f98ee712bb44b3e5f459f0b3dec8ad467970fe5f3d1a95820845a725a441162",
+      "bytes": 922854,
+      "sha256": "1a0f7849b66413e46ed2004e28d312b57705efd91edf2f9c96ddfee4593eb123",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -7546,8 +7546,8 @@
       "arquivo": "textures/atlas/phobos/horizon2_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 371768,
-      "sha256": "f02d0cc8b07f9d06423a7c67b2ec96f987c8ee89ae2764f15974417f28769818",
+      "bytes": 495930,
+      "sha256": "e44de8881f05946fa0140f7aa61b4dba1dd6b69f1177fc7fd368d3f63cb72375",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -7571,8 +7571,8 @@
       "arquivo": "textures/atlas/phobos/horizon2.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 2922049,
-      "sha256": "b883d69588df8a574cd12c8f12e930463ab4718808f85e45ed1fbe9c05fdb0a2",
+      "bytes": 3014245,
+      "sha256": "7355dd03b42ed22c90eb232e1f0295577c620407723f204efefed2b2f4d5506c",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -7596,8 +7596,8 @@
       "arquivo": "textures/atlas/phobos/horizon2.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 1094230,
-      "sha256": "82900cb12972962b12de7d83ca140df6e4e7258c520366a245fd634e62aa9412",
+      "bytes": 1403234,
+      "sha256": "eb9f5164226b802c5d61f37d705895a8b50efe6926b4927fe974568b70fd7567",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -7621,8 +7621,8 @@
       "arquivo": "textures/atlas/phobos/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 79525,
-      "sha256": "2327072ed372b96e7d69617129bb4ee2dd98082a9fef2f679b4347fc16ce3f7e",
+      "bytes": 77991,
+      "sha256": "a3171994aeef8a779ccedf6a0582983b37b47418455706cd05995afd074f2142",
       "origem": {
         "fonte": {
           "pt": "Mosaico global do Viking de Fobos (P. Stooke, controle da DLR) — USGS, 40 px/grau, registrado na forma medida",
@@ -7646,8 +7646,8 @@
       "arquivo": "textures/atlas/phobos/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 63788,
-      "sha256": "444f0a159045990d1777193cf74eef649ee8a7bb383c6b22db76ae2837eb0cd8",
+      "bytes": 63828,
+      "sha256": "e37e8a84a256ed6e7fcf911bb9becc7537c9bdc21a7c8e09302bc9757f188f70",
       "origem": {
         "fonte": {
           "pt": "Mosaico global do Viking de Fobos (P. Stooke, controle da DLR) — USGS, 40 px/grau, registrado na forma medida",
@@ -7671,8 +7671,8 @@
       "arquivo": "textures/atlas/phobos/map_2048.jpg",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 266894,
-      "sha256": "e2a15e0a25d90d8c8ff76736ee0f59cfdb096fd0bf059feb8d738fe67f645726",
+      "bytes": 265237,
+      "sha256": "dc2d2615182509287156aa54b9c95a88a5305f3ac3922d80cb22d37676e7a6fb",
       "origem": {
         "fonte": {
           "pt": "Mosaico global do Viking de Fobos (P. Stooke, controle da DLR) — USGS, 40 px/grau, registrado na forma medida",
@@ -7696,8 +7696,8 @@
       "arquivo": "textures/atlas/phobos/map_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 199104,
-      "sha256": "41df3853f18020c3a37a3a09ba3910a0465fbcd1ca68a7ceb766fb88372c96ff",
+      "bytes": 198460,
+      "sha256": "45f6a4049ff1c201c755703d05d946e128cbb9a1205c48dcf2793f9fc9583454",
       "origem": {
         "fonte": {
           "pt": "Mosaico global do Viking de Fobos (P. Stooke, controle da DLR) — USGS, 40 px/grau, registrado na forma medida",
@@ -7721,8 +7721,8 @@
       "arquivo": "textures/atlas/phobos/map.jpg",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 1061116,
-      "sha256": "8d28231335b1c6a94bc1824cabf7b50a4528c1f3994a7cbf5676d51fb1563df8",
+      "bytes": 1063484,
+      "sha256": "da99baa67d205086cbac7cef4f3421a3d96566a06ddb431f0908b29b0632e276",
       "origem": {
         "fonte": {
           "pt": "Mosaico global do Viking de Fobos (P. Stooke, controle da DLR) — USGS, 40 px/grau, registrado na forma medida",
@@ -7746,8 +7746,8 @@
       "arquivo": "textures/atlas/phobos/map.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 606864,
-      "sha256": "f6ba2642f24c1370bad9f4d4170b161bd4b13fdb9edac445c3d8a096f33f88d8",
+      "bytes": 610120,
+      "sha256": "fdc3b79af9db1020f7f8085c4777a9d2d01a59b5b119a74e6ca97efb42334ff0",
       "origem": {
         "fonte": {
           "pt": "Mosaico global do Viking de Fobos (P. Stooke, controle da DLR) — USGS, 40 px/grau, registrado na forma medida",
@@ -7771,8 +7771,8 @@
       "arquivo": "textures/atlas/phobos/normal_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 939551,
-      "sha256": "8c7c50c0484d3d843e40e543da4abfdb81dfef0c3ac6201bcec1aadf94b4ea99",
+      "bytes": 1018797,
+      "sha256": "708f60067b37d69a4c747af61ae9edda459de69bf5ca252b0e843a830538ad5f",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de NORMAIS derivado da altura",
@@ -7796,8 +7796,58 @@
       "arquivo": "textures/atlas/phobos/normal_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 387714,
-      "sha256": "41b2e1ca89214f7c11ff21b278fb0a7e7459e21037a19ced8b01d019a01d33c5",
+      "bytes": 508086,
+      "sha256": "426d540edd8dc50818b644b152b9a0a9616739cb86f33fdd6cb2c046c80cf43a",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de NORMAIS derivado da altura",
+          "en": "Phobos shape model (Gaskell, SPC, 3.1 million plates) — NASA PDS — NORMAL map derived from the height"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/non_mission/gaskell.phobos.shape-model/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "phobos",
+      "canal": "normal",
+      "arquivo": "textures/atlas/phobos/normal_2048.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 3412898,
+      "sha256": "3df2d45160bf582d4c5dba32accfed84b1b939a0dd4168d33badacaa42e94597",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de NORMAIS derivado da altura",
+          "en": "Phobos shape model (Gaskell, SPC, 3.1 million plates) — NASA PDS — NORMAL map derived from the height"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/non_mission/gaskell.phobos.shape-model/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "phobos",
+      "canal": "normal",
+      "arquivo": "textures/atlas/phobos/normal_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 1677222,
+      "sha256": "276648d6a9321d7b39f3c3818acd1e739858cc7f8713b6e75be04a1fe817d581",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de NORMAIS derivado da altura",
@@ -7819,10 +7869,10 @@
       "corpo": "phobos",
       "canal": "normal",
       "arquivo": "textures/atlas/phobos/normal.png",
-      "larguraPx": 2048,
-      "alturaPx": 1024,
-      "bytes": 2883454,
-      "sha256": "b26f0b0ab0da268183fe19743d150d7d0ed3f817482df4ac84b9ed6242293359",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 9958444,
+      "sha256": "fa26947b8fe1e635c6f95f0928aaac8aa317dc8fc7aaa8e8536d22241f51a560",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de NORMAIS derivado da altura",
@@ -7844,10 +7894,10 @@
       "corpo": "phobos",
       "canal": "normal",
       "arquivo": "textures/atlas/phobos/normal.webp",
-      "larguraPx": 2048,
-      "alturaPx": 1024,
-      "bytes": 925698,
-      "sha256": "04e91e1633d1a4f16730aa4be46e6ee4e52402fd8af51f838ed7a15a9aa9d913",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 4518666,
+      "sha256": "cde5fda26af161f51ecc7ed61311048a94331c1ce161f0a0dc692a2876e0d481",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de NORMAIS derivado da altura",
