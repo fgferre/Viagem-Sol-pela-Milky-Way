@@ -19,7 +19,7 @@ import { PROCEDENCIA } from '../../three/selo';
 import type { MetaEfemerides } from './efemerides';
 import { decodeEfemerides, MotorEfemerides } from './efemerides';
 import type { StarsMeta } from '../../three/config';
-import type { ManifestDeTexturas } from '../../three/world/corpos/texturas';
+import type { EntradaDeTextura, ManifestDeTexturas } from '../../three/world/corpos/texturas';
 import type { CorpoNoJson, CorposDoAtlas, EditorialDoCorpo, Ficha } from './ficha';
 import { formatarDuracao, montarFicha, montarFichaDeEstrela } from './ficha';
 import { temperatureFromBV } from './stellarPhysics';
@@ -589,6 +589,69 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
         }
       }
     }
+  });
+
+  it('o selo em partes: o canal misto mostra cada tier com a porcentagem da área; o de um tier só fica como era', () => {
+    // as partes que a coluna `selo` do ASSETS.md escreve (16/10/2026), postas
+    // aqui no manifesto para a prova não depender da cadeia ter rodado
+    const PARTES: Record<string, Pick<EntradaDeTextura, 'seloDaNota' | 'partes'>> = {
+      'phobos/normal': { seloDaNota: 'inventado', partes: { medido: 21, derivado: 41, inventado: 38 } },
+      'enceladus/height': { seloDaNota: 'inventado', partes: { medido: 94.4, derivado: 0.6, inventado: 5 } },
+      'enceladus/normal': { seloDaNota: 'inventado', partes: { medido: 94.4, derivado: 0.6, inventado: 5 } },
+      // escrita com uma parte medida, para provar o teto da régua: a tinta a faz derivada
+      'deimos/map': { seloDaNota: 'inventado', partes: { medido: 14, inventado: 86 } },
+      'phobos/map': { seloDaNota: 'derivado', partes: { medido: 60, derivado: 40 } },
+    };
+    const misto: ManifestDeTexturas = {
+      ...texturas,
+      formas: { ...texturas.formas, deimos: { ...texturas.formas!.deimos!, seloDaNota: 'derivado', partes: { medido: 90, derivado: 10 } } },
+      entradas: texturas.entradas.map((e) => {
+        const p = PARTES[`${e.corpo}/${e.canal}`];
+        return p ? { ...e, ...p } : e;
+      }),
+    };
+    const partes = (id: string, rotulo: string) =>
+      linhasDaImagem(id, misto).find((l) => l.rotulo === rotulo)!;
+    // Fobos: o relevo leva as partes da normal (o fino); a altura é a forma inteira, medida
+    expect(partes('phobos', 'relevo')).toMatchObject({
+      procedencia: 'artistico',
+      partes: [
+        { procedencia: 'medido', texto: 'medido 21 %' },
+        { procedencia: 'derivado', texto: 'derivado 41 %' },
+        { procedencia: 'artistico', texto: 'artístico 38 %' },
+      ],
+    });
+    expect(partes('enceladus', 'relevo').partes!.map((p) => p.texto)).toEqual([
+      'medido 94,4 %',
+      'derivado 0,6 %',
+      'artístico 5 %',
+    ]);
+    expect(partes('deimos', 'forma')).toMatchObject({
+      procedencia: 'derivado',
+      partes: [
+        { procedencia: 'medido', texto: 'medido 90 %' },
+        { procedencia: 'derivado', texto: 'derivado 10 %' },
+      ],
+    });
+    // a cor tem o teto da régua: o medido de um mapa tingido é derivado, e o que cai junto se soma
+    expect(partes('deimos', 'cor').partes!.map((p) => p.texto)).toEqual(['derivado 14 %', 'artístico 86 %']);
+    expect(partes('phobos', 'cor')).toMatchObject({ procedencia: 'derivado' });
+    expect(partes('phobos', 'cor').partes).toBeUndefined();
+    // sem partes, a linha é a de sempre
+    expect(partes('mars', 'relevo').partes).toBeUndefined();
+    expect(partes('vesta', 'forma').partes).toBeUndefined();
+    // em inglês, o rótulo do tier e o ponto decimal da língua
+    definirIdioma('en');
+    expect(partes('phobos', 'relief').partes!.map((p) => p.texto)).toEqual([
+      'measured 21 %',
+      'derived 41 %',
+      'artistic 38 %',
+    ]);
+    expect(partes('enceladus', 'relief').partes!.map((p) => p.texto)).toEqual([
+      'measured 94.4 %',
+      'derived 0.6 %',
+      'artistic 5 %',
+    ]);
   });
 
   it('o relevo realçado da Terra (item 232) se confessa SÓ quando ligado, antes da nota «sem exagero»', () => {

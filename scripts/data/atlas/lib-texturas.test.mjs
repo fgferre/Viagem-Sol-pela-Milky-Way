@@ -194,6 +194,32 @@ describe('lerTabelasDaConfissao (itens 19 e 20: a nota e o selo saem do ASSETS.m
     expect(forma.get('janus')).toEqual({ selo: 'inventado', nota: 'geometria esculpida por código' });
   });
 
+  it('o canal misto traz as partes, com o selo no mais fraco delas; parte torta falha', () => {
+    const comSelo = (selo) => doc.replace('| titan/map | medido |', `| titan/map | ${selo} |`);
+    expect(lerTabelasDaConfissao(comSelo('medido 21 · derivado 41 · inventado 38')).imagem.get('titan/map')).toEqual({
+      selo: 'inventado',
+      nota: 'só a névoa',
+      partes: { medido: 21, derivado: 41, inventado: 38 },
+    });
+    expect(lerTabelasDaConfissao(comSelo('medido 94,4 · derivado 0,6 · inventado 5')).imagem.get('titan/map').partes)
+      .toEqual({ medido: 94.4, derivado: 0.6, inventado: 5 });
+    const forma = lerTabelasDaConfissao(doc.replace('| phobos | medido |', '| phobos | medido 90 · derivado 10 |')).forma;
+    expect(forma.get('phobos')).toMatchObject({ selo: 'derivado', partes: { medido: 90, derivado: 10 } });
+    // o tier só continua sem partes
+    expect(lerTabelasDaConfissao(doc).imagem.get('titan/map').partes).toBeUndefined();
+    for (const [selo, porque] of [
+      ['medido 50 · inventado 40', /somam 90/],
+      ['inventado 38 · medido 62', /na ordem/],
+      ['medido 60 · medido 40', /na ordem/],
+      ['medido 90 · artístico 10', /"artístico 10"/],
+      ['medido 0 · inventado 100', /é zero/],
+      ['medido 100', /nem partes/],
+      ['medido 21.5 · inventado 78.5', /"medido 21.5"/],
+    ]) {
+      expect(() => lerTabelasDaConfissao(comSelo(selo)), selo).toThrow(porque);
+    }
+  });
+
   it('a forma de um corpo que não existe falha, em vez de publicar calada', () => {
     const { forma } = lerTabelasDaConfissao(doc.replace('| janus |', '| jnaus |'));
     expect(() => conferirCorposDaForma(forma, new Set(['phobos', 'janus']))).toThrow(/"jnaus"/);

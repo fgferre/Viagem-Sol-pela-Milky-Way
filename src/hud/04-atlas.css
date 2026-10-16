@@ -699,11 +699,37 @@
   border-radius: 50%;
   background: currentcolor;
 }
-.atlas-ficha-proc.medido {
+.atlas-ficha-proc.medido,
+.atlas-ficha-parte.medido {
   color: var(--ok);
 }
-.atlas-ficha-proc.derivado {
+.atlas-ficha-proc.derivado,
+.atlas-ficha-parte.derivado {
   color: var(--acento);
+}
+/* O SELO EM PARTES (16/10/2026): a linha mista da imagem mostra cada tier
+   com a porcentagem da área, cada parte com o ponto e a cor do tier dela;
+   a caixa fica na cor neutra (os "·" e a fonte) e sem ponto próprio. O
+   texto corre em linha e quebra ENTRE as partes, nunca dentro de uma —
+   no celular a linha desce, não estoura a caixa. */
+.atlas-ficha-proc.partes {
+  display: block;
+}
+.atlas-ficha-proc.partes::before {
+  content: none;
+}
+.atlas-ficha-parte {
+  white-space: nowrap;
+}
+.atlas-ficha-parte::before {
+  content: '';
+  display: inline-block;
+  width: 0.4rem;
+  height: 0.4rem;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+  border-radius: 50%;
+  background: currentcolor;
 }
 /* A LINHA LARGA (redesenho, 06/09) — texto longo (frases, listas de
    catálogo) não cabe nos 60% de `dd` sem virar uma coluna de uma palavra;

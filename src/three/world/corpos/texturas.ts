@@ -114,7 +114,19 @@ export interface EntradaDeTextura {
    * `selo` da mesma tabela do ASSETS.md. Vem sempre junto da `nota`.
    */
   seloDaNota?: 'medido' | 'derivado' | 'inventado';
+  /** As partes do selo, quando o canal é misto (ver `PartesDoSelo`). */
+  partes?: PartesDoSelo;
 }
+
+/**
+ * AS PARTES DO SELO MISTO (16/10/2026): a porcentagem da ÁREA em cada tier
+ * presente, da mesma coluna `selo` do ASSETS.md (`medido 21 · derivado 41 ·
+ * inventado 38`); soma 100 (±1), e o `seloDaNota` continua sendo o mais
+ * fraco delas. Ausente quando o canal é de um tier só.
+ */
+export type PartesDoSelo = Partial<
+  Record<NonNullable<EntradaDeTextura['seloDaNota']>, number>
+>;
 
 /**
  * A CONFISSÃO DA FORMA de um corpo: a frase bilíngue de sempre — quem lê só
@@ -124,6 +136,7 @@ export interface EntradaDeTextura {
  */
 export interface FormaConfessada extends TextoBilingue {
   seloDaNota?: EntradaDeTextura['seloDaNota'];
+  partes?: PartesDoSelo;
 }
 
 export interface ManifestDeTexturas {

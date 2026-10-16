@@ -936,11 +936,13 @@ async function main() {
       // preenchido em 512 px. A nota acompanha todas as variantes, e a
       // ausência dela é a declaração de que a bancada não achou defeito.
       // O selo vai junto: é o tier do que a nota confessa (coluna `selo`
-      // do ASSETS.md), e é ele que a ficha põe na linha da confissão.
+      // do ASSETS.md), e é ele que a ficha põe na linha da confissão; no
+      // canal misto, as `partes` (a porcentagem da área por tier) também.
       ...(confessada
         ? {
             nota: bilingue(confessada.nota, `a nota de ${corpo}/${canal}`),
             seloDaNota: confessada.selo,
+            ...(confessada.partes ? { partes: confessada.partes } : {}),
           }
         : {}),
     });
@@ -963,13 +965,14 @@ async function main() {
     // elipsoide de BODY_AXES no lugar da malha irregular que existe
     // publicada, ou a malha esculpida por código (item 20). Cada forma é a
     // frase bilíngue de sempre (`pt`/`en`, que a ficha já lê) com o selo
-    // ao lado, no mesmo nome da imagem: `seloDaNota`.
+    // ao lado, no mesmo nome da imagem: `seloDaNota` (e as `partes`, na
+    // forma mista).
     formas: Object.fromEntries(
       [...confissao.forma]
         .sort(([a], [b]) => a.localeCompare(b, 'en'))
-        .map(([id, { selo, nota }]) => [
+        .map(([id, { selo, nota, partes }]) => [
           id,
-          { ...bilingue(nota, `a forma de ${id}`), seloDaNota: selo },
+          { ...bilingue(nota, `a forma de ${id}`), seloDaNota: selo, ...(partes ? { partes } : {}) },
         ])
     ),
     entradas,

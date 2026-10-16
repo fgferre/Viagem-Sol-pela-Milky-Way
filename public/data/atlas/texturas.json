@@ -16,7 +16,11 @@
     "deimos": {
       "pt": "~90 % medida pelo modelo de forma de Thomas (Viking; grade de 5°, suavizada a 2°) e ~10 % interpolada entre as medidas",
       "en": "~90% measured by the Thomas shape model (Viking; 5° grid, smoothed to 2°) and ~10% interpolated between measurements",
-      "seloDaNota": "derivado"
+      "seloDaNota": "derivado",
+      "partes": {
+        "medido": 90,
+        "derivado": 10
+      }
     },
     "epimetheus": {
       "pt": "geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais",
@@ -1038,7 +1042,11 @@
         "pt": "a forma, medida pelo modelo de Thomas (Viking, grade de 5°), suavizada a 2° e com ~10 % interpolado entre as medidas; o relevo fino não mora aqui, mora na luz",
         "en": "the shape, measured by the Thomas model (Viking, 5° grid), smoothed to 2° with ~10% interpolated between measurements; the fine relief does not live here, it lives in the lighting"
       },
-      "seloDaNota": "derivado"
+      "seloDaNota": "derivado",
+      "partes": {
+        "medido": 90,
+        "derivado": 10
+      }
     },
     {
       "corpo": "deimos",
@@ -1068,7 +1076,11 @@
         "pt": "a forma, medida pelo modelo de Thomas (Viking, grade de 5°), suavizada a 2° e com ~10 % interpolado entre as medidas; o relevo fino não mora aqui, mora na luz",
         "en": "the shape, measured by the Thomas model (Viking, 5° grid), smoothed to 2° with ~10% interpolated between measurements; the fine relief does not live here, it lives in the lighting"
       },
-      "seloDaNota": "derivado"
+      "seloDaNota": "derivado",
+      "partes": {
+        "medido": 90,
+        "derivado": 10
+      }
     },
     {
       "corpo": "deimos",
@@ -1098,7 +1110,11 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos",
         "en": "the shadow, in six azimuths, is baked from the measured shape (Thomas) and the fine relief, which by area is 13% derived from the sharp photograph and 87% invented, with the crater depth taken from Phobos"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 13,
+        "inventado": 87
+      }
     },
     {
       "corpo": "deimos",
@@ -1128,7 +1144,11 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos",
         "en": "the shadow, in six azimuths, is baked from the measured shape (Thomas) and the fine relief, which by area is 13% derived from the sharp photograph and 87% invented, with the crater depth taken from Phobos"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 13,
+        "inventado": 87
+      }
     },
     {
       "corpo": "deimos",
@@ -1158,7 +1178,11 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos",
         "en": "the shadow, in six azimuths, is baked from the measured shape (Thomas) and the fine relief, which by area is 13% derived from the sharp photograph and 87% invented, with the crater depth taken from Phobos"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 13,
+        "inventado": 87
+      }
     },
     {
       "corpo": "deimos",
@@ -1188,7 +1212,11 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos",
         "en": "the shadow, in six azimuths, is baked from the measured shape (Thomas) and the fine relief, which by area is 13% derived from the sharp photograph and 87% invented, with the crater depth taken from Phobos"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 13,
+        "inventado": 87
+      }
     },
     {
       "corpo": "deimos",
@@ -1218,7 +1246,11 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos",
         "en": "the shadow, in six azimuths, is baked from the measured shape (Thomas) and the fine relief, which by area is 13% derived from the sharp photograph and 87% invented, with the crater depth taken from Phobos"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 13,
+        "inventado": 87
+      }
     },
     {
       "corpo": "deimos",
@@ -1248,7 +1280,11 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos",
         "en": "the shadow, in six azimuths, is baked from the measured shape (Thomas) and the fine relief, which by area is 13% derived from the sharp photograph and 87% invented, with the crater depth taken from Phobos"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 13,
+        "inventado": 87
+      }
     },
     {
       "corpo": "deimos",
@@ -1278,7 +1314,11 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos",
         "en": "the shadow, in six azimuths, is baked from the measured shape (Thomas) and the fine relief, which by area is 13% derived from the sharp photograph and 87% invented, with the crater depth taken from Phobos"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 13,
+        "inventado": 87
+      }
     },
     {
       "corpo": "deimos",
@@ -1308,7 +1348,11 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos",
         "en": "the shadow, in six azimuths, is baked from the measured shape (Thomas) and the fine relief, which by area is 13% derived from the sharp photograph and 87% invented, with the crater depth taken from Phobos"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 13,
+        "inventado": 87
+      }
     },
     {
       "corpo": "deimos",
@@ -1338,7 +1382,11 @@
         "pt": "14 % é foto nítida do Viking, 79 % é foto vista só de longe com o detalhe fino pintado por IA a partir de números medidos, 7 % (a faixa nunca vista de perto) é pintura por IA; a cor segue as medidas",
         "en": "14% is a sharp Viking photograph, 79% is a photograph seen only from afar with the fine detail painted by AI from measured numbers, 7% (the strip never seen up close) is an AI painting; the color follows the measurements"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 14,
+        "inventado": 86
+      }
     },
     {
       "corpo": "deimos",
@@ -1368,7 +1416,11 @@
         "pt": "14 % é foto nítida do Viking, 79 % é foto vista só de longe com o detalhe fino pintado por IA a partir de números medidos, 7 % (a faixa nunca vista de perto) é pintura por IA; a cor segue as medidas",
         "en": "14% is a sharp Viking photograph, 79% is a photograph seen only from afar with the fine detail painted by AI from measured numbers, 7% (the strip never seen up close) is an AI painting; the color follows the measurements"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 14,
+        "inventado": 86
+      }
     },
     {
       "corpo": "deimos",
@@ -1398,7 +1450,11 @@
         "pt": "14 % é foto nítida do Viking, 79 % é foto vista só de longe com o detalhe fino pintado por IA a partir de números medidos, 7 % (a faixa nunca vista de perto) é pintura por IA; a cor segue as medidas",
         "en": "14% is a sharp Viking photograph, 79% is a photograph seen only from afar with the fine detail painted by AI from measured numbers, 7% (the strip never seen up close) is an AI painting; the color follows the measurements"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 14,
+        "inventado": 86
+      }
     },
     {
       "corpo": "deimos",
@@ -1428,7 +1484,11 @@
         "pt": "14 % é foto nítida do Viking, 79 % é foto vista só de longe com o detalhe fino pintado por IA a partir de números medidos, 7 % (a faixa nunca vista de perto) é pintura por IA; a cor segue as medidas",
         "en": "14% is a sharp Viking photograph, 79% is a photograph seen only from afar with the fine detail painted by AI from measured numbers, 7% (the strip never seen up close) is an AI painting; the color follows the measurements"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 14,
+        "inventado": 86
+      }
     },
     {
       "corpo": "deimos",
@@ -1458,7 +1518,11 @@
         "pt": "14 % é foto nítida do Viking, 79 % é foto vista só de longe com o detalhe fino pintado por IA a partir de números medidos, 7 % (a faixa nunca vista de perto) é pintura por IA; a cor segue as medidas",
         "en": "14% is a sharp Viking photograph, 79% is a photograph seen only from afar with the fine detail painted by AI from measured numbers, 7% (the strip never seen up close) is an AI painting; the color follows the measurements"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 14,
+        "inventado": 86
+      }
     },
     {
       "corpo": "deimos",
@@ -1488,7 +1552,11 @@
         "pt": "14 % é foto nítida do Viking, 79 % é foto vista só de longe com o detalhe fino pintado por IA a partir de números medidos, 7 % (a faixa nunca vista de perto) é pintura por IA; a cor segue as medidas",
         "en": "14% is a sharp Viking photograph, 79% is a photograph seen only from afar with the fine detail painted by AI from measured numbers, 7% (the strip never seen up close) is an AI painting; the color follows the measurements"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 14,
+        "inventado": 86
+      }
     },
     {
       "corpo": "deimos",
@@ -1518,7 +1586,11 @@
         "pt": "relevo fino (20–80 m), por área: 0 % medido, 13 % derivado da foto nítida do Viking, 87 % inventado com a densidade de crateras de Deimos e a profundidade das de Fobos, pois Deimos não tem relevo fino medido",
         "en": "fine relief (20–80 m), by area: 0% measured, 13% derived from the sharp Viking photograph, 87% invented with Deimos's crater density and the depth of Phobos's craters, since Deimos has no measured fine relief"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 13,
+        "inventado": 87
+      }
     },
     {
       "corpo": "deimos",
@@ -1548,7 +1620,11 @@
         "pt": "relevo fino (20–80 m), por área: 0 % medido, 13 % derivado da foto nítida do Viking, 87 % inventado com a densidade de crateras de Deimos e a profundidade das de Fobos, pois Deimos não tem relevo fino medido",
         "en": "fine relief (20–80 m), by area: 0% measured, 13% derived from the sharp Viking photograph, 87% invented with Deimos's crater density and the depth of Phobos's craters, since Deimos has no measured fine relief"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 13,
+        "inventado": 87
+      }
     },
     {
       "corpo": "deimos",
@@ -1578,7 +1654,11 @@
         "pt": "relevo fino (20–80 m), por área: 0 % medido, 13 % derivado da foto nítida do Viking, 87 % inventado com a densidade de crateras de Deimos e a profundidade das de Fobos, pois Deimos não tem relevo fino medido",
         "en": "fine relief (20–80 m), by area: 0% measured, 13% derived from the sharp Viking photograph, 87% invented with Deimos's crater density and the depth of Phobos's craters, since Deimos has no measured fine relief"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 13,
+        "inventado": 87
+      }
     },
     {
       "corpo": "deimos",
@@ -1608,7 +1688,11 @@
         "pt": "relevo fino (20–80 m), por área: 0 % medido, 13 % derivado da foto nítida do Viking, 87 % inventado com a densidade de crateras de Deimos e a profundidade das de Fobos, pois Deimos não tem relevo fino medido",
         "en": "fine relief (20–80 m), by area: 0% measured, 13% derived from the sharp Viking photograph, 87% invented with Deimos's crater density and the depth of Phobos's craters, since Deimos has no measured fine relief"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 13,
+        "inventado": 87
+      }
     },
     {
       "corpo": "deimos",
@@ -1638,7 +1722,11 @@
         "pt": "relevo fino (20–80 m), por área: 0 % medido, 13 % derivado da foto nítida do Viking, 87 % inventado com a densidade de crateras de Deimos e a profundidade das de Fobos, pois Deimos não tem relevo fino medido",
         "en": "fine relief (20–80 m), by area: 0% measured, 13% derived from the sharp Viking photograph, 87% invented with Deimos's crater density and the depth of Phobos's craters, since Deimos has no measured fine relief"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 13,
+        "inventado": 87
+      }
     },
     {
       "corpo": "deimos",
@@ -1668,7 +1756,11 @@
         "pt": "relevo fino (20–80 m), por área: 0 % medido, 13 % derivado da foto nítida do Viking, 87 % inventado com a densidade de crateras de Deimos e a profundidade das de Fobos, pois Deimos não tem relevo fino medido",
         "en": "fine relief (20–80 m), by area: 0% measured, 13% derived from the sharp Viking photograph, 87% invented with Deimos's crater density and the depth of Phobos's craters, since Deimos has no measured fine relief"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 13,
+        "inventado": 87
+      }
     },
     {
       "corpo": "dione",
@@ -3283,7 +3375,12 @@
         "pt": "relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos",
         "en": "relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 94.4,
+        "derivado": 0.6,
+        "inventado": 5
+      }
     },
     {
       "corpo": "enceladus",
@@ -3313,7 +3410,12 @@
         "pt": "relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos",
         "en": "relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 94.4,
+        "derivado": 0.6,
+        "inventado": 5
+      }
     },
     {
       "corpo": "enceladus",
@@ -3493,7 +3595,12 @@
         "pt": "relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos",
         "en": "relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 94.4,
+        "derivado": 0.6,
+        "inventado": 5
+      }
     },
     {
       "corpo": "enceladus",
@@ -3523,7 +3630,12 @@
         "pt": "relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos",
         "en": "relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 94.4,
+        "derivado": 0.6,
+        "inventado": 5
+      }
     },
     {
       "corpo": "enceladus",
@@ -3553,7 +3665,12 @@
         "pt": "relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos",
         "en": "relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 94.4,
+        "derivado": 0.6,
+        "inventado": 5
+      }
     },
     {
       "corpo": "enceladus",
@@ -3583,7 +3700,12 @@
         "pt": "relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos",
         "en": "relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 94.4,
+        "derivado": 0.6,
+        "inventado": 5
+      }
     },
     {
       "corpo": "enceladus",
@@ -3613,7 +3735,12 @@
         "pt": "relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos",
         "en": "relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 94.4,
+        "derivado": 0.6,
+        "inventado": 5
+      }
     },
     {
       "corpo": "enceladus",
@@ -3643,7 +3770,12 @@
         "pt": "relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos",
         "en": "relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 94.4,
+        "derivado": 0.6,
+        "inventado": 5
+      }
     },
     {
       "corpo": "eris",
@@ -7213,7 +7345,11 @@
         "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código; das 14 crateras, só 4 são reais — as outras 10 foram postas pela densidade medida",
         "en": "the shape is measured by Cassini; the fine relief comes from 28 images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code; of the 14 craters, only 4 are real — the other 10 were placed at the measured density"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 40.5,
+        "inventado": 59.5
+      }
     },
     {
       "corpo": "pan",
@@ -7243,7 +7379,11 @@
         "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código; das 14 crateras, só 4 são reais — as outras 10 foram postas pela densidade medida",
         "en": "the shape is measured by Cassini; the fine relief comes from 28 images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code; of the 14 craters, only 4 are real — the other 10 were placed at the measured density"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 40.5,
+        "inventado": 59.5
+      }
     },
     {
       "corpo": "pan",
@@ -7273,7 +7413,11 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 40.5,
+        "inventado": 59.5
+      }
     },
     {
       "corpo": "pan",
@@ -7303,7 +7447,11 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 40.5,
+        "inventado": 59.5
+      }
     },
     {
       "corpo": "pan",
@@ -7333,7 +7481,11 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 40.5,
+        "inventado": 59.5
+      }
     },
     {
       "corpo": "pan",
@@ -7363,7 +7515,11 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 40.5,
+        "inventado": 59.5
+      }
     },
     {
       "corpo": "pan",
@@ -7393,7 +7549,11 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 40.5,
+        "inventado": 59.5
+      }
     },
     {
       "corpo": "pan",
@@ -7423,7 +7583,11 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 40.5,
+        "inventado": 59.5
+      }
     },
     {
       "corpo": "pan",
@@ -7453,7 +7617,11 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 40.5,
+        "inventado": 59.5
+      }
     },
     {
       "corpo": "pan",
@@ -7483,7 +7651,11 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida",
         "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which is measured by the images on only 40.5% of the surface: on the rest it is INVENTED, and 10 of the 14 craters were placed at the measured density"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 40.5,
+        "inventado": 59.5
+      }
     },
     {
       "corpo": "pan",
@@ -7633,7 +7805,11 @@
         "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código; das 14 crateras, só 4 são reais — as outras 10 foram postas pela densidade medida",
         "en": "the shape is measured by Cassini; the fine relief comes from 28 images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code; of the 14 craters, only 4 are real — the other 10 were placed at the measured density"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 40.5,
+        "inventado": 59.5
+      }
     },
     {
       "corpo": "pan",
@@ -7663,7 +7839,11 @@
         "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código; das 14 crateras, só 4 são reais — as outras 10 foram postas pela densidade medida",
         "en": "the shape is measured by Cassini; the fine relief comes from 28 images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code; of the 14 craters, only 4 are real — the other 10 were placed at the measured density"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 40.5,
+        "inventado": 59.5
+      }
     },
     {
       "corpo": "pan",
@@ -7693,7 +7873,11 @@
         "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código; das 14 crateras, só 4 são reais — as outras 10 foram postas pela densidade medida",
         "en": "the shape is measured by Cassini; the fine relief comes from 28 images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code; of the 14 craters, only 4 are real — the other 10 were placed at the measured density"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 40.5,
+        "inventado": 59.5
+      }
     },
     {
       "corpo": "pan",
@@ -7723,7 +7907,11 @@
         "pt": "a forma é medida pela Cassini; o relevo fino vem de 28 fotos, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código; das 14 crateras, só 4 são reais — as outras 10 foram postas pela densidade medida",
         "en": "the shape is measured by Cassini; the fine relief comes from 28 images, which cover 40.5% of the surface, and on the rest, which no image saw in daylight, it is INVENTED by code; of the 14 craters, only 4 are real — the other 10 were placed at the measured density"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "derivado": 40.5,
+        "inventado": 59.5
+      }
     },
     {
       "corpo": "phobos",
@@ -7813,7 +8001,12 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos",
         "en": "the shadow, in six azimuths, is baked from the measured shape (Gaskell) and the fine relief, which by area is 21% measured, 41% derived from the Viking images and 38% invented with Phobos's own statistics"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 21,
+        "derivado": 41,
+        "inventado": 38
+      }
     },
     {
       "corpo": "phobos",
@@ -7843,7 +8036,12 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos",
         "en": "the shadow, in six azimuths, is baked from the measured shape (Gaskell) and the fine relief, which by area is 21% measured, 41% derived from the Viking images and 38% invented with Phobos's own statistics"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 21,
+        "derivado": 41,
+        "inventado": 38
+      }
     },
     {
       "corpo": "phobos",
@@ -7873,7 +8071,12 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos",
         "en": "the shadow, in six azimuths, is baked from the measured shape (Gaskell) and the fine relief, which by area is 21% measured, 41% derived from the Viking images and 38% invented with Phobos's own statistics"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 21,
+        "derivado": 41,
+        "inventado": 38
+      }
     },
     {
       "corpo": "phobos",
@@ -7903,7 +8106,12 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos",
         "en": "the shadow, in six azimuths, is baked from the measured shape (Gaskell) and the fine relief, which by area is 21% measured, 41% derived from the Viking images and 38% invented with Phobos's own statistics"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 21,
+        "derivado": 41,
+        "inventado": 38
+      }
     },
     {
       "corpo": "phobos",
@@ -7933,7 +8141,12 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos",
         "en": "the shadow, in six azimuths, is baked from the measured shape (Gaskell) and the fine relief, which by area is 21% measured, 41% derived from the Viking images and 38% invented with Phobos's own statistics"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 21,
+        "derivado": 41,
+        "inventado": 38
+      }
     },
     {
       "corpo": "phobos",
@@ -7963,7 +8176,12 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos",
         "en": "the shadow, in six azimuths, is baked from the measured shape (Gaskell) and the fine relief, which by area is 21% measured, 41% derived from the Viking images and 38% invented with Phobos's own statistics"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 21,
+        "derivado": 41,
+        "inventado": 38
+      }
     },
     {
       "corpo": "phobos",
@@ -7993,7 +8211,12 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos",
         "en": "the shadow, in six azimuths, is baked from the measured shape (Gaskell) and the fine relief, which by area is 21% measured, 41% derived from the Viking images and 38% invented with Phobos's own statistics"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 21,
+        "derivado": 41,
+        "inventado": 38
+      }
     },
     {
       "corpo": "phobos",
@@ -8023,7 +8246,12 @@
         "pt": "a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos",
         "en": "the shadow, in six azimuths, is baked from the measured shape (Gaskell) and the fine relief, which by area is 21% measured, 41% derived from the Viking images and 38% invented with Phobos's own statistics"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 21,
+        "derivado": 41,
+        "inventado": 38
+      }
     },
     {
       "corpo": "phobos",
@@ -8233,7 +8461,12 @@
         "pt": "relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo",
         "en": "fine relief (35–140 m), by area: 21% measured (Gaskell), 41% derived from the Viking images (craters and pits), 38% invented with Phobos's own statistics; the grooves are only in the image, not in the relief"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 21,
+        "derivado": 41,
+        "inventado": 38
+      }
     },
     {
       "corpo": "phobos",
@@ -8263,7 +8496,12 @@
         "pt": "relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo",
         "en": "fine relief (35–140 m), by area: 21% measured (Gaskell), 41% derived from the Viking images (craters and pits), 38% invented with Phobos's own statistics; the grooves are only in the image, not in the relief"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 21,
+        "derivado": 41,
+        "inventado": 38
+      }
     },
     {
       "corpo": "phobos",
@@ -8293,7 +8531,12 @@
         "pt": "relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo",
         "en": "fine relief (35–140 m), by area: 21% measured (Gaskell), 41% derived from the Viking images (craters and pits), 38% invented with Phobos's own statistics; the grooves are only in the image, not in the relief"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 21,
+        "derivado": 41,
+        "inventado": 38
+      }
     },
     {
       "corpo": "phobos",
@@ -8323,7 +8566,12 @@
         "pt": "relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo",
         "en": "fine relief (35–140 m), by area: 21% measured (Gaskell), 41% derived from the Viking images (craters and pits), 38% invented with Phobos's own statistics; the grooves are only in the image, not in the relief"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 21,
+        "derivado": 41,
+        "inventado": 38
+      }
     },
     {
       "corpo": "phobos",
@@ -8353,7 +8601,12 @@
         "pt": "relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo",
         "en": "fine relief (35–140 m), by area: 21% measured (Gaskell), 41% derived from the Viking images (craters and pits), 38% invented with Phobos's own statistics; the grooves are only in the image, not in the relief"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 21,
+        "derivado": 41,
+        "inventado": 38
+      }
     },
     {
       "corpo": "phobos",
@@ -8383,7 +8636,12 @@
         "pt": "relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo",
         "en": "fine relief (35–140 m), by area: 21% measured (Gaskell), 41% derived from the Viking images (craters and pits), 38% invented with Phobos's own statistics; the grooves are only in the image, not in the relief"
       },
-      "seloDaNota": "inventado"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 21,
+        "derivado": 41,
+        "inventado": 38
+      }
     },
     {
       "corpo": "pluto",

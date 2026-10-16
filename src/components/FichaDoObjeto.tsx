@@ -740,8 +740,24 @@ export function FichaDoObjeto({
                           declara de onde veio; é essa frase que o ponteiro
                           tem de repetir. LINHA SEM SELO (o crédito da
                           imagem, e o relevo que não se aplica) não desenha
-                          o selo: um ponto neutro ali se leria "artístico". */}
-                      {l.procedencia && (
+                          o selo: um ponto neutro ali se leria "artístico".
+                          SELO EM PARTES (a linha mista da imagem, 16/10/2026):
+                          cada parte leva o ponto e a cor do tier dela, e a
+                          caixa fica neutra, sem ponto próprio. */}
+                      {l.procedencia && l.partes && (
+                        <span className="atlas-ficha-proc partes" title={l.fonte}>
+                          {l.partes.map((p, i) => (
+                            <span key={p.procedencia}>
+                              {i > 0 && ' · '}
+                              <span className={`atlas-ficha-parte ${p.procedencia}`}>
+                                {p.texto}
+                              </span>
+                            </span>
+                          ))}
+                          {l.fonte ? ` · ${l.fonte}` : ''}
+                        </span>
+                      )}
+                      {l.procedencia && !l.partes && (
                         <span
                           className={`atlas-ficha-proc ${l.procedencia}`}
                           title={l.fonte}

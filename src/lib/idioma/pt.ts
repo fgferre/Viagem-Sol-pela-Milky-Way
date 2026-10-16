@@ -400,9 +400,10 @@ export const PT = {
   'ficha.relevoDaCorAria':
     'Ligar um relevo inventado a partir da cor da foto de {nome} — não existe mapa de relevo',
   // O "?" do cabeçalho (redesenho, pedido do dono: "aplica o mesmo padrão
-  // na ficha dos corpos") — ≤40 palavras.
+  // na ficha dos corpos") — ≤40 palavras, mais a frase
+  // do selo em partes (16/10/2026).
   'ficha.ajuda':
-    "Cada selo diz de onde vem o número: medido é o número da fonte citada; derivado é calculado a partir de medidos; artístico é ilustração ou invenção declarada. O '×Terra' junto a um valor compara com o dado da Terra.",
+    "Cada selo diz de onde vem o número: medido é o número da fonte citada; derivado é calculado a partir de medidos; artístico é ilustração ou invenção declarada. O '×Terra' junto a um valor compara com o dado da Terra. Quando o selo vem em partes, cada porcentagem é da área.",
   // ---- a ficha no celular: compacta/expandida (Lote 5, PLAN-UI.md §7) -
   'ficha.detalhes': 'Detalhes',
   'ficha.detalhesAria': 'Ver os detalhes completos da ficha',
@@ -511,6 +512,8 @@ export const PT = {
   'ficha.fonte.bancada': 'bancada de texturas',
   'ficha.fonte.modoDeclarado': 'modo declarado, em Ajustes',
   'ficha.fonte.larguraPx': '{px} px de largura',
+  // uma parte do selo misto da imagem: o tier e a porcentagem da área
+  'ficha.parteDoSelo': '{tier} {porcento} %',
   'ficha.fonte.catalogoHyg': 'catálogo HYG/AT-HYG',
   'ficha.fonte.bayerIau': 'Bayer, sigla IAU',
   'ficha.fonte.paralaxe': 'paralaxe Gaia DR3',

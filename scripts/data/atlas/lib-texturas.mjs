@@ -364,14 +364,52 @@ export function preencherVazioSemDado(
 /** O título que abre a seção legível por máquina. */
 export const TITULO_DA_CONFISSAO = '## A CONFISSÃO NA TELA';
 
-/** O selo do que a nota confessa (da imagem ou da forma) — o tier mais fraco dela. */
+/** O selo do que a nota confessa (da imagem ou da forma) — o tier mais fraco dela; do mais forte ao mais fraco. */
 const SELOS_DA_NOTA = ['medido', 'derivado', 'inventado'];
+
+/** Uma parte do selo misto: o tier e a porcentagem da área, inteira ou com uma casa de vírgula. */
+const PARTE_DO_SELO = /^(medido|derivado|inventado) (\d+(?:,\d)?)$/;
+
+/**
+ * A COLUNA `selo` de uma linha: um tier só (`derivado`), ou o canal misto em
+ * PARTES (`medido 21 · derivado 41 · inventado 38`, a porcentagem da área
+ * em cada tier). As partes vêm na ordem medido → derivado → inventado, sem
+ * repetir, duas ou três, cada uma acima de zero, e somam 100 (±1); o selo
+ * é o mais fraco delas, a regra de sempre. Canal de um tier só se escreve
+ * como antes — uma parte de 100 % seria a segunda maneira de dizer o mesmo.
+ */
+function lerSelo(celula, chave, onde) {
+  if (SELOS_DA_NOTA.includes(celula)) return { selo: celula };
+  const pedacos = celula.split('·').map((p) => p.trim());
+  const malformado = (porque) =>
+    new Error(
+      `${onde}: "${chave}" com selo "${celula}" — ${porque}; vale ${SELOS_DA_NOTA.join(', ')} ` +
+        'ou as partes, "medido 21 · derivado 41 · inventado 38".'
+    );
+  if (pedacos.length < 2) throw malformado('não é um tier nem partes');
+  const partes = {};
+  let ultimo = -1;
+  for (const pedaco of pedacos) {
+    const achado = PARTE_DO_SELO.exec(pedaco);
+    if (!achado) throw malformado(`"${pedaco}" não é "<tier> <porcentagem>"`);
+    const indice = SELOS_DA_NOTA.indexOf(achado[1]);
+    if (indice <= ultimo) throw malformado('as partes vão na ordem medido → derivado → inventado, sem repetir');
+    const porcento = Number(achado[2].replace(',', '.'));
+    if (porcento <= 0) throw malformado(`a parte "${achado[1]}" é zero — tier ausente não se escreve`);
+    partes[achado[1]] = porcento;
+    ultimo = indice;
+  }
+  const soma = Object.values(partes).reduce((a, b) => a + b, 0);
+  if (Math.abs(soma - 100) > 1) throw malformado(`as partes somam ${soma}, e a área inteira é 100 (±1)`);
+  return { selo: SELOS_DA_NOTA[ultimo], partes };
+}
 
 /**
  * As duas tabelas da seção de confissão, lidas com rigor: o título tem de
  * existir, a seção tem de ir até o fim do arquivo, cada linha das duas tem
- * de ser `| chave | selo | frase |`, com o selo dentro de `SELOS_DA_NOTA`;
- * o resultado é um par de Maps de `{ selo, nota }` (a imagem por
+ * de ser `| chave | selo | frase |`, com o selo dentro de `SELOS_DA_NOTA`
+ * ou em partes (`lerSelo`); o resultado é um par de Maps de
+ * `{ selo, nota }`, mais `partes` no canal misto (a imagem por
  * `corpo/canal`, a forma por corpo). Sem tolerância a "quase" — nota que
  * sumir por causa de um pipe a menos some da TELA, e ninguém repara na
  * falta de uma frase.
@@ -416,12 +454,7 @@ export function lerTabelasDaConfissao(markdown, onde = 'docs/reference/ASSETS.md
     if (atual.has(chave)) {
       throw new Error(`${onde}: "${chave}" aparece duas vezes na mesma tabela.`);
     }
-    if (!SELOS_DA_NOTA.includes(selo)) {
-      throw new Error(
-        `${onde}: "${chave}" com selo "${selo}" — vale ${SELOS_DA_NOTA.join(', ')}.`
-      );
-    }
-    atual.set(chave, { selo, nota });
+    atual.set(chave, { ...lerSelo(selo, chave, onde), nota });
   }
   const imagem = [...tabelas].find(([t]) => t.startsWith('a imagem'))?.[1];
   const forma = [...tabelas].find(([t]) => t.startsWith('a forma'))?.[1];

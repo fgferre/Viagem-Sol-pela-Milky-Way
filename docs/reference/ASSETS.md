@@ -1002,7 +1002,15 @@ foi feita por código ou IA onde nada a observou, `derivado` se alguma parte
 foi estimada, inferida, preenchida ou tingida a partir de medidas por método
 declarado, `medido` nos outros casos (resolução, emenda, topo de nuvem, o
 limite do próprio produto medido) —, e a ficha a imprime como o selo da
-linha, com `inventado` no tier artístico.
+linha, com `inventado` no tier artístico. **Canal misto** (16/10/2026,
+decisão do dono: "mostrar o selo junto com a porcentagem, em todos os
+corpos"): a coluna pode trazer as PARTES, `medido 21 · derivado 41 ·
+inventado 38` — a porcentagem da ÁREA em cada tier presente, na ordem
+medido → derivado → inventado, duas ou três, cada uma acima de zero,
+inteira ou com uma casa de vírgula, somando 100 (±1; o gerador falha
+fora disso). O selo da linha continua sendo o mais fraco delas, e a ficha
+mostra cada parte com o ponto do tier dela. Canal de um tier só se escreve
+como antes; a parte se classifica pela mesma regra, área por área.
 
 **As três regras do formato** — quem lê é `lerTabelasDaConfissao`
 (`scripts/data/atlas/lib-texturas.mjs`), a mesma função no gerador e no
@@ -1031,8 +1039,8 @@ tocar num `.mjs`.
 | titan/map | medido | 720×360, só a névoa laranja: o mosaico Cassini de mais resolução mostra emendas de longitude na esfera e não entrou |
 | europa/map | derivado | mosaico real da Voyager e da Galileo, em cinza: não existe mapa global em cor de Europa, e a cor é INFERIDA do brilho pelo app, com os tons medidos numa foto em cor da Galileo de um só hemisfério; a calota sul sem imagem leva o tom da faixa vizinha |
 | venus/map | medido | é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor |
-| enceladus/height | medido | relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos |
-| enceladus/normal | medido | relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos |
+| enceladus/height | medido 94,4 · derivado 0,6 · inventado 5 | relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos |
+| enceladus/normal | medido 94,4 · derivado 0,6 · inventado 5 | relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos |
 | mimas/height | medido | modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, como a bacia de Herschel, não o detalhe menor que um texel |
 | tethys/height | medido | modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel |
 | dione/height | medido | DTM SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel |
@@ -1045,20 +1053,20 @@ tocar num `.mjs`.
 | hyperion/horizon | inventado | a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA |
 | hyperion/horizon2 | inventado | a sombra, em seis azimutes, é assada da forma medida pela Cassini, mas a dos 3.488 poços não é medida: eles saem das manchas escuras da pintura por IA |
 | pan/map | inventado | não existe mapa de cor de Pã publicado: a cor é uma pintura por IA generativa, calibrada pelo espectro medido pela Cassini; o claro e escuro vem de 28 fotos da Cassini nos 40,5 % da superfície que elas veem — no resto, é o da pintura |
-| pan/height | inventado | a forma é medida pela Cassini; o relevo fino vem de 28 fotos, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código; das 14 crateras, só 4 são reais — as outras 10 foram postas pela densidade medida |
-| pan/normal | inventado | a forma é medida pela Cassini; o relevo fino vem de 28 fotos, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código; das 14 crateras, só 4 são reais — as outras 10 foram postas pela densidade medida |
-| pan/horizon | inventado | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida |
-| pan/horizon2 | inventado | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida |
+| pan/height | derivado 40,5 · inventado 59,5 | a forma é medida pela Cassini; o relevo fino vem de 28 fotos, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código; das 14 crateras, só 4 são reais — as outras 10 foram postas pela densidade medida |
+| pan/normal | derivado 40,5 · inventado 59,5 | a forma é medida pela Cassini; o relevo fino vem de 28 fotos, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código; das 14 crateras, só 4 são reais — as outras 10 foram postas pela densidade medida |
+| pan/horizon | derivado 40,5 · inventado 59,5 | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida |
+| pan/horizon2 | derivado 40,5 · inventado 59,5 | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida |
 | phobos/map | derivado | a foto do Viking (mosaico global da USGS, 40 pixels por grau), em cinza, cobre 99,6 % do corpo; a cor é tingida pelo app a partir do albedo e das razões de cor medidos |
 | phobos/height | medido | a forma inteira, medida pelo modelo de Gaskell (3,1 milhões de placas, NASA PDS); o relevo fino não mora aqui, mora na luz |
-| phobos/normal | inventado | relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo |
-| phobos/horizon | inventado | a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos |
-| phobos/horizon2 | inventado | a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos |
-| deimos/map | inventado | 14 % é foto nítida do Viking, 79 % é foto vista só de longe com o detalhe fino pintado por IA a partir de números medidos, 7 % (a faixa nunca vista de perto) é pintura por IA; a cor segue as medidas |
-| deimos/height | derivado | a forma, medida pelo modelo de Thomas (Viking, grade de 5°), suavizada a 2° e com ~10 % interpolado entre as medidas; o relevo fino não mora aqui, mora na luz |
-| deimos/normal | inventado | relevo fino (20–80 m), por área: 0 % medido, 13 % derivado da foto nítida do Viking, 87 % inventado com a densidade de crateras de Deimos e a profundidade das de Fobos, pois Deimos não tem relevo fino medido |
-| deimos/horizon | inventado | a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos |
-| deimos/horizon2 | inventado | a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos |
+| phobos/normal | medido 21 · derivado 41 · inventado 38 | relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo |
+| phobos/horizon | medido 21 · derivado 41 · inventado 38 | a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos |
+| phobos/horizon2 | medido 21 · derivado 41 · inventado 38 | a sombra, em seis azimutes, é assada da forma medida (Gaskell) e do relevo fino, que por área é 21 % medido, 41 % derivado das fotos do Viking e 38 % inventado com as estatísticas de Fobos |
+| deimos/map | derivado 14 · inventado 86 | 14 % é foto nítida do Viking, 79 % é foto vista só de longe com o detalhe fino pintado por IA a partir de números medidos, 7 % (a faixa nunca vista de perto) é pintura por IA; a cor segue as medidas |
+| deimos/height | medido 90 · derivado 10 | a forma, medida pelo modelo de Thomas (Viking, grade de 5°), suavizada a 2° e com ~10 % interpolado entre as medidas; o relevo fino não mora aqui, mora na luz |
+| deimos/normal | derivado 13 · inventado 87 | relevo fino (20–80 m), por área: 0 % medido, 13 % derivado da foto nítida do Viking, 87 % inventado com a densidade de crateras de Deimos e a profundidade das de Fobos, pois Deimos não tem relevo fino medido |
+| deimos/horizon | derivado 13 · inventado 87 | a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos |
+| deimos/horizon2 | derivado 13 · inventado 87 | a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos |
 | earth/normal | medido | relevo MEDIDO pelo ETOPO 2022 da NOAA, na escala real e sem exagero (no gelo polar, o topo do gelo); cada texel de ~4,9 km guarda a inclinação média medida a ~1,85 km; a água é um espelho, e as depressões secas abaixo do mar ficam no nível do mar |
 | earth/horizon | derivado | a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água |
 | earth/horizon2 | derivado | a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água |
@@ -1092,8 +1100,8 @@ esculpidas, o caso oposto — têm malha, e a malha é INVENTADA a partir das
 dimensões publicadas (item 134/S3, seção acima); Hipérion e Pã saíram (forma
 medida, tabela de cima). Por fim, Fobos e Deimos, que têm a forma MEDIDA por
 mapa de altura (modelos de Gaskell e de Thomas, sobre o elipsoide) e ficam
-aqui porque a nota diz a proporção: `medido` se toda a forma é medida,
-`derivado` se parte é interpolada entre medidas. O selo segue a regra da tabela de cima: o corpo
+aqui porque a nota diz a proporção: `medido` se toda a forma é medida, em
+partes (`medido 90 · derivado 10`) se parte é interpolada entre medidas. O selo segue a regra da tabela de cima: o corpo
 redondo de verdade, desenhado pelo elipsoide dos eixos medidos, é `medido`; o
 elipsoide ou a esfera no lugar de uma forma irregular medida que a casa ainda
 não carrega é `derivado` (um ajuste das medidas, não a forma); a malha
@@ -1107,7 +1115,7 @@ elipsoide dos eixos medidos, `medido`.
 | hygiea | derivado | esfera do raio médio, sem malha: a forma irregular do DAMIT existe publicada e o app ainda não a carrega |
 | haumea | derivado | elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e o app ainda não a carrega |
 | phobos | medido | 100 % medida pelo modelo de forma de Gaskell (3,1 milhões de placas, NASA PDS), posto sobre o elipsoide da IAU |
-| deimos | derivado | ~90 % medida pelo modelo de forma de Thomas (Viking; grade de 5°, suavizada a 2°) e ~10 % interpolada entre as medidas |
+| deimos | medido 90 · derivado 10 | ~90 % medida pelo modelo de forma de Thomas (Viking; grade de 5°, suavizada a 2°) e ~10 % interpolada entre as medidas |
 | daphnis | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
 | atlas | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
 | prometheus | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |

@@ -1234,6 +1234,10 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
   // alguém se lembrasse de editar um `.mjs`. Agora crescer é só escrever a
   // linha, e o que o gate cobra é o manifesto BATER com ela.
   const confissao = lerTabelasDaConfissao(assetsMd, 'docs/reference/ASSETS.md');
+  // AS PARTES DO SELO MISTO (16/10/2026): as do manifesto têm de ser as do
+  // documento, tier a tier — a soma já foi cobrada na leitura dele.
+  const mesmasPartes = (doManifesto, doDocumento) =>
+    JSON.stringify(doManifesto ?? null) === JSON.stringify(doDocumento ?? null);
   const CONFESSAM = [...confissao.imagem.keys()].sort();
   for (const chave of CONFESSAM) {
     const entrada = notasNoManifesto.get(chave);
@@ -1256,6 +1260,13 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
         `atlas/texturas: o selo da nota de "${chave}" no manifesto é ` +
           `"${entrada.seloDaNota}", e o ASSETS.md diz "${confessada.selo}" — ` +
           'rode npm run data:texturas.'
+      );
+    }
+    if (!mesmasPartes(entrada.partes, confessada.partes)) {
+      throw new Error(
+        `atlas/texturas: as partes do selo de "${chave}" no manifesto são ` +
+          `${JSON.stringify(entrada.partes ?? null)}, e o ASSETS.md diz ` +
+          `${JSON.stringify(confessada.partes ?? null)} — rode npm run data:texturas.`
       );
     }
     if (typeof nota.en !== 'string' || nota.en === '') {
@@ -1290,6 +1301,13 @@ if (!Array.isArray(corpos) || corpos.length !== 54) {
         `atlas/texturas: o selo da forma de "${id}" no manifesto é ` +
           `"${nota.seloDaNota}", e o ASSETS.md diz "${confessada.selo}" — ` +
           'rode npm run data:texturas.'
+      );
+    }
+    if (!mesmasPartes(nota.partes, confessada.partes)) {
+      throw new Error(
+        `atlas/texturas: as partes do selo da forma de "${id}" no manifesto são ` +
+          `${JSON.stringify(nota.partes ?? null)}, e o ASSETS.md diz ` +
+          `${JSON.stringify(confessada.partes ?? null)} — rode npm run data:texturas.`
       );
     }
     if (typeof nota.en !== 'string' || nota.en === '') {

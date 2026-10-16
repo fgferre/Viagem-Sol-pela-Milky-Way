@@ -378,9 +378,10 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.relevoDaCorAria':
     "Turn on relief invented from the colour of {nome}'s photo — there is no relief map",
   // The "?" in the header (redesign, the owner's request: "apply the same
-  // pattern to the fact sheet") — ≤40 words.
+  // pattern to the fact sheet") — ≤40 words, plus the
+  // sentence on the seal in parts (16/10/2026).
   'ficha.ajuda':
-    "Each seal says where the number comes from: measured is a number from the cited source; derived is calculated from measured ones; artistic is a declared illustration or invention. The '×Terra' beside a value compares it with Earth's own figure.",
+    "Each seal says where the number comes from: measured is a number from the cited source; derived is calculated from measured ones; artistic is a declared illustration or invention. The '×Terra' beside a value compares it with Earth's own figure. When a seal comes in parts, each percentage is a share of the area.",
   // ---- the fact sheet on phone: compact/expanded (Lote 5, PLAN-UI.md §7)
   'ficha.detalhes': 'Details',
   'ficha.detalhesAria': 'View the full fact sheet',
@@ -481,6 +482,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.fonte.bancada': 'texture workbench',
   'ficha.fonte.modoDeclarado': 'declared mode, in Settings',
   'ficha.fonte.larguraPx': '{px} px wide',
+  // one part of the image's mixed seal: the tier and the share of the area
+  'ficha.parteDoSelo': '{tier} {porcento} %',
   'ficha.fonte.catalogoHyg': 'HYG/AT-HYG catalog',
   'ficha.fonte.bayerIau': 'Bayer, IAU abbreviation',
   'ficha.fonte.paralaxe': 'Gaia DR3 parallax',

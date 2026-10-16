@@ -70,6 +70,7 @@ import RELATORIO_DA_REGUA from './reguaDosMapas.relatorio.json';
 import type {
   EntradaDeTextura,
   ManifestDeTexturas,
+  PartesDoSelo,
   TextoBilingue,
 } from '../../three/world/corpos/texturas';
 
@@ -86,6 +87,13 @@ export interface LinhaDaFicha {
    * atribuição), que não confessa nada, e na linha que não se aplica
    */
   procedencia?: Procedencia;
+  /**
+   * AS PARTES DO SELO, só na linha mista da imagem (16/10/2026): cada tier
+   * presente, de medido a artístico, com a porcentagem da área já escrita na
+   * língua de agora. Ausente, o selo é o de um tier só, como sempre; com
+   * elas, `procedencia` continua sendo o mais fraco.
+   */
+  partes?: { procedencia: Procedencia; texto: string }[];
   /** de onde veio o número, em quatro ou cinco palavras */
   fonte?: string;
 }
@@ -561,6 +569,41 @@ function oMaisFraco(tiers: readonly Procedencia[]): Procedencia {
   );
 }
 
+/** A ordem das partes na tela: do mais forte ao mais fraco. */
+const ORDEM_DAS_PARTES = ['medido', 'derivado', 'inventado'] as const;
+
+/**
+ * O SELO EM PARTES (16/10/2026, decisão do dono: "mostrar o selo junto com
+ * a porcentagem, em todos os corpos"): a linha mista leva cada tier
+ * presente com a porcentagem da área, de medido a artístico. O `teto` é o
+ * tier mais forte que a linha admite — a política da régua, na cor: uma
+ * parte medida num mapa tingido é derivada, e as partes que caem no mesmo
+ * tier se somam. Sobrando um tier só, a linha fica como sempre, sem partes.
+ */
+function comPartes(
+  feita: LinhaDaFicha | null,
+  partes: PartesDoSelo | undefined,
+  teto: Procedencia = 'medido'
+): LinhaDaFicha | null {
+  if (!feita || !partes) return feita;
+  const porTier = new Map<Procedencia, number>();
+  for (const selo of ORDEM_DAS_PARTES) {
+    const porcento = partes[selo];
+    if (porcento === undefined) continue;
+    const tier = oMaisFraco([TIER_DA_NOTA[selo], teto]);
+    porTier.set(tier, (porTier.get(tier) ?? 0) + porcento);
+  }
+  if (porTier.size < 2) return feita;
+  feita.partes = [...porTier].map(([procedencia, porcento]) => ({
+    procedencia,
+    texto: t('ficha.parteDoSelo', {
+      tier: t(`selo.tier.${procedencia}` as 'selo.tier.medido'),
+      porcento: decimalDoIdioma(String(Math.round(porcento * 10) / 10)),
+    }),
+  }));
+  return feita;
+}
+
 /**
  * A POLÍTICA DA RÉGUA (`matiz`, reguaDosMapas.ts) na língua do selo: a foto
  * em cor verdadeira só tem a média movida para a medida; a tinta é o
@@ -641,14 +684,20 @@ function linhaDoRelevo(
     return linha(rotulo, t(mapa ? 'ficha.relevo.liso' : 'ficha.relevo.semMapa'), 'artistico');
   }
   const notas = presentes.flatMap((e) =>
-    e.nota ? [{ frase: noIdioma(e.nota), tier: TIER_DA_NOTA[e.seloDaNota ?? 'inventado'] }] : []
+    e.nota
+      ? [{ frase: noIdioma(e.nota), tier: TIER_DA_NOTA[e.seloDaNota ?? 'inventado'], partes: e.partes }]
+      : []
   );
   if (notas.length === 0) return linha(rotulo, t('ficha.relevo.semDefeito'), 'medido');
-  return linha(
-    rotulo,
-    [...new Set(notas.map((n) => n.frase))].join('; '),
-    oMaisFraco(notas.map((n) => n.tier)),
-    t('ficha.fonte.bancada')
+  const tier = oMaisFraco(notas.map((n) => n.tier));
+  // AS PARTES são as da nota que dá o selo — em Fobos, a da normal (o relevo
+  // fino); a altura é a forma inteira, medida. Duas notas no mesmo tier só
+  // as mostram se forem as mesmas (Encélado, Pã: a mesma frase nos dois).
+  const fracas = notas.filter((n) => n.tier === tier);
+  const mesmas = fracas.every((n) => JSON.stringify(n.partes) === JSON.stringify(fracas[0]!.partes));
+  return comPartes(
+    linha(rotulo, [...new Set(notas.map((n) => n.frase))].join('; '), tier, t('ficha.fonte.bancada')),
+    mesmas ? fracas[0]!.partes : undefined
   );
 }
 
@@ -669,7 +718,7 @@ function linhaDaCor(
     : null;
   if (!regua) {
     return nota
-      ? linha(rotulo, nota.frase, nota.tier, t('ficha.fonte.bancada'))
+      ? comPartes(linha(rotulo, nota.frase, nota.tier, t('ficha.fonte.bancada')), mapa?.partes)
       : linha(rotulo, t('ficha.cor.foraDaRegua'), null);
   }
   const politica = TIER_DA_POLITICA[regua.matiz];
@@ -679,7 +728,11 @@ function linhaDaCor(
   if (!nota) return linha(rotulo, daRegua, politica);
   const frase =
     FORCA_DO_TIER[politica] < FORCA_DO_TIER[nota.tier] ? `${nota.frase}; ${daRegua}` : nota.frase;
-  return linha(rotulo, frase, oMaisFraco([nota.tier, politica]), t('ficha.fonte.bancada'));
+  return comPartes(
+    linha(rotulo, frase, oMaisFraco([nota.tier, politica]), t('ficha.fonte.bancada')),
+    mapa?.partes,
+    politica
+  );
 }
 
 /**
@@ -723,7 +776,8 @@ function linhaDoBrilho(id: string, regua: MedidaDoCorpo | undefined): LinhaDaFic
  *
  * QUATRO LINHAS FIXAS, uma por canal do que se vê — forma, relevo, cor,
  * brilho —, cada uma com UM selo, o do mais fraco que ela confessa, e uma
- * frase. Uma fonte por canal: a forma é a tabela "a forma" do ASSETS.md
+ * frase; no canal misto o selo vem em partes, com a porcentagem da área
+ * de cada tier (`comPartes`). Uma fonte por canal: a forma é a tabela "a forma" do ASSETS.md
  * (sem linha, o elipsoide dos eixos medidos); o relevo, as notas dos mapas
  * de altura e de normais; a cor, a nota do `map` e a política da régua; o
  * brilho, a régua (`reguaDosMapas.ts`). As notas nascem na bancada de
@@ -755,11 +809,14 @@ function secaoImagem(
   const forma = manifest.formas?.[id];
   const linhas: (LinhaDaFicha | null)[] = [
     forma
-      ? linha(
-          t('ficha.campo.forma'),
-          noIdioma(forma),
-          TIER_DA_NOTA[forma.seloDaNota ?? 'inventado'],
-          t('ficha.fonte.bancada')
+      ? comPartes(
+          linha(
+            t('ficha.campo.forma'),
+            noIdioma(forma),
+            TIER_DA_NOTA[forma.seloDaNota ?? 'inventado'],
+            t('ficha.fonte.bancada')
+          ),
+          forma.partes
         )
       : linha(
           t('ficha.campo.forma'),
