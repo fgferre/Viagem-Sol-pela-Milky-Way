@@ -1063,11 +1063,61 @@
     {
       "corpo": "deimos",
       "canal": "horizon",
-      "arquivo": "textures/atlas/deimos/horizon.png",
+      "arquivo": "textures/atlas/deimos/horizon_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 530837,
-      "sha256": "f2b009cc7cbe01a53b079b11590f36b9eab45e5453150647bf91c863ad121d58",
+      "bytes": 602831,
+      "sha256": "b3d377f320b419bdf62e77a4399ea11179fd21a5ee69ec9fe6f81e2da24fa4c3",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "Deimos shape model (Thomas 1993, Viking, 5° grid) — NASA PDS / ESA SPICE — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://spiftp.esac.esa.int/data/SPICE/MARS-EXPRESS/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), no modelo de placas DEIMOS_K005_THO_V02 do SPICE da Mars Express (ESA). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 2° de arco.",
+          "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "deimos",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/deimos/horizon_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 246282,
+      "sha256": "254a7fd78b797fc15a9a070fac1e57aaf4ca01f93a162225d69142cf75636317",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "Deimos shape model (Thomas 1993, Viking, 5° grid) — NASA PDS / ESA SPICE — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://spiftp.esac.esa.int/data/SPICE/MARS-EXPRESS/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), no modelo de placas DEIMOS_K005_THO_V02 do SPICE da Mars Express (ESA). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 2° de arco.",
+          "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "deimos",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/deimos/horizon.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 1586426,
+      "sha256": "fddc24fc2d82bf929a2db22826d7a07aff59823787ac11657689892de4816043",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -1089,10 +1139,60 @@
       "corpo": "deimos",
       "canal": "horizon",
       "arquivo": "textures/atlas/deimos/horizon.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 638750,
+      "sha256": "9fb363cb24b47a422861daad0a46fd0ca716d935b8e3f152dbf64e9b16e98ec5",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "Deimos shape model (Thomas 1993, Viking, 5° grid) — NASA PDS / ESA SPICE — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://spiftp.esac.esa.int/data/SPICE/MARS-EXPRESS/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), no modelo de placas DEIMOS_K005_THO_V02 do SPICE da Mars Express (ESA). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 2° de arco.",
+          "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "deimos",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/deimos/horizon2_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 153680,
-      "sha256": "a9026ecb65ac40cbc9f53945ee203c5719a2f34651dce8b996e2b0d9095e6b9b",
+      "bytes": 538743,
+      "sha256": "b4d6255c3f0e970a93419a579250b7e3bdd3839a8a53e8f5fb7036d9fd4539fe",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "Deimos shape model (Thomas 1993, Viking, 5° grid) — NASA PDS / ESA SPICE — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://spiftp.esac.esa.int/data/SPICE/MARS-EXPRESS/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), no modelo de placas DEIMOS_K005_THO_V02 do SPICE da Mars Express (ESA). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 2° de arco.",
+          "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "deimos",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/deimos/horizon2_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 225772,
+      "sha256": "7ab1f9e2f096abadc9a677902b633da573a9cc2eef4d360013b85cdbba87a14f",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -1114,10 +1214,10 @@
       "corpo": "deimos",
       "canal": "horizon2",
       "arquivo": "textures/atlas/deimos/horizon2.png",
-      "larguraPx": 1024,
-      "alturaPx": 512,
-      "bytes": 461492,
-      "sha256": "d1f49b0e44ea64b2680c69ac2b9c41e8cab62c63d232e04addb20e5e05d94d2b",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 1405821,
+      "sha256": "0ffd6a2538ab7807c4287c224a5e836d6dc56c97e580f73c2f8d0ad46f533fc3",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -1139,10 +1239,10 @@
       "corpo": "deimos",
       "canal": "horizon2",
       "arquivo": "textures/atlas/deimos/horizon2.webp",
-      "larguraPx": 1024,
-      "alturaPx": 512,
-      "bytes": 143746,
-      "sha256": "c9ca97f452e364111eda8e5ccb5b2a1a1233530fe9e1e3bceae1270908bf2fec",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 587974,
+      "sha256": "265a90864df98319ff36e26f3230ec07e7932ed7c20c643a7ec46c1c8da52a3a",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
@@ -1166,8 +1266,8 @@
       "arquivo": "textures/atlas/deimos/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 31942,
-      "sha256": "3f572a7c29968764423d1ecaede2bff06dffe52cd6b0a43c9ff2ed0c3a765cf4",
+      "bytes": 37628,
+      "sha256": "8a73a0806b65f501f0a5e2a31a01e0dfaa7c163b4a847f37dceb97b4280e7a3a",
       "origem": {
         "fonte": {
           "pt": "Mosaico global do Viking de Deimos, com inserções da HiRISE (P. Stooke) — NASA PDS, 20 px/grau",
@@ -1191,8 +1291,58 @@
       "arquivo": "textures/atlas/deimos/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 18476,
-      "sha256": "69af398315e7be6b1862d218c7f5a14794614108eebf492c0dbeb7f4c9cb480e",
+      "bytes": 22992,
+      "sha256": "852d842c33dc5da8f0765a3b90ef39b1feddfb46b11c66b3d804e9a87d56692a",
+      "origem": {
+        "fonte": {
+          "pt": "Mosaico global do Viking de Deimos, com inserções da HiRISE (P. Stooke) — NASA PDS, 20 px/grau",
+          "en": "Global Viking mosaic of Deimos, with HiRISE insets (P. Stooke) — NASA PDS, 20 px/degree"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/non_mission/small_bodies.stooke.maps/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Fotos: Viking Orbiter (NASA/JPL) e MRO HiRISE (NASA/JPL/Universidade do Arizona), mosaico de P. Stooke (NASA PDS Small Bodies Node). Redução e cor pela régua do app (Felipe Ferreira).",
+          "en": "Images: Viking Orbiter (NASA/JPL) and MRO HiRISE (NASA/JPL/University of Arizona), mosaic by P. Stooke (NASA PDS Small Bodies Node). Reduction and color by the yardstick of the app (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "deimos",
+      "canal": "map",
+      "arquivo": "textures/atlas/deimos/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 129907,
+      "sha256": "a35b037e2110da0bb15b26178ededf2bd5980c1084862408983427e9f2362893",
+      "origem": {
+        "fonte": {
+          "pt": "Mosaico global do Viking de Deimos, com inserções da HiRISE (P. Stooke) — NASA PDS, 20 px/grau",
+          "en": "Global Viking mosaic of Deimos, with HiRISE insets (P. Stooke) — NASA PDS, 20 px/degree"
+        },
+        "url": "https://sbnarchive.psi.edu/pds4/non_mission/small_bodies.stooke.maps/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Fotos: Viking Orbiter (NASA/JPL) e MRO HiRISE (NASA/JPL/Universidade do Arizona), mosaico de P. Stooke (NASA PDS Small Bodies Node). Redução e cor pela régua do app (Felipe Ferreira).",
+          "en": "Images: Viking Orbiter (NASA/JPL) and MRO HiRISE (NASA/JPL/University of Arizona), mosaic by P. Stooke (NASA PDS Small Bodies Node). Reduction and color by the yardstick of the app (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "deimos",
+      "canal": "map",
+      "arquivo": "textures/atlas/deimos/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 73408,
+      "sha256": "2b2e0189bef855ef847fdc744877113baecc3531951a3602d2446a1b648f227b",
       "origem": {
         "fonte": {
           "pt": "Mosaico global do Viking de Deimos, com inserções da HiRISE (P. Stooke) — NASA PDS, 20 px/grau",
@@ -1214,10 +1364,10 @@
       "corpo": "deimos",
       "canal": "map",
       "arquivo": "textures/atlas/deimos/map.jpg",
-      "larguraPx": 2048,
-      "alturaPx": 1024,
-      "bytes": 136513,
-      "sha256": "10c5bc3d0301638f11c26ef495be2715160b5afce8edb96975fdc8167aac4808",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 456343,
+      "sha256": "786a21297dc30da99db475279ea5c02bbb59e6ad188485c501cf3703056b6b29",
       "origem": {
         "fonte": {
           "pt": "Mosaico global do Viking de Deimos, com inserções da HiRISE (P. Stooke) — NASA PDS, 20 px/grau",
@@ -1239,10 +1389,10 @@
       "corpo": "deimos",
       "canal": "map",
       "arquivo": "textures/atlas/deimos/map.webp",
-      "larguraPx": 2048,
-      "alturaPx": 1024,
-      "bytes": 55340,
-      "sha256": "2f8a7bfbf920d5c09d71717872c6d63ac4a066b94ad35517e53a626505d30d06",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 202122,
+      "sha256": "72ae776e804290e020269859c5a4e09470600467ce1c4efe0bb6bec24eb29221",
       "origem": {
         "fonte": {
           "pt": "Mosaico global do Viking de Deimos, com inserções da HiRISE (P. Stooke) — NASA PDS, 20 px/grau",
@@ -1263,11 +1413,111 @@
     {
       "corpo": "deimos",
       "canal": "normal",
-      "arquivo": "textures/atlas/deimos/normal.png",
+      "arquivo": "textures/atlas/deimos/normal_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 478674,
-      "sha256": "80877bf85dc9d2ed2291a2df046710989b8300d8b7ce4984ba9882f65ef8a5c4",
+      "bytes": 591523,
+      "sha256": "573d5e64ddae5829754627c8ce6a0f2b6de4abb809df94bc038e8595a91b3bfe",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de NORMAIS derivado da altura",
+          "en": "Deimos shape model (Thomas 1993, Viking, 5° grid) — NASA PDS / ESA SPICE — NORMAL map derived from the height"
+        },
+        "url": "https://spiftp.esac.esa.int/data/SPICE/MARS-EXPRESS/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), no modelo de placas DEIMOS_K005_THO_V02 do SPICE da Mars Express (ESA). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 2° de arco.",
+          "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "deimos",
+      "canal": "normal",
+      "arquivo": "textures/atlas/deimos/normal_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 244154,
+      "sha256": "69f2aced16d0915c0ba510531ffa18a76962797cd41e6a108ce855601ace4fa9",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de NORMAIS derivado da altura",
+          "en": "Deimos shape model (Thomas 1993, Viking, 5° grid) — NASA PDS / ESA SPICE — NORMAL map derived from the height"
+        },
+        "url": "https://spiftp.esac.esa.int/data/SPICE/MARS-EXPRESS/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), no modelo de placas DEIMOS_K005_THO_V02 do SPICE da Mars Express (ESA). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 2° de arco.",
+          "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "deimos",
+      "canal": "normal",
+      "arquivo": "textures/atlas/deimos/normal_2048.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 1431820,
+      "sha256": "9a680f1ebd6eb33bf645cb914b331cf36a4dc603fede9533ea9a6cf24c57b83d",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de NORMAIS derivado da altura",
+          "en": "Deimos shape model (Thomas 1993, Viking, 5° grid) — NASA PDS / ESA SPICE — NORMAL map derived from the height"
+        },
+        "url": "https://spiftp.esac.esa.int/data/SPICE/MARS-EXPRESS/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), no modelo de placas DEIMOS_K005_THO_V02 do SPICE da Mars Express (ESA). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 2° de arco.",
+          "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "deimos",
+      "canal": "normal",
+      "arquivo": "textures/atlas/deimos/normal_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 679956,
+      "sha256": "5712ddfab069d7eb906a57a8eb75df86d3c38f28a73e39e173c33db0dbcc47a7",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de NORMAIS derivado da altura",
+          "en": "Deimos shape model (Thomas 1993, Viking, 5° grid) — NASA PDS / ESA SPICE — NORMAL map derived from the height"
+        },
+        "url": "https://spiftp.esac.esa.int/data/SPICE/MARS-EXPRESS/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), no modelo de placas DEIMOS_K005_THO_V02 do SPICE da Mars Express (ESA). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 2° de arco.",
+          "en": "Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "deimos",
+      "canal": "normal",
+      "arquivo": "textures/atlas/deimos/normal.png",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 3376762,
+      "sha256": "52472ff6d0d9be8aa9e263ecf045f175144c6fa1361e534f2851de8f4d62f054",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de NORMAIS derivado da altura",
@@ -1289,10 +1539,10 @@
       "corpo": "deimos",
       "canal": "normal",
       "arquivo": "textures/atlas/deimos/normal.webp",
-      "larguraPx": 1024,
-      "alturaPx": 512,
-      "bytes": 149526,
-      "sha256": "7c076767c37d49d152ebe847c45bdffe02fcd8dfec68d193aa360f65304d2041",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 1706014,
+      "sha256": "7f4595ec24d8c08da8e4654dbab49ed87b1aca936d330e77aea5055fba57aaf1",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de NORMAIS derivado da altura",
