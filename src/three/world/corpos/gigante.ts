@@ -90,6 +90,7 @@ import { CANAL_MAP, type Seguradores, TexturasDoCorpo } from './texturas';
 import type { OpcoesDeTextura } from './texturas';
 import {
   componentesNoFrameDoAnel,
+  esferaNoPlanetocentrico,
   orientacaoDoCorpoNaCena,
   orientacaoInercialDoAnelNaCena,
 } from './orientacaoNaCena';
@@ -284,7 +285,8 @@ void main() {
 `;
 
 const GLSL_NORMAL_ELIPSOIDE = /* glsl */ `
-// gradiente exato do elipsoide (x/a², y/c², z/b²) em unidades de a
+// gradiente exato do elipsoide no ponto p da esfera unitária (antes da
+// escala): esc = (1, a/c, a/b)
 vec3 normalDoCorpo(vec3 p, vec3 esc) { return normSeguro(p * esc); }
 `;
 
@@ -1619,7 +1621,13 @@ export class GiganteResolvido {
 
   private garantirCasca() {
     if (this.geometria || this.disposto) return;
-    this.geometria = new THREE.SphereGeometry(1, 256, 128);
+    // o mapa vem em lat/lon PLANETOCÊNTRICA: os vértices andam para que a
+    // escala da matriz leve cada uv a ela (`esferaNoPlanetocentrico`)
+    this.geometria = esferaNoPlanetocentrico(
+      new THREE.SphereGeometry(1, 256, 128),
+      this.razaoC,
+      this.razaoB
+    );
     if (!this.dummyAnel) {
       this.dummyAnel = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1);
       this.dummyAnel.needsUpdate = true;
@@ -1634,7 +1642,7 @@ export class GiganteResolvido {
         uCamLocal: { value: new THREE.Vector3(0, 0, 4) },
         uLuzGanho: { value: 1 },
         uNormalEsc: {
-          value: new THREE.Vector3(1, 1 / (this.razaoC * this.razaoC), 1 / (this.razaoB * this.razaoB)),
+          value: new THREE.Vector3(1, 1 / this.razaoC, 1 / this.razaoB),
         },
         uEscalaLocal: { value: new THREE.Vector3(1, this.razaoC, this.razaoB) },
         uAnelAtivo: { value: this.temAnel ? 1 : 0 },

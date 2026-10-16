@@ -398,9 +398,11 @@ bool quadroTangente(vec3 n, out vec3 t, out vec3 b) {
  * dividida por zero.
  *
  * A APROXIMAÇÃO DECLARADA: nas luas triaxiais o `T` exato não é
- * exatamente `ŷ × n̂`; em Mimas (a/b = 1,05) o erro de direção fica
- * abaixo de 3°, e o que ele desloca é a SOMBRA dentro da cratera, não a
- * silhueta (essa vem do vértice).
+ * exatamente `ŷ × n̂` — com a malha na lat/lon planetocêntrica
+ * (`esferaNoPlanetocentrico`), o paralelo sobe e desce com o raio; em Mimas
+ * (a/b = 1,05) o erro de direção é 0 no equador e chega a 3,1° perto do
+ * polo, e o que ele desloca é a SOMBRA dentro da cratera, não a silhueta
+ * (essa vem do vértice). No achatado (b = a) o frame segue exato.
  */
 export const GLSL_NORMAL_DO_MAPA = /* glsl */ `
 uniform sampler2D uMapaNormal;

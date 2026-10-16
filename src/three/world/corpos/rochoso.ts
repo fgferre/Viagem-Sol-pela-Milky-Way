@@ -20,10 +20,11 @@
 //     ou 'lambert'.
 //   - FIGURA: esfera ou elipsoide triaxial por BODY_AXES — a
 //     escala anisotrópica mora na matriz, como o achatamento da
-//     Terra. A NORMAL do elipsoide aqui é o gradiente EXATO
-//     (x/a², y/c², z/b²): a aproximação de primeiro grau da Terra
-//     (a/c em vez de a²/c²) erra 0,3% no achatamento terrestre,
-//     mas em Fobos (a/c = 1,43) seria uma mentira geométrica.
+//     Terra. A NORMAL do elipsoide é o gradiente EXATO no ponto
+//     real q = p·(1, c/a, b/a) — (qx, qy·a²/c², qz·a²/b²) —, que no
+//     ponto p da esfera unitária (o `vLocal`) é p·(1, a/c, a/b), a
+//     mesma conta da Terra. Até 15/10/2026 aplicava-se a²/c² direto
+//     em p, e a normal inclinava demais (~9° em Fobos a 45°).
 //   - POSIÇÃO: os três planetas têm retrato congelado (o "sem
 //     rede" honesto da Terra); Fobos e Deimos, como a Lua, só
 //     nascem com a efeméride viva (Kepler composto com Marte —
@@ -92,6 +93,7 @@ import {
 import type { OpcoesDeTextura } from './texturas';
 import {
   componentesNoFrameDoAnel,
+  esferaNoPlanetocentrico,
   orientacaoDoCorpoNaCena,
   orientacaoInercialDoAnelNaCena,
 } from './orientacaoNaCena';
@@ -454,8 +456,8 @@ void main() {
 `;
 
 const GLSL_NORMAL_ELIPSOIDE = /* glsl */ `
-// gradiente exato do elipsoide (x/a², y/c², z/b²) em unidades de a:
-// uNormalEsc = (1, a²/c², a²/b²) — esfera ⇒ (1,1,1) exato
+// gradiente exato do elipsoide no ponto p da esfera unitária (antes da
+// escala): uNormalEsc = (1, a/c, a/b) — esfera ⇒ (1,1,1) exato
 vec3 normalDoCorpo(vec3 p, vec3 esc) { return normSeguro(p * esc); }
 `;
 
@@ -475,7 +477,7 @@ uniform sampler2D uMapaDia;
 uniform vec3 uDirSolLocal;  // corpo→Sol, frame LOCAL (unitário)
 uniform vec3 uCamLocal;     // câmera no frame local, em raios de a
 uniform float uLuzGanho;    // ganhoDoGlobo(dUA da CADEIA) — o escalar único
-uniform vec3 uNormalEsc;    // (1, a²/c², a²/b²): gradiente do elipsoide
+uniform vec3 uNormalEsc;    // (1, a/c, a/b): gradiente do elipsoide em p
 uniform vec3 uEscalaLocal;  // (1, c/a, b/a): ponto real do elipsoide
 varying vec3 vLocal;
 varying vec2 vUv;
@@ -1138,10 +1140,10 @@ export class RochosoResolvido {
         uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
         uCamLocal: { value: new THREE.Vector3(0, 0, 4) },
         uLuzGanho: { value: 1 },
-        // o gradiente EXATO do elipsoide (o cabeçalho diz por que não
-        // é a aproximação de primeiro grau da Terra)
+        // o gradiente EXATO do elipsoide no ponto da esfera unitária (o
+        // cabeçalho diz a conta)
         uNormalEsc: {
-          value: new THREE.Vector3(1, 1 / (this.razaoC * this.razaoC), 1 / (this.razaoB * this.razaoB)),
+          value: new THREE.Vector3(1, 1 / this.razaoC, 1 / this.razaoB),
         },
         uEscalaLocal: { value: new THREE.Vector3(1, this.razaoC, this.razaoB) },
         ...uniformsDaLuzDaVisita(),
@@ -1214,7 +1216,10 @@ export class RochosoResolvido {
   }
 
   /**
-   * A esfera unitária da casca. O VERTEX DO RELEVO desloca a superfície NA
+   * A esfera unitária da casca, com os vértices levados à lat/lon
+   * PLANETOCÊNTRICA do elipsoide (`esferaNoPlanetocentrico`) — as duas
+   * malhas, a da casa e a densa do relevo, nascem aqui. O VERTEX DO RELEVO
+   * desloca a superfície NA
    * GPU — o atributo de posição da CPU continua a esfera unitária, e o
    * boundingSphere AUTOMÁTICO (raio 1) cortaria o corpo do frustum com a
    * ponta ainda em tela: Hipérion alcança 1,37 (RELEVO_DA_LUA.hyperion).
@@ -1222,7 +1227,11 @@ export class RochosoResolvido {
    * deslocada e `computeBoundingSphere()` nela mede o raio de verdade.
    */
   private esferaDaCasca(largura: number, altura: number): THREE.SphereGeometry {
-    const geo = new THREE.SphereGeometry(1, largura, altura);
+    const geo = esferaNoPlanetocentrico(
+      new THREE.SphereGeometry(1, largura, altura),
+      this.razaoC,
+      this.razaoB
+    );
     const relevo = RELEVO_DA_LUA[this.config.id];
     if (relevo) {
       geo.boundingSphere = new THREE.Sphere(

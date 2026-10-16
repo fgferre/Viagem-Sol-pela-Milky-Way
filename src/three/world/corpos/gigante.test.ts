@@ -98,6 +98,33 @@ function subSolarDosEixos(
   };
 }
 
+/**
+ * O JUIZ DO MAPA PLANETOCÊNTRICO (o mesmo de rochoso.test.ts): cada vértice
+ * de `geo`, levado pela matriz do mesh e lido nos eixos dele, tem de estar na
+ * lat/lon PLANETOCÊNTRICA que o uv pede pela convenção pinada. Pior erro em
+ * radianos; a longitude do vértice do polo fica fora, a da costura dá a volta.
+ */
+function piorErroDoMapa(mesh: THREE.Mesh, geo: THREE.BufferGeometry): { lat: number; lon: number } {
+  const { colunaX, colunaY, colunaZ } = eixosDoMesh(mesh);
+  const centro = new THREE.Vector3().setFromMatrixPosition(mesh.matrix);
+  const pos = geo.getAttribute('position');
+  const uv = geo.getAttribute('uv');
+  const p = new THREE.Vector3();
+  const nos = (e: readonly number[]) => p.x * e[0] + p.y * e[1] + p.z * e[2];
+  let lat = 0;
+  let lon = 0;
+  for (let i = 0; i < pos.count; i++) {
+    p.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrix).sub(centro);
+    const [x, y, z] = [nos(colunaX), nos(colunaY), nos(colunaZ)];
+    const latPedida = (uv.getY(i) - 0.5) * Math.PI;
+    lat = Math.max(lat, Math.abs(Math.atan2(y, Math.hypot(x, z)) - latPedida));
+    if (Math.abs(latPedida) >= Math.PI / 2) continue;
+    const d = Math.atan2(-z, x) - (uv.getX(i) - 0.5) * 2 * Math.PI;
+    lon = Math.max(lon, Math.abs(Math.atan2(Math.sin(d), Math.cos(d))));
+  }
+  return { lat, lon };
+}
+
 function malhaDaSuperficie(group: THREE.Object3D): THREE.Mesh {
   for (const c of group.children) {
     if (c instanceof THREE.Mesh && c.geometry instanceof THREE.SphereGeometry) return c;
@@ -382,9 +409,9 @@ describe('3. a figura — BODY_AXES e o gradiente EXATO', () => {
     );
   });
 
-  it('a normal é o gradiente exato (x/a²…), não a aproximação de 1ª ordem', () => {
-    expect(FONTE).toContain('1 / (this.razaoC * this.razaoC)');
-    expect(FONTE).toContain('1 / (this.razaoB * this.razaoB)');
+  it('a normal é o gradiente exato no ponto da esfera unitária: p·(1, a/c, a/b)', () => {
+    expect(FONTE).toContain('new THREE.Vector3(1, 1 / this.razaoC, 1 / this.razaoB)');
+    expect(FONTE).not.toContain('1 / (this.razaoC * this.razaoC)');
   });
 });
 
@@ -564,6 +591,23 @@ describe('1. o oráculo de orientação por corpo (D-E4)', () => {
     const doMesh = subSolarDosEixos(eixosDoMesh(mesh), dirSolCena('jupiter', JD));
     const oraculo = subSolarPoint('jupiter', JD, motor);
     expect(Math.abs(doMesh.latDeg - oraculo.latPlanetocentricaDeg)).toBeGreaterThan(10);
+    corpo.dispose();
+  });
+
+  it('o uv cai na lat/lon PLANETOCÊNTRICA do elipsoide — Saturno, polo e costura', async () => {
+    const { corpo } = giganteDeTeste('saturn');
+    corpo.atualizar(quadro('saturn', 4));
+    await flush();
+    expect(corpo.atualizar(quadro('saturn', 4)).emQuadro).toBe(true);
+    const mesh = malhaDaSuperficie(corpo.group);
+    const erro = piorErroDoMapa(mesh, mesh.geometry);
+    expect(erro.lat).toBeLessThan(1e-6);
+    expect(erro.lon).toBeLessThan(1e-6);
+    // controle negativo: a esfera crua sob a MESMA matriz é a latitude
+    // paramétrica de antes (3° no achatamento de Saturno)
+    const crua = new THREE.SphereGeometry(1, 256, 128);
+    expect(piorErroDoMapa(mesh, crua).lat).toBeGreaterThan(0.04);
+    crua.dispose();
     corpo.dispose();
   });
 

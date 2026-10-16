@@ -109,6 +109,34 @@ function subSolarDosEixos(
   };
 }
 
+/**
+ * O JUIZ DO MAPA PLANETOCÊNTRICO: cada vértice de `geo`, levado pela matriz
+ * do mesh (base IAU + a escala do elipsoide) e lido nos eixos dele, tem de
+ * estar na lat/lon PLANETOCÊNTRICA que o uv dele pede pela convenção pinada
+ * (`direcaoLocalDeLonLat`). Devolve o pior erro em radianos; a longitude do
+ * vértice do polo não existe e fica fora, a da costura dá a volta.
+ */
+function piorErroDoMapa(mesh: THREE.Mesh, geo: THREE.BufferGeometry): { lat: number; lon: number } {
+  const { colunaX, colunaY, colunaZ } = eixosDoMesh(mesh);
+  const centro = new THREE.Vector3().setFromMatrixPosition(mesh.matrix);
+  const pos = geo.getAttribute('position');
+  const uv = geo.getAttribute('uv');
+  const p = new THREE.Vector3();
+  const nos = (e: readonly number[]) => p.x * e[0] + p.y * e[1] + p.z * e[2];
+  let lat = 0;
+  let lon = 0;
+  for (let i = 0; i < pos.count; i++) {
+    p.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrix).sub(centro);
+    const [x, y, z] = [nos(colunaX), nos(colunaY), nos(colunaZ)];
+    const latPedida = (uv.getY(i) - 0.5) * Math.PI;
+    lat = Math.max(lat, Math.abs(Math.atan2(y, Math.hypot(x, z)) - latPedida));
+    if (Math.abs(latPedida) >= Math.PI / 2) continue;
+    const d = Math.atan2(-z, x) - (uv.getX(i) - 0.5) * 2 * Math.PI;
+    lon = Math.max(lon, Math.abs(Math.atan2(Math.sin(d), Math.cos(d))));
+  }
+  return { lat, lon };
+}
+
 function malhaDaSuperficie(group: THREE.Object3D): THREE.Mesh {
   for (const c of group.children) {
     if (c instanceof THREE.Mesh && c.geometry instanceof THREE.SphereGeometry) return c;
@@ -214,9 +242,10 @@ describe('3. a figura — BODY_AXES e o gradiente EXATO do elipsoide', () => {
     expect(ANEIS_CITADOS.quaoar.rExt).toBeCloseTo(4057 / BODY_AXES.quaoar[0], 12);
   });
 
-  it('a normal é o gradiente exato (x/a²…), não a aproximação de 1ª ordem da Terra', () => {
-    // em Fobos a/c = 1,43: 1/razao² = 0,49 contra 1/razao = 0,70 da
-    // aproximação — a escolha é visível no limbo e o teste a pina
+  it('a normal é o gradiente exato no ponto da esfera unitária: p·(1, a/c, a/b), como a Terra', () => {
+    // o vLocal é p, antes da escala; o ponto real é q = p·(1, c/a, b/a), e
+    // (qx, qy·a²/c², qz·a²/b²) = p·(1, a/c, a/b). O a²/c² aplicado em p,
+    // que valeu até 15/10/2026, inclinava a normal ~9° em Fobos a 45°
     const fobos = new RochosoResolvido({
       config: { id: 'phobos', brdf: 'lambert' },
       tier: () => 'cinema',
@@ -224,8 +253,8 @@ describe('3. a figura — BODY_AXES e o gradiente EXATO do elipsoide', () => {
     });
     // o uniform nasce no garantirCasca (privado) — a fórmula é pinada
     // no texto-fonte, derivada dos raios
-    expect(FONTE).toContain('1 / (this.razaoC * this.razaoC)');
-    expect(FONTE).toContain('1 / (this.razaoB * this.razaoB)');
+    expect(FONTE).toContain('new THREE.Vector3(1, 1 / this.razaoC, 1 / this.razaoB)');
+    expect(FONTE).not.toContain('1 / (this.razaoC * this.razaoC)');
     fobos.dispose();
   });
 });
@@ -331,6 +360,41 @@ describe('1. o oráculo de orientação por corpo (D-E4)', () => {
     const oraculo = subSolarPoint('titan', JD, motor);
     expect(Math.abs(doMesh.latDeg - oraculo.latPlanetocentricaDeg)).toBeGreaterThan(10);
     corpo.dispose();
+  });
+
+  it('o uv cai na lat/lon PLANETOCÊNTRICA do elipsoide — Mimas nas duas malhas, polo e costura; a esfera não muda', async () => {
+    const { corpo } = rochosoDeTeste('mimas', 'lambert');
+    // a 4 raios o portão dá a densa do relevo; a 100 raios (~20 px), a da casa
+    for (const [distancia, segmentos] of [[4, 256], [100, 128]] as const) {
+      corpo.atualizar(quadro('mimas', distancia));
+      await flush();
+      expect(corpo.atualizar(quadro('mimas', distancia)).emQuadro).toBe(true);
+      const mesh = malhaDaSuperficie(corpo.group);
+      const geo = mesh.geometry as THREE.SphereGeometry;
+      expect(geo.parameters.widthSegments).toBe(segmentos);
+      const erro = piorErroDoMapa(mesh, geo);
+      expect(erro.lat, `${segmentos}: latitude`).toBeLessThan(1e-6);
+      expect(erro.lon, `${segmentos}: longitude`).toBeLessThan(1e-6);
+      // controle negativo: a esfera crua sob a MESMA matriz é a latitude
+      // paramétrica de antes (2,5° em Mimas, 1,6° de longitude)
+      const crua = new THREE.SphereGeometry(1, segmentos, segmentos / 2);
+      expect(piorErroDoMapa(mesh, crua).lat).toBeGreaterThan(0.03);
+      expect(piorErroDoMapa(mesh, crua).lon).toBeGreaterThan(0.02);
+      crua.dispose();
+    }
+    corpo.dispose();
+    // corpo esférico: a malha é a SphereGeometry de sempre, byte a byte
+    const { corpo: calisto } = rochosoDeTeste('callisto', 'ls');
+    calisto.atualizar(quadro('callisto', 4));
+    await flush();
+    calisto.atualizar(quadro('callisto', 4));
+    const esfera = new THREE.SphereGeometry(1, 128, 64);
+    const geoCalisto = malhaDaSuperficie(calisto.group).geometry;
+    for (const nome of ['position', 'normal'] as const) {
+      expect(geoCalisto.getAttribute(nome).array).toEqual(esfera.getAttribute(nome).array);
+    }
+    esfera.dispose();
+    calisto.dispose();
   });
 
   it('o anel de Quaoar é inercial: um dia não gira o padrão', async () => {

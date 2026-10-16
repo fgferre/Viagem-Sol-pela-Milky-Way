@@ -145,3 +145,44 @@ export function direcaoLocalDeLonLat(lonEastDeg: number, latDeg: number): Vec3 {
   const cosLat = Math.cos(lat);
   return [cosLat * Math.cos(lon), Math.sin(lat), -cosLat * Math.sin(lon)];
 }
+
+/**
+ * A ESFERA UNITÁRIA CUJO UV CAI NA LAT/LON PLANETOCÊNTRICA depois da escala
+ * do elipsoide. Os rochosos e os gigantes põem a figura na matriz —
+ * `S(a, a·razaoC, a·razaoB)` em (X, Y, Z), +Y no polo — e a cadeia de dados
+ * entrega todo mapa em latitude PLANETOCÊNTRICA (`paraLatitudePlanetocentrica`,
+ * `lib-texturas.mjs`). Com o vértice onde a SphereGeometry o põe, a escala
+ * levava a linha do mapa à latitude PARAMÉTRICA (tan φc = (c/a)·tan β) e, no
+ * triaxial, a coluna à longitude paramétrica (tan λc = (b/a)·tan λβ): 10° em
+ * Fobos, 3° em Saturno, 23° em Haumea.
+ *
+ * O uv fica e o vértice anda: para o uv de (λ, φ), u = `direcaoLocalDeLonLat`;
+ * o ponto do elipsoide nessa direção, em raios de a, é P = u / |u ⊘ k| com
+ * k = (1, razaoC, razaoB), e o vértice antes da escala é P ⊘ k =
+ * normalize(u ⊘ k) — ainda na esfera unitária, então o `vLocal` dos shaders, o
+ * relevo radial (que só estica a direção) e o boundingSphere seguem como eram.
+ * A normal do atributo acompanha a posição. Esfera (razões 1) sai intacta,
+ * byte a byte.
+ */
+export function esferaNoPlanetocentrico<G extends THREE.BufferGeometry>(
+  geo: G,
+  razaoC: number,
+  razaoB: number
+): G {
+  if (razaoC === 1 && razaoB === 1) return geo;
+  const uv = geo.getAttribute('uv');
+  const pos = geo.getAttribute('position');
+  const nrm = geo.getAttribute('normal');
+  for (let i = 0; i < pos.count; i++) {
+    const u = direcaoLocalDeLonLat((uv.getX(i) - 0.5) * 360, (uv.getY(i) - 0.5) * 180);
+    const x = u[0];
+    const y = u[1] / razaoC;
+    const z = u[2] / razaoB;
+    const s = 1 / Math.hypot(x, y, z);
+    pos.setXYZ(i, x * s, y * s, z * s);
+    nrm.setXYZ(i, x * s, y * s, z * s);
+  }
+  pos.needsUpdate = true;
+  nrm.needsUpdate = true;
+  return geo;
+}
