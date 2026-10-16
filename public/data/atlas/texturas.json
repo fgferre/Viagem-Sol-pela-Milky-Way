@@ -10455,25 +10455,275 @@
     },
     {
       "corpo": "vesta",
+      "canal": "height",
+      "arquivo": "textures/atlas/vesta/height.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 249907,
+      "sha256": "2b21b1431ff76128787b4d1421a163d3b4deb6b6d827d501aea79e3c5321c0f9",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de ALTURA",
+          "en": "Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — HEIGHT map"
+        },
+        "url": "https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "height",
+      "arquivo": "textures/atlas/vesta/height.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 114950,
+      "sha256": "6acb1841c576252b483f130f2d4a6a5f16d663c53ba86ad1e1f44ff8f935fc68",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de ALTURA",
+          "en": "Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — HEIGHT map"
+        },
+        "url": "https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/vesta/horizon_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 1209996,
+      "sha256": "181538991878df6b6bb7dd4f11e1bd466bf4599466b9d20993ecd73f0f0b64b1",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/vesta/horizon_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 864070,
+      "sha256": "ac2c08300a29ab3009b94cf09b66f9bc960a4dafe5106a946aad2b9af3ec6a6d",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/vesta/horizon.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 4521945,
+      "sha256": "a5ede8847e5d83a3dda42ca5949815e1dd531bb076e351d23c11593e43985984",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/vesta/horizon.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 2642610,
+      "sha256": "91ff051a9dae6989c04cc158cf4589bea7057d03e9230658841eeb29abb3d724",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/vesta/horizon2_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 1208749,
+      "sha256": "3112b06e316a3ea59f71ccdd804bfa8b9664b3853ba645c087e465fab1c56039",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/vesta/horizon2_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 862684,
+      "sha256": "c507cb723be45e429c6210739dcb9fcfa14b6b48738023f5b66092b5d4c285d1",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/vesta/horizon2.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 4513123,
+      "sha256": "bf8f43b9ee2d565aaa55fc8ef9f9847665031b00d38413d12f914354c692e7ab",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "medido"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/vesta/horizon2.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 2628644,
+      "sha256": "d4d7814758e8971994a43bbdba2a312a8bbd8b6a36bbc3b7feb01a43b7c5e59c",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — HORIZON map (baked relief shadow, six azimuths in RGB)"
+        },
+        "url": "https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/",
+        "licenca": {
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "vesta",
       "canal": "map",
       "arquivo": "textures/atlas/vesta/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 149545,
-      "sha256": "43b0bcbc7c7d73d0cd367c4dd7ca56988de81cc1c6c4c937a966b99d9cc8a3c3",
+      "bytes": 46789,
+      "sha256": "a605629e5ca7f7d4ec55d7a99a4e7d927af62f0512368a6a1c8f56550b47e0b9",
       "origem": {
         "fonte": {
-          "pt": "NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D, girado 150° do sistema \"Claudia\" da sonda para o meridiano da IAU",
-          "en": "NASA Science / Dawn — Vesta mosaic embedded in the 3D model, rotated 150° from the spacecraft's \"Claudia\" system to the IAU prime meridian"
+          "pt": "Mosaico HAMO da Dawn no filtro F2 (555 nm), corrigido fotometricamente pela DLR, com a cor das razões F8/F2 e F7/F2 — NASA PDS, 74 px/grau",
+          "en": "Dawn HAMO mosaic in the F2 filter (555 nm), photometrically corrected by the DLR, with the color of the F8/F2 and F7/F2 ratios — NASA PDS, 74 px/degree"
         },
-        "url": "https://science.nasa.gov/resource/vesta-3d-model/",
+        "url": "https://sbnarchive.psi.edu/pds3/dawn/fc/DWNVFC2_2/",
         "licenca": {
-          "pt": "NASA images and media usage guidelines",
-          "en": "NASA images and media usage guidelines"
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Giro de longitude pelo app.",
-          "en": "Texture: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Longitude rotation done by the app."
+          "pt": "Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaicos corrigidos do DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Buracos de sombra tapados pela vizinhança, redução e cor pela régua do app (Felipe Ferreira).",
+          "en": "Images: Dawn Framing Camera (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); corrected mosaics by the DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Shadow holes filled from their surroundings, reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado"
@@ -10484,21 +10734,71 @@
       "arquivo": "textures/atlas/vesta/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 147448,
-      "sha256": "1c3bdcc0a1a7b1fb8e996d2746458451735efec98a8b939a1ea4345ad41ef9b6",
+      "bytes": 33014,
+      "sha256": "50019b7db77b907ccaa7cc8ce8195d14629328532aa7f6ca6d864b915520a527",
       "origem": {
         "fonte": {
-          "pt": "NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D, girado 150° do sistema \"Claudia\" da sonda para o meridiano da IAU",
-          "en": "NASA Science / Dawn — Vesta mosaic embedded in the 3D model, rotated 150° from the spacecraft's \"Claudia\" system to the IAU prime meridian"
+          "pt": "Mosaico HAMO da Dawn no filtro F2 (555 nm), corrigido fotometricamente pela DLR, com a cor das razões F8/F2 e F7/F2 — NASA PDS, 74 px/grau",
+          "en": "Dawn HAMO mosaic in the F2 filter (555 nm), photometrically corrected by the DLR, with the color of the F8/F2 and F7/F2 ratios — NASA PDS, 74 px/degree"
         },
-        "url": "https://science.nasa.gov/resource/vesta-3d-model/",
+        "url": "https://sbnarchive.psi.edu/pds3/dawn/fc/DWNVFC2_2/",
         "licenca": {
-          "pt": "NASA images and media usage guidelines",
-          "en": "NASA images and media usage guidelines"
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Giro de longitude pelo app.",
-          "en": "Texture: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Longitude rotation done by the app."
+          "pt": "Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaicos corrigidos do DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Buracos de sombra tapados pela vizinhança, redução e cor pela régua do app (Felipe Ferreira).",
+          "en": "Images: Dawn Framing Camera (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); corrected mosaics by the DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Shadow holes filled from their surroundings, reduction and color by the yardstick of the app (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "map",
+      "arquivo": "textures/atlas/vesta/map_2048.jpg",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 175647,
+      "sha256": "31fe48d4d6f5d26da09c57167d38dd8a92fa169b5fe9109cd796a9881c19e043",
+      "origem": {
+        "fonte": {
+          "pt": "Mosaico HAMO da Dawn no filtro F2 (555 nm), corrigido fotometricamente pela DLR, com a cor das razões F8/F2 e F7/F2 — NASA PDS, 74 px/grau",
+          "en": "Dawn HAMO mosaic in the F2 filter (555 nm), photometrically corrected by the DLR, with the color of the F8/F2 and F7/F2 ratios — NASA PDS, 74 px/degree"
+        },
+        "url": "https://sbnarchive.psi.edu/pds3/dawn/fc/DWNVFC2_2/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaicos corrigidos do DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Buracos de sombra tapados pela vizinhança, redução e cor pela régua do app (Felipe Ferreira).",
+          "en": "Images: Dawn Framing Camera (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); corrected mosaics by the DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Shadow holes filled from their surroundings, reduction and color by the yardstick of the app (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "vesta",
+      "canal": "map",
+      "arquivo": "textures/atlas/vesta/map_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 115278,
+      "sha256": "21a6db8c40e2b5a357b1dc686badc66f37cdc2ba5684661c6acc0012e6500f39",
+      "origem": {
+        "fonte": {
+          "pt": "Mosaico HAMO da Dawn no filtro F2 (555 nm), corrigido fotometricamente pela DLR, com a cor das razões F8/F2 e F7/F2 — NASA PDS, 74 px/grau",
+          "en": "Dawn HAMO mosaic in the F2 filter (555 nm), photometrically corrected by the DLR, with the color of the F8/F2 and F7/F2 ratios — NASA PDS, 74 px/degree"
+        },
+        "url": "https://sbnarchive.psi.edu/pds3/dawn/fc/DWNVFC2_2/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaicos corrigidos do DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Buracos de sombra tapados pela vizinhança, redução e cor pela régua do app (Felipe Ferreira).",
+          "en": "Images: Dawn Framing Camera (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); corrected mosaics by the DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Shadow holes filled from their surroundings, reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado"
@@ -10507,48 +10807,48 @@
       "corpo": "vesta",
       "canal": "map",
       "arquivo": "textures/atlas/vesta/map.jpg",
-      "larguraPx": 2048,
-      "alturaPx": 1024,
-      "bytes": 685613,
-      "sha256": "09d06574bbca394ab2a443dc6efa50d8060d42045ee7cc9e18ea3ef0126d437f",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 847643,
+      "sha256": "8ab2b716d249ec3fcea225c62679466ed952b33e518086570a36f72600891f72",
       "origem": {
         "fonte": {
-          "pt": "NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D, girado 150° do sistema \"Claudia\" da sonda para o meridiano da IAU",
-          "en": "NASA Science / Dawn — Vesta mosaic embedded in the 3D model, rotated 150° from the spacecraft's \"Claudia\" system to the IAU prime meridian"
+          "pt": "Mosaico HAMO da Dawn no filtro F2 (555 nm), corrigido fotometricamente pela DLR, com a cor das razões F8/F2 e F7/F2 — NASA PDS, 74 px/grau",
+          "en": "Dawn HAMO mosaic in the F2 filter (555 nm), photometrically corrected by the DLR, with the color of the F8/F2 and F7/F2 ratios — NASA PDS, 74 px/degree"
         },
-        "url": "https://science.nasa.gov/resource/vesta-3d-model/",
+        "url": "https://sbnarchive.psi.edu/pds3/dawn/fc/DWNVFC2_2/",
         "licenca": {
-          "pt": "NASA images and media usage guidelines",
-          "en": "NASA images and media usage guidelines"
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Giro de longitude pelo app.",
-          "en": "Texture: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Longitude rotation done by the app."
+          "pt": "Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaicos corrigidos do DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Buracos de sombra tapados pela vizinhança, redução e cor pela régua do app (Felipe Ferreira).",
+          "en": "Images: Dawn Framing Camera (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); corrected mosaics by the DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Shadow holes filled from their surroundings, reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "medido"
     },
     {
       "corpo": "vesta",
       "canal": "map",
       "arquivo": "textures/atlas/vesta/map.webp",
-      "larguraPx": 2048,
-      "alturaPx": 1024,
-      "bytes": 556824,
-      "sha256": "d0306d9e239e3b3fe8b7e51d62547191acbbdeffe414e3774bd0f7de76d062f3",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 437992,
+      "sha256": "7ccebfd3b8967b0dfde1d9821b03ea305194eba96c23d1f28b9409c518965687",
       "origem": {
         "fonte": {
-          "pt": "NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D, girado 150° do sistema \"Claudia\" da sonda para o meridiano da IAU",
-          "en": "NASA Science / Dawn — Vesta mosaic embedded in the 3D model, rotated 150° from the spacecraft's \"Claudia\" system to the IAU prime meridian"
+          "pt": "Mosaico HAMO da Dawn no filtro F2 (555 nm), corrigido fotometricamente pela DLR, com a cor das razões F8/F2 e F7/F2 — NASA PDS, 74 px/grau",
+          "en": "Dawn HAMO mosaic in the F2 filter (555 nm), photometrically corrected by the DLR, with the color of the F8/F2 and F7/F2 ratios — NASA PDS, 74 px/degree"
         },
-        "url": "https://science.nasa.gov/resource/vesta-3d-model/",
+        "url": "https://sbnarchive.psi.edu/pds3/dawn/fc/DWNVFC2_2/",
         "licenca": {
-          "pt": "NASA images and media usage guidelines",
-          "en": "NASA images and media usage guidelines"
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Giro de longitude pelo app.",
-          "en": "Texture: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Longitude rotation done by the app."
+          "pt": "Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaicos corrigidos do DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Buracos de sombra tapados pela vizinhança, redução e cor pela régua do app (Felipe Ferreira).",
+          "en": "Images: Dawn Framing Camera (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); corrected mosaics by the DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Shadow holes filled from their surroundings, reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado"
@@ -10559,21 +10859,21 @@
       "arquivo": "textures/atlas/vesta/normal_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 1226470,
-      "sha256": "1f76377af975df39c7c5589ed984969f0a482a8f92ec5dd2ce0a6a7cb89e65c3",
+      "bytes": 1247848,
+      "sha256": "3c5d3b90aec2055053110bc79c7c6d4515f4a97124c4b956b8b90963a875626c",
       "origem": {
         "fonte": {
-          "pt": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
-          "en": "Dawn HAMO global DTM 93 m (DLR, via USGS Astrogeology) — NORMAL map derived from the radius, at physical amplitude"
+          "pt": "Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de NORMAIS: a figura do SPC com o relevo fino do DTM da DLR (64 px/grau)",
+          "en": "Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — NORMAL map: the SPC figure with the fine relief of the DLR DTM (64 px/degree)"
         },
-        "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
+        "url": "https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/",
         "licenca": {
-          "pt": "domínio público (NASA/DLR/USGS)",
-          "en": "public domain (NASA/DLR/USGS)"
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
         },
         "atribuicao": {
-          "pt": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado pelo app.",
-          "en": "Topography: DLR Institute of Planetary Research, from the Framing Camera imaging (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distributed by USGS Astrogeology. Normal map baked by the app."
+          "pt": "Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
@@ -10589,21 +10889,21 @@
       "arquivo": "textures/atlas/vesta/normal_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 834086,
-      "sha256": "ebf2fb805fb9c4cbb1f66ee2c2e8b8caea4d56ade9b013ac65fd08a5d7e6040b",
+      "bytes": 833532,
+      "sha256": "194df7110d5fc043b5e3dca56a1eea9653889637544756cd23005b01b7b194ba",
       "origem": {
         "fonte": {
-          "pt": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
-          "en": "Dawn HAMO global DTM 93 m (DLR, via USGS Astrogeology) — NORMAL map derived from the radius, at physical amplitude"
+          "pt": "Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de NORMAIS: a figura do SPC com o relevo fino do DTM da DLR (64 px/grau)",
+          "en": "Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — NORMAL map: the SPC figure with the fine relief of the DLR DTM (64 px/degree)"
         },
-        "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
+        "url": "https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/",
         "licenca": {
-          "pt": "domínio público (NASA/DLR/USGS)",
-          "en": "public domain (NASA/DLR/USGS)"
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
         },
         "atribuicao": {
-          "pt": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado pelo app.",
-          "en": "Topography: DLR Institute of Planetary Research, from the Framing Camera imaging (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distributed by USGS Astrogeology. Normal map baked by the app."
+          "pt": "Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
@@ -10619,21 +10919,21 @@
       "arquivo": "textures/atlas/vesta/normal_2048.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 4764731,
-      "sha256": "822b2300ba3b22f29b3062ebeb2237a63079334c4f03b00d000c36cd253bc018",
+      "bytes": 4754807,
+      "sha256": "2ae15a3d52765aaadf932ed890da79c2bae5220b47b9743c4990dc3b3179d4a8",
       "origem": {
         "fonte": {
-          "pt": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
-          "en": "Dawn HAMO global DTM 93 m (DLR, via USGS Astrogeology) — NORMAL map derived from the radius, at physical amplitude"
+          "pt": "Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de NORMAIS: a figura do SPC com o relevo fino do DTM da DLR (64 px/grau)",
+          "en": "Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — NORMAL map: the SPC figure with the fine relief of the DLR DTM (64 px/degree)"
         },
-        "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
+        "url": "https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/",
         "licenca": {
-          "pt": "domínio público (NASA/DLR/USGS)",
-          "en": "public domain (NASA/DLR/USGS)"
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
         },
         "atribuicao": {
-          "pt": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado pelo app.",
-          "en": "Topography: DLR Institute of Planetary Research, from the Framing Camera imaging (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distributed by USGS Astrogeology. Normal map baked by the app."
+          "pt": "Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
@@ -10649,21 +10949,21 @@
       "arquivo": "textures/atlas/vesta/normal_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 2926254,
-      "sha256": "795555e30fb208870917b4ed50a7e58b3dd006bac081027dd13eedbd93bb3546",
+      "bytes": 2790866,
+      "sha256": "a8f65a10289af771ffc37c14c672c5d2e0994386073a2beef3f11f81328a7d88",
       "origem": {
         "fonte": {
-          "pt": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
-          "en": "Dawn HAMO global DTM 93 m (DLR, via USGS Astrogeology) — NORMAL map derived from the radius, at physical amplitude"
+          "pt": "Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de NORMAIS: a figura do SPC com o relevo fino do DTM da DLR (64 px/grau)",
+          "en": "Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — NORMAL map: the SPC figure with the fine relief of the DLR DTM (64 px/degree)"
         },
-        "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
+        "url": "https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/",
         "licenca": {
-          "pt": "domínio público (NASA/DLR/USGS)",
-          "en": "public domain (NASA/DLR/USGS)"
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
         },
         "atribuicao": {
-          "pt": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado pelo app.",
-          "en": "Topography: DLR Institute of Planetary Research, from the Framing Camera imaging (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distributed by USGS Astrogeology. Normal map baked by the app."
+          "pt": "Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
@@ -10679,24 +10979,24 @@
       "arquivo": "textures/atlas/vesta/normal.png",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 17702686,
-      "sha256": "a4e294f5cc95f75599ce21afb7d935b2175285131045ba372ac1f5537916292a",
+      "bytes": 17220926,
+      "sha256": "ab2cd3cb36e340e5ffdc409d85512bb0121b2ddeb891f4a4c29a99c2fba80dbc",
       "origem": {
         "fonte": {
-          "pt": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
-          "en": "Dawn HAMO global DTM 93 m (DLR, via USGS Astrogeology) — NORMAL map derived from the radius, at physical amplitude"
+          "pt": "Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de NORMAIS: a figura do SPC com o relevo fino do DTM da DLR (64 px/grau)",
+          "en": "Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — NORMAL map: the SPC figure with the fine relief of the DLR DTM (64 px/degree)"
         },
-        "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
+        "url": "https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/",
         "licenca": {
-          "pt": "domínio público (NASA/DLR/USGS)",
-          "en": "public domain (NASA/DLR/USGS)"
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
         },
         "atribuicao": {
-          "pt": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado pelo app.",
-          "en": "Topography: DLR Institute of Planetary Research, from the Framing Camera imaging (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distributed by USGS Astrogeology. Normal map baked by the app."
+          "pt": "Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado",
+      "proveniencia": "medido",
       "nota": {
         "pt": "topografia real da Dawn, sobre um elipsoide de dois eixos iguais: Vesta tem três eixos diferentes, e os 9 km entre os dois do equador aparecem na luz como uma rampa suave",
         "en": "real Dawn topography, over an ellipsoid with two equal axes: Vesta has three different axes, and the 9 km between the two equatorial ones show in the light as a gentle ramp"
@@ -10709,21 +11009,21 @@
       "arquivo": "textures/atlas/vesta/normal.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 8803656,
-      "sha256": "75e30ea08bb5b6dc0fecf1fac59809bc440f96c20693177716f084e9b5a59fbb",
+      "bytes": 7798368,
+      "sha256": "2ae7308fb84622f808de053333caa279f0443196b7c5e4cba2fd79872066cd01",
       "origem": {
         "fonte": {
-          "pt": "Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física",
-          "en": "Dawn HAMO global DTM 93 m (DLR, via USGS Astrogeology) — NORMAL map derived from the radius, at physical amplitude"
+          "pt": "Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de NORMAIS: a figura do SPC com o relevo fino do DTM da DLR (64 px/grau)",
+          "en": "Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — NORMAL map: the SPC figure with the fine relief of the DLR DTM (64 px/degree)"
         },
-        "url": "https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m",
+        "url": "https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/",
         "licenca": {
-          "pt": "domínio público (NASA/DLR/USGS)",
-          "en": "public domain (NASA/DLR/USGS)"
+          "pt": "domínio público (NASA)",
+          "en": "public domain (NASA)"
         },
         "atribuicao": {
-          "pt": "Topografia: DLR Institute of Planetary Research, a partir das imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distribuída pelo USGS Astrogeology. Mapa de normais assado pelo app.",
-          "en": "Topography: DLR Institute of Planetary Research, from the Framing Camera imaging (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), distributed by USGS Astrogeology. Normal map baked by the app."
+          "pt": "Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",

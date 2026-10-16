@@ -466,15 +466,53 @@ const ORIGENS = {
       'Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaico do DLR Institute of Planetary Research, distribuído pelo USGS Astrogeology. Giro de longitude, tingimento uniforme e preenchimento do polo sul pelo app.',
     proveniencia: 'derivado',
   },
-  // ---- F7 (asteroides). Vesta Dawn (NASA Science 3D model).
+  // ---- F7 (asteroides). Vesta (16/10/2026, `completar-corpo` passos 2 a 5): a forma MEDIDA (o SPC da Dawn) vira
+  // mapa de altura, com a normal (a figura dele + o fino do DTM da DLR) e os dois horizontes, e a imagem é o mosaico
+  // F2 corrigido da DLR, sem sombra assada, com a cor das razões F8/F2 e F7/F2. A confissão mora no ASSETS.md.
   'vesta/map': {
     fonte:
-      'NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D, girado 150° do sistema "Claudia" da sonda para o meridiano da IAU',
-    url: 'https://science.nasa.gov/resource/vesta-3d-model/',
-    licenca: 'NASA images and media usage guidelines',
+      'Mosaico HAMO da Dawn no filtro F2 (555 nm), corrigido fotometricamente pela DLR, com a cor das razões F8/F2 e F7/F2 — NASA PDS, 74 px/grau',
+    url: 'https://sbnarchive.psi.edu/pds3/dawn/fc/DWNVFC2_2/',
+    licenca: 'domínio público (NASA PDS)',
     atribuicao:
-      'Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Giro de longitude pelo app.',
-    proveniencia: 'derivado',
+      'Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaicos corrigidos do DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Buracos de sombra tapados pela vizinhança, redução e cor pela régua do app (Felipe Ferreira).',
+    proveniencia: 'medido',
+  },
+  'vesta/height': {
+    fonte:
+      'Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de ALTURA',
+    url: 'https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/',
+    licenca: 'domínio público (NASA)',
+    atribuicao:
+      'Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).',
+    proveniencia: 'medido',
+  },
+  'vesta/normal': {
+    fonte:
+      'Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de NORMAIS: a figura do SPC com o relevo fino do DTM da DLR (64 px/grau)',
+    url: 'https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/',
+    licenca: 'domínio público (NASA)',
+    atribuicao:
+      'Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).',
+    proveniencia: 'medido',
+  },
+  'vesta/horizon': {
+    fonte:
+      'Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+    url: 'https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/',
+    licenca: 'domínio público (NASA)',
+    atribuicao:
+      'Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).',
+    proveniencia: 'medido',
+  },
+  'vesta/horizon2': {
+    fonte:
+      'Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+    url: 'https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/',
+    licenca: 'domínio público (NASA)',
+    atribuicao:
+      'Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).',
+    proveniencia: 'medido',
   },
   // ---- Os seis sem foto de superfície (item 151): Hígia, Palas, Haumea,
   // Makemake, Éris e Quaoar não foram visitados por sonda nenhuma. O mapa
@@ -802,18 +840,7 @@ const ORIGENS = {
       'distribuída pelo USGS Astrogeology. Mapa de normais assado pelo app.',
     proveniencia: 'derivado',
   },
-  'vesta/normal': {
-    fonte:
-      'Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de ' +
-      'NORMAIS derivado do raio, em amplitude física',
-    url: 'https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m',
-    licenca: 'domínio público (NASA/DLR/USGS)',
-    atribuicao:
-      'Topografia: DLR Institute of Planetary Research, a partir das ' +
-      'imagens da Framing Camera (Dawn, NASA/JPL-Caltech/UCLA/MPS/DLR/IDA), ' +
-      'distribuída pelo USGS Astrogeology. Mapa de normais assado pelo app.',
-    proveniencia: 'derivado',
-  },
+
   // 01/10/2026: a mesma técnica em PLUTÃO e CARONTE, com os DEMs de 300 m
   // da New Horizons (Schenk et al. 2018). Os dois são PARCIAIS — menos da
   // metade do globo tem dado —, e o gerador põe a normal LISA no vazio e

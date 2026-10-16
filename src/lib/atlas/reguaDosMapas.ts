@@ -324,8 +324,10 @@ export const REGUA_DOS_MAPAS: Readonly<Record<string, MedidaDoCorpo>> = {
   },
   vesta: {
     valor: 0.38, S: 1.21, fonteDoNivel: 'Li+2013 (p, Dawn FC 554 nm); S(H,G), G = 0.32',
-    BG: { BV: 0.782 }, RG: 1.1, fonteDaCor: 'SBDB (B−V); R/G ≈ f(B−V)', // R/G derivado pela inclinação do B−V
-    matiz: 'tinta', fonteDoMapa: 'NASA 3D Resources (Dawn mosaic)', confianca: 'alta',
+    // R/G medido no espectro de 24 cores (0,641/0,55 µm, ±0,04); o F7/F2 da Dawn dá 1,02 e o 1,1 antigo era extrapolado do B−V
+    BG: { BV: 0.782 }, RG: 1.07, fonteDaCor: 'SBDB (B−V); Chapman & Gaffey 1979 (24-color, R/G)',
+    // a variação de cor é a das razões F8/F2 e F7/F2 da própria Dawn
+    matiz: 'foto', fonteDoMapa: 'Dawn FC HAMO F2 + F8/F7 (DLR, photometrically corrected)', confianca: 'alta',
   },
   pallas: {
     valor: 0.155, S: 1.28, fonteDoNivel: 'Vernazza+2021 (p, SBDB); S(H,G)',

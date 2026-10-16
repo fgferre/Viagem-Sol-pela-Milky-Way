@@ -888,7 +888,8 @@ describe('8. o relevo dos seis da NORMAL_MEDIDA, e o inventado que saiu (141)', 
     // novo que entrar no relevo medido é cobrado aqui no mesmo dia. Os
     // quatro do item 141 e os dois da New Horizons (Plutão e Caronte,
     // 01/10) — tabela esvaziada aprovaria por vazio.
-    expect(Object.keys(NORMAL_MEDIDA)).toEqual(['mercury', 'mars', 'ceres', 'vesta', 'pluto', 'charon']);
+    // Vesta saiu em 16/10/2026: a forma medida passou a `RELEVO_DA_LUA` (com `normal: 1`, a mesma amplitude medida)
+    expect(Object.keys(NORMAL_MEDIDA)).toEqual(['mercury', 'mars', 'ceres', 'pluto', 'charon']);
     for (const id of Object.keys(NORMAL_MEDIDA)) {
       const { corpo, chamadas } = rochosoDeTeste(id, brdfDe(id));
       corpo.atualizar(quadro(id, 4));
@@ -1147,21 +1148,23 @@ describe('10. o horizonte assado — só quem declara `horizonte`', () => {
     mimas.corpo.dispose();
   });
 
-  it('o portão `uHorizonte` é 1 em Hipérion, 2 em Pã, Fobos e Deimos (só do relevo) e 0 em Mimas — e só os quatro o declaram', async () => {
+  it('o portão `uHorizonte` é 1 em Hipérion, 2 em Pã, Fobos, Deimos e Vesta (só do relevo) e 0 em Mimas — e só os cinco o declaram', async () => {
     expect(Object.keys(RELEVO_DA_LUA).filter((id) => RELEVO_DA_LUA[id]!.horizonte)).toEqual([
       'hyperion',
       'pan',
       'phobos',
       'deimos',
+      'vesta',
     ]);
     // a sombra só do relevo é opção da tabela: Pã (as encostas da aba a 65° do plano radial), Fobos e Deimos (12 % e
-    // 17 % da superfície a mais de 30° dele)
+    // 17 % da superfície a mais de 30° dele) e Vesta (6,8 %: as escarpas de Rheasilvia e Veneneia)
     expect(Object.keys(RELEVO_DA_LUA).filter((id) => RELEVO_DA_LUA[id]!.horizonte === 'soDoRelevo')).toEqual([
       'pan',
       'phobos',
       'deimos',
+      'vesta',
     ]);
-    for (const [id, portao] of [['hyperion', 1], ['pan', 2], ['phobos', 2], ['deimos', 2]] as const) {
+    for (const [id, portao] of [['hyperion', 1], ['pan', 2], ['phobos', 2], ['deimos', 2], ['vesta', 2]] as const) {
       const { corpo } = hiperionComHorizonte(id);
       corpo.atualizar(quadro(id, 4));
       await flush();
@@ -1182,7 +1185,7 @@ describe('10. o horizonte assado — só quem declara `horizonte`', () => {
     mimas.dispose();
   });
 
-  it('o Lambert chama a sombra (na direta) e o céu (na lanterna); os Lommel-Seeliger não', () => {
+  it('o Lambert e o Lommel-Seeliger chamam a sombra (na direta) e o céu (na lanterna); o procedural não', () => {
     const main = ROCHOSO_LAMBERT_FRAG.slice(ROCHOSO_LAMBERT_FRAG.indexOf('void main()'));
     expect(main).toContain('vec3 nGeo = n;');
     expect(main).toContain('float sombraRelevo = sombraDoHorizonte(nGeo, vUv, uDirSolLocal);');
@@ -1193,10 +1196,14 @@ describe('10. o horizonte assado — só quem declara `horizonte`', () => {
     expect(main).toContain('fill *= visibilidadeDoCeu(vUv);');
     // o nGeo é a normal RADIAL, tirada ANTES da normal do mapa
     expect(main.indexOf('vec3 nGeo = n;')).toBeLessThan(main.indexOf('normalDoMapa(n, vUv)'));
-    for (const frag of [ROCHOSO_LS_FRAG, ROCHOSO_PROC_LS_FRAG]) {
-      expect(frag).not.toContain('sombraDoHorizonte(');
-      expect(frag).not.toContain('visibilidadeDoCeu(');
-    }
+    // o LS desde Vesta (16/10/2026): o mesmo portão, a mesma ordem
+    const mainLs = ROCHOSO_LS_FRAG.slice(ROCHOSO_LS_FRAG.indexOf('void main()'));
+    expect(mainLs).toContain('if (uHorizonte > 1.5) sombraRelevo = sombraSoDoRelevo(nGeo, vUv, uDirSolLocal);');
+    expect(mainLs.indexOf('vec3 nGeo = n;')).toBeLessThan(mainLs.indexOf('normalDoMapa(n, vUv)'));
+    expect(mainLs).toContain('luzSol *= sombraRelevo;');
+    expect(mainLs).toContain('* visibilidadeDoCeu(vUv);');
+    expect(ROCHOSO_PROC_LS_FRAG).not.toContain('sombraDoHorizonte(');
+    expect(ROCHOSO_PROC_LS_FRAG).not.toContain('visibilidadeDoCeu(');
     expect(GLSL_SOMBRA_DO_HORIZONTE).not.toMatch(/uAmbient|ambientLight|uPiso|fresnel/);
     // sem alfa (o Safari do iPhone o pré-multiplica): toda leitura é `.rgb`
     expect(GLSL_SOMBRA_DO_HORIZONTE.match(/texture2D\(/g)).toHaveLength(4);

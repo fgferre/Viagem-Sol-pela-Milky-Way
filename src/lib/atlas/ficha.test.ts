@@ -495,7 +495,8 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
     }
     expect(linhaDe('iapetus', 'relevo').procedencia).toBe('artistico');
     expect(linhaDe('ceres', 'relevo').valor).toContain('137 m');
-    expect(linhaDe('vesta', 'fonte do relevo').valor).toContain('DTM');
+    // desde 16/10/2026 a forma (e o relevo sobre ela) vem do SPC da Dawn
+    expect(linhaDe('vesta', 'fonte do relevo').valor).toContain('SPC');
   });
 
   it('cor: o mais fraco entre a nota do mapa e a política da régua', () => {
@@ -533,7 +534,8 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
     const vesta = linhaDe('vesta', 'brilho');
     expect(vesta.procedencia).toBe('derivado');
     expect(vesta.valor).toContain('pico de oposição tirado por modelo');
-    expect(vesta.valor).toContain('×0,68');
+    // a foto F2 corrigida (16/10/2026) cabe sem compressão: γ = 1, nada a confessar
+    expect(vesta.valor).not.toContain('contraste');
     // γ = 1 não confessa contraste nenhum
     expect(linhaDe('callisto', 'brilho').valor).not.toContain('contraste');
     const dafnis = linhaDe('daphnis', 'brilho');

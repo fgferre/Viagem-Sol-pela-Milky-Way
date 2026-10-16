@@ -7,7 +7,7 @@
 //   node scripts/data/atlas/gera-normal-de-dem.mjs mercury
 //   node scripts/data/atlas/gera-normal-de-dem.mjs mars --manter
 //   node scripts/data/atlas/gera-normal-de-dem.mjs moon --dem /caminho/ldem.tif
-//   node scripts/data/atlas/gera-normal-de-dem.mjs vesta --varredura
+//   node scripts/data/atlas/gera-normal-de-dem.mjs ceres --varredura
 //   node scripts/data/atlas/gera-normal-de-dem.mjs pluto --varredura
 //   node scripts/data/atlas/gera-normal-de-dem.mjs pluto --rede
 //
@@ -386,41 +386,8 @@ export const CORPOS = {
     },
   },
 
-  vesta: {
-    nome: 'Vesta',
-    diretorio: 'vesta',
-    // a esfera de projeção do rótulo PDS3 (A=B=C=255 km); NÃO é o raio
-    // do corpo, que é o elipsoide de `eixosDaCasaKm`
-    raioM: 255000,
-    // o TIF não traz GDALMetadata: o float32 já é o RAIO em metros
-    // (medido: 279 km de média no equador, 224 no polo)
-    offsetDoDado: 0,
-    metrosPorUnidade: 1,
-    // OS 150° DE VESTA, RESOLVIDOS NA COR (item 141, 3ª fase). Vesta tem
-    // DOIS sistemas de longitude a 150° um do outro: o "Claudia" com que a
-    // Dawn operou e o "Claudia Double Prime" que a IAU aprovou, que é o
-    // que `iauOrientation.ts` usa para girar o corpo. Este DEM está na
-    // IAU e o rótulo diz a verdade: CENTER_LONGITUDE 0 (geokey 3088 = 0),
-    // borda esquerda em 180°, a mesma da casa — giro 0.
-    // Na 2ª fase quem estava fora era o MAPA DE COR (o mosaico embutido
-    // no modelo 3D da NASA, no sistema da sonda), e o relevo foi torcido
-    // para acompanhá-lo (borda declarada em 30°). Agora a cor foi girada
-    // −150° na aquisição (`baixa-texturas.mjs`) e os dois estão na IAU:
-    // o relevo volta ao rótulo, e a face que o Sol ilumina numa data
-    // também passa a ser a certa.
-    longitudeDaBordaEsquerdaGraus: 180,
-    // BODY_AXES.vesta = [289, 280, 229]; `a` é a média equatorial
-    eixosDaCasaKm: { a: 284.5, c: 229 },
-    fonte: {
-      tipo: 'tif-por-faixas',
-      nome: 'Vesta_Dawn_HAMO_DTM_DLR_Global_48ppd.tif',
-      url: 'https://asc-pds-services.s3.us-west-2.amazonaws.com/mosaic/Vesta_Dawn_HAMO_DTM_DLR_Global_48ppd.tif',
-      descricao: 'Dawn HAMO DTM global 48 px/grau, 93 m (DLR, via USGS Astrogeology)',
-      linhasPorSaida: 2,
-      // o GDALNoData do TIF é o menor float negativo
-      semDado: -1e30,
-    },
-  },
+  // Vesta saiu desta tabela em 16/10/2026: a forma medida (SPC da Dawn) e a normal sobre ela são fontes locais
+  // de `baixa-texturas.mjs` (`capturas/vesta/etapa2/`), como Fobos e Deimos.
 
   // OS DOIS DA NEW HORIZONS (01/10/2026): DEMs de 300 m do sobrevoo de
   // 2015, PARCIAIS — daí `vazioInventado` (ver o cabeçalho). Schenk et al.

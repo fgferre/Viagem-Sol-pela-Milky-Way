@@ -301,9 +301,6 @@ describe('4. a tabela dos corpos (o que muda de um para o outro)', () => {
     expect(CORPOS.mercury).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 0.5, longitudeDaBordaEsquerdaGraus: 0 });
     expect(CORPOS.mars).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 0 });
     expect(CORPOS.ceres).toMatchObject({ offsetDoDado: 470000, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 0 });
-    // Vesta: na 3ª fase do 141 a COR foi girada −150° para a IAU na
-    // aquisição, e o relevo voltou ao rótulo do DEM (borda esquerda 180°)
-    expect(CORPOS.vesta).toMatchObject({ offsetDoDado: 0, metrosPorUnidade: 1, longitudeDaBordaEsquerdaGraus: 180 });
     // Plutão e Caronte (01/10): os DEMs da New Horizons não declaram escala
     // nem deslocamento; Plutão nasce com meridiano central 180° (borda em
     // 0°, a meia volta do mapa de cor), Caronte com 0° (borda em 180°)
@@ -334,7 +331,7 @@ describe('4. a tabela dos corpos (o que muda de um para o outro)', () => {
     expect(Object.keys(CORPOS).filter((id) => CORPOS[id].cacheDeAlturas)).toEqual(['pluto', 'charon']);
     // e NINGUÉM fica de fora do pino: corpo novo entra na tabela com as
     // três declarações ou reprova aqui, em vez de assar por padrão mudo
-    expect(Object.keys(CORPOS)).toEqual(['moon', 'mercury', 'mars', 'ceres', 'vesta', 'pluto', 'charon', 'enceladus']);
+    expect(Object.keys(CORPOS)).toEqual(['moon', 'mercury', 'mars', 'ceres', 'pluto', 'charon', 'enceladus']);
     for (const [id, c] of Object.entries(CORPOS)) {
       expect(Number.isFinite(c.offsetDoDado), `${id} offset`).toBe(true);
       expect(Number.isFinite(c.metrosPorUnidade), `${id} escala`).toBe(true);
@@ -351,10 +348,6 @@ describe('4. a tabela dos corpos (o que muda de um para o outro)', () => {
     expect(aCeres).toBe(bCeres); // Ceres é esférico em a/b: a média é o próprio a
     expect(CORPOS.ceres.eixosDaCasaKm).toEqual({ a: aCeres, c: cCeres });
 
-    const [aVesta, bVesta, cVesta] = BODY_AXES.vesta;
-    // Vesta tem TRÊS eixos; o gerador usa a média equatorial
-    expect(aVesta).not.toBe(bVesta);
-    expect(CORPOS.vesta.eixosDaCasaKm).toEqual({ a: (aVesta + bVesta) / 2, c: cVesta });
   });
 
   it('quem o gerador assa é quem o `rochoso.ts` lê como NORMAL_MEDIDA (+ a Lua e Encélado)', () => {
@@ -738,7 +731,8 @@ describe('9. Encélado (R4): o DEM local vira altura e normal', () => {
       grade((i, j) => 900 * Math.sin(i * 0.7) * Math.cos(j * 0.45) + 37 * ((i * 7 + j * 13) % 11), Wq, Hq);
     const sha = (rgb) => createHash('sha256').update(rgb).digest('hex');
     // Vesta e a Lua assam por `assaNormais` (Vesta no passo do elipsoide da casa)
-    const { a, c } = CORPOS.vesta.eixosDaCasaKm;
+    // (o elipsoide de dois eixos que Vesta usava aqui até 16/10/2026: o pino de `assaNormais` fica)
+    const [a, c] = [284.5, 229];
     expect(sha(assaNormais(relevoQualquer(L, A), L, A, ((2 * a + c) / 3) * 1000).rgb)).toBe(
       '7321dc47fb8235058dcebc896967ba978e2e1b8940af6e4f50f77b0ce4a17155'
     );

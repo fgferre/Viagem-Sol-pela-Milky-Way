@@ -269,12 +269,32 @@ export const EM_INGLES = new Map([
 
   // ---- fontes: Ceres e Vesta ----------------------------------------
   [
-    'Dawn FC — mosaico global de Ceres a 20 px/grau (DLR, via USGS Astrogeology)',
-    'Dawn FC — global mosaic of Ceres at 20 px/degree (DLR, via USGS Astrogeology)',
+    'Mosaico HAMO da Dawn no filtro F2 (555 nm), corrigido fotometricamente pela DLR, com a cor das razões F8/F2 e F7/F2 — NASA PDS, 74 px/grau',
+    'Dawn HAMO mosaic in the F2 filter (555 nm), photometrically corrected by the DLR, with the color of the F8/F2 and F7/F2 ratios — NASA PDS, 74 px/degree',
   ],
   [
-    'NASA Science / Dawn — mosaico de Vesta embutido no modelo 3D, girado 150° do sistema "Claudia" da sonda para o meridiano da IAU',
-    'NASA Science / Dawn — Vesta mosaic embedded in the 3D model, rotated 150° from the spacecraft\'s "Claudia" system to the IAU prime meridian',
+    'Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaicos corrigidos do DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Buracos de sombra tapados pela vizinhança, redução e cor pela régua do app (Felipe Ferreira).',
+    'Images: Dawn Framing Camera (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); corrected mosaics by the DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Shadow holes filled from their surroundings, reduction and color by the yardstick of the app (Felipe Ferreira).',
+  ],
+  [
+    'Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de ALTURA',
+    'Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — HEIGHT map',
+  ],
+  [
+    'Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de NORMAIS: a figura do SPC com o relevo fino do DTM da DLR (64 px/grau)',
+    'Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — NORMAL map: the SPC figure with the fine relief of the DLR DTM (64 px/degree)',
+  ],
+  [
+    'Modelo de forma de Vesta (SPC da equipe de gravidade da Dawn, 12,6 milhões de placas) — NASA NAIF — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+    'Vesta shape model (SPC by the Dawn gravity team, 12.6 million plates) — NASA NAIF — HORIZON map (baked relief shadow, six azimuths in RGB)',
+  ],
+  [
+    'Forma: R. S. Park et al., modelo SPC de Vesta da equipe de gravidade da Dawn (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Relevo fino: DTM HAMO de F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Mapa equiretangular assado pelo app (Felipe Ferreira).',
+    'Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira).',
+  ],
+  [
+    'Dawn FC — mosaico global de Ceres a 20 px/grau (DLR, via USGS Astrogeology)',
+    'Dawn FC — global mosaic of Ceres at 20 px/degree (DLR, via USGS Astrogeology)',
   ],
 
   // ---- fontes: Hipérion (item 134/S3 → relevo medido, 23/09/2026) ---
@@ -447,10 +467,6 @@ export const EM_INGLES = new Map([
     'Dawn FC HAMO global DTM 137 m (DLR, via USGS Astrogeology) — NORMAL map derived from the height, at physical amplitude',
   ],
   [
-    'Dawn HAMO DTM global 93 m (DLR, via USGS Astrogeology) — mapa de NORMAIS derivado do raio, em amplitude física',
-    'Dawn HAMO global DTM 93 m (DLR, via USGS Astrogeology) — NORMAL map derived from the radius, at physical amplitude',
-  ],
-  [
     'New Horizons LORRI+MVIC — DEM global de Plutão a 300 m (USGS Astrogeology) — mapa de NORMAIS derivado da altura, em amplitude física',
     'New Horizons LORRI+MVIC — global DEM of Pluto at 300 m (USGS Astrogeology) — NORMAL map derived from the height, at physical amplitude',
   ],
@@ -467,10 +483,6 @@ export const EM_INGLES = new Map([
   [
     'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
     'Texture: NASA 3D Resources — NASA/JPL-Caltech.',
-  ],
-  [
-    'Textura: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Giro de longitude pelo app.',
-    'Texture: NASA/JPL-Caltech/UCLA/MPS/DLR/IDA — Dawn. Longitude rotation done by the app.',
   ],
   [
     'Imagens: Framing Camera da Dawn (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); mosaico do DLR Institute of Planetary Research, distribuído pelo USGS Astrogeology. Giro de longitude, tingimento uniforme e preenchimento do polo sul pelo app.',

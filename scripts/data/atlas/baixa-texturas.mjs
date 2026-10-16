@@ -721,22 +721,25 @@ export const FONTES = [
     // entrada baixa da fonte também no modo --offline
     bake: 'mosaico-ceres',
   },
-  // ---- F7 (asteroides). Vesta: mosaico Dawn embutido no modelo
-  // NASA Science (crédito NASA/JPL-Caltech/UCLA/MPS/DLR/IDA). Modelos
-  // GLB/OBJ (DAMIT CC BY / NASA) ficam pendentes (sem GLTFLoader/
-  // OBJLoader na casa).
+  // ---- F7 (asteroides). Vesta sai do elipsoide em 16/10/2026 (`completar-corpo`, passos 2 a 5): a FORMA MEDIDA
+  // como mapa de ALTURA — a razão sobre o elipsoide de `BODY_AXES`, pelo SPC da equipe de gravidade da Dawn
+  // (NAIF, 12,6 milhões de placas) —, a NORMAL e os dois HORIZONTES da figura desse SPC com o relevo fino do DTM da
+  // DLR (64 px/grau), e a IMAGEM sem sombra assada: o mosaico HAMO F2 (555 nm) corrigido fotometricamente pela DLR,
+  // com a cor das razões F8/F2 e F7/F2 (a média é a da régua). Tudo na longitude da IAU ("Claudia Double Prime"):
+  // o giro de −150° do mosaico antigo da NASA morre com ele. As fontes LOCAIS são os bytes gerados em
+  // `capturas/vesta/etapa2/` (gera.mjs, foto.mjs, instala.mjs), na convenção da casa.
   {
     corpo: 'vesta',
     canal: 'map',
-    url: 'https://science.nasa.gov/resource/vesta-3d-model/',
-    nomeNoDoador: 'vesta_dawn_embedded.png',
-    // OS 150° DE VESTA (item 141, 3ª fase). O mosaico do modelo 3D da
-    // NASA está no sistema "Claudia" com que a Dawn operou, e a casa
-    // orienta Vesta pela IAU (`iauOrientation.ts`, sistema "Claudia
-    // Double Prime"): a borda esquerda dele cai em 330°E da IAU, não em
-    // 180°. O giro que a põe na convenção da casa é 180 − 330 = −150.
-    giroDeLongitudeGraus: -150,
+    url: 'https://sbnarchive.psi.edu/pds3/dawn/fc/DWNVFC2_2/DATA/HAMO_COLOR/VE_HAMO_00N_330E_CYL_FILT2.IMG',
+    arquivoLocal: 'fonte/vesta-foto.png',
   },
+  ...['height', 'normal', 'horizon', 'horizon2'].map((canal) => ({
+    corpo: 'vesta',
+    canal,
+    url: 'https://naif.jpl.nasa.gov/pub/naif/DAWN/kernels/dsk/dawn_vesta_grv_icq1024_v1.bds',
+    arquivoLocal: `fonte/vesta-${canal === 'height' ? 'altura' : canal}.png`,
+  })),
   // ---- Os seis sem foto de superfície (item 151): nenhuma sonda visitou
   // Hígia, Palas, Haumea, Makemake, Éris ou Quaoar. Hígia usava um
   // GRÁFICO científico do ESO/VLT com grade e barra de cores por cima

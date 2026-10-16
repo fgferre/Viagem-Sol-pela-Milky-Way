@@ -243,7 +243,7 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
  * a foto que o limbo tinha de mostrar e a esfera lisa não mostrava.
  */
 export const RELEVO_DA_LUA: Readonly<
-  Record<string, { escala: number; vies: number; horizonte?: true | 'soDoRelevo' }>
+  Record<string, { escala: number; vies: number; horizonte?: true | 'soDoRelevo'; normal?: number }>
 > = {
   mimas: { escala: 0.10200225260766879, vies: -0.04611062610562858 },
   // Encélado (R4, 13/10/2026): assado nesta casa do DEM de 200 m
@@ -292,9 +292,17 @@ export const RELEVO_DA_LUA: Readonly<
   // `capturas/fobos-deimos/etapa2/gera.mjs`. 'soDoRelevo' pelo motivo de Pã:
   // a superfície passa de 30° do elipsoide em 6 % de Fobos e 11 % de Deimos
   // (Stickney, as pontas, a grande bacia do sul de Deimos), e com o teste cru
-  // essas encostas viradas para o Sol apagariam.
-  phobos: { escala: 0.282252, vies: -0.111937, horizonte: 'soDoRelevo' },
-  deimos: { escala: 0.506607, vies: -0.318369, horizonte: 'soDoRelevo' },
+  // essas encostas viradas para o Sol apagariam. `normal: 1`: a normal é a
+  // inclinação medida (ou inventada com a estatística medida), sem o 1,2 de
+  // Saturno, que a realçava 20 %.
+  phobos: { escala: 0.282252, vies: -0.111937, horizonte: 'soDoRelevo', normal: 1 },
+  deimos: { escala: 0.506607, vies: -0.318369, horizonte: 'soDoRelevo', normal: 1 },
+  // Vesta (16/10/2026, `completar-corpo` passos 2 a 5): saiu de NORMAL_MEDIDA. A forma MEDIDA (o SPC da equipe de
+  // gravidade da Dawn, NAIF) como RAZÃO sobre `BODY_AXES` (0,904 a 1,066 — Rheasilvia e o pico central no contorno),
+  // pelo caminho de Fobos; a normal e os horizontes são a figura desse SPC com o fino do DTM da DLR
+  // (`capturas/vesta/etapa2/gera.mjs`). 'soDoRelevo' pelo motivo de Pã: 6,8 % da superfície passa de 30° do plano
+  // radial (as escarpas de Rheasilvia e Veneneia). `normal: 1`: a inclinação é a medida, sem o 1,2 de Saturno.
+  vesta: { escala: 0.162515, vies: -0.096244, horizonte: 'soDoRelevo', normal: 1 },
 };
 
 /**
@@ -316,7 +324,8 @@ const ESCALA_DA_NORMAL_DO_RELEVO = 1.2;
 /**
  * A NORMAL MEDIDA (item 141) — os corpos cujo relevo vem de DEM público
  * e entra SÓ NA LUZ. É o caminho que a Lua estreou no item 140, agora em
- * Mercúrio, Marte, Ceres, Vesta, Plutão e Caronte:
+ * Mercúrio, Marte, Ceres, Plutão e Caronte (Vesta passou a `RELEVO_DA_LUA`
+ * em 16/10/2026):
  * `scripts/data/atlas/gera-normal-de-dem.mjs` assa o
  * mapa de normais em AMPLITUDE FÍSICA (a inclinação do texel é a
  * inclinação medida do terreno) e o shader o consome pelo frame
@@ -358,7 +367,6 @@ export const NORMAL_MEDIDA: Readonly<Record<string, number>> = {
   mercury: 1,
   mars: 1,
   ceres: 1,
-  vesta: 1,
   pluto: 1,
   charon: 1,
 };
@@ -564,10 +572,12 @@ ${GLSL_LUZ_DA_VISITA}
 ${GLSL_ALTURA_DO_ALBEDO}
 ${GLSL_BUMP_DO_ALBEDO}
 ${GLSL_NORMAL_DO_MAPA}
+${GLSL_SOMBRA_DO_HORIZONTE}
 ${GLSL_RUIDO_DE_VALOR}
 ${GLSL_GRAO_DO_CLOSE}
 void main() {
   vec3 n = normalDoCorpo(vLocal, uNormalEsc);
+  vec3 nGeo = n;
   vec3 pElip = vLocal * uEscalaLocal;
   // o nível e a cor já vêm assados no mapa (régua dos mapas, reguaDosMapas.ts)
   vec3 albedo = texture2D(uMapaDia, vUv).rgb;
@@ -585,9 +595,14 @@ void main() {
   float ls = ${LS_NORMALIZACAO_GLSL} * mu0 / max(mu0 + mu, 1.0e-4);
   vec3 sombras = fatorDeEclipse(pElip, n, mu0);
   vec3 luzSol = vec3(ls * uLuzGanho) * sombras;
-  gl_FragColor = vec4(
-    albedo * luzDoRegolito(luzSol, lanternaDeLeitura(n, dirCam, sombras)), 1.0
-  );
+  // o horizonte assado, o mesmo da Lambert (Vesta, 16/10/2026, a primeira LS com
+  // forma medida): o relevo tapa só a direta, o céu visível só a lanterna — e
+  // sem o portão (uHorizonte = 0) os dois valem 1 exato
+  float sombraRelevo = sombraDoHorizonte(nGeo, vUv, uDirSolLocal);
+  if (uHorizonte > 1.5) sombraRelevo = sombraSoDoRelevo(nGeo, vUv, uDirSolLocal);
+  luzSol *= sombraRelevo;
+  vec3 fill = lanternaDeLeitura(n, dirCam, sombras) * visibilidadeDoCeu(vUv);
+  gl_FragColor = vec4(albedo * luzDoRegolito(luzSol, fill), 1.0);
 }
 `;
 
@@ -1142,7 +1157,7 @@ export class RochosoResolvido {
         },
         uRelevoNormal: {
           value: relevo
-            ? ESCALA_DA_NORMAL_DO_RELEVO
+            ? (relevo.normal ?? ESCALA_DA_NORMAL_DO_RELEVO)
             : (NORMAL_MEDIDA[this.config.id] ?? 0),
         },
         // E — o gate do grão. Quem escreve o tamanho VERDADEIRO é quem

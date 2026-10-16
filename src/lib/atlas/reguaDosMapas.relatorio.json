@@ -843,22 +843,22 @@
     "alvo": {
       "p0": 0.314,
       "BG": 0.888,
-      "RG": 1.1,
-      "matiz": "tinta"
+      "RG": 1.07,
+      "matiz": "foto"
     },
-    "gama": 0.6812,
+    "gama": 1,
     "gamaAntesDoTeto": 1,
-    "fracaoComprimida": 0.01173,
-    "fracaoNoTeto": 0.00095,
+    "fracaoComprimida": 0,
+    "fracaoNoTeto": 0,
     "g": [
-      1.2918,
-      1.1744,
-      1.0428
+      0.8587,
+      0.8205,
+      0.8214
     ],
     "medias": [
-      0.3456,
-      0.314,
-      0.279
+      0.336,
+      0.3141,
+      0.2788
     ]
   }
 }
