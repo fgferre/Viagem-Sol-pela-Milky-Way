@@ -59,6 +59,61 @@ export function lePlt(texto) {
   return { vx, vy, vz, fa, fb, fc };
 }
 
+/** O modelo em OBJ (o `.OBJ` que a ESA/NAIF exportam dos DSK): linhas "v x y z" (km) e "f a b c" a partir de 1. */
+export function leObj(texto) {
+  const v = [];
+  const f = [];
+  for (const linha of texto.split(/\r?\n/)) {
+    const p = linha.trim().split(/\s+/);
+    if (p[0] === 'v') v.push(+p[1], +p[2], +p[3]);
+    else if (p[0] === 'f') f.push(+p[1] - 1, +p[2] - 1, +p[3] - 1);
+  }
+  const n = v.length / 3;
+  const vx = new Float64Array(n);
+  const vy = new Float64Array(n);
+  const vz = new Float64Array(n);
+  for (let i = 0; i < n; i++) [vx[i], vy[i], vz[i]] = [v[3 * i], v[3 * i + 1], v[3 * i + 2]];
+  const m = f.length / 3;
+  const fa = new Int32Array(m);
+  const fb = new Int32Array(m);
+  const fc = new Int32Array(m);
+  for (let i = 0; i < m; i++) [fa[i], fb[i], fc[i]] = [f[3 * i], f[3 * i + 1], f[3 * i + 2]];
+  return { vx, vy, vz, fa, fb, fc };
+}
+
+/**
+ * O modelo em ICQ (o "implicitly connected quadrilateral" de Gaskell): Q, depois 6·(Q+1)² vértices x y z (km), face a
+ * face, linha j e coluna i (índice f·(Q+1)² + j·(Q+1) + i); cada quadrilátero (i,j)–(i+1,j)–(i+1,j+1)–(i,j+1) vira dois
+ * triângulos. As arestas do cubo repetem vértices entre faces — sem efeito na grade radial.
+ */
+export function leIcq(texto) {
+  const numeros = texto.trim().split(/\s+/).map(Number);
+  const Q = numeros[0];
+  const n = Q + 1;
+  const nV = 6 * n * n;
+  if (numeros.length !== 1 + 3 * nV) throw new Error(`ICQ: Q = ${Q} pede ${3 * nV} números, o texto tem ${numeros.length - 1}`);
+  const vx = new Float64Array(nV);
+  const vy = new Float64Array(nV);
+  const vz = new Float64Array(nV);
+  for (let i = 0; i < nV; i++) [vx[i], vy[i], vz[i]] = [numeros[1 + 3 * i], numeros[2 + 3 * i], numeros[3 + 3 * i]];
+  const nF = 6 * Q * Q * 2;
+  const fa = new Int32Array(nF);
+  const fb = new Int32Array(nF);
+  const fc = new Int32Array(nF);
+  let t = 0;
+  for (let face = 0; face < 6; face++) {
+    for (let j = 0; j < Q; j++) {
+      for (let i = 0; i < Q; i++) {
+        const v00 = face * n * n + j * n + i;
+        [fa[t], fb[t], fc[t]] = [v00, v00 + 1, v00 + n + 1];
+        [fa[t + 1], fb[t + 1], fc[t + 1]] = [v00, v00 + n + 1, v00 + n];
+        t += 2;
+      }
+    }
+  }
+  return { vx, vy, vz, fa, fb, fc };
+}
+
 /** O centroide de VOLUME (tetraedros a partir da origem). */
 export function centroideDeVolume({ vx, vy, vz, fa, fb, fc }) {
   let v6 = 0,
@@ -271,6 +326,8 @@ function intersectaRaioTriangulo(dx, dy, dz, ax, ay, az, bx, by, bz, cx, cy, cz)
  * O raio (km) da malha local em nx×ny direções: coluna i em λ = −180 + (i+½)·360/nx com λ = atan2(z,x), linha j em
  * lat = −90 + (j+½)·180/ny (linha 0 = SUL); o cruzamento mais distante, com balde de culling (folga `padGraus`) e, sem
  * cruzamento no balde, todas as facetas. `raiosComZeroHits` tem de dar 0 (corpo estrelado a partir da origem).
+ * O balde é compacto (contagem, deslocamento e índices num Int32Array; as facetas de cada célula em ordem crescente,
+ * como eram as listas): cabem os 3,1 milhões de placas do Gaskell de Fobos, e a grade de 30 mil placas sai a mesma.
  */
 export function gradeRadial({ vx, vy, vz, fa, fb, fc }, { nx = 512, ny = 256, padGraus = 1.5 } = {}) {
   const nFacetas = fa.length;
@@ -283,9 +340,8 @@ export function gradeRadial({ vx, vy, vz, fa, fb, fc }, { nx = 512, ny = 256, pa
   const idxLonFrac = (lonGraus) => ((lonGraus + 180) / 360) * nx - 0.5;
   const idxLatFrac = (latGraus) => ((latGraus + 90) / 180) * ny - 0.5;
 
-  const balde = new Array(nx * ny);
-  for (let k = 0; k < balde.length; k++) balde[k] = [];
-  for (let i = 0; i < nFacetas; i++) {
+  /** `visita(k)` em cada célula do balde da faceta i (a caixa lon/lat dos vértices com a folga; perto do polo, a volta toda). */
+  const celulasDaFaceta = (i, visita) => {
     const ia = fa[i],
       ib = fb[i],
       ic = fc[i];
@@ -308,24 +364,29 @@ export function gradeRadial({ vx, vy, vz, fa, fb, fc }, { nx = 512, ny = 256, pa
     const jMax = Math.min(ny - 1, Math.ceil(idxLatFrac(latMax)));
     if (lonCheia) {
       for (let j = jMin; j <= jMax; j++) {
-        for (let ii = 0; ii < nx; ii++) balde[j * nx + ii].push(i);
+        for (let ii = 0; ii < nx; ii++) visita(j * nx + ii);
       }
-      continue;
+      return;
     }
     const iMinF = Math.floor(idxLonFrac(lonMin));
     const iMaxF = Math.ceil(idxLonFrac(lonMax));
     for (let j = jMin; j <= jMax; j++) {
-      for (let ii = iMinF; ii <= iMaxF; ii++) {
-        const col = ((ii % nx) + nx) % nx;
-        balde[j * nx + col].push(i);
-      }
+      for (let ii = iMinF; ii <= iMaxF; ii++) visita(j * nx + (((ii % nx) + nx) % nx));
     }
-  }
+  };
+  const inicio = new Int32Array(nx * ny + 1);
+  for (let i = 0; i < nFacetas; i++) celulasDaFaceta(i, (k) => inicio[k + 1]++);
+  for (let k = 0; k < nx * ny; k++) inicio[k + 1] += inicio[k];
+  const facetasDoBalde = new Int32Array(inicio[nx * ny]);
+  const cursor = inicio.slice(0, nx * ny);
+  for (let i = 0; i < nFacetas; i++) celulasDaFaceta(i, (k) => (facetasDoBalde[cursor[k]++] = i));
 
-  const testaFacetas = (dx, dy, dz, listaDeFacetas) => {
+  /** O cruzamento mais distante entre as facetas `lista[de..ate)` (sem lista: as facetas de..ate). */
+  const testaFacetas = (dx, dy, dz, lista, de, ate) => {
     let melhor = -Infinity;
     let hits = 0;
-    for (const i of listaDeFacetas) {
+    for (let p = de; p < ate; p++) {
+      const i = lista ? lista[p] : p;
       const ia = fa[i],
         ib = fb[i],
         ic = fc[i];
@@ -338,7 +399,6 @@ export function gradeRadial({ vx, vy, vz, fa, fb, fc }, { nx = 512, ny = 256, pa
     return { melhor, hits };
   };
 
-  const todasAsFacetas = Array.from({ length: nFacetas }, (_, i) => i);
   const rKm = new Float64Array(nx * ny);
   let raiosComZeroHits = 0;
   for (let j = 0; j < ny; j++) {
@@ -348,8 +408,9 @@ export function gradeRadial({ vx, vy, vz, fa, fb, fc }, { nx = 512, ny = 256, pa
       const dx = Math.cos(phi) * Math.cos(lon);
       const dy = Math.sin(phi);
       const dz = Math.cos(phi) * Math.sin(lon);
-      let { melhor, hits } = testaFacetas(dx, dy, dz, balde[j * nx + i]);
-      if (hits === 0) ({ melhor, hits } = testaFacetas(dx, dy, dz, todasAsFacetas));
+      const k = j * nx + i;
+      let { melhor, hits } = testaFacetas(dx, dy, dz, facetasDoBalde, inicio[k], inicio[k + 1]);
+      if (hits === 0) ({ melhor, hits } = testaFacetas(dx, dy, dz, null, 0, nFacetas));
       if (hits === 0) raiosComZeroHits++;
       rKm[j * nx + i] = melhor;
     }
@@ -828,6 +889,96 @@ export function normalDoRaio(raio, W, H, raioKm) {
     metros[k] = R_M * Math.log((rKm * 1000) / R_M);
   }
   return { ...assaNormais(metros, W, H, R_M), metros };
+}
+
+/**
+ * A MESMA normal de `normalDoRaio` (os bytes de `assaNormais`: leste, norte, alto), mas com a derivada tirada POR
+ * DIREÇÃO: em cada texel W×H da casa, ln r em d girado ±ε para leste e para norte no quadro do próprio ponto (ε = π/H,
+ * o passo de `assaNormais` longe do polo) — sem passo leste-oeste na linha equiretangular, sem a trava de 80°, e o
+ * leque do polo some (a guarda dos polos de `completar-corpo`). `raioEm(d)`: o raio (unidades do app) na direção
+ * unitária d da malha. Fobos e Deimos (15/10/2026).
+ */
+export function normalPorDirecao(raioEm, W, H) {
+  const eps = Math.PI / H;
+  const [c, s] = [Math.cos(eps), Math.sin(eps)];
+  const gira = (d, t, sinal) => ({ x: d.x * c + t[0] * s * sinal, y: d.y * c + t[1] * s * sinal, z: d.z * c + t[2] * s * sinal });
+  const rgb = Buffer.allocUnsafe(W * H * 3);
+  let somaDeclive2 = 0;
+  let maiorDeclive = 0;
+  for (let j = 0; j < H; j++) {
+    const lat = (90 - (j + 0.5) * (180 / H)) * DEG_PARA_RAD;
+    for (let i = 0; i < W; i++) {
+      const lon = ((i + 0.5) * (360 / W) - 180) * DEG_PARA_RAD;
+      const d = direcaoLocalDeLonLat(lon / DEG_PARA_RAD, lat / DEG_PARA_RAD);
+      const leste = [-Math.sin(lon), 0, -Math.cos(lon)];
+      const norte = [-Math.sin(lat) * Math.cos(lon), Math.cos(lat), Math.sin(lat) * Math.sin(lon)];
+      const x = -(Math.log(raioEm(gira(d, leste, 1))) - Math.log(raioEm(gira(d, leste, -1)))) / (2 * eps);
+      const y = -(Math.log(raioEm(gira(d, norte, 1))) - Math.log(raioEm(gira(d, norte, -1)))) / (2 * eps);
+      const inv = 1 / Math.sqrt(x * x + y * y + 1);
+      const declive2 = x * x + y * y;
+      somaDeclive2 += declive2;
+      if (declive2 > maiorDeclive) maiorDeclive = declive2;
+      const k = (j * W + i) * 3;
+      rgb[k] = Math.max(0, Math.min(255, Math.round((x * inv * 0.5 + 0.5) * 255)));
+      rgb[k + 1] = Math.max(0, Math.min(255, Math.round((y * inv * 0.5 + 0.5) * 255)));
+      rgb[k + 2] = Math.max(0, Math.min(255, Math.round((inv * 0.5 + 0.5) * 255)));
+    }
+  }
+  return {
+    rgb,
+    rmsGraus: Math.atan(Math.sqrt(somaDeclive2 / (W * H))) * GRAUS,
+    maxGraus: Math.atan(Math.sqrt(maiorDeclive)) * GRAUS,
+  };
+}
+
+/**
+ * A suavização gaussiana de σ graus de ARCO do raio, por direção: a média pesada de `raioEm` em anéis de ½σ a 3σ em
+ * volta de cada direção, no quadro do ponto (polo sem emenda, nada leste-oeste na grade). Devolve o campo W×H na casa.
+ * Deimos (15/10/2026): a grade de 5° de Thomas tem as placas à vista na normal.
+ */
+export function raioSuavizadoNaCasa(raioEm, W, H, sigmaGraus) {
+  const aneis = [];
+  for (let a = 1; a <= 6; a++) {
+    const ang = a * 0.5 * sigmaGraus * DEG_PARA_RAD;
+    const n = 6 * a;
+    const peso = Math.exp(-((a * 0.5) ** 2) / 2); // por amostra: o anel tem 6a amostras, ∝ a área dele
+    aneis.push({ c: Math.cos(ang), s: Math.sin(ang), n, peso });
+  }
+  return campoNaCasa(W, H, (d) => {
+    const lon = Math.atan2(-d.z, d.x);
+    const lat = Math.asin(Math.max(-1, Math.min(1, d.y)));
+    const leste = [-Math.sin(lon), 0, -Math.cos(lon)];
+    const norte = [-Math.sin(lat) * Math.cos(lon), Math.cos(lat), Math.sin(lat) * Math.sin(lon)];
+    // o centro vale o disco de raio σ/4 (0,75 da área de uma amostra de anel)
+    let soma = 0.75 * raioEm(d);
+    let w = 0.75;
+    for (const { c, s, n, peso } of aneis) {
+      for (let k = 0; k < n; k++) {
+        const az = (2 * Math.PI * k) / n;
+        const t = [0, 1, 2].map((q) => Math.cos(az) * leste[q] + Math.sin(az) * norte[q]);
+        soma += peso * raioEm({ x: d.x * c + t[0] * s, y: d.y * c + t[1] * s, z: d.z * c + t[2] * s });
+        w += peso;
+      }
+    }
+    return soma / w;
+  });
+}
+
+/** Bilinear de um campo W×H da CASA (linha 0 = norte, coluna 0 em 180°E) na direção unitária d da malha. */
+export function amostraCasa(campo, W, H, d) {
+  const u = ((Math.atan2(-d.z, d.x) * GRAUS + 180) / 360) * W - 0.5;
+  const v = ((90 - Math.asin(Math.max(-1, Math.min(1, d.y))) * GRAUS) / 180) * H - 0.5;
+  const i0 = Math.floor(u);
+  const j0Bruto = Math.floor(v);
+  const fu = u - i0;
+  const fv = v - j0Bruto;
+  const j0 = Math.max(0, Math.min(H - 1, j0Bruto));
+  const j1 = Math.max(0, Math.min(H - 1, j0Bruto + 1));
+  const i0c = ((i0 % W) + W) % W;
+  const i1c = (i0c + 1) % W;
+  const g0 = campo[j0 * W + i0c] + (campo[j0 * W + i1c] - campo[j0 * W + i0c]) * fu;
+  const g1 = campo[j1 * W + i0c] + (campo[j1 * W + i1c] - campo[j1 * W + i0c]) * fu;
+  return g0 + (g1 - g0) * fv;
 }
 
 // ------------------------------------------------------------

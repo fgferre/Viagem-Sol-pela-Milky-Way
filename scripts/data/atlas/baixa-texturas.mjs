@@ -369,18 +369,43 @@ export const FONTES = [
     url: `${SSS}/8k_mars.jpg`,
     nomeNoDoador: '8k_mars.jpg',
   },
+  // ---- Fobos e Deimos saem do elipsoide em 15/10/2026 (`completar-corpo`,
+  // passo 2, "medido primeiro"): a forma MEDIDA inteira como mapa de ALTURA,
+  // com a NORMAL e os dois HORIZONTES dela, pela receita de Pã — Fobos pelo
+  // modelo de Gaskell (ICQ Q=512, 3,1 milhões de placas, PDS SBN), Deimos
+  // pelo de Thomas (grade de 5°, o DSK V02 da ESA, suavizado a 2° de arco:
+  // as placas de 5° apareciam na normal). A COR é a FOTO real: os mosaicos
+  // do Viking (Fobos, USGS 40 ppd com o controle da DLR, registrado na forma
+  // pela medida — giro + centro deslocado, em duas passadas; Deimos, Stooke
+  // 20 ppd, sem registro mensurável contra a forma lisa), cinza, com a tinta
+  // e o nível da régua. As fontes LOCAIS são os bytes gerados em
+  // `capturas/fobos-deimos/etapa2/` (gera.mjs e foto.mjs), na convenção da casa.
   {
     corpo: 'phobos',
     canal: 'map',
-    url: 'https://science.nasa.gov/resource/phobos-mars-moon-3d-model/',
-    nomeNoDoador: 'phobos_nasa_3d_resource.jpg',
+    url: 'https://planetarymaps.usgs.gov/mosaic/Phobos_Viking_Mosaic_40ppd_DLRcontrol.tif',
+    arquivoLocal: 'fonte/phobos-foto.png',
   },
+  ...['height', 'normal', 'horizon', 'horizon2'].map((canal) => ({
+    corpo: 'phobos',
+    canal,
+    url: 'https://sbnarchive.psi.edu/pds4/non_mission/gaskell.phobos.shape-model/data/phobos_quad512q.tab',
+    arquivoLocal: `fonte/phobos-${canal === 'height' ? 'altura' : canal}.png`,
+  })),
   {
     corpo: 'deimos',
     canal: 'map',
-    url: 'https://science.nasa.gov/resource/deimos-mars-moon-3d-model/',
-    nomeNoDoador: 'deimos_nasa_3d_resource.jpg',
+    url: 'https://sbnarchive.psi.edu/pds4/non_mission/small_bodies.stooke.maps/miscellaneous/m2deimos/deimos_cyl_viking_mro.jpg',
+    arquivoLocal: 'fonte/deimos-foto.png',
   },
+  ...['height', 'normal', 'horizon', 'horizon2'].map((canal) => ({
+    corpo: 'deimos',
+    canal,
+    url: 'https://spiftp.esac.esa.int/data/SPICE/MARS-EXPRESS/kernels/dsk/DEIMOS_K005_THO_V02.BDS',
+    arquivoLocal: `fonte/deimos-${canal === 'height' ? 'altura' : canal}.png`,
+    // a altura de 512×256 suavizada a 2° comprime a ~40 kB: é lisa, não truncada
+    ...(canal === 'height' ? { minimoBytes: 20_000 } : {}),
+  })),
   // ---- F4 (gigantes). SSS CC BY 4.0, a mesma linha Terra/Lua/
   // Mercúrio. Urano/Netuno entram pelo incumbente 2k (não há 8k SSS).
   // Júpiteres sem licença clara no doador (jupiter_vgr1_2025.jpg etc.)

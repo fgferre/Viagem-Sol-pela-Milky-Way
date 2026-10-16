@@ -116,12 +116,12 @@ export const REGUA_DOS_MAPAS: Readonly<Record<string, MedidaDoCorpo>> = {
   phobos: {
     valor: 0.068, S: 1.28, fonteDoNivel: 'HRSC 538 nm (p); S(H,G)',
     BG: 0.91, RG: 1.07, fonteDaCor: 'Fornasier+2024 (7.9 %/100 nm)', // inclinação espectral
-    matiz: 'tinta', fonteDoMapa: 'NASA 3D Resources', confianca: 'média',
+    matiz: 'tinta', fonteDoMapa: 'USGS Viking mosaic (Stooke, DLR control)', confianca: 'média',
   },
   deimos: {
     valor: 0.068, S: 1.28, fonteDoNivel: 'Thomas+1996 (p); S(H,G)',
     BG: 0.89, RG: 1.09, fonteDaCor: '9.6 %/100 nm', // inclinação espectral
-    matiz: 'tinta', fonteDoMapa: 'NASA 3D Resources', confianca: 'média',
+    matiz: 'tinta', fonteDoMapa: 'Viking + HiRISE mosaic (Stooke, PDS)', confianca: 'média',
   },
   jupiter: {
     valor: 0.538, S: 1, fonteDoNivel: 'Mallama+2017 (p V)',

@@ -18,10 +18,15 @@ import {
   direcaoLocalDeLonLat,
   gradeNaCasa,
   gradeRadial,
+  leIcq,
+  leObj,
   lePlt,
   malhaNoReferencial,
+  normalDoRaio,
+  normalPorDirecao,
   quantizaGrade,
   raioComPocos,
+  raioDaGrade,
 } from './relevo-medido.mjs';
 
 const RAD = Math.PI / 180;
@@ -130,6 +135,52 @@ describe('relevo medido', () => {
     }
     expect(difCasa).toBeLessThan(1e-9);
     expect(difMalha).toBeLessThan(1e-9);
+  });
+
+  it('a mesma forma em OBJ (DSK da ESA) dá a grade da PLT; um ICQ de Gaskell de esfera dá a esfera, sem raio perdido', () => {
+    const plt = pltSintetico();
+    const linhas = plt.split('\n');
+    const [nV] = linhas[0].split(' ').map(Number);
+    const obj = [
+      ...linhas.slice(1, 1 + nV).map((l) => `v ${l}`),
+      ...linhas.slice(1 + nV).map((l) => `f ${l.split(' ').map((i) => +i + 1).join(' ')}`),
+    ].join('\n');
+    const dePlt = gradeRadial(malhaNoReferencial(lePlt(plt), 'iau'), { nx: 64, ny: 32 });
+    const deObj = gradeRadial(malhaNoReferencial(leObj(obj), 'iau'), { nx: 64, ny: 32 });
+    expect(Array.from(deObj.rKm)).toEqual(Array.from(dePlt.rKm));
+    // o cubo de Gaskell (Q = 8) projetado na esfera de 7 km: 6·Q²·2 triângulos, todo raio acha a casca
+    const Q = 8;
+    const icq = [String(Q)];
+    const faces = [(a, b) => [1, a, b], (a, b) => [-1, -a, b], (a, b) => [a, 1, b], (a, b) => [-a, -1, b], (a, b) => [a, b, 1], (a, b) => [a, -b, -1]];
+    for (const face of faces) {
+      for (let j = 0; j <= Q; j++) {
+        for (let i = 0; i <= Q; i++) {
+          const v = face((2 * i) / Q - 1, (2 * j) / Q - 1);
+          const l = Math.hypot(...v);
+          icq.push(v.map((c) => ((7 * c) / l).toFixed(9)).join(' '));
+        }
+      }
+    }
+    const malha = leIcq(icq.join('\n'));
+    expect(malha.fa.length).toBe(6 * Q * Q * 2);
+    const grade = gradeRadial(malha, { nx: 64, ny: 32 });
+    expect(grade.raiosComZeroHits).toBe(0);
+    for (const r of grade.rKm) expect(r).toBeGreaterThan(7 * Math.cos(Math.PI / Q)); // abaixo da corda mais funda, nunca
+    for (const r of grade.rKm) expect(r).toBeLessThanOrEqual(7 + 1e-9);
+  });
+
+  it('a normal POR DIREÇÃO é a de `assaNormais` longe do polo e não faz leque no polo', () => {
+    const [W, H] = [128, 64];
+    const grade = quantizaGrade(gradeRadial(malhaNoReferencial(lePlt(pltSintetico()), 'iau'), { nx: W, ny: H }), 10);
+    const raioEm = (d) => raioDaGrade(grade, d);
+    const porDirecao = normalPorDirecao(raioEm, W, H);
+    const naGrade = normalDoRaio(campoNaCasa(W, H, raioEm), W, H, 10);
+    let maiorDif = 0;
+    for (let k = 8 * W * 3; k < (H - 8) * W * 3; k++) maiorDif = Math.max(maiorDif, Math.abs(porDirecao.rgb[k] - naGrade.rgb[k]));
+    expect(maiorDif).toBeLessThanOrEqual(6); // diferença central na grade × no campo bilinear
+    // a esfera tem a normal radial em TODO texel, polos incluídos
+    const esfera = normalPorDirecao(() => 1, W, H);
+    for (let k = 0; k < W * H; k++) expect([esfera.rgb[3 * k], esfera.rgb[3 * k + 1], esfera.rgb[3 * k + 2]]).toEqual([128, 128, 255]);
   });
 
   it('o byte da altura volta ao raio do app em ±½ degrau: raio = 1 + viés + (b/255)·escala', () => {

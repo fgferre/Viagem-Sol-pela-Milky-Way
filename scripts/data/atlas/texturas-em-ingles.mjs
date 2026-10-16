@@ -174,12 +174,52 @@ export const EM_INGLES = new Map([
     'Images: New Horizons LORRI and Ralph/MVIC (NASA/Johns Hopkins APL/Southwest Research Institute); mosaic by the USGS Astrogeology Science Center. Resampling to 8192 px and filling of the south with no data done by the app.',
   ],
   [
-    'NASA 3D Resources — modelo 3D de Fobos (textura)',
-    'NASA 3D Resources — 3D model of Phobos (texture)',
+    'Mosaico global do Viking de Fobos (P. Stooke, controle da DLR) — USGS, 40 px/grau, registrado na forma medida',
+    'Global Viking mosaic of Phobos (P. Stooke, DLR control) — USGS, 40 px/degree, registered to the measured shape',
   ],
   [
-    'NASA 3D Resources — modelo 3D de Deimos (textura)',
-    'NASA 3D Resources — 3D model of Deimos (texture)',
+    'Fotos: Viking Orbiter (NASA/JPL), mosaico de P. Stooke com o controle da DLR (USGS Astrogeology Science Center). Registro na forma, redução e cor pela régua do app (Felipe Ferreira).',
+    'Images: Viking Orbiter (NASA/JPL), mosaic by P. Stooke with DLR control (USGS Astrogeology Science Center). Registration to the shape, reduction and color by the yardstick of the app (Felipe Ferreira).',
+  ],
+  [
+    'Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de ALTURA',
+    'Phobos shape model (Gaskell, SPC, 3.1 million plates) — NASA PDS — HEIGHT map',
+  ],
+  [
+    'Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de NORMAIS derivado da altura',
+    'Phobos shape model (Gaskell, SPC, 3.1 million plates) — NASA PDS — NORMAL map derived from the height',
+  ],
+  [
+    'Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+    'Phobos shape model (Gaskell, SPC, 3.1 million plates) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB)',
+  ],
+  [
+    'Forma: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Mapa equiretangular assado pelo app (Felipe Ferreira).',
+    'Shape: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Equirectangular map baked by the app (Felipe Ferreira).',
+  ],
+  [
+    'Mosaico global do Viking de Deimos, com inserções da HiRISE (P. Stooke) — NASA PDS, 20 px/grau',
+    'Global Viking mosaic of Deimos, with HiRISE insets (P. Stooke) — NASA PDS, 20 px/degree',
+  ],
+  [
+    'Fotos: Viking Orbiter (NASA/JPL) e MRO HiRISE (NASA/JPL/Universidade do Arizona), mosaico de P. Stooke (NASA PDS Small Bodies Node). Redução e cor pela régua do app (Felipe Ferreira).',
+    'Images: Viking Orbiter (NASA/JPL) and MRO HiRISE (NASA/JPL/University of Arizona), mosaic by P. Stooke (NASA PDS Small Bodies Node). Reduction and color by the yardstick of the app (Felipe Ferreira).',
+  ],
+  [
+    'Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de ALTURA',
+    'Deimos shape model (Thomas 1993, Viking, 5° grid) — NASA PDS / ESA SPICE — HEIGHT map',
+  ],
+  [
+    'Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de NORMAIS derivado da altura',
+    'Deimos shape model (Thomas 1993, Viking, 5° grid) — NASA PDS / ESA SPICE — NORMAL map derived from the height',
+  ],
+  [
+    'Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+    'Deimos shape model (Thomas 1993, Viking, 5° grid) — NASA PDS / ESA SPICE — HORIZON map (baked relief shadow, six azimuths in RGB)',
+  ],
+  [
+    'Forma: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), no modelo de placas DEIMOS_K005_THO_V02 do SPICE da Mars Express (ESA). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 2° de arco.',
+    'Shape: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), in the DEIMOS_K005_THO_V02 plate model of the Mars Express SPICE (ESA). Equirectangular map baked by the app (Felipe Ferreira), smoothed at 2° of arc.',
   ],
   [
     'NASA 3D Resources — Titã (720×360, só a névoa; o mosaico Cassini ainda não entrou)',

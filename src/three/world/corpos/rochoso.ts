@@ -282,6 +282,19 @@ export const RELEVO_DA_LUA: Readonly<
   // na borda que a foto não tem. Só Pã usa este modo; o Hipérion segue com
   // o teste cru.
   pan: { escala: 0.709911, vies: -0.259518, horizonte: 'soDoRelevo' },
+  // Fobos e Deimos (15/10/2026, `completar-corpo` passo 2): a forma MEDIDA
+  // inteira, Fobos pelo modelo de Gaskell (3,1 milhões de placas), Deimos
+  // pelo de Thomas (grade de 5°, suavizada a 2° de arco) — mas pelo caminho
+  // de Mimas, não pelo de Pã: `BODY_AXES` segue o elipsoide do pck00011
+  // (também converte a latitude do sub-ponto que se compara com o Horizons),
+  // e o mapa guarda a RAZÃO forma ÷ elipsoide na direção planetocêntrica
+  // (Fobos 0,888 a 1,170; Deimos 0,682 a 1,188) —
+  // `capturas/fobos-deimos/etapa2/gera.mjs`. 'soDoRelevo' pelo motivo de Pã:
+  // a superfície passa de 30° do elipsoide em 6 % de Fobos e 11 % de Deimos
+  // (Stickney, as pontas, a grande bacia do sul de Deimos), e com o teste cru
+  // essas encostas viradas para o Sol apagariam.
+  phobos: { escala: 0.282252, vies: -0.111937, horizonte: 'soDoRelevo' },
+  deimos: { escala: 0.506607, vies: -0.318369, horizonte: 'soDoRelevo' },
 };
 
 /**

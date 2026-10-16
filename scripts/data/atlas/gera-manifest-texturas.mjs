@@ -175,20 +175,98 @@ const ORIGENS = {
     atribuicao: ATRIBUICAO_SSS,
     proveniencia: 'medido',
   },
-  // Fobos/Deimos: textura dos modelos 3D da NASA (a página é a fonte;
-  // o arquivo nasceu no doador por extração manual do pacote glTF).
+  // Fobos e Deimos (15/10/2026, `completar-corpo` passo 2): a forma MEDIDA
+  // inteira vira mapa de altura, com a normal e os dois horizontes dela, e a
+  // cor é a FOTO do Viking (cinza; a tinta e o nível são os da régua) —
+  // Fobos registrada na forma pela medida. A confissão mora no ASSETS.md.
   'phobos/map': {
-    fonte: 'NASA 3D Resources — modelo 3D de Fobos (textura)',
-    url: 'https://science.nasa.gov/resource/phobos-mars-moon-3d-model/',
-    licenca: 'NASA 3D Resources (uso livre)',
-    atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
+    fonte:
+      'Mosaico global do Viking de Fobos (P. Stooke, controle da DLR) — USGS, 40 px/grau, registrado na forma medida',
+    url: 'https://planetarymaps.usgs.gov/mosaic/Phobos_Viking_Mosaic_40ppd_DLRcontrol.tif',
+    licenca: 'domínio público (NASA/USGS)',
+    atribuicao:
+      'Fotos: Viking Orbiter (NASA/JPL), mosaico de P. Stooke com o controle da DLR (USGS Astrogeology Science Center). Registro na forma, redução e cor pela régua do app (Felipe Ferreira).',
+    proveniencia: 'medido',
+  },
+  'phobos/height': {
+    fonte:
+      'Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de ALTURA',
+    url: 'https://sbnarchive.psi.edu/pds4/non_mission/gaskell.phobos.shape-model/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao:
+      'Forma: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Mapa equiretangular assado pelo app (Felipe Ferreira).',
+    proveniencia: 'medido',
+  },
+  'phobos/normal': {
+    fonte:
+      'Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de NORMAIS derivado da altura',
+    url: 'https://sbnarchive.psi.edu/pds4/non_mission/gaskell.phobos.shape-model/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao:
+      'Forma: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Mapa equiretangular assado pelo app (Felipe Ferreira).',
+    proveniencia: 'medido',
+  },
+  'phobos/horizon': {
+    fonte:
+      'Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+    url: 'https://sbnarchive.psi.edu/pds4/non_mission/gaskell.phobos.shape-model/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao:
+      'Forma: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Mapa equiretangular assado pelo app (Felipe Ferreira).',
+    proveniencia: 'medido',
+  },
+  'phobos/horizon2': {
+    fonte:
+      'Modelo de forma de Fobos (Gaskell, SPC, 3,1 milhões de placas) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+    url: 'https://sbnarchive.psi.edu/pds4/non_mission/gaskell.phobos.shape-model/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao:
+      'Forma: R. Gaskell, Gaskell Phobos Shape Model V1.0 (NASA PDS Small Bodies Node, urn:nasa:pds:gaskell.phobos.shape-model). Mapa equiretangular assado pelo app (Felipe Ferreira).',
     proveniencia: 'medido',
   },
   'deimos/map': {
-    fonte: 'NASA 3D Resources — modelo 3D de Deimos (textura)',
-    url: 'https://science.nasa.gov/resource/deimos-mars-moon-3d-model/',
-    licenca: 'NASA 3D Resources (uso livre)',
-    atribuicao: 'Textura: NASA 3D Resources — NASA/JPL-Caltech.',
+    fonte:
+      'Mosaico global do Viking de Deimos, com inserções da HiRISE (P. Stooke) — NASA PDS, 20 px/grau',
+    url: 'https://sbnarchive.psi.edu/pds4/non_mission/small_bodies.stooke.maps/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao:
+      'Fotos: Viking Orbiter (NASA/JPL) e MRO HiRISE (NASA/JPL/Universidade do Arizona), mosaico de P. Stooke (NASA PDS Small Bodies Node). Redução e cor pela régua do app (Felipe Ferreira).',
+    proveniencia: 'medido',
+  },
+  'deimos/height': {
+    fonte:
+      'Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de ALTURA',
+    url: 'https://spiftp.esac.esa.int/data/SPICE/MARS-EXPRESS/kernels/dsk/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao:
+      'Forma: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), no modelo de placas DEIMOS_K005_THO_V02 do SPICE da Mars Express (ESA). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 2° de arco.',
+    proveniencia: 'medido',
+  },
+  'deimos/normal': {
+    fonte:
+      'Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de NORMAIS derivado da altura',
+    url: 'https://spiftp.esac.esa.int/data/SPICE/MARS-EXPRESS/kernels/dsk/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao:
+      'Forma: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), no modelo de placas DEIMOS_K005_THO_V02 do SPICE da Mars Express (ESA). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 2° de arco.',
+    proveniencia: 'medido',
+  },
+  'deimos/horizon': {
+    fonte:
+      'Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+    url: 'https://spiftp.esac.esa.int/data/SPICE/MARS-EXPRESS/kernels/dsk/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao:
+      'Forma: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), no modelo de placas DEIMOS_K005_THO_V02 do SPICE da Mars Express (ESA). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 2° de arco.',
+    proveniencia: 'medido',
+  },
+  'deimos/horizon2': {
+    fonte:
+      'Modelo de forma de Deimos (Thomas 1993, Viking, grade de 5°) — NASA PDS / ESA SPICE — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+    url: 'https://spiftp.esac.esa.int/data/SPICE/MARS-EXPRESS/kernels/dsk/',
+    licenca: 'domínio público (NASA PDS)',
+    atribuicao:
+      'Forma: P. Thomas (Viking), Small Body Shape Models (NASA PDS Small Bodies Node), no modelo de placas DEIMOS_K005_THO_V02 do SPICE da Mars Express (ESA). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 2° de arco.',
     proveniencia: 'medido',
   },
   // ---- F4 (gigantes). Mesma linha SSS CC BY 4.0. O 8k_jupiter

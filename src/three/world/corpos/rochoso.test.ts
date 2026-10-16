@@ -1147,16 +1147,21 @@ describe('10. o horizonte assado — só quem declara `horizonte`', () => {
     mimas.corpo.dispose();
   });
 
-  it('o portão `uHorizonte` é 1 em Hipérion, 2 em Pã (só do relevo) e 0 em Mimas — e só os dois o declaram', async () => {
+  it('o portão `uHorizonte` é 1 em Hipérion, 2 em Pã, Fobos e Deimos (só do relevo) e 0 em Mimas — e só os quatro o declaram', async () => {
     expect(Object.keys(RELEVO_DA_LUA).filter((id) => RELEVO_DA_LUA[id]!.horizonte)).toEqual([
       'hyperion',
       'pan',
+      'phobos',
+      'deimos',
     ]);
-    // a sombra só do relevo é opção da tabela, e só Pã a usa (as encostas da aba a 65° do plano radial)
+    // a sombra só do relevo é opção da tabela: Pã (as encostas da aba a 65° do plano radial), Fobos e Deimos (12 % e
+    // 17 % da superfície a mais de 30° dele)
     expect(Object.keys(RELEVO_DA_LUA).filter((id) => RELEVO_DA_LUA[id]!.horizonte === 'soDoRelevo')).toEqual([
       'pan',
+      'phobos',
+      'deimos',
     ]);
-    for (const [id, portao] of [['hyperion', 1], ['pan', 2]] as const) {
+    for (const [id, portao] of [['hyperion', 1], ['pan', 2], ['phobos', 2], ['deimos', 2]] as const) {
       const { corpo } = hiperionComHorizonte(id);
       corpo.atualizar(quadro(id, 4));
       await flush();
@@ -1269,4 +1274,45 @@ describe('11. Pã — a forma medida virada para Saturno (08/10)', () => {
       expect(graus(paraSaturno(meridiano0)), `JD ${jd}: a longitude 0`).toBeLessThan(5);
     }
   });
+});
+
+// ------------------------------------------------------------
+// 12. FOBOS E DEIMOS — SAEM DO ELIPSOIDE, ENTRAM NA FORMA MEDIDA (15/10/2026,
+//     `completar-corpo` passo 2): o caminho de Pã, com o lado comprido virado
+//     para Marte pelo W da IAU (pck00011, sem meia volta: o modelo vem no
+//     referencial da IAU, longitude 0 = ponto sub-Marte).
+// ------------------------------------------------------------
+
+describe('12. Fobos e Deimos — a forma medida no lugar certo (15/10)', () => {
+  /**
+   * O RAIO QUE O APP DESENHA — (1 + viés + b/255·escala) × o raio do elipsoide de `BODY_AXES` na direção
+   * planetocêntrica — lido da FONTE local que a cadeia copia (`scripts/data/atlas/fonte/<lua>-altura.png`, convenção da
+   * casa), nos seis eixos do corpo, contra os do modelo (Gaskell Q512; Thomas pelo DSK V02 da ESA, suavizado a 2°):
+   * Fobos é 0,45 km mais curto no lado de Marte (+x) que no de trás, 0,6 km mais largo a leste e 1,7 km mais alto no
+   * norte; Deimos é 0,65 km mais estreito a leste e tem a bacia do sul (−z, 4 km). Meia volta, espelho ou norte
+   * trocado — e um par escala/viés que não é o do mapa — trocam esses números.
+   */
+  const MODELO = {
+    phobos: { '+x': 12.562, '-x': 13.008, '+y': 11.881, '-y': 11.264, '+z': 9.924, '-z': 8.191 },
+    deimos: { '+x': 7.376, '-x': 7.939, '+y': 5.888, '-y': 6.556, '+z': 5.64, '-z': 3.969 },
+  } as const;
+  const EIXOS = { '+x': [0, 0], '-x': [180, 0], '+y': [90, 0], '-y': [-90, 0], '+z': [0, 89.9], '-z': [0, -89.9] } as const;
+  for (const id of ['phobos', 'deimos'] as const) {
+    it(`${id}: o raio desenhado nos seis eixos é o do modelo medido (± 50 m)`, async () => {
+      const { default: sharp } = await import('sharp');
+      const caminho = fileURLToPath(new URL(`../../../../scripts/data/atlas/fonte/${id}-altura.png`, import.meta.url));
+      const { data, info } = await sharp(caminho).toColourspace('b-w').raw().toBuffer({ resolveWithObject: true });
+      const { width: W, height: H, channels } = info;
+      const [a, b, c] = BODY_AXES[id]!;
+      const { escala, vies } = RELEVO_DA_LUA[id]!;
+      for (const [eixo, [lon, lat]] of Object.entries(EIXOS)) {
+        const d = direcaoLocalDeLonLat(lon, lat); // malha: x = a, y = polo (c), z = b
+        const elipsoide = 1 / Math.hypot(d[0]! / a, d[1]! / c, d[2]! / b);
+        const i = Math.min(W - 1, Math.floor(((lon + 180) / 360) * W));
+        const j = Math.min(H - 1, Math.floor(((90 - lat) / 180) * H));
+        const raio = (1 + vies + (data[(j * W + i) * channels]! / 255) * escala) * elipsoide;
+        expect(Math.abs(raio - MODELO[id][eixo as keyof (typeof MODELO)[typeof id]]), `${id} ${eixo}: ${raio.toFixed(3)} km`).toBeLessThan(0.05);
+      }
+    });
+  }
 });
