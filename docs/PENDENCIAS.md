@@ -4,7 +4,7 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 234.**
 
-## O BASTÃO — onde a rodada parou (17/10) — MIMAS, TÉTIS E DIONE COM O RELEVO MEDIDO DE 2025, SEM A ESTRELA DO POLO
+## O BASTÃO — onde a rodada parou (17/10) — MIMAS, TÉTIS E DIONE COM O RELEVO MEDIDO DE 2025, NO AR (`origin/main` be247f50)
 
 **Feito e aprovado** (*"sim, aprovo, pode juntar e publicar"*): o relevo das três assado em casa do SPC de Weirich,
 Gaskell, Palmer & Domingue (2025, PDS SBN) como razão sobre o elipsoide da casa — altura 1024, normal 4096 sem leque no
