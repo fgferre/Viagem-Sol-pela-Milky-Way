@@ -4,7 +4,24 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 234.**
 
-## O BASTÃO — onde a rodada parou (16/10) — FOBOS, DEIMOS E VESTA COM A FORMA MEDIDA, NO AR (`origin/main` ec636ae0)
+## O BASTÃO — onde a rodada parou (17/10) — MIMAS, TÉTIS E DIONE COM O RELEVO MEDIDO DE 2025, SEM A ESTRELA DO POLO
+
+**Feito e aprovado** (*"sim, aprovo, pode juntar e publicar"*): o relevo das três assado em casa do SPC de Weirich,
+Gaskell, Palmer & Domingue (2025, PDS SBN) como razão sobre o elipsoide da casa — altura 1024, normal 4096 sem leque no
+polo, horizontes 2048 —, mais os 4 DTMs regionais de Tétis e de Dione costurados com rampa de 60 km (a de 8 km fazia
+quadrado em luz rasante). O relevo do projeto Saturn tinha o polo quebrado (a estrela de riscos; Dione era a faixa de
+±55° esticada até os polos) e a figura contada duas vezes (Mimas 34 km de achatamento em vez de 16). As fotos giram
+pelo alinhamento contra o relevo novo: Mimas −4,02°, Tétis 0,16°, Dione 0,61°. O relevo fino abaixo do modelo (Mimas
+~2,2 km; Tétis ~6; Dione ~6,4) fica LISO e confessado: tirá-lo das fotos reprovou na validação (Tétis, Dione) e as
+tigelas inventadas saíram carimbadas (Mimas) — a skill aprendeu. Provas: `../Viagem-mtd/capturas/mtd/` (inventário,
+pranchas finais `prancha-final-{mimas,tetis,dione}.jpg`, tentativas rejeitadas em `*/etapa3/rejeitado/`).
+
+**A próxima rodada — a fila dele:** as seis luas pequenas de Saturno (forma da Cassini), depois o peso do app. Achados
+abertos seguem no bastão anterior (gelos claros e Lambert; o Sol ~1° em Vesta; Jápeto ~1°; Gazetteer NoSuchBucket;
+retrato em brilho; Plutão sem partes), mais: a linha "Total baixado 3,43 MB" do ASSETS.md está velha (as normais de
+4096 pesam 4–6 MB cada); os mapas de cor das três ainda dizem "graduada no projeto Saturn" na origem.
+
+## O BASTÃO anterior (16/10) — FOBOS, DEIMOS E VESTA COM A FORMA MEDIDA, NO AR (`origin/main` ec636ae0)
 
 **No ar desde 16/10** (*"sim, pode publicar"*; push pelo terminal do Mac, deploy verde, conferido por sha256):
 o motor encaixa o mapa na lat/lon planetocêntrica do elipsoide e a normal é a do elipsoide de verdade (até 10° em
