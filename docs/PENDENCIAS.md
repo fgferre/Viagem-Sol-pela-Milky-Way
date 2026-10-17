@@ -4,7 +4,38 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 234.**
 
-## O BASTÃO — onde a rodada parou (15/10) — A LATITUDE DAS FOTOS, A LINHA DE PRODUÇÃO E O RELEVO DE ENCÉLADO NO AR (`main` a75998f6)
+## O BASTÃO — onde a rodada parou (16/10) — FOBOS, DEIMOS E VESTA COM A FORMA MEDIDA; TUDO NO `main` (805c11ca), NADA PUBLICADO
+
+**No `main`, não publicado** (backup em `origin/backup`; publicar é com a palavra dele, pelo terminal do Mac):
+o motor encaixa o mapa na lat/lon planetocêntrica do elipsoide e a normal é a do elipsoide de verdade (até 10° em
+Fobos, 3° em Saturno); a foto de Mimas girada 3,86° (estava a oeste das crateras do Gazetteer); o Saturno do SSS
+declarado planetográfico (2,4σ, escolha por evidência — o mapa é pintado); Júpiter mediu planetocêntrico e ficou;
+**Fobos e Deimos** com o modelo de forma medido, a foto do Viking registrada e o relevo fino completado pela linha de
+produção (Deimos com pintura por IA no fino da foto lisa e na faixa nunca vista) — aprovados por ele pela prancha
+(*"1) sim"*); o **selo da ficha em partes** com a porcentagem da área (*"2) concordo"*); **Vesta** com a forma SPC da
+Dawn (Rheasilvia no contorno), a foto F2 corrigida sem sombra assada (era a "face preta"), cor das razões F8/F7 e a
+calota norte nunca vista com terreno medido do próprio Vesta transplantado — aprovada (*"sim aprovo"*); o borrão em
+cunhas no polo (mip) consertado no motor (`amostraEquiretangular`); Fobos e Deimos sem o realce 1,2 da normal.
+A lei de luz LS foi conferida contra três fotos da Dawn na mesma geometria: o contraste bate (Vesta lisa de longe é real).
+Provas: `../Viagem-fobos/capturas/fobos-deimos/` e `../Viagem-vesta/capturas/vesta/` (pranchas finais, coberturas,
+inventários; os worktrees ficam — `capturas/` é a única cópia), `capturas/elipsoide/`, `capturas/latitude/`.
+
+**A próxima rodada — a primeira da fila:** o relevo de **Mimas, Tétis e Dione** refeito em casa pela skill
+`completar-corpo`. Os mapas de normais delas vieram do projeto Saturn com o polo quebrado: a inclinação leste cheia de
+riscos radiais (uma estrela no polo; Dione pior, desce até 60–70°), provado em
+`../Viagem-mimas-polo/capturas/mimas-polo/prancha.jpg` — conserto no motor reprovado (limpa Mimas, estraga Encélado).
+Fonte provável: os DEMs globais de Schenk & McKinnon 2024 (usados na medida da latitude de Mimas e Tétis). Depois: as
+seis luas pequenas de Saturno (forma Cassini), o peso do app.
+
+**Achados abertos:** gelos muito claros (Encélado, Europa, Tétis) talvez peçam Lambert parcial — mesma prova contra
+Cassini/Galileo; o Sol do app cai ~1° de longitude fora do rótulo da Dawn em Vesta (W ou efeméride); Jápeto talvez
+~1° girado contra o Gazetteer; o link do Gazetteer no repo dá NoSuchBucket (o novo é `asc-planetarynames-data`); os
+sulcos de Fobos reprovaram como relevo; o SPC de Ernst 2023 de Fobos/Deimos está atrás de senha no SBMT; o retrato de
+família desvia em BRILHO (Caronte −49 % do alvo), não em tamanho; Plutão sem partes no selo; a normal de Vesta pesa
+7,4 MB no tier cinema. Dos achados de 15/10 saíram: Júpiter e Saturno, Mimas girada, a face preta de Vesta, a costura
+de Deimos.
+
+## O BASTÃO anterior (15/10) — A LATITUDE DAS FOTOS, A LINHA DE PRODUÇÃO E O RELEVO DE ENCÉLADO NO AR (`main` a75998f6)
 
 **No ar:** desde 14/10 (push dele, 1c3ac6d5) R1 (tom neutro), R2 (cor dos mapas pela régua), R3 (a ficha confessa
 forma, relevo, cor e brilho) e a lente Hollywood por padrão; desde 15/10 (`origin/main` a75998f6, publicado pelo
