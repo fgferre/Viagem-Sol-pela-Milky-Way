@@ -856,10 +856,13 @@ describe('7. a meia volta dos mapas das seis luas de mosaico (item 138)', () => 
     expect(distanciaEmU(u, U_DE_HERSCHEL + 0.5)).toBeGreaterThan(0.4);
   });
 
-  it('o fundo é fundo mesmo: Herschel afunda muito abaixo do resto do equador', async () => {
+  it('o fundo é fundo mesmo: Herschel afunda mais de 4 km abaixo do resto do equador', async () => {
+    // o byte é uma RAZÃO sobre o elipsoide (escala/viés de `RELEVO_DA_LUA`), então a fundura se mede em km, não em
+    // fração do byte: ~5,9 km na média das 64 colunas, que alisa o fundo (a bacia tem ~10 km do fundo ao topo da borda)
     const perfil = await faixaEquatorial(join(TEXTURAS, 'mimas/height.png'));
     const media = perfil.reduce((a, b) => a + b, 0) / perfil.length;
-    expect(Math.min(...perfil)).toBeLessThan(media * 0.4);
+    const kmPorByte = (RELEVO_DA_LUA.mimas!.escala / 255) * BODY_AXES.mimas![1]!;
+    expect((media - Math.min(...perfil)) * kmPorByte).toBeGreaterThan(4);
   });
 
   it('o MOSAICO de Mimas está na MESMA convenção do relevo (os dois girados)', async () => {

@@ -53,7 +53,13 @@ não altura zero. Olhar o resultado numa vista POLAR e numa equatorial antes de 
 - costura sem emenda: `membranaHarmonica`/`costura` (`relevo-inventado.mjs`);
 - bater a estatística (RMS, espectro) NÃO basta: em Encélado o ruído Gabor saiu "penteado" e os retalhos por exemplo
   saíram "colcha agitada"; o juiz é o olho contra a foto. Relevo pela foto só entra depois de VALIDADO em ladrilhos bons
-  (esconder o fino medido, reconstruir pela foto, comparar banda a banda) — sem passar, fica liso e confessado.
+  (esconder o fino medido, reconstruir pela foto, comparar banda a banda) — sem passar, fica liso e confessado;
+- NUNCA inventar numa escala que a foto do lugar resolve: onde a foto vê e a validação reprova, inventar crateras
+  contradiz a foto (Tétis, 17/10: 74 mil tigelas de 1,6–6 km). E tigela fresca de d/D único sobre o fundo liso do SPC
+  sai "carimbada", bolha (Mimas, 17/10) — inventado só onde a foto não separa, e com a degradação medida, não fresca.
+  Em Tétis e Dione o fino medido nos regionais nem é cratera (é ondulação): crateras da foto correlacionaram 0,0–0,1;
+- DTM regional mais fino que o resto aparece como QUADRADO em luz rasante: o fino dele entra com rampa larga
+  (~60 km), não de 8 km.
 
 **4. Imagem que falta.**
 - foto em cinza ou realçada → a cor vem da régua (tinta medida) ou de `cor-inventada.mjs` (transferência guiada pelo

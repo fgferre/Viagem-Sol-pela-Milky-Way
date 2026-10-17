@@ -211,7 +211,8 @@ prova.
 **A longitude da foto de Mimas (15/10/2026,
 `capturas/latitude/mimas-longitude/`).** A foto estava 3,86° a oeste do
 relevo (938 janelas, uniforme) e ~4° a oeste de 20 crateras do Gazetteer,
-que o relevo acerta (0,1°); a cadeia a gira (`giroDeLongitudeGraus: -3.86`).
+que o relevo acerta (0,1°); a cadeia a gira (`giroDeLongitudeGraus: -3.86`; −4,02° desde 17/10/2026,
+medido contra o relevo novo).
 Causa provável, não conferida: o meridiano antigo da IAU para Mimas.
 
 **A casa lê mesmo em planetocêntrica desde 15/10/2026.** Até então a esfera
@@ -232,20 +233,21 @@ de normais, 51/255. A regra vive em `scripts/data/atlas/otimiza-texturas.mjs`
 (`CANAIS_DE_DADO`) e vale só para fonte PNG — desde 07/10/2026 também a
 normal da Terra, que nasce PNG do relevo medido (seção própria, abaixo).
 
-Todos vêm do **projeto Saturn do dono** (https://github.com/fgferre/Saturn,
+Todos vieram do **projeto Saturn do dono** (https://github.com/fgferre/Saturn,
 `public/textures/relief/`) — menos o de Jápeto desde o item 230, o de Reia
-desde o PLAN-REIA.md e o de Encélado desde a R4 da régua, que nascem nesta
-casa (parágrafos no fim desta seção) —,
+desde o PLAN-REIA.md, o de Encélado desde a R4 da régua e os de Mimas, Tétis
+e Dione desde 17/10/2026, que nascem nesta casa (parágrafos no fim desta
+seção) —,
 que os assou a partir dos modelos abaixo; as
 escalas de deslocamento (`span`/`bias` como fração do raio) vêm do
 `relief.json` dele e moram em `RELEVO_DA_LUA` (`world/corpos/rochoso.ts`).
 
 | lua | topografia | licença | webp (altura + normal) |
 | --- | --- | --- | --- |
-| Mimas | modelo de forma SPC V2.0 (R. Gaskell), NASA PDS | domínio público | 103 + 477 KB |
-| Tétis | modelo de forma SPC V1.0 (R. Gaskell), NASA PDS | domínio público | 143 + 492 KB |
+| Mimas | **relevo MEDIDO, assado nesta casa** (17/10/2026) — modelo de forma SPC da Cassini (Weirich, Gaskell, Palmer & Domingue 2025, NASA PDS SBN, doi 10.26033/y8wv-r303); altura em 1024 px, normal em 4096 (parágrafo abaixo) | domínio público, **citação obrigatória** | 122 + 4156 KB |
+| Tétis | **relevo MEDIDO, assado nesta casa** (17/10/2026) — modelo de forma SPC da Cassini (Weirich, Gaskell, Palmer & Domingue 2025, NASA PDS SBN, doi 10.26033/hpv0-eh61) com 4 modelos regionais de 235–405 m; altura em 1024 px, normal em 4096 (parágrafo abaixo) | domínio público, **citação obrigatória** | 183 + 5570 KB |
 | Encélado | **DEM medido, assado nesta casa** (R4) — DEM global 200 m, Schenk & McKinnon 2024, USGS Astropedia; altura em 1024 px, normal em 4096 (parágrafo abaixo) | domínio público, **citação obrigatória**: *Icarus* 408, 115827, doi 10.1016/j.icarus.2023.115827 | a medir ao regenerar (o do Saturn tinha 296 + 728 KB) |
-| Dione | DTM SPC — Weirich et al. 2025, NASA PDS SBN | domínio público | 228 + 512 KB |
+| Dione | **relevo MEDIDO, assado nesta casa** (17/10/2026) — modelo de forma SPC da Cassini (Weirich, Gaskell, Palmer & Domingue 2025, NASA PDS SBN, doi 10.26033/bxx6-g543) com 4 modelos regionais de 235–405 m; altura em 1024 px, normal em 4096 (parágrafo abaixo) | domínio público, **citação obrigatória** | 221 + 5460 KB |
 | Reia | **relevo MEDIDO, completado** (PLAN-REIA.md) — modelo de forma SPC da Cassini (Weirich, Gaskell, Palmer & Domingue 2025, NASA PDS SBN, doi 10.26033/tqxb-q714) acima de ~30 km; abaixo, crateras onde a foto as mostra, com perfis ESTIMADOS (parágrafo abaixo) | dado NASA PDS, **citação obrigatória**; montagem: código do autor | a medir ao regenerar (o sintético tinha 108 + 232 KB) |
 | Jápeto | **relevo INVENTADO ancorado no medido** (item 230) — não existe DTM público de Jápeto; gerado nesta casa: crista e crateras no lugar medido, perfis e profundidades inventados (parágrafo abaixo) | código do autor; posições do Gazetteer da IAU e mosaico Cassini, domínio público | 55 + 135 KB |
 
@@ -344,6 +346,32 @@ dele; e as bordas retas de ladrilho entre dois ladrilhos bons (uma risca de
 1–2 pixels e degraus de até ~500 m) são recosturadas numa faixa de ±5 km — a
 única mudança no DEM bom, ~6 100 km² (0,8 % da esfera); a reta que a foto
 confirma, ou que é vale ou crista, fica como está.
+
+**Mimas, Tétis e Dione refeitas nesta casa (17/10/2026, `capturas/mtd/`).**
+O relevo das três vinha do projeto Saturn com dois defeitos: o polo quebrado
+(riscos radiais, uma estrela; em Dione era a faixa de ±55° esticada até os
+polos) e o achatamento contado duas vezes, no mapa e na figura (Mimas com 34
+km de diferença entre o eixo maior e o menor no limbo, contra 16 do modelo;
+Tétis 24,2 contra 11,7; Dione 6,7 contra 3,9). Agora tudo sai do modelo de
+forma SPC de Weirich, Gaskell, Palmer & Domingue (2025, NASA PDS SBN, ICQ
+Q=512; doi 10.26033/y8wv-r303 em Mimas, 10.26033/hpv0-eh61 em Tétis e
+10.26033/bxx6-g543 em Dione — domínio público, citação obrigatória), como
+**razão sobre o elipsoide do app**: Mimas de 0,9472 a 1,0194 (Herschel no
+fundo; escala 0,072251 e viés −0,052826 em `RELEVO_DA_LUA`), Tétis de 0,9812
+a 1,0103 e Dione de 0,9910 a 1,0066. Altura em 1024 px, normal em 4096 px sem
+o leque do polo e os dois horizontes em 2048 px, assados pelo
+`capturas/mtd/<lua>/gera.mjs`. Em Tétis e em Dione entram ainda os 4 modelos
+regionais de cada uma (235–405 m), costurados ao global com uma rampa larga:
+cobrem 4,8 % de Tétis e 3,9 % de Dione.
+
+**O que é medido e o que não existe**: tudo o que o modelo resolve — Mimas
+até ~2,2 km, Tétis ~6 km, Dione ~6,4 km (fora dos regionais). Abaixo disso
+o relevo fica **liso**; nada é inventado nem derivado de foto, e por isso o
+selo é `medido` nos quatro canais das três. Foram tentados o relevo fino
+tirado das fotos (reprovou na validação em Tétis e em Dione e saiu
+artificial em Mimas) e não entraram. A foto de cada uma gira pelo
+alinhamento medido contra o relevo novo: Mimas −4,02° (era −3,86°), Tétis
+0,16° e Dione 0,61°.
 
 ## As nove luas esculpidas de Saturno (item 134, S3)
 
@@ -1050,9 +1078,18 @@ tocar num `.mjs`.
 | venus/map | medido | é o topo de nuvens, não o chão: a superfície de Vênus não tem foto em luz visível — o que existe é radar, e radar não é cor |
 | enceladus/height | medido 94,4 · derivado 0,6 · inventado 5 | relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos |
 | enceladus/normal | medido 94,4 · derivado 0,6 · inventado 5 | relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos |
-| mimas/height | medido | modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, como a bacia de Herschel, não o detalhe menor que um texel |
-| tethys/height | medido | modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel |
-| dione/height | medido | DTM SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel |
+| mimas/height | medido | medido pelo modelo de forma da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e fica liso: aparece a bacia de Herschel, não as crateras pequenas |
+| mimas/normal | medido | medido pelo modelo de forma da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e fica liso: aparece a bacia de Herschel, não as crateras pequenas |
+| mimas/horizon | medido | a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e não faz sombra |
+| mimas/horizon2 | medido | a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e não faz sombra |
+| tethys/height | medido | medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 4,8 % da superfície; no resto, o que é menor que ~6 km não está no modelo e fica liso |
+| tethys/normal | medido | medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 4,8 % da superfície; no resto, o que é menor que ~6 km não está no modelo e fica liso |
+| tethys/horizon | medido | a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 4,8 % da superfície; no resto, o que é menor que ~6 km não faz sombra |
+| tethys/horizon2 | medido | a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 4,8 % da superfície; no resto, o que é menor que ~6 km não faz sombra |
+| dione/height | medido | medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não está no modelo e fica liso |
+| dione/normal | medido | medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não está no modelo e fica liso |
+| dione/horizon | medido | a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não faz sombra |
+| dione/horizon2 | medido | a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não faz sombra |
 | rhea/height | derivado | relevo MEDIDO pela Cassini nas escalas acima de ~30 km; as crateras menores estão onde a foto da Cassini as mostra, mas a profundidade, a borda e o desgaste delas são ESTIMADOS por uma regra pelo tamanho; as escarpas finas estão só na cor, não no relevo |
 | rhea/normal | derivado | relevo MEDIDO pela Cassini nas escalas acima de ~30 km; as crateras menores estão onde a foto da Cassini as mostra, mas a profundidade, a borda e o desgaste delas são ESTIMADOS por uma regra pelo tamanho; as escarpas finas estão só na cor, não no relevo |
 | iapetus/height | inventado | não existe mapa de altura medido de Jápeto: o relevo é INVENTADO pelo app, ancorado no medido — a crista, de até 20 km, e as crateras estão onde o catálogo da IAU e as fotos da Cassini mostram; o perfil da crista, a profundidade das crateras e o chão liso são inventados |

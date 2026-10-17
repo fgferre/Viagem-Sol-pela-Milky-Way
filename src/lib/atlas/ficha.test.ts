@@ -489,9 +489,11 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
     // a esculpida não tem mapa nenhum: o relevo é o da malha feita por código
     expect(linhaDe('daphnis', 'relevo').valor).toContain('malha feita por código');
     expect(linhaDe('daphnis', 'relevo').procedencia).toBe('artistico');
-    // com imagem, o selo é o da nota mais fraca; Mimas, Tétis e Dione admitem o texel
-    for (const id of ['mimas', 'tethys', 'dione']) {
-      expect(linhaDe(id, 'relevo').valor, id).toContain('1024 px');
+    // com imagem, o selo é o da nota mais fraca; Mimas, Tétis e Dione (SPC de 2025, 17/10/2026) dizem o menor
+    // detalhe que o modelo resolve — abaixo dele o relevo fica liso, sem nada inventado: tudo `medido`
+    for (const [id, menorDetalhe] of [['mimas', '~2,2 km'], ['tethys', '~6 km'], ['dione', '~6,4 km']] as const) {
+      expect(linhaDe(id, 'relevo').valor, id).toContain(menorDetalhe);
+      expect(linhaDe(id, 'relevo').valor, id).toContain('SPC, 2025');
       expect(linhaDe(id, 'relevo').procedencia, id).toBe('medido');
     }
     expect(linhaDe('iapetus', 'relevo').procedencia).toBe('artistico');

@@ -259,7 +259,7 @@ export const RELEVO_DA_LUA: Readonly<
   // quatro DTMs regionais costurados, como RAZÃO sobre `BODY_AXES` (0,9812 a 1,0103; `capturas/mtd/tetis/gera.mjs`): o
   // mapa do Saturn tinha o polo quebrado e a figura entrava duas vezes (a−c de 24,2 km, contra 11,7 do modelo).
   // 'soDoRelevo' pelo motivo de Pã e de Mimas (as paredes de Odisseu e de Ithaca no terminador). `normal: 1`.
-  tethys: { escala: 0.029128, vies: -0.018831, horizonte: 'soDoRelevo', normal: 1 },
+  tethys: { escala: 0.02891, vies: -0.018613, horizonte: 'soDoRelevo', normal: 1 },
   // Dione (17/10/2026, `completar-corpo` passo 2, a receita de Mimas): o SPC de Weirich et al. 2025 (ICQ Q=512) com os
   // quatro DTMs regionais costurados, como RAZÃO sobre `BODY_AXES` (0,9910 a 1,0066; `capturas/mtd/dione/gera.mjs`): o
   // mapa do Saturn era a faixa de ±55° esticada até os polos, e a figura entrava duas vezes (a−c de 6,7 km, contra 3,9

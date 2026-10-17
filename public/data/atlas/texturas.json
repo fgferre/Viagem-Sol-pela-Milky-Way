@@ -1772,27 +1772,27 @@
       "arquivo": "textures/atlas/dione/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 413271,
-      "sha256": "8b8e1a46de396aa1112b8617f0365bd4be3478a68042a36e56515d6906993acb",
+      "bytes": 412728,
+      "sha256": "f76a2e6985779fa8e615918d1fa40e60323da91f00d75522bef10d7fe4ce8e54",
       "origem": {
         "fonte": {
-          "pt": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de ALTURA",
-          "en": "SPC DTM of Dione — Weirich et al. 2025 (NASA PDS SBN) — HEIGHT map"
+          "pt": "Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de ALTURA",
+          "en": "SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HEIGHT map"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-dione.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Topography: Weirich et al. 2025 (NASA PDS SBN). Map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado",
+      "proveniencia": "medido",
       "nota": {
-        "pt": "DTM SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel",
-        "en": "an SPC DTM baked into a 1024 px map: what you see is the overall shape, not detail smaller than a texel"
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não está no modelo e fica liso",
+        "en": "measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km is not in the model and stays smooth"
       },
       "seloDaNota": "medido"
     },
@@ -1802,27 +1802,27 @@
       "arquivo": "textures/atlas/dione/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 226212,
-      "sha256": "ee53f06703d5100a9369ec9d1182f57bfeed9e1f686f7f08cc1c42dbafa0dde0",
+      "bytes": 225778,
+      "sha256": "3d0fb98aef5845c0782a62db9f40f8262720216413049596b6523fde4749617f",
       "origem": {
         "fonte": {
-          "pt": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de ALTURA",
-          "en": "SPC DTM of Dione — Weirich et al. 2025 (NASA PDS SBN) — HEIGHT map"
+          "pt": "Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de ALTURA",
+          "en": "SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HEIGHT map"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-dione.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Topography: Weirich et al. 2025 (NASA PDS SBN). Map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "DTM SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel",
-        "en": "an SPC DTM baked into a 1024 px map: what you see is the overall shape, not detail smaller than a texel"
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não está no modelo e fica liso",
+        "en": "measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km is not in the model and stays smooth"
       },
       "seloDaNota": "medido"
     },
@@ -1832,18 +1832,29 @@
       "arquivo": "textures/atlas/dione/horizon_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 978581,
-      "sha256": "0efc083886dcc3fb2f599b9bbe7a6e52b2fb4e61687d858363301563021ed9f9",
+      "bytes": 976954,
+      "sha256": "0c0db42e15186239fc872d420eb57e833b0c71d902f5d2d2689671305f8e7aac",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-dione.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "dione",
@@ -1851,18 +1862,29 @@
       "arquivo": "textures/atlas/dione/horizon_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 787068,
-      "sha256": "4534b6bda44d281f7907b67b604bf33996a52c6d7a70bc380f1f9861c6865187",
+      "bytes": 784804,
+      "sha256": "7235b6936d1b27399553f2e639b9692d358f73ea7fd141e46c1e5407379a992b",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-dione.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "dione",
@@ -1870,18 +1892,29 @@
       "arquivo": "textures/atlas/dione/horizon.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 3556132,
-      "sha256": "2f7094b028ddbda8420bbb9429889bf9314f2921be367dc0d4b3c676c240c632",
+      "bytes": 3549484,
+      "sha256": "362a7ac779bddee0ea302cd1a953f9b22405aa4fde309ed038e1bea81b2ff626",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-dione.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "nao-resolvida"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "dione",
@@ -1889,18 +1922,29 @@
       "arquivo": "textures/atlas/dione/horizon.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 2372016,
-      "sha256": "982482b8f22b14d566c5e6f4c56ed8e4e97659c3533ac5e8f1c4e7bb3830855c",
+      "bytes": 2373810,
+      "sha256": "1d7908d8bcc2502f6f505e598545b6e1419145cdb434283255b86534c36df195",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-dione.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "dione",
@@ -1908,18 +1952,29 @@
       "arquivo": "textures/atlas/dione/horizon2_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 981674,
-      "sha256": "92d23860dbcc34e772813e4c5cac264080a6c6991d69751c92b82b9601492468",
+      "bytes": 980193,
+      "sha256": "82418e618b8a9fe7b04a72a121fc6f494218e2b77395d86dbf806c338d682826",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-dione.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "dione",
@@ -1927,18 +1982,29 @@
       "arquivo": "textures/atlas/dione/horizon2_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 785534,
-      "sha256": "7fdf16adff5c176da0901788d12d08a998aa250ddb009f552ab95f076ceb13ca",
+      "bytes": 783370,
+      "sha256": "20fed8030f10c5e9376565bc5aeab94cdf3d5634dee05c0518946db01796925f",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-dione.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "dione",
@@ -1946,18 +2012,29 @@
       "arquivo": "textures/atlas/dione/horizon2.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 3569779,
-      "sha256": "b575539446b72ee8e974149801b60a4ccd1376e006ad565db359529d3aeaccd8",
+      "bytes": 3563214,
+      "sha256": "b437f5ddde84be4f6dba3a245c54d7555a3a236393842b33f9b3264f5dc77c5e",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-dione.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "nao-resolvida"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "dione",
@@ -1965,18 +2042,29 @@
       "arquivo": "textures/atlas/dione/horizon2.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 2354912,
-      "sha256": "3f51836f2fd34a1a80391a20396ec8ab74a19d679432f5725d2063a7c977ed52",
+      "bytes": 2356962,
+      "sha256": "296ea65d257459b3b7b56d09f7d5cc8f8a6ce5d1ec47675b059faf59b566a409",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-dione.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "dione",
@@ -2134,24 +2222,29 @@
       "arquivo": "textures/atlas/dione/normal_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 899750,
-      "sha256": "81ab2342e0c6e3a85b82e0cc37ba3cbb5dbc67f46f48e0b9fe98c6b1aba4e058",
+      "bytes": 898437,
+      "sha256": "98b28fa8dbbed031f25637a9c7456d4f842c2ae6cccfc69320f66450e01703a1",
       "origem": {
         "fonte": {
-          "pt": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
-          "en": "SPC DTM of Dione — Weirich et al. 2025 (NASA PDS SBN) — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-dione.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Topography: Weirich et al. 2025 (NASA PDS SBN). Map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não está no modelo e fica liso",
+        "en": "measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km is not in the model and stays smooth"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "dione",
@@ -2159,24 +2252,29 @@
       "arquivo": "textures/atlas/dione/normal_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 643098,
-      "sha256": "2fb83b54be03de5eb195b6f7e2d0b6a0fe8b6182a53c65c43da9761a4c6a226e",
+      "bytes": 640758,
+      "sha256": "51f18afb805fd9c2445467499e414f4b71d6df23fd1d93d001c488bb880b3c22",
       "origem": {
         "fonte": {
-          "pt": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
-          "en": "SPC DTM of Dione — Weirich et al. 2025 (NASA PDS SBN) — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-dione.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Topography: Weirich et al. 2025 (NASA PDS SBN). Map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não está no modelo e fica liso",
+        "en": "measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km is not in the model and stays smooth"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "dione",
@@ -2184,24 +2282,29 @@
       "arquivo": "textures/atlas/dione/normal_2048.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 3386470,
-      "sha256": "b5c54328c0ca4209a6f744eaf99b663581a2400c32722a278f9b2cf93faf4787",
+      "bytes": 3377907,
+      "sha256": "fbe5b14677ee9a39a081d8d0cd3b8dc534113cecd59ba7d712e69670af6d1541",
       "origem": {
         "fonte": {
-          "pt": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
-          "en": "SPC DTM of Dione — Weirich et al. 2025 (NASA PDS SBN) — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-dione.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Topography: Weirich et al. 2025 (NASA PDS SBN). Map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não está no modelo e fica liso",
+        "en": "measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km is not in the model and stays smooth"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "dione",
@@ -2209,24 +2312,29 @@
       "arquivo": "textures/atlas/dione/normal_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 2048140,
-      "sha256": "9587840647664876364c692108a45a463cca0f4528fe7e661edd746423e9d671",
+      "bytes": 2037328,
+      "sha256": "b7abf03ea19a806bcffcea1591a6f31da2f595826eb20a0316325446b5a97960",
       "origem": {
         "fonte": {
-          "pt": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
-          "en": "SPC DTM of Dione — Weirich et al. 2025 (NASA PDS SBN) — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-dione.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Topography: Weirich et al. 2025 (NASA PDS SBN). Map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não está no modelo e fica liso",
+        "en": "measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km is not in the model and stays smooth"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "dione",
@@ -2234,24 +2342,29 @@
       "arquivo": "textures/atlas/dione/normal.png",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 11796796,
-      "sha256": "17d5e3ceeb4338a02c5e1c14216f982c967aeb58c3ebf499608a148f1d35c4db",
+      "bytes": 11758305,
+      "sha256": "3ef9ab214f8fed2b1385f6a4a4033cbe39a68a7d2ca06ab76f593679116bb9c0",
       "origem": {
         "fonte": {
-          "pt": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
-          "en": "SPC DTM of Dione — Weirich et al. 2025 (NASA PDS SBN) — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-dione.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Topography: Weirich et al. 2025 (NASA PDS SBN). Map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não está no modelo e fica liso",
+        "en": "measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km is not in the model and stays smooth"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "dione",
@@ -2259,24 +2372,29 @@
       "arquivo": "textures/atlas/dione/normal.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 5591112,
-      "sha256": "7edbebc0900d20190f1a55d4d6bb44fa41a230d2793449581f3db8049958d305",
+      "bytes": 5548134,
+      "sha256": "691bb6850b5a8506e9e5eba9ef340bb3700b88b55400b96b9e067d3de45314b8",
       "origem": {
         "fonte": {
-          "pt": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
-          "en": "SPC DTM of Dione — Weirich et al. 2025 (NASA PDS SBN) — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-dione.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Topography: Weirich et al. 2025 (NASA PDS SBN). Map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não está no modelo e fica liso",
+        "en": "measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km is not in the model and stays smooth"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "earth",
@@ -6573,23 +6691,23 @@
       "sha256": "aa4af17393cbc9d3518e5a9f6ace5f9b3b504e8974c8dfdba773daae163da400",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de ALTURA",
-          "en": "SPC V2.0 shape model of Mimas (Gaskell) — NASA PDS — HEIGHT map"
+          "pt": "Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de ALTURA",
+          "en": "SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — HEIGHT map"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-mimas.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Shape: R. Gaskell, SPC V2.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado",
+      "proveniencia": "medido",
       "nota": {
-        "pt": "modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, como a bacia de Herschel, não o detalhe menor que um texel",
-        "en": "an SPC shape model baked into a 1024 px map: what you see is the overall shape, such as the Herschel basin, not detail smaller than a texel"
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e fica liso: aparece a bacia de Herschel, não as crateras pequenas",
+        "en": "measured by the Cassini shape model (SPC, 2025); anything smaller than ~2.2 km is not in the model and stays smooth: the Herschel basin shows, the small craters do not"
       },
       "seloDaNota": "medido"
     },
@@ -6603,23 +6721,23 @@
       "sha256": "57b169ffca7035d5c42424c79697519a7a908eba86bec164da5aeed01cf014ed",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de ALTURA",
-          "en": "SPC V2.0 shape model of Mimas (Gaskell) — NASA PDS — HEIGHT map"
+          "pt": "Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de ALTURA",
+          "en": "SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — HEIGHT map"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-mimas.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Shape: R. Gaskell, SPC V2.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, como a bacia de Herschel, não o detalhe menor que um texel",
-        "en": "an SPC shape model baked into a 1024 px map: what you see is the overall shape, such as the Herschel basin, not detail smaller than a texel"
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e fica liso: aparece a bacia de Herschel, não as crateras pequenas",
+        "en": "measured by the Cassini shape model (SPC, 2025); anything smaller than ~2.2 km is not in the model and stays smooth: the Herschel basin shows, the small craters do not"
       },
       "seloDaNota": "medido"
     },
@@ -6632,15 +6750,26 @@
       "bytes": 1090054,
       "sha256": "8c1cff23826e4642ceb8bf3cbab652bbbf0a92d4c245692c31a125c4791d446c",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-mimas.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025); anything smaller than ~2.2 km is not in the model and casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mimas",
@@ -6651,15 +6780,26 @@
       "bytes": 641318,
       "sha256": "8d21cc315fee2236757474b999f4aba9355a7fb853e326dd2f90d8c9a1950fa0",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-mimas.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025); anything smaller than ~2.2 km is not in the model and casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mimas",
@@ -6670,15 +6810,26 @@
       "bytes": 4040362,
       "sha256": "d85aba7129600bbefe082c30df1fda998d67670a87e76a4d4ca6cdf3b8d8ba59",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-mimas.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "nao-resolvida"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025); anything smaller than ~2.2 km is not in the model and casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mimas",
@@ -6689,15 +6840,26 @@
       "bytes": 1646472,
       "sha256": "3904519b466cc57d2f0ae34be39addece7774c8329aee204c02356ab014f4567",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-mimas.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025); anything smaller than ~2.2 km is not in the model and casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mimas",
@@ -6708,15 +6870,26 @@
       "bytes": 1090332,
       "sha256": "35361ef0c05346a145f871841f091d140ac99b3b2eea7480f453cc68556d4336",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-mimas.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025); anything smaller than ~2.2 km is not in the model and casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mimas",
@@ -6727,15 +6900,26 @@
       "bytes": 634430,
       "sha256": "68e07ab0c65a2ad9ff9c716d3aca0b1040af4205cf158fc16f496e6e8d3b7dcd",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-mimas.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025); anything smaller than ~2.2 km is not in the model and casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mimas",
@@ -6746,15 +6930,26 @@
       "bytes": 4040287,
       "sha256": "6cd1f3ae96261b3b08ff555959c49c07c764c14323c4134eacf0e4e4df5f3c40",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-mimas.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "nao-resolvida"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025); anything smaller than ~2.2 km is not in the model and casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mimas",
@@ -6765,15 +6960,26 @@
       "bytes": 1630828,
       "sha256": "20a59966d04a3ae2eb5fac7d1f8689f075b5c359f993ffe5cbf7cde596d0e6e2",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-mimas.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025); anything smaller than ~2.2 km is not in the model and casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mimas",
@@ -6935,20 +7141,25 @@
       "sha256": "4b33f5508e987543002e5c95af455c330209000710f72433a1ae58b0c3c54a27",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "SPC V2.0 shape model of Mimas (Gaskell) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-mimas.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Shape: R. Gaskell, SPC V2.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e fica liso: aparece a bacia de Herschel, não as crateras pequenas",
+        "en": "measured by the Cassini shape model (SPC, 2025); anything smaller than ~2.2 km is not in the model and stays smooth: the Herschel basin shows, the small craters do not"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mimas",
@@ -6960,20 +7171,25 @@
       "sha256": "2efd54f6556d048d3b14d62e73f63aac6dc67d1ba57228de97d218c15887a02f",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "SPC V2.0 shape model of Mimas (Gaskell) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-mimas.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Shape: R. Gaskell, SPC V2.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e fica liso: aparece a bacia de Herschel, não as crateras pequenas",
+        "en": "measured by the Cassini shape model (SPC, 2025); anything smaller than ~2.2 km is not in the model and stays smooth: the Herschel basin shows, the small craters do not"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mimas",
@@ -6985,20 +7201,25 @@
       "sha256": "cd1dd679d019a1ecaf3cf9e56e7ca9ef10969c3bf4c8196a1fcf5f62d7628748",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "SPC V2.0 shape model of Mimas (Gaskell) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-mimas.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Shape: R. Gaskell, SPC V2.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e fica liso: aparece a bacia de Herschel, não as crateras pequenas",
+        "en": "measured by the Cassini shape model (SPC, 2025); anything smaller than ~2.2 km is not in the model and stays smooth: the Herschel basin shows, the small craters do not"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mimas",
@@ -7010,20 +7231,25 @@
       "sha256": "0baa15febc677f1d1416c0e4471f28dd88698d47bfdb8a6c51418bc664942f9a",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "SPC V2.0 shape model of Mimas (Gaskell) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-mimas.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Shape: R. Gaskell, SPC V2.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e fica liso: aparece a bacia de Herschel, não as crateras pequenas",
+        "en": "measured by the Cassini shape model (SPC, 2025); anything smaller than ~2.2 km is not in the model and stays smooth: the Herschel basin shows, the small craters do not"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mimas",
@@ -7035,20 +7261,25 @@
       "sha256": "6cc682713aa2d331100dbe228f6d5ecaf5117e34c7a853f99de17486d7e6b6ec",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "SPC V2.0 shape model of Mimas (Gaskell) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-mimas.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Shape: R. Gaskell, SPC V2.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e fica liso: aparece a bacia de Herschel, não as crateras pequenas",
+        "en": "measured by the Cassini shape model (SPC, 2025); anything smaller than ~2.2 km is not in the model and stays smooth: the Herschel basin shows, the small craters do not"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "mimas",
@@ -7060,20 +7291,25 @@
       "sha256": "94eb81ec193b61e22469d7a7264d6f776c2678d0b1f8eab78a7f3b9e84847547",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "SPC V2.0 shape model of Mimas (Gaskell) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-mimas.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Shape: R. Gaskell, SPC V2.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e fica liso: aparece a bacia de Herschel, não as crateras pequenas",
+        "en": "measured by the Cassini shape model (SPC, 2025); anything smaller than ~2.2 km is not in the model and stays smooth: the Herschel basin shows, the small craters do not"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "miranda",
@@ -10067,27 +10303,27 @@
       "arquivo": "textures/atlas/tethys/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 380389,
-      "sha256": "aafc41d128055a63fd2408acf42a579efd9a8df10cd4e0ff37af9f44f1660bfa",
+      "bytes": 381699,
+      "sha256": "345b56c97790c33de3abbe17db9d23086806be259d92954da45c8bd5e674bb8f",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de ALTURA",
-          "en": "SPC V1.0 shape model of Tethys (Gaskell) — NASA PDS — HEIGHT map"
+          "pt": "Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de ALTURA",
+          "en": "SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HEIGHT map"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-tethys.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Shape: R. Gaskell, SPC V1.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado",
+      "proveniencia": "medido",
       "nota": {
-        "pt": "modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel",
-        "en": "an SPC shape model baked into a 1024 px map: what you see is the overall shape, not detail smaller than a texel"
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 4,8 % da superfície; no resto, o que é menor que ~6 km não está no modelo e fica liso",
+        "en": "measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 4.8% of the surface; elsewhere, anything smaller than ~6 km is not in the model and stays smooth"
       },
       "seloDaNota": "medido"
     },
@@ -10097,27 +10333,27 @@
       "arquivo": "textures/atlas/tethys/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 187058,
-      "sha256": "266a5cb3bdb2b5cb831f41603b420d490174afb9ea038cd1f6fbe2fdf6609b0a",
+      "bytes": 187424,
+      "sha256": "7d1909265b706f898d59af3ac279e3876db014f4c3400462605d39b025fb0cc0",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de ALTURA",
-          "en": "SPC V1.0 shape model of Tethys (Gaskell) — NASA PDS — HEIGHT map"
+          "pt": "Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de ALTURA",
+          "en": "SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HEIGHT map"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-tethys.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Shape: R. Gaskell, SPC V1.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel",
-        "en": "an SPC shape model baked into a 1024 px map: what you see is the overall shape, not detail smaller than a texel"
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 4,8 % da superfície; no resto, o que é menor que ~6 km não está no modelo e fica liso",
+        "en": "measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 4.8% of the surface; elsewhere, anything smaller than ~6 km is not in the model and stays smooth"
       },
       "seloDaNota": "medido"
     },
@@ -10127,18 +10363,29 @@
       "arquivo": "textures/atlas/tethys/horizon_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 1023490,
-      "sha256": "4cad4fa899aa1cd0b20990a519bd61b924df8b943c45dc2b835aa34708c052a3",
+      "bytes": 1022497,
+      "sha256": "b6adc277fa9406d584f2841365202a558c0fae6ae29c350f1cfc8557a8677ada",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-tethys.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 4,8 % da superfície; no resto, o que é menor que ~6 km não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 4.8% of the surface; elsewhere, anything smaller than ~6 km casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "tethys",
@@ -10146,18 +10393,29 @@
       "arquivo": "textures/atlas/tethys/horizon_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 775452,
-      "sha256": "0dad99bdbaa4ecfe6b3223ec464736b9c7a71838a7db9442ff7a2fe4b68f682d",
+      "bytes": 773900,
+      "sha256": "b1b5f2f9656d846e6a85198ca88b8353b9d8bef7b9b411618694481d33829b93",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-tethys.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 4,8 % da superfície; no resto, o que é menor que ~6 km não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 4.8% of the surface; elsewhere, anything smaller than ~6 km casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "tethys",
@@ -10165,18 +10423,29 @@
       "arquivo": "textures/atlas/tethys/horizon.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 3751575,
-      "sha256": "4cc1337c89ccab08087392875e1309de0dfab0014e6f7e2f52e78b3a9bbd0640",
+      "bytes": 3747685,
+      "sha256": "b75a3e7688278272ef72453e06d44fdc6c9dba30265fa2715a4e59c7b7de8245",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-tethys.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "nao-resolvida"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 4,8 % da superfície; no resto, o que é menor que ~6 km não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 4.8% of the surface; elsewhere, anything smaller than ~6 km casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "tethys",
@@ -10184,18 +10453,29 @@
       "arquivo": "textures/atlas/tethys/horizon.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 2320856,
-      "sha256": "848291c4b2e747b2f8fb72dc2285336605cbed042cbafaeaa567d95568989e17",
+      "bytes": 2310460,
+      "sha256": "66b92f0ad7e8dbd0eeb136eb66e9cde6a8dd92f4acdcfe5284051759733871ab",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-tethys.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 4,8 % da superfície; no resto, o que é menor que ~6 km não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 4.8% of the surface; elsewhere, anything smaller than ~6 km casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "tethys",
@@ -10203,18 +10483,29 @@
       "arquivo": "textures/atlas/tethys/horizon2_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 1023896,
-      "sha256": "f3ff3752f3f70cc8b88e07ee20a26eca4b6e9ee7b8206e3ee845935da469d274",
+      "bytes": 1023006,
+      "sha256": "931474138a235ef2c1ce27c37ac895c1fbe54720de351260deabfdb2eb21a3a3",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-tethys.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 4,8 % da superfície; no resto, o que é menor que ~6 km não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 4.8% of the surface; elsewhere, anything smaller than ~6 km casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "tethys",
@@ -10222,18 +10513,29 @@
       "arquivo": "textures/atlas/tethys/horizon2_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 772910,
-      "sha256": "8b792492ea50ad12b9cd29794c82cd221facc19e7b5286fc9412688297036e5a",
+      "bytes": 771280,
+      "sha256": "a1d734b48f41ad816d94b17354fd3e609c6a5f6fe1684c8685203b9ad6e53d14",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-tethys.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 4,8 % da superfície; no resto, o que é menor que ~6 km não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 4.8% of the surface; elsewhere, anything smaller than ~6 km casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "tethys",
@@ -10241,18 +10543,29 @@
       "arquivo": "textures/atlas/tethys/horizon2.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 3757412,
-      "sha256": "a52bec44303667415a937d0199cae5ae9cb93b60065a088fc6157004c9640c8d",
+      "bytes": 3753559,
+      "sha256": "583822cabed07d06c0708cc191c8a9e690327873b89e918e786a2ff0beab81df",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-tethys.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "nao-resolvida"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 4,8 % da superfície; no resto, o que é menor que ~6 km não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 4.8% of the surface; elsewhere, anything smaller than ~6 km casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "tethys",
@@ -10260,18 +10573,29 @@
       "arquivo": "textures/atlas/tethys/horizon2.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 2301296,
-      "sha256": "eabbb9437dedbf88ba8abdcc3c963a4cbc6018c62d171f1d40510f3fea707f23",
+      "bytes": 2292788,
+      "sha256": "2fa5975b2d7c26a2c5c720532e89c0f46a999f6bc84e0652b77f0a5c59fa248d",
       "origem": {
-        "fonte": null,
-        "url": null,
-        "licenca": {
-          "pt": "nao-resolvida",
-          "en": "unresolved"
+        "fonte": {
+          "pt": "Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
+          "en": "SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)"
         },
-        "atribuicao": null
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-tethys.cassini.shape-models-maps/",
+        "licenca": {
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
+        }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 4,8 % da superfície; no resto, o que é menor que ~6 km não faz sombra",
+        "en": "the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 4.8% of the surface; elsewhere, anything smaller than ~6 km casts no shadow"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "tethys",
@@ -10429,24 +10753,29 @@
       "arquivo": "textures/atlas/tethys/normal_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 960958,
-      "sha256": "28a06fbf9386fa38a730ba757f317bd9f1380ee88a723f8d36214281004b10dd",
+      "bytes": 960009,
+      "sha256": "6523fff925ae98c8f715154473eb6889d854e8d6918bacef6b0751f568d433d0",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "SPC V1.0 shape model of Tethys (Gaskell) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-tethys.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Shape: R. Gaskell, SPC V1.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 4,8 % da superfície; no resto, o que é menor que ~6 km não está no modelo e fica liso",
+        "en": "measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 4.8% of the surface; elsewhere, anything smaller than ~6 km is not in the model and stays smooth"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "tethys",
@@ -10454,24 +10783,29 @@
       "arquivo": "textures/atlas/tethys/normal_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 658242,
-      "sha256": "06793c0c0951ce0c577cbea00c73d4628353506d3a3f5de06837db4994207e95",
+      "bytes": 657098,
+      "sha256": "5fa4ac625a12ca46e28011db07eb4016f30f5787f105c6c360a831cc57ca7f12",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "SPC V1.0 shape model of Tethys (Gaskell) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-tethys.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Shape: R. Gaskell, SPC V1.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 4,8 % da superfície; no resto, o que é menor que ~6 km não está no modelo e fica liso",
+        "en": "measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 4.8% of the surface; elsewhere, anything smaller than ~6 km is not in the model and stays smooth"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "tethys",
@@ -10479,24 +10813,29 @@
       "arquivo": "textures/atlas/tethys/normal_2048.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 3593363,
-      "sha256": "4df54bc54eef2b898cfbfa2184ae1d70d034c4cf0dfd4d41cab0443920d2da9e",
+      "bytes": 3587829,
+      "sha256": "86fc6b6eae457dd8851d942c42920f1cd8110633939c18200277bf77d24071ad",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "SPC V1.0 shape model of Tethys (Gaskell) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-tethys.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Shape: R. Gaskell, SPC V1.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 4,8 % da superfície; no resto, o que é menor que ~6 km não está no modelo e fica liso",
+        "en": "measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 4.8% of the surface; elsewhere, anything smaller than ~6 km is not in the model and stays smooth"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "tethys",
@@ -10504,24 +10843,29 @@
       "arquivo": "textures/atlas/tethys/normal_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 2062404,
-      "sha256": "2897dde0a13992efd394a1f01f2c66adf6970fb6c0a8d6039a4e2424dfe725a7",
+      "bytes": 2054480,
+      "sha256": "ea2f2a682a63f7c42c59b3a465c0c2f80deee3f86002bd08387f09562741a6b4",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "SPC V1.0 shape model of Tethys (Gaskell) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-tethys.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Shape: R. Gaskell, SPC V1.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 4,8 % da superfície; no resto, o que é menor que ~6 km não está no modelo e fica liso",
+        "en": "measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 4.8% of the surface; elsewhere, anything smaller than ~6 km is not in the model and stays smooth"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "tethys",
@@ -10529,24 +10873,29 @@
       "arquivo": "textures/atlas/tethys/normal.png",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 12504531,
-      "sha256": "14f3c84b36f30fddcf7d8bc88cfdebb23b19158b37fdd9d587e379d71b3f4bc2",
+      "bytes": 12477946,
+      "sha256": "091db2ea4a242caea058b000967b90e716fb65762ece97d6f87bb82b35a47662",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "SPC V1.0 shape model of Tethys (Gaskell) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-tethys.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Shape: R. Gaskell, SPC V1.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 4,8 % da superfície; no resto, o que é menor que ~6 km não está no modelo e fica liso",
+        "en": "measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 4.8% of the surface; elsewhere, anything smaller than ~6 km is not in the model and stays smooth"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "tethys",
@@ -10554,24 +10903,29 @@
       "arquivo": "textures/atlas/tethys/normal.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 5703902,
-      "sha256": "76dfbabbcf1691d1fac79141c5b971f2c6d69251dd9ca856ed09345e947dc22f",
+      "bytes": 5669412,
+      "sha256": "aa0367399da9d9bd810b5617dcfaab4da22e1b14584240f461ef35de391a7baa",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "SPC V1.0 shape model of Tethys (Gaskell) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de NORMAIS derivado da altura",
+          "en": "SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — NORMAL map derived from the height"
         },
-        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "url": "https://sbnarchive.psi.edu/pds4/cassini/satellite-tethys.cassini.shape-models-maps/",
         "licenca": {
-          "pt": "domínio público (NASA PDS)",
-          "en": "public domain (NASA PDS)"
+          "pt": "domínio público, com citação obrigatória",
+          "en": "public domain, citation required"
         },
         "atribuicao": {
-          "pt": "Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
-          "en": "Shape: R. Gaskell, SPC V1.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+          "pt": "Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.",
+          "en": "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 4,8 % da superfície; no resto, o que é menor que ~6 km não está no modelo e fica liso",
+        "en": "measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 4.8% of the surface; elsewhere, anything smaller than ~6 km is not in the model and stays smooth"
+      },
+      "seloDaNota": "medido"
     },
     {
       "corpo": "titan",

@@ -401,20 +401,40 @@ export const EM_INGLES = new Map([
 
   // ---- fontes: relevo (altura e normais) ---------------------------
   [
-    'Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de ALTURA',
-    'SPC V2.0 shape model of Mimas (Gaskell) — NASA PDS — HEIGHT map',
+    'Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de ALTURA',
+    'SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — HEIGHT map',
   ],
   [
-    'Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura',
-    'SPC V2.0 shape model of Mimas (Gaskell) — NASA PDS — NORMAL map derived from the height',
+    'Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura',
+    'SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — NORMAL map derived from the height',
   ],
   [
-    'Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de ALTURA',
-    'SPC V1.0 shape model of Tethys (Gaskell) — NASA PDS — HEIGHT map',
+    'Modelo de forma SPC de Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+    'SPC shape model of Mimas — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN) — HORIZON map (baked relief shadow, six azimuths in RGB)',
   ],
   [
-    'Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura',
-    'SPC V1.0 shape model of Tethys (Gaskell) — NASA PDS — NORMAL map derived from the height',
+    'Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de ALTURA',
+    'SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HEIGHT map',
+  ],
+  [
+    'Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de NORMAIS derivado da altura',
+    'SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — NORMAL map derived from the height',
+  ],
+  [
+    'Modelo de forma SPC de Tétis — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+    'SPC shape model of Tethys — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)',
+  ],
+  [
+    'Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de ALTURA',
+    'SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HEIGHT map',
+  ],
+  [
+    'Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de NORMAIS derivado da altura',
+    'SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — NORMAL map derived from the height',
+  ],
+  [
+    'Modelo de forma SPC de Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), com 4 modelos regionais de 235–405 m — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)',
+    'SPC shape model of Dione — Weirich, Gaskell, Palmer & Domingue 2025 (NASA PDS SBN), with 4 regional models of 235–405 m — HORIZON map (baked relief shadow, six azimuths in RGB)',
   ],
   [
     'DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de ALTURA',
@@ -423,14 +443,6 @@ export const EM_INGLES = new Map([
   [
     'DEM global de Encélado a 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — mapa de NORMAIS derivado da altura',
     'Global DEM of Enceladus at 200 m — Schenk & McKinnon 2024 (USGS Astropedia) — NORMAL map derived from the height',
-  ],
-  [
-    'DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de ALTURA',
-    'SPC DTM of Dione — Weirich et al. 2025 (NASA PDS SBN) — HEIGHT map',
-  ],
-  [
-    'DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura',
-    'SPC DTM of Dione — Weirich et al. 2025 (NASA PDS SBN) — NORMAL map derived from the height',
   ],
   // PLAN-REIA.md: o relevo de Reia é o modelo medido da Cassini, completado nesta casa
   [
@@ -513,20 +525,20 @@ export const EM_INGLES = new Map([
     'Mosaic: NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute (Paul Schenk, PIA18436). Color grading: Saturn project (Felipe Ferreira).',
   ],
   [
-    'Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).',
-    'Shape: R. Gaskell, SPC V2.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira).',
+    'Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.',
+    "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Mimas SPC Shape Model and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/y8wv-r303. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid.",
   ],
   [
-    'Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).',
-    'Shape: R. Gaskell, SPC V1.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira).',
+    'Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.',
+    "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Tethys SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/hpv0-eh61, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid.",
+  ],
+  [
+    'Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, com os 4 modelos regionais do mesmo pacote. Mapa equiretangular assado pelo app (Felipe Ferreira), como razão sobre o elipsoide do app.',
+    "Topography: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Dione SPC Shape Models and Assessment Products V1.0, NASA PDS Small Bodies Node, doi 10.26033/bxx6-g543, with the 4 regional models from the same package. Equirectangular map baked by the app (Felipe Ferreira), as a ratio over the app's ellipsoid.",
   ],
   [
     'Topografia: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distribuída pelo USGS Astrogeology (Astropedia). Mapa assado pelo app.',
     'Topography: Schenk & McKinnon 2024, Icarus 408, 115827, doi 10.1016/j.icarus.2023.115827, distributed by USGS Astrogeology (Astropedia). Map baked by the app.',
-  ],
-  [
-    'Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).',
-    'Topography: Weirich et al. 2025 (NASA PDS SBN). Map baked in the Saturn project (Felipe Ferreira).',
   ],
   [
     'Topografia: Weirich, J. R., Gaskell, R. W., Palmer, E. E. & Domingue, D. L. (2025), Rhea shape model and maps, Cassini ISS SPC, NASA PDS Small Bodies Node, doi 10.26033/tqxb-q714. Crateras menores que ~30 km: lugar e diâmetro pelo mosaico global Cassini de Paul Schenk (PIA18438, NASA/JPL-Caltech/Space Science Institute/Lunar and Planetary Institute); profundidade ESTIMADA pela lei de Aponte-Hernández et al. 2021. Montagem pelo app.',
@@ -607,18 +619,30 @@ export const EM_INGLES = new Map([
     'relevo medido: 82 % pelo DEM de 200 m (Schenk & McKinnon 2024) e 2 % pelo modelo de 100 m do polo sul (Park et al. 2024); 5 % inventado com pedaços dele; 10 % alisado; 0,6 % derivado das fotos',
     'relief measured: 82 % by the 200 m DEM (Schenk & McKinnon 2024), 2 % by the 100 m south pole model (Park et al. 2024); 5 % invented from pieces of it; 10 % smoothed; 0.6 % derived from photos',
   ],
-  // 10/10/2026 — Mimas, Tétis e Dione ganham a nota do relevo (R3)
+  // 17/10/2026 — Mimas, Tétis e Dione: o SPC de 2025 assado em casa (a mesma frase na altura e na normal, outra nos dois horizontes)
   [
-    'modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, como a bacia de Herschel, não o detalhe menor que um texel',
-    'an SPC shape model baked into a 1024 px map: what you see is the overall shape, such as the Herschel basin, not detail smaller than a texel',
+    'medido pelo modelo de forma da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e fica liso: aparece a bacia de Herschel, não as crateras pequenas',
+    'measured by the Cassini shape model (SPC, 2025); anything smaller than ~2.2 km is not in the model and stays smooth: the Herschel basin shows, the small craters do not',
   ],
   [
-    'modelo de forma SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel',
-    'an SPC shape model baked into a 1024 px map: what you see is the overall shape, not detail smaller than a texel',
+    'a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025); o que é menor que ~2,2 km não está no modelo e não faz sombra',
+    'the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025); anything smaller than ~2.2 km is not in the model and casts no shadow',
   ],
   [
-    'DTM SPC assado num mapa de 1024 px: o que se vê é a forma geral, não o detalhe menor que um texel',
-    'an SPC DTM baked into a 1024 px map: what you see is the overall shape, not detail smaller than a texel',
+    'medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 4,8 % da superfície; no resto, o que é menor que ~6 km não está no modelo e fica liso',
+    'measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 4.8% of the surface; elsewhere, anything smaller than ~6 km is not in the model and stays smooth',
+  ],
+  [
+    'a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 4,8 % da superfície; no resto, o que é menor que ~6 km não faz sombra',
+    'the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 4.8% of the surface; elsewhere, anything smaller than ~6 km casts no shadow',
+  ],
+  [
+    'medido pelo modelo de forma da Cassini (SPC, 2025), com 4 modelos regionais de 235–405 m em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não está no modelo e fica liso',
+    'measured by the Cassini shape model (SPC, 2025), with 4 regional models of 235–405 m on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km is not in the model and stays smooth',
+  ],
+  [
+    'a sombra, em seis azimutes, é assada da forma medida pelo modelo da Cassini (SPC, 2025) e de 4 modelos regionais em 3,9 % da superfície; no resto, o que é menor que ~6,4 km não faz sombra',
+    'the shadow, in six azimuths, is baked from the shape measured by the Cassini model (SPC, 2025) and from 4 regional models on 3.9% of the surface; elsewhere, anything smaller than ~6.4 km casts no shadow',
   ],
   [
     'relevo MEDIDO pela Cassini nas escalas acima de ~30 km; as crateras menores estão onde a foto da Cassini as mostra, mas a profundidade, a borda e o desgaste delas são ESTIMADOS por uma regra pelo tamanho; as escarpas finas estão só na cor, não no relevo',
