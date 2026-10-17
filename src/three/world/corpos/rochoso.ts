@@ -71,6 +71,7 @@ import { RETRATO_2026 } from '../planetas/retrato2026';
 import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import {
   GLSL_ALTURA_DO_ALBEDO,
+  GLSL_AMOSTRA_EQUIRETANGULAR,
   GLSL_BUMP_DO_ALBEDO,
   GLSL_GRAO_DO_CLOSE,
   GLSL_NORMAL_DO_MAPA,
@@ -506,6 +507,7 @@ vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_NORMAL_ELIPSOIDE}
 ${GLSL_SOMBRA_ECLIPSE}
 ${GLSL_LUZ_DA_VISITA}
+${GLSL_AMOSTRA_EQUIRETANGULAR}
 ${GLSL_ALTURA_DO_ALBEDO}
 ${GLSL_BUMP_DO_ALBEDO}
 ${GLSL_NORMAL_DO_MAPA}
@@ -517,7 +519,7 @@ void main() {
   vec3 nGeo = n;
   vec3 pElip = vLocal * uEscalaLocal;
   // o nível e a cor já vêm assados no mapa (régua dos mapas, reguaDosMapas.ts)
-  vec3 albedo = texture2D(uMapaDia, vUv).rgb;
+  vec3 albedo = amostraEquiretangular(uMapaDia, vUv).rgb;
   // B2: com mapa de relevo, a normal vem MEDIDA e o bump do albedo
   // não entra — seriam duas fontes para a mesma cratera. B1 é o
   // substituto de quem não tem mapa (uRelevoNormal == 0).
@@ -569,6 +571,7 @@ vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_NORMAL_ELIPSOIDE}
 ${GLSL_SOMBRA_ECLIPSE}
 ${GLSL_LUZ_DA_VISITA}
+${GLSL_AMOSTRA_EQUIRETANGULAR}
 ${GLSL_ALTURA_DO_ALBEDO}
 ${GLSL_BUMP_DO_ALBEDO}
 ${GLSL_NORMAL_DO_MAPA}
@@ -580,7 +583,7 @@ void main() {
   vec3 nGeo = n;
   vec3 pElip = vLocal * uEscalaLocal;
   // o nível e a cor já vêm assados no mapa (régua dos mapas, reguaDosMapas.ts)
-  vec3 albedo = texture2D(uMapaDia, vUv).rgb;
+  vec3 albedo = amostraEquiretangular(uMapaDia, vUv).rgb;
   // B2: com mapa de relevo, a normal vem MEDIDA e o bump do albedo
   // não entra — seriam duas fontes para a mesma cratera. B1 é o
   // substituto de quem não tem mapa (uRelevoNormal == 0).

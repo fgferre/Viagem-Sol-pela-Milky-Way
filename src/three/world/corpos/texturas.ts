@@ -59,6 +59,13 @@ import type { QualityLevel } from '../../core/engine';
 export const RECARGAS_ATE_DESISTIR = 2;
 
 /**
+ * O filtro ANISOTRÓPICO de todo mapa de corpo (o teto do three é o da
+ * GPU). A amostra segura no polo (`GLSL_AMOSTRA_EQUIRETANGULAR`) encolhe o
+ * gradiente em u até a razão caber neste número — os dois andam juntos.
+ */
+export const ANISOTROPIA_DOS_MAPAS = 4;
+
+/**
  * DE ONDE VEIO ESTA IMAGEM — os quatro campos que `texturas.json` guarda por
  * entrada desde a Onda 6, e que até 22/08 não tinham leitor nenhum: o
  * manifesto os escrevia e o app os ignorava. A ficha do objeto (item 74) é o
@@ -581,7 +588,7 @@ export async function carregarCanaisDoCorpo(
       if (pedido.cor) tex.colorSpace = THREE.SRGBColorSpace;
       tex.wrapS = pedido.repetirEmU ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
       tex.wrapT = THREE.ClampToEdgeWrapping;
-      tex.anisotropy = 4;
+      tex.anisotropy = ANISOTROPIA_DOS_MAPAS;
       return { canal: pedido.canal, tex };
     })
   );

@@ -68,9 +68,13 @@
       "seloDaNota": "inventado"
     },
     "vesta": {
-      "pt": "elipsoide, sem malha: a forma irregular medida pela Dawn existe publicada e o app ainda não a carrega",
-      "en": "an ellipsoid, no mesh: the irregular shape measured by Dawn is published, and the app does not load it yet",
-      "seloDaNota": "derivado"
+      "pt": "modelo de forma da equipe de gravidade da Dawn (Park et al., NASA, 12,6 milhões de placas, ~0,4 km): 97,9 % da área tem foto; na calota norte, nunca vista (2,1 %), vale a forma grande do próprio modelo, sem foto",
+      "en": "shape model of the Dawn gravity team (Park et al., NASA, 12.6 million plates, ~0.4 km): 97.9% of the area has photographs; on the north cap, never seen (2.1%), the large shape of the model itself holds, with no photograph",
+      "seloDaNota": "derivado",
+      "partes": {
+        "medido": 97.9,
+        "derivado": 2.1
+      }
     }
   },
   "entradas": [
@@ -10476,7 +10480,16 @@
           "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "a forma inteira, medida pelo modelo da equipe de gravidade da Dawn (Park et al., NASA) em 97,9 % da área; na calota norte, nunca vista (2,1 %), é a forma grande do próprio modelo, sem foto; o relevo fino não mora aqui, mora na luz",
+        "en": "the whole shape, measured by the model of the Dawn gravity team (Park et al., NASA) over 97.9% of the area; on the north cap, never seen (2.1%), it is the large shape of the model itself, with no photograph; the fine relief does not live here, it lives in the lighting"
+      },
+      "seloDaNota": "derivado",
+      "partes": {
+        "medido": 97.9,
+        "derivado": 2.1
+      }
     },
     {
       "corpo": "vesta",
@@ -10501,7 +10514,16 @@
           "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a forma inteira, medida pelo modelo da equipe de gravidade da Dawn (Park et al., NASA) em 97,9 % da área; na calota norte, nunca vista (2,1 %), é a forma grande do próprio modelo, sem foto; o relevo fino não mora aqui, mora na luz",
+        "en": "the whole shape, measured by the model of the Dawn gravity team (Park et al., NASA) over 97.9% of the area; on the north cap, never seen (2.1%), it is the large shape of the model itself, with no photograph; the fine relief does not live here, it lives in the lighting"
+      },
+      "seloDaNota": "derivado",
+      "partes": {
+        "medido": 97.9,
+        "derivado": 2.1
+      }
     },
     {
       "corpo": "vesta",
@@ -10526,7 +10548,17 @@
           "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Dawn) e do relevo fino, que por área é 97,4 % medido (DLR), 0,4 % liso nos fundos de cratera em sombra e 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Dawn) and the fine relief, which by area is 97.4% measured (DLR), 0.4% smooth in the floors of craters in shadow and 2.1% invented: measured terrain from Vesta placed on the never-seen north cap"
+      },
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 97.4,
+        "derivado": 0.4,
+        "inventado": 2.1
+      }
     },
     {
       "corpo": "vesta",
@@ -10551,7 +10583,17 @@
           "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Dawn) e do relevo fino, que por área é 97,4 % medido (DLR), 0,4 % liso nos fundos de cratera em sombra e 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Dawn) and the fine relief, which by area is 97.4% measured (DLR), 0.4% smooth in the floors of craters in shadow and 2.1% invented: measured terrain from Vesta placed on the never-seen north cap"
+      },
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 97.4,
+        "derivado": 0.4,
+        "inventado": 2.1
+      }
     },
     {
       "corpo": "vesta",
@@ -10576,7 +10618,17 @@
           "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Dawn) e do relevo fino, que por área é 97,4 % medido (DLR), 0,4 % liso nos fundos de cratera em sombra e 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Dawn) and the fine relief, which by area is 97.4% measured (DLR), 0.4% smooth in the floors of craters in shadow and 2.1% invented: measured terrain from Vesta placed on the never-seen north cap"
+      },
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 97.4,
+        "derivado": 0.4,
+        "inventado": 2.1
+      }
     },
     {
       "corpo": "vesta",
@@ -10601,7 +10653,17 @@
           "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Dawn) e do relevo fino, que por área é 97,4 % medido (DLR), 0,4 % liso nos fundos de cratera em sombra e 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Dawn) and the fine relief, which by area is 97.4% measured (DLR), 0.4% smooth in the floors of craters in shadow and 2.1% invented: measured terrain from Vesta placed on the never-seen north cap"
+      },
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 97.4,
+        "derivado": 0.4,
+        "inventado": 2.1
+      }
     },
     {
       "corpo": "vesta",
@@ -10626,7 +10688,17 @@
           "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Dawn) e do relevo fino, que por área é 97,4 % medido (DLR), 0,4 % liso nos fundos de cratera em sombra e 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Dawn) and the fine relief, which by area is 97.4% measured (DLR), 0.4% smooth in the floors of craters in shadow and 2.1% invented: measured terrain from Vesta placed on the never-seen north cap"
+      },
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 97.4,
+        "derivado": 0.4,
+        "inventado": 2.1
+      }
     },
     {
       "corpo": "vesta",
@@ -10651,7 +10723,17 @@
           "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Dawn) e do relevo fino, que por área é 97,4 % medido (DLR), 0,4 % liso nos fundos de cratera em sombra e 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Dawn) and the fine relief, which by area is 97.4% measured (DLR), 0.4% smooth in the floors of craters in shadow and 2.1% invented: measured terrain from Vesta placed on the never-seen north cap"
+      },
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 97.4,
+        "derivado": 0.4,
+        "inventado": 2.1
+      }
     },
     {
       "corpo": "vesta",
@@ -10676,7 +10758,17 @@
           "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Dawn) e do relevo fino, que por área é 97,4 % medido (DLR), 0,4 % liso nos fundos de cratera em sombra e 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Dawn) and the fine relief, which by area is 97.4% measured (DLR), 0.4% smooth in the floors of craters in shadow and 2.1% invented: measured terrain from Vesta placed on the never-seen north cap"
+      },
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 97.4,
+        "derivado": 0.4,
+        "inventado": 2.1
+      }
     },
     {
       "corpo": "vesta",
@@ -10701,7 +10793,17 @@
           "en": "Shape: R. S. Park et al., SPC model of Vesta by the Dawn gravity team (NASA/JPL, NAIF dawn_vesta_grv_icq1024_v1). Fine relief: HAMO DTM by F. Preusker et al. (DLR, NASA PDS DWNVSPG_2). Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "a sombra, em seis azimutes, é assada da forma medida (Dawn) e do relevo fino, que por área é 97,4 % medido (DLR), 0,4 % liso nos fundos de cratera em sombra e 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista",
+        "en": "the shadow, in six azimuths, is baked from the measured shape (Dawn) and the fine relief, which by area is 97.4% measured (DLR), 0.4% smooth in the floors of craters in shadow and 2.1% invented: measured terrain from Vesta placed on the never-seen north cap"
+      },
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 97.4,
+        "derivado": 0.4,
+        "inventado": 2.1
+      }
     },
     {
       "corpo": "vesta",
@@ -10726,7 +10828,17 @@
           "en": "Images: Dawn Framing Camera (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); corrected mosaics by the DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Shadow holes filled from their surroundings, reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "foto da Dawn corrigida pela DLR, sem sombra assada: a luz vem da forma e do relevo medidos, conferida contra fotos da Dawn; o inventado é terreno medido posto na calota norte e pintura por IA em fundos de cratera em sombra",
+        "en": "Dawn photograph corrected by the DLR, with no baked shadow: the light comes from the measured shape and relief, checked against Dawn photographs; the invented part is measured terrain placed on the north cap and AI painting in shadowed crater floors"
+      },
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 95.2,
+        "derivado": 2.3,
+        "inventado": 2.5
+      }
     },
     {
       "corpo": "vesta",
@@ -10751,7 +10863,17 @@
           "en": "Images: Dawn Framing Camera (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); corrected mosaics by the DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Shadow holes filled from their surroundings, reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "foto da Dawn corrigida pela DLR, sem sombra assada: a luz vem da forma e do relevo medidos, conferida contra fotos da Dawn; o inventado é terreno medido posto na calota norte e pintura por IA em fundos de cratera em sombra",
+        "en": "Dawn photograph corrected by the DLR, with no baked shadow: the light comes from the measured shape and relief, checked against Dawn photographs; the invented part is measured terrain placed on the north cap and AI painting in shadowed crater floors"
+      },
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 95.2,
+        "derivado": 2.3,
+        "inventado": 2.5
+      }
     },
     {
       "corpo": "vesta",
@@ -10776,7 +10898,17 @@
           "en": "Images: Dawn Framing Camera (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); corrected mosaics by the DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Shadow holes filled from their surroundings, reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "foto da Dawn corrigida pela DLR, sem sombra assada: a luz vem da forma e do relevo medidos, conferida contra fotos da Dawn; o inventado é terreno medido posto na calota norte e pintura por IA em fundos de cratera em sombra",
+        "en": "Dawn photograph corrected by the DLR, with no baked shadow: the light comes from the measured shape and relief, checked against Dawn photographs; the invented part is measured terrain placed on the north cap and AI painting in shadowed crater floors"
+      },
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 95.2,
+        "derivado": 2.3,
+        "inventado": 2.5
+      }
     },
     {
       "corpo": "vesta",
@@ -10801,7 +10933,17 @@
           "en": "Images: Dawn Framing Camera (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); corrected mosaics by the DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Shadow holes filled from their surroundings, reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "foto da Dawn corrigida pela DLR, sem sombra assada: a luz vem da forma e do relevo medidos, conferida contra fotos da Dawn; o inventado é terreno medido posto na calota norte e pintura por IA em fundos de cratera em sombra",
+        "en": "Dawn photograph corrected by the DLR, with no baked shadow: the light comes from the measured shape and relief, checked against Dawn photographs; the invented part is measured terrain placed on the north cap and AI painting in shadowed crater floors"
+      },
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 95.2,
+        "derivado": 2.3,
+        "inventado": 2.5
+      }
     },
     {
       "corpo": "vesta",
@@ -10826,7 +10968,17 @@
           "en": "Images: Dawn Framing Camera (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); corrected mosaics by the DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Shadow holes filled from their surroundings, reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido"
+      "proveniencia": "medido",
+      "nota": {
+        "pt": "foto da Dawn corrigida pela DLR, sem sombra assada: a luz vem da forma e do relevo medidos, conferida contra fotos da Dawn; o inventado é terreno medido posto na calota norte e pintura por IA em fundos de cratera em sombra",
+        "en": "Dawn photograph corrected by the DLR, with no baked shadow: the light comes from the measured shape and relief, checked against Dawn photographs; the invented part is measured terrain placed on the north cap and AI painting in shadowed crater floors"
+      },
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 95.2,
+        "derivado": 2.3,
+        "inventado": 2.5
+      }
     },
     {
       "corpo": "vesta",
@@ -10851,7 +11003,17 @@
           "en": "Images: Dawn Framing Camera (NASA/JPL-Caltech/UCLA/MPS/DLR/IDA); corrected mosaics by the DLR Institute of Planetary Research (NASA PDS Small Bodies Node, DWNVFC2_2). Shadow holes filled from their surroundings, reduction and color by the yardstick of the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "derivado"
+      "proveniencia": "derivado",
+      "nota": {
+        "pt": "foto da Dawn corrigida pela DLR, sem sombra assada: a luz vem da forma e do relevo medidos, conferida contra fotos da Dawn; o inventado é terreno medido posto na calota norte e pintura por IA em fundos de cratera em sombra",
+        "en": "Dawn photograph corrected by the DLR, with no baked shadow: the light comes from the measured shape and relief, checked against Dawn photographs; the invented part is measured terrain placed on the north cap and AI painting in shadowed crater floors"
+      },
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 95.2,
+        "derivado": 2.3,
+        "inventado": 2.5
+      }
     },
     {
       "corpo": "vesta",
@@ -10878,10 +11040,15 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "topografia real da Dawn, sobre um elipsoide de dois eixos iguais: Vesta tem três eixos diferentes, e os 9 km entre os dois do equador aparecem na luz como uma rampa suave",
-        "en": "real Dawn topography, over an ellipsoid with two equal axes: Vesta has three different axes, and the 9 km between the two equatorial ones show in the light as a gentle ramp"
+        "pt": "relevo fino (mapa de altura da DLR, 64 pixels por grau), por área: 97,4 % medido (Preusker et al.), 0,4 % liso nos fundos de cratera em sombra (só a forma), 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista, a medida é real e o lugar não",
+        "en": "fine relief (DLR height map, 64 pixels per degree), by area: 97.4% measured (Preusker et al.), 0.4% smooth in the floors of craters in shadow (shape only), 2.1% invented: measured terrain from Vesta placed on the never-seen north cap, the measurement is real and the place is not"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 97.4,
+        "derivado": 0.4,
+        "inventado": 2.1
+      }
     },
     {
       "corpo": "vesta",
@@ -10908,10 +11075,15 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "topografia real da Dawn, sobre um elipsoide de dois eixos iguais: Vesta tem três eixos diferentes, e os 9 km entre os dois do equador aparecem na luz como uma rampa suave",
-        "en": "real Dawn topography, over an ellipsoid with two equal axes: Vesta has three different axes, and the 9 km between the two equatorial ones show in the light as a gentle ramp"
+        "pt": "relevo fino (mapa de altura da DLR, 64 pixels por grau), por área: 97,4 % medido (Preusker et al.), 0,4 % liso nos fundos de cratera em sombra (só a forma), 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista, a medida é real e o lugar não",
+        "en": "fine relief (DLR height map, 64 pixels per degree), by area: 97.4% measured (Preusker et al.), 0.4% smooth in the floors of craters in shadow (shape only), 2.1% invented: measured terrain from Vesta placed on the never-seen north cap, the measurement is real and the place is not"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 97.4,
+        "derivado": 0.4,
+        "inventado": 2.1
+      }
     },
     {
       "corpo": "vesta",
@@ -10938,10 +11110,15 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "topografia real da Dawn, sobre um elipsoide de dois eixos iguais: Vesta tem três eixos diferentes, e os 9 km entre os dois do equador aparecem na luz como uma rampa suave",
-        "en": "real Dawn topography, over an ellipsoid with two equal axes: Vesta has three different axes, and the 9 km between the two equatorial ones show in the light as a gentle ramp"
+        "pt": "relevo fino (mapa de altura da DLR, 64 pixels por grau), por área: 97,4 % medido (Preusker et al.), 0,4 % liso nos fundos de cratera em sombra (só a forma), 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista, a medida é real e o lugar não",
+        "en": "fine relief (DLR height map, 64 pixels per degree), by area: 97.4% measured (Preusker et al.), 0.4% smooth in the floors of craters in shadow (shape only), 2.1% invented: measured terrain from Vesta placed on the never-seen north cap, the measurement is real and the place is not"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 97.4,
+        "derivado": 0.4,
+        "inventado": 2.1
+      }
     },
     {
       "corpo": "vesta",
@@ -10968,10 +11145,15 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "topografia real da Dawn, sobre um elipsoide de dois eixos iguais: Vesta tem três eixos diferentes, e os 9 km entre os dois do equador aparecem na luz como uma rampa suave",
-        "en": "real Dawn topography, over an ellipsoid with two equal axes: Vesta has three different axes, and the 9 km between the two equatorial ones show in the light as a gentle ramp"
+        "pt": "relevo fino (mapa de altura da DLR, 64 pixels por grau), por área: 97,4 % medido (Preusker et al.), 0,4 % liso nos fundos de cratera em sombra (só a forma), 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista, a medida é real e o lugar não",
+        "en": "fine relief (DLR height map, 64 pixels per degree), by area: 97.4% measured (Preusker et al.), 0.4% smooth in the floors of craters in shadow (shape only), 2.1% invented: measured terrain from Vesta placed on the never-seen north cap, the measurement is real and the place is not"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 97.4,
+        "derivado": 0.4,
+        "inventado": 2.1
+      }
     },
     {
       "corpo": "vesta",
@@ -10998,10 +11180,15 @@
       },
       "proveniencia": "medido",
       "nota": {
-        "pt": "topografia real da Dawn, sobre um elipsoide de dois eixos iguais: Vesta tem três eixos diferentes, e os 9 km entre os dois do equador aparecem na luz como uma rampa suave",
-        "en": "real Dawn topography, over an ellipsoid with two equal axes: Vesta has three different axes, and the 9 km between the two equatorial ones show in the light as a gentle ramp"
+        "pt": "relevo fino (mapa de altura da DLR, 64 pixels por grau), por área: 97,4 % medido (Preusker et al.), 0,4 % liso nos fundos de cratera em sombra (só a forma), 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista, a medida é real e o lugar não",
+        "en": "fine relief (DLR height map, 64 pixels per degree), by area: 97.4% measured (Preusker et al.), 0.4% smooth in the floors of craters in shadow (shape only), 2.1% invented: measured terrain from Vesta placed on the never-seen north cap, the measurement is real and the place is not"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 97.4,
+        "derivado": 0.4,
+        "inventado": 2.1
+      }
     },
     {
       "corpo": "vesta",
@@ -11028,10 +11215,15 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "topografia real da Dawn, sobre um elipsoide de dois eixos iguais: Vesta tem três eixos diferentes, e os 9 km entre os dois do equador aparecem na luz como uma rampa suave",
-        "en": "real Dawn topography, over an ellipsoid with two equal axes: Vesta has three different axes, and the 9 km between the two equatorial ones show in the light as a gentle ramp"
+        "pt": "relevo fino (mapa de altura da DLR, 64 pixels por grau), por área: 97,4 % medido (Preusker et al.), 0,4 % liso nos fundos de cratera em sombra (só a forma), 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista, a medida é real e o lugar não",
+        "en": "fine relief (DLR height map, 64 pixels per degree), by area: 97.4% measured (Preusker et al.), 0.4% smooth in the floors of craters in shadow (shape only), 2.1% invented: measured terrain from Vesta placed on the never-seen north cap, the measurement is real and the place is not"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 97.4,
+        "derivado": 0.4,
+        "inventado": 2.1
+      }
     }
   ]
 }

@@ -431,14 +431,15 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
   });
 
   it('forma: sem linha na tabela é o elipsoide dos eixos medidos; com linha, o selo é o da tabela', () => {
-    // A tabela "a forma" do ASSETS.md: os quatro elipsoides (ou esferas) no
+    // A tabela "a forma" do ASSETS.md: os três elipsoides (ou esferas) no
     // lugar da malha publicada, as sete esculpidas por código e as duas luas
-    // de Marte com o modelo de forma medido no mapa de altura (16/10/2026).
-    const COM_MALHA_PUBLICADA = ['vesta', 'pallas', 'hygiea', 'haumea'];
+    // de Marte e Vesta com o modelo de forma medido no mapa de altura (16/10/2026).
+    const COM_MALHA_PUBLICADA = ['pallas', 'hygiea', 'haumea'];
     const ESCULPIDAS = ['daphnis', 'atlas', 'prometheus', 'pandora', 'janus', 'epimetheus', 'phoebe'];
     const FORMA_MEDIDA: Record<string, [string, string]> = {
       phobos: ['Gaskell', 'medido'],
       deimos: ['Thomas', 'derivado'],
+      vesta: ['equipe de gravidade da Dawn', 'derivado'],
     };
     for (const id of ALVOS.filter((i) => i !== 'sun')) {
       const forma = linhaDe(id, 'forma');
@@ -641,7 +642,7 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
     expect(partes('phobos', 'cor').partes).toBeUndefined();
     // sem partes, a linha é a de sempre
     expect(partes('mars', 'relevo').partes).toBeUndefined();
-    expect(partes('vesta', 'forma').partes).toBeUndefined();
+    expect(partes('pallas', 'forma').partes).toBeUndefined();
     // em inglês, o rótulo do tier e o ponto decimal da língua
     definirIdioma('en');
     expect(partes('phobos', 'relief').partes!.map((p) => p.texto)).toEqual([

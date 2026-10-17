@@ -88,10 +88,11 @@ do doador era um mapa **de Io** (NASA 3D Io B).
 
 ## GLB/OBJ — pipeline de malha irregular
 
-`Vesta_1_100.glb`, `Haumea_1_1000.glb` (NASA), `Pallas_DAMIT_101.obj`,
+`Haumea_1_1000.glb` (NASA), `Pallas_DAMIT_101.obj`,
 `Hygiea_DAMIT_4392.obj` (DAMIT CC BY 4.0): licença fecha; a casa não
 tem `GLTFLoader`/`OBJLoader`. F7 renderiza elipsoide BODY_AXES + LS.
-Pendência **P-F7-MESH**.
+Pendência **P-F7-MESH**. Vesta saiu dela em 16/10/2026: a forma medida
+da Dawn entra como mapa de altura, sem malha (seção do relevo, abaixo).
 
 ## Licenças vivas
 
@@ -508,9 +509,10 @@ JÁ desenha —, e assá-la no mapa contaria a mesma forma **duas vezes**. Por
 isso o gerador subtrai o raio do elipsoide de revolução da casa antes de
 derivar (campo `eixosDaCasaKm`), e o que vai para o mapa é o relevo SOBRE a
 bola desenhada. Preço declarado: a subtração é axissimétrica (a equatorial é
-a média de *a* e *b*), então os 9 km entre os dois eixos equatoriais de Vesta
-ficam no resíduo como rampa suave, e a diferença entre o elipsoide da casa e
-o que a Dawn mediu (Ceres 487,3 aqui contra 482 lá) também.
+a média de *a* e *b*), então a diferença entre o elipsoide da casa e o que a
+Dawn mediu (Ceres 487,3 aqui contra 482 lá) fica no resíduo. Vesta não paga
+mais esse preço desde 16/10/2026: a forma dela é a medida (parágrafo dela,
+adiante).
 
 **Ceres**: `Ceres Dawn FC HAMO DTM Global 137m` (DLR, distribuído pelo USGS
 Astrogeology, <https://astrogeology.usgs.gov/search/map/ceres_dawn_fc_hamo_dtm_global_137m>,
@@ -566,19 +568,21 @@ Fica declarado o que NÃO foi corrigido: o mosaico não é achatado
 fotometricamente, e o brilho médio cai de 145/255 no equador para 84 no polo
 norte e 68 no sul — a luz da casa escurece de novo por cima disso.
 
-**Vesta**: `Vesta Dawn HAMO DTM Global 93m` (DLR, via USGS Astrogeology,
-<https://astrogeology.usgs.gov/search/map/vesta_dawn_hamo_dtm_global_93m>,
-domínio público), 17280×8640, **ponto flutuante de 32 bits** (o leitor por
-faixas do gerador aprendeu esse formato aqui), 597 MB, lidos por faixas. O
-TIF não traz `GDALMetadata`: o float **já é o raio em metros** (medido: 279
-km de média no equador, 224 no polo), e a esfera de 255 km do rótulo é só a
-projeção, não o corpo. Inclinação medida DEPOIS de tirar o elipsoide da casa:
-**RMS 17,44°, máxima 84,61°** — o número mais alto da casa, e Vesta é
-mesmo assim: a 4096 px cada texel dela cobre 0,41 km, e nessa régua a
-escarpa de Rheasilvia e as fossas equatoriais entram inteiras. A repartição
-por eixo (`capturas/item141-anisotropia.mjs`) dá 11,66° leste-oeste contra
-13,33° norte-sul, razão 1,15 — a média de caixa que usa 2 das 4,2 linhas de
-origem NÃO está fabricando ruído (em Ceres a razão é 1,03, em Mercúrio 0,89).
+**Vesta** (desde 16/10/2026 fora do caminho do DEM do USGS, que segue valendo
+para Ceres): a forma é o modelo SPC da equipe de gravidade da Dawn
+(R. S. Park et al., NASA/JPL, NAIF `dawn_vesta_grv_icq1024_v1`, 12,6 milhões
+de placas, ~0,4 km), posto no mapa de altura como a RAZÃO do raio sobre o
+elipsoide de `BODY_AXES` (de 0,904 a 1,066: a bacia de Rheasilvia e o pico
+central entram no contorno), o caminho de Fobos e Deimos. A normal e os dois
+horizontes são a figura desse SPC com o relevo fino do DTM HAMO da DLR
+(F. Preusker et al., NASA PDS `DWNVSPG_2`, 64 px/grau, domínio público). A
+imagem é o mosaico HAMO F2 (555 nm), corrigido fotometricamente pela DLR
+(`DWNVFC2_2`, 74 px/grau), sem sombra assada, com a cor das razões F8/F2 e
+F7/F2. A cobertura, por área, está na tabela da confissão: forma medida em
+97,9 %; relevo fino medido em 97,4 %; a calota norte, que a Dawn nunca viu
+(2,1 %), leva a forma grande do próprio modelo e quatro pedaços de terreno
+medido de Vesta, espelhados e longe de feições com nome. Os bytes de origem
+são os gerados em `capturas/vesta/etapa2/`.
 
 **OS 150° DE VESTA — medidos na 2ª fase, consertados na 3ª.** Vesta tem dois sistemas de longitude em
 circulação — o "Claudia" com que a Dawn operou e o "Claudia Double Prime" que
@@ -596,21 +600,26 @@ fase alinhou o RELEVO ao mapa de cor (borda esquerda do DEM em 30° = 180 −
 150), porque cratera e mancha casando é o que o olho vê, e deixou o conserto
 de raiz pendente.
 
-**A 3ª fase fez o conserto de raiz**: o mapa de cor é girado **−150°** na
+**A 3ª fase fez o conserto de raiz**: o mapa de cor foi girado **−150°** na
 aquisição (`baixa-texturas.mjs`, campo `giroDeLongitudeGraus`) e o relevo
-voltou ao rótulo do DEM (borda esquerda em 180°, giro 0). Agora os dois estão
-na IAU, e a face que o Sol ilumina numa data também é a certa — não só o
-casamento entre cratera e mancha. A guarda passa **sem varredura**, com a
-varredura confirmando pico em 0°. Rastro em
+voltou ao rótulo do DEM (borda esquerda em 180°, giro 0). Então os dois
+estavam na IAU, e a face que o Sol ilumina numa data também era a certa — não
+só o casamento entre cratera e mancha. A guarda passou **sem varredura**, com
+a varredura confirmando pico em 0°. Rastro em
 `capturas/item141-vesta-longitude.txt` (2ª fase) e
-`capturas/item141c-guardas.txt` (3ª).
+`capturas/item141c-guardas.txt` (3ª). Desde 16/10/2026 o giro morreu junto
+com o mosaico antigo da NASA: a foto F2 da DLR, o SPC e o DTM já vêm todos na
+longitude da IAU ("Claudia Double Prime").
 
-**Só na iluminação, como nos outros.** Nada desloca vértice: a silhueta segue
-a do elipsoide de `BODY_AXES`, a esfera continua a de 128×64, e os dois saem
-da tabela `BUMP_DO_ALBEDO` (`NORMAL_MEDIDA`, em `rochoso.ts`, é a lista de
-quem tem a normal medida). Vesta entra nessa lista de zeros AGORA: o mosaico
-dela é real, mas o que o bump lia como cratera era em boa parte a mancha de
-composição da crosta. Os TIF de origem não ficam na árvore.
+**Só na iluminação, como nos outros** (em Ceres; Vesta deixou de ser assim em
+16/10/2026). Nada desloca vértice: a silhueta segue a do elipsoide de
+`BODY_AXES`, a esfera continua a de 128×64, e Ceres sai da tabela
+`BUMP_DO_ALBEDO` (`NORMAL_MEDIDA`, em `rochoso.ts`, é a lista de quem tem a
+normal medida). Vesta segue sem bump do albedo — o mosaico dela é real, mas o
+que o bump lia como cratera era em boa parte a mancha de composição da
+crosta —, só que saiu de `NORMAL_MEDIDA` para `RELEVO_DA_LUA`: a silhueta é a
+da forma medida, não a do elipsoide, e a luz lê a normal e os horizontes
+assados dela. Os TIF de origem não ficam na árvore.
 
 ## As cinco luas de Urano e Tritão — o hemisfério que a Voyager não viu (item 147)
 
@@ -1067,6 +1076,11 @@ tocar num `.mjs`.
 | deimos/normal | derivado 13 · inventado 87 | relevo fino (20–80 m), por área: 0 % medido, 13 % derivado da foto nítida do Viking, 87 % inventado com a densidade de crateras de Deimos e a profundidade das de Fobos, pois Deimos não tem relevo fino medido |
 | deimos/horizon | derivado 13 · inventado 87 | a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos |
 | deimos/horizon2 | derivado 13 · inventado 87 | a sombra, em seis azimutes, é assada da forma medida (Thomas) e do relevo fino, que por área é 13 % derivado da foto nítida e 87 % inventado, com a profundidade das crateras vinda de Fobos |
+| vesta/map | medido 95,2 · derivado 2,3 · inventado 2,5 | foto da Dawn corrigida pela DLR, sem sombra assada: a luz vem da forma e do relevo medidos, conferida contra fotos da Dawn; o inventado é terreno medido posto na calota norte e pintura por IA em fundos de cratera em sombra |
+| vesta/height | medido 97,9 · derivado 2,1 | a forma inteira, medida pelo modelo da equipe de gravidade da Dawn (Park et al., NASA) em 97,9 % da área; na calota norte, nunca vista (2,1 %), é a forma grande do próprio modelo, sem foto; o relevo fino não mora aqui, mora na luz |
+| vesta/normal | medido 97,4 · derivado 0,4 · inventado 2,1 | relevo fino (mapa de altura da DLR, 64 pixels por grau), por área: 97,4 % medido (Preusker et al.), 0,4 % liso nos fundos de cratera em sombra (só a forma), 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista, a medida é real e o lugar não |
+| vesta/horizon | medido 97,4 · derivado 0,4 · inventado 2,1 | a sombra, em seis azimutes, é assada da forma medida (Dawn) e do relevo fino, que por área é 97,4 % medido (DLR), 0,4 % liso nos fundos de cratera em sombra e 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista |
+| vesta/horizon2 | medido 97,4 · derivado 0,4 · inventado 2,1 | a sombra, em seis azimutes, é assada da forma medida (Dawn) e do relevo fino, que por área é 97,4 % medido (DLR), 0,4 % liso nos fundos de cratera em sombra e 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista |
 | earth/normal | medido | relevo MEDIDO pelo ETOPO 2022 da NOAA, na escala real e sem exagero (no gelo polar, o topo do gelo); cada texel de ~4,9 km guarda a inclinação média medida a ~1,85 km; a água é um espelho, e as depressões secas abaixo do mar ficam no nível do mar |
 | earth/horizon | derivado | a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água |
 | earth/horizon2 | derivado | a sombra das montanhas, em seis azimutes, é assada do mesmo relevo MEDIDO (ETOPO 2022 da NOAA) na escala real, sem exagero, com o horizonte medido sobre as células de ~1,85 km da fonte e guardado como a média de cada texel de 4096 px (~9,8 km); a sombra é PARCIAL, a fração da célula que fica na sombra, por uma lei tirada dos próprios dados (a dispersão dos horizontes finos cresce com a média); a água é um espelho, como na normal: o oceano, o Cáspio, o Mar Morto e as depressões secas no nível do mar, e os cinco lagos com fundo no nível da água |
@@ -1074,7 +1088,6 @@ tocar num `.mjs`.
 | mercury/normal | medido | topografia real da MESSENGER reamostrada de 665 m para 4096 px: cada texel cobre ~3,7 km, e a média de latitude usou 2 das 5,6 linhas de origem |
 | mars/normal | medido | topografia real do MOLA a 16 pixels por grau: cada texel cobre ~5,2 km, então o que a luz desenha é o vulcão e o cânion, nunca a duna |
 | ceres/normal | medido | topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino do app, e a média de latitude usou 2 das 5,3 linhas de origem |
-| vesta/normal | medido | topografia real da Dawn, sobre um elipsoide de dois eixos iguais: Vesta tem três eixos diferentes, e os 9 km entre os dois do equador aparecem na luz como uma rampa suave |
 | pluto/normal | inventado | topografia real da New Horizons em menos da metade do globo, o hemisfério do sobrevoo e a calota norte; o resto é relevo INVENTADO por código, com pedaços do terreno medido postos pelo mapa geológico e as crateras do catálogo no lugar; o sul é palpite |
 | charon/normal | inventado | topografia real da New Horizons só no hemisfério voltado para Plutão, menos da metade do globo; o resto é relevo INVENTADO por código, com pedaços do terreno medido postos por um mapa de terrenos que é palpite e as crateras do catálogo no lugar; o sul é palpite |
 | miranda/map | inventado | o mapa inteiro é um redesenho por IA generativa: o sul segue o mosaico da Voyager 2 (1986), o norte, nunca visto, é inventado — nada aqui é medida |
@@ -1092,16 +1105,17 @@ tocar num `.mjs`.
 
 ### a forma (item 20)
 
-Três famílias. Primeiro, os quatro corpos cujo modelo de forma IRREGULAR
+Três famílias. Primeiro, os três corpos cujo modelo de forma IRREGULAR
 existe publicado e **não** é carregado: a casa não tem
 `GLTFLoader`/`OBJLoader` (pendência **P-F7-MESH**, acima) e desenha o
 elipsoide de `BODY_AXES`. Depois, as sete luas de Saturno da S3 que seguem
 esculpidas, o caso oposto — têm malha, e a malha é INVENTADA a partir das
 dimensões publicadas (item 134/S3, seção acima); Hipérion e Pã saíram (forma
-medida, tabela de cima). Por fim, Fobos e Deimos, que têm a forma MEDIDA por
-mapa de altura (modelos de Gaskell e de Thomas, sobre o elipsoide) e ficam
-aqui porque a nota diz a proporção: `medido` se toda a forma é medida, em
-partes (`medido 90 · derivado 10`) se parte é interpolada entre medidas. O selo segue a regra da tabela de cima: o corpo
+medida, tabela de cima). Por fim, Fobos, Deimos e Vesta, que têm a forma MEDIDA por
+mapa de altura (modelos de Gaskell, de Thomas e o da equipe de gravidade da
+Dawn, sobre o elipsoide) e ficam aqui porque a nota diz a proporção: `medido`
+se toda a forma é medida, em partes (`medido 90 · derivado 10`) se parte é
+interpolada entre medidas ou vem sem foto. O selo segue a regra da tabela de cima: o corpo
 redondo de verdade, desenhado pelo elipsoide dos eixos medidos, é `medido`; o
 elipsoide ou a esfera no lugar de uma forma irregular medida que a casa ainda
 não carrega é `derivado` (um ajuste das medidas, não a forma); a malha
@@ -1110,12 +1124,12 @@ elipsoide dos eixos medidos, `medido`.
 
 | corpo | selo | nota |
 | --- | --- | --- |
-| vesta | derivado | elipsoide, sem malha: a forma irregular medida pela Dawn existe publicada e o app ainda não a carrega |
 | pallas | derivado | esfera do raio médio, sem malha: a forma irregular do DAMIT existe publicada e o app ainda não a carrega |
 | hygiea | derivado | esfera do raio médio, sem malha: a forma irregular do DAMIT existe publicada e o app ainda não a carrega |
 | haumea | derivado | elipsoide, sem malha: a forma irregular medida por ocultação existe publicada e o app ainda não a carrega |
 | phobos | medido | 100 % medida pelo modelo de forma de Gaskell (3,1 milhões de placas, NASA PDS), posto sobre o elipsoide da IAU |
 | deimos | medido 90 · derivado 10 | ~90 % medida pelo modelo de forma de Thomas (Viking; grade de 5°, suavizada a 2°) e ~10 % interpolada entre as medidas |
+| vesta | medido 97,9 · derivado 2,1 | modelo de forma da equipe de gravidade da Dawn (Park et al., NASA, 12,6 milhões de placas, ~0,4 km): 97,9 % da área tem foto; na calota norte, nunca vista (2,1 %), vale a forma grande do próprio modelo, sem foto |
 | daphnis | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
 | atlas | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
 | prometheus | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |

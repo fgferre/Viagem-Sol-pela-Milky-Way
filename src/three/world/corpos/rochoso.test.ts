@@ -43,7 +43,12 @@ import {
   S_DO_TERMINADOR,
   ganhoDoGlobo,
 } from '../../../lib/atlas/luzDaVisita';
-import { GLSL_NORMAL_DO_MAPA, GLSL_SOMBRA_DO_HORIZONTE, escalaDoBumpDoAlbedo } from './corpos';
+import {
+  GLSL_AMOSTRA_EQUIRETANGULAR,
+  GLSL_NORMAL_DO_MAPA,
+  GLSL_SOMBRA_DO_HORIZONTE,
+  escalaDoBumpDoAlbedo,
+} from './corpos';
 import { direcaoLocalDeLonLat, orientacaoDoCorpoNaCena } from './orientacaoNaCena';
 import {
   type ConfigDoRochoso,
@@ -1206,8 +1211,27 @@ describe('10. o horizonte assado — só quem declara `horizonte`', () => {
     expect(ROCHOSO_PROC_LS_FRAG).not.toContain('visibilidadeDoCeu(');
     expect(GLSL_SOMBRA_DO_HORIZONTE).not.toMatch(/uAmbient|ambientLight|uPiso|fresnel/);
     // sem alfa (o Safari do iPhone o pré-multiplica): toda leitura é `.rgb`
-    expect(GLSL_SOMBRA_DO_HORIZONTE.match(/texture2D\(/g)).toHaveLength(4);
-    expect(GLSL_SOMBRA_DO_HORIZONTE.match(/texture2D\([^)]*\)\.rgb;/g)).toHaveLength(4);
+    expect(GLSL_SOMBRA_DO_HORIZONTE.match(/amostraEquiretangular\(uMapaHorizonte2?, uv\)/g)).toHaveLength(4);
+    expect(GLSL_SOMBRA_DO_HORIZONTE.match(/amostraEquiretangular\([^)]*\)\.rgb;/g)).toHaveLength(4);
+  });
+
+  it('o polo dos mapas equiretangulares: toda leitura de mapa passa pela amostra segura (16/10/2026)', () => {
+    // a estrela de cunhas de Vesta: o mip subia pela razão u/v do polo e borrava em v
+    for (const frag of [ROCHOSO_LAMBERT_FRAG, ROCHOSO_LS_FRAG]) {
+      const main = frag.slice(frag.indexOf('void main()'));
+      expect(main).toContain('vec3 albedo = amostraEquiretangular(uMapaDia, vUv).rgb;');
+      expect(frag).not.toMatch(/texture2D\(uMapa/);
+      // o guarda deixa UMA definição, venha o chunk por quantos caminhos vier
+      expect(frag.split('vec4 amostraEquiretangular(').length - 1).toBeGreaterThan(1);
+      expect(frag).toContain('#ifndef AMOSTRA_EQUIRETANGULAR');
+    }
+    expect(GLSL_NORMAL_DO_MAPA).toContain('amostraEquiretangular(uMapaNormal, uv)');
+    // fora do polo a leitura é a de antes; no polo, o gradiente em u encolhido
+    // e as leituras lado a lado que cobrem a pegada inteira
+    expect(GLSL_AMOSTRA_EQUIRETANGULAR).toContain('if (f >= 1.0) return texture2D(mapa, uv);');
+    expect(GLSL_AMOSTRA_EQUIRETANGULAR).toContain('sin(3.14159265 * uv.y)');
+    expect(GLSL_AMOSTRA_EQUIRETANGULAR).toMatch(/textureGrad\(mapa, uv \+ vec2\(/);
+    expect(GLSL_AMOSTRA_EQUIRETANGULAR).toContain('return soma / m;');
   });
 
   it('a normal do mapa e o horizonte leem o MESMO frame tangente — uma cópia só', () => {

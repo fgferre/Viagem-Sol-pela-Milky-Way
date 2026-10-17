@@ -40,6 +40,7 @@
 // não sabe que horas são (o jd é do Director) e não conhece efeméride.
 // ============================================================
 import * as THREE from 'three';
+import { ANISOTROPIA_DOS_MAPAS } from './texturas';
 
 /**
  * A CHAVE da camada. (A irmã dela, `PLANETAS_DEFAULT_ON`, morreu no M4
@@ -379,6 +380,66 @@ bool quadroTangente(vec3 n, out vec3 t, out vec3 b) {
   return true;
 }`;
 
+/** O teto de leituras por amostra perto do polo — com K = 4, cobre a pegada
+ *  inteira até a razão 32 (o leque do polo da malha densa chega a ~40). */
+const LEITURAS_NO_POLO = 8;
+
+/**
+ * A AMOSTRA EQUIRETANGULAR SEGURA NO POLO (16/10/2026, a estrela de cunhas
+ * no polo de Vesta) — toda leitura de mapa equiretangular dos corpos passa
+ * por aqui, no lugar do `texture2D` cru.
+ *
+ * O DEFEITO: perto do polo os meridianos convergem, e um pixel atravessa
+ * 1/sen θ vezes mais texels em u do que em v (θ do polo; ~40× no primeiro
+ * anel da malha densa). O filtro anisotrópico absorve só
+ * `ANISOTROPIA_DOS_MAPAS` dessa razão; o resto a GPU paga subindo o mip, e o
+ * mip é isotrópico — borra em v também, e cada triângulo do leque do polo
+ * vira uma cunha lisa (`capturas/motor-polo/`).
+ *
+ * O CONSERTO: o mesmo gradiente que a GPU usaria (`dFdx`/`dFdy` do uv),
+ * com a parte em u ENCOLHIDA pelo fator f até a razão u/v caber no filtro
+ * anisotrópico — e só a parte que é do MAPA (o 1/sen θ), nunca a do escorço
+ * da vista, que é pegada de verdade. Para não deixar texel de fora (encolher
+ * sozinho serrilha os raios do polo de Mimas), m = ⌈1/f⌉ leituras lado a
+ * lado em u cobrem a pegada inteira, e a média delas é a do pixel.
+ *
+ * FORA DE sen θ < 1/K (14,5° de cada polo, com K = 4) f é 1 exato e a
+ * leitura é o `texture2D` de antes, bit a bit. No leque do polo o uv
+ * interpolado tem a razão do anel (não a de θ), e a razão medida das
+ * derivadas segura o fator ali. Acima de `LEITURAS_NO_POLO`× a GPU volta a
+ * subir o mip, só no centro do leque.
+ *
+ * O GUARDA: a normal do mapa e o horizonte trazem este chunk cada um (a
+ * Lua só tem a normal, a Terra só o horizonte); `#ifndef` deixa uma cópia
+ * só no shader que inclui os dois.
+ */
+export const GLSL_AMOSTRA_EQUIRETANGULAR = /* glsl */ `
+#ifndef AMOSTRA_EQUIRETANGULAR
+#define AMOSTRA_EQUIRETANGULAR
+vec4 amostraEquiretangular(sampler2D mapa, vec2 uv) {
+  vec2 gx = dFdx(uv);
+  vec2 gy = dFdy(uv);
+  float eu = length(vec2(gx.x, gy.x));
+  // em texels a pegada em u é 2·|∇u| contra |∇v|: o mapa equiretangular é 2:1
+  float f = min(1.0, ${ANISOTROPIA_DOS_MAPAS.toFixed(1)} * max(length(vec2(gx.y, gy.y)) / max(2.0 * eu, 1.0e-12), sin(3.14159265 * uv.y)));
+  if (f >= 1.0) return texture2D(mapa, uv);
+  // m leituras ao longo de u, cada uma com a pegada em u encolhida para s,
+  // que juntas cobrem a pegada inteira do pixel
+  float s = max(f, 1.0 / ${LEITURAS_NO_POLO}.0);
+  float m = ceil(1.0 / s - 1.0e-3);
+  float passo = (1.0 - s) * eu / max(m - 1.0, 1.0);
+  vec2 dx = vec2(gx.x * s, gx.y);
+  vec2 dy = vec2(gy.x * s, gy.y);
+  vec4 soma = vec4(0.0);
+  for (int k = 0; k < ${LEITURAS_NO_POLO}; k++) {
+    if (float(k) >= m) break;
+    soma += textureGrad(mapa, uv + vec2((float(k) - 0.5 * (m - 1.0)) * passo, 0.0), dx, dy);
+  }
+  return soma / m;
+}
+#endif
+`;
+
 /**
  * A NORMAL DO MAPA, em espaço tangente sobre a esfera equiretangular.
  *
@@ -408,12 +469,13 @@ export const GLSL_NORMAL_DO_MAPA = /* glsl */ `
 uniform sampler2D uMapaNormal;
 uniform float uRelevoNormal;  // 0 desliga; a escala tangencial dele é 1,2
 ${GLSL_QUADRO_TANGENTE}
+${GLSL_AMOSTRA_EQUIRETANGULAR}
 vec3 normalDoMapa(vec3 n, vec2 uv) {
   if (uRelevoNormal <= 0.0) return n;
   vec3 t;
   vec3 b;
   if (!quadroTangente(n, t, b)) return n;
-  vec3 m = texture2D(uMapaNormal, uv).rgb * 2.0 - 1.0;
+  vec3 m = amostraEquiretangular(uMapaNormal, uv).rgb * 2.0 - 1.0;
   return normalize(m.x * uRelevoNormal * t + m.y * uRelevoNormal * b + m.z * n);
 }
 `;
@@ -466,6 +528,7 @@ export const GLSL_SOMBRA_DO_HORIZONTE = /* glsl */ `
 uniform sampler2D uMapaHorizonte;
 uniform sampler2D uMapaHorizonte2;
 uniform float uHorizonte;  // 0 desliga; 1 nos corpos com horizonte: true
+${GLSL_AMOSTRA_EQUIRETANGULAR}
 float solAcimaDe(float senH, float senElev) {
   return smoothstep(senH - 0.03, senH + 0.03, senElev);
 }
@@ -474,8 +537,8 @@ float senoDoHorizonte(vec3 t, vec3 b, vec2 uv, vec3 L) {
   float ly = dot(L, b);
   float az = abs(lx) + abs(ly) > 1.0e-6 ? atan(ly, lx) : 0.0;
   float s = az / 1.0471975511965976;
-  vec3 h1 = texture2D(uMapaHorizonte, uv).rgb;
-  vec3 h2 = texture2D(uMapaHorizonte2, uv).rgb;
+  vec3 h1 = amostraEquiretangular(uMapaHorizonte, uv).rgb;
+  vec3 h2 = amostraEquiretangular(uMapaHorizonte2, uv).rgb;
 #ifdef REALCE_DO_RELEVO
   // o relevo realçado da Terra (item 232, declarado): alturas ×k →
   // tan(h) ×k em cada azimute, antes da interpolação
@@ -503,8 +566,8 @@ float sombraSoDoRelevo(vec3 nGeo, vec2 uv, vec3 L) {
 }
 float visibilidadeDoCeu(vec2 uv) {
   if (uHorizonte <= 0.0) return 1.0;
-  vec3 h1 = texture2D(uMapaHorizonte, uv).rgb;
-  vec3 h2 = texture2D(uMapaHorizonte2, uv).rgb;
+  vec3 h1 = amostraEquiretangular(uMapaHorizonte, uv).rgb;
+  vec3 h2 = amostraEquiretangular(uMapaHorizonte2, uv).rgb;
   return 1.0 - (dot(h1, h1) + dot(h2, h2)) / 6.0;
 }
 `;

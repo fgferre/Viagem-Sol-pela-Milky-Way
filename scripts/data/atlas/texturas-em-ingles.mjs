@@ -706,10 +706,6 @@ export const EM_INGLES = new Map([
     'topografia real da Dawn reamostrada de 137 m para 4096 px: cada texel cobre 0,73 km, o mais fino do app, e a média de latitude usou 2 das 5,3 linhas de origem',
     'real Dawn topography resampled from 137 m to 4096 px: each texel covers 0.73 km, the finest in the app, and the latitude average used 2 of the 5.3 source rows',
   ],
-  [
-    'topografia real da Dawn, sobre um elipsoide de dois eixos iguais: Vesta tem três eixos diferentes, e os 9 km entre os dois do equador aparecem na luz como uma rampa suave',
-    'real Dawn topography, over an ellipsoid with two equal axes: Vesta has three different axes, and the 9 km between the two equatorial ones show in the light as a gentle ramp',
-  ],
   // 01–02/10/2026 — o relevo da New Horizons: medido em menos da metade do
   // globo, inventado por código no resto (PLAN-RELEVO.md)
   [
@@ -722,10 +718,6 @@ export const EM_INGLES = new Map([
   ],
 
   // ---- "a forma" (tabela `a forma` do ASSETS) ----------------------
-  [
-    'elipsoide, sem malha: a forma irregular medida pela Dawn existe publicada e o app ainda não a carrega',
-    'an ellipsoid, no mesh: the irregular shape measured by Dawn is published, and the app does not load it yet',
-  ],
   [
     'esfera do raio médio, sem malha: a forma irregular do DAMIT existe publicada e o app ainda não a carrega',
     'a sphere of the mean radius, no mesh: the irregular shape from DAMIT is published, and the app does not load it yet',
@@ -747,6 +739,28 @@ export const EM_INGLES = new Map([
   [
     '~90 % medida pelo modelo de forma de Thomas (Viking; grade de 5°, suavizada a 2°) e ~10 % interpolada entre as medidas',
     '~90% measured by the Thomas shape model (Viking; 5° grid, smoothed to 2°) and ~10% interpolated between measurements',
+  ],
+  // 16/10/2026 — Vesta sai do elipsoide: forma medida (SPC da Dawn), relevo fino
+  // do DTM da DLR e foto F2 corrigida, cada canal com as partes
+  [
+    'modelo de forma da equipe de gravidade da Dawn (Park et al., NASA, 12,6 milhões de placas, ~0,4 km): 97,9 % da área tem foto; na calota norte, nunca vista (2,1 %), vale a forma grande do próprio modelo, sem foto',
+    'shape model of the Dawn gravity team (Park et al., NASA, 12.6 million plates, ~0.4 km): 97.9% of the area has photographs; on the north cap, never seen (2.1%), the large shape of the model itself holds, with no photograph',
+  ],
+  [
+    'a forma inteira, medida pelo modelo da equipe de gravidade da Dawn (Park et al., NASA) em 97,9 % da área; na calota norte, nunca vista (2,1 %), é a forma grande do próprio modelo, sem foto; o relevo fino não mora aqui, mora na luz',
+    'the whole shape, measured by the model of the Dawn gravity team (Park et al., NASA) over 97.9% of the area; on the north cap, never seen (2.1%), it is the large shape of the model itself, with no photograph; the fine relief does not live here, it lives in the lighting',
+  ],
+  [
+    'foto da Dawn corrigida pela DLR, sem sombra assada: a luz vem da forma e do relevo medidos, conferida contra fotos da Dawn; o inventado é terreno medido posto na calota norte e pintura por IA em fundos de cratera em sombra',
+    'Dawn photograph corrected by the DLR, with no baked shadow: the light comes from the measured shape and relief, checked against Dawn photographs; the invented part is measured terrain placed on the north cap and AI painting in shadowed crater floors',
+  ],
+  [
+    'relevo fino (mapa de altura da DLR, 64 pixels por grau), por área: 97,4 % medido (Preusker et al.), 0,4 % liso nos fundos de cratera em sombra (só a forma), 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista, a medida é real e o lugar não',
+    'fine relief (DLR height map, 64 pixels per degree), by area: 97.4% measured (Preusker et al.), 0.4% smooth in the floors of craters in shadow (shape only), 2.1% invented: measured terrain from Vesta placed on the never-seen north cap, the measurement is real and the place is not',
+  ],
+  [
+    'a sombra, em seis azimutes, é assada da forma medida (Dawn) e do relevo fino, que por área é 97,4 % medido (DLR), 0,4 % liso nos fundos de cratera em sombra e 2,1 % inventado: terreno medido de Vesta posto na calota norte nunca vista',
+    'the shadow, in six azimuths, is baked from the measured shape (Dawn) and the fine relief, which by area is 97.4% measured (DLR), 0.4% smooth in the floors of craters in shadow and 2.1% invented: measured terrain from Vesta placed on the never-seen north cap',
   ],
 ]);
 
