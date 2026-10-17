@@ -1130,7 +1130,7 @@ describe('10. o horizonte assado — só quem declara `horizonte`', () => {
     return { corpo, chamadas };
   }
 
-  it('Hipérion pede cinco canais e os dois do horizonte chegam ao material; Mimas segue com três', async () => {
+  it('Hipérion pede cinco canais e os dois do horizonte chegam ao material; Encélado segue com três', async () => {
     const { corpo, chamadas } = hiperionComHorizonte();
     corpo.atualizar(quadro('hyperion', 4));
     await flush();
@@ -1143,18 +1143,21 @@ describe('10. o horizonte assado — só quem declara `horizonte`', () => {
     expect(u.uMapaHorizonte2.value).not.toBeNull();
     corpo.dispose();
 
-    const mimas = rochosoDeTeste('mimas', brdfDe('mimas'));
-    mimas.corpo.atualizar(quadro('mimas', 4));
+    const encelado = rochosoDeTeste('enceladus', brdfDe('enceladus'));
+    encelado.corpo.atualizar(quadro('enceladus', 4));
     await flush();
-    mimas.corpo.atualizar(quadro('mimas', 4));
-    const texMimas = mimas.chamadas.filter((c) => c.startsWith('tex:'));
-    expect(texMimas).toHaveLength(3);
-    expect(texMimas.some((c) => c.includes('/horizon')), 'Mimas pediu horizonte').toBe(false);
-    mimas.corpo.dispose();
+    encelado.corpo.atualizar(quadro('enceladus', 4));
+    const texEncelado = encelado.chamadas.filter((c) => c.startsWith('tex:'));
+    expect(texEncelado).toHaveLength(3);
+    expect(texEncelado.some((c) => c.includes('/horizon')), 'Encélado pediu horizonte').toBe(false);
+    encelado.corpo.dispose();
   });
 
-  it('o portão `uHorizonte` é 1 em Hipérion, 2 em Pã, Fobos, Deimos e Vesta (só do relevo) e 0 em Mimas — e só os cinco o declaram', async () => {
+  it('o portão `uHorizonte` é 1 em Hipérion, 2 em Mimas, Tétis, Dione, Pã, Fobos, Deimos e Vesta (só do relevo) e 0 em Encélado — e só os oito o declaram', async () => {
     expect(Object.keys(RELEVO_DA_LUA).filter((id) => RELEVO_DA_LUA[id]!.horizonte)).toEqual([
+      'mimas',
+      'tethys',
+      'dione',
       'hyperion',
       'pan',
       'phobos',
@@ -1162,14 +1165,18 @@ describe('10. o horizonte assado — só quem declara `horizonte`', () => {
       'vesta',
     ]);
     // a sombra só do relevo é opção da tabela: Pã (as encostas da aba a 65° do plano radial), Fobos e Deimos (12 % e
-    // 17 % da superfície a mais de 30° dele) e Vesta (6,8 %: as escarpas de Rheasilvia e Veneneia)
+    // 17 % da superfície a mais de 30° dele), Vesta (6,8 %: as escarpas de Rheasilvia e Veneneia) e Mimas (as paredes
+    // de Herschel) e Dione (as paredes dos chasmata) e Tétis (as paredes de Odisseu e de Ithaca)
     expect(Object.keys(RELEVO_DA_LUA).filter((id) => RELEVO_DA_LUA[id]!.horizonte === 'soDoRelevo')).toEqual([
+      'mimas',
+      'tethys',
+      'dione',
       'pan',
       'phobos',
       'deimos',
       'vesta',
     ]);
-    for (const [id, portao] of [['hyperion', 1], ['pan', 2], ['phobos', 2], ['deimos', 2], ['vesta', 2]] as const) {
+    for (const [id, portao] of [['hyperion', 1], ['mimas', 2], ['tethys', 2], ['dione', 2], ['pan', 2], ['phobos', 2], ['deimos', 2], ['vesta', 2]] as const) {
       const { corpo } = hiperionComHorizonte(id);
       corpo.atualizar(quadro(id, 4));
       await flush();
@@ -1179,15 +1186,15 @@ describe('10. o horizonte assado — só quem declara `horizonte`', () => {
       corpo.dispose();
     }
 
-    const { corpo: mimas } = rochosoDeTeste('mimas', brdfDe('mimas'));
-    mimas.atualizar(quadro('mimas', 4));
+    const { corpo: encelado } = rochosoDeTeste('enceladus', brdfDe('enceladus'));
+    encelado.atualizar(quadro('enceladus', 4));
     await flush();
-    mimas.atualizar(quadro('mimas', 4));
-    const uM = (malhaDaSuperficie(mimas.group).material as THREE.ShaderMaterial).uniforms;
-    expect(uM.uHorizonte.value).toBe(0);
-    expect(uM.uMapaHorizonte.value).toBeNull();
-    expect(uM.uMapaHorizonte2.value).toBeNull();
-    mimas.dispose();
+    encelado.atualizar(quadro('enceladus', 4));
+    const uE = (malhaDaSuperficie(encelado.group).material as THREE.ShaderMaterial).uniforms;
+    expect(uE.uHorizonte.value).toBe(0);
+    expect(uE.uMapaHorizonte.value).toBeNull();
+    expect(uE.uMapaHorizonte2.value).toBeNull();
+    encelado.dispose();
   });
 
   it('o Lambert e o Lommel-Seeliger chamam a sombra (na direta) e o céu (na lanterna); o procedural não', () => {

@@ -167,6 +167,9 @@ describe('relevo medido', () => {
     expect(grade.raiosComZeroHits).toBe(0);
     for (const r of grade.rKm) expect(r).toBeGreaterThan(7 * Math.cos(Math.PI / Q)); // abaixo da corda mais funda, nunca
     for (const r of grade.rKm) expect(r).toBeLessThanOrEqual(7 + 1e-9);
+    // o ICQ de Weirich et al. 2025 traz o albedo relativo numa quarta coluna: a mesma malha
+    const comAlbedo = leIcq([icq[0], ...icq.slice(1).map((l) => `${l} 0.987000000`)].join('\n'));
+    expect(Array.from(comAlbedo.vz)).toEqual(Array.from(malha.vz));
   });
 
   it('a normal POR DIREÇÃO é a de `assaNormais` longe do polo e não faz leque no polo', () => {

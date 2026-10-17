@@ -228,8 +228,8 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
  * fique no raio nominal de `BODY_AXES` (a esfera não engorda).
  *
  * SÓ OITO LUAS PORQUE SÓ OITO TÊM MAPA. Cinco saem de modelo de forma
- * MEDIDO (Mimas e Tétis por SPC de Gaskell, Encélado pelo DEM de Schenk &
- * McKinnon 2024, Dione e Reia pelos DTMs de Weirich et al. 2025 — o de Reia
+ * MEDIDO (Encélado pelo DEM de Schenk &
+ * McKinnon 2024, Mimas, Tétis, Dione e Reia pelos modelos de Weirich et al. 2025 — o de Reia
  * completado nesta casa com as crateras finas que a foto mostra,
  * `relevo-reia.mjs`); Jápeto NÃO TEM DTM público e o relevo dele é gerado por
  * código nesta casa desde o item 230, ancorado no catálogo da IAU e na foto
@@ -240,19 +240,31 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
  * Thomas, Joseph & Ansty 2018), não um relevo sobre elipsoide como as
  * outras seis; Pã é o oitavo (08/10/2026), pelo mesmo caminho.
  *
- * Mimas puxa 10 % do raio: Herschel é um terço do diâmetro dela, e é essa
+ * Mimas puxa 7 % do raio: Herschel é um terço do diâmetro dela, e é essa
  * a foto que o limbo tinha de mostrar e a esfera lisa não mostrava.
  */
 export const RELEVO_DA_LUA: Readonly<
   Record<string, { escala: number; vies: number; horizonte?: true | 'soDoRelevo'; normal?: number }>
 > = {
-  mimas: { escala: 0.10200225260766879, vies: -0.04611062610562858 },
+  // Mimas (17/10/2026, `completar-corpo` passo 2): o SPC de Weirich et al. 2025 (ICQ Q=512) como RAZÃO sobre
+  // `BODY_AXES` (0,947 a 1,019 — Herschel no fundo), pelo caminho de Fobos e Vesta (`capturas/mtd/mimas/gera.mjs`):
+  // o mapa do Saturn era o raio menos uma esfera, e a figura entrava duas vezes (a−c de 34 km no limbo, contra 16 do
+  // modelo). 'soDoRelevo' pelo motivo de Pã (as paredes de Herschel). `normal: 1`: a inclinação é a medida.
+  mimas: { escala: 0.072251, vies: -0.052826, horizonte: 'soDoRelevo', normal: 1 },
   // Encélado (R4, 13/10/2026): assado nesta casa do DEM de 200 m
   // (`gera-normal-de-dem.mjs`), a faixa inteira dele, −2,73 a +2,34 km, ÷ 256,6 km
   // (`escalaEViesDaFaixa`; o juiz do gerador cobra este par).
   enceladus: { escala: 0.01975837879968823, vies: -0.01063912704598597 },
-  tethys: { escala: 0.03387224437534385, vies: -0.016188330361680364 },
-  dione: { escala: 0.01065032313122289, vies: -0.005189992373296278 },
+  // Tétis (17/10/2026, `completar-corpo` passo 2, a receita de Mimas): o SPC de Weirich et al. 2025 (ICQ Q=512) com os
+  // quatro DTMs regionais costurados, como RAZÃO sobre `BODY_AXES` (0,9812 a 1,0103; `capturas/mtd/tetis/gera.mjs`): o
+  // mapa do Saturn tinha o polo quebrado e a figura entrava duas vezes (a−c de 24,2 km, contra 11,7 do modelo).
+  // 'soDoRelevo' pelo motivo de Pã e de Mimas (as paredes de Odisseu e de Ithaca no terminador). `normal: 1`.
+  tethys: { escala: 0.029128, vies: -0.018831, horizonte: 'soDoRelevo', normal: 1 },
+  // Dione (17/10/2026, `completar-corpo` passo 2, a receita de Mimas): o SPC de Weirich et al. 2025 (ICQ Q=512) com os
+  // quatro DTMs regionais costurados, como RAZÃO sobre `BODY_AXES` (0,9910 a 1,0066; `capturas/mtd/dione/gera.mjs`): o
+  // mapa do Saturn era a faixa de ±55° esticada até os polos, e a figura entrava duas vezes (a−c de 6,7 km, contra 3,9
+  // do modelo). 'soDoRelevo' pelo motivo de Pã e de Mimas (as paredes dos chasmata no terminador). `normal: 1`.
+  dione: { escala: 0.01558, vies: -0.008983, horizonte: 'soDoRelevo', normal: 1 },
   // S2b — Reia e Jápeto entram por ORDEM DELE (02/09): "queremos o relevo
   // sobressaído, sabemos que Reia não é uma esfera, ela é acidentada".
   // Reia (PLAN-REIA.md): o DTM medido da Cassini (Weirich et al. 2025) + as crateras finas pela foto

@@ -84,18 +84,23 @@ export function leObj(texto) {
 /**
  * O modelo em ICQ (o "implicitly connected quadrilateral" de Gaskell): Q, depois 6·(Q+1)² vértices x y z (km), face a
  * face, linha j e coluna i (índice f·(Q+1)² + j·(Q+1) + i); cada quadrilátero (i,j)–(i+1,j)–(i+1,j+1)–(i,j+1) vira dois
- * triângulos. As arestas do cubo repetem vértices entre faces — sem efeito na grade radial.
+ * triângulos. As arestas do cubo repetem vértices entre faces — sem efeito na grade radial. Três colunas (Gaskell) ou
+ * quatro (Weirich et al. 2025: x y z e o albedo relativo, que fica fora).
  */
 export function leIcq(texto) {
   const numeros = texto.trim().split(/\s+/).map(Number);
   const Q = numeros[0];
   const n = Q + 1;
   const nV = 6 * n * n;
-  if (numeros.length !== 1 + 3 * nV) throw new Error(`ICQ: Q = ${Q} pede ${3 * nV} números, o texto tem ${numeros.length - 1}`);
+  const colunas = (numeros.length - 1) / nV;
+  if (colunas !== 3 && colunas !== 4) throw new Error(`ICQ: Q = ${Q} pede ${3 * nV} ou ${4 * nV} números, o texto tem ${numeros.length - 1}`);
   const vx = new Float64Array(nV);
   const vy = new Float64Array(nV);
   const vz = new Float64Array(nV);
-  for (let i = 0; i < nV; i++) [vx[i], vy[i], vz[i]] = [numeros[1 + 3 * i], numeros[2 + 3 * i], numeros[3 + 3 * i]];
+  for (let i = 0; i < nV; i++) {
+    const p = 1 + colunas * i;
+    [vx[i], vy[i], vz[i]] = [numeros[p], numeros[p + 1], numeros[p + 2]];
+  }
   const nF = 6 * Q * Q * 2;
   const fa = new Int32Array(nF);
   const fb = new Int32Array(nF);

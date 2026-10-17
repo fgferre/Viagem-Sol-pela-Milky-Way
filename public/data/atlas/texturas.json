@@ -1772,8 +1772,8 @@
       "arquivo": "textures/atlas/dione/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 367700,
-      "sha256": "a32e350eacab5d5372c747d2e21815f39790721706f05998654de6370b4b5655",
+      "bytes": 413271,
+      "sha256": "8b8e1a46de396aa1112b8617f0365bd4be3478a68042a36e56515d6906993acb",
       "origem": {
         "fonte": {
           "pt": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de ALTURA",
@@ -1802,8 +1802,8 @@
       "arquivo": "textures/atlas/dione/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 234076,
-      "sha256": "f3fc681ae1a28f2fa329f4404f043cedd1b86b00c43603b691be6030abec184a",
+      "bytes": 226212,
+      "sha256": "ee53f06703d5100a9369ec9d1182f57bfeed9e1f686f7f08cc1c42dbafa0dde0",
       "origem": {
         "fonte": {
           "pt": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de ALTURA",
@@ -1828,12 +1828,164 @@
     },
     {
       "corpo": "dione",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/dione/horizon_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 978581,
+      "sha256": "0efc083886dcc3fb2f599b9bbe7a6e52b2fb4e61687d858363301563021ed9f9",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/dione/horizon_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 787068,
+      "sha256": "4534b6bda44d281f7907b67b604bf33996a52c6d7a70bc380f1f9861c6865187",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/dione/horizon.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 3556132,
+      "sha256": "2f7094b028ddbda8420bbb9429889bf9314f2921be367dc0d4b3c676c240c632",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "nao-resolvida"
+    },
+    {
+      "corpo": "dione",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/dione/horizon.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 2372016,
+      "sha256": "982482b8f22b14d566c5e6f4c56ed8e4e97659c3533ac5e8f1c4e7bb3830855c",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/dione/horizon2_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 981674,
+      "sha256": "92d23860dbcc34e772813e4c5cac264080a6c6991d69751c92b82b9601492468",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/dione/horizon2_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 785534,
+      "sha256": "7fdf16adff5c176da0901788d12d08a998aa250ddb009f552ab95f076ceb13ca",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/dione/horizon2.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 3569779,
+      "sha256": "b575539446b72ee8e974149801b60a4ccd1376e006ad565db359529d3aeaccd8",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "nao-resolvida"
+    },
+    {
+      "corpo": "dione",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/dione/horizon2.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 2354912,
+      "sha256": "3f51836f2fd34a1a80391a20396ec8ab74a19d679432f5725d2063a7c977ed52",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
       "canal": "map",
       "arquivo": "textures/atlas/dione/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 91701,
-      "sha256": "5d10946895cb3e5e0fd83407d02fffe24336decac57ec1b2dbd0da389ee123f8",
+      "bytes": 91722,
+      "sha256": "fca3fbc986a655ee8a6a49e3aacf3815b7b77ea53f346194243acdc402d943f5",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Dione (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -1857,8 +2009,8 @@
       "arquivo": "textures/atlas/dione/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 88020,
-      "sha256": "4bba07896265b2cf6d9587914ca4a004f548cc8e707c8b726cbbc88ccf1ef37e",
+      "bytes": 86596,
+      "sha256": "5c62970ee7937bc3801fc254aaa6e380d19ec85f75a2aa890cf4bc78f9f42d93",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Dione (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -1882,8 +2034,8 @@
       "arquivo": "textures/atlas/dione/map_2048.jpg",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 387049,
-      "sha256": "bebebba9a641d69134286337a8883054da8c9ba1c79687c1357dbbe05ea41763",
+      "bytes": 387267,
+      "sha256": "81ec2c0b6253b145c38f4a2399667c5f8fbe733d8d2774c539df6dea2437ef5e",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Dione (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -1907,8 +2059,8 @@
       "arquivo": "textures/atlas/dione/map_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 367162,
-      "sha256": "1f0bf07c7e9f9ee571539facbe122a7a9899b2a2d5974a8e007db18127f62674",
+      "bytes": 370128,
+      "sha256": "0d7429fa3fc1599c1f1efc47e4369400e909ef15a082697efb73d3708398eb1b",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Dione (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -1932,8 +2084,8 @@
       "arquivo": "textures/atlas/dione/map.jpg",
       "larguraPx": 3840,
       "alturaPx": 1920,
-      "bytes": 1551168,
-      "sha256": "885aa4e9d93f84763da7853546413a3bd824a7bebc15212d0748f04629c96828",
+      "bytes": 1543173,
+      "sha256": "2f41d728638547dfe5b1d6fe78ff50ddab42df82446b3ef3a11e231dcb2f5bd5",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Dione (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -1957,8 +2109,8 @@
       "arquivo": "textures/atlas/dione/map.webp",
       "larguraPx": 3840,
       "alturaPx": 1920,
-      "bytes": 1171764,
-      "sha256": "035ee8da94d157b435ec65695962c884faee025e03a2c319b615fe2caac3246a",
+      "bytes": 1163352,
+      "sha256": "48d7b34a731c50e361e145b8f1897a2686ba01e08eb701ab2b46084232605100",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Dione (Paul Schenk, PIA18434) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -1979,11 +2131,111 @@
     {
       "corpo": "dione",
       "canal": "normal",
-      "arquivo": "textures/atlas/dione/normal.png",
+      "arquivo": "textures/atlas/dione/normal_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 626209,
-      "sha256": "d5a44ba9da683b9b71fbefffe43515b4e46a846b305ea39185578708e5e0a98a",
+      "bytes": 899750,
+      "sha256": "81ab2342e0c6e3a85b82e0cc37ba3cbb5dbc67f46f48e0b9fe98c6b1aba4e058",
+      "origem": {
+        "fonte": {
+          "pt": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
+          "en": "SPC DTM of Dione — Weirich et al. 2025 (NASA PDS SBN) — NORMAL map derived from the height"
+        },
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).",
+          "en": "Topography: Weirich et al. 2025 (NASA PDS SBN). Map baked in the Saturn project (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
+      "canal": "normal",
+      "arquivo": "textures/atlas/dione/normal_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 643098,
+      "sha256": "2fb83b54be03de5eb195b6f7e2d0b6a0fe8b6182a53c65c43da9761a4c6a226e",
+      "origem": {
+        "fonte": {
+          "pt": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
+          "en": "SPC DTM of Dione — Weirich et al. 2025 (NASA PDS SBN) — NORMAL map derived from the height"
+        },
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).",
+          "en": "Topography: Weirich et al. 2025 (NASA PDS SBN). Map baked in the Saturn project (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
+      "canal": "normal",
+      "arquivo": "textures/atlas/dione/normal_2048.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 3386470,
+      "sha256": "b5c54328c0ca4209a6f744eaf99b663581a2400c32722a278f9b2cf93faf4787",
+      "origem": {
+        "fonte": {
+          "pt": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
+          "en": "SPC DTM of Dione — Weirich et al. 2025 (NASA PDS SBN) — NORMAL map derived from the height"
+        },
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).",
+          "en": "Topography: Weirich et al. 2025 (NASA PDS SBN). Map baked in the Saturn project (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
+      "canal": "normal",
+      "arquivo": "textures/atlas/dione/normal_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 2048140,
+      "sha256": "9587840647664876364c692108a45a463cca0f4528fe7e661edd746423e9d671",
+      "origem": {
+        "fonte": {
+          "pt": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
+          "en": "SPC DTM of Dione — Weirich et al. 2025 (NASA PDS SBN) — NORMAL map derived from the height"
+        },
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Topografia: Weirich et al. 2025 (NASA PDS SBN). Mapa assado no projeto Saturn (Felipe Ferreira).",
+          "en": "Topography: Weirich et al. 2025 (NASA PDS SBN). Map baked in the Saturn project (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "dione",
+      "canal": "normal",
+      "arquivo": "textures/atlas/dione/normal.png",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 11796796,
+      "sha256": "17d5e3ceeb4338a02c5e1c14216f982c967aeb58c3ebf499608a148f1d35c4db",
       "origem": {
         "fonte": {
           "pt": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
@@ -2005,10 +2257,10 @@
       "corpo": "dione",
       "canal": "normal",
       "arquivo": "textures/atlas/dione/normal.webp",
-      "larguraPx": 1024,
-      "alturaPx": 512,
-      "bytes": 524940,
-      "sha256": "4cfbc6ddf5860b4cc6814254e1409b5b77ac505db0601e9a7b75b72f0ce2d00e",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 5591112,
+      "sha256": "7edbebc0900d20190f1a55d4d6bb44fa41a230d2793449581f3db8049958d305",
       "origem": {
         "fonte": {
           "pt": "DTM SPC de Dione — Weirich et al. 2025 (NASA PDS SBN) — mapa de NORMAIS derivado da altura",
@@ -6317,8 +6569,8 @@
       "arquivo": "textures/atlas/mimas/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 164163,
-      "sha256": "2374f052e8f8fb761e32bebd0cf6a9d57d967e8632b2594cece4f8cf6687a825",
+      "bytes": 291611,
+      "sha256": "aa4af17393cbc9d3518e5a9f6ace5f9b3b504e8974c8dfdba773daae163da400",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de ALTURA",
@@ -6347,8 +6599,8 @@
       "arquivo": "textures/atlas/mimas/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 105518,
-      "sha256": "609431ad45d1c156e8622dcd8155d799675f36bae54f5c2878d4b9297aaa306c",
+      "bytes": 124858,
+      "sha256": "57b169ffca7035d5c42424c79697519a7a908eba86bec164da5aeed01cf014ed",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de ALTURA",
@@ -6373,12 +6625,164 @@
     },
     {
       "corpo": "mimas",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/mimas/horizon_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 1090054,
+      "sha256": "8c1cff23826e4642ceb8bf3cbab652bbbf0a92d4c245692c31a125c4791d446c",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/mimas/horizon_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 641318,
+      "sha256": "8d21cc315fee2236757474b999f4aba9355a7fb853e326dd2f90d8c9a1950fa0",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/mimas/horizon.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 4040362,
+      "sha256": "d85aba7129600bbefe082c30df1fda998d67670a87e76a4d4ca6cdf3b8d8ba59",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "nao-resolvida"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/mimas/horizon.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 1646472,
+      "sha256": "3904519b466cc57d2f0ae34be39addece7774c8329aee204c02356ab014f4567",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/mimas/horizon2_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 1090332,
+      "sha256": "35361ef0c05346a145f871841f091d140ac99b3b2eea7480f453cc68556d4336",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/mimas/horizon2_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 634430,
+      "sha256": "68e07ab0c65a2ad9ff9c716d3aca0b1040af4205cf158fc16f496e6e8d3b7dcd",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/mimas/horizon2.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 4040287,
+      "sha256": "6cd1f3ae96261b3b08ff555959c49c07c764c14323c4134eacf0e4e4df5f3c40",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "nao-resolvida"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/mimas/horizon2.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 1630828,
+      "sha256": "20a59966d04a3ae2eb5fac7d1f8689f075b5c359f993ffe5cbf7cde596d0e6e2",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
       "canal": "map",
       "arquivo": "textures/atlas/mimas/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 104950,
-      "sha256": "f2e2cc399e24728ef96974a4f502cd9e007ae669d6f1aea9df732314f5c1d743",
+      "bytes": 104978,
+      "sha256": "c296114118fc5788e155307bda7a7310f98516cb8c017616a4c914cd62cb9c2a",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -6402,8 +6806,8 @@
       "arquivo": "textures/atlas/mimas/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 93946,
-      "sha256": "5431260f1e66be10dbf652e358c7c942cf9b018e362fd66fe87ce5cf41f75263",
+      "bytes": 93708,
+      "sha256": "cb0ee217edb0dc62d3ba43600faf71df0d9d78525d32380a5f2324014f284225",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -6427,8 +6831,8 @@
       "arquivo": "textures/atlas/mimas/map_2048.jpg",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 307134,
-      "sha256": "1e95cc4c377019e1c1053cb792cc60b6cfeabeec7e7328496ba831414baca90e",
+      "bytes": 307180,
+      "sha256": "5ee1c60908beb61528857e673d903ad572602329f8d095d6a8269450132986f3",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -6452,8 +6856,8 @@
       "arquivo": "textures/atlas/mimas/map_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 240910,
-      "sha256": "834625ddfc35ebfb34d206388682fc17a8635d136fd95ee9767eb30535a319ad",
+      "bytes": 241618,
+      "sha256": "d715862c7bf35754d789e4dc87190c1da75947dc74b350c94b99ade069a052b3",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -6477,8 +6881,8 @@
       "arquivo": "textures/atlas/mimas/map.jpg",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 990580,
-      "sha256": "cd4a2c2643b56905714d173b06db0f80f272087a99e23ea443ec0e950f1549e7",
+      "bytes": 989618,
+      "sha256": "32894541794e59bcd06e499d686f52cb1aaeca188fcfc796aa9d6aab11a14bcd",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -6502,8 +6906,8 @@
       "arquivo": "textures/atlas/mimas/map.webp",
       "larguraPx": 4096,
       "alturaPx": 2048,
-      "bytes": 558534,
-      "sha256": "42a070a9faf14073a73f7872b6f2348460d437817d9fe6ae47dab940cd561220",
+      "bytes": 554124,
+      "sha256": "1e14a6236e6a452a7b2bfef39f00e2fedf7f617d2521293d3c9643416c3d2431",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Mimas (Paul Schenk, PIA18437) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -6524,11 +6928,111 @@
     {
       "corpo": "mimas",
       "canal": "normal",
-      "arquivo": "textures/atlas/mimas/normal.png",
+      "arquivo": "textures/atlas/mimas/normal_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 605393,
-      "sha256": "cde74a5206517934f99601490f1881f8157632e88c61681e52afc71686e4ce07",
+      "bytes": 1064405,
+      "sha256": "4b33f5508e987543002e5c95af455c330209000710f72433a1ae58b0c3c54a27",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
+          "en": "SPC V2.0 shape model of Mimas (Gaskell) — NASA PDS — NORMAL map derived from the height"
+        },
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
+          "en": "Shape: R. Gaskell, SPC V2.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mimas/normal_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 561486,
+      "sha256": "2efd54f6556d048d3b14d62e73f63aac6dc67d1ba57228de97d218c15887a02f",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
+          "en": "SPC V2.0 shape model of Mimas (Gaskell) — NASA PDS — NORMAL map derived from the height"
+        },
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
+          "en": "Shape: R. Gaskell, SPC V2.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mimas/normal_2048.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 3850179,
+      "sha256": "cd1dd679d019a1ecaf3cf9e56e7ca9ef10969c3bf4c8196a1fcf5f62d7628748",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
+          "en": "SPC V2.0 shape model of Mimas (Gaskell) — NASA PDS — NORMAL map derived from the height"
+        },
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
+          "en": "Shape: R. Gaskell, SPC V2.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mimas/normal_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 1577026,
+      "sha256": "0baa15febc677f1d1416c0e4471f28dd88698d47bfdb8a6c51418bc664942f9a",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
+          "en": "SPC V2.0 shape model of Mimas (Gaskell) — NASA PDS — NORMAL map derived from the height"
+        },
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. Gaskell, SPC V2.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
+          "en": "Shape: R. Gaskell, SPC V2.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "mimas",
+      "canal": "normal",
+      "arquivo": "textures/atlas/mimas/normal.png",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 12712248,
+      "sha256": "6cc682713aa2d331100dbe228f6d5ecaf5117e34c7a853f99de17486d7e6b6ec",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
@@ -6550,10 +7054,10 @@
       "corpo": "mimas",
       "canal": "normal",
       "arquivo": "textures/atlas/mimas/normal.webp",
-      "larguraPx": 1024,
-      "alturaPx": 512,
-      "bytes": 487944,
-      "sha256": "e35fde8920f3051c8a1f53ba359fa078850446933bc0b9f43149835dbd95705c",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 4255684,
+      "sha256": "94eb81ec193b61e22469d7a7264d6f776c2678d0b1f8eab78a7f3b9e84847547",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma SPC V2.0 de Mimas (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
@@ -9563,8 +10067,8 @@
       "arquivo": "textures/atlas/tethys/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 236020,
-      "sha256": "730a6b34d84c814aa37bb049e4f99712e07e8d580cc03aeaab5b72bd8f8adea9",
+      "bytes": 380389,
+      "sha256": "aafc41d128055a63fd2408acf42a579efd9a8df10cd4e0ff37af9f44f1660bfa",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de ALTURA",
@@ -9593,8 +10097,8 @@
       "arquivo": "textures/atlas/tethys/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 147308,
-      "sha256": "0ed977c8823b9bdb153f2d3cc079aa4dfe991332bafbcf1d47601a4bf9fbdbf9",
+      "bytes": 187058,
+      "sha256": "266a5cb3bdb2b5cb831f41603b420d490174afb9ea038cd1f6fbe2fdf6609b0a",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de ALTURA",
@@ -9619,12 +10123,164 @@
     },
     {
       "corpo": "tethys",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/tethys/horizon_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 1023490,
+      "sha256": "4cad4fa899aa1cd0b20990a519bd61b924df8b943c45dc2b835aa34708c052a3",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/tethys/horizon_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 775452,
+      "sha256": "0dad99bdbaa4ecfe6b3223ec464736b9c7a71838a7db9442ff7a2fe4b68f682d",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/tethys/horizon.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 3751575,
+      "sha256": "4cc1337c89ccab08087392875e1309de0dfab0014e6f7e2f52e78b3a9bbd0640",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "nao-resolvida"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "horizon",
+      "arquivo": "textures/atlas/tethys/horizon.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 2320856,
+      "sha256": "848291c4b2e747b2f8fb72dc2285336605cbed042cbafaeaa567d95568989e17",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/tethys/horizon2_1024.png",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 1023896,
+      "sha256": "f3ff3752f3f70cc8b88e07ee20a26eca4b6e9ee7b8206e3ee845935da469d274",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/tethys/horizon2_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 772910,
+      "sha256": "8b792492ea50ad12b9cd29794c82cd221facc19e7b5286fc9412688297036e5a",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/tethys/horizon2.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 3757412,
+      "sha256": "a52bec44303667415a937d0199cae5ae9cb93b60065a088fc6157004c9640c8d",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "nao-resolvida"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "horizon2",
+      "arquivo": "textures/atlas/tethys/horizon2.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 2301296,
+      "sha256": "eabbb9437dedbf88ba8abdcc3c963a4cbc6018c62d171f1d40510f3fea707f23",
+      "origem": {
+        "fonte": null,
+        "url": null,
+        "licenca": {
+          "pt": "nao-resolvida",
+          "en": "unresolved"
+        },
+        "atribuicao": null
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
       "canal": "map",
       "arquivo": "textures/atlas/tethys/map_1024.jpg",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 99291,
-      "sha256": "e828c784c601ff2c6254c7eaa569c4388416d73516cb3e2e79e2a606bb220bfa",
+      "bytes": 99206,
+      "sha256": "858e82acc32bb75b7ded0b206eecf6eacf4d30f08f7edb1586461f6facf170f2",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -9648,8 +10304,8 @@
       "arquivo": "textures/atlas/tethys/map_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 98668,
-      "sha256": "536190e672ccb6a0f9eee3bba5a8614991d182d52cc9a33a23607814ba8c2502",
+      "bytes": 98940,
+      "sha256": "5982559141440733adfaa1c98866a458585b58871160d0a63aa5f5e7ed06409d",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -9673,8 +10329,8 @@
       "arquivo": "textures/atlas/tethys/map_2048.jpg",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 406554,
-      "sha256": "b380e802e5a7c24d2179a5850d475d345664fa38c840d27f516cb030fb360b72",
+      "bytes": 406409,
+      "sha256": "42e6269b7f239cb413f8704585761422e6f463e6c75d83c8b50d85e6cd25af3d",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -9698,8 +10354,8 @@
       "arquivo": "textures/atlas/tethys/map_2048.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 392814,
-      "sha256": "e3b73a1ee9a193261dcba138b067afecf860b53bbc82c92871eb2ca694d429bb",
+      "bytes": 388986,
+      "sha256": "59beab8e397c39c8be1361960ff4a0d66688f9b2388336bfc23e329789e5e4b4",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -9723,8 +10379,8 @@
       "arquivo": "textures/atlas/tethys/map.jpg",
       "larguraPx": 3840,
       "alturaPx": 1920,
-      "bytes": 1569310,
-      "sha256": "c50a7f150725a73c0b2c9c56a604e20b01b64a7ffbc512f77d7b92a06646c993",
+      "bytes": 1564565,
+      "sha256": "65ecf4b4ebbc2b88324d19ad846c9d7cbfe5c14741a8938fc4aa0a45490a2002",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -9748,8 +10404,8 @@
       "arquivo": "textures/atlas/tethys/map.webp",
       "larguraPx": 3840,
       "alturaPx": 1920,
-      "bytes": 1152710,
-      "sha256": "6620530b706d33cc09bdcea6c1bb63010b90e30fffcecbffb00584a1a800d7db",
+      "bytes": 1147896,
+      "sha256": "e0e9e7041b9597c368f47388e1bc885f5ac00565761361800d0e09ed3b828ff5",
       "origem": {
         "fonte": {
           "pt": "Mosaico global Cassini de Tétis (Paul Schenk, PIA18439) — cor realçada IR/UV, graduada para cor natural no projeto Saturn",
@@ -9770,11 +10426,111 @@
     {
       "corpo": "tethys",
       "canal": "normal",
-      "arquivo": "textures/atlas/tethys/normal.png",
+      "arquivo": "textures/atlas/tethys/normal_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 604834,
-      "sha256": "39fd74d31595a57fc2b31f51444dcaea565395674858266d114a2b218e53c0e8",
+      "bytes": 960958,
+      "sha256": "28a06fbf9386fa38a730ba757f317bd9f1380ee88a723f8d36214281004b10dd",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
+          "en": "SPC V1.0 shape model of Tethys (Gaskell) — NASA PDS — NORMAL map derived from the height"
+        },
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
+          "en": "Shape: R. Gaskell, SPC V1.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "normal",
+      "arquivo": "textures/atlas/tethys/normal_1024.webp",
+      "larguraPx": 1024,
+      "alturaPx": 512,
+      "bytes": 658242,
+      "sha256": "06793c0c0951ce0c577cbea00c73d4628353506d3a3f5de06837db4994207e95",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
+          "en": "SPC V1.0 shape model of Tethys (Gaskell) — NASA PDS — NORMAL map derived from the height"
+        },
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
+          "en": "Shape: R. Gaskell, SPC V1.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "normal",
+      "arquivo": "textures/atlas/tethys/normal_2048.png",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 3593363,
+      "sha256": "4df54bc54eef2b898cfbfa2184ae1d70d034c4cf0dfd4d41cab0443920d2da9e",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
+          "en": "SPC V1.0 shape model of Tethys (Gaskell) — NASA PDS — NORMAL map derived from the height"
+        },
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
+          "en": "Shape: R. Gaskell, SPC V1.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "normal",
+      "arquivo": "textures/atlas/tethys/normal_2048.webp",
+      "larguraPx": 2048,
+      "alturaPx": 1024,
+      "bytes": 2062404,
+      "sha256": "2897dde0a13992efd394a1f01f2c66adf6970fb6c0a8d6039a4e2424dfe725a7",
+      "origem": {
+        "fonte": {
+          "pt": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
+          "en": "SPC V1.0 shape model of Tethys (Gaskell) — NASA PDS — NORMAL map derived from the height"
+        },
+        "url": "https://sbn.psi.edu/pds/shape-models/",
+        "licenca": {
+          "pt": "domínio público (NASA PDS)",
+          "en": "public domain (NASA PDS)"
+        },
+        "atribuicao": {
+          "pt": "Forma: R. Gaskell, SPC V1.0 (NASA PDS). Mapa equiretangular assado no projeto Saturn (Felipe Ferreira).",
+          "en": "Shape: R. Gaskell, SPC V1.0 (NASA PDS). Equirectangular map baked in the Saturn project (Felipe Ferreira)."
+        }
+      },
+      "proveniencia": "derivado"
+    },
+    {
+      "corpo": "tethys",
+      "canal": "normal",
+      "arquivo": "textures/atlas/tethys/normal.png",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 12504531,
+      "sha256": "14f3c84b36f30fddcf7d8bc88cfdebb23b19158b37fdd9d587e379d71b3f4bc2",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",
@@ -9796,10 +10552,10 @@
       "corpo": "tethys",
       "canal": "normal",
       "arquivo": "textures/atlas/tethys/normal.webp",
-      "larguraPx": 1024,
-      "alturaPx": 512,
-      "bytes": 504500,
-      "sha256": "f906a108a2fed94f944064c09c685da18cac6a78f9be7579576b41e8cb0f909e",
+      "larguraPx": 4096,
+      "alturaPx": 2048,
+      "bytes": 5703902,
+      "sha256": "76dfbabbcf1691d1fac79141c5b971f2c6d69251dd9ca856ed09345e947dc22f",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma SPC V1.0 de Tétis (Gaskell) — NASA PDS — mapa de NORMAIS derivado da altura",

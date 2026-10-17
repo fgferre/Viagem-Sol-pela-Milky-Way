@@ -528,14 +528,28 @@ export const FONTES = [
   // A foto de Mimas está 3,86° a oeste do relevo (registro de 938 janelas,
   // uniforme em longitude) e ~4° a oeste das crateras do Gazetteer, que o
   // relevo acerta (0,1°): o giro a põe no lugar. As outras quatro ficam a
-  // menos de 0,5° (capturas/latitude/mimas-longitude/).
+  // menos de 0,5° (capturas/latitude/mimas-longitude/). Contra o relevo
+  // medido novo (o ICQ de Weirich et al. 2025, 17/10/2026) a foto girada
+  // 3,86° ainda ficava 0,16° a oeste (219 janelas, desvio mediano 0,14°,
+  // latitude 0,005°): o giro passa a 4,02° (capturas/mtd/mimas/alinhamento.mjs).
+  // A de Dione está 0,61° a leste do relevo medido (o ICQ de Weirich et al.
+  // 2025 com os regionais, 17/10/2026: 472 janelas, desvio mediano 0,05°,
+  // igual em toda latitude; a latitude confere a 0,03°) — a USGS diz ter
+  // deslocado o mosaico 0,6° para oeste pela convenção da IAU: o giro a leva
+  // para oeste (capturas/mtd/dione/alinhamento.mjs). A de Tétis está 0,16° a
+  // leste do relevo medido (o ICQ de Weirich et al. 2025 com os regionais,
+  // 17/10/2026: 378 janelas, desvio mediano 0,12°, e 0,06° de resto depois de
+  // girada uma coluna; a latitude confere a 0,04°): o giro a leva para oeste
+  // — duas colunas da foto de 3840 px (capturas/mtd/tetis/alinhamento.mjs).
   ...['mimas', 'enceladus', 'tethys', 'dione', 'rhea'].map((corpo) => ({
     corpo,
     canal: 'map',
     url: 'https://github.com/fgferre/Saturn',
     arquivoLocal: `fonte/${corpo}-cor.jpg`,
     latitude: LATITUDE_DE_SCHENK[corpo],
-    ...(corpo === 'mimas' ? { giroDeLongitudeGraus: -3.86 } : {}),
+    ...(corpo === 'mimas' ? { giroDeLongitudeGraus: -4.02 } : {}),
+    ...(corpo === 'dione' ? { giroDeLongitudeGraus: 0.61 } : {}),
+    ...(corpo === 'tethys' ? { giroDeLongitudeGraus: 0.16 } : {}),
   })),
   {
     corpo: 'titan',
@@ -557,17 +571,54 @@ export const FONTES = [
   // em docs/reference/ASSETS.md e no manifest, não aqui. Jápeto saiu desta
   // lista no item 230 e Reia no PLAN-REIA.md: o relevo das duas nasce nesta
   // casa (logo abaixo). Encélado saiu na R4 da régua: altura e normal saem
-  // do DEM de 200 m por `gera-normal-de-dem.mjs`, não daqui.
-  ...['mimas', 'tethys', 'dione'].flatMap((corpo) =>
-    ['height', 'normal'].map((canal) => ({
-      corpo,
-      canal,
-      url: 'https://github.com/fgferre/Saturn',
-      nomeNoDoador: `relief/${corpo}_${canal}.png`,
-      giroDeLongitudeGraus: 180,
-      larguraDoDestino: 1024,
-    }))
-  ),
+  // do DEM de 200 m por `gera-normal-de-dem.mjs`, não daqui. Mimas saiu em
+  // 17/10/2026 (`completar-corpo`, passo 2): o mapa do Saturn tinha o polo
+  // quebrado e a figura triaxial contada duas vezes (logo abaixo). Dione saiu
+  // no mesmo dia: o mapa dela era a faixa de ±55° esticada até os polos. Tétis
+  // também (o polo quebrado a partir de ~60°N e ~65°S, a figura contada duas
+  // vezes), e a lista acabou: o relevo das seis nasce nesta casa.
+  // O RELEVO DE MIMAS (17/10/2026, `completar-corpo` passo 2, "medido
+  // primeiro"): o modelo SPC de Weirich, Gaskell, Palmer & Domingue (2025,
+  // ICQ Q=512, PDS SBN, doi 10.26033/y8wv-r303) assado nesta casa pelo
+  // caminho de Fobos e Vesta — a ALTURA 1024×512 é a razão sobre o elipsoide
+  // de `BODY_AXES` (a figura mora só na matriz), a NORMAL 4096×2048 e os dois
+  // HORIZONTES 2048×1024 são da mesma razão, por direção (o polo sem leque).
+  // As fontes LOCAIS são os bytes gerados em `capturas/mtd/mimas/` (grade.mjs,
+  // gera.mjs, instala.mjs), na convenção da casa, sem giro.
+  ...['height', 'normal', 'horizon', 'horizon2'].map((canal) => ({
+    corpo: 'mimas',
+    canal,
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/satellite-mimas.cassini.shape-models-maps/data/mimas_512_i.tab',
+    arquivoLocal: `fonte/mimas-${canal === 'height' ? 'altura' : canal}.png`,
+  })),
+  // O RELEVO DE TÉTIS (17/10/2026, `completar-corpo` passo 2, pela receita de
+  // Mimas): o ICQ Q=512 de Weirich, Gaskell, Palmer & Domingue (2025, PDS
+  // SBN, doi 10.26033/hpv0-eh61) com os quatro DTMs regionais do mesmo pacote
+  // (235–400 m) registrados no ICQ por medida (≤ 0,31 km) e costurados sem
+  // emenda (a parte larga da diferença pela membrana harmônica, o fino com
+  // rampa de 8 km para dentro) — a razão sobre `BODY_AXES`, a mesma escada de
+  // Mimas. Fontes LOCAIS de `capturas/mtd/tetis/` (grade.mjs, regionais.mjs,
+  // costura.mjs, gera.mjs, instala.mjs), na convenção da casa, sem giro.
+  ...['height', 'normal', 'horizon', 'horizon2'].map((canal) => ({
+    corpo: 'tethys',
+    canal,
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/satellite-tethys.cassini.shape-models-maps/data/global/tethys_512_i.tab',
+    arquivoLocal: `fonte/tethys-${canal === 'height' ? 'altura' : canal}.png`,
+  })),
+  // O RELEVO DE DIONE (17/10/2026, `completar-corpo` passo 2, pela receita de
+  // Mimas): o ICQ Q=512 de Weirich, Gaskell, Palmer & Domingue (2025, PDS
+  // SBN, doi 10.26033/bxx6-g543) com os quatro DTMs regionais do mesmo pacote
+  // (360–405 m) costurados sem emenda onde existem (membrana harmônica,
+  // registrados no ICQ a ≤ 0,11 km) — a razão sobre `BODY_AXES`, a mesma
+  // escada de Mimas. O mapa do Saturn era a faixa de ±55° esticada até os
+  // polos. Fontes LOCAIS de `capturas/mtd/dione/` (grade.mjs, regionais.mjs,
+  // gera.mjs, instala.mjs), na convenção da casa, sem giro.
+  ...['height', 'normal', 'horizon', 'horizon2'].map((canal) => ({
+    corpo: 'dione',
+    canal,
+    url: 'https://sbnarchive.psi.edu/pds4/cassini/satellite-dione.cassini.shape-models-maps/data/global/dione_512_i.tab',
+    arquivoLocal: `fonte/dione-${canal === 'height' ? 'altura' : canal}.png`,
+  })),
   // O RELEVO DE JÁPETO (item 230, PLAN-EUROPA-JAPETO.md): não existe DTM
   // público, e o sintético do Saturn punha a crista no antípoda. Os dois
   // canais saem do gerador `relevo-japeto.mjs` (`relevoDeJapeto`), na
