@@ -1469,10 +1469,13 @@ describe('13. As seis pequenas de Saturno — a forma medida virada para Saturno
   };
   const EIXOS = { '+x': [0, 0], '-x': [180, 0], '+y': [90, 0], '-y': [-90, 0], '+z': [0, 89.9], '-z': [0, -89.9] } as const;
   for (const id of SEIS) {
-    it(`${id}: o raio desenhado nos seis eixos é o do modelo medido (± 2 bytes)`, async () => {
+    it(`${id}: o raio desenhado nos seis eixos é o do modelo medido (± 2 bytes, mais o relevo fino onde ele entrou)`, async () => {
       const { raio, W, H } = await alturaDaFonte(id);
       const R = BODY_AXES[id]![0];
-      const tolerancia = (2 * RELEVO_DA_LUA[id]!.escala * R) / 255;
+      // Pandora e Epimeteu ganharam o relevo fino das fotos e da síntese (rms ~0,3 km): no
+      // ponto do eixo o raio pode sair até ~2,5 rms do modelo de placas, que não o tem
+      const fino = id === 'pandora' || id === 'epimetheus' ? 0.8 : 0;
+      const tolerancia = Math.max((2 * RELEVO_DA_LUA[id]!.escala * R) / 255, fino);
       for (const [eixo, [lon, lat]] of Object.entries(EIXOS)) {
         const i = Math.min(W - 1, Math.floor(((lon + 180) / 360) * W));
         const j = Math.min(H - 1, Math.floor(((90 - lat) / 180) * H));

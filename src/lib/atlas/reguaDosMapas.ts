@@ -88,8 +88,6 @@ const SCHENK = 'Cassini mosaic (Schenk)';
 const IA = 'AI painting';
 // a família de regolito procedural de `esculpido.ts`
 const ESCULPIDO = 'procedural regolith';
-// o cinza uniforme PROVISÓRIO das seis pequenas de forma medida (17/10/2026), até a pintura por IA (PLAN-LUAS-PEQUENAS.md)
-const UNIFORME = 'uniform gray (provisional)';
 
 export const REGUA_DOS_MAPAS: Readonly<Record<string, MedidaDoCorpo>> = {
   // ---- planetas, a Lua e Marte
@@ -234,36 +232,44 @@ export const REGUA_DOS_MAPAS: Readonly<Record<string, MedidaDoCorpo>> = {
     matiz: 'foto', fonteDoMapa: 'AI painting; Buratti+2019, Hedman+2020 (color)',
     confianca: 'média',
   },
-  // as seis de forma medida (17/10/2026): o mapa é o cinza uniforme provisório, tingido e nivelado por estes números
+  // as seis de forma medida (17/10/2026): o mapa de cor do acabamento (pintura por IA e fotos da Cassini; o de
+  // Prometeu só pela pintura, sem fotos), tingido e nivelado por estes números
   daphnis: {
     valor: 0.91, S: 1.57, fonteDoNivel: 'Verbiscer+2018 (p); S: HST', // p só pela Wikipédia; S das luas de gelo do HST
     BG: 0.84, RG: 1.03, fonteDaCor: 'Buratti+2019 (IR3/UV3)',
-    matiz: 'tinta', fonteDoMapa: UNIFORME, confianca: 'baixa',
+    // pintura por IA em cinza, tingida pela cor do corpo inteiro (não há cor por terreno: as UV3 saíram borradas)
+    matiz: 'tinta', fonteDoMapa: 'AI painting', confianca: 'baixa',
   },
   atlas: {
     valor: 0.625, S: 1.2, fonteDoNivel: 'Hedman+2020 (B0, 30°)',
-    BG: 0.83, RG: 1.03, fonteDaCor: 'IR3/UV3; VIMS',
-    matiz: 'tinta', fonteDoMapa: UNIFORME, confianca: 'média',
+    // medida nos quadros BL1/GRN/RED do sobrevoo de 12/04/2017 (fase 57°), levada ao IR3/UV3 de Buratti+2019 (2,4)
+    BG: 0.833, RG: 1.065, fonteDaCor: 'Cassini ISS BL1/GRN/RED; Buratti+2019',
+    // pintura por IA recolorida pela medida: o núcleo 16 % mais vermelho que a crista (Buratti+2019)
+    matiz: 'foto', fonteDoMapa: 'AI painting; Cassini ISS, Buratti+2019 (color)', confianca: 'média',
   },
   prometheus: {
     valor: 0.793, S: 1.2, fonteDoNivel: 'Hedman+2020 (B0, 30°)',
     BG: 0.74, RG: 1.04, fonteDaCor: 'VIMS',
-    matiz: 'tinta', fonteDoMapa: UNIFORME, confianca: 'média',
+    // a pintura por IA em cinza (o tom largo e o fino atenuado) com o brilho por hemisfério de Hedman+2020; as fotos
+    // da Cassini ficam para depois (o PDS barrou os downloads)
+    matiz: 'tinta', fonteDoMapa: 'AI painting', confianca: 'média',
   },
   pandora: {
     valor: 0.76, S: 1.2, fonteDoNivel: 'Hedman+2020 (B0, 30°)',
-    BG: 0.81, RG: 1.03, fonteDaCor: 'IR3/UV3; VIMS',
-    matiz: 'tinta', fonteDoMapa: UNIFORME, confianca: 'média',
+    // medida nos quadros UV3–IR3 do sobrevoo de 18/12/2016 (fase 64–76°, o espectro ajustado; IR3/UV3 2,05)
+    BG: 0.843, RG: 1.056, fonteDaCor: 'Cassini ISS UV3–IR3',
+    // o tom de fundo da pintura por IA; o relevo fino e o claro-escuro fino das fotos calibradas onde elas veem
+    matiz: 'tinta', fonteDoMapa: 'AI painting (broad tone); Cassini ISS (fine detail)', confianca: 'média',
   },
   janus: {
     valor: 0.531, S: 1.2, fonteDoNivel: 'Hedman+2020 (B0, 30°)',
     BG: 0.87, RG: 1.04, fonteDaCor: 'VIMS',
-    matiz: 'tinta', fonteDoMapa: UNIFORME, confianca: 'média',
+    matiz: 'tinta', fonteDoMapa: 'AI painting (broad tone); Cassini ISS (broad tone)', confianca: 'média',
   },
   epimetheus: {
     valor: 0.463, S: 1.2, fonteDoNivel: 'Hedman+2020 (B0, 30°)',
     BG: 0.9, RG: 1.03, fonteDaCor: 'IR3/UV3 (VIMS-equiv.)',
-    matiz: 'tinta', fonteDoMapa: UNIFORME, confianca: 'média',
+    matiz: 'tinta', fonteDoMapa: 'AI painting (broad tone); Cassini ISS (broad tone)', confianca: 'média',
   },
   // ---- Urano: as cinco (HST, Karkoschka 2001 via DeColibus+2026; Miranda baixa)
   miranda: {

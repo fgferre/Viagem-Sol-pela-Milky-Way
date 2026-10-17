@@ -690,13 +690,13 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
     expect(linhaDe('titan', 'cor').valor).toContain('emendas');
   });
 
-  it('as seis pequenas de Saturno (17/10): a forma medida no mapa de altura, e a cor confessada como cinza provisório', () => {
+  it('as seis pequenas de Saturno (17/10): a forma medida no mapa de altura, e a cor que não é foto confessa a pintura', () => {
     for (const id of ['daphnis', 'atlas', 'prometheus', 'pandora', 'janus', 'epimetheus']) {
       expect(linhaDe(id, 'forma').valor, id).toContain('mapa de altura');
-      expect(linhaDe(id, 'relevo').valor, id).toContain('Thomas, Joseph & Ansty');
-      expect(linhaDe(id, 'relevo').procedencia, id).toBe('medido');
-      expect(linhaDe(id, 'cor').valor, id).toContain('cinza uniforme');
-      expect(linhaDe(id, 'cor').procedencia, id).toBe('derivado');
+      expect(linhaDe(id, 'relevo').valor, id).toMatch(/Thomas, Joseph & Ansty|medida pela Cassini/);
+      // o cinza provisório da etapa da forma saiu: a cor é a pintura por IA (com as fotos onde elas veem)
+      expect(linhaDe(id, 'cor').valor, id).not.toContain('cinza uniforme');
+      expect(linhaDe(id, 'cor').procedencia, id).not.toBe('medido');
     }
   });
 

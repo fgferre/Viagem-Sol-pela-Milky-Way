@@ -850,44 +850,124 @@ const ORIGENS = {
   },
 
   // ---- DAFNIS, ATLAS, PROMETEU, PANDORA, JANO E EPIMETEU (17/10/2026,
-  // PLAN-LUAS-PEQUENAS.md E4/E5, a receita de Pã): a forma inteira (Cassini —
-  // Thomas, Joseph & Ansty 2018) vira mapa de altura, e a normal e os
-  // horizontes saem dela — tudo MEDIDO, sem relevo fino nem cratera
-  // inventada. A cor é PROVISÓRIA (cinza uniforme na média medida, tingido
-  // pela régua) até a pintura sobre o relevo medido: 'derivado'. As frases
-  // não dizem o nome: a ficha já é a da lua, e uma tradução serve às seis.
-  ...Object.fromEntries(
-    ['daphnis', 'atlas', 'prometheus', 'pandora', 'janus', 'epimetheus'].flatMap((corpo) => [
-      [
-        `${corpo}/map`,
-        {
+  // PLAN-LUAS-PEQUENAS.md E4/E5, a receita de Pã), uma entrada por lua e por
+  // canal. A FORMA inteira (Cassini — Thomas, Joseph & Ansty 2018) é o mapa
+  // de altura, e a normal e os horizontes saem dela: 'medido' onde só ela
+  // entra; 'derivado' onde o relevo fino das fotos calibradas da Cassini
+  // entra por cima (Atlas; Pandora e Epimeteu, que onde nenhuma foto vê têm
+  // o relevo fino inventado por código). A COR de cada uma diz de onde vem o
+  // claro e escuro (pintura por IA, fotos) e a cor (o espectro medido);
+  // Prometeu, sem fotos (o PDS barrou os downloads), só pela pintura.
+  // A confissão do que é cada coisa mora no ASSETS.md.
+  ...(() => {
+    const URL_DA_FORMA = 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/';
+    const FORMA =
+      'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61).';
+    const CANAIS_DA_FORMA = [
+      ['height', 'mapa de ALTURA'],
+      ['normal', 'mapa de NORMAIS derivado da altura'],
+      ['horizon', 'mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)'],
+      ['horizon2', 'mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)'],
+    ];
+    const LICENCA_PINTURA_E_FOTOS =
+      'imagem do autor (Felipe Ferreira), gerada com IA; fotos da Cassini em domínio público (NASA)';
+    // `relevo`: o relevo fino das fotos (quantas e de onde), ou null quando só a forma medida entra
+    const SEIS = {
+      daphnis: {
+        cor: {
           fonte:
-            'Cinza uniforme provisório no albedo e na cor médios medidos pela Cassini — não existe mapa de cor medido desta lua',
-          url: `https://science.nasa.gov/saturn/moons/${corpo}/`,
-          licenca: 'sem imagem de origem: só valores medidos publicados (Cassini, NASA)',
+            'Pintura por IA generativa do autor sobre o relevo medido de Dafnis, quase uniforme, com as cristas levadas para onde o relevo medido as põe e tingida pela cor do corpo inteiro medida pela Cassini — não existe mapa de cor medido de Dafnis',
+          licenca: 'imagem do autor (Felipe Ferreira), gerada com IA; a cor: valores medidos publicados (Cassini, NASA)',
           atribuicao:
-            'Albedo e cor médios: medidas publicadas da Cassini ISS e VIMS (Hedman et al. 2020, Verbiscer et al. 2018, Buratti et al. 2019, Filacchione et al. 2013). Mapa uniforme gerado pelo app (Felipe Ferreira).',
-          proveniencia: 'derivado',
+            'Pintura: imagem do autor (Felipe Ferreira), gerada com IA. Cor do corpo inteiro: Buratti et al. 2019 (Science), fotos da Cassini ISS. Montagem pelo app.',
         },
-      ],
-      ...[
-        ['height', 'mapa de ALTURA'],
-        ['normal', 'mapa de NORMAIS derivado da altura'],
-        ['horizon', 'mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)'],
-        ['horizon2', 'mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)'],
-      ].map(([canal, mapa]) => [
-        `${corpo}/${canal}`,
-        {
-          fonte: `Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — ${mapa}`,
-          url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
-          licenca: 'domínio público (NASA PDS)',
+        relevo: null,
+      },
+      atlas: {
+        cor: {
+          fonte:
+            'Pintura por IA generativa do autor sobre o relevo medido de Atlas, sem a sombra que o pintor copiou da planta, com o albedo fino de 14 fotos calibradas da Cassini onde elas veem e a cor medida em três filtros da Cassini (azul, verde e vermelho) — não existe mapa de cor medido de Atlas',
+          licenca: LICENCA_PINTURA_E_FOTOS,
           atribuicao:
-            'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.',
-          proveniencia: 'medido',
+            'Pintura: imagem do autor (Felipe Ferreira), gerada com IA. Albedo fino e cor: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2112) e Buratti et al. 2019 (Science). Montagem pelo app.',
         },
-      ]),
-    ])
-  ),
+        relevo: {
+          fotos: 14,
+          atribuicao: `${FORMA} Relevo fino: 14 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2112). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco; onde nenhuma foto vê, fica só a forma medida.`,
+        },
+      },
+      // sem as fotos da Cassini (ficam para depois): a pintura, a cor e o
+      // brilho por hemisfério medidos; o relevo é só a forma medida
+      prometheus: {
+        cor: {
+          fonte:
+            'Pintura por IA generativa do autor, pedida a partir dos números medidos: o tom largo e, bem atenuado, o detalhe fino, com a cor do corpo inteiro medida pela Cassini e o brilho medido de cada hemisfério — não existe mapa de cor medido de Prometeu',
+          licenca: 'imagem do autor (Felipe Ferreira), gerada com IA; a cor: valores medidos publicados (Cassini, NASA)',
+          atribuicao:
+            'Pintura: imagem do autor (Felipe Ferreira), gerada com IA (ChatGPT). Cor do corpo inteiro: Cassini VIMS (Filacchione et al. 2013); brilho por hemisfério: Hedman et al. 2020. Montagem pelo app.',
+        },
+        relevo: null,
+      },
+      pandora: {
+        cor: {
+          fonte:
+            'Pintura por IA generativa do autor, só no tom largo, com o claro e escuro fino de 26 fotos calibradas da Cassini onde elas veem, a cor medida pelas fotos da Cassini em sete filtros (do ultravioleta ao infravermelho) e o brilho medido de cada hemisfério — não existe mapa de cor medido de Pandora',
+          licenca: LICENCA_PINTURA_E_FOTOS,
+          atribuicao:
+            'Pintura: imagem do autor (Felipe Ferreira), gerada com IA. Claro e escuro fino e cor: fotos calibradas da Cassini ISS (I/F do CISSCAL; NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2015 e COISS_2109); brilho por hemisfério: Hedman et al. 2020. Montagem pelo app.',
+        },
+        relevo: {
+          fotos: 26,
+          atribuicao: `${FORMA} Relevo fino: 26 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2015 e COISS_2109). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.`,
+        },
+      },
+      janus: {
+        cor: {
+          fonte:
+            'Cor medida pela Cassini, com o claro e escuro largo de 6 fotos calibradas da Cassini onde elas veem e, no resto, o de uma pintura por IA generativa do autor, só no tom largo, e o brilho medido de cada hemisfério — não existe mapa de cor medido de Jano',
+          licenca: LICENCA_PINTURA_E_FOTOS,
+          atribuicao:
+            'Tom largo: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node) e pintura por IA do autor (Felipe Ferreira). Cor: Cassini VIMS (Filacchione et al. 2013); brilho por hemisfério: Hedman et al. 2020. Montagem pelo app.',
+        },
+        relevo: null,
+      },
+      epimetheus: {
+        cor: {
+          fonte:
+            'Cor medida pela Cassini, com o claro e escuro largo de 5 fotos calibradas da Cassini onde elas veem e, no resto, o de uma pintura por IA generativa do autor, só no tom largo, e o brilho medido de cada hemisfério — não existe mapa de cor medido de Epimeteu',
+          licenca: LICENCA_PINTURA_E_FOTOS,
+          atribuicao:
+            'Tom largo: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node) e pintura por IA do autor (Felipe Ferreira). Cor: Cassini VIMS (Filacchione et al. 2013); brilho por hemisfério: Hedman et al. 2020. Montagem pelo app.',
+        },
+        relevo: {
+          fotos: 5,
+          atribuicao: `${FORMA} Relevo fino: 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.`,
+        },
+      },
+    };
+    return Object.fromEntries(
+      Object.entries(SEIS).flatMap(([corpo, { cor, relevo }]) => [
+        [
+          `${corpo}/map`,
+          { ...cor, url: `https://science.nasa.gov/saturn/moons/${corpo}/`, proveniencia: 'derivado' },
+        ],
+        ...CANAIS_DA_FORMA.map(([canal, mapa]) => [
+          `${corpo}/${canal}`,
+          {
+            fonte: `Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — ${mapa}${
+              relevo ? `, com o relevo fino de ${relevo.fotos} fotos calibradas da Cassini onde elas veem` : ''
+            }`,
+            url: URL_DA_FORMA,
+            licenca: 'domínio público (NASA PDS)',
+            atribuicao: relevo
+              ? relevo.atribuicao
+              : `${FORMA} Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.`,
+            proveniencia: relevo ? 'derivado' : 'medido',
+          },
+        ]),
+      ])
+    );
+  })(),
 
   // ---- ITEM 140 (2026-09-03): O RELEVO DA LUA, medido. Até aqui a Lua
   // tinha SÓ o mapa de cor, e o relevo dela era derivado dele (o bump do
