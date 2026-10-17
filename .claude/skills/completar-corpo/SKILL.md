@@ -26,7 +26,10 @@ visto. Comparar sempre com o que a tela pede (o degrau 4096 px). Medir, não sup
 - máscaras prontas: `mascarasDoDado` (`relevo-inventado.mjs`), `mascarasDaCor` e `vazioDoMosaico` (`cor-inventada.mjs`);
 - a LATITUDE de cada foto (planetográfica × planetocêntrica) medida contra o relevo ou as crateras do Gazetteer antes de
   usar a foto para qualquer coisa — os mosaicos de Schenk são planetográficos (`LATITUDE_DE_SCHENK`, `lib-texturas.mjs`);
-  sem isso a foto e o relevo "não conversam" e todo passo pela foto falha;
+  sem isso a foto e o relevo "não conversam" e todo passo pela foto falha; e a LONGITUDE também (Mimas estava 3,86° a
+  oeste) — contra o Gazetteer, que é longitude OESTE nas luas de Saturno;
+- os POLOS do mapa de normais que já existe: inclinação leste com riscos radiais perto do polo = mapa quebrado (Mimas,
+  Tétis e Dione do projeto Saturn), refazer em casa — o motor não conserta;
 - ruído de estéreo no DEM: o ρ sozinho não acha; a ORIENTAÇÃO acha (relevo forte sem direção onde a foto tem direção,
   ladrilhos de borda reta) — `conserto-do-dem.mjs`;
 - procurar dado REGIONAL melhor antes de inventar (ex.: o modelo SPC do JPL para o polo sul de Encélado, `relevo-spc.mjs`,
@@ -56,9 +59,18 @@ não altura zero. Olhar o resultado numa vista POLAR e numa equatorial antes de 
 - foto em cinza ou realçada → a cor vem da régua (tinta medida) ou de `cor-inventada.mjs` (transferência guiada pelo
   relevo, corte de erro mínimo);
 - região nunca vista → pintura por IA: a referência sai de `amostra-para-ia.mjs`; o pedido segue o modelo abaixo e fica
-  salvo em `capturas/<corpo>/pedido-ia.md`; quem gera é ele no ChatGPT (ou o assistente no Chrome dele, com o sim
-  dele); entra como `scripts/data/atlas/fonte/<corpo>-ia.png`; pós-processo de emenda, registro e sombra assada (hoje
-  em `capturas/luas-pequenas/pa/pintura/gera-pintura.mjs` — promover no primeiro reuso).
+  salvo em `capturas/<corpo>/pedido-ia.md`; quem gera é o assistente no ChatGPT dele pelo Chrome (palavra dele de
+  16/10: *"Ai painting is yours"*); entra como `scripts/data/atlas/fonte/<corpo>-ia.png`; pós-processo de emenda,
+  registro e sombra assada (Pã: `capturas/luas-pequenas/pa/pintura/gera-pintura.mjs`; Deimos:
+  `../Viagem-fobos/capturas/fobos-deimos/deimos-etapa4/pos.mjs` — promover no próximo reuso);
+- foto vista só de longe (lisa) → frequências BAIXAS da foto (as manchas são reais) + ALTAS da pintura, por máscara,
+  corte na escala que a foto separa (Deimos, 16/10);
+- calota polar nunca vista → a IA faz leque no polo equiretangular: preferir terreno MEDIDO do próprio corpo
+  transplantado em quadro polar (pedaços longe de feições com nome, girados e espelhados, imagem e relevo do MESMO
+  pedaço), selo inventado (Vesta, 16/10: `../Viagem-vesta/capturas/vesta/etapa4/calota.mjs`);
+- foto com sombra assada → procurar o mosaico com correção fotométrica (a DLR fez para Vesta); a "lisura" que fica é
+  física — conferir a lei de luz contra fotos da missão na MESMA geometria antes de pensar em realçar
+  (`../Viagem-vesta/capturas/vesta/luz/`).
 
 Modelo do pedido científico (preencher com números e fontes, nunca adjetivos soltos):
 > Mapa equiretangular 2:1 de <corpo> (<raio> km), só albedo: sem sombra, sem relevo pintado, sem nuvem, sem
