@@ -396,8 +396,9 @@ trazidos com autorização dele. O material da casa é reescrito — o dele é
 
 **O que NÃO é medido, e está confessado na tela** (tabela *a forma*,
 abaixo): o campo de crateras é procedural por semente, e o meridiano-primo
-das nove é W₀ = 0 arbitrário — numa superfície inventada não há feição
-medida em que ancorá-lo. A fase orbital também não é efeméride: os
+das nove era W₀ = 0 arbitrário — numa superfície inventada não há feição
+medida em que ancorá-lo (hoje só o de Febe; as sete síncronas de forma
+medida seguem a regra da órbita, seção das seis, abaixo). A fase orbital também não é efeméride: os
 elementos são MÉDIOS na época J2000 e a propagação é de dois corpos, então
 uma lua de 0,575 dia acumula dezenas de graus de longitude em 26 anos. A
 órbita, o tamanho, a inclinação e o sentido, sim.
@@ -405,7 +406,10 @@ uma lua de 0,575 dia acumula dezenas de graus de longitude em 26 anos. A
 **Hipérion saiu daqui em 23/09/2026:** a forma dela passou a ser MEDIDA
 (Cassini), por mapa de altura — ver "Hipérion — a forma medida e os poços
 da pintura (22–23/09)", abaixo. **Pã saiu em 08/10/2026**, pelo mesmo
-caminho — ver "Pã — a forma medida e o relevo das fotos (08/10)", abaixo.
+caminho — ver "Pã — a forma medida e o relevo das fotos (08/10)", abaixo —, e
+**Dafnis, Atlas, Prometeu, Pandora, Jano e Epimeteu em 17/10/2026** — ver "As
+seis pequenas de Saturno — a forma medida (17/10)", abaixo. Só Febe segue
+esculpida.
 
 ## Fonte dos rótulos 3D (item 109)
 
@@ -1014,6 +1018,27 @@ Receita e números: `capturas/luas-pequenas/pa/f/notas.md` e `gera-f.mjs`; os
 mapas entram pela cadeia como fonte local (`fonte/pan-*.png`), sem giro e
 sem bake.
 
+## As seis pequenas de Saturno — a forma medida (17/10)
+
+Dafnis, Atlas, Prometeu, Pandora, Jano e Epimeteu saem da família esculpida
+pela receita de Pã (`PLAN-LUAS-PEQUENAS.md`, etapas E4 e E5). Forma: o mesmo
+pacote de Thomas, Joseph & Ansty (2018), DOI 10.26033/ewy3-jy61, um
+`<lua>_30k_plt.tab` por lua (~27 mil placas), no referencial da IAU
+(longitude 0 = ponto sub-Saturno). A forma inteira é o mapa de ALTURA, como
+RAZÃO sobre a esfera de `BODY_AXES` (`RELEVO_DA_LUA`): a grade radial 512×256
+suavizada a 1° de arco por direção (sem leque no polo), e a normal e os dois
+horizontes saem do mesmo raio. Nada fino é inventado: o que o modelo não
+resolve fica liso. O meridiano-primo sai da regra única das síncronas
+(`iauOrientation.ts`, `sincronaNaOrbitaDaCasa`): com o W₀ = 0 de antes, o lado
+de 180°E (240°E em Epimeteu) ficava de frente para Saturno.
+
+**A cor é provisória**: cinza uniforme no albedo e na cor médios da régua
+(`matiz: 'tinta'`), até a pintura por IA sobre a planta do relevo medido
+(`capturas/luas-pequenas/<lua>/pedido-ia.md`). Receita e números:
+`capturas/luas-pequenas/seis/` (`gera.mjs`, `instala.mjs`,
+`produtos/<lua>/numeros.json`); os mapas entram pela cadeia como fonte local
+(`fonte/<lua>-*.png`), sem giro e sem bake.
+
 ## A CONFISSÃO NA TELA — este arquivo é lido por máquina
 
 **Não edite as duas tabelas abaixo achando que são prosa.**
@@ -1103,6 +1128,36 @@ tocar num `.mjs`.
 | pan/normal | derivado 40,5 · inventado 59,5 | a forma é medida pela Cassini; o relevo fino vem de 28 fotos, que cobrem 40,5 % da superfície, e no resto, que nenhuma foto viu de dia, é INVENTADO por código; das 14 crateras, só 4 são reais — as outras 10 foram postas pela densidade medida |
 | pan/horizon | derivado 40,5 · inventado 59,5 | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida |
 | pan/horizon2 | derivado 40,5 · inventado 59,5 | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que só é medido pelas fotos em 40,5 % da superfície: no resto ele é INVENTADO, e 10 das 14 crateras foram postas pela densidade medida |
+| daphnis/map | derivado | não existe mapa de cor publicado: por ora a cor é um cinza uniforme, no albedo e na cor médios medidos pela Cassini — nenhuma mancha nem cratera clara ou escura aparece |
+| daphnis/height | medido | a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado |
+| daphnis/normal | medido | a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado |
+| daphnis/horizon | medido | a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra |
+| daphnis/horizon2 | medido | a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra |
+| atlas/map | derivado | não existe mapa de cor publicado: por ora a cor é um cinza uniforme, no albedo e na cor médios medidos pela Cassini — nenhuma mancha nem cratera clara ou escura aparece |
+| atlas/height | medido | a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado |
+| atlas/normal | medido | a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado |
+| atlas/horizon | medido | a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra |
+| atlas/horizon2 | medido | a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra |
+| prometheus/map | derivado | não existe mapa de cor publicado: por ora a cor é um cinza uniforme, no albedo e na cor médios medidos pela Cassini — nenhuma mancha nem cratera clara ou escura aparece |
+| prometheus/height | medido | a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado |
+| prometheus/normal | medido | a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado |
+| prometheus/horizon | medido | a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra |
+| prometheus/horizon2 | medido | a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra |
+| pandora/map | derivado | não existe mapa de cor publicado: por ora a cor é um cinza uniforme, no albedo e na cor médios medidos pela Cassini — nenhuma mancha nem cratera clara ou escura aparece |
+| pandora/height | medido | a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado |
+| pandora/normal | medido | a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado |
+| pandora/horizon | medido | a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra |
+| pandora/horizon2 | medido | a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra |
+| janus/map | derivado | não existe mapa de cor publicado: por ora a cor é um cinza uniforme, no albedo e na cor médios medidos pela Cassini — nenhuma mancha nem cratera clara ou escura aparece |
+| janus/height | medido | a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado |
+| janus/normal | medido | a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado |
+| janus/horizon | medido | a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra |
+| janus/horizon2 | medido | a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra |
+| epimetheus/map | derivado | não existe mapa de cor publicado: por ora a cor é um cinza uniforme, no albedo e na cor médios medidos pela Cassini — nenhuma mancha nem cratera clara ou escura aparece |
+| epimetheus/height | medido | a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado |
+| epimetheus/normal | medido | a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado |
+| epimetheus/horizon | medido | a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra |
+| epimetheus/horizon2 | medido | a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra |
 | phobos/map | derivado | a foto do Viking (mosaico global da USGS, 40 pixels por grau), em cinza, cobre 99,6 % do corpo; a cor é tingida pelo app a partir do albedo e das razões de cor medidos |
 | phobos/height | medido | a forma inteira, medida pelo modelo de Gaskell (3,1 milhões de placas, NASA PDS); o relevo fino não mora aqui, mora na luz |
 | phobos/normal | medido 21 · derivado 41 · inventado 38 | relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo |
@@ -1145,10 +1200,10 @@ tocar num `.mjs`.
 Três famílias. Primeiro, os três corpos cujo modelo de forma IRREGULAR
 existe publicado e **não** é carregado: a casa não tem
 `GLTFLoader`/`OBJLoader` (pendência **P-F7-MESH**, acima) e desenha o
-elipsoide de `BODY_AXES`. Depois, as sete luas de Saturno da S3 que seguem
-esculpidas, o caso oposto — têm malha, e a malha é INVENTADA a partir das
-dimensões publicadas (item 134/S3, seção acima); Hipérion e Pã saíram (forma
-medida, tabela de cima). Por fim, Fobos, Deimos e Vesta, que têm a forma MEDIDA por
+elipsoide de `BODY_AXES`. Depois, a lua de Saturno da S3 que segue
+esculpida (Febe), o caso oposto — tem malha, e a malha é INVENTADA a partir das
+dimensões publicadas (item 134/S3, seção acima); Hipérion, Pã, Dafnis, Atlas,
+Prometeu, Pandora, Jano e Epimeteu saíram (forma medida, tabela de cima). Por fim, Fobos, Deimos e Vesta, que têm a forma MEDIDA por
 mapa de altura (modelos de Gaskell, de Thomas e o da equipe de gravidade da
 Dawn, sobre o elipsoide) e ficam aqui porque a nota diz a proporção: `medido`
 se toda a forma é medida, em partes (`medido 90 · derivado 10`) se parte é
@@ -1167,10 +1222,4 @@ elipsoide dos eixos medidos, `medido`.
 | phobos | medido | 100 % medida pelo modelo de forma de Gaskell (3,1 milhões de placas, NASA PDS), posto sobre o elipsoide da IAU |
 | deimos | medido 90 · derivado 10 | ~90 % medida pelo modelo de forma de Thomas (Viking; grade de 5°, suavizada a 2°) e ~10 % interpolada entre as medidas |
 | vesta | medido 97,9 · derivado 2,1 | modelo de forma da equipe de gravidade da Dawn (Park et al., NASA, 12,6 milhões de placas, ~0,4 km): 97,9 % da área tem foto; na calota norte, nunca vista (2,1 %), vale a forma grande do próprio modelo, sem foto |
-| daphnis | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
-| atlas | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
-| prometheus | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
-| pandora | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
-| janus | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
-| epimetheus | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |
 | phoebe | inventado | geometria esculpida por código a partir das dimensões Cassini — não é medida ponto a ponto: as crateras são procedurais |

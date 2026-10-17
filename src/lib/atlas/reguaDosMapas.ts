@@ -88,6 +88,8 @@ const SCHENK = 'Cassini mosaic (Schenk)';
 const IA = 'AI painting';
 // a família de regolito procedural de `esculpido.ts`
 const ESCULPIDO = 'procedural regolith';
+// o cinza uniforme PROVISÓRIO das seis pequenas de forma medida (17/10/2026), até a pintura por IA (PLAN-LUAS-PEQUENAS.md)
+const UNIFORME = 'uniform gray (provisional)';
 
 export const REGUA_DOS_MAPAS: Readonly<Record<string, MedidaDoCorpo>> = {
   // ---- planetas, a Lua e Marte
@@ -232,35 +234,36 @@ export const REGUA_DOS_MAPAS: Readonly<Record<string, MedidaDoCorpo>> = {
     matiz: 'foto', fonteDoMapa: 'AI painting; Buratti+2019, Hedman+2020 (color)',
     confianca: 'média',
   },
+  // as seis de forma medida (17/10/2026): o mapa é o cinza uniforme provisório, tingido e nivelado por estes números
   daphnis: {
     valor: 0.91, S: 1.57, fonteDoNivel: 'Verbiscer+2018 (p); S: HST', // p só pela Wikipédia; S das luas de gelo do HST
     BG: 0.84, RG: 1.03, fonteDaCor: 'Buratti+2019 (IR3/UV3)',
-    matiz: 'esculpido', fonteDoMapa: ESCULPIDO, confianca: 'baixa',
+    matiz: 'tinta', fonteDoMapa: UNIFORME, confianca: 'baixa',
   },
   atlas: {
     valor: 0.625, S: 1.2, fonteDoNivel: 'Hedman+2020 (B0, 30°)',
     BG: 0.83, RG: 1.03, fonteDaCor: 'IR3/UV3; VIMS',
-    matiz: 'esculpido', fonteDoMapa: ESCULPIDO, confianca: 'média',
+    matiz: 'tinta', fonteDoMapa: UNIFORME, confianca: 'média',
   },
   prometheus: {
     valor: 0.793, S: 1.2, fonteDoNivel: 'Hedman+2020 (B0, 30°)',
     BG: 0.74, RG: 1.04, fonteDaCor: 'VIMS',
-    matiz: 'esculpido', fonteDoMapa: ESCULPIDO, confianca: 'média',
+    matiz: 'tinta', fonteDoMapa: UNIFORME, confianca: 'média',
   },
   pandora: {
     valor: 0.76, S: 1.2, fonteDoNivel: 'Hedman+2020 (B0, 30°)',
     BG: 0.81, RG: 1.03, fonteDaCor: 'IR3/UV3; VIMS',
-    matiz: 'esculpido', fonteDoMapa: ESCULPIDO, confianca: 'média',
+    matiz: 'tinta', fonteDoMapa: UNIFORME, confianca: 'média',
   },
   janus: {
     valor: 0.531, S: 1.2, fonteDoNivel: 'Hedman+2020 (B0, 30°)',
     BG: 0.87, RG: 1.04, fonteDaCor: 'VIMS',
-    matiz: 'esculpido', fonteDoMapa: ESCULPIDO, confianca: 'média',
+    matiz: 'tinta', fonteDoMapa: UNIFORME, confianca: 'média',
   },
   epimetheus: {
     valor: 0.463, S: 1.2, fonteDoNivel: 'Hedman+2020 (B0, 30°)',
     BG: 0.9, RG: 1.03, fonteDaCor: 'IR3/UV3 (VIMS-equiv.)',
-    matiz: 'esculpido', fonteDoMapa: ESCULPIDO, confianca: 'média',
+    matiz: 'tinta', fonteDoMapa: UNIFORME, confianca: 'média',
   },
   // ---- Urano: as cinco (HST, Karkoschka 2001 via DeColibus+2026; Miranda baixa)
   miranda: {

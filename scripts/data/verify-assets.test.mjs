@@ -159,11 +159,11 @@ describe('verify-assets — o cadeado do inglês', () => {
 
   it('reprova o SELO DA FORMA que não é o do ASSETS.md (item 20)', () => {
     const r = rodar((corpos, texturas) => {
-      texturas.formas.atlas.seloDaNota = 'medido'; // o ASSETS.md diz inventado
+      texturas.formas.phoebe.seloDaNota = 'medido'; // o ASSETS.md diz inventado
       return { corpos, texturas };
     });
     expect(r.ok).toBe(false);
-    expect(r.saida).toContain('o selo da forma de "atlas"');
+    expect(r.saida).toContain('o selo da forma de "phoebe"');
   }, 180_000);
 
   it('reprova as PARTES DO SELO que não são as do ASSETS.md (16/10/2026)', () => {

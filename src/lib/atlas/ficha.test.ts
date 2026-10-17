@@ -94,8 +94,8 @@ function ficha(id: string): Ficha | null {
 const todasAsLinhas = (f: Ficha) => f.secoes.flatMap((s) => s.linhas);
 
 describe('completude — todo alvo do Atlas monta ficha', () => {
-  // 39 → 48 no item 134/S3: as nove luas esculpidas de Saturno entraram
-  // na lista de alvos do Atlas.
+  // 39 → 48 no item 134/S3: as nove luas pequenas de Saturno (então
+  // esculpidas) entraram na lista de alvos do Atlas.
   it('são 48 alvos e os 48 montam', () => {
     expect(ALVOS).toHaveLength(48);
     for (const id of ALVOS) {
@@ -432,10 +432,12 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
 
   it('forma: sem linha na tabela é o elipsoide dos eixos medidos; com linha, o selo é o da tabela', () => {
     // A tabela "a forma" do ASSETS.md: os três elipsoides (ou esferas) no
-    // lugar da malha publicada, as sete esculpidas por código e as duas luas
-    // de Marte e Vesta com o modelo de forma medido no mapa de altura (16/10/2026).
+    // lugar da malha publicada, a esculpida por código que ficou (Febe; as
+    // outras seis pequenas de Saturno passaram ao mapa de altura em
+    // 17/10/2026, como Pã, e caem no ramo de baixo) e as duas luas de Marte e
+    // Vesta com o modelo de forma medido no mapa de altura (16/10/2026).
     const COM_MALHA_PUBLICADA = ['pallas', 'hygiea', 'haumea'];
-    const ESCULPIDAS = ['daphnis', 'atlas', 'prometheus', 'pandora', 'janus', 'epimetheus', 'phoebe'];
+    const ESCULPIDAS = ['phoebe'];
     const FORMA_MEDIDA: Record<string, [string, string]> = {
       phobos: ['Gaskell', 'medido'],
       deimos: ['Thomas', 'derivado'],
@@ -487,8 +489,8 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
       procedencia: 'artistico',
     });
     // a esculpida não tem mapa nenhum: o relevo é o da malha feita por código
-    expect(linhaDe('daphnis', 'relevo').valor).toContain('malha feita por código');
-    expect(linhaDe('daphnis', 'relevo').procedencia).toBe('artistico');
+    expect(linhaDe('phoebe', 'relevo').valor).toContain('malha feita por código');
+    expect(linhaDe('phoebe', 'relevo').procedencia).toBe('artistico');
     // com imagem, o selo é o da nota mais fraca; Mimas, Tétis e Dione (SPC de 2025, 17/10/2026) dizem o menor
     // detalhe que o modelo resolve — abaixo dele o relevo fica liso, sem nada inventado: tudo `medido`
     for (const [id, menorDetalhe] of [['mimas', '~2,2 km'], ['tethys', '~6 km'], ['dione', '~6,4 km']] as const) {
@@ -519,7 +521,7 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
       valor: 'foto em cor verdadeira, média medida — Mallama+2017',
       procedencia: 'medido',
     });
-    expect(linhaDe('daphnis', 'cor').procedencia).toBe('artistico');
+    expect(linhaDe('phoebe', 'cor').procedencia).toBe('artistico');
     expect(linhaDe('pluto', 'cor').procedencia).toBe('artistico');
     for (const id of ['hygiea', 'pallas', 'haumea', 'makemake', 'eris', 'quaoar']) {
       expect(linhaDe(id, 'fonte').valor, id).toContain('IA');
@@ -541,9 +543,9 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
     expect(vesta.valor).not.toContain('contraste');
     // γ = 1 não confessa contraste nenhum
     expect(linhaDe('callisto', 'brilho').valor).not.toContain('contraste');
-    const dafnis = linhaDe('daphnis', 'brilho');
-    expect(dafnis.procedencia).toBe('derivado');
-    expect(dafnis.valor).toContain('média estimada');
+    const febe = linhaDe('phoebe', 'brilho');
+    expect(febe.procedencia).toBe('derivado');
+    expect(febe.valor).toContain('média estimada');
     // a Terra composta fica fora da régua: cor e brilho dizem isso, sem selo
     for (const rotulo of ['cor', 'brilho']) {
       expect(linhaDe('earth', rotulo).valor, rotulo).toContain('fora da régua');
@@ -686,6 +688,16 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
     expect(linhaDe('pan', 'cor').valor).toContain('espectro medido');
     expect(linhaDe('ceres', 'cor').valor).toContain('tingimento');
     expect(linhaDe('titan', 'cor').valor).toContain('emendas');
+  });
+
+  it('as seis pequenas de Saturno (17/10): a forma medida no mapa de altura, e a cor confessada como cinza provisório', () => {
+    for (const id of ['daphnis', 'atlas', 'prometheus', 'pandora', 'janus', 'epimetheus']) {
+      expect(linhaDe(id, 'forma').valor, id).toContain('mapa de altura');
+      expect(linhaDe(id, 'relevo').valor, id).toContain('Thomas, Joseph & Ansty');
+      expect(linhaDe(id, 'relevo').procedencia, id).toBe('medido');
+      expect(linhaDe(id, 'cor').valor, id).toContain('cinza uniforme');
+      expect(linhaDe(id, 'cor').procedencia, id).toBe('derivado');
+    }
   });
 
   it('sem o manifesto a seção some inteira, sem uma linha a explicar', () => {

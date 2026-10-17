@@ -1,6 +1,5 @@
 // ============================================================
-// AS LUAS ESCULPIDAS (item 134/S3) — Dafnis, Atlas, Prometeu, Pandora,
-// Jano, Epimeteu e Febe.
+// AS LUAS ESCULPIDAS (item 134/S3) — desde 17/10/2026, só Febe.
 //
 // PROVENIÊNCIA: o ESCULPIDOR é código do PROJETO SATURN DO AUTOR
 // (https://github.com/fgferre/Saturn, `src/scene/irregularMoonGeometry.ts`,
@@ -22,9 +21,9 @@
 // `luzDaVisita` e o mesmo chunk de bump por derivada de tela que a S2 ligou
 // em todo corpo sem atmosfera — a lei do dono de 02/09.
 //
-// POR QUE UMA GEOMETRIA E NÃO UM ELIPSOIDE. Estes sete não são esferas
-// achatadas: os pastores do anel têm crista equatorial de material
-// acretado, Epimeteu tem o polo sul rebaixado por um impacto antigo. Um
+// POR QUE UMA GEOMETRIA E NÃO UM ELIPSOIDE. As pequenas de Saturno não
+// são esferas achatadas (crista equatorial dos pastores do anel, o polo sul
+// de Epimeteu rebaixado por um impacto antigo, as crateras de Febe). Um
 // elipsoide com textura procedural mostraria a COR certa numa forma
 // errada — e a forma é o fato que uma foto da Cassini confere.
 //
@@ -42,7 +41,9 @@
 // Thomas/Joseph/Ansty 2018) por mapa de altura, na família dos rochosos
 // com relevo (`rochoso.ts`, `RELEVO_DA_LUA`) — o mesmo caminho de Mimas.
 // PÃ SAIU DAQUI EM 08/10/2026 pelo mesmo caminho (PLAN-LUAS-PEQUENAS.md):
-// a forma medida pela Cassini, com o relevo fino das fotos.
+// a forma medida pela Cassini, com o relevo fino das fotos. DAFNIS, ATLAS,
+// PROMETEU, PANDORA, JANO E EPIMETEU SAÍRAM EM 17/10/2026, pela receita
+// de Pã (a forma medida inteira no mapa de altura).
 // ============================================================
 import * as THREE from 'three';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -134,16 +135,8 @@ export interface FormaEsculpida {
 }
 
 /**
- * As sete formas do projeto Saturn do autor, com as referências de
+ * A forma do projeto Saturn do autor que ficou, com a referência de
  * morfologia Cassini/NASA que ele anotou:
- *  - Atlas / Dafnis (cristas equatoriais de acreção, manto liso):
- *    https://science.nasa.gov/missions/cassini/cassini-finds-saturns-rings-coat-tiny-moons/
- *  - Prometeu (irregular, menos craterizado que Pandora / Jano / Epimeteu):
- *    https://science.nasa.gov/saturn/moons/prometheus/
- *  - Pandora (crateras suavizadas por detrito fino de gelo):
- *    https://science.nasa.gov/saturn/moons/pandora/
- *  - Jano / Epimeteu (dimensões e campo de crateras antigo, amaciado por
- *    poeira): https://science.nasa.gov/saturn/moons/janus/ e /epimetheus/
  *  - Febe (quase esférica, muito escura, capturada):
  *    https://science.nasa.gov/saturn/moons/phoebe/
  *
@@ -153,51 +146,6 @@ export interface FormaEsculpida {
  * fonte é que é a régua.
  */
 export const FORMAS_ESCULPIDAS: Record<string, FormaEsculpida> = {
-  daphnis: {
-    detalhe: 18, semente: 211, eixos: [0.94, 0.72, 0.88],
-    escalaMacro: 2.4, forcaMacro: 0.045,
-    numeroDeCrateras: 3, raioDaCratera: [0.13, 0.22], funduraDaCratera: [0.010, 0.030],
-    bordaDaCratera: [0.001, 0.003], maciezDaCratera: 1.65, escuridaoDoFundo: [0.12, 0.30],
-    crista: { altura: 0.22, potencia: 11 },
-  },
-  atlas: {
-    detalhe: 18, semente: 307, eixos: [0.98, 0.63, 0.84],
-    escalaMacro: 2.0, forcaMacro: 0.065,
-    numeroDeCrateras: 5, raioDaCratera: [0.13, 0.24], funduraDaCratera: [0.012, 0.038],
-    bordaDaCratera: [0.001, 0.004], maciezDaCratera: 1.50, escuridaoDoFundo: [0.18, 0.40],
-    crista: { altura: 0.39, potencia: 10 },
-  },
-  prometheus: {
-    detalhe: 18, semente: 401, eixos: [1.58, 0.92, 0.68],
-    escalaMacro: 1.75, forcaMacro: 0.11,
-    numeroDeCrateras: 8, raioDaCratera: [0.12, 0.28], funduraDaCratera: [0.020, 0.070],
-    bordaDaCratera: [0.002, 0.007], maciezDaCratera: 1.30, escuridaoDoFundo: [0.22, 0.52],
-  },
-  pandora: {
-    detalhe: 18, semente: 503, eixos: [1.28, 1.01, 0.77],
-    escalaMacro: 1.9, forcaMacro: 0.085,
-    numeroDeCrateras: 15, raioDaCratera: [0.11, 0.29], funduraDaCratera: [0.018, 0.065],
-    bordaDaCratera: [0.001, 0.005], maciezDaCratera: 1.65, escuridaoDoFundo: [0.18, 0.44],
-  },
-  janus: {
-    detalhe: 18, semente: 601, eixos: [1.095, 1.073, 0.838],
-    escalaMacro: 1.8, forcaMacro: 0.075,
-    numeroDeCrateras: 19, raioDaCratera: [0.11, 0.31], funduraDaCratera: [0.020, 0.080],
-    bordaDaCratera: [0.002, 0.007], maciezDaCratera: 1.48, escuridaoDoFundo: [0.24, 0.56],
-    craterasCitadas: [
-      { centro: [-0.38, 0.52, 0.76], raio: 0.36, fundura: 0.095, borda: 0.008, escuridao: 0.55 },
-    ],
-  },
-  epimetheus: {
-    detalhe: 18, semente: 809, eixos: [1.164, 0.931, 0.905],
-    escalaMacro: 1.75, forcaMacro: 0.095,
-    numeroDeCrateras: 17, raioDaCratera: [0.11, 0.31], funduraDaCratera: [0.022, 0.085],
-    bordaDaCratera: [0.002, 0.008], maciezDaCratera: 1.42, escuridaoDoFundo: [0.26, 0.60],
-    // Cassini: o achatamento do polo sul é o resto de uma cratera grande.
-    craterasCitadas: [
-      { centro: [0.05, -0.98, 0.18], raio: 0.49, fundura: 0.13, borda: 0.009, escuridao: 0.68 },
-    ],
-  },
   phoebe: {
     detalhe: 20, semente: 907, eixos: [1.03, 0.98, 1.00],
     escalaMacro: 2.5, forcaMacro: 0.065,
@@ -209,11 +157,8 @@ export const FORMAS_ESCULPIDAS: Record<string, FormaEsculpida> = {
   },
 };
 
-/** Os sete ids na ordem em que a lista de luas os traz. */
-export const IDS_ESCULPIDOS: readonly string[] = [
-  'daphnis', 'atlas', 'prometheus', 'pandora',
-  'janus', 'epimetheus', 'phoebe',
-];
+/** Os ids esculpidos — só Febe desde 17/10/2026. */
+export const IDS_ESCULPIDOS: readonly string[] = ['phoebe'];
 
 // ------------------------------------------------------------
 // O ESCULPIDOR
@@ -407,54 +352,12 @@ export interface FamiliaDeRegolito {
 }
 
 /**
- * As sete famílias dele. Desde a régua (PLAN-REGUA-UNICA.md, R2) só as
+ * A família dele que ficou (Febe). Desde a régua (PLAN-REGUA-UNICA.md, R2) só as
  * PROPORÇÕES entre base, fundo, borda e crista valem: o nível e a cor média
  * de cada corpo são os medidos da tabela única (`reguaDosMapas.ts`), postos
  * por `coresNaRegua` — os números absolutos daqui não chegam ao shader.
  */
 export const FAMILIAS_DE_REGOLITO: Record<string, FamiliaDeRegolito> = {
-  daphnis: {
-    semente: 2.11, base: [0.67, 0.66, 0.62], fundo: [0.48, 0.47, 0.43],
-    borda: [0.79, 0.78, 0.73], crista: [0.75, 0.74, 0.70],
-    escalaMacro: 4.2, escalaMicro: 10, contraste: 0.09,
-    misturaFundo: 0.30, misturaBorda: 0.24, misturaCrista: 0.42,
-    escurecerCavidade: 0.018, oclusao: 0.04, forcaBump: 0.003,
-  },
-  atlas: {
-    semente: 3.07, base: [0.61, 0.60, 0.56], fundo: [0.41, 0.40, 0.37],
-    borda: [0.75, 0.73, 0.68], crista: [0.70, 0.68, 0.64],
-    escalaMacro: 3.8, escalaMicro: 11, contraste: 0.12,
-    misturaFundo: 0.38, misturaBorda: 0.30, misturaCrista: 0.38,
-    escurecerCavidade: 0.025, oclusao: 0.06, forcaBump: 0.004,
-  },
-  prometheus: {
-    semente: 4.01, base: [0.60, 0.59, 0.56], fundo: [0.37, 0.36, 0.34],
-    borda: [0.74, 0.73, 0.69], crista: [0.60, 0.59, 0.56],
-    escalaMacro: 3.4, escalaMicro: 12, contraste: 0.16,
-    misturaFundo: 0.48, misturaBorda: 0.38, misturaCrista: 0,
-    escurecerCavidade: 0.045, oclusao: 0.10, forcaBump: 0.009,
-  },
-  pandora: {
-    semente: 5.03, base: [0.62, 0.60, 0.56], fundo: [0.43, 0.41, 0.38],
-    borda: [0.73, 0.72, 0.68], crista: [0.62, 0.60, 0.56],
-    escalaMacro: 3.2, escalaMicro: 11, contraste: 0.12,
-    misturaFundo: 0.40, misturaBorda: 0.24, misturaCrista: 0,
-    escurecerCavidade: 0.030, oclusao: 0.075, forcaBump: 0.007,
-  },
-  janus: {
-    semente: 6.01, base: [0.63, 0.61, 0.57], fundo: [0.37, 0.35, 0.32],
-    borda: [0.78, 0.76, 0.71], crista: [0.63, 0.61, 0.57],
-    escalaMacro: 3.0, escalaMicro: 12, contraste: 0.16,
-    misturaFundo: 0.56, misturaBorda: 0.43, misturaCrista: 0,
-    escurecerCavidade: 0.050, oclusao: 0.12, forcaBump: 0.01,
-  },
-  epimetheus: {
-    semente: 8.09, base: [0.61, 0.59, 0.55], fundo: [0.34, 0.32, 0.29],
-    borda: [0.77, 0.75, 0.70], crista: [0.61, 0.59, 0.55],
-    escalaMacro: 3.1, escalaMicro: 12, contraste: 0.18,
-    misturaFundo: 0.62, misturaBorda: 0.46, misturaCrista: 0,
-    escurecerCavidade: 0.055, oclusao: 0.13, forcaBump: 0.011,
-  },
   phoebe: {
     semente: 9.07, base: [0.090, 0.082, 0.073], fundo: [0.032, 0.027, 0.023],
     borda: [0.16, 0.145, 0.125], crista: [0.090, 0.082, 0.073],

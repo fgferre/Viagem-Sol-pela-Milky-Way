@@ -470,7 +470,10 @@ export const NOMES_DOS_CORPOS: Record<
   rhea: { nome: 'Reia', nomeEn: 'Rhea', classe: 'lua' },
   titan: { nome: 'Titã', nomeEn: 'Titan', classe: 'lua' },
   iapetus: { nome: 'Jápeto', nomeEn: 'Iapetus', classe: 'lua' },
-  // item 134/S3 — as nove luas esculpidas do projeto Saturn do autor.
+  // item 134/S3 — as nove luas pequenas de Saturno, que entraram esculpidas
+  // pelo projeto Saturn do autor; Hipérion, Pã e (17/10/2026) Dafnis, Atlas,
+  // Prometeu, Pandora, Jano e Epimeteu têm hoje a forma medida — só Febe
+  // segue esculpida.
   pan: { nome: 'Pã', nomeEn: 'Pan', classe: 'lua' },
   daphnis: { nome: 'Dafnis', nomeEn: 'Daphnis', classe: 'lua' },
   atlas: { nome: 'Atlas', nomeEn: 'Atlas', classe: 'lua' },

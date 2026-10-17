@@ -29,6 +29,7 @@
 // confundir move um corpo por fator 36.525.
 // Os tipos abaixo são verbatim do doador (src/lib/bodyOrientation.ts).
 // ============================================================
+import { SATELLITES } from './elementosOrbitais';
 
 /**
  * One periodic term of an IAU rotation model.
@@ -98,6 +99,31 @@ export interface IauOrientation {
   spinAccelDegPerDay2?: number;
   /** Periodic corrections. Absent = the secular model only. */
   nutPrec?: readonly IauNutPrecTerm[];
+}
+
+/**
+ * A LUA SÍNCRONA AMARRADA À ÓRBITA DESTA CASA (17/10/2026, PLAN-LUAS-PEQUENAS.md,
+ * E5) — a regra da IAU para as que giram travadas (o W anda com a órbita e
+ * põe a longitude 0 de frente para o planeta) aplicada à órbita que o app
+ * desenha, que não é efeméride (`elementosOrbitais.ts`: elementos médios em
+ * J2000, dois corpos). Ẇ = n da órbita e W₀ = 180° + M₀ − n·(época − J2000):
+ * com W₀ = M₀ = 0 o ponto sub-Saturno cai em 180°E (o nodo e o periastro da
+ * órbita da casa estão no nodo Q do equador de Saturno, então o meridiano-primo
+ * aponta para FORA dele); o M₀ = 60° de Epimeteu o levava a 240°E. Uma regra
+ * só, lida da órbita: quem mexer nos elementos não desalinha a forma medida.
+ * Prova: `rochoso.test.ts`, a longitude 0 de frente para Saturno e o eixo
+ * comprido do mapa na reta dele, a menos de 5°, em três datas.
+ */
+function sincronaNaOrbitaDaCasa(id: string): IauOrientation {
+  const { epochJD, M0Deg, nDegPerDay } = SATELLITES[id]!.elements;
+  if (nDegPerDay === undefined) throw new Error(`${id}: a lua síncrona precisa do n declarado da órbita`);
+  return {
+    // o polo de Saturno: as sete internas orbitam no plano do equador dele
+    poleRaDeg: 40.589,
+    poleDecDeg: 83.537,
+    primeMeridianDeg: 180 + M0Deg - nDegPerDay * (epochJD - 2451545.0),
+    spinRateDegPerDay: nDegPerDay,
+  };
 }
 
 export const IAU_ORIENTATIONS: Record<string, IauOrientation> = {
@@ -998,22 +1024,29 @@ export const IAU_ORIENTATIONS: Record<string, IauOrientation> = {
     spinRateDegPerDay: 626.0869565,
   },
   // ============================================================
-  // S3 (item 134): AS OITO ESCULPIDAS — ORIENTAÇÃO MODELADA, NÃO MEDIDA.
-  // Nenhuma delas está no pck00011 desta casa, e o dono da régua manda
-  // dizê-lo: o polo é o de SATURNO (`saturn` acima, α₀ = 40,589°,
+  // S3 (item 134): AS NOVE PEQUENAS DE SATURNO — ORIENTAÇÃO MODELADA, NÃO
+  // MEDIDA. Nenhuma delas está no pck00011 desta casa, e o dono da régua
+  // manda dizê-lo: o polo é o de SATURNO (`saturn` acima, α₀ = 40,589°,
   // δ₀ = 83,537°) porque as sete internas orbitam no plano do equador
   // dele e giram travadas por maré; o Ẇ é a taxa ORBITAL do corpo
   // (360°/período de `elementosOrbitais.ts`), que é o que rotação síncrona
   // significa. Mesmo padrão declarado de Hígia/Haumea/Makemake/Éris.
   //
-  // W₀ = 0 EM TODAS, e aqui isso não é um número faltando: a superfície
-  // destes oito é ESCULPIDA POR CÓDIGO (campo de crateras procedural,
-  // `esculpido.ts`) — não existe feição medida para um meridiano-primo
-  // ancorar. Ancorá-lo em qualquer valor seria precisão fingida.
+  // AS SETE SÍNCRONAS (Pã, Dafnis, Atlas, Prometeu, Pandora, Jano e
+  // Epimeteu) TÊM A FORMA MEDIDA desde 08/10 (Pã) e 17/10/2026 (as outras
+  // seis): o modelo de Thomas, Joseph & Ansty 2018 vem no referencial da IAU
+  // — longitude 0 = ponto sub-Saturno, onde fica a ponta comprida — e o mapa
+  // de altura (`rochoso.ts`/`RELEVO_DA_LUA`) também. O W delas sai da regra
+  // `sincronaNaOrbitaDaCasa` (acima da tabela), uma só para as sete: com o
+  // W₀ = 0 de antes, o lado de 180°E ficava de frente para Saturno (o de
+  // 240°E em Epimeteu) — meia volta fora, invisível enquanto a forma era
+  // esculpida e sem feição medida.
   //
   // UMA EXCEÇÃO DECLARADA. FEBE é capturada e gira em 9,27 h,
   // independente da órbita: o Ẇ dela é 360/(9,27/24) e o polo dela é o de
-  // Saturno por falta de medida na casa, não por física.
+  // Saturno por falta de medida na casa, não por física. W₀ = 0: a
+  // superfície dela segue ESCULPIDA POR CÓDIGO (`esculpido.ts`), sem feição
+  // medida para um meridiano-primo ancorar.
   //
   // HIPÉRION SAIU DA FAMÍLIA ESCULPIDA em 23/09/2026 (a forma dela agora é
   // MEDIDA, mapa de altura em `rochoso.ts`/`RELEVO_DA_LUA`) — mas a linha
@@ -1025,32 +1058,23 @@ export const IAU_ORIENTATIONS: Record<string, IauOrientation> = {
   // solução. O síncrono aqui é a aproximação visível, e o caos fica por
   // contar na ficha, não no shader.
   //
-  // PÃ SAIU DA FAMÍLIA ESCULPIDA em 08/10/2026 (forma MEDIDA, mapa de
-  // altura em `rochoso.ts`/`RELEVO_DA_LUA`) e é a ÚNICA linha deste bloco
-  // com W₀ ancorado: agora há feição medida. Pã gira em sincronia, e o
-  // modelo de forma (Thomas, Joseph & Ansty 2018) vem no referencial da
-  // IAU — longitude 0 = ponto sub-Saturno, onde fica a ponta mais comprida
-  // dele (20,3 km, a −0,6°E/+1,3°N). A IAU (Archinal et al. 2018, WGCCRE
+  // PÃ, O PILOTO (08/10/2026): a ponta mais comprida dela (20,3 km, a
+  // −0,6°E/+1,3°N) fica na longitude 0. A IAU (Archinal et al. 2018, WGCCRE
   // 2015) dá W = 48,8° + 626,0440000°·d — a taxa da órbita DE VERDADE, e o
   // W₀ casa com a fase DE VERDADE. A órbita desta casa NÃO é efeméride
-  // (`elementosOrbitais.ts`: M₀ = 0 em J2000 e n = 360/0,575 d =
-  // 626,0869565°/d), então o W da IAU, aqui, erraria Saturno em 131° em
-  // J2000 e escorregaria 0,043°/dia. O que vale é a REGRA da IAU — W anda
-  // com a órbita e põe a longitude 0 de frente para Saturno — aplicada à
-  // órbita desta casa: a taxa é a do registro (= a da órbita) e W₀ = 180°,
-  // porque com W₀ = 0 o ponto sub-Saturno cai em 180°E (o meridiano-primo
-  // aponta para FORA de Saturno). Prova: `rochoso.test.ts`, o diâmetro mais
-  // comprido do mapa publicado na reta de Saturno e a longitude 0 de frente
-  // para ele, a menos de 5° em três datas. As outras seis ficam com W₀ = 0
-  // até ganharem a forma medida.
+  // (M₀ = 0 em J2000 e n = 360/0,575 d = 626,0869565°/d), então o W da IAU,
+  // aqui, erraria Saturno em 131° em J2000 e escorregaria 0,043°/dia. O que
+  // vale é a REGRA da IAU — W anda com a órbita e põe a longitude 0 de
+  // frente para Saturno — aplicada à órbita desta casa: Pã dá W₀ = 180°, o
+  // número que ela tinha à mão, agora lido da regra.
   // ============================================================
-  pan: { poleRaDeg: 40.589, poleDecDeg: 83.537, primeMeridianDeg: 180, spinRateDegPerDay: 626.0869565 },
-  daphnis: { poleRaDeg: 40.589, poleDecDeg: 83.537, primeMeridianDeg: 0, spinRateDegPerDay: 606.0606061 },
-  atlas: { poleRaDeg: 40.589, poleDecDeg: 83.537, primeMeridianDeg: 0, spinRateDegPerDay: 598.3048031 },
-  prometheus: { poleRaDeg: 40.589, poleDecDeg: 83.537, primeMeridianDeg: 0, spinRateDegPerDay: 587.2756933 },
-  pandora: { poleRaDeg: 40.589, poleDecDeg: 83.537, primeMeridianDeg: 0, spinRateDegPerDay: 572.7923628 },
-  janus: { poleRaDeg: 40.589, poleDecDeg: 83.537, primeMeridianDeg: 0, spinRateDegPerDay: 518.3585313 },
-  epimetheus: { poleRaDeg: 40.589, poleDecDeg: 83.537, primeMeridianDeg: 0, spinRateDegPerDay: 518.3585313 },
+  pan: sincronaNaOrbitaDaCasa('pan'),
+  daphnis: sincronaNaOrbitaDaCasa('daphnis'),
+  atlas: sincronaNaOrbitaDaCasa('atlas'),
+  prometheus: sincronaNaOrbitaDaCasa('prometheus'),
+  pandora: sincronaNaOrbitaDaCasa('pandora'),
+  janus: sincronaNaOrbitaDaCasa('janus'),
+  epimetheus: sincronaNaOrbitaDaCasa('epimetheus'),
   hyperion: { poleRaDeg: 40.589, poleDecDeg: 83.537, primeMeridianDeg: 0, spinRateDegPerDay: 16.91998962 },
   phoebe: { poleRaDeg: 40.589, poleDecDeg: 83.537, primeMeridianDeg: 0, spinRateDegPerDay: 932.0388350 },
 };
@@ -1129,7 +1153,7 @@ export const BODY_AXES: Record<string, readonly [number, number, number]> = {
   vesta: [289, 280, 229],
   pallas: [256, 256, 256],
   hygiea: [217, 217, 217],
-  // S3 (item 134): as oito esculpidas entram como ESFERAS do raio MÉDIO
+  // S3 (item 134): as nove pequenas entram como ESFERAS do raio MÉDIO
   // publicado (`src/data/saturn.ts` do projeto Saturn do autor, transcrito
   // do JPL SSD) — e é escolha, não falta de dado. A figura irregular delas
   // não é um elipsoide: é malha, e mora em `PROCEDURAL_MOON_SHAPES`
@@ -1144,7 +1168,9 @@ export const BODY_AXES: Record<string, readonly [number, number, number]> = {
   // nas outras oito. O preço, declarado: o gate de tamanho aparente mede
   // pelo raio médio, então Hipérion entra em quadro um pouco mais tarde do
   // que a silhueta dela mereceria. Pã (08/10/2026) idem: esfera de 14 km,
-  // a forma (0,74 a 1,45 raio) no mapa de altura (`RELEVO_DA_LUA.pan`).
+  // a forma (0,74 a 1,45 raio) no mapa de altura (`RELEVO_DA_LUA.pan`); e
+  // Dafnis, Atlas, Prometeu, Pandora, Jano e Epimeteu (17/10/2026) pelo
+  // mesmo caminho. Só Febe segue esculpida.
   pan: [14, 14, 14],
   daphnis: [3.8, 3.8, 3.8],
   atlas: [15, 15, 15],

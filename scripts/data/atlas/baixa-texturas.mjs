@@ -914,6 +914,31 @@ export const FONTES = [
     url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/data/pan_30k_plt.tab',
     arquivoLocal: 'fonte/pan-horizon2.png',
   },
+  // ---- Dafnis, Atlas, Prometeu, Pandora, Jano e Epimeteu saem das esculpidas
+  // em 17/10/2026 (PLAN-LUAS-PEQUENAS.md, E4/E5) pela receita de Pã: a forma
+  // MEDIDA inteira (Thomas, Joseph & Ansty 2018, o mesmo pacote) como mapa de
+  // ALTURA sobre a esfera de `BODY_AXES`, a NORMAL e os dois HORIZONTES dela,
+  // por direção — fontes LOCAIS de `capturas/luas-pequenas/seis/` (gera.mjs,
+  // instala.mjs), na convenção da casa, sem giro. A COR é PROVISÓRIA: cinza
+  // uniforme, tingido e nivelado pela régua (`matiz: 'tinta'`), até a pintura
+  // por IA sobre o relevo medido. O cinza uniforme comprime a ~8 kB e a forma
+  // lisa de Atlas a ~40 kB: são lisos, não truncados.
+  ...['daphnis', 'atlas', 'prometheus', 'pandora', 'janus', 'epimetheus'].flatMap((corpo) => [
+    {
+      corpo,
+      canal: 'map',
+      url: `https://science.nasa.gov/saturn/moons/${corpo}/`,
+      arquivoLocal: `fonte/${corpo}-cor.png`,
+      minimoBytes: 5_000,
+    },
+    ...['height', 'normal', 'horizon', 'horizon2'].map((canal) => ({
+      corpo,
+      canal,
+      url: `https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/data/${corpo}_30k_plt.tab`,
+      arquivoLocal: `fonte/${corpo}-${canal === 'height' ? 'altura' : canal}.png`,
+      ...(canal === 'height' ? { minimoBytes: 20_000 } : {}),
+    })),
+  ]),
 ];
 
 const MAXIMO_DE_REDIRECTS = 5;

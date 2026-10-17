@@ -1156,30 +1156,33 @@ describe('10. o horizonte assado — só quem declara `horizonte`', () => {
     encelado.corpo.dispose();
   });
 
-  it('o portão `uHorizonte` é 1 em Hipérion, 2 em Mimas, Tétis, Dione, Pã, Fobos, Deimos e Vesta (só do relevo) e 0 em Encélado — e só os oito o declaram', async () => {
+  it('o portão `uHorizonte` é 1 em Hipérion, 2 em Mimas, Tétis, Dione, nas sete pequenas de Saturno, Fobos, Deimos e Vesta (só do relevo) e 0 em Encélado — e só os quatorze o declaram', async () => {
+    const PEQUENAS = ['pan', 'daphnis', 'atlas', 'prometheus', 'pandora', 'janus', 'epimetheus'] as const;
     expect(Object.keys(RELEVO_DA_LUA).filter((id) => RELEVO_DA_LUA[id]!.horizonte)).toEqual([
       'mimas',
       'tethys',
       'dione',
       'hyperion',
-      'pan',
+      ...PEQUENAS,
       'phobos',
       'deimos',
       'vesta',
     ]);
     // a sombra só do relevo é opção da tabela: Pã (as encostas da aba a 65° do plano radial), Fobos e Deimos (12 % e
     // 17 % da superfície a mais de 30° dele), Vesta (6,8 %: as escarpas de Rheasilvia e Veneneia) e Mimas (as paredes
-    // de Herschel) e Dione (as paredes dos chasmata) e Tétis (as paredes de Odisseu e de Ithaca)
+    // de Herschel) e Dione (as paredes dos chasmata) e Tétis (as paredes de Odisseu e de Ithaca), e as outras seis pequenas
+    // de Saturno (17/10/2026: de 4 % da superfície a mais de 30° do plano radial em Jano a 51 % em Atlas)
     expect(Object.keys(RELEVO_DA_LUA).filter((id) => RELEVO_DA_LUA[id]!.horizonte === 'soDoRelevo')).toEqual([
       'mimas',
       'tethys',
       'dione',
-      'pan',
+      ...PEQUENAS,
       'phobos',
       'deimos',
       'vesta',
     ]);
-    for (const [id, portao] of [['hyperion', 1], ['mimas', 2], ['tethys', 2], ['dione', 2], ['pan', 2], ['phobos', 2], ['deimos', 2], ['vesta', 2]] as const) {
+    const portoes: [string, number][] = [['hyperion', 1], ['mimas', 2], ['tethys', 2], ['dione', 2], ...PEQUENAS.map((id): [string, number] => [id, 2]), ['phobos', 2], ['deimos', 2], ['vesta', 2]];
+    for (const [id, portao] of portoes) {
       const { corpo } = hiperionComHorizonte(id);
       corpo.atualizar(quadro(id, 4));
       await flush();
@@ -1353,6 +1356,128 @@ describe('12. Fobos e Deimos — a forma medida no lugar certo (15/10)', () => {
         const j = Math.min(H - 1, Math.floor(((90 - lat) / 180) * H));
         const raio = (1 + vies + (data[(j * W + i) * channels]! / 255) * escala) * elipsoide;
         expect(Math.abs(raio - MODELO[id][eixo as keyof (typeof MODELO)[typeof id]]), `${id} ${eixo}: ${raio.toFixed(3)} km`).toBeLessThan(0.05);
+      }
+    });
+  }
+});
+
+// ------------------------------------------------------------
+// 13. AS SEIS PEQUENAS DE SATURNO — SAEM DA ESCULPIDA, ENTRAM NA FORMA MEDIDA
+//     (17/10/2026, PLAN-LUAS-PEQUENAS.md E4/E5): Dafnis, Atlas, Prometeu,
+//     Pandora, Jano e Epimeteu pela receita de Pã, com o W das sete
+//     síncronas lido da órbita da casa (`sincronaNaOrbitaDaCasa`).
+// ------------------------------------------------------------
+
+describe('13. As seis pequenas de Saturno — a forma medida virada para Saturno (17/10)', () => {
+  const SEIS = ['daphnis', 'atlas', 'prometheus', 'pandora', 'janus', 'epimetheus'] as const;
+  // J2000, o sobrevoo de Pã pela Cassini (07/03/2017) e 17/10/2026
+  const DATAS = [2451545.0, 2457819.5, 2461330.5];
+  const graus = (cos: number) => Math.acos(Math.min(1, cos)) / (Math.PI / 180);
+  /** o cosseno entre uma direção LOCAL do corpo (malha) e a direção da lua a Saturno, na cena, em `jd` */
+  const paraSaturno = (id: string, jd: number, l: readonly number[]) => {
+    const { colunaX, colunaY, colunaZ } = orientacaoDoCorpoNaCena(IAU_ORIENTATIONS[id]!, jd);
+    const c = [0, 1, 2].map((k) => l[0]! * colunaX[k]! + l[1]! * colunaY[k]! + l[2]! * colunaZ[k]!);
+    const p = posicaoKepler(id, jd);
+    const doPai = eclipticaParaEquatorial([p.x, p.y, p.z]);
+    return -(c[0]! * doPai[0] + c[1]! * doPai[1] + c[2]! * doPai[2]) / Math.hypot(...doPai) / Math.hypot(...c);
+  };
+  /** a altura da FONTE local que a cadeia copia (convenção da casa), como o raio que o app desenha, em unidades do raio */
+  const alturaDaFonte = async (id: string) => {
+    const { default: sharp } = await import('sharp');
+    const caminho = fileURLToPath(new URL(`../../../../scripts/data/atlas/fonte/${id}-altura.png`, import.meta.url));
+    const { data, info } = await sharp(caminho).toColourspace('b-w').raw().toBuffer({ resolveWithObject: true });
+    const { escala, vies } = RELEVO_DA_LUA[id]!;
+    const raio = Float64Array.from({ length: info.width * info.height }, (_, k) => 1 + vies + (data[k * info.channels]! / 255) * escala);
+    return { raio, W: info.width, H: info.height };
+  };
+
+  it('a regra única: nas sete síncronas a longitude 0 fica de frente para Saturno (< 5°) em três datas — Pã inclusive', () => {
+    for (const id of ['pan', ...SEIS]) {
+      for (const jd of DATAS) expect(graus(paraSaturno(id, jd, direcaoLocalDeLonLat(0, 0))), `${id} JD ${jd}`).toBeLessThan(5);
+    }
+    // Pã segue no número aprovado (W₀ = 180°); Epimeteu, que nasce 60° à frente na órbita, ganha os 60°
+    expect(IAU_ORIENTATIONS.pan!.primeMeridianDeg).toBe(180);
+    expect(IAU_ORIENTATIONS.epimetheus!.primeMeridianDeg).toBe(240);
+  });
+
+  /**
+   * O LADO COMPRIDO NA RETA DE SATURNO (< 5°, três datas), lido da altura que o app desenha. O juiz é o de Pã — o
+   * DIÂMETRO mais comprido, r(d) + r(−d), sem sinal — menos em Jano: o equador dele é quase redondo (103 × 91 km no
+   * elipsoide ajustado) e o diâmetro máximo cai num calombo a 147°E, 34° fora; ali o juiz é o EIXO PRINCIPAL do
+   * volume (o segundo momento ∫ r⁵ d dᵀ dΩ, o eixo de menor inércia, que é o que a maré alinha): 1,1°. Dafnis fica no
+   * limite pelo próprio modelo (diâmetro 4,5°, eixo principal 5,5°: o lado comprido medido está ~5° a leste do ponto
+   * sub-Saturno).
+   */
+  const JUIZ: Record<(typeof SEIS)[number], 'diametro' | 'eixoPrincipal'> = {
+    daphnis: 'diametro',
+    atlas: 'diametro',
+    prometheus: 'diametro',
+    pandora: 'diametro',
+    janus: 'eixoPrincipal',
+    epimetheus: 'diametro',
+  };
+  for (const id of SEIS) {
+    it(`${id}: o lado comprido fica na reta de Saturno (< 5°, ${JUIZ[id] === 'diametro' ? 'o diâmetro mais comprido' : 'o eixo principal'})`, async () => {
+      const { raio, W, H } = await alturaDaFonte(id);
+      let eixo: readonly number[];
+      if (JUIZ[id] === 'diametro') {
+        let maior = -1;
+        eixo = [1, 0, 0];
+        for (let j = 0; j < H; j++) {
+          for (let i = 0; i < W; i++) {
+            const diametro = raio[j * W + i]! + raio[(H - 1 - j) * W + ((i + W / 2) % W)]!;
+            if (diametro <= maior) continue;
+            maior = diametro;
+            eixo = direcaoLocalDeLonLat(((i + 0.5) * 360) / W - 180, 90 - ((j + 0.5) * 180) / H);
+          }
+        }
+      } else {
+        const C = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+        for (let j = 0; j < H; j++) {
+          const lat = 90 - ((j + 0.5) * 180) / H;
+          for (let i = 0; i < W; i++) {
+            const d = direcaoLocalDeLonLat(((i + 0.5) * 360) / W - 180, lat);
+            const w = Math.cos((lat * Math.PI) / 180) * raio[j * W + i]! ** 5;
+            for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) C[3 * a + b] = C[3 * a + b]! + w * d[a]! * d[b]!;
+          }
+        }
+        let v = [1, 0, 0];
+        for (let it = 0; it < 100; it++) {
+          const u = [0, 1, 2].map((a) => C[3 * a]! * v[0]! + C[3 * a + 1]! * v[1]! + C[3 * a + 2]! * v[2]!);
+          const n = Math.hypot(...u);
+          v = u.map((x) => x / n);
+        }
+        eixo = v;
+      }
+      for (const jd of DATAS) expect(graus(Math.abs(paraSaturno(id, jd, eixo))), `${id} JD ${jd}`).toBeLessThan(5);
+    });
+  }
+
+  /**
+   * O RAIO DESENHADO NOS SEIS EIXOS DO CORPO é o do modelo medido (Thomas, Joseph & Ansty 2018, suavizado a 1°, em km;
+   * `capturas/luas-pequenas/seis/produtos/<lua>/numeros.json`), a menos de dois bytes do mapa: meia volta, espelho,
+   * norte trocado ou um par escala/viés que não é o do mapa trocam estes números (Jano é 12 km mais curto do lado de
+   * Saturno; Epimeteu, 4,7 km mais baixo no sul, a grande cratera; Atlas, 0,85 km).
+   */
+  const MODELO: Record<(typeof SEIS)[number], Record<'+x' | '-x' | '+y' | '-y' | '+z' | '-z', number>> = {
+    daphnis: { '+x': 5.456, '-x': 5.534, '+y': 4.857, '-y': 4.622, '+z': 2.774, '-z': 3.012 },
+    atlas: { '+x': 23.247, '-x': 23.978, '+y': 20.807, '-y': 20.043, '+z': 9.196, '-z': 10.049 },
+    prometheus: { '+x': 69.066, '-x': 71.182, '+y': 39.553, '-y': 41.532, '+z': 26.394, '-z': 27.997 },
+    pandora: { '+x': 55.225, '-x': 56.06, '+y': 40.797, '-y': 40.187, '+z': 31.654, '-z': 31.666 },
+    janus: { '+x': 93.727, '-x': 105.878, '+y': 95.885, '-y': 88.846, '+z': 70.356, '-z': 74.118 },
+    epimetheus: { '+x': 69.537, '-x': 75.251, '+y': 52.803, '-y': 56.41, '+z': 51.73, '-z': 47.005 },
+  };
+  const EIXOS = { '+x': [0, 0], '-x': [180, 0], '+y': [90, 0], '-y': [-90, 0], '+z': [0, 89.9], '-z': [0, -89.9] } as const;
+  for (const id of SEIS) {
+    it(`${id}: o raio desenhado nos seis eixos é o do modelo medido (± 2 bytes)`, async () => {
+      const { raio, W, H } = await alturaDaFonte(id);
+      const R = BODY_AXES[id]![0];
+      const tolerancia = (2 * RELEVO_DA_LUA[id]!.escala * R) / 255;
+      for (const [eixo, [lon, lat]] of Object.entries(EIXOS)) {
+        const i = Math.min(W - 1, Math.floor(((lon + 180) / 360) * W));
+        const j = Math.min(H - 1, Math.floor(((90 - lat) / 180) * H));
+        const km = raio[j * W + i]! * R;
+        expect(Math.abs(km - MODELO[id][eixo as keyof (typeof MODELO)[typeof id]]), `${id} ${eixo}: ${km.toFixed(3)} km`).toBeLessThan(tolerancia);
       }
     });
   }

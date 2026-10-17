@@ -21,6 +21,28 @@
       0.3992
     ]
   },
+  "atlas": {
+    "alvo": {
+      "p0": 0.5208,
+      "BG": 0.83,
+      "RG": 1.03,
+      "matiz": "tinta"
+    },
+    "gama": 1,
+    "gamaAntesDoTeto": 1,
+    "fracaoComprimida": 0,
+    "fracaoNoTeto": 0,
+    "g": [
+      1.0297,
+      0.9997,
+      0.8298
+    ],
+    "medias": [
+      0.5395,
+      0.521,
+      0.4342
+    ]
+  },
   "callisto": {
     "alvo": {
       "p0": 0.17,
@@ -87,6 +109,28 @@
       0.3205
     ]
   },
+  "daphnis": {
+    "alvo": {
+      "p0": 0.5796,
+      "BG": 0.84,
+      "RG": 1.03,
+      "matiz": "tinta"
+    },
+    "gama": 1,
+    "gamaAntesDoTeto": 1,
+    "fracaoComprimida": 0,
+    "fracaoNoTeto": 0,
+    "g": [
+      1.0336,
+      1.0035,
+      0.843
+    ],
+    "medias": [
+      0.5972,
+      0.5776,
+      0.4851
+    ]
+  },
   "deimos": {
     "alvo": {
       "p0": 0.0531,
@@ -151,6 +195,28 @@
       0.89,
       0.89,
       0.8188
+    ]
+  },
+  "epimetheus": {
+    "alvo": {
+      "p0": 0.3858,
+      "BG": 0.9,
+      "RG": 1.03,
+      "matiz": "tinta"
+    },
+    "gama": 1,
+    "gamaAntesDoTeto": 1,
+    "fracaoComprimida": 0,
+    "fracaoNoTeto": 0,
+    "g": [
+      1.0284,
+      0.9984,
+      0.8986
+    ],
+    "medias": [
+      0.3968,
+      0.3864,
+      0.3467
     ]
   },
   "eris": {
@@ -329,6 +395,28 @@
       0.6805,
       0.6302,
       0.3789
+    ]
+  },
+  "janus": {
+    "alvo": {
+      "p0": 0.4425,
+      "BG": 0.87,
+      "RG": 1.04,
+      "matiz": "tinta"
+    },
+    "gama": 1,
+    "gamaAntesDoTeto": 1,
+    "fracaoComprimida": 0,
+    "fracaoNoTeto": 0,
+    "g": [
+      1.0337,
+      0.9939,
+      0.8647
+    ],
+    "medias": [
+      0.4621,
+      0.4452,
+      0.3864
     ]
   },
   "jupiter": {
@@ -573,6 +661,28 @@
       0.4111
     ]
   },
+  "pandora": {
+    "alvo": {
+      "p0": 0.6333,
+      "BG": 0.81,
+      "RG": 1.03,
+      "matiz": "tinta"
+    },
+    "gama": 1,
+    "gamaAntesDoTeto": 1,
+    "fracaoComprimida": 0,
+    "fracaoNoTeto": 0,
+    "g": [
+      1.0342,
+      1.0041,
+      0.8133
+    ],
+    "medias": [
+      0.6514,
+      0.6308,
+      0.5149
+    ]
+  },
   "phobos": {
     "alvo": {
       "p0": 0.0531,
@@ -618,6 +728,28 @@
     ],
     "razaoDaAncora": 6.662,
     "razaoMedida": 6.667
+  },
+  "prometheus": {
+    "alvo": {
+      "p0": 0.6608,
+      "BG": 0.74,
+      "RG": 1.04,
+      "matiz": "tinta"
+    },
+    "gama": 1,
+    "gamaAntesDoTeto": 1,
+    "fracaoComprimida": 0,
+    "fracaoNoTeto": 0,
+    "g": [
+      1.0439,
+      1.0037,
+      0.7428
+    ],
+    "medias": [
+      0.6867,
+      0.6584,
+      0.491
+    ]
   },
   "quaoar": {
     "alvo": {

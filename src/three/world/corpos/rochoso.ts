@@ -212,10 +212,18 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
   // agora é MEDIDA (Cassini) por mapa de altura, como a do Hipérion — ver
   // RELEVO_DA_LUA abaixo. Fica no lugar em que estava na lista.
   { id: 'pan', brdf: 'lambert' },
-  // S3 (item 134) — as sete esculpidas de Saturno. Todas `lambert` com o
+  // As outras seis pequenas de Saturno saíram das esculpidas em 17/10/2026
+  // pela receita de Pã (PLAN-LUAS-PEQUENAS.md, E4/E5): a forma MEDIDA no
+  // mapa de altura — ver RELEVO_DA_LUA. `lambert` como eram.
+  { id: 'daphnis', brdf: 'lambert' },
+  { id: 'atlas', brdf: 'lambert' },
+  { id: 'prometheus', brdf: 'lambert' },
+  { id: 'pandora', brdf: 'lambert' },
+  { id: 'janus', brdf: 'lambert' },
+  { id: 'epimetheus', brdf: 'lambert' },
+  // S3 (item 134) — a esculpida de Saturno que ficou (Febe). `lambert` com o
   // `terminadorSuave` da casa: o disco chato de Lommel-Seeliger é o fato
-  // que uma FOTO confere, e não há foto destas sete com que conferir —
-  // o que existe é a forma, e a forma está na malha.
+  // que uma FOTO confere, e a forma dela ainda está na malha.
   // A lista mora em `esculpido.ts` (`IDS_ESCULPIDOS`): uma fonte só.
   ...IDS_ESCULPIDOS.map((id) => ({ id, brdf: 'lambert', superficie: 'esculpido' }) as const),
 ];
@@ -238,7 +246,9 @@ export const ROCHOSOS: readonly ConfigDoRochoso[] = [
  * texto nascendo em `docs/reference/ASSETS.md`. Hipérion é o sétimo caso
  * (23/09/2026): o mapa de altura é a FORMA MEDIDA inteira (Cassini —
  * Thomas, Joseph & Ansty 2018), não um relevo sobre elipsoide como as
- * outras seis; Pã é o oitavo (08/10/2026), pelo mesmo caminho.
+ * outras seis; Pã é o oitavo (08/10/2026), pelo mesmo caminho, e as outras
+ * seis pequenas de Saturno vieram atrás dela (17/10/2026). A lista cresceu
+ * depois (Fobos, Deimos, Vesta): o título é o de quando havia oito.
  *
  * Mimas puxa 7 % do raio: Herschel é um terço do diâmetro dela, e é essa
  * a foto que o limbo tinha de mostrar e a esfera lisa não mostrava.
@@ -295,6 +305,18 @@ export const RELEVO_DA_LUA: Readonly<
   // na borda que a foto não tem. Só Pã usa este modo; o Hipérion segue com
   // o teste cru.
   pan: { escala: 0.709911, vies: -0.259518, horizonte: 'soDoRelevo' },
+  // Dafnis, Atlas, Prometeu, Pandora, Jano e Epimeteu (17/10/2026, PLAN-LUAS-PEQUENAS.md E4/E5): a receita de Pã — a
+  // forma MEDIDA inteira (Thomas, Joseph & Ansty 2018, a grade radial 512×256 no referencial da IAU, suavizada a 1° de
+  // arco por direção) como RAZÃO sobre a esfera de `BODY_AXES` (`capturas/luas-pequenas/seis/gera.mjs`); o disco de
+  // Atlas vai de 0,61 a 1,60 raio, a batata de Prometeu de 0,61 a 1,68. Sem relevo fino nem cratera inventada: o que se
+  // vê é só o modelo (a pintura e as crateras das fotos são a etapa seguinte). 'soDoRelevo' pelo motivo de Pã: a
+  // superfície passa de 30° do plano radial em 4 % (Jano) a 51 % (Atlas). `normal: 1`: a inclinação é a medida.
+  daphnis: { escala: 0.768044, vies: -0.295736, horizonte: 'soDoRelevo', normal: 1 },
+  atlas: { escala: 0.987905, vies: -0.388491, horizonte: 'soDoRelevo', normal: 1 },
+  prometheus: { escala: 1.070744, vies: -0.388247, horizonte: 'soDoRelevo', normal: 1 },
+  pandora: { escala: 0.683621, vies: -0.268572, horizonte: 'soDoRelevo', normal: 1 },
+  janus: { escala: 0.435357, vies: -0.237657, horizonte: 'soDoRelevo', normal: 1 },
+  epimetheus: { escala: 0.53307, vies: -0.235401, horizonte: 'soDoRelevo', normal: 1 },
   // Fobos e Deimos (15/10/2026, `completar-corpo` passo 2): a forma MEDIDA
   // inteira, Fobos pelo modelo de Gaskell (3,1 milhões de placas), Deimos
   // pelo de Thomas (grade de 5°, suavizada a 2° de arco) — mas pelo caminho

@@ -849,6 +849,46 @@ const ORIGENS = {
     proveniencia: 'derivado',
   },
 
+  // ---- DAFNIS, ATLAS, PROMETEU, PANDORA, JANO E EPIMETEU (17/10/2026,
+  // PLAN-LUAS-PEQUENAS.md E4/E5, a receita de Pã): a forma inteira (Cassini —
+  // Thomas, Joseph & Ansty 2018) vira mapa de altura, e a normal e os
+  // horizontes saem dela — tudo MEDIDO, sem relevo fino nem cratera
+  // inventada. A cor é PROVISÓRIA (cinza uniforme na média medida, tingido
+  // pela régua) até a pintura sobre o relevo medido: 'derivado'. As frases
+  // não dizem o nome: a ficha já é a da lua, e uma tradução serve às seis.
+  ...Object.fromEntries(
+    ['daphnis', 'atlas', 'prometheus', 'pandora', 'janus', 'epimetheus'].flatMap((corpo) => [
+      [
+        `${corpo}/map`,
+        {
+          fonte:
+            'Cinza uniforme provisório no albedo e na cor médios medidos pela Cassini — não existe mapa de cor medido desta lua',
+          url: `https://science.nasa.gov/saturn/moons/${corpo}/`,
+          licenca: 'sem imagem de origem: só valores medidos publicados (Cassini, NASA)',
+          atribuicao:
+            'Albedo e cor médios: medidas publicadas da Cassini ISS e VIMS (Hedman et al. 2020, Verbiscer et al. 2018, Buratti et al. 2019, Filacchione et al. 2013). Mapa uniforme gerado pelo app (Felipe Ferreira).',
+          proveniencia: 'derivado',
+        },
+      ],
+      ...[
+        ['height', 'mapa de ALTURA'],
+        ['normal', 'mapa de NORMAIS derivado da altura'],
+        ['horizon', 'mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)'],
+        ['horizon2', 'mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)'],
+      ].map(([canal, mapa]) => [
+        `${corpo}/${canal}`,
+        {
+          fonte: `Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — ${mapa}`,
+          url: 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/',
+          licenca: 'domínio público (NASA PDS)',
+          atribuicao:
+            'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.',
+          proveniencia: 'medido',
+        },
+      ]),
+    ])
+  ),
+
   // ---- ITEM 140 (2026-09-03): O RELEVO DA LUA, medido. Até aqui a Lua
   // tinha SÓ o mapa de cor, e o relevo dela era derivado dele (o bump do
   // albedo da S2) — invenção que afundava os mares e levantava os raios

@@ -211,7 +211,9 @@ describe('completude — todo alvo do Atlas tem física, ou a falta é nomeada',
    * emissor não a pede, e sair de `IDS_ESCULPIDOS` não é o mesmo que ganhar
    * massa. A linha dela fica nesta lista até o bloco ser regenerado com ela.
    * Pã saiu da família esculpida em 08/10/2026 pelo mesmo caminho, e fica
-   * aqui pelo mesmo motivo.
+   * aqui pelo mesmo motivo; Dafnis, Atlas, Prometeu, Pandora, Jano e
+   * Epimeteu também (17/10/2026). O nome da lista é o de quando eram nove
+   * esculpidas: hoje só Febe é.
    */
   const SEM_GM_DAS_ESCULPIDAS = [
     'pan', 'daphnis', 'atlas', 'prometheus', 'pandora',
