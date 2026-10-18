@@ -55,6 +55,7 @@ export function quadroDoPalcoVazio(): QuadroDoPalco {
     fovDeg: 0,
     ligado: false,
     focoDoAtlas: false,
+    destinoDoAtlas: false,
     pedidoDoRoteiro: false,
     politica: 'assistida',
     luzDoRoteiro: 0,
@@ -148,6 +149,12 @@ export interface FiosDoPalco {
    */
   noFoco: (id: string) => boolean;
   noRoteiro: (id: string) => boolean;
+  /**
+   * O foco SEM o pai da lua: o corpo para onde o visitante vai. Ele pede o
+   * teto do tier (`larguraPedidaPelaTela`); o pai segura os texels, mas
+   * pede o degrau da tela como qualquer vizinho.
+   */
+  noDestino: (id: string) => boolean;
   /** a cena mudou: a captura recomeça a contagem de estabilidade */
   perturbar: () => void;
 }
@@ -165,7 +172,8 @@ export function passoDoPalco(
   quadro: QuadroDoPalco,
   fios: FiosDoPalco
 ): void {
-  const { palco, planetas, rotulos, efemeride, noFilme, noFoco, noRoteiro, perturbar } = fios;
+  const { palco, planetas, rotulos, efemeride, noFilme, noFoco, noRoteiro, noDestino, perturbar } =
+    fios;
   for (const posto of postos) {
     // o pino das 16:00 é POR CORPO e só dentro do filme; sem ele o
     // pouso miraria um globo a 1,7 milhão de km
@@ -174,6 +182,7 @@ export function passoDoPalco(
     // e os dois seguradores antecipados também são POR CORPO (a dose
     // de 22/08, separada em duas mãos pelo item 115)
     quadro.focoDoAtlas = noFoco(posto.id);
+    quadro.destinoDoAtlas = noDestino(posto.id);
     quadro.pedidoDoRoteiro = noRoteiro(posto.id);
     const e = posto.corpo.atualizar(quadro);
 

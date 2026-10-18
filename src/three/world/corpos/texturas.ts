@@ -268,6 +268,101 @@ export function detectarWebp(): boolean {
   }
 }
 
+// ------------------------------------------------------------
+// O DEGRAU DA TELA — a imagem igual, com menos bytes (peso de rede,
+// 18/10/2026)
+// ------------------------------------------------------------
+//
+// MEDIDO (`capturas/peso/rede.md`): o gate de 4 px arma pelo TAMANHO, não
+// pelo quadro, e o tier mandava cada corpo armado baixar a variante cheia.
+// Em Saturno de perto 11,7 dos 11,8 MB de textura eram de Dione, fora do
+// quadro; na Terra de perto, 18,5 eram da Lua, um disco de ~15 px.
+//
+// A REGRA É DE IMAGEM IGUAL, e por isso tem só dois degraus. As variantes
+// menores do manifesto NÃO são o mip da cheia (`capturas/peso/rede-v2.md`:
+// a `map_4096` da Lua contra a cheia reduzida 2× difere até 51 níveis —
+// outro filtro, outra compressão), então um degrau intermediário para um
+// corpo VISÍVEL muda a imagem em qualquer tamanho onde o disco se lê. O
+// corpo no quadro com mais de `LIMIAR_DA_IMAGEM_PX` de diâmetro pede o teto
+// do tier, como antes; fora do quadro, ou menor que isso, o PISO da escada.
+// Destino declarado (o foco do Atlas, o roteiro do filme) pede o teto
+// sempre: a viagem até ele não pode chegar borrada. O teto do tier continua
+// mandando por cima de tudo (`alvoDePixels`).
+
+/** O menor degrau da escada do manifesto: todo canal tem variante ≤ 1024. */
+export const PISO_DA_TELA_PX = 1024;
+
+/**
+ * T: o diâmetro aparente (px) abaixo do qual o piso desenha a MESMA imagem
+ * que o teto (A/B: média |Δ| < 0,5/255, máximo ≤ 3/255). MEDIDO na
+ * varredura de tamanho (`capturas/peso/rede-v3.md`, piso × teto, o corpo
+ * sozinho no centro): Jano passa até 16 px (máx 2); Terra e Lua passam até
+ * 8 px e falham a 10 (máx 9 e 4); Dione, sem ponto que a cubra, passa a
+ * 4 px e já falha a 5 (máx 5). T fica nos 4 px do gate: todo disco armado
+ * no quadro pede o teto, e o piso é só de quem está fora dele.
+ */
+export const LIMIAR_DA_IMAGEM_PX = 4;
+
+/**
+ * A MARGEM sobre T: o teto é pedido quando o disco passa de T / MARGEM, para
+ * o lote chegar antes de o corpo cruzar T na aproximação.
+ */
+export const MARGEM_DO_LIMIAR = 2;
+
+/**
+ * A margem do cone da tela: corpo até este ângulo além da borda já conta
+ * como no quadro — girar a câmera não revela um corpo no piso.
+ */
+export const MARGEM_DO_QUADRO_RAD = 0.15;
+
+/**
+ * O que a tela informa ao corpo para ele pedir o degrau. Os campos da mira
+ * são opcionais: sem eles o corpo conta como no quadro (o pedido vira só o
+ * tamanho) e sem `destinoDoAtlas` ele não é destino.
+ */
+export interface MiraDaTela {
+  /** o eixo da câmera, unitário (o Director escreve a cada quadro) */
+  direcaoDaCamera?: THREE.Vector3;
+  /** meia diagonal do quadro, em radianos (`meioConeDaTela`) */
+  meioConeDaTelaRad?: number;
+  /** o Atlas está focado NESTE corpo — não na lua dele, não no pai */
+  destinoDoAtlas?: boolean;
+}
+
+/** A meia diagonal do quadro (o cone que o circunscreve), em radianos. */
+export function meioConeDaTela(fovDeg: number, aspecto: number): number {
+  const meiaAltura = Math.tan(THREE.MathUtils.degToRad(fovDeg) / 2);
+  return Math.atan(meiaAltura * Math.hypot(1, aspecto));
+}
+
+/**
+ * O DIÂMETRO que a tela pede deste corpo AGORA (`diametroPx`, a régua do
+ * gate): infinito = o teto (destino declarado, ou câmera dentro do raio);
+ * 0 = o piso (fora do quadro, ou sem posição). `raioPc` é o MAIOR semieixo.
+ */
+export function diametroPedidoPelaTela(
+  diametroPx: number,
+  raioPc: number,
+  centroPc: THREE.Vector3,
+  q: MiraDaTela & { camPosPc: THREE.Vector3; pedidoDoRoteiro: boolean }
+): number {
+  if (q.pedidoDoRoteiro || q.destinoDoAtlas) return Number.POSITIVE_INFINITY;
+  const dPc = q.camPosPc.distanceTo(centroPc);
+  if (!Number.isFinite(dPc)) return 0;
+  if (dPc <= raioPc) return Number.POSITIVE_INFINITY;
+  const eixo = q.direcaoDaCamera;
+  if (eixo && q.meioConeDaTelaRad !== undefined) {
+    const cos =
+      (eixo.x * (centroPc.x - q.camPosPc.x) +
+        eixo.y * (centroPc.y - q.camPosPc.y) +
+        eixo.z * (centroPc.z - q.camPosPc.z)) /
+      dPc;
+    const foraDoEixo = Math.acos(Math.min(1, Math.max(-1, cos))) - Math.asin(raioPc / dPc);
+    if (foraDoEixo > q.meioConeDaTelaRad + MARGEM_DO_QUADRO_RAD) return 0;
+  }
+  return diametroPx;
+}
+
 
 // ------------------------------------------------------------
 // A CARGA — uma só, para os quatro corpos
@@ -567,7 +662,9 @@ export async function carregarCanaisDoCorpo(
   opcoes: OpcoesDeTextura,
   tier: QualityLevel,
   cancelado: () => boolean,
-  sinal?: AbortSignal
+  sinal?: AbortSignal,
+  /** o degrau da tela (`degrauPara`); infinito = só o teto do tier */
+  degrau = Number.POSITIVE_INFINITY
 ): Promise<Map<string, THREE.Texture> | null> {
   const { base, maxTextureSize } = opcoes;
   const buscar = opcoes.buscarManifest ?? buscarPelaRede;
@@ -578,8 +675,12 @@ export async function carregarCanaisDoCorpo(
 
   const lote = await Promise.allSettled(
     canais.map(async (pedido) => {
-      // o alvo é POR CANAL — a dose de VRAM mora em `alvoDePixels`
-      const alvo = alvoDePixels(tier, pedido.canal, maxTextureSize, pedido.assunto);
+      // o alvo é POR CANAL — a dose de VRAM mora em `alvoDePixels` — e a
+      // tela só o baixa, nunca o sobe
+      const alvo = Math.min(
+        alvoDePixels(tier, pedido.canal, maxTextureSize, pedido.assunto),
+        degrau
+      );
       const variante = escolherVariante(manifest.entradas, corpo, pedido.canal, alvo, webpOk);
       if (!variante) {
         throw new Error(`${corpo} sem variante para '${pedido.canal}' ≤ ${alvo}px`);
@@ -729,6 +830,15 @@ export class TexturasDoCorpo {
    * rede que já disse não três vezes. Uma troca bem-sucedida o apaga.
    */
   private tierRecusado: QualityLevel | null = null;
+  /**
+   * O DEGRAU DA TELA dos pixels vivos e da troca recusada (o piso ou o
+   * teto do tier — `degrauPara`): um lote é o par (tier, degrau). 0 =
+   * nenhum.
+   */
+  private degrauVivo = 0;
+  private degrauRecusado = 0;
+  /** o degrau que a imagem igual exige no último tick (T sem a margem) */
+  private degrauPreciso = 0;
   /** o pedido que vale; qualquer outro que chegue é descartado */
   private geracao = 0;
   /**
@@ -820,8 +930,15 @@ export class TexturasDoCorpo {
    *
    * `tS` é o relógio de parede do app (o `t` do tick). Ver
    * `CARENCIA_DA_DESCARGA_S` para o porquê de não ser a soma dos `dtS`.
+   *
+   * `diametroPx` é o que a TELA pede (`diametroPedidoPelaTela`); ausente,
+   * o teto do tier, como antes do degrau. A troca de DEGRAU é a troca de
+   * tier um passo abaixo, com duas regras a mais: no mesmo tier o degrau
+   * SÓ SOBE enquanto alguém segura (encolher na tela não troca pixel nenhum
+   * — quem devolve os texels é a carência), e uma subida em voo POUSA
+   * antes de qualquer outra troca no mesmo tier.
    */
-  aoTick(seguram: Seguradores, tS: number): void {
+  aoTick(seguram: Seguradores, tS: number, diametroPx = Number.POSITIVE_INFINITY): void {
     if (this.disposto) return;
     const gatilho = seguram.tela || seguram.foco || seguram.filme;
     this.quantosSeguram =
@@ -845,26 +962,59 @@ export class TexturasDoCorpo {
       this.recargas = 0;
     }
     this.ninguemSegurava = false;
+    // o tier lido AGORA, na hora do pedido (pino de `atlasConfig.test.ts`)
+    const { rede } = this.pedido;
+    const tier = rede.tier();
+    const degrauDaTela = this.degrauPara(tier, diametroPx, LIMIAR_DA_IMAGEM_PX / MARGEM_DO_LIMIAR);
+    this.degrauPreciso = this.degrauPara(tier, diametroPx, LIMIAR_DA_IMAGEM_PX);
     if (this.estado === 'fria') {
-      this.pedir();
+      this.pedir(tier, degrauDaTela);
       return;
     }
     // corpo procedural (sem canais) não tem pixel de arquivo a trocar
     if (this.estado !== 'pronta' || this.pedido.canais.length === 0) return;
-    const tier = this.pedido.rede.tier();
-    // contra o lote EM VOO quando há um: dois cliques no mesmo tier não
-    // abrem dois pedidos, e o pedido em voo não se cancela sozinho
-    if (tier === (this.tierEmVoo ?? this.tierVivo) || tier === this.tierRecusado) return;
-    // VOLTAR AO TIER QUE JÁ ESTÁ NA TELA É CANCELAR, e não pedir de
-    // novo: não há lote a buscar, mas há um em voo que ninguém espera
-    // mais — a geração nova o invalida. É a lição do `reassarMundo`
-    // (21/08) num corpo só. Fora da tela quem cancela é o `aoSoltar`,
-    // que não olha tier nenhum: sem segurador, nenhum lote tem dono.
-    if (tier === this.tierVivo) {
-      this.cancelarEmVoo();
-      return;
+    const degrau =
+      tier === this.tierVivo ? Math.max(this.degrauVivo, degrauDaTela) : degrauDaTela;
+    if (this.tierEmVoo !== null) {
+      // contra o lote EM VOO: dois cliques no mesmo tier não abrem dois
+      // pedidos, e a subida de degrau em voo pousa antes da próxima
+      if (tier === this.tierEmVoo) return;
+      // VOLTAR AO TIER QUE JÁ ESTÁ NA TELA É CANCELAR o que está no ar:
+      // ninguém o espera mais — a geração nova o invalida. É a lição do
+      // `reassarMundo` (21/08) num corpo só. Fora da tela quem cancela é
+      // o `aoSoltar`, que não olha tier nenhum: sem segurador, nenhum
+      // lote tem dono.
+      if (tier === this.tierVivo) this.cancelarEmVoo();
     }
-    this.pedir();
+    if (tier === this.tierVivo && degrau === this.degrauVivo) return;
+    if (tier === this.tierRecusado && degrau === this.degrauRecusado) return;
+    this.pedir(tier, degrau);
+  }
+
+  /** os pixels na tela são de que degrau (0: nenhum) — a sonda da aproximação */
+  get degrauNaTela(): number {
+    return this.degrauVivo;
+  }
+
+  /** o degrau que a imagem igual exige agora (T, sem a margem) — a sonda */
+  get degrauPrecisoNaTela(): number {
+    return this.degrauPreciso;
+  }
+
+  /**
+   * O degrau de um diâmetro pedido: o TETO do tier (o maior alvo entre os
+   * canais deste corpo) a partir de `limiarPx`, o piso abaixo. O teto é um
+   * número só para o foco (infinito) e para o close: virar destino de um
+   * corpo já carregado no teto não baixa nada de novo.
+   */
+  private degrauPara(tier: QualityLevel, diametroPx: number, limiarPx: number): number {
+    if (!(diametroPx >= limiarPx)) return PISO_DA_TELA_PX;
+    const { rede, canais } = this.pedido;
+    let teto = PISO_DA_TELA_PX;
+    for (const c of canais) {
+      teto = Math.max(teto, alvoDePixels(tier, c.canal, rede.maxTextureSize, c.assunto));
+    }
+    return teto;
   }
 
   /**
@@ -933,11 +1083,13 @@ export class TexturasDoCorpo {
     this.tierVivo = null;
     this.tierEmVoo = null;
     this.tierRecusado = null;
+    this.degrauVivo = 0;
+    this.degrauRecusado = 0;
     this.recargas = 0;
     this.soltoDesde = null;
   }
 
-  private pedir(): void {
+  private pedir(tier: QualityLevel, degrau: number): void {
     // com o globo já na tela o pedido é de TROCA: o estado continua
     // 'pronta' e os pixels velhos seguem desenhando até o lote chegar
     const daPrimeiraVez = this.estado !== 'pronta';
@@ -955,10 +1107,9 @@ export class TexturasDoCorpo {
     const aborto = new AbortController();
     this.abortoEmVoo = aborto;
     const minha = ++this.geracao;
-    const tier = rede.tier();
     this.tierEmVoo = tier;
     const vencida = () => this.disposto || minha !== this.geracao;
-    void carregarCanaisDoCorpo(corpo, canais, rede, tier, vencida, aborto.signal)
+    void carregarCanaisDoCorpo(corpo, canais, rede, tier, vencida, aborto.signal, degrau)
       .then((porCanal) => {
         // cancelada no caminho: o lote já foi descartado lá dentro
         if (!porCanal) return;
@@ -978,9 +1129,11 @@ export class TexturasDoCorpo {
         this.vivas = [...porCanal.values()];
         // ---- fim da troca -------------------------------------------
         this.tierVivo = tier;
+        this.degrauVivo = degrau;
         this.tierEmVoo = null;
         if (this.abortoEmVoo === aborto) this.abortoEmVoo = null;
         this.tierRecusado = null;
+        this.degrauRecusado = 0;
         this.recargas = 0;
         this.estado = 'pronta';
       })
@@ -1005,9 +1158,10 @@ export class TexturasDoCorpo {
         }
         this.recargas = 0;
         this.tierRecusado = tier;
+        this.degrauRecusado = degrau;
         console.warn(
           `[${etiqueta}] troca de qualidade falhou ${1 + RECARGAS_ATE_DESISTIR}×; ` +
-            `o corpo segue no tier '${this.tierVivo}'`
+            `o corpo segue no tier '${this.tierVivo}' (degrau ${this.degrauVivo})`
         );
       });
   }

@@ -66,6 +66,7 @@ import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
 import { WrappedStars, resolvedCatalogCurve } from './world/wrappedStars';
 import { CORPOS_DEFAULT_ON, CorposResolvidos } from './world/corpos/corpos';
+import { meioConeDaTela } from './world/corpos/texturas';
 import { LuaResolvida } from './world/corpos/lua';
 import type { TerraResolvida } from './world/corpos/terra';
 import { RochosoResolvido } from './world/corpos/rochoso';
@@ -130,6 +131,7 @@ import {
 } from './director/carregamento';
 import { passoDoPalco, quadroDoPalcoVazio } from './director/palco';
 import {
+  corpoEDestinoDoAtlas,
   corpoNoFocoDoAtlas,
   corpoPedidoPeloRoteiro,
   efemeridesPrecisamPreCarga,
@@ -692,6 +694,11 @@ export class Director {
   private corpoNoRoteiro(id: string): boolean {
     return corpoPedidoPeloRoteiro(this.phase, this.journeyT, id, this.filme.apoios);
   }
+  private corpoNoDestino(id: string): boolean {
+    return corpoEDestinoDoAtlas(this.phase, this.escada.focoCorpoId, id);
+  }
+  /** o eixo da câmera, reescrito a cada tick para o degrau da tela */
+  private readonly eixoDaCamera = new THREE.Vector3();
   /** quadros já gastos segurando a captura com a efeméride pedida
    *  indisponível — ver QUADROS_TENTANDO_FONTE (auditoria item 5c). */
   private quadrosTentandoFonte = 0;
@@ -1188,6 +1195,7 @@ export class Director {
   constructor(canvas: HTMLCanvasElement, events: DirectorEvents) {
     this.corpoNoFoco = this.corpoNoFoco.bind(this);
     this.corpoNoRoteiro = this.corpoNoRoteiro.bind(this);
+    this.corpoNoDestino = this.corpoNoDestino.bind(this);
     this.events = events;
     this.engine = new Engine(canvas);
     // Se QUALQUER coisa abaixo lançar (o prime do Sol são ~550 draws numa
@@ -3959,6 +3967,10 @@ export class Director {
       q.camPosPc = cam.position;
       q.screenHPx = hPx;
       q.fovDeg = cam.fov;
+      // a MIRA do degrau da tela: o eixo e a meia diagonal do quadro (a
+      // matriz da câmera já foi atualizada lá em cima)
+      q.direcaoDaCamera = cam.getWorldDirection(this.eixoDaCamera);
+      q.meioConeDaTelaRad = meioConeDaTela(cam.fov, cam.aspect);
       q.ligado = this.palco.ligado;
       q.politica = this.politicaDeLuz;
       q.luzDoRoteiro = this.luzDoRoteiro;
@@ -3980,6 +3992,7 @@ export class Director {
         noFilme: this.phase === 'journey' || this.phase === 'end',
         noFoco: this.corpoNoFoco,
         noRoteiro: this.corpoNoRoteiro,
+        noDestino: this.corpoNoDestino,
         perturbar: this.perturbarDoPalco,
       });
     }

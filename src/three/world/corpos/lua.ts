@@ -123,8 +123,14 @@ import type { FonteDeEfemerides } from '../planetas/planetas';
 import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import { GLSL_NORMAL_DO_MAPA, diametroAparentePx } from './corpos';
 import { cessaoAlvo, gateBinario, saltoGuardado } from './terra';
-import { CANAL_MAP, CANAL_NORMAL, type Seguradores, TexturasDoCorpo } from './texturas';
-import type { OpcoesDeTextura } from './texturas';
+import {
+  CANAL_MAP,
+  CANAL_NORMAL,
+  type Seguradores,
+  TexturasDoCorpo,
+  diametroPedidoPelaTela,
+} from './texturas';
+import type { MiraDaTela, OpcoesDeTextura } from './texturas';
 import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
 import {
   escreverSombraDeEclipse,
@@ -234,7 +240,7 @@ void main() {
 /** O que o Director entrega por tick — o MESMO quadro da Terra desde
  *  30/08: com o ponto fotométrico, a Lua passou a ter cessão, e a
  *  cessão consome `dtS` e `salto` como as irmãs. */
-export interface QuadroDaLua {
+export interface QuadroDaLua extends MiraDaTela {
   jdTdb: number;
   /** a efeméride viva, ou null — e null aqui significa SEM Lua, salvo
    *  `centroPinadoPc` (o vetor da coda do filme). */
@@ -461,7 +467,11 @@ export class LuaResolvida {
     this.seguram.tela = this.armado;
     this.seguram.foco = q.focoDoAtlas;
     this.seguram.filme = q.pedidoDoRoteiro;
-    this.texturas.aoTick(this.seguram, q.tS);
+    this.texturas.aoTick(
+      this.seguram,
+      q.tS,
+      diametroPedidoPelaTela(diametroPx, RAIO_LUA_PC, this.centro, q)
+    );
 
     // A LUA TEM LUGAR? (item 225) — posição finita, e NUNCA `q.fonte !==
     // null` sozinho: com o PINO da coda o centro nasce do vetor pré-

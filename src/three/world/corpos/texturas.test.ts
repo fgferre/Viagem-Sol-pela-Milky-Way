@@ -21,12 +21,17 @@ import {
   CANAL_NORMAL,
   CARENCIA_DA_DESCARGA_S,
   RECARGAS_ATE_DESISTIR,
+  LIMIAR_DA_IMAGEM_PX,
+  MARGEM_DO_LIMIAR,
+  MARGEM_DO_QUADRO_RAD,
   TexturasDoCorpo,
   alvoDePixels,
   buscarManifestUmaVez,
   carregarCanaisDoCorpo,
   descartarTextura,
   escolherVariante,
+  diametroPedidoPelaTela,
+  meioConeDaTela,
 } from './texturas';
 import type {
   CanalPedido,
@@ -891,5 +896,74 @@ describe('os canais do horizonte são DADO de apoio, como a normal', () => {
       }
     }
     expect([CANAL_HORIZONTE.canal, CANAL_HORIZONTE2.canal]).toEqual(['horizon', 'horizon2']);
+  });
+});
+
+// ------------------------------------------------------------
+// O DEGRAU DA TELA (peso de rede, 18/10/2026)
+// ------------------------------------------------------------
+
+describe('o degrau da tela: imagem igual; pequeno ou fora do quadro baixa o piso', () => {
+  const R = 1e-10;
+  /** câmera na origem olhando −z, quadro 16:9 de 58° */
+  const vista = (extra = {}) => ({
+    camPosPc: new THREE.Vector3(),
+    pedidoDoRoteiro: false,
+    direcaoDaCamera: new THREE.Vector3(0, 0, -1),
+    meioConeDaTelaRad: meioConeDaTela(58, 16 / 9),
+    ...extra,
+  });
+
+  it('no quadro pede o diâmetro; atrás da câmera, o piso; a margem da borda conta', () => {
+    expect(diametroPedidoPelaTela(40, R, new THREE.Vector3(0, 0, -1000 * R), vista())).toBe(40);
+    expect(diametroPedidoPelaTela(40, R, new THREE.Vector3(0, 0, 10 * R), vista())).toBe(0);
+    const borda = meioConeDaTela(58, 16 / 9) + MARGEM_DO_QUADRO_RAD / 2;
+    const naMargem = new THREE.Vector3(Math.sin(borda), 0, -Math.cos(borda));
+    naMargem.multiplyScalar(1000 * R);
+    expect(diametroPedidoPelaTela(40, R, naMargem, vista())).toBe(40);
+    const alem = meioConeDaTela(58, 16 / 9) + 2 * MARGEM_DO_QUADRO_RAD;
+    const fora = new THREE.Vector3(Math.sin(alem), 0, -Math.cos(alem)).multiplyScalar(1000 * R);
+    expect(diametroPedidoPelaTela(40, R, fora, vista())).toBe(0);
+  });
+
+  it('destino do Atlas e roteiro do filme pedem o teto, mesmo atrás da câmera', () => {
+    const atras = new THREE.Vector3(0, 0, 10 * R);
+    expect(diametroPedidoPelaTela(1, R, atras, vista({ destinoDoAtlas: true }))).toBe(Infinity);
+    expect(diametroPedidoPelaTela(1, R, atras, vista({ pedidoDoRoteiro: true }))).toBe(Infinity);
+    // sem posição não há tela a pedir; dentro do raio, o teto
+    expect(diametroPedidoPelaTela(1, R, new THREE.Vector3(NaN, 0, 0), vista())).toBe(0);
+    expect(diametroPedidoPelaTela(1, R, new THREE.Vector3(0, 0, -R / 2), vista())).toBe(Infinity);
+  });
+
+  it('dois degraus: o piso abaixo de T/margem, o teto do tier acima — e só sobe', async () => {
+    const b = bancadaDaTroca('cinema');
+    const tela = { tela: true, foco: false, filme: false };
+    const mapa = (sufixo: string) => `textures/atlas/earth/map${sufixo}.webp`;
+    const pedeOTeto = LIMIAR_DA_IMAGEM_PX / MARGEM_DO_LIMIAR;
+    // pequeno: o piso
+    b.casa.aoTick(tela, 0, pedeOTeto * 0.9);
+    await b.entregar();
+    expect(b.pedidos).toEqual([mapa('_1024')]);
+    expect(b.casa.degrauNaTela).toBe(1024);
+    expect(b.casa.degrauPrecisoNaTela).toBe(1024);
+    // passou de T/margem: o teto, em segundo plano, antes de a imagem precisar
+    b.casa.aoTick(tela, 0, pedeOTeto);
+    await b.respirar();
+    expect(b.pedidos.at(-1)).toBe(mapa(''));
+    expect(b.casa.degrauPrecisoNaTela).toBe(1024);
+    // cruzou T com o teto no ar: nenhum pedido novo, o piso desenha
+    b.casa.aoTick(tela, 0, LIMIAR_DA_IMAGEM_PX);
+    await b.respirar();
+    expect(b.pedidos).toHaveLength(2);
+    expect(b.casa.pronta).toBe(true);
+    expect(b.casa.degrauPrecisoNaTela).toBe(8192);
+    await b.entregar();
+    expect(b.casa.degrauNaTela).toBe(8192);
+    // encolher ou sair do quadro não troca pixel; virar destino também não
+    b.casa.aoTick(tela, 0, 0);
+    b.casa.aoTick({ ...tela, foco: true }, 0, Infinity);
+    await b.entregar();
+    expect(b.pedidos).toHaveLength(2);
+    expect(b.descartadas).toEqual([mapa('_1024')]);
   });
 });

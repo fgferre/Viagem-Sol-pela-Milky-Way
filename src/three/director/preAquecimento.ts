@@ -18,6 +18,16 @@ export function corpoNoFocoDoAtlas(fase: Phase, foco: string | null, id: string)
 }
 
 /**
+ * O DESTINO: o foco do Atlas sem o pai da lua. É o único dos dois que pede
+ * o teto do tier antes de estar grande na tela — a câmera vai até ele, e
+ * a carga antecipada existe para ele chegar nítido. O pai segura os texels
+ * pelo `corpoNoFocoDoAtlas` e pede o degrau da tela (peso de rede, 18/10).
+ */
+export function corpoEDestinoDoAtlas(fase: Phase, foco: string | null, id: string): boolean {
+  return fase === 'atlas' && foco === id;
+}
+
+/**
  * No filme, só os corpos e os momentos declarados pelo roteiro — e o
  * pedido é MONOTÔNICO: `montarApoiosDoRoteiro` guarda o INÍCIO de cada
  * corpo e responde `t >= inicio`, então uma vez aceso ele fica aceso até

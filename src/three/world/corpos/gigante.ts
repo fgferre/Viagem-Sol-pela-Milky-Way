@@ -86,8 +86,8 @@ import { LajotaDoAnel, VOLUME_DA_LAJOTA } from './lajotaDoAnel';
 import type { QuadroDaLajota } from './lajotaDoAnel';
 import { posicaoKepler } from '../../../lib/atlas/kepler';
 import { cessaoAlvo, gateBinario, saltoGuardado } from './terra';
-import { CANAL_MAP, type Seguradores, TexturasDoCorpo } from './texturas';
-import type { OpcoesDeTextura } from './texturas';
+import { CANAL_MAP, type Seguradores, TexturasDoCorpo, diametroPedidoPelaTela } from './texturas';
+import type { MiraDaTela, OpcoesDeTextura } from './texturas';
 import {
   componentesNoFrameDoAnel,
   esferaNoPlanetocentrico,
@@ -1185,7 +1185,7 @@ void main() {
 // A classe
 // ------------------------------------------------------------
 
-export interface QuadroDoGigante {
+export interface QuadroDoGigante extends MiraDaTela {
   jdTdb: number;
   fonte: FonteDeEfemerides | null;
   camPosPc: THREE.Vector3;
@@ -1409,7 +1409,11 @@ export class GiganteResolvido {
     this.seguram.tela = this.armado;
     this.seguram.foco = q.focoDoAtlas;
     this.seguram.filme = q.pedidoDoRoteiro;
-    this.texturas.aoTick(this.seguram, q.tS);
+    this.texturas.aoTick(
+      this.seguram,
+      q.tS,
+      diametroPedidoPelaTela(diametroPx, this.raioA, this.centro, q)
+    );
 
     const emQuadro =
       this.armado &&

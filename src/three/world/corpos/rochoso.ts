@@ -90,8 +90,9 @@ import {
   CANAL_NORMAL,
   type Seguradores,
   TexturasDoCorpo,
+  diametroPedidoPelaTela,
 } from './texturas';
-import type { OpcoesDeTextura } from './texturas';
+import type { MiraDaTela, OpcoesDeTextura } from './texturas';
 import {
   componentesNoFrameDoAnel,
   esferaNoPlanetocentrico,
@@ -725,7 +726,7 @@ void main() {
 // ------------------------------------------------------------
 
 /** O que o Director entrega por tick. */
-export interface QuadroDoRochoso {
+export interface QuadroDoRochoso extends MiraDaTela {
   jdTdb: number;
   fonte: FonteDeEfemerides | null;
   camPosPc: THREE.Vector3;
@@ -980,7 +981,11 @@ export class RochosoResolvido {
     this.seguram.tela = armado;
     this.seguram.foco = q.focoDoAtlas;
     this.seguram.filme = q.pedidoDoRoteiro;
-    this.texturas.aoTick(this.seguram, q.tS);
+    this.texturas.aoTick(
+      this.seguram,
+      q.tS,
+      diametroPedidoPelaTela(diametroPx, this.raioA, this.centro, q)
+    );
 
     const emQuadro =
       armado &&

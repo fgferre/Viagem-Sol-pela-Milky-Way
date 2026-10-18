@@ -9,7 +9,7 @@
 // ao fim de verdade — ver o cabeçalho do arquivo para o efeito medido.
 // ============================================================
 import { describe, expect, it } from 'vitest';
-import { corpoPedidoPeloRoteiro } from './preAquecimento';
+import { corpoEDestinoDoAtlas, corpoNoFocoDoAtlas, corpoPedidoPeloRoteiro } from './preAquecimento';
 import { APOIOS_DO_FILME } from '../cinematic/journey';
 
 // 'earth' e 'moon' são preload do roteiro real (revelacao.json) — um t
@@ -28,5 +28,14 @@ describe('o pedido do roteiro conta o fim do filme como filme', () => {
     for (const fase of ['loading', 'intro', 'free', 'atlas'] as const) {
       expect(corpoPedidoPeloRoteiro(fase, T_BEM_DEPOIS_DO_FILME, 'earth', APOIOS_DO_FILME)).toBe(false);
     }
+  });
+});
+
+describe('o destino do Atlas é o foco SEM o pai da lua (peso de rede, 18/10)', () => {
+  it('focado em Jano, Saturno segura os texels mas não é destino', () => {
+    expect(corpoNoFocoDoAtlas('atlas', 'janus', 'saturn')).toBe(true);
+    expect(corpoEDestinoDoAtlas('atlas', 'janus', 'saturn')).toBe(false);
+    expect(corpoEDestinoDoAtlas('atlas', 'janus', 'janus')).toBe(true);
+    expect(corpoEDestinoDoAtlas('journey', 'janus', 'janus')).toBe(false);
   });
 });

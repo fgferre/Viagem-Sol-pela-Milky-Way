@@ -95,8 +95,14 @@ import {
 } from '../../shaders/terraShaders';
 import { orientacaoDoCorpoNaCena } from './orientacaoNaCena';
 import type { OrientacaoNaCena } from './orientacaoNaCena';
-import { CANAL_HORIZONTE, CANAL_HORIZONTE2, type Seguradores, TexturasDoCorpo } from './texturas';
-import type { CanalPedido, OpcoesDeTextura } from './texturas';
+import {
+  CANAL_HORIZONTE,
+  CANAL_HORIZONTE2,
+  type Seguradores,
+  TexturasDoCorpo,
+  diametroPedidoPelaTela,
+} from './texturas';
+import type { CanalPedido, MiraDaTela, OpcoesDeTextura } from './texturas';
 import {
   escreverSombraDeEclipse,
   uniformsDeEclipseNeutros,
@@ -277,7 +283,7 @@ export function saltoGuardado(pendente: boolean, salto: boolean, emQuadro: boole
 // ------------------------------------------------------------
 
 /** O que o Director entrega por tick. */
-export interface QuadroDaTerra {
+export interface QuadroDaTerra extends MiraDaTela {
   /** jd TDB grampeado do Director — o relógio único da casa. */
   jdTdb: number;
   /** a efeméride viva, ou null (retrato congelado — o "sem rede"). */
@@ -633,7 +639,11 @@ export class TerraResolvida {
     this.seguram.tela = this.armado;
     this.seguram.foco = q.focoDoAtlas;
     this.seguram.filme = q.pedidoDoRoteiro;
-    this.texturas.aoTick(this.seguram, q.tS);
+    this.texturas.aoTick(
+      this.seguram,
+      q.tS,
+      diametroPedidoPelaTela(diametroPx, RAIO_EQ_TERRA_PC, this.centro, q)
+    );
 
     const emQuadro = this.armado && q.ligado && this.texturas.pronta;
     e.emQuadro = emQuadro;
