@@ -1,7 +1,7 @@
 # O peso do app — rodada de 18/10/2026 (a fila dele: *"vamos seguir com as melhorias"*)
 
 Regra dele: otimizar é a MESMA imagem com menos ms (ou menos bytes); nada de desligar opção de Ajustes como ganho.
-Medidas de partida (build a1e6ef50, M1 dele): `capturas/peso/quadro.md` (quadro) e `capturas/peso/rede.md` (rede).
+Medidas de partida (build a1e6ef50, M1 dele): `capturas/copias/Viagem-peso/peso/quadro.md` (quadro) e `.../rede.md` (rede); as cópias de trabalho foram fechadas em 18/10 e as provas de cada frente estão em `capturas/copias/Viagem-peso-{sol,msaa,rede}/`.
 
 ## O que pesa
 - Rodar, nível cinema (o padrão do visitante), janela 1440×733 a 2× (a que a tela dele abre): Início 14 fps,
@@ -12,14 +12,14 @@ Medidas de partida (build a1e6ef50, M1 dele): `capturas/peso/quadro.md` (quadro)
   (tier `cinema` fixo: mapas 8192 e normais 4096 no iPhone).
 
 ## Frentes (um ramo e uma cópia por frente, juntadas em `peso-do-app` por prova)
-1. **Sol do Início** (`../Viagem-peso-sol`, ramo `peso-sol`): mesma imagem, menos ms.
-2. **MSAA uma vez só** (`../Viagem-peso-msaa`, ramo `peso-msaa`): a cena resolve uma vez; os passes depois em alvo
+1. **Sol do Início** (ramo `peso-sol`): mesma imagem, menos ms.
+2. **MSAA uma vez só** (ramo `peso-msaa`): a cena resolve uma vez; os passes depois em alvo
    simples (o item 144 mostrou o composer escrevendo 4× no alvo multiamostrado). Mesma imagem.
    → FECHADA SEM MUDANÇA (18/10): já é assim desde 03/09 (`CenaResolvidaUmaVez`, um resolve por quadro, conferido por
    rastro de GL). Os ~24 ms são o próprio MSAA 4× no ANGLE/Metal; nada que mantenha a imagem ajudou (descartar
    profundidade, profundidade 32f; `multisampled_render_to_texture` não existe no Chrome 155). O que sobra muda a
    imagem ou espera a palavra dele ("MSAA só nas fases com órbitas"). Achado: as sondas de oclusão custam ~2,3 ms no Atlas.
-3. **Rede** (`../Viagem-peso-rede`, ramo `peso-rede`): o tamanho da textura pelo tamanho na tela (vizinho pequeno ou fora
+3. **Rede** (ramo `peso-rede`): o tamanho da textura pelo tamanho na tela (vizinho pequeno ou fora
    do quadro baixa pequeno; celular não baixa 8192); dados da galáxia só quando a galáxia aparece.
    → 18/10, sem commit: a regra pela largura na tela muda a imagem (o arquivo menor não é a redução da GPU do cheio:
    a Lua de 4096 difere até 51 níveis). Decisão: teto cheio para todo corpo visível > ~10 px; 1024 só fora do quadro ou

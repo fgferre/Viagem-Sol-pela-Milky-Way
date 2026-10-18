@@ -7,7 +7,7 @@ Número é identidade, não posição: item novo entra no fim da sua seção. **
 ## O BASTÃO — onde a rodada parou (18/10) — O PESO DO APP, PRIMEIRA LEVA: O SOL DA ABERTURA E O DOWNLOAD NA ORDEM CERTA, NO AR (`origin/main` 6988ff7e)
 
 **No ar desde 18/10** (*"sim, aprovo o limite no celular, pode publicar"*; deploy verde, bundle no ar = build local por sha256), mesma imagem, menos ms e menos espera
-(plano e números em `PLAN-PESO.md`; medidas em `../Viagem-peso/capturas/peso/`): a coroa do Sol calcula o padrão de
+(plano e números em `PLAN-PESO.md`; medidas em `capturas/copias/Viagem-peso/peso/`): a coroa do Sol calcula o padrão de
 cada ângulo uma vez por quadro — abertura no notebook dele, nível cinema, 17 → 27 fps (2560: 6 → 10,5), A/B ≤ 1/255;
 as texturas numa fila só — o destino primeiro (desde o clique), os visíveis pelo tamanho, os vizinhos do sistema
 adiantados com a rede quieta; corpo fora do quadro baixa o piso (1024); as 25 vistas oficiais idênticas; o foco nítido
@@ -30,7 +30,7 @@ no lugar, e o resto por produção + degradação ajustadas contra a foto de cad
 pouco de rugosidade"* → o fundo de crateras gastas). Sem cratera inventada acima do que a forma medida resolve (o teste
 dos eixos pegou 27 delas); a sombra assada sem as covas menores que um texel (era a pimenta preta). Prometeu ganhou as
 fotos pelo PDS Imaging (o nó de anéis segue em HTTP 429). Atlas, Pandora e Dafnis ficam como estavam: batem com as
-fotos (o risco escuro no topo de Atlas é real). Provas: `../Viagem-luas6/capturas/luas-pequenas/` (pranchas finais
+fotos (o risco escuro no topo de Atlas é real). Provas: `capturas/copias/Viagem-luas6/luas-pequenas/` (pranchas finais
 `prancha-final-{1,2}-v2.jpg`, pranchas por lua `<lua>/prancha-v6*.jpg`, catálogos em `<lua>/acabamento-v2/olho/`).
 
 **A próxima rodada — a fila dele:** o peso do app. Achados abertos desta: Dafnis meio enterrada porque o anel do app não
@@ -49,7 +49,7 @@ quadrado em luz rasante). O relevo do projeto Saturn tinha o polo quebrado (a es
 ±55° esticada até os polos) e a figura contada duas vezes (Mimas 34 km de achatamento em vez de 16). As fotos giram
 pelo alinhamento contra o relevo novo: Mimas −4,02°, Tétis 0,16°, Dione 0,61°. O relevo fino abaixo do modelo (Mimas
 ~2,2 km; Tétis ~6; Dione ~6,4) fica LISO e confessado: tirá-lo das fotos reprovou na validação (Tétis, Dione) e as
-tigelas inventadas saíram carimbadas (Mimas) — a skill aprendeu. Provas: `../Viagem-mtd/capturas/mtd/` (inventário,
+tigelas inventadas saíram carimbadas (Mimas) — a skill aprendeu. Provas: `capturas/copias/Viagem-mtd/mtd/` (inventário,
 pranchas finais `prancha-final-{mimas,tetis,dione}.jpg`, tentativas rejeitadas em `*/etapa3/rejeitado/`).
 
 **A próxima rodada — a fila dele:** as seis luas pequenas de Saturno (forma da Cassini), depois o peso do app. Achados
@@ -70,13 +70,13 @@ Dawn (Rheasilvia no contorno), a foto F2 corrigida sem sombra assada (era a "fac
 calota norte nunca vista com terreno medido do próprio Vesta transplantado — aprovada (*"sim aprovo"*); o borrão em
 cunhas no polo (mip) consertado no motor (`amostraEquiretangular`); Fobos e Deimos sem o realce 1,2 da normal.
 A lei de luz LS foi conferida contra três fotos da Dawn na mesma geometria: o contraste bate (Vesta lisa de longe é real).
-Provas: `../Viagem-fobos/capturas/fobos-deimos/` e `../Viagem-vesta/capturas/vesta/` (pranchas finais, coberturas,
+Provas: `capturas/copias/Viagem-fobos/fobos-deimos/` e `capturas/copias/Viagem-vesta/vesta/` (pranchas finais, coberturas,
 inventários; os worktrees ficam — `capturas/` é a única cópia), `capturas/elipsoide/`, `capturas/latitude/`.
 
 **A próxima rodada — a primeira da fila:** o relevo de **Mimas, Tétis e Dione** refeito em casa pela skill
 `completar-corpo`. Os mapas de normais delas vieram do projeto Saturn com o polo quebrado: a inclinação leste cheia de
 riscos radiais (uma estrela no polo; Dione pior, desce até 60–70°), provado em
-`../Viagem-mimas-polo/capturas/mimas-polo/prancha.jpg` — conserto no motor reprovado (limpa Mimas, estraga Encélado).
+`capturas/copias/Viagem-mimas-polo/mimas-polo/prancha.jpg` — conserto no motor reprovado (limpa Mimas, estraga Encélado).
 Fonte provável: os DEMs globais de Schenk & McKinnon 2024 (usados na medida da latitude de Mimas e Tétis). Depois: as
 seis luas pequenas de Saturno (forma Cassini), o peso do app.
 

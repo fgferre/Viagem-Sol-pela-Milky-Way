@@ -65,11 +65,11 @@ não altura zero. Olhar o resultado numa vista POLAR e numa equatorial antes de 
   publicado. A estatística fina medida num modelo de placas abaixo da resolução dele é artefato, não o corpo.
 - Crateras numa foto única: os detectores falham (revocação 0,19); o catálogo é A OLHO, como na contagem científica
   (ladrilhos 3× com grade e seta do Sol, marcar a BORDA, segunda passada, repetição às cegas como barra de erro,
-  quadro de prova fora) — `../Viagem-luas6/capturas/luas-pequenas/<lua>/acabamento-v2/olho/`.
+  quadro de prova fora) — `capturas/copias/Viagem-luas6/luas-pequenas/<lua>/acabamento-v2/olho/`.
 - Fundo de crateras: produção (inclinação medida no catálogo) + degradação por difusão no tempo, ajustadas contra a
   foto; catálogo no lugar; nenhuma cratera inventada ≥ ~8 placas do modelo de forma (ele as veria) nem ≥ a completude
   onde a foto vê; a sombra assada (horizonte) sai do relevo suavizado 1 texel, senão cova de 2 texels vira pimenta
-  preta — `../Viagem-luas6/capturas/luas-pequenas/janus/acabamento-v2/relevo-v6/` (Jano, Epimeteu, Prometeu, 18/10).
+  preta — `capturas/copias/Viagem-luas6/luas-pequenas/janus/acabamento-v2/relevo-v6/` (Jano, Epimeteu, Prometeu, 18/10).
 
 **4. Imagem que falta.**
 - foto em cinza ou realçada → a cor vem da régua (tinta medida) ou de `cor-inventada.mjs` (transferência guiada pelo
@@ -78,15 +78,15 @@ não altura zero. Olhar o resultado numa vista POLAR e numa equatorial antes de 
   salvo em `capturas/<corpo>/pedido-ia.md`; quem gera é o assistente no ChatGPT dele pelo Chrome (palavra dele de
   16/10: *"Ai painting is yours"*); entra como `scripts/data/atlas/fonte/<corpo>-ia.png`; pós-processo de emenda,
   registro e sombra assada (Pã: `capturas/luas-pequenas/pa/pintura/gera-pintura.mjs`; Deimos:
-  `../Viagem-fobos/capturas/fobos-deimos/deimos-etapa4/pos.mjs` — promover no próximo reuso);
+  `capturas/copias/Viagem-fobos/fobos-deimos/deimos-etapa4/pos.mjs` — promover no próximo reuso);
 - foto vista só de longe (lisa) → frequências BAIXAS da foto (as manchas são reais) + ALTAS da pintura, por máscara,
   corte na escala que a foto separa (Deimos, 16/10);
 - calota polar nunca vista → a IA faz leque no polo equiretangular: preferir terreno MEDIDO do próprio corpo
   transplantado em quadro polar (pedaços longe de feições com nome, girados e espelhados, imagem e relevo do MESMO
-  pedaço), selo inventado (Vesta, 16/10: `../Viagem-vesta/capturas/vesta/etapa4/calota.mjs`);
+  pedaço), selo inventado (Vesta, 16/10: `capturas/copias/Viagem-vesta/vesta/etapa4/calota.mjs`);
 - foto com sombra assada → procurar o mosaico com correção fotométrica (a DLR fez para Vesta); a "lisura" que fica é
   física — conferir a lei de luz contra fotos da missão na MESMA geometria antes de pensar em realçar
-  (`../Viagem-vesta/capturas/vesta/luz/`).
+  (`capturas/copias/Viagem-vesta/vesta/luz/`).
 
 Modelo do pedido científico (preencher com números e fontes, nunca adjetivos soltos):
 > Mapa equiretangular 2:1 de <corpo> (<raio> km), só albedo: sem sombra, sem relevo pintado, sem nuvem, sem
