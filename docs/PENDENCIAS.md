@@ -4,9 +4,9 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 234.**
 
-## O BASTÃO — onde a rodada parou (18/10) — O PESO DO APP, PRIMEIRA LEVA: O SOL DA ABERTURA E O DOWNLOAD NA ORDEM CERTA, APROVADA PARA PUBLICAR
+## O BASTÃO — onde a rodada parou (18/10) — O PESO DO APP, PRIMEIRA LEVA: O SOL DA ABERTURA E O DOWNLOAD NA ORDEM CERTA, NO AR (`origin/main` 6988ff7e)
 
-**Feito e aprovado** (*"sim, aprovo o limite no celular, pode publicar"*), mesma imagem, menos ms e menos espera
+**No ar desde 18/10** (*"sim, aprovo o limite no celular, pode publicar"*; deploy verde, bundle no ar = build local por sha256), mesma imagem, menos ms e menos espera
 (plano e números em `PLAN-PESO.md`; medidas em `../Viagem-peso/capturas/peso/`): a coroa do Sol calcula o padrão de
 cada ângulo uma vez por quadro — abertura no notebook dele, nível cinema, 17 → 27 fps (2560: 6 → 10,5), A/B ≤ 1/255;
 as texturas numa fila só — o destino primeiro (desde o clique), os visíveis pelo tamanho, os vizinhos do sistema
