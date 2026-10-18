@@ -4,7 +4,23 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 234.**
 
-## O BASTÃO — onde a rodada parou (18/10) — AS SEIS LUAS PEQUENAS DE SATURNO COM A FORMA DA CASSINI E AS CRATERAS DAS FOTOS, NO AR (`origin/main` 25ad0ede)
+## O BASTÃO — onde a rodada parou (18/10) — O PESO DO APP, PRIMEIRA LEVA: O SOL DA ABERTURA E O DOWNLOAD NA ORDEM CERTA, APROVADA PARA PUBLICAR
+
+**Feito e aprovado** (*"sim, aprovo o limite no celular, pode publicar"*), mesma imagem, menos ms e menos espera
+(plano e números em `PLAN-PESO.md`; medidas em `../Viagem-peso/capturas/peso/`): a coroa do Sol calcula o padrão de
+cada ângulo uma vez por quadro — abertura no notebook dele, nível cinema, 17 → 27 fps (2560: 6 → 10,5), A/B ≤ 1/255;
+as texturas numa fila só — o destino primeiro (desde o clique), os visíveis pelo tamanho, os vizinhos do sistema
+adiantados com a rede quieta; corpo fora do quadro baixa o piso (1024); as 25 vistas oficiais idênticas; o foco nítido
+mais cedo (Saturno 21 → 14 s, Terra 27 → 22 s a 25 Mbps); destino mudo não segura a fila (10 s / 20 s sem bytes);
+no telefone nenhum canal passa de 4096 (Terra de perto 50 → 20 MB, diferença invisível, aprovada por A/B). Conferido no
+Safari do iPhone simulado. O MSAA "uma vez só" já era assim desde 03/09: os ~24 ms são o próprio MSAA.
+
+**A próxima leva (do plano):** bloom + clarão (~22 ms) e os 4 M pontos da galáxia de fora (−79 de 132 ms). Esperam a
+palavra dele, desde 03/09: MSAA só nas fases com linha de órbita; orçamento de pixels / menu de gráficos. Achados: as
+sondas de oclusão custam ~2,3 ms no Atlas; o `memoria.mjs` reprova 2 conferências (troca de nível deixa até 4 texturas
+e geometrias, e um worker sobrevive à carga).
+
+## O BASTÃO anterior (18/10) — AS SEIS LUAS PEQUENAS DE SATURNO COM A FORMA DA CASSINI E AS CRATERAS DAS FOTOS, NO AR (`origin/main` 25ad0ede)
 
 **No ar desde 18/10** (*"ok, pode seguir"*; push pelo terminal dele, deploy verde, conferido por sha256): Jano, Epimeteu, Pandora, Prometeu, Atlas e Dafnis com a forma medida
 (Thomas, Joseph & Ansty 2018) e o lado certo virado para Saturno. A primeira versão de Jano, Epimeteu e Prometeu saiu
