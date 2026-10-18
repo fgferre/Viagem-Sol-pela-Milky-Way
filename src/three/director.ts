@@ -66,7 +66,7 @@ import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
 import { WrappedStars, resolvedCatalogCurve } from './world/wrappedStars';
 import { CORPOS_DEFAULT_ON, CorposResolvidos } from './world/corpos/corpos';
-import { meioConeDaTela } from './world/corpos/texturas';
+import { ehTelefone, meioConeDaTela, tetoDoAparelho } from './world/corpos/texturas';
 import { LuaResolvida } from './world/corpos/lua';
 import type { TerraResolvida } from './world/corpos/terra';
 import { RochosoResolvido } from './world/corpos/rochoso';
@@ -144,7 +144,7 @@ import { AtlasRig, retanguloUtilDoAtlas } from './cinematic/atlasRig';
 import type { EstadoDaBussola } from './cinematic/atlasRig';
 import type { ReservaDaFicha } from './cinematic/retanguloDoAtlas';
 import { ORIGEM } from './cinematic/enquadramento';
-import { escalaDaUi, larguraDeCss } from '../lib/uiScale';
+import { LARGURA_DO_CELULAR_PX, escalaDaUi, larguraDeCss } from '../lib/uiScale';
 import {
   CAMADAS,
   CHAVE_DE_CORPO,
@@ -2158,7 +2158,11 @@ export class Director {
     // proíbe.
     const corpos = montarCorposDoPalco({
       tier: () => this.engine.quality,
-      maxTextureSize: sondarGl().maxTextureSize,
+      // o teto do APARELHO: a sonda do GPU e, no telefone, a dose de memória
+      maxTextureSize: tetoDoAparelho(
+        sondarGl().maxTextureSize,
+        ehTelefone(LARGURA_DO_CELULAR_PX)
+      ),
       base: import.meta.env.BASE_URL,
       pinos: () => this.filme.pinos,
     });

@@ -316,6 +316,43 @@ export const MARGEM_DO_LIMIAR = 2;
 export const MARGEM_DO_QUADRO_RAD = 0.15;
 
 /**
+ * O TETO DO TELEFONE (a dose de memória do aparelho): nenhum canal acima de
+ * 4096 num telefone. Um 8192×4096 com mip são 179 MB de VRAM por canal, e a
+ * Terra cinema empilhava três; o telefone em retrato (780 px de largura no
+ * pr 2 do cinema) enquadra o disco pela largura, e 4096 já dá ~1 texel por
+ * pixel no centro dele. MUDA A IMAGEM (Terra de perto no telefone: média
+ * 0,65/255, máximo 42) — é escolha do dono, separada da regra da imagem
+ * igual.
+ */
+export const TETO_DO_TELEFONE_PX = 4096;
+
+/**
+ * O aparelho é um telefone? Ponteiro grosso E tela estreita — a mesma régua
+ * de 760 px do HUD (`LARGURA_DO_CELULAR_PX`), lida na tela e não na janela,
+ * porque o teto é do aparelho e congela no boot. Tablet fica com o teto do
+ * computador.
+ */
+export function ehTelefone(larguraDoCelularPx: number): boolean {
+  try {
+    return (
+      window.matchMedia('(pointer: coarse)').matches &&
+      Math.min(window.screen.width, window.screen.height) <= larguraDoCelularPx
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** O teto de textura DO APARELHO: a sonda do GPU, e no telefone a dose. */
+export function tetoDoAparelho(
+  sondaPx: number | undefined,
+  telefone: boolean
+): number | undefined {
+  if (!telefone) return sondaPx;
+  return Math.min(sondaPx ?? TETO_DO_TELEFONE_PX, TETO_DO_TELEFONE_PX);
+}
+
+/**
  * O que a tela informa ao corpo para ele pedir o degrau. Os campos da mira
  * são opcionais: sem eles o corpo conta como no quadro (o pedido vira só o
  * tamanho) e sem `destinoDoAtlas` ele não é destino.

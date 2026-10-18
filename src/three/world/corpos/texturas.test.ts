@@ -34,6 +34,7 @@ import {
   escolherVariante,
   diametroPedidoPelaTela,
   meioConeDaTela,
+  tetoDoAparelho,
 } from './texturas';
 import type {
   CanalPedido,
@@ -935,6 +936,14 @@ describe('o degrau da tela: imagem igual; pequeno ou fora do quadro baixa o piso
     // sem posição não há tela a pedir; dentro do raio, o teto
     expect(diametroPedidoPelaTela(1, R, new THREE.Vector3(NaN, 0, 0), vista())).toBe(0);
     expect(diametroPedidoPelaTela(1, R, new THREE.Vector3(0, 0, -R / 2), vista())).toBe(Infinity);
+  });
+
+  it('o telefone teta em 4096; o computador fica com a sonda', () => {
+    expect(tetoDoAparelho(16384, true)).toBe(4096);
+    expect(tetoDoAparelho(2048, true)).toBe(2048);
+    expect(tetoDoAparelho(undefined, true)).toBe(4096);
+    expect(tetoDoAparelho(16384, false)).toBe(16384);
+    expect(alvoDePixels('cinema', 'map', tetoDoAparelho(16384, true))).toBe(4096);
   });
 
   it('dois degraus: o piso abaixo de T/margem, o teto do tier acima — e só sobe', async () => {
