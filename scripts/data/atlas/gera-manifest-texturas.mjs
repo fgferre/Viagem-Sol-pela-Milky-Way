@@ -854,10 +854,12 @@ const ORIGENS = {
   // canal. A FORMA inteira (Cassini — Thomas, Joseph & Ansty 2018) é o mapa
   // de altura, e a normal e os horizontes saem dela: 'medido' onde só ela
   // entra; 'derivado' onde o relevo fino das fotos calibradas da Cassini
-  // entra por cima (Atlas; Pandora e Epimeteu, que onde nenhuma foto vê têm
-  // o relevo fino inventado por código). A COR de cada uma diz de onde vem o
-  // claro e escuro (pintura por IA, fotos) e a cor (o espectro medido);
-  // Prometeu, sem fotos (o PDS barrou os downloads), só pela pintura.
+  // entra por cima (Atlas; Pandora, Epimeteu, Jano e Prometeu, que onde nenhuma
+  // foto vê têm o relevo fino inventado por código; em Jano, Epimeteu e
+  // Prometeu o das fotos são as crateras marcadas a olho). A COR de cada uma
+  // diz de onde vem o claro e escuro (pintura por IA, fotos) e a cor (o
+  // espectro medido); a de Prometeu, sem fotos (o PDS barrou os downloads),
+  // só pela pintura.
   // A confissão do que é cada coisa mora no ASSETS.md.
   ...(() => {
     const URL_DA_FORMA = 'https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/';
@@ -896,8 +898,8 @@ const ORIGENS = {
           atribuicao: `${FORMA} Relevo fino: 14 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2112). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco; onde nenhuma foto vê, fica só a forma medida.`,
         },
       },
-      // sem as fotos da Cassini (ficam para depois): a pintura, a cor e o
-      // brilho por hemisfério medidos; o relevo é só a forma medida
+      // a cor sem as fotos da Cassini (ficam para depois): a pintura, a cor e o
+      // brilho por hemisfério medidos
       prometheus: {
         cor: {
           fonte:
@@ -906,7 +908,10 @@ const ORIGENS = {
           atribuicao:
             'Pintura: imagem do autor (Felipe Ferreira), gerada com IA (ChatGPT). Cor do corpo inteiro: Cassini VIMS (Filacchione et al. 2013); brilho por hemisfério: Hedman et al. 2020. Montagem pelo app.',
         },
-        relevo: null,
+        relevo: {
+          fotos: 6,
+          atribuicao: `${FORMA} Relevo fino: crateras, 2 vales e 1 escarpa marcados a olho em 6 fotos cruas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibradas pelo app; as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Prometeu. Mapa equiretangular assado pelo app (Felipe Ferreira).`,
+        },
       },
       pandora: {
         cor: {
@@ -929,7 +934,10 @@ const ORIGENS = {
           atribuicao:
             'Tom largo: fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node) e pintura por IA do autor (Felipe Ferreira). Cor: Cassini VIMS (Filacchione et al. 2013); brilho por hemisfério: Hedman et al. 2020. Montagem pelo app.',
         },
-        relevo: null,
+        relevo: {
+          fotos: 9,
+          atribuicao: `${FORMA} Relevo fino: crateras marcadas a olho em 9 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais são inventadas por código, com a contagem e o desgaste das crateras medidos em Jano. Mapa equiretangular assado pelo app (Felipe Ferreira).`,
+        },
       },
       epimetheus: {
         cor: {
@@ -941,7 +949,7 @@ const ORIGENS = {
         },
         relevo: {
           fotos: 5,
-          atribuicao: `${FORMA} Relevo fino: 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.`,
+          atribuicao: `${FORMA} Relevo fino: crateras e 5 sulcos marcados a olho em 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Epimeteu. Mapa equiretangular assado pelo app (Felipe Ferreira).`,
         },
       },
     };

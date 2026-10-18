@@ -393,8 +393,16 @@ export const EM_INGLES = new Map([
     'Broad tone: calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node) and an AI painting by the author (Felipe Ferreira). Color: Cassini VIMS (Filacchione et al. 2013); brightness per hemisphere: Hedman et al. 2020. Assembled by the app.',
   ],
   [
-    'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.',
-    'Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Equirectangular map baked by the app (Felipe Ferreira); where no image sees, the fine relief is invented by code.',
+    'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras marcadas a olho em 9 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais são inventadas por código, com a contagem e o desgaste das crateras medidos em Jano. Mapa equiretangular assado pelo app (Felipe Ferreira).',
+    'Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters marked by eye on 9 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the rest are invented by code, with the crater count and wear measured on Janus. Equirectangular map baked by the app (Felipe Ferreira).',
+  ],
+  [
+    'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras e 5 sulcos marcados a olho em 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Epimeteu. Mapa equiretangular assado pelo app (Felipe Ferreira).',
+    'Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters and 5 grooves marked by eye on 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the other craters are invented by code, with the crater count and wear measured on Epimetheus. Equirectangular map baked by the app (Felipe Ferreira).',
+  ],
+  [
+    'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras, 2 vales e 1 escarpa marcados a olho em 6 fotos cruas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibradas pelo app; as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Prometeu. Mapa equiretangular assado pelo app (Felipe Ferreira).',
+    'Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters, 2 valleys and 1 scarp marked by eye on 6 raw Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibrated by the app; the other craters are invented by code, with the crater count and wear measured on Prometheus. Equirectangular map baked by the app (Felipe Ferreira).',
   ],
   // ---- fontes: Pandora (17/10/2026, o acabamento pela receita de Pã): o tom
   // largo da pintura, o claro e escuro fino e a cor das fotos, o relevo fino
@@ -411,7 +419,7 @@ export const EM_INGLES = new Map([
     'Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: 26 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2015 e COISS_2109). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.',
     'Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: 26 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node, COISS_2015 and COISS_2109). Equirectangular map baked by the app (Felipe Ferreira); where no image sees, the fine relief is invented by code.',
   ],
-  ...[14, 5, 26].flatMap((n) => [
+  ...[14, 5, 26, 9, 6].flatMap((n) => [
     [
       `Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de ALTURA, com o relevo fino de ${n} fotos calibradas da Cassini onde elas veem`,
       `Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HEIGHT map, with the fine relief of ${n} calibrated Cassini images where they see`,
@@ -437,8 +445,7 @@ export const EM_INGLES = new Map([
     'Painting: image by the author (Felipe Ferreira), made with AI (ChatGPT). Whole-body color: Cassini VIMS (Filacchione et al. 2013); brightness per hemisphere: Hedman et al. 2020. Assembled by the app.',
   ],
   // ---- fontes: das seis de Saturno (17/10/2026, PLAN-LUAS-PEQUENAS.md → a
-  // forma medida) — sem o nome: a forma sem relevo fino, a de Dafnis,
-  // Prometeu e Jano
+  // forma medida) — sem o nome: a forma sem relevo fino, a de Dafnis
   [
     'Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de ALTURA',
     'Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HEIGHT map',
@@ -786,11 +793,11 @@ export const EM_INGLES = new Map([
   // 17/10/2026 — Prometeu: a pintura por IA (o tom largo e o fino atenuado),
   // a cor e o brilho por hemisfério medidos, sem as fotos da Cassini
   [
-    'não existe mapa de cor de Prometeu publicado: o claro e escuro é uma pintura por IA generativa, o tom largo com o detalhe fino bem atenuado; a cor e o brilho de cada hemisfério são os medidos pela Cassini; as fotos da Cassini ficam para depois',
-    'there is no published color map of Prometheus: the light and dark is a generative-AI painting, the broad tone with the fine detail strongly toned down; the color and the brightness of each hemisphere are the ones measured by Cassini; the Cassini images are left for later',
+    'não existe mapa de cor de Prometeu publicado: o claro e escuro é uma pintura por IA generativa, o tom largo com o detalhe fino bem atenuado; a cor e o brilho de cada hemisfério são os medidos pela Cassini; as fotos da Cassini ainda não entram na cor',
+    'there is no published color map of Prometheus: the light and dark is a generative-AI painting, the broad tone with the fine detail strongly toned down; the color and the brightness of each hemisphere are the ones measured by Cassini; the Cassini images do not yet enter the color',
   ],
-  // 17/10/2026 — Dafnis, Prometeu e Jano: a forma medida inteira (as mesmas
-  // frases nas três)
+  // 17/10/2026 — Dafnis (e Prometeu e Jano, até o relevo fino v6): a forma
+  // medida inteira
   [
     'a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado',
     'the whole shape, measured by the Thomas, Joseph & Ansty model (Cassini, ~27 thousand plates), smoothed to 1° of arc: relief finer than the model stays smooth, with nothing invented',
@@ -820,8 +827,7 @@ export const EM_INGLES = new Map([
     'the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which comes from the images on 38.3% of the surface; elsewhere, only the measured shape casts shadow',
   ],
   // 17/10/2026 — Jano e Epimeteu: a cor medida com o tom largo das fotos e da
-  // pintura; em Epimeteu, o relevo fino das fotos onde elas veem e inventado
-  // no resto (retalhos do relevo das fotos dele, a receita de Pã)
+  // pintura; o relevo fino das duas (e o de Prometeu) vem mais abaixo, no v6
   [
     'não existe mapa de cor de Jano publicado: a cor é a medida pela Cassini; o claro e escuro largo vem de 6 fotos da Cassini nos 26,6 % da superfície que elas veem e, no resto, de uma pintura por IA generativa, só no tom largo; o brilho de cada hemisfério é o medido',
     'there is no published color map of Janus: the color is the one measured by Cassini; the broad light and dark comes from 6 Cassini images on the 26.6% of the surface they see and, elsewhere, from a generative-AI painting, only in the broad tone; the brightness of each hemisphere is the measured one',
@@ -830,13 +836,24 @@ export const EM_INGLES = new Map([
     'não existe mapa de cor de Epimeteu publicado: a cor é a medida pela Cassini; o claro e escuro largo vem de 5 fotos da Cassini nos 34 % da superfície que elas veem e, no resto, de uma pintura por IA generativa, só no tom largo; o brilho de cada hemisfério é o medido',
     'there is no published color map of Epimetheus: the color is the one measured by Cassini; the broad light and dark comes from 5 Cassini images on the 34% of the surface they see and, elsewhere, from a generative-AI painting, only in the broad tone; the brightness of each hemisphere is the measured one',
   ],
+  // 17/10/2026 — Jano, Epimeteu e Prometeu, o relevo fino v6: a forma medida,
+  // as crateras marcadas a olho nas fotos e as demais inventadas com a
+  // contagem e o desgaste medidos na própria lua
   [
-    'a forma é medida pela Cassini; o relevo fino vem de 5 fotos nos 40,4 % da superfície que elas veem e, no resto, é INVENTADO por código, copiando em retalhos o relevo das fotos de Epimeteu',
-    'the shape is measured by Cassini; the fine relief comes from 5 images on the 40.4% of the surface they see and, elsewhere, is INVENTED by code, copying in patches the relief of the Epimetheus images',
+    'forma medida pela Cassini (Thomas, Joseph & Ansty); 150 crateras marcadas a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Jano',
+    'shape measured by Cassini (Thomas, Joseph & Ansty); 150 craters marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Janus',
   ],
   [
-    'a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que vem das fotos em 40,4 % da superfície; no resto, ele é INVENTADO com retalhos do relevo das fotos de Epimeteu',
-    'the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which comes from the images on 40.4% of the surface; elsewhere, it is INVENTED with patches of the relief from the Epimetheus images',
+    'forma medida pela Cassini (Thomas, Joseph & Ansty); 305 crateras e 5 sulcos marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Epimeteu',
+    'shape measured by Cassini (Thomas, Joseph & Ansty); 305 craters and 5 grooves marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Epimetheus',
+  ],
+  [
+    'forma medida pela Cassini (Thomas, Joseph & Ansty); 137 crateras, 2 vales e 1 escarpa marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Prometeu',
+    'shape measured by Cassini (Thomas, Joseph & Ansty); 137 craters, 2 valleys and 1 scarp marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Prometheus',
+  ],
+  [
+    'a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel',
+    'the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel',
   ],
   // 17/10/2026 — Pandora: a cor e os hemisférios medidos, o tom largo da
   // pintura, o relevo fino das fotos onde elas veem e inventado no resto

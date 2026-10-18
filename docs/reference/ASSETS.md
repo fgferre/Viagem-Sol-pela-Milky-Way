@@ -1039,10 +1039,11 @@ de Pã. O claro e escuro do mapa de cor é uma pintura por IA (o pedido em
 da Cassini onde elas veem (em Dafnis e Prometeu, só a pintura), e a cor é a
 medida; o relevo fino das fotos entra em Atlas, Pandora e Epimeteu, e nas
 duas últimas, onde nenhuma foto vê, ele é INVENTADO por código com retalhos
-do relevo das fotos da própria lua; em Dafnis, Prometeu e Jano fica só a
-forma medida. O que cada mapa é, canal por canal, está na tabela "a imagem",
-abaixo. **Prometeu sem fotos**: o PDS barrou os downloads (HTTP 429), e as
-fotos da Cassini ficam para depois; o mapa é o tom largo da pintura v2
+do relevo das fotos da própria lua; em Dafnis fica só a forma medida (Jano,
+Epimeteu e Prometeu ganharam depois o relevo fino v6: crateras marcadas a olho
+nas fotos, as demais inventadas). O que cada mapa é, canal por canal, está na
+tabela "a imagem", abaixo. **Prometeu**: o nó de anéis do PDS barrou os downloads (HTTP 429); as
+fotos vieram cruas do nó PDS Imaging e entram só no relevo, ainda não na cor; o mapa é o tom largo da pintura v2
 (albedo puro, sem sombra) com o fino dela atenuado ao contraste que as fotos
 mediram em Pandora, e o brilho por hemisfério de Hedman et al. 2020
 (`prometheus/acabamento/gera.mjs`). Receita e
@@ -1150,26 +1151,26 @@ tocar num `.mjs`.
 | atlas/normal | medido 61,7 · derivado 38,3 | a forma é medida pela Cassini; o relevo fino vem de 14 fotos, que cobrem 38,3 % da superfície; no resto fica só a forma medida, lisa, sem relevo nem cratera inventados |
 | atlas/horizon | medido 61,7 · derivado 38,3 | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que vem das fotos em 38,3 % da superfície; no resto, só a forma medida faz sombra |
 | atlas/horizon2 | medido 61,7 · derivado 38,3 | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que vem das fotos em 38,3 % da superfície; no resto, só a forma medida faz sombra |
-| prometheus/map | inventado | não existe mapa de cor de Prometeu publicado: o claro e escuro é uma pintura por IA generativa, o tom largo com o detalhe fino bem atenuado; a cor e o brilho de cada hemisfério são os medidos pela Cassini; as fotos da Cassini ficam para depois |
-| prometheus/height | medido | a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado |
-| prometheus/normal | medido | a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado |
-| prometheus/horizon | medido | a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra |
-| prometheus/horizon2 | medido | a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra |
+| prometheus/map | inventado | não existe mapa de cor de Prometeu publicado: o claro e escuro é uma pintura por IA generativa, o tom largo com o detalhe fino bem atenuado; a cor e o brilho de cada hemisfério são os medidos pela Cassini; as fotos da Cassini ainda não entram na cor |
+| prometheus/height | medido 61 · derivado 4 · inventado 35 | forma medida pela Cassini (Thomas, Joseph & Ansty); 137 crateras, 2 vales e 1 escarpa marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Prometeu |
+| prometheus/normal | medido 61 · derivado 4 · inventado 35 | forma medida pela Cassini (Thomas, Joseph & Ansty); 137 crateras, 2 vales e 1 escarpa marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Prometeu |
+| prometheus/horizon | medido 61 · derivado 4 · inventado 35 | a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel |
+| prometheus/horizon2 | medido 61 · derivado 4 · inventado 35 | a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel |
 | pandora/map | inventado | não existe mapa de cor de Pandora publicado: a cor e o brilho de cada hemisfério são os medidos pela Cassini; o tom largo é uma pintura por IA generativa e o claro e escuro fino vem de 26 fotos da Cassini nos 49,1 % da superfície que elas veem |
 | pandora/height | derivado 49,1 · inventado 50,9 | a forma é medida pela Cassini; o relevo fino vem de 26 fotos nos 49,1 % da superfície que elas veem e, no resto, é INVENTADO por código, copiando em retalhos o relevo das fotos de Pandora; nenhuma cratera foi posta |
 | pandora/normal | derivado 49,1 · inventado 50,9 | a forma é medida pela Cassini; o relevo fino vem de 26 fotos nos 49,1 % da superfície que elas veem e, no resto, é INVENTADO por código, copiando em retalhos o relevo das fotos de Pandora; nenhuma cratera foi posta |
 | pandora/horizon | derivado 49,1 · inventado 50,9 | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que vem das fotos em 49,1 % da superfície; no resto, ele é INVENTADO com retalhos do relevo das fotos de Pandora |
 | pandora/horizon2 | derivado 49,1 · inventado 50,9 | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que vem das fotos em 49,1 % da superfície; no resto, ele é INVENTADO com retalhos do relevo das fotos de Pandora |
 | janus/map | derivado | não existe mapa de cor de Jano publicado: a cor é a medida pela Cassini; o claro e escuro largo vem de 6 fotos da Cassini nos 26,6 % da superfície que elas veem e, no resto, de uma pintura por IA generativa, só no tom largo; o brilho de cada hemisfério é o medido |
-| janus/height | medido | a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado |
-| janus/normal | medido | a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado |
-| janus/horizon | medido | a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra |
-| janus/horizon2 | medido | a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra |
+| janus/height | medido 30 · derivado 3 · inventado 67 | forma medida pela Cassini (Thomas, Joseph & Ansty); 150 crateras marcadas a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Jano |
+| janus/normal | medido 30 · derivado 3 · inventado 67 | forma medida pela Cassini (Thomas, Joseph & Ansty); 150 crateras marcadas a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Jano |
+| janus/horizon | medido 30 · derivado 3 · inventado 67 | a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel |
+| janus/horizon2 | medido 30 · derivado 3 · inventado 67 | a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel |
 | epimetheus/map | derivado | não existe mapa de cor de Epimeteu publicado: a cor é a medida pela Cassini; o claro e escuro largo vem de 5 fotos da Cassini nos 34 % da superfície que elas veem e, no resto, de uma pintura por IA generativa, só no tom largo; o brilho de cada hemisfério é o medido |
-| epimetheus/height | derivado 40,4 · inventado 59,6 | a forma é medida pela Cassini; o relevo fino vem de 5 fotos nos 40,4 % da superfície que elas veem e, no resto, é INVENTADO por código, copiando em retalhos o relevo das fotos de Epimeteu |
-| epimetheus/normal | derivado 40,4 · inventado 59,6 | a forma é medida pela Cassini; o relevo fino vem de 5 fotos nos 40,4 % da superfície que elas veem e, no resto, é INVENTADO por código, copiando em retalhos o relevo das fotos de Epimeteu |
-| epimetheus/horizon | derivado 40,4 · inventado 59,6 | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que vem das fotos em 40,4 % da superfície; no resto, ele é INVENTADO com retalhos do relevo das fotos de Epimeteu |
-| epimetheus/horizon2 | derivado 40,4 · inventado 59,6 | a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que vem das fotos em 40,4 % da superfície; no resto, ele é INVENTADO com retalhos do relevo das fotos de Epimeteu |
+| epimetheus/height | medido 32 · derivado 7 · inventado 61 | forma medida pela Cassini (Thomas, Joseph & Ansty); 305 crateras e 5 sulcos marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Epimeteu |
+| epimetheus/normal | medido 32 · derivado 7 · inventado 61 | forma medida pela Cassini (Thomas, Joseph & Ansty); 305 crateras e 5 sulcos marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Epimeteu |
+| epimetheus/horizon | medido 32 · derivado 7 · inventado 61 | a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel |
+| epimetheus/horizon2 | medido 32 · derivado 7 · inventado 61 | a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel |
 | phobos/map | derivado | a foto do Viking (mosaico global da USGS, 40 pixels por grau), em cinza, cobre 99,6 % do corpo; a cor é tingida pelo app a partir do albedo e das razões de cor medidos |
 | phobos/height | medido | a forma inteira, medida pelo modelo de Gaskell (3,1 milhões de placas, NASA PDS); o relevo fino não mora aqui, mora na luz |
 | phobos/normal | medido 21 · derivado 41 · inventado 38 | relevo fino (35–140 m), por área: 21 % medido (Gaskell), 41 % derivado das fotos do Viking (crateras e poços), 38 % inventado com as estatísticas de Fobos; os sulcos estão só na imagem, sem relevo |

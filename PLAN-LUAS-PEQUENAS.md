@@ -35,3 +35,30 @@ Palavra dele (08/10): *"nao so hyperion, varios outros obejtos quero relevo e as
 
 ## Fora desta rodada (vão para a fila, em ordem)
 Febe (rodada própria, receita de Reia: modelo SPC de Weirich 2023 + o mosaico cinza da Cassini/DLR de 233 m/px, semi-global, domínio público, colorido cientificamente pela regra dele de 08/10); Calipso, Telesto e Helena (corpos novos: precisam de órbita antes de forma); Fobos e Deimos (forma de Gaskell/Thomas sobre a cor de foto que já têm); a silhueta de Vesta pela Dawn; depois os corpos com relevo falso tirado da cor (item 144) pelo detector de crateras, e as luas de Urano pela receita de Plutão — todos pela mesma régua. O Hipérion fica como está.
+
+## E7 — Refazer o acabamento (17/10, depois do "não" dele às pranchas finais)
+Palavras dele: *"foi uma grande regressão... a gente precisa ser sincero. E usar método científico"*. Só Pandora melhorou;
+Jano e Prometeu viraram massa lisa, Epimeteu, Atlas e Dafne ficaram mais lisos que o publicado. Causa: relevo pela foto
+reprovado → parado no liso (pulado o passo 3 da skill); a síntese mediu a estatística fina no modelo de placas (~2 km),
+que é liso abaixo de ~1,5° — artefato, não a lua. Nada vai ao `main` nem ao ar até a prancha nova passar.
+Receita nova (piloto em Jano, worker opus, pasta `janus/acabamento-v2/`): catálogo de crateras das fotos (derivado,
+folhas de sobreposição conferidas no olho) → lei de tamanhos e d/D da própria lua → perfis com degradação por difusão
+(um parâmetro global ajustado contra a foto de prova) → crateras do catálogo no lugar + sorteadas só onde nada vê ou
+abaixo da completude do quadro → prancha HOJE | NOVO | CASSINI na MESMA geometria; régua: nenhuma lua mais pobre de perto
+que hoje. Prometeu: fotos pelo nó PDS Imaging (`planetarydata.jpl.nasa.gov`), o nó Rings segue em 429.
+Depois do piloto aprovado: Epimeteu, Prometeu, Atlas (conferir o risco escuro do topo contra a foto), Dafnis e Pandora.
+- 17/10, tarde: o detector de crateras falhou em quadro único (padrão: 10 aceitas em 9 quadros; um novo, pela direção do
+  Sol, deu revocação 0,19 no quadro guardado). Catálogo passa a ser A OLHO, como na contagem científica: ladrilhos com
+  grade e seta do Sol, marcar pela borda, segunda passada, repetibilidade medida; o quadro de prova N1649342285 fora.
+  Prometeu: 59 quadros crus (12 bits) do PDS Imaging; calibração relativa + registro em `prometheus/acabamento-v2/`.
+- 17/10, noite: catálogos a olho prontos — Jano 150 (depois de juntar), Prometeu 138 + 5 cristas/vales, Epimeteu 305 +
+  5 sulcos (em `<lua>/acabamento-v2/olho/`). Jano v5 (`janus/prancha-v5.jpg`): cratera grande no lugar (prova 0,48 × hoje
+  0,03), mas de perto "carimbado" (bacias nítidas em chão liso); v6 em curso: produção + degradação (equilíbrio de
+  crateras), ajustada no quadro de construção, conferida no de prova. Atlas: o risco escuro do topo É REAL (a foto
+  N1870699087 mostra) e o liso de Atlas é o da foto — Atlas, Pandora e Dafnis ficam; a refação é de Jano, Epimeteu e
+  Prometeu. Motor (depois, todas as luas de gelo): a luz do app é mais dura que a da foto (inclinação log ~1,2 × 0,6).
+- 17/10: Jano v6 APROVADO por ele ("gosto do novo jano" → rugosidade → "sim, pode seguir com Epimeteu e Prometeu"):
+  `janus/acabamento-v2/relevo-v6/` (candidato `candidato-v6-v2`, prancha `janus/prancha-v6-v3.jpg`): A 1,40, σT 0,15 km,
+  157 mil crateras de produção, pontos pretos consertados (`h0`); medido 28 % · derivado 4 % · inventado 68 %.
+  Em curso: Epimeteu e Prometeu pela mesma receita (`<lua>/acabamento-v2/relevo-v6/`, portas 5385–88 e 5389–92).
+  Falta depois: juntar os três nas fontes (instala), confissão em ASSETS.md + inglês, testes, cadeia no terminal dele.

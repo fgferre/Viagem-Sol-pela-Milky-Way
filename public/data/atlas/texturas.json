@@ -5263,8 +5263,8 @@
       "arquivo": "textures/atlas/epimetheus/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 111501,
-      "sha256": "a7260b61afd53ef14bd66e4ef17a07b5d278a5af2ce2613caa8985840278391d",
+      "bytes": 132914,
+      "sha256": "18bca7d4b38dabdbdcfb24d6935fe2ea452730db0709172fc7fca6c4ea44d272",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de ALTURA, com o relevo fino de 5 fotos calibradas da Cassini onde elas veem",
@@ -5276,19 +5276,20 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Equirectangular map baked by the app (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras e 5 sulcos marcados a olho em 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Epimeteu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters and 5 grooves marked by eye on 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the other craters are invented by code, with the crater count and wear measured on Epimetheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma é medida pela Cassini; o relevo fino vem de 5 fotos nos 40,4 % da superfície que elas veem e, no resto, é INVENTADO por código, copiando em retalhos o relevo das fotos de Epimeteu",
-        "en": "the shape is measured by Cassini; the fine relief comes from 5 images on the 40.4% of the surface they see and, elsewhere, is INVENTED by code, copying in patches the relief of the Epimetheus images"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 305 crateras e 5 sulcos marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Epimeteu",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 305 craters and 5 grooves marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Epimetheus"
       },
       "seloDaNota": "inventado",
       "partes": {
-        "derivado": 40.4,
-        "inventado": 59.6
+        "medido": 32,
+        "derivado": 7,
+        "inventado": 61
       }
     },
     {
@@ -5297,8 +5298,8 @@
       "arquivo": "textures/atlas/epimetheus/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 57896,
-      "sha256": "f2b058ddea02e4f4d362f09bc0160f78a166c47610f0002ccee69db5ea755934",
+      "bytes": 70132,
+      "sha256": "7d589d2102fbc93703d106bb41f3a5260424899794ce95cd713237e85175f01d",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de ALTURA, com o relevo fino de 5 fotos calibradas da Cassini onde elas veem",
@@ -5310,19 +5311,20 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Equirectangular map baked by the app (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras e 5 sulcos marcados a olho em 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Epimeteu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters and 5 grooves marked by eye on 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the other craters are invented by code, with the crater count and wear measured on Epimetheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma é medida pela Cassini; o relevo fino vem de 5 fotos nos 40,4 % da superfície que elas veem e, no resto, é INVENTADO por código, copiando em retalhos o relevo das fotos de Epimeteu",
-        "en": "the shape is measured by Cassini; the fine relief comes from 5 images on the 40.4% of the surface they see and, elsewhere, is INVENTED by code, copying in patches the relief of the Epimetheus images"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 305 crateras e 5 sulcos marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Epimeteu",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 305 craters and 5 grooves marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Epimetheus"
       },
       "seloDaNota": "inventado",
       "partes": {
-        "derivado": 40.4,
-        "inventado": 59.6
+        "medido": 32,
+        "derivado": 7,
+        "inventado": 61
       }
     },
     {
@@ -5331,8 +5333,8 @@
       "arquivo": "textures/atlas/epimetheus/horizon_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 764042,
-      "sha256": "6112428bc3800a9cbe8e1af49959314fa18c21c14246a841b34d77e7bc240f32",
+      "bytes": 882723,
+      "sha256": "a92f011e939f9706d8944ddcdc76061f649e314b9c6f5a4b8a8318ef24a59682",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 5 fotos calibradas da Cassini onde elas veem",
@@ -5344,19 +5346,20 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Equirectangular map baked by the app (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras e 5 sulcos marcados a olho em 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Epimeteu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters and 5 grooves marked by eye on 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the other craters are invented by code, with the crater count and wear measured on Epimetheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que vem das fotos em 40,4 % da superfície; no resto, ele é INVENTADO com retalhos do relevo das fotos de Epimeteu",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which comes from the images on 40.4% of the surface; elsewhere, it is INVENTED with patches of the relief from the Epimetheus images"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
       "seloDaNota": "inventado",
       "partes": {
-        "derivado": 40.4,
-        "inventado": 59.6
+        "medido": 32,
+        "derivado": 7,
+        "inventado": 61
       }
     },
     {
@@ -5365,8 +5368,8 @@
       "arquivo": "textures/atlas/epimetheus/horizon_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 295168,
-      "sha256": "08187ed821a6ef8c38a02df221bf36015d30d8fa5d5daf3d08fc92de2651b8e6",
+      "bytes": 419222,
+      "sha256": "f6514534cff90b2210fa2fb8ddf7e81d0dfbdaca268b68fd0a6299ae2beca07d",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 5 fotos calibradas da Cassini onde elas veem",
@@ -5378,19 +5381,20 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Equirectangular map baked by the app (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras e 5 sulcos marcados a olho em 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Epimeteu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters and 5 grooves marked by eye on 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the other craters are invented by code, with the crater count and wear measured on Epimetheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que vem das fotos em 40,4 % da superfície; no resto, ele é INVENTADO com retalhos do relevo das fotos de Epimeteu",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which comes from the images on 40.4% of the surface; elsewhere, it is INVENTED with patches of the relief from the Epimetheus images"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
       "seloDaNota": "inventado",
       "partes": {
-        "derivado": 40.4,
-        "inventado": 59.6
+        "medido": 32,
+        "derivado": 7,
+        "inventado": 61
       }
     },
     {
@@ -5399,8 +5403,8 @@
       "arquivo": "textures/atlas/epimetheus/horizon.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 2284588,
-      "sha256": "de96cd24814562818b64c5dcef161447d270e185def4ada807a4c263e7929d55",
+      "bytes": 2883492,
+      "sha256": "613fb73e9e95cff1483c3aae6fbb2e8d101feebf816890c9ce841e1dbadec6e1",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 5 fotos calibradas da Cassini onde elas veem",
@@ -5412,19 +5416,20 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Equirectangular map baked by the app (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras e 5 sulcos marcados a olho em 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Epimeteu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters and 5 grooves marked by eye on 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the other craters are invented by code, with the crater count and wear measured on Epimetheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que vem das fotos em 40,4 % da superfície; no resto, ele é INVENTADO com retalhos do relevo das fotos de Epimeteu",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which comes from the images on 40.4% of the surface; elsewhere, it is INVENTED with patches of the relief from the Epimetheus images"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
       "seloDaNota": "inventado",
       "partes": {
-        "derivado": 40.4,
-        "inventado": 59.6
+        "medido": 32,
+        "derivado": 7,
+        "inventado": 61
       }
     },
     {
@@ -5433,8 +5438,8 @@
       "arquivo": "textures/atlas/epimetheus/horizon.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 690658,
-      "sha256": "7a5812d028676b44c3a216fb97abb97a531f3206cbfaf9898ffa82b206384d0b",
+      "bytes": 1050560,
+      "sha256": "6259211abb6c09035ac32040a976f177d4601446e74502867726fc23eabdd50e",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 5 fotos calibradas da Cassini onde elas veem",
@@ -5446,19 +5451,20 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Equirectangular map baked by the app (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras e 5 sulcos marcados a olho em 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Epimeteu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters and 5 grooves marked by eye on 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the other craters are invented by code, with the crater count and wear measured on Epimetheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que vem das fotos em 40,4 % da superfície; no resto, ele é INVENTADO com retalhos do relevo das fotos de Epimeteu",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which comes from the images on 40.4% of the surface; elsewhere, it is INVENTED with patches of the relief from the Epimetheus images"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
       "seloDaNota": "inventado",
       "partes": {
-        "derivado": 40.4,
-        "inventado": 59.6
+        "medido": 32,
+        "derivado": 7,
+        "inventado": 61
       }
     },
     {
@@ -5467,8 +5473,8 @@
       "arquivo": "textures/atlas/epimetheus/horizon2_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 785301,
-      "sha256": "fa6148a588d539b3dd27a529af0361816c549d054c1677ba4ec4e5a293757a47",
+      "bytes": 903605,
+      "sha256": "f824f5c2c15f6e080dd4cc57787ee1b59b6e2d063040715f6dfbb37cf0fa07cb",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 5 fotos calibradas da Cassini onde elas veem",
@@ -5480,19 +5486,20 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Equirectangular map baked by the app (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras e 5 sulcos marcados a olho em 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Epimeteu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters and 5 grooves marked by eye on 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the other craters are invented by code, with the crater count and wear measured on Epimetheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que vem das fotos em 40,4 % da superfície; no resto, ele é INVENTADO com retalhos do relevo das fotos de Epimeteu",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which comes from the images on 40.4% of the surface; elsewhere, it is INVENTED with patches of the relief from the Epimetheus images"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
       "seloDaNota": "inventado",
       "partes": {
-        "derivado": 40.4,
-        "inventado": 59.6
+        "medido": 32,
+        "derivado": 7,
+        "inventado": 61
       }
     },
     {
@@ -5501,8 +5508,8 @@
       "arquivo": "textures/atlas/epimetheus/horizon2_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 295454,
-      "sha256": "1b2422b234b62c83fe1a2663f1782759ab5f30f7bdbe6e1bdbaf147e67596ee0",
+      "bytes": 428012,
+      "sha256": "de34cc2e5ad5c73df761f8b6929015a7ce25837377ce1d58e043747bd825ccde",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 5 fotos calibradas da Cassini onde elas veem",
@@ -5514,19 +5521,20 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Equirectangular map baked by the app (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras e 5 sulcos marcados a olho em 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Epimeteu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters and 5 grooves marked by eye on 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the other craters are invented by code, with the crater count and wear measured on Epimetheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que vem das fotos em 40,4 % da superfície; no resto, ele é INVENTADO com retalhos do relevo das fotos de Epimeteu",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which comes from the images on 40.4% of the surface; elsewhere, it is INVENTED with patches of the relief from the Epimetheus images"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
       "seloDaNota": "inventado",
       "partes": {
-        "derivado": 40.4,
-        "inventado": 59.6
+        "medido": 32,
+        "derivado": 7,
+        "inventado": 61
       }
     },
     {
@@ -5535,8 +5543,8 @@
       "arquivo": "textures/atlas/epimetheus/horizon2.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 2361963,
-      "sha256": "54a1ebea03e272b59c1d948555e1b1e8d0b11f91fde871fe523f81661c70a132",
+      "bytes": 2975679,
+      "sha256": "0ba47a6d8d219ba47f996b2f0904a6889017f17e1f65ffecea24e34087d07c19",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 5 fotos calibradas da Cassini onde elas veem",
@@ -5548,19 +5556,20 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Equirectangular map baked by the app (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras e 5 sulcos marcados a olho em 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Epimeteu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters and 5 grooves marked by eye on 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the other craters are invented by code, with the crater count and wear measured on Epimetheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que vem das fotos em 40,4 % da superfície; no resto, ele é INVENTADO com retalhos do relevo das fotos de Epimeteu",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which comes from the images on 40.4% of the surface; elsewhere, it is INVENTED with patches of the relief from the Epimetheus images"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
       "seloDaNota": "inventado",
       "partes": {
-        "derivado": 40.4,
-        "inventado": 59.6
+        "medido": 32,
+        "derivado": 7,
+        "inventado": 61
       }
     },
     {
@@ -5569,8 +5578,8 @@
       "arquivo": "textures/atlas/epimetheus/horizon2.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 693936,
-      "sha256": "5ca2fb8b54c87fc0695e2a892bb8835fdf060fffe7ab25039ef99f33efb65bfa",
+      "bytes": 1060284,
+      "sha256": "0cb471866f78159648d1a47d40861d1fb8a9d2e48c73de35365b0539f17f6cf3",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 5 fotos calibradas da Cassini onde elas veem",
@@ -5582,19 +5591,20 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Equirectangular map baked by the app (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras e 5 sulcos marcados a olho em 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Epimeteu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters and 5 grooves marked by eye on 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the other craters are invented by code, with the crater count and wear measured on Epimetheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini e do relevo fino, que vem das fotos em 40,4 % da superfície; no resto, ele é INVENTADO com retalhos do relevo das fotos de Epimeteu",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini and from the fine relief, which comes from the images on 40.4% of the surface; elsewhere, it is INVENTED with patches of the relief from the Epimetheus images"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
       "seloDaNota": "inventado",
       "partes": {
-        "derivado": 40.4,
-        "inventado": 59.6
+        "medido": 32,
+        "derivado": 7,
+        "inventado": 61
       }
     },
     {
@@ -5723,8 +5733,8 @@
       "arquivo": "textures/atlas/epimetheus/normal_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 885136,
-      "sha256": "ebfd90137851d4df278e23d60678b52535aafea04cb2c1913f1b9a640e58e993",
+      "bytes": 1068279,
+      "sha256": "05bfe852c7949009d7404bd728173146be6d383a5366c662fe0132c3e60c14e8",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 5 fotos calibradas da Cassini onde elas veem",
@@ -5736,19 +5746,20 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Equirectangular map baked by the app (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras e 5 sulcos marcados a olho em 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Epimeteu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters and 5 grooves marked by eye on 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the other craters are invented by code, with the crater count and wear measured on Epimetheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma é medida pela Cassini; o relevo fino vem de 5 fotos nos 40,4 % da superfície que elas veem e, no resto, é INVENTADO por código, copiando em retalhos o relevo das fotos de Epimeteu",
-        "en": "the shape is measured by Cassini; the fine relief comes from 5 images on the 40.4% of the surface they see and, elsewhere, is INVENTED by code, copying in patches the relief of the Epimetheus images"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 305 crateras e 5 sulcos marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Epimeteu",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 305 craters and 5 grooves marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Epimetheus"
       },
       "seloDaNota": "inventado",
       "partes": {
-        "derivado": 40.4,
-        "inventado": 59.6
+        "medido": 32,
+        "derivado": 7,
+        "inventado": 61
       }
     },
     {
@@ -5757,8 +5768,8 @@
       "arquivo": "textures/atlas/epimetheus/normal_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 345242,
-      "sha256": "1989c890dfbb7f509fcbc1bd0a465ce69f751349e49f10c537e1300622c8041d",
+      "bytes": 495072,
+      "sha256": "e61b7c135beb9cb6f31b7fe0e1c8c7369937debba1e29bd8b326992714642c60",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 5 fotos calibradas da Cassini onde elas veem",
@@ -5770,19 +5781,20 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Equirectangular map baked by the app (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras e 5 sulcos marcados a olho em 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Epimeteu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters and 5 grooves marked by eye on 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the other craters are invented by code, with the crater count and wear measured on Epimetheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma é medida pela Cassini; o relevo fino vem de 5 fotos nos 40,4 % da superfície que elas veem e, no resto, é INVENTADO por código, copiando em retalhos o relevo das fotos de Epimeteu",
-        "en": "the shape is measured by Cassini; the fine relief comes from 5 images on the 40.4% of the surface they see and, elsewhere, is INVENTED by code, copying in patches the relief of the Epimetheus images"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 305 crateras e 5 sulcos marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Epimeteu",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 305 craters and 5 grooves marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Epimetheus"
       },
       "seloDaNota": "inventado",
       "partes": {
-        "derivado": 40.4,
-        "inventado": 59.6
+        "medido": 32,
+        "derivado": 7,
+        "inventado": 61
       }
     },
     {
@@ -5791,8 +5803,8 @@
       "arquivo": "textures/atlas/epimetheus/normal.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 2448459,
-      "sha256": "43ffd923ce556c1bbfb62b85ac48e236576c0134213b82246228b74791752980",
+      "bytes": 3481306,
+      "sha256": "599b343bc2985ba76076bd7237cdc67fe3f7b48afb605ac29103b9e4085391c6",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 5 fotos calibradas da Cassini onde elas veem",
@@ -5804,19 +5816,20 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Equirectangular map baked by the app (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras e 5 sulcos marcados a olho em 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Epimeteu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters and 5 grooves marked by eye on 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the other craters are invented by code, with the crater count and wear measured on Epimetheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma é medida pela Cassini; o relevo fino vem de 5 fotos nos 40,4 % da superfície que elas veem e, no resto, é INVENTADO por código, copiando em retalhos o relevo das fotos de Epimeteu",
-        "en": "the shape is measured by Cassini; the fine relief comes from 5 images on the 40.4% of the surface they see and, elsewhere, is INVENTED by code, copying in patches the relief of the Epimetheus images"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 305 crateras e 5 sulcos marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Epimeteu",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 305 craters and 5 grooves marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Epimetheus"
       },
       "seloDaNota": "inventado",
       "partes": {
-        "derivado": 40.4,
-        "inventado": 59.6
+        "medido": 32,
+        "derivado": 7,
+        "inventado": 61
       }
     },
     {
@@ -5825,8 +5838,8 @@
       "arquivo": "textures/atlas/epimetheus/normal.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 793538,
-      "sha256": "c8c3ecb9811792cc30fe42f00a1239f300787e67674330fd200e9c1f463f997b",
+      "bytes": 1181584,
+      "sha256": "b7a774f935ca7f1058411935c75a599319d6d6dd083b582b980d0a9f43e2a440",
       "origem": {
         "fonte": {
           "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 5 fotos calibradas da Cassini onde elas veem",
@@ -5838,19 +5851,20 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Mapa equiretangular assado pelo app (Felipe Ferreira); onde nenhuma foto vê, o relevo fino é inventado por código.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node). Equirectangular map baked by the app (Felipe Ferreira); where no image sees, the fine relief is invented by code."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras e 5 sulcos marcados a olho em 5 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Epimeteu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters and 5 grooves marked by eye on 5 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the other craters are invented by code, with the crater count and wear measured on Epimetheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma é medida pela Cassini; o relevo fino vem de 5 fotos nos 40,4 % da superfície que elas veem e, no resto, é INVENTADO por código, copiando em retalhos o relevo das fotos de Epimeteu",
-        "en": "the shape is measured by Cassini; the fine relief comes from 5 images on the 40.4% of the surface they see and, elsewhere, is INVENTED by code, copying in patches the relief of the Epimetheus images"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 305 crateras e 5 sulcos marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Epimeteu",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 305 craters and 5 grooves marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Epimetheus"
       },
       "seloDaNota": "inventado",
       "partes": {
-        "derivado": 40.4,
-        "inventado": 59.6
+        "medido": 32,
+        "derivado": 7,
+        "inventado": 61
       }
     },
     {
@@ -7359,12 +7373,12 @@
       "arquivo": "textures/atlas/janus/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 105735,
-      "sha256": "ad51a8399366ae2531b3500a197c0f41fd85dec4ae2db551680eae3b5c5426c5",
+      "bytes": 186414,
+      "sha256": "4e508e3062e857d46099161af54191c113b094af8f6a56070c0928ded73646b4",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de ALTURA",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HEIGHT map"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de ALTURA, com o relevo fino de 9 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HEIGHT map, with the fine relief of 9 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -7372,16 +7386,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras marcadas a olho em 9 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais são inventadas por código, com a contagem e o desgaste das crateras medidos em Jano. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters marked by eye on 9 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the rest are invented by code, with the crater count and wear measured on Janus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido",
+      "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado",
-        "en": "the whole shape, measured by the Thomas, Joseph & Ansty model (Cassini, ~27 thousand plates), smoothed to 1° of arc: relief finer than the model stays smooth, with nothing invented"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 150 crateras marcadas a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Jano",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 150 craters marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Janus"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 30,
+        "derivado": 3,
+        "inventado": 67
+      }
     },
     {
       "corpo": "janus",
@@ -7389,12 +7408,12 @@
       "arquivo": "textures/atlas/janus/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 54418,
-      "sha256": "ec71bfeba3874e24a07bdd04cc34c71ead7efebacfa4d290ec4db17e48adb078",
+      "bytes": 93052,
+      "sha256": "0017e5a372e93d8708f1237ea2666e1e92d5004887c0197b4be92340c11d9f46",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de ALTURA",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HEIGHT map"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de ALTURA, com o relevo fino de 9 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HEIGHT map, with the fine relief of 9 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -7402,16 +7421,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras marcadas a olho em 9 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais são inventadas por código, com a contagem e o desgaste das crateras medidos em Jano. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters marked by eye on 9 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the rest are invented by code, with the crater count and wear measured on Janus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado",
-        "en": "the whole shape, measured by the Thomas, Joseph & Ansty model (Cassini, ~27 thousand plates), smoothed to 1° of arc: relief finer than the model stays smooth, with nothing invented"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 150 crateras marcadas a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Jano",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 150 craters marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Janus"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 30,
+        "derivado": 3,
+        "inventado": 67
+      }
     },
     {
       "corpo": "janus",
@@ -7419,12 +7443,12 @@
       "arquivo": "textures/atlas/janus/horizon_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 618666,
-      "sha256": "2caa7c5573cdd91931e30ed4c09c9a9650445831d823e240457443d9c7ebd392",
+      "bytes": 1075910,
+      "sha256": "7f8ecf15224d7db7d1277bd94c38fd86ba1e04f4bc8290e9c3b93203a9e941b5",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB)"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 9 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 9 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -7432,16 +7456,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras marcadas a olho em 9 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais são inventadas por código, com a contagem e o desgaste das crateras medidos em Jano. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters marked by eye on 9 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the rest are invented by code, with the crater count and wear measured on Janus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini (Thomas, Joseph & Ansty), smoothed to 1° of arc: relief finer than the model casts no shadow"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 30,
+        "derivado": 3,
+        "inventado": 67
+      }
     },
     {
       "corpo": "janus",
@@ -7449,12 +7478,12 @@
       "arquivo": "textures/atlas/janus/horizon_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 204022,
-      "sha256": "19add2f8095e79ee3e8355f8fd469cd6d55783014403238a8e46f790e8988bda",
+      "bytes": 688818,
+      "sha256": "f6f84d391531b71d15c3538983e6c9433b50ffe2165e195a6cf5fd5d464f3032",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB)"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 9 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 9 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -7462,16 +7491,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras marcadas a olho em 9 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais são inventadas por código, com a contagem e o desgaste das crateras medidos em Jano. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters marked by eye on 9 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the rest are invented by code, with the crater count and wear measured on Janus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini (Thomas, Joseph & Ansty), smoothed to 1° of arc: relief finer than the model casts no shadow"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 30,
+        "derivado": 3,
+        "inventado": 67
+      }
     },
     {
       "corpo": "janus",
@@ -7479,12 +7513,12 @@
       "arquivo": "textures/atlas/janus/horizon.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 1655022,
-      "sha256": "09ad28501b597350803697ed36b0dbfa92f4d2716d8e36c783b283f6c372d3f3",
+      "bytes": 3852418,
+      "sha256": "79e9eb57fa7c9391ee4ca94a181c908857f5ff0ccacf1be07fafe6b36c2619da",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB)"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 9 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 9 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -7492,16 +7526,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras marcadas a olho em 9 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais são inventadas por código, com a contagem e o desgaste das crateras medidos em Jano. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters marked by eye on 9 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the rest are invented by code, with the crater count and wear measured on Janus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido",
+      "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini (Thomas, Joseph & Ansty), smoothed to 1° of arc: relief finer than the model casts no shadow"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 30,
+        "derivado": 3,
+        "inventado": 67
+      }
     },
     {
       "corpo": "janus",
@@ -7509,12 +7548,12 @@
       "arquivo": "textures/atlas/janus/horizon.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 497172,
-      "sha256": "bb40d07dc80d80620311fab598f4b5646cbe96bda126efb30ac52fac5855f34a",
+      "bytes": 1959808,
+      "sha256": "6e92d9f88ce45dca1e3e025a505333467874076f204b7da17a1bdbc17644be7c",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB)"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 9 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 9 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -7522,16 +7561,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras marcadas a olho em 9 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais são inventadas por código, com a contagem e o desgaste das crateras medidos em Jano. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters marked by eye on 9 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the rest are invented by code, with the crater count and wear measured on Janus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini (Thomas, Joseph & Ansty), smoothed to 1° of arc: relief finer than the model casts no shadow"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 30,
+        "derivado": 3,
+        "inventado": 67
+      }
     },
     {
       "corpo": "janus",
@@ -7539,12 +7583,12 @@
       "arquivo": "textures/atlas/janus/horizon2_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 612916,
-      "sha256": "a3cddebdc760dcaae8906747196cdf2b21fb47678630ea78aa35e4c4d03e44b5",
+      "bytes": 1072657,
+      "sha256": "0c5180d248bca6f18c426754b52fdf26df0b95d6c90958c44df4ee42c7e2183e",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB)"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 9 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 9 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -7552,16 +7596,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras marcadas a olho em 9 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais são inventadas por código, com a contagem e o desgaste das crateras medidos em Jano. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters marked by eye on 9 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the rest are invented by code, with the crater count and wear measured on Janus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini (Thomas, Joseph & Ansty), smoothed to 1° of arc: relief finer than the model casts no shadow"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 30,
+        "derivado": 3,
+        "inventado": 67
+      }
     },
     {
       "corpo": "janus",
@@ -7569,12 +7618,12 @@
       "arquivo": "textures/atlas/janus/horizon2_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 200140,
-      "sha256": "71f32df19fb6172950849226acada984847bc3310b811cf3fdc1926ccaf37520",
+      "bytes": 685578,
+      "sha256": "2c6063b12571c4c1cb2b88c176350dc738425c26bd8c777bba3bc5b9337b5f4c",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB)"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 9 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 9 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -7582,16 +7631,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras marcadas a olho em 9 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais são inventadas por código, com a contagem e o desgaste das crateras medidos em Jano. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters marked by eye on 9 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the rest are invented by code, with the crater count and wear measured on Janus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini (Thomas, Joseph & Ansty), smoothed to 1° of arc: relief finer than the model casts no shadow"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 30,
+        "derivado": 3,
+        "inventado": 67
+      }
     },
     {
       "corpo": "janus",
@@ -7599,12 +7653,12 @@
       "arquivo": "textures/atlas/janus/horizon2.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 1649714,
-      "sha256": "20a409b84852bcac84e38c6ffa4c20ed7b639f00bd8cc7902139de2d202e153b",
+      "bytes": 3841682,
+      "sha256": "b5a5d71f1e402c90faf0af5eb54b8483a52222cff718eba21062c5f255ba9eed",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB)"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 9 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 9 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -7612,16 +7666,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras marcadas a olho em 9 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais são inventadas por código, com a contagem e o desgaste das crateras medidos em Jano. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters marked by eye on 9 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the rest are invented by code, with the crater count and wear measured on Janus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido",
+      "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini (Thomas, Joseph & Ansty), smoothed to 1° of arc: relief finer than the model casts no shadow"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 30,
+        "derivado": 3,
+        "inventado": 67
+      }
     },
     {
       "corpo": "janus",
@@ -7629,12 +7688,12 @@
       "arquivo": "textures/atlas/janus/horizon2.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 491538,
-      "sha256": "18a20e12fc65183d1dadddc5d54d4243fd40a6f0852d83240b793221fc69eac7",
+      "bytes": 1949504,
+      "sha256": "2c30ea9629da64403def92d726ecf41fbdc560ce246bb2a9b8a6beef83e8fd47",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB)"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 9 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 9 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -7642,16 +7701,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras marcadas a olho em 9 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais são inventadas por código, com a contagem e o desgaste das crateras medidos em Jano. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters marked by eye on 9 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the rest are invented by code, with the crater count and wear measured on Janus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini (Thomas, Joseph & Ansty), smoothed to 1° of arc: relief finer than the model casts no shadow"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 30,
+        "derivado": 3,
+        "inventado": 67
+      }
     },
     {
       "corpo": "janus",
@@ -7779,12 +7843,12 @@
       "arquivo": "textures/atlas/janus/normal_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 646636,
-      "sha256": "b9791d7cbbcbd81f84e1695de1b1bf5656714990a83190eab0f5ea92b7b1cdff",
+      "bytes": 1316587,
+      "sha256": "0ed7e9287f921fed087dc57b285fc699412c83ddaa53a542d74923ad5904eb09",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 9 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the fine relief of 9 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -7792,16 +7856,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras marcadas a olho em 9 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais são inventadas por código, com a contagem e o desgaste das crateras medidos em Jano. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters marked by eye on 9 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the rest are invented by code, with the crater count and wear measured on Janus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado",
-        "en": "the whole shape, measured by the Thomas, Joseph & Ansty model (Cassini, ~27 thousand plates), smoothed to 1° of arc: relief finer than the model stays smooth, with nothing invented"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 150 crateras marcadas a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Jano",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 150 craters marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Janus"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 30,
+        "derivado": 3,
+        "inventado": 67
+      }
     },
     {
       "corpo": "janus",
@@ -7809,12 +7878,12 @@
       "arquivo": "textures/atlas/janus/normal_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 213286,
-      "sha256": "0260032fd7899441259be3a14df56ea60a3c5b140694c34862ac79994d7a411c",
+      "bytes": 905660,
+      "sha256": "e1e4888ae219cb68df8f0015ad46643602b26d09651add559aabf23c1e927023",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 9 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the fine relief of 9 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -7822,16 +7891,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras marcadas a olho em 9 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais são inventadas por código, com a contagem e o desgaste das crateras medidos em Jano. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters marked by eye on 9 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the rest are invented by code, with the crater count and wear measured on Janus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado",
-        "en": "the whole shape, measured by the Thomas, Joseph & Ansty model (Cassini, ~27 thousand plates), smoothed to 1° of arc: relief finer than the model stays smooth, with nothing invented"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 150 crateras marcadas a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Jano",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 150 craters marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Janus"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 30,
+        "derivado": 3,
+        "inventado": 67
+      }
     },
     {
       "corpo": "janus",
@@ -7839,12 +7913,12 @@
       "arquivo": "textures/atlas/janus/normal.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 1541887,
-      "sha256": "b8ca88590c5856f4b8186d3f006b7beda844c23d72c3af54e6f0065084a888c5",
+      "bytes": 4842839,
+      "sha256": "5c30819b80e00ba7946729490021a1e13f3d7fddcc49990b9448bc8c1f496cfc",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 9 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the fine relief of 9 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -7852,16 +7926,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras marcadas a olho em 9 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais são inventadas por código, com a contagem e o desgaste das crateras medidos em Jano. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters marked by eye on 9 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the rest are invented by code, with the crater count and wear measured on Janus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido",
+      "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado",
-        "en": "the whole shape, measured by the Thomas, Joseph & Ansty model (Cassini, ~27 thousand plates), smoothed to 1° of arc: relief finer than the model stays smooth, with nothing invented"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 150 crateras marcadas a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Jano",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 150 craters marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Janus"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 30,
+        "derivado": 3,
+        "inventado": 67
+      }
     },
     {
       "corpo": "janus",
@@ -7869,12 +7948,12 @@
       "arquivo": "textures/atlas/janus/normal.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 524308,
-      "sha256": "d82f3cebb091201b0f4465f5de4d72cf7ed93d614a0cbe3d20840a4a5055a58c",
+      "bytes": 3058352,
+      "sha256": "80a986b6f49510fb9cf1091cae4849cc025ab690faf5972f3d1d17ac164cd6d0",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 9 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the fine relief of 9 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -7882,16 +7961,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras marcadas a olho em 9 fotos calibradas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); as demais são inventadas por código, com a contagem e o desgaste das crateras medidos em Jano. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters marked by eye on 9 calibrated Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Ring-Moon Systems Node); the rest are invented by code, with the crater count and wear measured on Janus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado",
-        "en": "the whole shape, measured by the Thomas, Joseph & Ansty model (Cassini, ~27 thousand plates), smoothed to 1° of arc: relief finer than the model stays smooth, with nothing invented"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 150 crateras marcadas a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Jano",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 150 craters marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Janus"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 30,
+        "derivado": 3,
+        "inventado": 67
+      }
     },
     {
       "corpo": "jupiter",
@@ -12651,12 +12735,12 @@
       "arquivo": "textures/atlas/prometheus/height.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 73526,
-      "sha256": "5abcddafa042d216130bc67f8b81c426ec0cb22cbd2f184cb334c454c04bfbfb",
+      "bytes": 88956,
+      "sha256": "d2e8af272e30ef7ad77454e2fe0a8022916ff551f0113b114e89e56e1d95f192",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de ALTURA",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HEIGHT map"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de ALTURA, com o relevo fino de 6 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HEIGHT map, with the fine relief of 6 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -12664,16 +12748,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras, 2 vales e 1 escarpa marcados a olho em 6 fotos cruas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibradas pelo app; as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Prometeu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters, 2 valleys and 1 scarp marked by eye on 6 raw Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibrated by the app; the other craters are invented by code, with the crater count and wear measured on Prometheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido",
+      "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado",
-        "en": "the whole shape, measured by the Thomas, Joseph & Ansty model (Cassini, ~27 thousand plates), smoothed to 1° of arc: relief finer than the model stays smooth, with nothing invented"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 137 crateras, 2 vales e 1 escarpa marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Prometeu",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 137 craters, 2 valleys and 1 scarp marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Prometheus"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 61,
+        "derivado": 4,
+        "inventado": 35
+      }
     },
     {
       "corpo": "prometheus",
@@ -12681,12 +12770,12 @@
       "arquivo": "textures/atlas/prometheus/height.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 40226,
-      "sha256": "11bda0dd216d5c84aac6ad26ca551d88550fdbc4562a2cf00ce0d9362eed5a5e",
+      "bytes": 49976,
+      "sha256": "0208858f30fb807826ac3f2414105e3fead2aabde7c8e40674d5042906bd6391",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de ALTURA",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HEIGHT map"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de ALTURA, com o relevo fino de 6 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HEIGHT map, with the fine relief of 6 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -12694,16 +12783,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras, 2 vales e 1 escarpa marcados a olho em 6 fotos cruas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibradas pelo app; as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Prometeu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters, 2 valleys and 1 scarp marked by eye on 6 raw Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibrated by the app; the other craters are invented by code, with the crater count and wear measured on Prometheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado",
-        "en": "the whole shape, measured by the Thomas, Joseph & Ansty model (Cassini, ~27 thousand plates), smoothed to 1° of arc: relief finer than the model stays smooth, with nothing invented"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 137 crateras, 2 vales e 1 escarpa marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Prometeu",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 137 craters, 2 valleys and 1 scarp marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Prometheus"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 61,
+        "derivado": 4,
+        "inventado": 35
+      }
     },
     {
       "corpo": "prometheus",
@@ -12711,12 +12805,12 @@
       "arquivo": "textures/atlas/prometheus/horizon_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 619094,
-      "sha256": "7af4f31bccdb762fa3f5c2ecd1561f4331f28393c9f9f790b8e3fc0713e5bc71",
+      "bytes": 864619,
+      "sha256": "45bf24b571bc21c24c2d63c7dd39762ebedc457dcb98e8500c8a2ac2531bf45a",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB)"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 6 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 6 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -12724,16 +12818,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras, 2 vales e 1 escarpa marcados a olho em 6 fotos cruas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibradas pelo app; as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Prometeu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters, 2 valleys and 1 scarp marked by eye on 6 raw Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibrated by the app; the other craters are invented by code, with the crater count and wear measured on Prometheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini (Thomas, Joseph & Ansty), smoothed to 1° of arc: relief finer than the model casts no shadow"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 61,
+        "derivado": 4,
+        "inventado": 35
+      }
     },
     {
       "corpo": "prometheus",
@@ -12741,12 +12840,12 @@
       "arquivo": "textures/atlas/prometheus/horizon_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 190298,
-      "sha256": "b6e1174ef37f664b90a0d506ac9f8f38c1f32ab9cde4800425ec9925574339a1",
+      "bytes": 438614,
+      "sha256": "3f91fec743468fb5a7ca9fd4c1fe5b11ba5171658fd3703fe6fdfb75c5c2638f",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB)"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 6 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 6 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -12754,16 +12853,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras, 2 vales e 1 escarpa marcados a olho em 6 fotos cruas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibradas pelo app; as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Prometeu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters, 2 valleys and 1 scarp marked by eye on 6 raw Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibrated by the app; the other craters are invented by code, with the crater count and wear measured on Prometheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini (Thomas, Joseph & Ansty), smoothed to 1° of arc: relief finer than the model casts no shadow"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 61,
+        "derivado": 4,
+        "inventado": 35
+      }
     },
     {
       "corpo": "prometheus",
@@ -12771,12 +12875,12 @@
       "arquivo": "textures/atlas/prometheus/horizon.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 1522661,
-      "sha256": "da2f4798160d41f18321930d4956b32b665a93ecb95d4950575a332a966e1eed",
+      "bytes": 2751051,
+      "sha256": "1c5fe4895de9f4ef5dc7bfeb223046ea15079d335309408f44c9614781a15b91",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB)"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 6 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 6 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -12784,16 +12888,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras, 2 vales e 1 escarpa marcados a olho em 6 fotos cruas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibradas pelo app; as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Prometeu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters, 2 valleys and 1 scarp marked by eye on 6 raw Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibrated by the app; the other craters are invented by code, with the crater count and wear measured on Prometheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido",
+      "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini (Thomas, Joseph & Ansty), smoothed to 1° of arc: relief finer than the model casts no shadow"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 61,
+        "derivado": 4,
+        "inventado": 35
+      }
     },
     {
       "corpo": "prometheus",
@@ -12801,12 +12910,12 @@
       "arquivo": "textures/atlas/prometheus/horizon.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 451208,
-      "sha256": "e52fa7ee97faa558a02156d180847c7a4a6b3bbc062638b6f2460f67f2ae5fa9",
+      "bytes": 1125652,
+      "sha256": "a5cc6b63f40522ee7ba1d3662f09d987f2bb8dfcaf8cbbb3c2828e09162a6d10",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB)"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 6 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 6 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -12814,16 +12923,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras, 2 vales e 1 escarpa marcados a olho em 6 fotos cruas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibradas pelo app; as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Prometeu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters, 2 valleys and 1 scarp marked by eye on 6 raw Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibrated by the app; the other craters are invented by code, with the crater count and wear measured on Prometheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini (Thomas, Joseph & Ansty), smoothed to 1° of arc: relief finer than the model casts no shadow"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 61,
+        "derivado": 4,
+        "inventado": 35
+      }
     },
     {
       "corpo": "prometheus",
@@ -12831,12 +12945,12 @@
       "arquivo": "textures/atlas/prometheus/horizon2_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 601085,
-      "sha256": "0a29c56065142eba1ab2d4c7bb35a86f3cde72757de60242c63f5fe3052432e9",
+      "bytes": 838649,
+      "sha256": "38d3edb17ccf9b4f006c6585507e7b3370038fbea1dd2f93229a67fd65f78fec",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB)"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 6 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 6 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -12844,16 +12958,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras, 2 vales e 1 escarpa marcados a olho em 6 fotos cruas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibradas pelo app; as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Prometeu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters, 2 valleys and 1 scarp marked by eye on 6 raw Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibrated by the app; the other craters are invented by code, with the crater count and wear measured on Prometheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini (Thomas, Joseph & Ansty), smoothed to 1° of arc: relief finer than the model casts no shadow"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 61,
+        "derivado": 4,
+        "inventado": 35
+      }
     },
     {
       "corpo": "prometheus",
@@ -12861,12 +12980,12 @@
       "arquivo": "textures/atlas/prometheus/horizon2_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 182540,
-      "sha256": "e1d44a9145532c24ceb9b352124ca255031b99ef12262bd5cb479b5d6b2865c7",
+      "bytes": 416854,
+      "sha256": "46cfb430305517085dcefe98163bcee6ce2a7c05131bd99b1c84261dc57a956d",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB)"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 6 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 6 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -12874,16 +12993,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras, 2 vales e 1 escarpa marcados a olho em 6 fotos cruas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibradas pelo app; as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Prometeu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters, 2 valleys and 1 scarp marked by eye on 6 raw Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibrated by the app; the other craters are invented by code, with the crater count and wear measured on Prometheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini (Thomas, Joseph & Ansty), smoothed to 1° of arc: relief finer than the model casts no shadow"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 61,
+        "derivado": 4,
+        "inventado": 35
+      }
     },
     {
       "corpo": "prometheus",
@@ -12891,12 +13015,12 @@
       "arquivo": "textures/atlas/prometheus/horizon2.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 1467148,
-      "sha256": "8fe6e70259355ccdbb1c622d7bae8eda52f13f1454382907537f21556a4fb39d",
+      "bytes": 2660677,
+      "sha256": "2ab856deca6902de65715ca60d88db35b1b8a532bf0452686a2a0962815f72bb",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB)"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 6 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 6 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -12904,16 +13028,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras, 2 vales e 1 escarpa marcados a olho em 6 fotos cruas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibradas pelo app; as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Prometeu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters, 2 valleys and 1 scarp marked by eye on 6 raw Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibrated by the app; the other craters are invented by code, with the crater count and wear measured on Prometheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido",
+      "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini (Thomas, Joseph & Ansty), smoothed to 1° of arc: relief finer than the model casts no shadow"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 61,
+        "derivado": 4,
+        "inventado": 35
+      }
     },
     {
       "corpo": "prometheus",
@@ -12921,12 +13050,12 @@
       "arquivo": "textures/atlas/prometheus/horizon2.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 434324,
-      "sha256": "49e0e12d8a215d467bc90c6f834134de046925b8b325b02608513c38762f8291",
+      "bytes": 999480,
+      "sha256": "d64471fad79d060419f3a34c6e649e82e5ac6fe35da939a64ef03f263359d599",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB)",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB)"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de HORIZONTE (sombra de relevo assada, seis azimutes em RGB), com o relevo fino de 6 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — HORIZON map (baked relief shadow, six azimuths in RGB), with the fine relief of 6 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -12934,16 +13063,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras, 2 vales e 1 escarpa marcados a olho em 6 fotos cruas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibradas pelo app; as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Prometeu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters, 2 valleys and 1 scarp marked by eye on 6 raw Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibrated by the app; the other craters are invented by code, with the crater count and wear measured on Prometheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a sombra, em seis azimutes, é assada da forma medida pela Cassini (Thomas, Joseph & Ansty), suavizada a 1° de arco: o relevo mais fino que o modelo não faz sombra",
-        "en": "the shadow, in six azimuths, is baked from the shape measured by Cassini (Thomas, Joseph & Ansty), smoothed to 1° of arc: relief finer than the model casts no shadow"
+        "pt": "a sombra, em seis azimutes, é assada do relevo acima (forma medida, crateras das fotos e inventadas), sem as covas menores que um texel",
+        "en": "the shadow, in six azimuths, is baked from the relief above (measured shape, craters from the images and invented ones), without the pits smaller than one texel"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 61,
+        "derivado": 4,
+        "inventado": 35
+      }
     },
     {
       "corpo": "prometheus",
@@ -12970,8 +13104,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "não existe mapa de cor de Prometeu publicado: o claro e escuro é uma pintura por IA generativa, o tom largo com o detalhe fino bem atenuado; a cor e o brilho de cada hemisfério são os medidos pela Cassini; as fotos da Cassini ficam para depois",
-        "en": "there is no published color map of Prometheus: the light and dark is a generative-AI painting, the broad tone with the fine detail strongly toned down; the color and the brightness of each hemisphere are the ones measured by Cassini; the Cassini images are left for later"
+        "pt": "não existe mapa de cor de Prometeu publicado: o claro e escuro é uma pintura por IA generativa, o tom largo com o detalhe fino bem atenuado; a cor e o brilho de cada hemisfério são os medidos pela Cassini; as fotos da Cassini ainda não entram na cor",
+        "en": "there is no published color map of Prometheus: the light and dark is a generative-AI painting, the broad tone with the fine detail strongly toned down; the color and the brightness of each hemisphere are the ones measured by Cassini; the Cassini images do not yet enter the color"
       },
       "seloDaNota": "inventado"
     },
@@ -13000,8 +13134,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "não existe mapa de cor de Prometeu publicado: o claro e escuro é uma pintura por IA generativa, o tom largo com o detalhe fino bem atenuado; a cor e o brilho de cada hemisfério são os medidos pela Cassini; as fotos da Cassini ficam para depois",
-        "en": "there is no published color map of Prometheus: the light and dark is a generative-AI painting, the broad tone with the fine detail strongly toned down; the color and the brightness of each hemisphere are the ones measured by Cassini; the Cassini images are left for later"
+        "pt": "não existe mapa de cor de Prometeu publicado: o claro e escuro é uma pintura por IA generativa, o tom largo com o detalhe fino bem atenuado; a cor e o brilho de cada hemisfério são os medidos pela Cassini; as fotos da Cassini ainda não entram na cor",
+        "en": "there is no published color map of Prometheus: the light and dark is a generative-AI painting, the broad tone with the fine detail strongly toned down; the color and the brightness of each hemisphere are the ones measured by Cassini; the Cassini images do not yet enter the color"
       },
       "seloDaNota": "inventado"
     },
@@ -13030,8 +13164,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "não existe mapa de cor de Prometeu publicado: o claro e escuro é uma pintura por IA generativa, o tom largo com o detalhe fino bem atenuado; a cor e o brilho de cada hemisfério são os medidos pela Cassini; as fotos da Cassini ficam para depois",
-        "en": "there is no published color map of Prometheus: the light and dark is a generative-AI painting, the broad tone with the fine detail strongly toned down; the color and the brightness of each hemisphere are the ones measured by Cassini; the Cassini images are left for later"
+        "pt": "não existe mapa de cor de Prometeu publicado: o claro e escuro é uma pintura por IA generativa, o tom largo com o detalhe fino bem atenuado; a cor e o brilho de cada hemisfério são os medidos pela Cassini; as fotos da Cassini ainda não entram na cor",
+        "en": "there is no published color map of Prometheus: the light and dark is a generative-AI painting, the broad tone with the fine detail strongly toned down; the color and the brightness of each hemisphere are the ones measured by Cassini; the Cassini images do not yet enter the color"
       },
       "seloDaNota": "inventado"
     },
@@ -13060,8 +13194,8 @@
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "não existe mapa de cor de Prometeu publicado: o claro e escuro é uma pintura por IA generativa, o tom largo com o detalhe fino bem atenuado; a cor e o brilho de cada hemisfério são os medidos pela Cassini; as fotos da Cassini ficam para depois",
-        "en": "there is no published color map of Prometheus: the light and dark is a generative-AI painting, the broad tone with the fine detail strongly toned down; the color and the brightness of each hemisphere are the ones measured by Cassini; the Cassini images are left for later"
+        "pt": "não existe mapa de cor de Prometeu publicado: o claro e escuro é uma pintura por IA generativa, o tom largo com o detalhe fino bem atenuado; a cor e o brilho de cada hemisfério são os medidos pela Cassini; as fotos da Cassini ainda não entram na cor",
+        "en": "there is no published color map of Prometheus: the light and dark is a generative-AI painting, the broad tone with the fine detail strongly toned down; the color and the brightness of each hemisphere are the ones measured by Cassini; the Cassini images do not yet enter the color"
       },
       "seloDaNota": "inventado"
     },
@@ -13071,12 +13205,12 @@
       "arquivo": "textures/atlas/prometheus/normal_1024.png",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 664696,
-      "sha256": "c77cfad45cc2b363a3d71f94e497669e00899c5c4b6835be210fa9d89d53bd93",
+      "bytes": 1106025,
+      "sha256": "789715ca794e8331616b0b2a0e0f5a22e5339b4f4d05573f7c997acbff36062c",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 6 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the fine relief of 6 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -13084,16 +13218,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras, 2 vales e 1 escarpa marcados a olho em 6 fotos cruas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibradas pelo app; as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Prometeu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters, 2 valleys and 1 scarp marked by eye on 6 raw Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibrated by the app; the other craters are invented by code, with the crater count and wear measured on Prometheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado",
-        "en": "the whole shape, measured by the Thomas, Joseph & Ansty model (Cassini, ~27 thousand plates), smoothed to 1° of arc: relief finer than the model stays smooth, with nothing invented"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 137 crateras, 2 vales e 1 escarpa marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Prometeu",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 137 craters, 2 valleys and 1 scarp marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Prometheus"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 61,
+        "derivado": 4,
+        "inventado": 35
+      }
     },
     {
       "corpo": "prometheus",
@@ -13101,12 +13240,12 @@
       "arquivo": "textures/atlas/prometheus/normal_1024.webp",
       "larguraPx": 1024,
       "alturaPx": 512,
-      "bytes": 209680,
-      "sha256": "cedbd487fe226ad152931774bb41219c2ac22a36dbff859b3b78222b2c6d678e",
+      "bytes": 584414,
+      "sha256": "fea4edc2e6968d0911e7a8193b0244833b9a69642edfaabf73572a3ee2e466ef",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 6 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the fine relief of 6 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -13114,16 +13253,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras, 2 vales e 1 escarpa marcados a olho em 6 fotos cruas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibradas pelo app; as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Prometeu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters, 2 valleys and 1 scarp marked by eye on 6 raw Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibrated by the app; the other craters are invented by code, with the crater count and wear measured on Prometheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado",
-        "en": "the whole shape, measured by the Thomas, Joseph & Ansty model (Cassini, ~27 thousand plates), smoothed to 1° of arc: relief finer than the model stays smooth, with nothing invented"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 137 crateras, 2 vales e 1 escarpa marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Prometeu",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 137 craters, 2 valleys and 1 scarp marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Prometheus"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 61,
+        "derivado": 4,
+        "inventado": 35
+      }
     },
     {
       "corpo": "prometheus",
@@ -13131,12 +13275,12 @@
       "arquivo": "textures/atlas/prometheus/normal.png",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 1451806,
-      "sha256": "8f7cb2229639a32f1fb0608b7d7ede2e0c47e244f43806ffee8b5995eb2003ad",
+      "bytes": 3662315,
+      "sha256": "49c3f854d48509b9138e2d81960fdebd2d6e16b730ef68c09d3ccd0a9905635f",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 6 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the fine relief of 6 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -13144,16 +13288,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras, 2 vales e 1 escarpa marcados a olho em 6 fotos cruas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibradas pelo app; as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Prometeu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters, 2 valleys and 1 scarp marked by eye on 6 raw Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibrated by the app; the other craters are invented by code, with the crater count and wear measured on Prometheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
-      "proveniencia": "medido",
+      "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado",
-        "en": "the whole shape, measured by the Thomas, Joseph & Ansty model (Cassini, ~27 thousand plates), smoothed to 1° of arc: relief finer than the model stays smooth, with nothing invented"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 137 crateras, 2 vales e 1 escarpa marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Prometeu",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 137 craters, 2 valleys and 1 scarp marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Prometheus"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 61,
+        "derivado": 4,
+        "inventado": 35
+      }
     },
     {
       "corpo": "prometheus",
@@ -13161,12 +13310,12 @@
       "arquivo": "textures/atlas/prometheus/normal.webp",
       "larguraPx": 2048,
       "alturaPx": 1024,
-      "bytes": 506308,
-      "sha256": "c5eef81b3829ed297ba99c5905f56b876ae39fe6002b932c74d25c344b8e0a50",
+      "bytes": 1634400,
+      "sha256": "5d8c10f42d2ec5c296f9e98826e29540dce5c711510f8ed710e3549eb32d5275",
       "origem": {
         "fonte": {
-          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura",
-          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — NORMAL map derived from the height"
+          "pt": "Modelo de forma de Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — mapa de NORMAIS derivado da altura, com o relevo fino de 6 fotos calibradas da Cassini onde elas veem",
+          "en": "Shape model by Thomas, Joseph & Ansty (2018, Cassini) — NASA PDS — NORMAL map derived from the height, with the fine relief of 6 calibrated Cassini images where they see"
         },
         "url": "https://sbnarchive.psi.edu/pds4/cassini/saturn_satellite_shape_models_V1_0/",
         "licenca": {
@@ -13174,16 +13323,21 @@
           "en": "public domain (NASA PDS)"
         },
         "atribuicao": {
-          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Mapa equiretangular assado pelo app (Felipe Ferreira), suavizado a 1° de arco.",
-          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Equirectangular map baked by the app (Felipe Ferreira), smoothed to 1° of arc."
+          "pt": "Forma: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Relevo fino: crateras, 2 vales e 1 escarpa marcados a olho em 6 fotos cruas da Cassini ISS (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibradas pelo app; as demais crateras são inventadas por código, com a contagem e o desgaste medidos em Prometeu. Mapa equiretangular assado pelo app (Felipe Ferreira).",
+          "en": "Shape: P. Thomas, J. Joseph & T. Ansty, Saturn Small Moon Shape Models V1.0 (NASA PDS, DOI 10.26033/ewy3-jy61). Fine relief: craters, 2 valleys and 1 scarp marked by eye on 6 raw Cassini ISS images (NASA/JPL-Caltech/Space Science Institute; PDS Imaging Node), calibrated by the app; the other craters are invented by code, with the crater count and wear measured on Prometheus. Equirectangular map baked by the app (Felipe Ferreira)."
         }
       },
       "proveniencia": "derivado",
       "nota": {
-        "pt": "a forma inteira, medida pelo modelo de Thomas, Joseph & Ansty (Cassini, ~27 mil placas), suavizada a 1° de arco: o relevo mais fino que o modelo fica liso, sem nada inventado",
-        "en": "the whole shape, measured by the Thomas, Joseph & Ansty model (Cassini, ~27 thousand plates), smoothed to 1° of arc: relief finer than the model stays smooth, with nothing invented"
+        "pt": "forma medida pela Cassini (Thomas, Joseph & Ansty); 137 crateras, 2 vales e 1 escarpa marcados a olho nas fotos da Cassini entram no lugar; as demais são inventadas com a contagem e o desgaste medidos em Prometeu",
+        "en": "shape measured by Cassini (Thomas, Joseph & Ansty); 137 craters, 2 valleys and 1 scarp marked by eye on the Cassini images go in their place; the rest are invented with the crater count and wear measured on Prometheus"
       },
-      "seloDaNota": "medido"
+      "seloDaNota": "inventado",
+      "partes": {
+        "medido": 61,
+        "derivado": 4,
+        "inventado": 35
+      }
     },
     {
       "corpo": "quaoar",
