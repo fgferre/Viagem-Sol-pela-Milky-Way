@@ -4,9 +4,9 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 234.**
 
-## O BASTÃO — onde a rodada parou (18/10) — AS SEIS LUAS PEQUENAS DE SATURNO COM A FORMA DA CASSINI E AS CRATERAS DAS FOTOS, APROVADAS PARA PUBLICAR
+## O BASTÃO — onde a rodada parou (18/10) — AS SEIS LUAS PEQUENAS DE SATURNO COM A FORMA DA CASSINI E AS CRATERAS DAS FOTOS, NO AR (`origin/main` 25ad0ede)
 
-**Feito e aprovado** (*"ok, pode seguir"*): Jano, Epimeteu, Pandora, Prometeu, Atlas e Dafnis com a forma medida
+**No ar desde 18/10** (*"ok, pode seguir"*; push pelo terminal dele, deploy verde, conferido por sha256): Jano, Epimeteu, Pandora, Prometeu, Atlas e Dafnis com a forma medida
 (Thomas, Joseph & Ansty 2018) e o lado certo virado para Saturno. A primeira versão de Jano, Epimeteu e Prometeu saiu
 lisa e ele recusou: *"foi uma grande regressão... a gente precisa ser sincero. E usar método científico"*. Refeitas:
 crateras marcadas a olho nas fotos da Cassini (Jano 150, Epimeteu 305 + 5 sulcos, Prometeu 137 + 2 vales e 1 escarpa)
