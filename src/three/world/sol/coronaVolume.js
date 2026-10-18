@@ -3,9 +3,10 @@
 // estado mutável do bake fatiado (ctx.cvol*) compartilhado com o animate.
 
 import * as THREE from 'three';
+import { POR_ANGULO_GLSL } from './common.js';
 
 export function createCoronaVolume(ctx){
-  var scene = ctx.scene, TP = ctx.TP, NOISE_GLSL = ctx.NOISE_GLSL,
+  var scene = ctx.scene, TP = ctx.TP,
       SUN_RADIUS = ctx.SUN_RADIUS, CORONA_SIZE = ctx.CORONA_SIZE,
       charges = ctx.charges;
   // ---------------------------------------------------------------
@@ -297,7 +298,6 @@ export function createCoronaVolume(ctx){
       uInvRot: { value: cvolInvRot },
       uCvol: { value: 0 },
       uActivity: { value: 0.5 },
-      uTime: { value: 0 },
       // contraste das raias finas procedurais sobre o volume (0 =
       // liso). 0.55 = v1-fil-suave, vencedora do painel de 3 juízes
       // da F4 (mediana 7.8: leitura orgânica de eclipse, sem o padrão
@@ -311,26 +311,29 @@ export function createCoronaVolume(ctx){
       // peso 0 o bloco é pulado no shader (imagem F4 bit-idêntica) e
       // com cvol=0 a mesh nem desenha. Ajuste via setCvolShape({plume}).
       uPlume: { value: 0.6 },
-      // cargas VIVAS (o mesmo array de Vector4 do disco/coronaRays; o
-      // three re-flatten por frame) — o gate de buraco coronal das
-      // plumas reavalia a unipolaridade no pé da linha radial do pixel
-      uCharges: { value: charges },
       // R1b da régua única: o ganho por canal da paleta, pela curva viva
       // (`stellarBody.ts`, `porCurva`); 1,1,1 no ACES
-      uPaleta: ctx.paletaDaCoroa
+      uPaleta: ctx.paletaDaCoroa,
+      // o fio e as plumas por ângulo (`POR_ANGULO_GLSL`, common.js): a
+      // faixa da coroa lê ESTES uFil/uPlume, os mesmos objetos
+      uPorAngulo: { value: ctx.coronaPorAngulo.rt.texture }
     };
+    ctx.coronaPorAngulo.uniforms.uFil = cvolUniforms.uFil;
+    ctx.coronaPorAngulo.uniforms.uPlume = cvolUniforms.uPlume;
     var cvolMat = new THREE.ShaderMaterial({
       glslVersion: THREE.GLSL3,
       uniforms: cvolUniforms,
       vertexShader: [
         'varying vec3 vWorld;',
+        'varying vec2 vUvA;',
         'void main(){',
+        '  vUvA = uv;',
         '  vec4 w = modelMatrix * vec4(position, 1.0);',
         '  vWorld = w.xyz;',
         '  gl_Position = projectionMatrix * viewMatrix * w;',
         '}'
       ].join('\n'),
-      fragmentShader: NOISE_GLSL + '\n' + [
+      fragmentShader: POR_ANGULO_GLSL + '\n' + [
         'precision highp sampler3D;',
         '#define CVOL_STEPS ' + CVOL_STEPS,
         // transplante: o raymarch corre em ESPAÇO DE MUNDO (cameraPosition/
@@ -347,11 +350,10 @@ export function createCoronaVolume(ctx){
         'uniform float uCvol;',
         'uniform vec3 uPaleta;',
         'uniform float uActivity;',
-        'uniform float uTime;',
-        'uniform float uFil;',
         'uniform float uPlume;',
-        'uniform vec4 uCharges[10];',
+        'uniform sampler2D uPorAngulo;',
         'varying vec3 vWorld;',
+        'varying vec2 vUvA;',
         // GLSL3: sem gl_FragColor — saída explícita
         'out vec4 fragColor;',
         'void main(){',
@@ -385,8 +387,12 @@ export function createCoronaVolume(ctx){
         '  float jit = fract(sin(dot(gl_FragCoord.xy, vec2(12.9898,78.233)))*43758.5453);',
         '  float t = t0 + dt*jit;',
         '  float sum = 0.0; float hsum = 0.0;',
+        // o ponto do passo no espaço do objeto é afim em t: a rotação e a
+        // escala saem do laço (rodada do peso; mesma conta, reassociada)
+        '  vec3 pA = (uInvRot * ro) * (1.0/SUN_R);',
+        '  vec3 pB = (uInvRot * rd) * (1.0/SUN_R);',
         '  for (int i = 0; i < CVOL_STEPS; i++){',
-        '    vec3 pO = (uInvRot * (ro + rd*t)) * (1.0/SUN_R);',
+        '    vec3 pO = pA + pB*t;',
         '    float d = texture(uVol, pO*' + (0.5/CVOL_VR).toFixed(6) + ' + 0.5).r;',
         '    d = d*d;',                       // decode do sqrt-encode
         '    sum += d;',
@@ -396,13 +402,14 @@ export function createCoronaVolume(ctx){
         '  if (sum <= 1e-5){ fragColor = vec4(0.0); return; }',
         '  float hMean = hsum / sum;',
         // raias finas + flicker 1/f no referencial do objeto — a mesma
-        // vida do plano de raias (uma avaliação por pixel, não por passo)
-        '  vec3 dirO = normalize(uInvRot * normalize(vWorld));',
-        '  float f1 = fbmLight(dirO*3.1 + vec3(0.0, 0.0, uTime*0.030));',
-        '  float f2 = fbmLight(dirO*7.3 + vec3(5.1, 2.2, uTime*0.045));',
-        '  float flick = fbmLight(dirO*1.9 + vec3(3.7, 8.2, uTime*0.55));',
-        '  float fil = (0.62 + 0.55*f1) * (0.80 + 0.34*f2) * (0.90 + 0.20*flick);',
-        '  fil = 1.0 + (fil - 1.0)*uFil;',
+        // vida do plano de raias. O plano passa pelo centro do Sol, então
+        // a direção do pixel (normalize(vWorld), girada por uInvRot) só
+        // depende do ÂNGULO dele no plano: o fio (e o portão e os fios
+        // das plumas, abaixo) vêm da faixa da coroa por ângulo
+        // (coronaRays.js), que roda o código que morava aqui
+        '  vec2 cA = vUvA - 0.5;',
+        '  vec4 pa = coroaPorAngulo(uPorAngulo, atan(cA.y, cA.x));',
+        '  float fil = pa.g;',
         // paleta quente do projeto, esfriando com a altura média da luz
         '  vec3 col = mix(vec3(1.0,0.72,0.42), vec3(1.0,0.46,0.20), clamp((hMean-1.0)*0.75, 0.0, 1.0));',
         '  float amp = sum * dt * (1.0/SUN_R) * 0.14 * uCvol * fil * (0.70 + 0.60*uActivity);',
@@ -416,7 +423,8 @@ export function createCoronaVolume(ctx){
         // centro) => ruído angular em dirO dá fios retos e radiais que,
         // confinados ao buraco, abrem em leque a partir do centro dele.
         // Early-outs em ordem de custo: perfil de altura (rp) -> gate
-        // de buraco (2x10 cargas) -> só então os 2 fbm dos fios.
+        // de buraco -> fios (o gate e os fios vêm prontos da faixa por
+        // ângulo; o pixel só aplica o limiar que depende da altura).
         // ------------------------------------------------------------
         '  if (uPlume > 0.0){',
         // pé da linha radial: vWorld ~ ponto de máxima aproximação do
@@ -427,41 +435,13 @@ export function createCoronaVolume(ctx){
         '    float hk = 1.0 - smoothstep(1.06, 1.52, rp);',
         '    hk *= hk;',
         '    if (hk > 0.001){',
-        // buraco coronal = campo ABERTO: unipolaridade alta em DUAS
-        // alturas (1.06 e 1.35) na radial do pixel — o min() mata os
-        // picos locais de unip sobre cargas bipolares (loops fechados
-        // perdem a radialidade com a altura; o buraco não). Janela
-        // 0.74-0.92, mais estrita que a do bake (0.60-0.90): plumas
-        // estritamente DENTRO do buraco visível
-        '      float ug = 1.0;',
-        '      for (int s = 0; s < 2; s++){',
-        '        vec3 fp = dirO * (s == 0 ? 1.06 : 1.35);',
-        '        vec3 B = vec3(0.0);',
-        '        for (int i = 0; i < 10; i++){',
-        '          vec3 dv = fp - uCharges[i].xyz;',
-        '          float r2 = dot(dv, dv) + 1e-3;',
-        '          B += dv * (uCharges[i].w / (r2 * sqrt(r2)));',
-        '        }',
-        '        ug = min(ug, abs(dot(B, dirO)) / (length(B) + 1e-9));',
-        '      }',
-        '      float hg = smoothstep(0.74, 0.92, ug);',
+        // o portão de buraco coronal (hg) e os fios (pa.a) são do ÂNGULO
+        // do pixel e vêm da faixa da coroa por ângulo (coronaRays.js, onde
+        // moram o código e a razão de cada um); o limiar que sobe com a
+        // altura (os fios AFINAM ao longo do comprimento) fica aqui
+        '      float hg = pa.b;',
         '      if (hg > 0.001){',
-        // fios: 2 oitavas angulares ESTÁTICAS no referencial do objeto
-        // (giram com o Sol; sem uTime — nada de cintilação nova, flags
-        // temporais são do Bloco C). O limiar sobe com a altura => os
-        // fios AFINAM ao longo do comprimento.
-        // BLOCO C (rodada de movimento, flag F6 confirmada): fios com
-        // FWHM 1.6-2.6px estroboscopavam sob rotação+pan (delta-p99
-        // polar +0.194 vs controle). Piso engrossado por A/B de flicker
-        // no qa-motion2: oitava alta 18->14 (fio ~1.3x mais largo) +
-        // topo do smoothstep 0.46->0.54 (a PONTA sub-pixel amolece;
-        // alargar por baixo só ADICIONAVA fios fracos e piorava o
-        // flicker). Medido: FWHM mediana 2.45->3.82px em 960x600,
-        // delta-p99 polar 0.194->0.084. Confinamento aos buracos (hg)
-        // e P-checks do qa:phase6 intactos (P1 +0.364/866px verdes).
-        '        float p1 = fbmLight(dirO*9.0 + vec3(7.7, 1.3, 0.0));',
-        '        float p2 = fbmLight(dirO*14.0 + vec3(3.1, 12.9, 0.0));',
-        '        float strand = smoothstep(0.12 + 0.20*(rp - 1.0), 0.54, p1*0.55 + p2*0.65);',
+        '        float strand = smoothstep(0.12 + 0.20*(rp - 1.0), 0.54, pa.a);',
         // ganho calibrado na rodada: plume=0.9 soma ~+8-14% no setor do
         // cap polar do mínimo (medido) — visível e ainda "bem mais
         // fraco que os streamers equatoriais" (ref-09)

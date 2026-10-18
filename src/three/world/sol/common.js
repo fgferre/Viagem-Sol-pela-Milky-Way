@@ -157,6 +157,40 @@ export const LIC_GLSL = [
   ].join('\n');
 
   // ---------------------------------------------------------------
+  // A COROA POR ÂNGULO (rodada do peso, 18/10/2026). Os dois planos da
+  // coroa (raias e volume) são billboards PELO CENTRO do Sol, e tudo o
+  // que eles têm de caro fora do raymarch — os simplex das raias e do
+  // fio do volume, o reforço sobre as regiões ativas e o portão das
+  // plumas — é lido na direção 3D do ÂNGULO do pixel no plano do céu:
+  // função só desse ângulo. Medido no Início (1440×820 a 2×, cinema):
+  // os ruídos das raias custavam 8,3 ms e o fio do volume 9,0 ms, com o
+  // mesmo padrão recalculado em cada um dos milhões de pixels de um
+  // mesmo raio. A faixa (`coronaRays.js`) guarda o padrão de cada um de
+  // CORONA_ANG_N ângulos, refeita UMA vez por quadro com o código de
+  // antes; o pixel lê os dois vizinhos e interpola. A oitava mais fina
+  // (os fios das plumas, 57 unidades de ruído por radiano) recebe ~11
+  // amostras por unidade, e o A/B mediu o erro: no máximo 1 nível de
+  // 8 bits, em ~2 % dos pixels, no Início e de perto (capturas/peso/sol/).
+  //   r = fator das raias (ruídos × flicker × regiões ativas)
+  //   g = fio do volume (já com uFil)
+  //   b = portão de buraco coronal das plumas (hg)
+  //   a = fios das plumas, antes do limiar que depende da altura
+  // ---------------------------------------------------------------
+export const CORONA_ANG_N = 4096;
+export const POR_ANGULO_GLSL = [
+    'vec4 coroaPorAngulo(sampler2D faixa, float ang){',
+    // texel i guarda o ângulo -PI + 2PI(i+0,5)/N; atan devolve [-PI, PI]
+    '  float x = (ang*0.15915494309189535 + 0.5)*' + CORONA_ANG_N + '.0 - 0.5;',
+    '  float x0 = floor(x);',
+    '  int i0 = int(x0);',
+    '  int i1 = i0 + 1;',
+    '  if (i0 < 0) i0 += ' + CORONA_ANG_N + ';',
+    '  if (i1 >= ' + CORONA_ANG_N + ') i1 -= ' + CORONA_ANG_N + ';',
+    '  return mix(texelFetch(faixa, ivec2(i0, 0), 0), texelFetch(faixa, ivec2(i1, 0), 0), x - x0);',
+    '}'
+  ].join('\n');
+
+  // ---------------------------------------------------------------
   // Infraestrutura compartilhada de "quad" de tela cheia
   // (usada pela simulação e pelo bloom multi-escala)
   // ---------------------------------------------------------------

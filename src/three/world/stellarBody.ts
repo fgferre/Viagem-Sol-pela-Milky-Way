@@ -1535,13 +1535,17 @@ export class StellarBody {
       if (cvolShow) {
         ctx.coronaVol.quaternion.copy(camera.quaternion);
         ctx.cvolUniforms.uCvol.value = ctx.CVOL_K;
-        ctx.cvolUniforms.uTime.value = ctx.elapsed;
         ctx.cvolUniforms.uActivity.value = ctx.coronaRaysUniforms.uActivity.value;
         // rotação PURA (matrixWorld herdaria a escala do group)
         ctx.cvolInvRot.copy(ctx.sunInvRot);
       }
       ctx.cvolFrame(cvolOn, delta, false);
     }
+
+    // --- a coroa por ângulo (rodada do peso): o padrão angular das raias
+    // e do volume, uma vez por quadro, DEPOIS de todo uniform da coroa
+    // deste quadro (tempo, base da câmera, giro, cargas, atividade) ---
+    ctx.coronaPorAngulo.desenhar();
   }
 
   dispose() {
@@ -1579,5 +1583,8 @@ export class StellarBody {
     // Data3DTexture da coroa volumétrica: material.dispose() NÃO dispõe
     // texturas, e esta não pertence a nenhum material do traverse.
     free(ctx.cvolTex);
+    // a faixa da coroa por ângulo: alvo e material vivem fora do `group`
+    free(ctx.coronaPorAngulo?.rt);
+    free(ctx.coronaPorAngulo?.material);
   }
 }
