@@ -109,6 +109,10 @@ estatísticas de <corpo>". Sem jargão na nota (número de item, nome de script,
 mais pobre de dado — e o mapa de cobertura pintado (medido / derivado / inventado). Ele decide pela imagem. A cadeia de
 dados roda no terminal dele e pede a palavra dele na conversa; depois `npm run done`, merge, e publicar é dele.
 
+**9. Fechar a cópia** (palavra dele, 18/10: as cópias esquecidas somavam 26 GB). Depois de publicado: `capturas/` da
+cópia vai para `capturas/copias/<cópia>/` na pasta principal (`mv`, contagem e bytes conferidos), os links de
+`node_modules`/`.cache` saem, e `git worktree remove --force ../Viagem-<corpo>`; o ramo fica no git.
+
 ## Ferramentas de um corpo só
 
 Ao usar num segundo corpo uma peça feita para um (Jápeto, Reia, Hipérion, Pã, Europa), generalizar ali, no ramo da
