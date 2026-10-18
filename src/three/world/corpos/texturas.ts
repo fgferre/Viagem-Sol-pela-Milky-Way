@@ -604,10 +604,12 @@ const carregarPelaRede: CarregadorDeTextura = async (url, sinal, aoChegar) => {
  * `aoChegar`, e os cabeçalhos também contam. Os bytes passam os mesmos,
  * na mesma ordem, e o tipo do blob sai dos mesmos cabeçalhos — o blob é
  * o mesmo, e o pixel também. O aborto do `fetch` derruba o corpo da
- * resposta, e o cano leva o erro até o `blob()`.
+ * resposta, e o cano leva o erro até o `blob()`. Navegador sem
+ * `TransformStream` recebe a resposta crua: sem contar, só o prazo do
+ * destino parado vale, e a textura chega igual.
  */
 function contandoOsBytes(r: Response, aoChegar?: () => void): Response {
-  if (!aoChegar || !r.body) return r;
+  if (!aoChegar || !r.body || typeof TransformStream === 'undefined') return r;
   aoChegar();
   const contar = new TransformStream<Uint8Array, Uint8Array>({
     transform(pedaco, saida) {
