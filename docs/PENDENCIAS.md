@@ -4,7 +4,27 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 234.**
 
-## O BASTÃO — onde a rodada parou (17/10) — MIMAS, TÉTIS E DIONE COM O RELEVO MEDIDO DE 2025, NO AR (`origin/main` be247f50)
+## O BASTÃO — onde a rodada parou (18/10) — AS SEIS LUAS PEQUENAS DE SATURNO COM A FORMA DA CASSINI E AS CRATERAS DAS FOTOS, APROVADAS PARA PUBLICAR
+
+**Feito e aprovado** (*"ok, pode seguir"*): Jano, Epimeteu, Pandora, Prometeu, Atlas e Dafnis com a forma medida
+(Thomas, Joseph & Ansty 2018) e o lado certo virado para Saturno. A primeira versão de Jano, Epimeteu e Prometeu saiu
+lisa e ele recusou: *"foi uma grande regressão... a gente precisa ser sincero. E usar método científico"*. Refeitas:
+crateras marcadas a olho nas fotos da Cassini (Jano 150, Epimeteu 305 + 5 sulcos, Prometeu 137 + 2 vales e 1 escarpa)
+no lugar, e o resto por produção + degradação ajustadas contra a foto de cada lua (*"gosto do novo jano, talvez falte um
+pouco de rugosidade"* → o fundo de crateras gastas). Sem cratera inventada acima do que a forma medida resolve (o teste
+dos eixos pegou 27 delas); a sombra assada sem as covas menores que um texel (era a pimenta preta). Prometeu ganhou as
+fotos pelo PDS Imaging (o nó de anéis segue em HTTP 429). Atlas, Pandora e Dafnis ficam como estavam: batem com as
+fotos (o risco escuro no topo de Atlas é real). Provas: `../Viagem-luas6/capturas/luas-pequenas/` (pranchas finais
+`prancha-final-{1,2}-v2.jpg`, pranchas por lua `<lua>/prancha-v6*.jpg`, catálogos em `<lua>/acabamento-v2/olho/`).
+
+**A próxima rodada — a fila dele:** o peso do app. Achados abertos desta: Dafnis meio enterrada porque o anel do app não
+tem a divisão de Keeler (motor); a luz do app é mais dura que a das fotos nas luas de gelo (inclinação log ~1,2 × 0,6;
+junta com "gelos claros e Lambert"); a cor de Prometeu ainda é a pintura, e há 49 quadros dele com filtros de cor no
+disco (`prometheus/acabamento/baixado/raw/`); em Jano e Epimeteu o lado sem foto tem ~2× mais crateras médias que o lado
+visto (o olho acha ~55–70 %); Epimeteu ficou 13 % abaixo do alvo de crateras nítidas no lado cego depois do corte das
+grandes; Pã ainda usa o realce 1,2 da normal.
+
+## O BASTÃO anterior (17/10) — MIMAS, TÉTIS E DIONE COM O RELEVO MEDIDO DE 2025, NO AR (`origin/main` be247f50)
 
 **Feito e aprovado** (*"sim, aprovo, pode juntar e publicar"*): o relevo das três assado em casa do SPC de Weirich,
 Gaskell, Palmer & Domingue (2025, PDS SBN) como razão sobre o elipsoide da casa — altura 1024, normal 4096 sem leque no

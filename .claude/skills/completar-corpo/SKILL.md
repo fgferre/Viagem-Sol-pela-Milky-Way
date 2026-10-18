@@ -60,6 +60,16 @@ não altura zero. Olhar o resultado numa vista POLAR e numa equatorial antes de 
   Em Tétis e Dione o fino medido nos regionais nem é cratera (é ondulação): crateras da foto correlacionaram 0,0–0,1;
 - DTM regional mais fino que o resto aparece como QUADRADO em luz rasante: o fino dele entra com rampa larga
   (~60 km), não de 8 km.
+- LISO NÃO É VERDADEIRO (dono, 17/10: *"foi uma grande regressão... a gente precisa ser sincero. E usar método
+  científico"*): quando a derivação pela foto reprova, o passo seguinte é obrigatório, nunca entregar mais pobre que o
+  publicado. A estatística fina medida num modelo de placas abaixo da resolução dele é artefato, não o corpo.
+- Crateras numa foto única: os detectores falham (revocação 0,19); o catálogo é A OLHO, como na contagem científica
+  (ladrilhos 3× com grade e seta do Sol, marcar a BORDA, segunda passada, repetição às cegas como barra de erro,
+  quadro de prova fora) — `../Viagem-luas6/capturas/luas-pequenas/<lua>/acabamento-v2/olho/`.
+- Fundo de crateras: produção (inclinação medida no catálogo) + degradação por difusão no tempo, ajustadas contra a
+  foto; catálogo no lugar; nenhuma cratera inventada ≥ ~8 placas do modelo de forma (ele as veria) nem ≥ a completude
+  onde a foto vê; a sombra assada (horizonte) sai do relevo suavizado 1 texel, senão cova de 2 texels vira pimenta
+  preta — `../Viagem-luas6/capturas/luas-pequenas/janus/acabamento-v2/relevo-v6/` (Jano, Epimeteu, Prometeu, 18/10).
 
 **4. Imagem que falta.**
 - foto em cinza ou realçada → a cor vem da régua (tinta medida) ou de `cor-inventada.mjs` (transferência guiada pelo
