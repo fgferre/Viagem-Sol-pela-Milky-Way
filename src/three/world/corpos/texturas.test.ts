@@ -20,6 +20,8 @@ import {
   CANAL_MAP,
   CANAL_NORMAL,
   CARENCIA_DA_DESCARGA_S,
+  ESPERA_PELO_DESTINO_S,
+  PRAZO_SEM_BYTES_S,
   RECARGAS_ATE_DESISTIR,
   LIMIAR_DA_IMAGEM_PX,
   MARGEM_DO_LIMIAR,
@@ -974,9 +976,10 @@ describe('o degrau da tela: imagem igual; pequeno ou fora do quadro baixa o piso
 
 /**
  * Várias casas no MESMO carregador — a mesma fila. Cada imagem fica
- * pendurada até `entregar(corpo)`, e o abort a derruba, como o fetch.
+ * pendurada até `entregar(corpo)`, e o abort a derruba, como o fetch. A
+ * de um corpo `mudo` nunca responde, nem ao abort.
  */
-function bancadaDaFila() {
+function bancadaDaFila(mudos: string[] = []) {
   const pedidos: string[] = [];
   const abortados: string[] = [];
   const pendentes = new Map<string, () => void>();
@@ -989,6 +992,7 @@ function bancadaDaFila() {
     carregarTextura: (url, sinal) =>
       new Promise((resolver, rejeitar) => {
         pedidos.push(url);
+        if (mudos.some((c) => url.includes(`/${c}/`))) return;
         sinal?.addEventListener('abort', () => {
           abortados.push(url);
           rejeitar(new Error('abortado'));
@@ -1077,6 +1081,37 @@ describe('a fila das cargas: o destino primeiro, a tela pelo tamanho, a vizinhan
     await f.entregar('moon');
     expect(lua.degrauNaTela).toBe(8192);
     expect(lua.carregando).toBe(false);
+  });
+
+  it('o destino mudo não segura a tela: ela desce depois da espera, e ele cai e rearma no prazo', async () => {
+    const f = bancadaDaFila(['earth']);
+    const [terra, lua] = ['earth', 'moon'].map(f.casa);
+    const ticks = (tS: number) => {
+      terra.aoTick({ ...armado, foco: true }, tS, Infinity);
+      lua.aoTick(armado, tS, 0);
+    };
+    ticks(0);
+    await f.respirar();
+    // o relógio do destino começa no tick seguinte às imagens no ar
+    ticks(0);
+    ticks(ESPERA_PELO_DESTINO_S - 0.01);
+    await f.respirar();
+    expect(f.pedidos).toEqual([mapa('earth')]);
+    // sem imagem pousada na espera inteira, a tela anda sem ele
+    ticks(ESPERA_PELO_DESTINO_S);
+    await f.entregar('moon');
+    expect(f.pedidos).toEqual([mapa('earth'), mapa('moon', '_1024')]);
+    expect(lua.pronta).toBe(true);
+    expect(terra.carregando).toBe(true);
+    // sem byte nenhum no prazo, ele cai pelo caminho de toda falha e o
+    // gatilho o rearma no tick seguinte, de novo na frente
+    ticks(PRAZO_SEM_BYTES_S);
+    await f.respirar();
+    expect(terra.carregando).toBe(false);
+    ticks(PRAZO_SEM_BYTES_S);
+    await f.respirar();
+    expect(f.pedidos).toEqual([mapa('earth'), mapa('moon', '_1024'), mapa('earth')]);
+    expect(terra.carregando).toBe(true);
   });
 
   it('sem estar armada, a vizinha não adianta nada', async () => {

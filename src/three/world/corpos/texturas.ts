@@ -380,11 +380,14 @@ type EstadoDasTexturas = 'fria' | 'buscando' | 'pronta' | 'falhou';
 export type BuscadorDeManifest = (url: string) => Promise<ManifestDeTexturas>;
 /**
  * O carregador de UMA imagem. O `sinal` é a peça 3 do bloco A: pedido
- * que perdeu o dono no meio do caminho para de descer.
+ * que perdeu o dono no meio do caminho para de descer. `aoChegar` é
+ * chamado a cada pedaço de bytes que desce — o relógio da casa
+ * (`PRAZO_SEM_BYTES_S`); quem não o chama conta só a imagem que pousa.
  */
 export type CarregadorDeTextura = (
   url: string,
-  sinal?: AbortSignal
+  sinal?: AbortSignal,
+  aoChegar?: () => void
 ) => Promise<THREE.Texture>;
 
 /**
@@ -574,10 +577,10 @@ const buscarPelaRede: BuscadorDeManifest = async (url) => {
  *
  * A prova de que o pixel não mudou é o `ab-identidade` nas 54 vistas.
  */
-const carregarPelaRede: CarregadorDeTextura = async (url, sinal) => {
+const carregarPelaRede: CarregadorDeTextura = async (url, sinal, aoChegar) => {
   const r = await fetch(url, { signal: sinal });
   if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
-  const bitmap = await createImageBitmap(await r.blob(), {
+  const bitmap = await createImageBitmap(await contandoOsBytes(r, aoChegar).blob(), {
     imageOrientation: 'flipY',
     premultiplyAlpha: 'none',
     colorSpaceConversion: 'none',
@@ -595,6 +598,25 @@ const carregarPelaRede: CarregadorDeTextura = async (url, sinal) => {
   tex.needsUpdate = true;
   return tex;
 };
+
+/**
+ * A RESPOSTA COM OS BYTES CONTADOS: cada pedaço que desce avisa
+ * `aoChegar`, e os cabeçalhos também contam. Os bytes passam os mesmos,
+ * na mesma ordem, e o tipo do blob sai dos mesmos cabeçalhos — o blob é
+ * o mesmo, e o pixel também. O aborto do `fetch` derruba o corpo da
+ * resposta, e o cano leva o erro até o `blob()`.
+ */
+function contandoOsBytes(r: Response, aoChegar?: () => void): Response {
+  if (!aoChegar || !r.body) return r;
+  aoChegar();
+  const contar = new TransformStream<Uint8Array, Uint8Array>({
+    transform(pedaco, saida) {
+      aoChegar();
+      saida.enqueue(pedaco);
+    },
+  });
+  return new Response(r.body.pipeThrough(contar), { headers: r.headers });
+}
 
 /**
  * O manifest é UM arquivo de 3,44 MiB e treze corpos o pediam ao mesmo
@@ -757,6 +779,30 @@ function estadoAposFalha(
 //    próximo clique acha a imagem cheia. Um destino que chega a
 //    INTERROMPE — ela volta a esperar, e os bytes dela param.
 // Nenhuma vez muda o degrau que a tela pede: muda só QUANDO ele desce.
+//
+// E NENHUM LOTE SEGURA A FILA PARA SEMPRE (a casa mede, no relógio do
+// tick): o destino no ar sem imagem pousada há `ESPERA_PELO_DESTINO_S`
+// continua descendo, mas não segura mais a tela nem a vizinhança; e o
+// lote, de qualquer vez, sem byte nenhum há `PRAZO_SEM_BYTES_S` CAI, pelo
+// mesmo caminho de toda falha — volta a fria e rearma pelo gatilho.
+
+/**
+ * Quanto a tela espera por um destino que não pousa imagem nenhuma: 10 s.
+ * O lote de destino mais lento medido a 25 Mbps (a Lua no teto, ~7 s,
+ * `capturas/peso/rede-v4.md`) cabe com folga, então na rede de referência
+ * o destino desce sempre sozinho, como antes. Passado isso ele está
+ * pendurado ou rastejando, e a tela não fica vazia esperando por ele.
+ */
+export const ESPERA_PELO_DESTINO_S = 10;
+
+/**
+ * Lote sem byte nenhum há 20 s é FALHA. Rede lenta não é rede muda: a
+ * 1 Mbps um pedaço de 64 KB chega a cada meio segundo. Vinte segundos de
+ * silêncio são uma conexão morta, e o dobro da espera do destino: a tela
+ * já andou antes de ele cair. O relógio só corre com as imagens no ar —
+ * o manifest, de todos, não conta.
+ */
+export const PRAZO_SEM_BYTES_S = 20;
 
 /** A VEZ de um lote na fila — o menor desce primeiro. */
 export const VEZ_DO_DESTINO = 0;
@@ -779,6 +825,8 @@ export interface LugarNaFila {
   chegada: number;
   /** a fila já mandou descer */
   descendo: boolean;
+  /** o destino no ar sem avanço (`ESPERA_PELO_DESTINO_S`): desce, sem segurar ninguém */
+  parado: boolean;
   /** a casa começa a baixar o lote */
   comecar: () => void;
   /** a casa corta o lote em voo; ele continua na fila, esperando */
@@ -803,7 +851,15 @@ export class FilaDeCargas {
   entrar(lugar: LugarNaFila): void {
     lugar.chegada = this.chegadas++;
     lugar.descendo = false;
+    lugar.parado = false;
     this.lugares.add(lugar);
+    this.agendar();
+  }
+
+  /** o destino no ar parou de avançar: a fila anda sem ele, que segue descendo */
+  parou(lugar: LugarNaFila): void {
+    if (lugar.parado || !this.lugares.has(lugar)) return;
+    lugar.parado = true;
     this.agendar();
   }
 
@@ -830,6 +886,7 @@ export class FilaDeCargas {
 
   private comecar(lugar: LugarNaFila): void {
     lugar.descendo = true;
+    lugar.parado = false;
     lugar.comecar();
   }
 
@@ -855,7 +912,8 @@ export class FilaDeCargas {
     let telaDescendo = 0;
     let vizinhancaDescendo = false;
     for (const l of this.lugares) {
-      if (l.vez === VEZ_DO_DESTINO) destino = true;
+      // o destino parado não segura ninguém, e também não ocupa vez nenhuma
+      if (l.vez === VEZ_DO_DESTINO) destino ||= !l.parado;
       else if (l.vez === VEZ_DA_TELA) {
         tela = true;
         if (l.descendo) telaDescendo += 1;
@@ -899,6 +957,24 @@ export function filaDoCarregador(carregar: CarregadorDeTextura): FilaDeCargas {
     filasPorCarregador.set(carregar, fila);
   }
   return fila;
+}
+
+/**
+ * O relógio de UM lote no ar. Os avisos do carregador só marcam o que
+ * chegou; quem lê o relógio é o tick (`vigiar`), no tempo do app.
+ */
+interface VigiaDoLote {
+  /** as imagens já foram pedidas (o manifest chegou): o relógio corre */
+  noAr: boolean;
+  /** chegaram bytes desde o tick anterior */
+  chegou: boolean;
+  /** pousou imagem desde o tick anterior */
+  pousou: boolean;
+  /** o tick do último byte e da última imagem; null antes do primeiro */
+  byteS: number | null;
+  pousoS: number | null;
+  /** o lote cai como qualquer falha */
+  desistir: () => void;
 }
 
 // ------------------------------------------------------------
@@ -1044,6 +1120,8 @@ export class TexturasDoCorpo {
    * transferência. `null` quando não há pedido no ar.
    */
   private abortoEmVoo: AbortController | null = null;
+  /** o relógio do lote NO AR (`vigiar`); null sem lote descendo */
+  private vigia: VigiaDoLote | null = null;
 
   constructor(pedido: PedidoDeTexturas) {
     this.pedido = pedido;
@@ -1152,6 +1230,7 @@ export class TexturasDoCorpo {
       this.recargas = 0;
     }
     this.ninguemSegurava = false;
+    this.vigiar(tS);
     // o tier lido AGORA, na hora do pedido (pino de `atlasConfig.test.ts`)
     const { rede } = this.pedido;
     const tier = rede.tier();
@@ -1275,6 +1354,27 @@ export class TexturasDoCorpo {
     this.geracao += 1;
     this.abortoEmVoo?.abort();
     this.abortoEmVoo = null;
+    this.vigia = null;
+  }
+
+  /**
+   * O RELÓGIO DO LOTE NO AR, a cada tick em que alguém segura: o que
+   * chegou desde o tick anterior zera o relógio dele. Sem imagem pousada
+   * há `ESPERA_PELO_DESTINO_S`, o destino deixa a fila andar; sem byte há
+   * `PRAZO_SEM_BYTES_S`, o lote desiste e cai no `catch` de sempre.
+   */
+  private vigiar(tS: number): void {
+    const v = this.vigia;
+    const lugar = this.lugar;
+    if (!v || !lugar || !v.noAr) return;
+    if (v.byteS === null || v.chegou || v.pousou) v.byteS = tS;
+    if (v.pousoS === null || v.pousou) v.pousoS = tS;
+    v.chegou = false;
+    v.pousou = false;
+    if (tS - v.byteS >= PRAZO_SEM_BYTES_S) v.desistir();
+    else if (lugar.vez === VEZ_DO_DESTINO && tS - v.pousoS >= ESPERA_PELO_DESTINO_S) {
+      this.fila.parou(lugar);
+    }
   }
 
   /**
@@ -1356,6 +1456,7 @@ export class TexturasDoCorpo {
       tamanhoPx,
       chegada: 0,
       descendo: false,
+      parado: false,
       comecar: () => this.baixar(lugar),
       interromper: () => {
         if (this.lugar === lugar) this.interromper();
@@ -1376,15 +1477,57 @@ export class TexturasDoCorpo {
     this.abortoEmVoo = aborto;
     const minha = ++this.geracao;
     const vencida = () => this.disposto || minha !== this.geracao;
+    // O PRAZO: o lote mudo desiste por aqui, mesmo que o carregador não
+    // obedeça ao aborto — e o que chegar depois é descartado lá dentro
+    let desistiu = false;
+    let cair: (erro: Error) => void = () => {};
+    const prazo = new Promise<never>((_, rejeitar) => {
+      cair = rejeitar;
+    });
+    const vigia: VigiaDoLote = {
+      noAr: false,
+      chegou: false,
+      pousou: false,
+      byteS: null,
+      pousoS: null,
+      desistir: () => {
+        desistiu = true;
+        aborto.abort();
+        cair(new Error(`${corpo}: nenhum byte há ${PRAZO_SEM_BYTES_S} s`));
+      },
+    };
+    this.vigia = vigia;
+    const carregar = rede.carregarTextura ?? carregarPelaRede;
+    const vigiado: CarregadorDeTextura = (url, sinal) => {
+      vigia.noAr = true;
+      return carregar(url, sinal, () => {
+        vigia.chegou = true;
+      }).then((tex) => {
+        vigia.pousou = true;
+        return tex;
+      });
+    };
     /** o lote saiu (pousou ou caiu): a vez dele passa adiante */
     const sair = () => {
       this.tierEmVoo = null;
       this.degrauEmVoo = 0;
       this.lugar = null;
       if (this.abortoEmVoo === aborto) this.abortoEmVoo = null;
+      if (this.vigia === vigia) this.vigia = null;
       this.fila.sair(lugar);
     };
-    void carregarCanaisDoCorpo(corpo, canais, rede, tier, vencida, aborto.signal, degrau)
+    void Promise.race([
+      carregarCanaisDoCorpo(
+        corpo,
+        canais,
+        { ...rede, carregarTextura: vigiado },
+        tier,
+        () => vencida() || desistiu,
+        aborto.signal,
+        degrau
+      ),
+      prazo,
+    ])
       .then((porCanal) => {
         // cancelada no caminho: o lote já foi descartado lá dentro
         if (!porCanal) return;
