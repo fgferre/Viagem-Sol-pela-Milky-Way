@@ -132,9 +132,11 @@ import {
 import { passoDoPalco, quadroDoPalcoVazio } from './director/palco';
 import {
   corpoEDestinoDoAtlas,
+  corpoNaVizinhancaDoAtlas,
   corpoNoFocoDoAtlas,
   corpoPedidoPeloRoteiro,
   efemeridesPrecisamPreCarga,
+  vizinhancaLiberada,
 } from './director/preAquecimento';
 import type { PostoNoPalco } from './director/palco';
 import type { GalacticAssets, ManifestVolume, VolumeDePoeira } from './cartography/galacticAssets';
@@ -697,6 +699,41 @@ export class Director {
   private corpoNoDestino(id: string): boolean {
     return corpoEDestinoDoAtlas(this.phase, this.escada.focoCorpoId, id);
   }
+  private corpoNaVizinhanca(id: string): boolean {
+    return (
+      this.vizinhancaDesce && corpoNaVizinhancaDoAtlas(this.phase, this.escada.focoCorpoId, id)
+    );
+  }
+  /**
+   * A VIZINHANÇA PODE DESCER neste tick (`vizinhancaLiberada`): os dois
+   * fatos do APARELHO são lidos uma vez — o visitante que pediu economia de
+   * dados (`navigator.connection.saveData`) e a tela de toque (o mesmo
+   * `pointer: coarse` da casa) — e o foco inteiro, a cada tick.
+   */
+  private vizinhancaDesce = false;
+  private readonly economiaDeDados = (() => {
+    try {
+      const n = navigator as Navigator & { connection?: { saveData?: boolean } };
+      return n.connection?.saveData === true;
+    } catch {
+      return false;
+    }
+  })();
+  private readonly telaDeToque = (() => {
+    try {
+      return window.matchMedia?.('(pointer: coarse)').matches ?? false;
+    } catch {
+      return false;
+    }
+  })();
+  /** o foco do Atlas está inteiro: nada dele no ar, e não frio no gate */
+  private focoInteiro(): boolean {
+    const foco = this.escada.focoCorpoId;
+    for (const p of this.noPalco) {
+      if (p.id === foco) return !p.carregando && !p.friaNoGate;
+    }
+    return false;
+  }
   /** o eixo da câmera, reescrito a cada tick para o degrau da tela */
   private readonly eixoDaCamera = new THREE.Vector3();
   /** quadros já gastos segurando a captura com a efeméride pedida
@@ -1196,6 +1233,7 @@ export class Director {
     this.corpoNoFoco = this.corpoNoFoco.bind(this);
     this.corpoNoRoteiro = this.corpoNoRoteiro.bind(this);
     this.corpoNoDestino = this.corpoNoDestino.bind(this);
+    this.corpoNaVizinhanca = this.corpoNaVizinhanca.bind(this);
     this.events = events;
     this.engine = new Engine(canvas);
     // Se QUALQUER coisa abaixo lançar (o prime do Sol são ~550 draws numa
@@ -3980,6 +4018,11 @@ export class Director {
       q.dtS = dt;
       q.pr = prAtual;
       q.salto = this.saltoDeCamera;
+      this.vizinhancaDesce = vizinhancaLiberada(
+        this.economiaDeDados,
+        this.telaDeToque,
+        this.telaDeToque && this.focoInteiro()
+      );
       passoDoPalco(this.noPalco, q, {
         palco: this.palco,
         planetas: this.planetas,
@@ -3993,6 +4036,7 @@ export class Director {
         noFoco: this.corpoNoFoco,
         noRoteiro: this.corpoNoRoteiro,
         noDestino: this.corpoNoDestino,
+        noVizinho: this.corpoNaVizinhanca,
         perturbar: this.perturbarDoPalco,
       });
     }

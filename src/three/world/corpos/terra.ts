@@ -642,7 +642,8 @@ export class TerraResolvida {
     this.texturas.aoTick(
       this.seguram,
       q.tS,
-      diametroPedidoPelaTela(diametroPx, RAIO_EQ_TERRA_PC, this.centro, q)
+      diametroPedidoPelaTela(diametroPx, RAIO_EQ_TERRA_PC, this.centro, q),
+      q.vizinhoDoAtlas === true
     );
 
     const emQuadro = this.armado && q.ligado && this.texturas.pronta;

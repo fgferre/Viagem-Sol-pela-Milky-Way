@@ -27,6 +27,36 @@ export function corpoEDestinoDoAtlas(fase: Phase, foco: string | null, id: strin
   return fase === 'atlas' && foco === id;
 }
 
+/** o pai de cada lua, lido sem alocar (a vizinhança é perguntada por corpo e por tick) */
+const PAI_DA_LUA = new Map(LUAS_DO_SISTEMA.map((l) => [l.id, l.pai]));
+
+/**
+ * A VIZINHANÇA do foco: o SISTEMA dele — o planeta e as luas, ou, com o
+ * foco numa lua, o pai e as irmãs. São os corpos que o próximo clique
+ * alcança ou que girar a câmera mostra; com a rede quieta, o que já estiver
+ * armado sobe ao teto (`TexturasDoCorpo.aoTick`), para o clique não chegar
+ * no piso (peso de rede, 18/10: a Lua 6,6 s e Dione 4,6 s no 1024). O foco
+ * não é vizinho dele mesmo — ele é o destino.
+ */
+export function corpoNaVizinhancaDoAtlas(fase: Phase, foco: string | null, id: string): boolean {
+  if (fase !== 'atlas' || !foco || id === foco) return false;
+  const sistema = PAI_DA_LUA.get(foco) ?? foco;
+  return id === sistema || PAI_DA_LUA.get(id) === sistema;
+}
+
+/**
+ * A REDE DEIXA A VIZINHANÇA DESCER? Nunca com a economia de dados pedida
+ * (`navigator.connection.saveData`); na tela de toque, só depois de o foco
+ * estar inteiro — o telefone não divide a banda do que o visitante olha.
+ */
+export function vizinhancaLiberada(
+  economiaDeDados: boolean,
+  telaDeToque: boolean,
+  focoInteiro: boolean
+): boolean {
+  return !economiaDeDados && (!telaDeToque || focoInteiro);
+}
+
 /**
  * No filme, só os corpos e os momentos declarados pelo roteiro — e o
  * pedido é MONOTÔNICO: `montarApoiosDoRoteiro` guarda o INÍCIO de cada

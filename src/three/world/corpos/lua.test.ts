@@ -734,6 +734,7 @@ describe('6. a ordem fotométrica — o ponto da Lua no fim do filme', () => {
       noFoco: () => false,
       noRoteiro: () => false,
       noDestino: () => false,
+      noVizinho: () => false,
       perturbar: () => {},
     });
     // o quadro da camada, DEPOIS do palco — é ele que escreve o Φ de

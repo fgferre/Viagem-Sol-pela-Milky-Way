@@ -984,7 +984,8 @@ export class RochosoResolvido {
     this.texturas.aoTick(
       this.seguram,
       q.tS,
-      diametroPedidoPelaTela(diametroPx, this.raioA, this.centro, q)
+      diametroPedidoPelaTela(diametroPx, this.raioA, this.centro, q),
+      q.vizinhoDoAtlas === true
     );
 
     const emQuadro =

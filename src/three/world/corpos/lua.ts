@@ -470,7 +470,8 @@ export class LuaResolvida {
     this.texturas.aoTick(
       this.seguram,
       q.tS,
-      diametroPedidoPelaTela(diametroPx, RAIO_LUA_PC, this.centro, q)
+      diametroPedidoPelaTela(diametroPx, RAIO_LUA_PC, this.centro, q),
+      q.vizinhoDoAtlas === true
     );
 
     // A LUA TEM LUGAR? (item 225) — posição finita, e NUNCA `q.fonte !==

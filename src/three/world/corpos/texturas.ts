@@ -327,6 +327,11 @@ export interface MiraDaTela {
   meioConeDaTelaRad?: number;
   /** o Atlas está focado NESTE corpo — não na lua dele, não no pai */
   destinoDoAtlas?: boolean;
+  /**
+   * o corpo é do SISTEMA do foco do Atlas (`corpoNaVizinhancaDoAtlas`) e a
+   * rede pode adiantá-lo: armado, ele pede o teto na última vez da fila
+   */
+  vizinhoDoAtlas?: boolean;
 }
 
 /** A meia diagonal do quadro (o cone que o circunscreve), em radianos. */
@@ -732,6 +737,171 @@ function estadoAposFalha(
 }
 
 // ------------------------------------------------------------
+// A FILA DAS CARGAS — quem desce primeiro (peso de rede, 18/10/2026)
+// ------------------------------------------------------------
+//
+// MEDIDO (`capturas/peso/rede-v3.md`): com o vizinho fora do quadro no
+// piso, a Lua clicada da Terra de perto ficou 6,6 s no 1024 e Dione,
+// clicada de Saturno, 4,6 s — antes do piso as duas já estavam no teto.
+// E os lotes desciam todos de uma vez, dividindo a banda: o corpo que o
+// visitante escolheu disputava com cada vizinho armado.
+//
+// UMA FILA, TRÊS VEZES, e o lote é a unidade (os canais de um corpo
+// descem juntos, como sempre):
+//  - o DESTINO declarado (pedido infinito: o foco do Atlas desde o clique,
+//    o roteiro do filme) desce na hora, todos juntos, e não espera nada;
+//  - a TELA espera o destino e desce pelo diâmetro no quadro, o maior
+//    primeiro, `LOTES_DA_TELA_DE_UMA_VEZ` por vez;
+//  - a VIZINHANÇA (o armado do sistema do foco, já servido pela tela) só
+//    desce com a fila quieta, um lote por vez, e sobe ao teto do tier: o
+//    próximo clique acha a imagem cheia. Um destino que chega a
+//    INTERROMPE — ela volta a esperar, e os bytes dela param.
+// Nenhuma vez muda o degrau que a tela pede: muda só QUANDO ele desce.
+
+/** A VEZ de um lote na fila — o menor desce primeiro. */
+export const VEZ_DO_DESTINO = 0;
+export const VEZ_DA_TELA = 1;
+export const VEZ_DA_VIZINHANCA = 2;
+export type VezDaCarga = typeof VEZ_DO_DESTINO | typeof VEZ_DA_TELA | typeof VEZ_DA_VIZINHANCA;
+
+/**
+ * Quantos lotes da TELA descem juntos: dois, para a banda de um cobrir a
+ * decodificação do outro, e o maior disco não dividir a rede com todos.
+ */
+export const LOTES_DA_TELA_DE_UMA_VEZ = 2;
+
+/** Um lote na fila: esperando a vez, ou já descendo. A casa o monta. */
+export interface LugarNaFila {
+  vez: VezDaCarga;
+  /** o diâmetro na tela (px): na vez da tela, o maior desce primeiro */
+  tamanhoPx: number;
+  /** a ordem de chegada (a fila escreve) — o desempate */
+  chegada: number;
+  /** a fila já mandou descer */
+  descendo: boolean;
+  /** a casa começa a baixar o lote */
+  comecar: () => void;
+  /** a casa corta o lote em voo; ele continua na fila, esperando */
+  interromper: () => void;
+}
+
+/**
+ * A FILA. Não baixa nada: decide QUANDO cada casa baixa o lote dela, e a
+ * casa avisa quando ele sai (pousou, caiu ou foi cancelado). Uma por
+ * carregador de imagem (`filaDoCarregador`), como o manifest.
+ *
+ * A VEZ SE DECIDE NO FIM DO TICK (um microtask), nunca no meio: o palco
+ * percorre os corpos numa ordem fixa — Terra, Lua, rochosos, gigantes —, e
+ * Dione armada não pode começar a descer antes de Saturno, o destino que só
+ * entra na fila mais adiante no MESMO tick.
+ */
+export class FilaDeCargas {
+  private readonly lugares = new Set<LugarNaFila>();
+  private chegadas = 0;
+  private agendada = false;
+
+  entrar(lugar: LugarNaFila): void {
+    lugar.chegada = this.chegadas++;
+    lugar.descendo = false;
+    this.lugares.add(lugar);
+    this.agendar();
+  }
+
+  /** a vez do lote mudou: o corpo virou destino, entrou na tela, cresceu nela */
+  mudarVez(lugar: LugarNaFila, vez: VezDaCarga, tamanhoPx: number): void {
+    lugar.tamanhoPx = tamanhoPx;
+    if (lugar.vez === vez) return;
+    lugar.vez = vez;
+    this.agendar();
+  }
+
+  sair(lugar: LugarNaFila): void {
+    if (this.lugares.delete(lugar)) this.agendar();
+  }
+
+  private agendar(): void {
+    if (this.agendada) return;
+    this.agendada = true;
+    queueMicrotask(() => {
+      this.agendada = false;
+      this.escoar();
+    });
+  }
+
+  private comecar(lugar: LugarNaFila): void {
+    lugar.descendo = true;
+    lugar.comecar();
+  }
+
+  /** o próximo que espera nesta vez: o maior disco, e o mais antigo no empate */
+  private proximo(vez: VezDaCarga): LugarNaFila | null {
+    let melhor: LugarNaFila | null = null;
+    for (const l of this.lugares) {
+      if (l.vez !== vez || l.descendo) continue;
+      if (
+        !melhor ||
+        l.tamanhoPx > melhor.tamanhoPx ||
+        (l.tamanhoPx === melhor.tamanhoPx && l.chegada < melhor.chegada)
+      ) {
+        melhor = l;
+      }
+    }
+    return melhor;
+  }
+
+  private escoar(): void {
+    let destino = false;
+    let tela = false;
+    let telaDescendo = 0;
+    let vizinhancaDescendo = false;
+    for (const l of this.lugares) {
+      if (l.vez === VEZ_DO_DESTINO) destino = true;
+      else if (l.vez === VEZ_DA_TELA) {
+        tela = true;
+        if (l.descendo) telaDescendo += 1;
+      } else if (l.descendo) vizinhancaDescendo = true;
+    }
+    if (destino) {
+      for (const l of this.lugares) {
+        if (l.vez === VEZ_DO_DESTINO && !l.descendo) this.comecar(l);
+        else if (l.vez === VEZ_DA_VIZINHANCA && l.descendo) {
+          l.descendo = false;
+          l.interromper();
+        }
+      }
+      return;
+    }
+    if (tela) {
+      for (; telaDescendo < LOTES_DA_TELA_DE_UMA_VEZ; telaDescendo++) {
+        const l = this.proximo(VEZ_DA_TELA);
+        if (!l) break;
+        this.comecar(l);
+      }
+      return;
+    }
+    if (vizinhancaDescendo) return;
+    const l = this.proximo(VEZ_DA_VIZINHANCA);
+    if (l) this.comecar(l);
+  }
+}
+
+/**
+ * Uma fila por CARREGADOR, pela mesma razão do cache do manifest: em
+ * produção o carregador é um só (`carregarPelaRede`) e a fila é global de
+ * verdade; o teste que injeta o seu tem a sua, e um nunca espera o outro.
+ */
+const filasPorCarregador = new WeakMap<CarregadorDeTextura, FilaDeCargas>();
+
+export function filaDoCarregador(carregar: CarregadorDeTextura): FilaDeCargas {
+  let fila = filasPorCarregador.get(carregar);
+  if (!fila) {
+    fila = new FilaDeCargas();
+    filasPorCarregador.set(carregar, fila);
+  }
+  return fila;
+}
+
+// ------------------------------------------------------------
 // A CASA DO ESTADO — uma por corpo
 // ------------------------------------------------------------
 
@@ -822,8 +992,15 @@ export class TexturasDoCorpo {
 
   /** de que tier são os pixels QUE ESTÃO NA TELA (null: nenhum ainda) */
   private tierVivo: QualityLevel | null = null;
-  /** o tier do lote EM VOO — null quando não há pedido no ar */
+  /**
+   * o tier do lote PEDIDO — esperando a vez na fila ou já no ar; null
+   * quando não há pedido. `degrauEmVoo` é o degrau dele.
+   */
   private tierEmVoo: QualityLevel | null = null;
+  private degrauEmVoo = 0;
+  /** o lugar do lote pedido na fila (`FilaDeCargas`); null sem pedido */
+  private lugar: LugarNaFila | null = null;
+  private readonly fila: FilaDeCargas;
   /**
    * O tier cuja TROCA esgotou as três tentativas. Sem ele o tick
    * repetiria o pedido para sempre, 60 vezes por segundo, contra uma
@@ -870,6 +1047,7 @@ export class TexturasDoCorpo {
 
   constructor(pedido: PedidoDeTexturas) {
     this.pedido = pedido;
+    this.fila = filaDoCarregador(pedido.rede.carregarTextura ?? carregarPelaRede);
   }
 
   /** quantos dos três seguram os texels neste quadro (0 = carência) */
@@ -937,8 +1115,20 @@ export class TexturasDoCorpo {
    * SÓ SOBE enquanto alguém segura (encolher na tela não troca pixel nenhum
    * — quem devolve os texels é a carência), e uma subida em voo POUSA
    * antes de qualquer outra troca no mesmo tier.
+   *
+   * O pedido infinito é o DESTINO e desce na frente; o finito espera na
+   * vez da tela, pelo tamanho (`FilaDeCargas`). Um lote que ainda espera
+   * a vez não baixou nada: segue o pedido de agora a cada tick, ou sai.
+   * `vizinho` (`MiraDaTela.vizinhoDoAtlas`): com a tela servida, o corpo
+   * ARMADO pede o teto do tier na última vez — o que o visitante ainda não
+   * vê, mas o próximo clique ou giro mostra.
    */
-  aoTick(seguram: Seguradores, tS: number, diametroPx = Number.POSITIVE_INFINITY): void {
+  aoTick(
+    seguram: Seguradores,
+    tS: number,
+    diametroPx = Number.POSITIVE_INFINITY,
+    vizinho = false
+  ): void {
     if (this.disposto) return;
     const gatilho = seguram.tela || seguram.foco || seguram.filme;
     this.quantosSeguram =
@@ -967,28 +1157,70 @@ export class TexturasDoCorpo {
     const tier = rede.tier();
     const degrauDaTela = this.degrauPara(tier, diametroPx, LIMIAR_DA_IMAGEM_PX / MARGEM_DO_LIMIAR);
     this.degrauPreciso = this.degrauPara(tier, diametroPx, LIMIAR_DA_IMAGEM_PX);
+    const vezDaTela = diametroPx === Number.POSITIVE_INFINITY ? VEZ_DO_DESTINO : VEZ_DA_TELA;
     if (this.estado === 'fria') {
-      this.pedir(tier, degrauDaTela);
+      this.pedir(tier, degrauDaTela, vezDaTela, diametroPx);
+      return;
+    }
+    if (this.estado === 'buscando') {
+      // a PRIMEIRA carga: na fila, segue o pedido de agora; no ar, pousa
+      // antes de qualquer troca — e nos dois casos a vez acompanha a tela
+      if (!this.lugar) return;
+      if (!this.lugar.descendo) {
+        this.tierEmVoo = tier;
+        this.degrauEmVoo = degrauDaTela;
+      }
+      this.fila.mudarVez(this.lugar, vezDaTela, diametroPx);
       return;
     }
     // corpo procedural (sem canais) não tem pixel de arquivo a trocar
     if (this.estado !== 'pronta' || this.pedido.canais.length === 0) return;
-    const degrau =
+    let degrau =
       tier === this.tierVivo ? Math.max(this.degrauVivo, degrauDaTela) : degrauDaTela;
-    if (this.tierEmVoo !== null) {
+    let vez: VezDaCarga = vezDaTela;
+    // A VIZINHANÇA: a tela já está servida, e o vizinho armado pede o teto
+    // do tier na última vez da fila
+    if (vizinho && seguram.tela && tier === this.tierVivo && degrau === this.degrauVivo) {
+      const teto = this.degrauPara(tier, Number.POSITIVE_INFINITY, 0);
+      if (teto > degrau) {
+        degrau = teto;
+        vez = VEZ_DA_VIZINHANCA;
+      }
+    }
+    const nadaATrocar = tier === this.tierVivo && degrau === this.degrauVivo;
+    const recusado = tier === this.tierRecusado && degrau === this.degrauRecusado;
+    if (this.lugar && !this.lugar.descendo) {
+      // NA FILA, nada desceu ainda: o lote segue o pedido de agora, ou sai
+      if (nadaATrocar || recusado) {
+        this.cancelarEmVoo();
+        return;
+      }
+      this.tierEmVoo = tier;
+      this.degrauEmVoo = degrau;
+      this.fila.mudarVez(this.lugar, vez, diametroPx);
+      return;
+    }
+    if (this.lugar) {
       // contra o lote EM VOO: dois cliques no mesmo tier não abrem dois
-      // pedidos, e a subida de degrau em voo pousa antes da próxima
-      if (tier === this.tierEmVoo) return;
+      // pedidos, e a subida de degrau em voo pousa antes da próxima — a
+      // não ser a da VIZINHANÇA, que ninguém mais pede: essa para
+      if (tier === this.tierEmVoo) {
+        if (degrau === this.degrauEmVoo) {
+          this.fila.mudarVez(this.lugar, vez, diametroPx);
+          return;
+        }
+        if (this.lugar.vez !== VEZ_DA_VIZINHANCA) return;
+        this.cancelarEmVoo();
+      }
       // VOLTAR AO TIER QUE JÁ ESTÁ NA TELA É CANCELAR o que está no ar:
       // ninguém o espera mais — a geração nova o invalida. É a lição do
       // `reassarMundo` (21/08) num corpo só. Fora da tela quem cancela é
       // o `aoSoltar`, que não olha tier nenhum: sem segurador, nenhum
       // lote tem dono.
-      if (tier === this.tierVivo) this.cancelarEmVoo();
+      else if (tier === this.tierVivo) this.cancelarEmVoo();
     }
-    if (tier === this.tierVivo && degrau === this.degrauVivo) return;
-    if (tier === this.tierRecusado && degrau === this.degrauRecusado) return;
-    this.pedir(tier, degrau);
+    if (nadaATrocar || recusado) return;
+    this.pedir(tier, degrau, vez, diametroPx);
   }
 
   /** os pixels na tela são de que degrau (0: nenhum) — a sonda da aproximação */
@@ -1022,11 +1254,25 @@ export class TexturasDoCorpo {
    * é descartado) e o aborto corta os bytes que ainda estão descendo.
    * As duas metades andam juntas: sem a geração, um lote abortado
    * poderia pousar; sem o aborto, um lote invalidado continua custando
-   * banda. Um `abort()` depois de a carga terminar é inócuo.
+   * banda. Um `abort()` depois de a carga terminar é inócuo. E o lote
+   * sai da fila, esperando ou no ar: a vez dele passa adiante.
    */
   private cancelarEmVoo(): void {
-    this.geracao += 1;
+    this.interromper();
     this.tierEmVoo = null;
+    this.degrauEmVoo = 0;
+    const lugar = this.lugar;
+    this.lugar = null;
+    if (lugar) this.fila.sair(lugar);
+  }
+
+  /**
+   * O LOTE NO AR PARA, mas o pedido fica: a geração nova invalida o que
+   * chegar e o aborto corta os bytes. É o que a fila chama quando um
+   * destino passa à frente da vizinhança — ela volta a esperar a vez.
+   */
+  private interromper(): void {
+    this.geracao += 1;
     this.abortoEmVoo?.abort();
     this.abortoEmVoo = null;
   }
@@ -1089,26 +1335,55 @@ export class TexturasDoCorpo {
     this.soltoDesde = null;
   }
 
-  private pedir(tier: QualityLevel, degrau: number): void {
+  private pedir(tier: QualityLevel, degrau: number, vez: VezDaCarga, tamanhoPx: number): void {
     // com o globo já na tela o pedido é de TROCA: o estado continua
     // 'pronta' e os pixels velhos seguem desenhando até o lote chegar
-    const daPrimeiraVez = this.estado !== 'pronta';
-    if (daPrimeiraVez) this.estado = 'buscando';
+    if (this.estado !== 'pronta') this.estado = 'buscando';
     // corpo procedural: nada a baixar, e a casca nasce no `publicar`
     if (this.pedido.canais.length === 0) {
       this.pedido.publicar(new Map());
       this.estado = 'pronta';
       return;
     }
-    const { corpo, canais, rede, publicar } = this.pedido;
     // um pedido novo cancela o anterior — a geração já o invalidava, e
     // agora os bytes dele também param
-    this.abortoEmVoo?.abort();
+    this.cancelarEmVoo();
+    this.tierEmVoo = tier;
+    this.degrauEmVoo = degrau;
+    // o lote espera a vez dele; a fila manda descer (`baixar`), talvez já
+    const lugar: LugarNaFila = {
+      vez,
+      tamanhoPx,
+      chegada: 0,
+      descendo: false,
+      comecar: () => this.baixar(lugar),
+      interromper: () => {
+        if (this.lugar === lugar) this.interromper();
+      },
+    };
+    this.lugar = lugar;
+    this.fila.entrar(lugar);
+  }
+
+  /** a fila mandou descer: o lote pedido (`tierEmVoo`, `degrauEmVoo`) vai à rede */
+  private baixar(lugar: LugarNaFila): void {
+    const tier = this.tierEmVoo;
+    if (this.disposto || this.lugar !== lugar || tier === null) return;
+    const degrau = this.degrauEmVoo;
+    const daPrimeiraVez = this.estado !== 'pronta';
+    const { corpo, canais, rede, publicar } = this.pedido;
     const aborto = new AbortController();
     this.abortoEmVoo = aborto;
     const minha = ++this.geracao;
-    this.tierEmVoo = tier;
     const vencida = () => this.disposto || minha !== this.geracao;
+    /** o lote saiu (pousou ou caiu): a vez dele passa adiante */
+    const sair = () => {
+      this.tierEmVoo = null;
+      this.degrauEmVoo = 0;
+      this.lugar = null;
+      if (this.abortoEmVoo === aborto) this.abortoEmVoo = null;
+      this.fila.sair(lugar);
+    };
     void carregarCanaisDoCorpo(corpo, canais, rede, tier, vencida, aborto.signal, degrau)
       .then((porCanal) => {
         // cancelada no caminho: o lote já foi descartado lá dentro
@@ -1130,17 +1405,15 @@ export class TexturasDoCorpo {
         // ---- fim da troca -------------------------------------------
         this.tierVivo = tier;
         this.degrauVivo = degrau;
-        this.tierEmVoo = null;
-        if (this.abortoEmVoo === aborto) this.abortoEmVoo = null;
         this.tierRecusado = null;
         this.degrauRecusado = 0;
         this.recargas = 0;
         this.estado = 'pronta';
+        sair();
       })
       .catch(() => {
         if (vencida()) return;
-        this.tierEmVoo = null;
-        if (this.abortoEmVoo === aborto) this.abortoEmVoo = null;
+        sair();
         const etiqueta = this.pedido.etiqueta ?? corpo;
         if (daPrimeiraVez) {
           const r = estadoAposFalha(this.recargas, etiqueta, this.pedido.oQueNaoNasce);
@@ -1168,9 +1441,9 @@ export class TexturasDoCorpo {
 
   dispose(): void {
     this.disposto = true;
-    // o que ainda está descendo para uma cena que morreu para de descer
-    this.abortoEmVoo?.abort();
-    this.abortoEmVoo = null;
+    // o que ainda está descendo para uma cena que morreu para de descer,
+    // e o que esperava a vez sai da fila
+    this.cancelarEmVoo();
     for (const t of this.vivas) descartarTextura(t);
     this.vivas.length = 0;
   }

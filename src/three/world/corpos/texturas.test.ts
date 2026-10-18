@@ -967,3 +967,126 @@ describe('o degrau da tela: imagem igual; pequeno ou fora do quadro baixa o piso
     expect(b.descartadas).toEqual([mapa('_1024')]);
   });
 });
+
+// ------------------------------------------------------------
+// A FILA DAS CARGAS (peso de rede, 18/10/2026)
+// ------------------------------------------------------------
+
+/**
+ * Várias casas no MESMO carregador — a mesma fila. Cada imagem fica
+ * pendurada até `entregar(corpo)`, e o abort a derruba, como o fetch.
+ */
+function bancadaDaFila() {
+  const pedidos: string[] = [];
+  const abortados: string[] = [];
+  const pendentes = new Map<string, () => void>();
+  const rede: OpcoesDeTextura = {
+    tier: () => 'cinema',
+    maxTextureSize: 16384,
+    base: '',
+    webp: true,
+    buscarManifest: async () => MANIFEST,
+    carregarTextura: (url, sinal) =>
+      new Promise((resolver, rejeitar) => {
+        pedidos.push(url);
+        sinal?.addEventListener('abort', () => {
+          abortados.push(url);
+          rejeitar(new Error('abortado'));
+        });
+        pendentes.set(url, () => resolver(new THREE.Texture()));
+      }),
+  };
+  const casa = (corpo: string) =>
+    new TexturasDoCorpo({
+      corpo,
+      canais: [CANAL_MAP],
+      rede,
+      oQueNaoNasce: 'nada',
+      publicar: () => {},
+      soltar: () => {},
+    });
+  return {
+    pedidos,
+    abortados,
+    casa,
+    respirar: flush,
+    /** entrega o que este corpo tem pendurado */
+    entregar: async (corpo: string) => {
+      await flush();
+      for (const [url, f] of [...pendentes]) {
+        if (!url.includes(`/${corpo}/`)) continue;
+        pendentes.delete(url);
+        f();
+      }
+      await flush();
+    },
+  };
+}
+
+describe('a fila das cargas: o destino primeiro, a tela pelo tamanho, a vizinhança por último', () => {
+  const armado = { tela: true, foco: false, filme: false };
+  const mapa = (corpo: string, sufixo = '') => `textures/atlas/${corpo}/map${sufixo}.webp`;
+
+  it('a tela espera o destino e desce pelo maior disco, dois lotes de cada vez', async () => {
+    const f = bancadaDaFila();
+    const [lua, marte, venus, mercurio] = ['moon', 'mars', 'venus', 'mercury'].map(f.casa);
+    marte.aoTick(armado, 0, 40);
+    lua.aoTick({ ...armado, foco: true }, 0, Infinity);
+    venus.aoTick(armado, 0, 80);
+    mercurio.aoTick(armado, 0, 10);
+    await f.respirar();
+    // o destino desce sozinho — e a espera conta como carga para a captura
+    expect(f.pedidos).toEqual([mapa('moon')]);
+    expect(marte.carregando).toBe(true);
+    await f.entregar('moon');
+    expect(f.pedidos.slice(1)).toEqual([mapa('venus'), mapa('mars')]);
+    await f.entregar('venus');
+    expect(f.pedidos.at(-1)).toBe(mapa('mercury'));
+    expect(lua.degrauNaTela).toBe(8192);
+  });
+
+  it('a vizinhança sobe ao teto com a fila quieta; o destino a interrompe, e o clique nela a herda', async () => {
+    const f = bancadaDaFila();
+    const [terra, lua, marte] = ['earth', 'moon', 'mars'].map(f.casa);
+    const ticks = (luaPx: number) => {
+      terra.aoTick({ ...armado, foco: true }, 0, Infinity);
+      lua.aoTick(armado, 0, luaPx, true);
+    };
+    // a Lua armada fora do quadro: primeiro o piso, e só depois da Terra
+    ticks(0);
+    await f.entregar('earth');
+    await f.entregar('moon');
+    expect(f.pedidos).toEqual([mapa('earth'), mapa('moon', '_1024')]);
+    expect(lua.degrauNaTela).toBe(1024);
+    // a fila quieta: a vizinha sobe ao teto do tier
+    ticks(0);
+    await f.respirar();
+    expect(f.pedidos.at(-1)).toBe(mapa('moon'));
+    // um destino novo interrompe o lote dela, que volta a esperar
+    marte.aoTick({ ...armado, foco: true }, 0, Infinity);
+    await f.respirar();
+    expect(f.abortados).toEqual([mapa('moon')]);
+    expect(lua.carregando).toBe(true);
+    await f.entregar('mars');
+    expect(f.pedidos.slice(-2)).toEqual([mapa('mars'), mapa('moon')]);
+    // o visitante clica na Lua com o teto no ar: o mesmo lote, sem pedido novo
+    lua.aoTick({ ...armado, foco: true }, 0, Infinity, false);
+    await f.respirar();
+    expect(f.pedidos).toHaveLength(5);
+    expect(f.abortados).toHaveLength(1);
+    await f.entregar('moon');
+    expect(lua.degrauNaTela).toBe(8192);
+    expect(lua.carregando).toBe(false);
+  });
+
+  it('sem estar armada, a vizinha não adianta nada', async () => {
+    const f = bancadaDaFila();
+    const lua = f.casa('moon');
+    lua.aoTick({ tela: false, foco: true, filme: false }, 0, 0, true);
+    await f.entregar('moon');
+    lua.aoTick({ tela: false, foco: true, filme: false }, 0, 0, true);
+    await f.respirar();
+    expect(f.pedidos).toEqual([mapa('moon', '_1024')]);
+    expect(lua.carregando).toBe(false);
+  });
+});

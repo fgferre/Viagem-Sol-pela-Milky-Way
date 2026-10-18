@@ -640,6 +640,7 @@ describe('o passo do palco publica o chão do anel como `<id>-anel`', () => {
       noFoco: () => false,
       noRoteiro: () => false,
       noDestino: () => false,
+      noVizinho: () => false,
       perturbar: () => {},
     });
     return palco;

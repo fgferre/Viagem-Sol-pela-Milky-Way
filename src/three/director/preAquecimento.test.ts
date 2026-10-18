@@ -9,7 +9,13 @@
 // ao fim de verdade — ver o cabeçalho do arquivo para o efeito medido.
 // ============================================================
 import { describe, expect, it } from 'vitest';
-import { corpoEDestinoDoAtlas, corpoNoFocoDoAtlas, corpoPedidoPeloRoteiro } from './preAquecimento';
+import {
+  corpoEDestinoDoAtlas,
+  corpoNaVizinhancaDoAtlas,
+  corpoNoFocoDoAtlas,
+  corpoPedidoPeloRoteiro,
+  vizinhancaLiberada,
+} from './preAquecimento';
 import { APOIOS_DO_FILME } from '../cinematic/journey';
 
 // 'earth' e 'moon' são preload do roteiro real (revelacao.json) — um t
@@ -37,5 +43,26 @@ describe('o destino do Atlas é o foco SEM o pai da lua (peso de rede, 18/10)', 
     expect(corpoEDestinoDoAtlas('atlas', 'janus', 'saturn')).toBe(false);
     expect(corpoEDestinoDoAtlas('atlas', 'janus', 'janus')).toBe(true);
     expect(corpoEDestinoDoAtlas('journey', 'janus', 'janus')).toBe(false);
+  });
+});
+
+describe('a vizinhança do foco é o sistema dele (peso de rede, 18/10)', () => {
+  it('Saturno: as luas dele; Dione: o pai e as irmãs; nunca o próprio foco nem outro sistema', () => {
+    expect(corpoNaVizinhancaDoAtlas('atlas', 'saturn', 'dione')).toBe(true);
+    expect(corpoNaVizinhancaDoAtlas('atlas', 'dione', 'saturn')).toBe(true);
+    expect(corpoNaVizinhancaDoAtlas('atlas', 'dione', 'rhea')).toBe(true);
+    expect(corpoNaVizinhancaDoAtlas('atlas', 'earth', 'moon')).toBe(true);
+    expect(corpoNaVizinhancaDoAtlas('atlas', 'dione', 'dione')).toBe(false);
+    expect(corpoNaVizinhancaDoAtlas('atlas', 'saturn', 'io')).toBe(false);
+    expect(corpoNaVizinhancaDoAtlas('atlas', 'earth', 'mars')).toBe(false);
+    expect(corpoNaVizinhancaDoAtlas('free', 'earth', 'moon')).toBe(false);
+    expect(corpoNaVizinhancaDoAtlas('atlas', null, 'moon')).toBe(false);
+  });
+
+  it('economia de dados nunca adianta; a tela de toque espera o foco inteiro', () => {
+    expect(vizinhancaLiberada(false, false, false)).toBe(true);
+    expect(vizinhancaLiberada(true, false, true)).toBe(false);
+    expect(vizinhancaLiberada(false, true, false)).toBe(false);
+    expect(vizinhancaLiberada(false, true, true)).toBe(true);
   });
 });
