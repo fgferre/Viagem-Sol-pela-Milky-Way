@@ -189,15 +189,20 @@ export function descartarCarga(carga: CargaDoMundo) {
  */
 /**
  * O ORÇAMENTO DA GALÁXIA DE PARTÍCULAS POR TIER (12/11/2026, a nova virou
- * padrão): `sorteios` do motor WebGPU (4 M partículas cada) e o teto de
- * instâncias do caminho WebGL, em milhões. Medidos contra a clássica no
- * mesmo tier (PLAN-GALAXIA.md): a nova não pode custar mais de longe nem
- * no filme. `?sorteios=` e `?lodmax=` varrem.
+ * padrão): `sorteios` do motor WebGPU (~4 M partículas cada) e o teto de
+ * instâncias do caminho WebGL, em milhões. A régua: a nova não pode custar
+ * mais que a clássica no mesmo tier de longe nem no filme (medido neste
+ * Mac, 1280×800 e 390×844, PLAN-GALAXIA.md). Com 4 sorteios a meia
+ * distância passava da clássica em cinema; com 2, não. O filme em t=148
+ * ainda está na cessão (a camada WebGPU só entra fora do disco) e quem
+ * desenha ali é o WebGL: com 5 M ele custava o dobro da clássica, com 2 M
+ * (cinema) e 1 M (alta, cuja clássica desenha metade) fica abaixo. O
+ * telefone vai ao WebGL com 0,5 M. `?sorteios=` e `?lodmax=` varrem.
  */
 export const ORCAMENTO_DA_GALAXIA: Record<QualityLevel, { sorteios: number; tetoLodMilhoes: number }> = {
-  cinema: { sorteios: 4, tetoLodMilhoes: 5 },
-  alta: { sorteios: 4, tetoLodMilhoes: 5 },
-  performance: { sorteios: 1, tetoLodMilhoes: 2 },
+  cinema: { sorteios: 2, tetoLodMilhoes: 2 },
+  alta: { sorteios: 2, tetoLodMilhoes: 1 },
+  performance: { sorteios: 1, tetoLodMilhoes: 0.5 },
 };
 
 export async function montarCarga(opts: {
