@@ -11,6 +11,7 @@
 // ============================================================
 import { projetarLugares } from '../world/lugaresDoCeu';
 import { projetarSondas } from '../world/sondas';
+import { projetarCometas } from '../world/cometas';
 import * as THREE from 'three';
 import {
   PRIORIDADE_DO_ROTULO,
@@ -56,6 +57,8 @@ export interface QuadroDeRotulos {
   foco: string | null;
   /** a SONDA em foco (pilar 4) — a escada é a dona; `null` fora dela */
   focoSonda?: string | null;
+  /** o COMETA em foco (pilar 4) — o nome dele aparece mesmo longe do Sol */
+  focoCometa?: string | null;
   /** o instante vivo (JD TDB) — as sondas se põem no lugar por ele;
    *  ausente = nenhuma sonda (os quadros de teste antigos) */
   jd?: number;
@@ -887,7 +890,10 @@ export class Rotulos {
         // só no Atlas — onde a máquina do tempo as move
         const sondas =
           fase === 'atlas' ? projetarSondas(cam, quadro.jd ?? Number.NaN, quadro.focoSonda ?? null, !quadro.iconesEscondidos) : [];
-        const lista = [...corpos, ...luas, ...estrelas, ...projetarLugares(cam), ...sondas];
+        // OS COMETAS (pilar 4, 12/11): perto do Sol ou em foco
+        const cometas =
+          fase === 'atlas' ? projetarCometas(cam, quadro.jd ?? Number.NaN, quadro.focoCometa ?? null, !quadro.iconesEscondidos) : [];
+        const lista = [...corpos, ...luas, ...estrelas, ...projetarLugares(cam), ...sondas, ...cometas];
         // O ALVO ESCOLHIDO NÃO CEDE A NADA. A chave do corpo em foco é a
         // mesma que o hit-test reconhece; o `sol-home` cobre o caso da
         // estrela da casa vista de longe.

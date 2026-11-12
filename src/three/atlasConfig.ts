@@ -180,6 +180,12 @@ export const CAMADAS: readonly Camada[] = [
   // Instrumento de leitura como as órbitas: a linha da sonda EM FOCO,
   // percorrida e a percorrer; nunca um fóton
   { flag: 'nosondas', get nome() { return t('camada.nosondas'); }, get nota() { return t('camada.nosondas.nota'); }, familia: 'Sistema solar', viva: true, icone: '↗' },
+  // OS COMETAS (pilar 4, 12/11/2026) — `world/cometas.ts` e
+  // `world/caudasDosCometas.ts`. A órbita é instrumento de leitura, como
+  // a das sondas; as caudas são luz de verdade (poeira e gás), e a chave
+  // existe porque são o efeito mais caro do sistema solar
+  { flag: 'nocometas', get nome() { return t('camada.nocometas'); }, get nota() { return t('camada.nocometas.nota'); }, familia: 'Sistema solar', viva: true, icone: '⊙' },
+  { flag: 'nocaudas', get nome() { return t('camada.nocaudas'); }, get nota() { return t('camada.nocaudas.nota'); }, familia: 'Sistema solar', viva: true, icone: '☄' },
 ];
 
 /**

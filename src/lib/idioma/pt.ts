@@ -362,6 +362,7 @@ export const PT = {
   'busca.destino.saturn': 'Os anéis, de perto',
   'busca.destino.pluto': 'A borda do sistema',
   'busca.destino.voyager-1': 'O objeto humano mais distante',
+  'busca.destino.halley': 'O cometa mais famoso',
   'busca.destino.sirius': 'A estrela mais brilhante do céu',
   'busca.destino.betelgeuse': 'Uma supergigante em Órion',
   'busca.destino.rigil-kentaurus': 'O sistema estelar mais próximo',
@@ -433,6 +434,9 @@ export const PT = {
   'ficha.secao.lugar': 'o lugar',
   'ficha.secao.sonda': 'agora',
   'ficha.secao.missao': 'a missão',
+  'ficha.secao.cometa': 'agora',
+  'ficha.secao.orbitaDoCometa': 'a órbita',
+  'ficha.secao.oCometa': 'o cometa',
   // A REFERÊNCIA vem depois de um travessão, como nas maquetes m3/m13
   // ("Distância — Sol", "Distance — Sun"): sem preposição nem artigo, o
   // mesmo rótulo serve a Sol, Terra e Saturno nas duas línguas. O "ao
@@ -527,6 +531,32 @@ export const PT = {
   'ficha.sonda.naCena': 'o que se vê aqui',
   'ficha.sonda.naCena.valor': 'um marcador do tamanho de um instrumento, não a sonda — ela tem poucos metros',
   'ficha.fonte.horizons': 'JPL Horizons, consultado em {data}',
+  'ficha.cometa.doSol': 'distância do Sol',
+  'ficha.cometa.daTerra': 'distância da Terra',
+  'ficha.cometa.velocidade': 'velocidade em relação ao Sol',
+  'ficha.cometa.atividade': 'atividade',
+  'ficha.cometa.ativo': 'ativo: o gelo sublima, e a coma e as caudas estão acesas',
+  'ficha.cometa.inativo': 'inativo: longe demais do Sol para o gelo de água sublimar',
+  'ficha.cometa.naCena': 'o que se vê aqui',
+  'ficha.cometa.naCena.valor':
+    'a posição é medida (elementos do JPL); a coma e as caudas são física calculada aqui, partícula por partícula — poeira empurrada pela luz do Sol, íons levados pelo vento solar, gás que se desfaz —, com brilho realçado; de longe, o núcleo é um marcador',
+  'ficha.cometa.ultimo': 'último periélio',
+  'ficha.cometa.proximo': 'próximo periélio',
+  'ficha.cometa.perielio': 'distância no periélio',
+  'ficha.cometa.periodo': 'período',
+  'ficha.cometa.semVolta': 'não volta: a órbita é uma hipérbole (e = {e})',
+  'ficha.cometa.excentricidade': 'excentricidade',
+  'ficha.cometa.limite': 'até onde vale',
+  'ficha.cometa.limite.valor':
+    'cônica osculante de {data}: longe dessa data, Júpiter e os jatos do próprio núcleo mudam a órbita — medido contra o Horizons em 12/11/2026, o erro é de 0,001 a 0,01 UA',
+  'ficha.cometa.designacao': 'designação',
+  'ficha.cometa.nucleo': 'núcleo',
+  'ficha.cometa.descoberta': 'descoberta',
+  'ficha.cometa.brilho': 'brilho (M1, K1)',
+  'ficha.cometa.fama': 'por que é famoso',
+  'ficha.fonte.elementos': 'conta sobre os elementos do JPL Horizons',
+  'ficha.fonte.modeloDeAtividade': 'sublimação da água, Marsden et al. (1973)',
+  'ficha.fonte.modeloDasCaudas': 'Finson & Probstein (1968); Haser (1957); ganho de brilho da casa',
   'ficha.fonte.daTrajetoria': 'conta sobre a trajetória do Horizons',
   'ficha.fonte.reguaDeEscala': 'regra de escala da casa',
   'ficha.fonte.daEfemeride': 'da efeméride',
@@ -688,6 +718,11 @@ export const PT = {
   'camada.nosondas': 'Trajetórias das sondas',
   'camada.nosondas.nota':
     'Desliga o caminho da sonda escolhida: o já percorrido, cheio, e o que falta até 2040, fraco.',
+  'camada.nocometas': 'Órbitas dos cometas',
+  'camada.nocometas.nota': 'Desliga a órbita do cometa escolhido.',
+  'camada.nocaudas': 'Caudas dos cometas',
+  'camada.nocaudas.nota':
+    'Desliga a coma e as caudas de partículas dos cometas perto do Sol — o efeito mais pesado do sistema solar.',
   'qualidade.cinema': 'Cinema',
   'qualidade.alta': 'Alta',
   'qualidade.performance': 'Performance',
@@ -714,6 +749,8 @@ export const PT = {
   'classe.vista da galáxia': 'vista da galáxia',
   'classe.galáxia anã': 'galáxia anã',
   'classe.sonda': 'sonda',
+  'classe.cometa': 'cometa',
+  'classe.cometa interestelar': 'cometa interestelar',
 
   // ---- a máquina do tempo (`three/tempoDoAtlas.ts`) -----------------
   'tempo.mes.0': 'janeiro',

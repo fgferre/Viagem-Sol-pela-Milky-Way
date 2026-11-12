@@ -68,6 +68,16 @@ import type { NamedStar } from '../../three/config';
 import type { LugarDoCeu } from '../lugaresDoFilme';
 import type { Sonda } from '../sondas';
 import { CONSULTADO_EM, estadoDaSonda, janelaDaSonda } from '../sondas';
+import type { Cometa } from '../cometas';
+import {
+  COMETAS_CONSULTADOS_EM,
+  LIMIAR_DE_ATIVIDADE,
+  brilhoRelativo,
+  conjuntoVigente,
+  estadoDoCometa,
+  perieliosEmVolta,
+  periodoEmDias,
+} from '../cometas';
 import { REGUA_DOS_MAPAS, alvoDoMapa, type Matiz, type MedidaDoCorpo } from './reguaDosMapas';
 import RELATORIO_DA_REGUA from './reguaDosMapas.relatorio.json';
 import type {
@@ -115,7 +125,11 @@ export type IdDeSecao =
   | 'lugar'
   /** as duas de uma SONDA (pilar 4, 12/11/2026) */
   | 'sonda'
-  | 'missao';
+  | 'missao'
+  /** as três de um COMETA (pilar 4, 12/11/2026) */
+  | 'cometa'
+  | 'orbitaDoCometa'
+  | 'oCometa';
 
 export interface SecaoDaFicha {
   id: IdDeSecao;
@@ -1084,6 +1098,112 @@ export function montarFichaDeSonda(sonda: Sonda, jd: number | null | undefined):
     { id: 'missao', titulo: TITULO('missao'), linhas: missao.filter((l): l is LinhaDaFicha => l !== null) },
   ];
   return { id: `sonda:${sonda.id}`, nome: sonda.nome, classe: classeEmTexto('sonda'), secoes };
+}
+
+/** UA com as casas que a distância pede (0,587 · 4,34 · 35,0) */
+function emUa(x: number): string {
+  const casas = x < 1 ? 3 : x < 10 ? 2 : 1;
+  return t('unidade.ua', { n: decimalDoIdioma(x.toFixed(casas)) });
+}
+
+/** JD TDB → AAAA-MM-DD (UTC; o minuto de TDB−UTC não muda o dia aqui) */
+function isoDoJd(jd: number): string {
+  return new Date((jd - 2_440_587.5) * 86_400_000).toISOString().slice(0, 10);
+}
+
+/**
+ * A FICHA DE UM COMETA (pilar 4, 12/11/2026), no molde da das sondas.
+ * "Agora" é viva no instante mostrado: as distâncias ao Sol e à Terra, a
+ * velocidade e se ele está aceso — a mesma lei que acende as partículas
+ * (`brilhoRelativo`). "A órbita" diz o que é medido (os elementos) e até
+ * onde a cônica vale. "O cometa" é o que se sabe dele, cada fato com a
+ * fonte. A Terra sai da efeméride viva; antes dela chegar, a linha some.
+ */
+export function montarFichaDeCometa(
+  cometa: Cometa,
+  jd: number | null | undefined,
+  fonte: FonteDaFicha | null | undefined
+): Ficha {
+  const ingles = idiomaAtual() === 'en';
+  const no = (texto: { pt: string; en: string }) => (ingles ? texto.en : texto.pt);
+  const horizons = t('ficha.fonte.horizons', { data: dataNaLingua(COMETAS_CONSULTADOS_EM) });
+  const conta = t('ficha.fonte.elementos');
+  const agora: (LinhaDaFicha | null)[] = [];
+  const temData = jd !== null && jd !== undefined && Number.isFinite(jd);
+  const e = temData ? estadoDoCometa(cometa.id, jd) : null;
+  if (e && temData) {
+    const r = Math.hypot(e[0], e[1], e[2]);
+    agora.push(linha(t('ficha.cometa.doSol'), emUa(r), 'derivado', conta));
+    if (fonte) {
+      const terra = fonte.posicaoHeliocentrica('earth', jd);
+      const d = Math.hypot(e[0] - terra.x, e[1] - terra.y, e[2] - terra.z);
+      agora.push(linha(t('ficha.cometa.daTerra'), emUa(d), 'derivado', conta));
+    }
+    const v = Math.hypot(e[3], e[4], e[5]) * KM_POR_S_POR_UA_DIA;
+    agora.push(linha(t('ficha.cometa.velocidade'), `${numeroDoIdioma(v)} km/s`, 'derivado', conta));
+    const aceso = brilhoRelativo(cometa, r) > LIMIAR_DE_ATIVIDADE;
+    agora.push(
+      linha(
+        t('ficha.cometa.atividade'),
+        t(aceso ? 'ficha.cometa.ativo' : 'ficha.cometa.inativo'),
+        'derivado',
+        t('ficha.fonte.modeloDeAtividade')
+      )
+    );
+  }
+  agora.push(
+    linha(t('ficha.cometa.naCena'), t('ficha.cometa.naCena.valor'), 'artistico', t('ficha.fonte.modeloDasCaudas'))
+  );
+
+  const orbita: (LinhaDaFicha | null)[] = [];
+  const c = temData ? conjuntoVigente(cometa.id, jd) : null;
+  if (c && temData) {
+    const { ultimo, proximo } = perieliosEmVolta(cometa.id, jd);
+    if (ultimo)
+      orbita.push(
+        linha(t('ficha.cometa.ultimo'), dataNaLingua(isoDoJd(ultimo.jd)), ultimo.derivado ? 'derivado' : 'medido', ultimo.derivado ? conta : horizons)
+      );
+    if (proximo)
+      orbita.push(
+        linha(t('ficha.cometa.proximo'), dataNaLingua(isoDoJd(proximo.jd)), proximo.derivado ? 'derivado' : 'medido', proximo.derivado ? conta : horizons)
+      );
+    orbita.push(linha(t('ficha.cometa.perielio'), emUa(c[1]), 'medido', horizons));
+    const P = periodoEmDias(c);
+    orbita.push(
+      P === null
+        ? linha(t('ficha.cometa.periodo'), t('ficha.cometa.semVolta', { e: decimalDoIdioma(c[2].toFixed(2)) }), 'medido', horizons)
+        : linha(t('ficha.cometa.periodo'), formatarDuracao(P), 'derivado', conta)
+    );
+    orbita.push(linha(t('ficha.cometa.excentricidade'), decimalDoIdioma(c[2].toFixed(4)), 'medido', horizons));
+    orbita.push(
+      linha(t('ficha.cometa.limite'), t('ficha.cometa.limite.valor', { data: dataNaLingua(isoDoJd(c[0])) }), 'derivado', horizons)
+    );
+  }
+
+  const fatos: (LinhaDaFicha | null)[] = [
+    linha(t('ficha.cometa.designacao'), cometa.designacao, 'medido', 'IAU / MPC'),
+    linha(
+      t('ficha.cometa.nucleo'),
+      cometa.nucleo.km ? `${numeroDoIdioma(cometa.nucleo.km)} km` : cometa.nucleo.texto ? no(cometa.nucleo.texto) : null,
+      cometa.nucleo.km ? 'medido' : null,
+      cometa.nucleo.fonte
+    ),
+    linha(t('ficha.cometa.descoberta'), `${dataNaLingua(cometa.descoberta.data)} · ${cometa.descoberta.quem}`, 'medido', cometa.descoberta.fonte),
+    linha(
+      t('ficha.cometa.brilho'),
+      `${decimalDoIdioma(cometa.brilho.M1.toFixed(1))} · ${decimalDoIdioma(cometa.brilho.K1.toFixed(1))}`,
+      'medido',
+      cometa.brilho.fonte
+    ),
+    linha(t('ficha.cometa.fama'), no(cometa.fama.texto), 'medido', cometa.fama.fonte),
+  ];
+  const so = (l: (LinhaDaFicha | null)[]) => l.filter((x): x is LinhaDaFicha => x !== null);
+  const secoes: SecaoDaFicha[] = [
+    { id: 'cometa', titulo: TITULO('cometa'), linhas: so(agora) },
+    ...(orbita.length ? [{ id: 'orbitaDoCometa' as const, titulo: TITULO('orbitaDoCometa'), linhas: so(orbita) }] : []),
+    { id: 'oCometa', titulo: TITULO('oCometa'), linhas: so(fatos) },
+  ];
+  return { id: `cometa:${cometa.id}`, nome: cometa.nome, classe: classeEmTexto(cometa.classe), secoes };
 }
 
 /**
