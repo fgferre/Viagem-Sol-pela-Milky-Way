@@ -79,6 +79,9 @@ export interface QuadroDeRotulos {
   /** BETA dos rótulos 3D (item 109): o TEXTO dos corpos é pintado na
    *  cena pelo `Rotulos3d`; o 2D segue dono das leis e do anel. */
   texto3d: boolean;
+  /** os discos das ESTRELAS COM CORPO deste quadro (piloto de 12/11,
+   *  `director/estrelasNoQuadro.ts`) — escondem nome pela mesma lei */
+  oclusoresDeEstrelas?: readonly OclusorDeRotulo[];
 }
 
 /**
@@ -299,9 +302,10 @@ export class Rotulos {
    * erraria justamente no caso que interessa (a lua que passa
    * rasante atrás do pai).
    */
-  private montarOclusores(planetas: Planetas | null) {
+  private montarOclusores(planetas: Planetas | null, estrelas?: readonly OclusorDeRotulo[]) {
     // a entrada zero é o Sol, e ela não se remonta
     this.oclusoresDeRotulo.length = 1;
+    if (estrelas) for (const o of estrelas) this.oclusoresDeRotulo.push(o);
     if (!planetas) return;
     this.somarOclusores(CORPOS_DO_SISTEMA, planetas.posicoes);
     this.somarOclusores(LUAS_DO_SISTEMA, this.luaPosParaRotulo);
@@ -697,7 +701,7 @@ export class Rotulos {
     this.dtDeRampa = 0;
     // OS DISCOS DO QUADRO, antes de qualquer projeção: eles valem para
     // as estrelas e para os corpos, e a lista é a mesma nos dois ramos.
-    this.montarOclusores(planetas);
+    this.montarOclusores(planetas, quadro.oclusoresDeEstrelas);
     // A ISENÇÃO DO ALVO SEGUIDO (item 125, F4 · O11): o corpo em foco não
     // é escondido por globo nenhum — o `setCanBeOccluded(false)` deles,
     // que o `unfollow` desfaz. Aqui o "desfazer" é de graça: a chave sai

@@ -106,6 +106,23 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
       'corte de 0,05 pc morreram, ?bcede morreu',
   },
   {
+    id: 'estrelas-com-lugar',
+    nome: 'as estrelas com corpo do piloto (Proxima, Sirius A+B, Betelgeuse, Vega)',
+    arquivos: ['src/three/world/corpoDeEstrela.ts', 'src/three/director/estrelasNoQuadro.ts'],
+    consomeL1: true,
+    leiVelhaApagada: true,
+    fatorDeBrilho: 1,
+    destino: 'migra',
+    migracao: 'M3',
+    emiteGlPointSize: true,
+    razao:
+      'piloto de 12/11: a fotosfera emite a radiância visível de corpo negro ' +
+      'pela ponte do Sol (`radianciaDeTela` com o raio do Sol) e o filtro e o ' +
+      'peso de `repartir`; o ponto do catálogo cede por `aFocus` com a ' +
+      'fórmula do Sol-ponto; o ponto de Sirius B é o `starPSF` do campo com ' +
+      'a magnitude da física dela (R², radiância visível)',
+  },
+  {
     id: 'planetas',
     nome: 'os 9 planetas-ponto',
     arquivos: ['src/three/world/planetas/planetas.ts'],

@@ -49,6 +49,7 @@ import { Icone } from './Icone';
 import { Sanfona } from './Sanfona';
 import type { CorpoNoJson, CorposDoAtlas, FonteDaFicha, IdDeSecao } from '../lib/atlas/ficha';
 import { montarFicha, montarFichaDeEstrela, montarFichaDeLugar, montarFichaDeSonda } from '../lib/atlas/ficha';
+import { estrelaVisitavelPorNome } from '../lib/atlas/estrelasVisitaveis';
 import type { Sonda } from '../lib/sondas';
 import type { LugarDoCeu } from '../lib/lugaresDoFilme';
 import type { NamedStar } from '../three/config';
@@ -543,7 +544,7 @@ export function FichaDoObjeto({
           de sempre (o mesmo de "⌕ Buscar"/"⧉ Camadas" na barra); o
           `Segmentado` (`components/Segmentado.tsx`) não muda. */}
       <div className="atlas-ficha-escada">
-        {podeAproximar && (
+        {(podeAproximar || (estrelaEmFoco !== null && estrelaVisitavelPorNome(estrelaEmFoco) !== null)) && (
           <button
             type="button"
             className="hud-btn small"

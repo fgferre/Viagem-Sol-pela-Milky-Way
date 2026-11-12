@@ -37,10 +37,11 @@ export const BETA_DA_EMISSAO = lerBetaDaEmissao(
 // (Os dois canais por estrela da Onda 3 saíram do TEXTO do vertex no M2
 // da LEI-DA-ESTRELA: `aFade` morreu com a política de dominância — quem
 // responde pelo clarão das fortes é a camada da asa (world/clarao.ts),
-// que soma óptica POR CIMA e não pede cessão ao ponto. `aFocus` segue
-// vivo como canal dormente do lado da CPU (item 38 — buffer + escrita em
-// stars.ts); a leitura volta ao shader no M3/E3, quando a esfera
-// analítica precisar apagar o ponto da estrela que ganha corpo.)
+// que soma óptica POR CIMA e não pede cessão ao ponto. `aFocus` VOLTOU
+// ao shader em 12/11 (piloto "toda estrela é um lugar"): é a CESSÃO do
+// ponto à estrela que ganha corpo (`director/estrelasNoQuadro.ts`, a
+// mesma fórmula do Sol-ponto). Zero em toda estrela sem corpo, e
+// `alpha *= 1.0 - 0.0` é exato — o céu sai bit a bit o de antes.)
 export const STAR_VERT = /* glsl */ `
 attribute float aLogLum;
 attribute float aCi;
@@ -52,6 +53,8 @@ attribute float aCi;
 // inteiro e apaga metade da luz de quem está NA FRENTE da nuvem (medido:
 // 49,7% numa estrela a 56,5 pc, com a nuvem mais próxima a 121 pc).
 attribute float aNaFrenteDasNuvens;
+/** 0..1 — quanto o ponto cede ao corpo resolvido da MESMA estrela */
+attribute float aFocus;
 /** 0 = a passada de trás (a de sempre) · 1 = a passada da frente */
 uniform float uLado;
 
@@ -124,6 +127,7 @@ void main() {
   float vis = (absorb.r + absorb.g + absorb.b) / 3.0;
   alpha *= mix(1.0, vis, 0.5);
   alpha *= uFade; // some ao deixar a vizinhança solar
+  alpha *= 1.0 - aFocus; // cede ao corpo da estrela (piloto 12/11)
 
   vColor = col;
   vSigma = sigmaFrac;

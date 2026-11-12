@@ -137,14 +137,14 @@ const SOL_KNOBS: Record<string, number> = {
  * resto que a rampa de duas pontas não alcança: as manchas saem um pouco
  * menos vermelhas que no ACES (a* ~15 contra 20–25).
  */
-const SOL_NO_ACES = {
+export const SOL_NO_ACES = {
   ganho: new THREE.Vector3(1, 1, 1),
   corFria: new THREE.Vector3(1.0, 0.34, 0.06),
   corQuente: new THREE.Vector3(1.0, 0.62, 0.24),
   limbo: new THREE.Vector3(1.0, 0.3, 0.1),
   coroaExterna: new THREE.Color(1, 1, 1),
 };
-const SOL_FORA_DO_ACES = {
+export const SOL_FORA_DO_ACES = {
   /** ganho por canal da cor final da fotosfera */
   paleta: new THREE.Vector3(0.76, 1.02, 1.36),
   /** as duas pontas da rampa H-alfa da fotosfera (`sol/sun.js`), antes do ganho acima */

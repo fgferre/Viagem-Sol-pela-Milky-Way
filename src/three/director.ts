@@ -117,6 +117,7 @@ import { ligarGestos } from './director/gestos';
 import { distanciaAposEstalos } from './zoomDaRoda';
 import { Rotulos } from './director/rotulos';
 import { SolNoQuadro } from './director/solNoQuadro';
+import { EstrelasNoQuadro, lerPortaEstrelasComLugar } from './director/estrelasNoQuadro';
 import { faseDoCiclo, lerPortaSolQuadro } from './estrela';
 import type { CalibracaoDaCasa } from './estrela';
 import { BETA_DA_EMISSAO } from './shaders/starShaders';
@@ -640,6 +641,9 @@ export class Director {
   private clarao!: ClaraoDeAsas;
   private sondaDaLente!: SondaDaLente;
   private heroes!: HeroStars;
+  /** o piloto "toda estrela é um lugar" (12/11): as quatro com corpo;
+   *  `null` com `?estrelaslugar=0` ou antes do catálogo */
+  private estrelasNoQuadro: EstrelasNoQuadro | null = null;
   private galaxy!: Galaxy;
   /** os 11 pontos fotométricos do domínio profundo (Onda 4, D3) —
    *  camada IRMÃ do `sun.group`, nunca filha dele */
@@ -1224,6 +1228,8 @@ export class Director {
         this.phase === 'atlas' && this.orbitas
           ? this.orbitas.corpoNoPonto(x, y, this.engine.camera, window.innerWidth, window.innerHeight)
           : null,
+      estrelasComLugar: () => lerPortaEstrelasComLugar(this.debug.get('estrelaslugar')),
+      posicaoDaEstrelaComLugar: (nome) => this.estrelasNoQuadro?.posicaoDe(nome) ?? null,
     },
   });
   private disposed = false;
@@ -1979,6 +1985,18 @@ export class Director {
     // era, byte a byte, e o clarão da lei fica só com o Sol. Palavras
     // dele: "resgata no git a versão certa antes de entrar o atlas".
     this.heroes = new HeroStars(this.meta.named);
+    // TODA ESTRELA É UM LUGAR (piloto de 12/11): as quatro com corpo,
+    // preguiçosas — nada nasce enquanto nenhuma estiver por perto
+    if (lerPortaEstrelasComLugar(this.debug.get('estrelaslugar'))) {
+      this.estrelasNoQuadro = new EstrelasNoQuadro(this.meta.named, {
+        stars: () => this.stars,
+        palco: () => this.palco,
+        escondido: (flag) => this.hide.has(flag),
+        janelaDoQuadro: lerPortaSolQuadro(this.debug.get('solquadro')),
+        toneMapping: () => this.engine.renderer.toneMapping,
+        politicaDeLuz: () => this.politicaDeLuz,
+      });
+    }
 
     // O mapa é bakeado SEMPRE: os canais B/A (braços/warp) alimentam
     // o envelope de gás do raymarch mesmo sem APOGEE (R/G zerados).
@@ -2118,6 +2136,7 @@ export class Director {
     this.engine.scene.add(this.clarao.group);
     this.engine.scene.add(this.sondaDaLente.group);
     this.engine.scene.add(this.heroes.group);
+    if (this.estrelasNoQuadro) this.engine.scene.add(this.estrelasNoQuadro.group);
     this.engine.scene.add(this.galaxy.group);
     // O COBERTOR DO CAMPO (R2 do item 44, "cada camada com seu cobertor"):
     // as três camadas de estrelas vivem TAMBÉM na CAMADA_DO_CAMPO — é por
@@ -4007,6 +4026,17 @@ export class Director {
     // clip a superfície do quadro ANTERIOR. É o mesmo lugar em que a
     // Terra e a Lua se registram, pela mesma razão escrita.
     this.solNoQuadro.armarGate({ dHome, hPx, fovDeg: cam.fov });
+    // AS ESTRELAS COM LUGAR, pela mesma lei e no mesmo ponto do tick (o
+    // near lê o palco logo abaixo) — director/estrelasNoQuadro.ts
+    this.estrelasNoQuadro?.atualizar({
+      camPos: cam.position,
+      hPx,
+      prAtual,
+      fovDeg: cam.fov,
+      jd: this.maquinaDoTempo.jdVivo,
+      tempoS: time,
+      focoNome: this.escada.nomeDaEstrelaEmFoco,
+    });
 
     // OS DOZE CORPOS DO PALCO num laço só (item 63, 22/08): o passo
     // mora em `director/palco.ts`, junto do contrato dos quatro traços
@@ -4453,6 +4483,7 @@ export class Director {
       // pela rede (import tardio) e, até lá — ou se a carga falhar —,
       // o corpo focado continua com nome (item 109)
       texto3d: this.rotulos3dLigado && !!this.rotulos3d,
+      oclusoresDeEstrelas: this.estrelasNoQuadro?.oclusores(),
     });
     // a camada 3D espelha o QUE ESTE QUADRO decidiu desenhar — depois
     // do projetar, para o texto nunca correr um quadro atrás do anel.
@@ -4646,6 +4677,7 @@ export class Director {
     // Director deixava 16 geometrias e 16 materiais vivos, que são
     // exatamente os das 16 nomeadas de autor
     step('heroes', () => this.heroes?.dispose());
+    step('estrelasNoQuadro', () => this.estrelasNoQuadro?.dispose());
     step('galaxy', () => this.galaxy?.dispose());
     step('observedClouds', () => this.observedClouds?.dispose());
     step('starForges', () => this.starForges?.dispose());
