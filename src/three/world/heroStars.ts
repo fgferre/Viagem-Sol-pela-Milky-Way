@@ -132,6 +132,12 @@ function heroColor(bv: number): THREE.Color {
 // de PSF. Custa 4 draws, todos invisíveis além de 1.200 pc de casa.
 const HERO_COUNT = 16;
 
+/** o `smoothstep` do GLSL, na CPU (a presença espelha o fragment) */
+function suave(a: number, b: number, x: number): number {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+}
+
 export class HeroStars {
   readonly group = new THREE.Group();
   private mats: THREE.ShaderMaterial[] = [];
@@ -191,6 +197,41 @@ export class HeroStars {
       this.camDistPc[i] = dist;
       i++;
     }
+  }
+
+  /**
+   * A PRESENÇA da hero de uma estrela (0..1) vista de `camPos`: a mesma
+   * conta do fragment (`nearFade · farFade · uGain`), na CPU. 0 quando a
+   * estrela não é hero ou a camada está escondida. É por ela que o clarão
+   * da estrela visitada cede à hero (`director/estrelasNoQuadro.ts`): as
+   * duas são a óptica do mesmo ponto, e a soma não pode dobrar.
+   */
+  presenca(nome: string, camPos: THREE.Vector3): number {
+    if (!this.group.visible) return 0;
+    const i = this.chosen.findIndex((s) => s.n === nome);
+    if (i < 0) return 0;
+    const size = this.sizePc[i];
+    const dist = (this.group.children[i] as THREE.Mesh).position.distanceTo(camPos);
+    const near = suave(size * 0.5, size * 1.4, dist);
+    const far = 1 - suave(320, 900, dist);
+    return near * far * (this.mats[i].uniforms.uGain.value as number);
+  }
+
+  /** o raio do brilho da hero de uma estrela, pc (0 quando não é hero) */
+  tamanhoDe(nome: string): number {
+    const i = this.chosen.findIndex((s) => s.n === nome);
+    return i < 0 ? 0 : this.sizePc[i];
+  }
+
+  /**
+   * A CESSÃO da hero ao corpo da MESMA estrela: o ganho vira `1 − cede`,
+   * a mesma cessão que o ponto do catálogo recebe (`cessaoDoSol`). Sem
+   * estrela montada ninguém escreve e o ganho fica 1, como sempre.
+   */
+  escreverCessao(nome: string, cede: number) {
+    const i = this.chosen.findIndex((s) => s.n === nome);
+    if (i < 0 || !Number.isFinite(cede)) return;
+    this.mats[i].uniforms.uGain.value = 1 - Math.min(1, Math.max(0, cede));
   }
 
   dispose() {

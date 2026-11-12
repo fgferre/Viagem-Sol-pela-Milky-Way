@@ -1212,6 +1212,7 @@ export class Director {
     jdTdb: () => this.maquinaDoTempo.jdVivo,
     escondido: (flag) => this.hide.has(flag),
     janelaDoQuadro: lerPortaSolQuadro(this.debug.get('solquadro')),
+    visitadas: () => this.estrelasNoQuadro?.candidatasAoClarao() ?? [],
   });
   /** a escada do Atlas — corte 9 da Parte 1 (director/escada.ts): o
    *  clique, a busca, os degraus, o religador do relógio e o trio do
@@ -2049,6 +2050,7 @@ export class Director {
           camera: this.engine.camera,
           quality: this.engine.quality,
         }),
+        heroes: () => this.heroes,
       });
     }
 
@@ -4624,6 +4626,11 @@ export class Director {
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(this.reducedMotion ? 0 : warp);
     this.aplicarLente();
+    // A FONTE DA LENTE: a estrela de maior irradiância na câmera — o Sol,
+    // ou a visitada montada (director/estrelasNoQuadro.ts). A lei é a do
+    // Sol: a distância entra como a do Sol de MESMA irradiância, a cor
+    // relativa à dele. Sem visitada, `null`: a lente de sempre, bit a bit.
+    const fonte = this.estrelasNoQuadro?.fonteDaLente(cam.position) ?? null;
     this.visibilidadeDoSol = this.sondaDaLente.atualizar({
       ligada: this.post.lente !== 'nenhuma',
       camera: cam,
@@ -4631,13 +4638,17 @@ export class Director {
       alturaPx: hPx,
       tanHalfFov,
       dtS: dt,
+      fonte,
     });
     this.post.atualizarLente(
-      cam.position.length() * UA_POR_PC,
+      fonte
+        ? cam.position.distanceTo(fonte.pos) * UA_POR_PC * fonte.fatorDeDistancia
+        : cam.position.length() * UA_POR_PC,
       this.politicaDeLuz,
       this.luzDoRoteiro,
       this.visibilidadeDoSol,
-      this.solNoQuadro.transmitanciaDoSolVisto
+      fonte ? fonte.tinta : this.solNoQuadro.transmitanciaDoSolVisto,
+      fonte
     );
     // A PIRÂMIDE DA POEIRA (E3c): a fonte que o pedido quer agora, o
     // aquecimento dos materiais dela (desde o clique, antes da troca) e,

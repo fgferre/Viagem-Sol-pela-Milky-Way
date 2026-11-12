@@ -58,10 +58,16 @@ export class PontoDeEstrela {
   readonly points: THREE.Points;
   private readonly mat: THREE.ShaderMaterial;
   private readonly mAbs: number;
+  /** m − 5·log10(d) deste ponto (a régua do clarão: `CandidataVisitada`) */
+  readonly mBase: number;
+  /** a cor deste ponto — o clarão dele sai na mesma */
+  readonly cor: readonly [number, number, number];
 
   constructor(f: FotosferaDoPonto, expoM0: number, sigmaPx: number) {
     this.mAbs = magnitudeAbsolutaDe(f);
+    this.mBase = this.mAbs - 5;
     const [r, g, b] = blackbodyLinear(f.teffK);
+    this.cor = [r, g, b];
     this.mat = new THREE.ShaderMaterial({
       vertexShader: VERT_PONTO,
       fragmentShader: STAR_FRAG,

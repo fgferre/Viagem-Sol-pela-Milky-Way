@@ -71,8 +71,8 @@ void main() {
 `;
 
 /** O raio aparente do disco do Sol na tela, px do buffer, com o piso. */
-function raioDoDiscoPx(distancia: number, alturaPx: number, tanHalfFov: number): number {
-  const angulo = Math.asin(Math.min(1, RAIO_DO_SOL_NA_CENA / distancia));
+function raioDoDiscoPx(distancia: number, alturaPx: number, tanHalfFov: number, raio: number): number {
+  const angulo = Math.asin(Math.min(1, raio / distancia));
   return Math.max((Math.tan(angulo) * alturaPx) / (2 * tanHalfFov), RAIO_MINIMO_DO_DISCO_PX);
 }
 
@@ -85,6 +85,8 @@ export interface QuadroDaSondaDaLente {
   alturaPx: number;
   tanHalfFov: number;
   dtS: number;
+  /** a fonte quando não é o Sol (a visitada de maior irradiância); ausente = o Sol */
+  fonte?: { readonly pos: THREE.Vector3; readonly raioPc: number } | null;
 }
 
 export class SondaDaLente {
@@ -103,6 +105,9 @@ export class SondaDaLente {
   private medido = false;
   private readonly v = new THREE.Vector3();
   private readonly vNdc = new THREE.Vector3();
+  private readonly origem = new THREE.Vector3();
+  /** onde os toques estão (a fonte do último quadro) */
+  private readonly posDaFonte = new THREE.Vector3();
 
   constructor() {
     for (let i = 0; i < TOQUES_DA_LENTE; i++) {
@@ -137,11 +142,21 @@ export class SondaDaLente {
    *  visível do disco, já na rampa — o que a lente lê. */
   atualizar(q: QuadroDaSondaDaLente): number {
     const cam = q.camera;
-    const solNaFrente = this.v.set(0, 0, 0).applyMatrix4(cam.matrixWorldInverse).z < 0;
+    const pos = q.fonte ? q.fonte.pos : this.origem;
+    // a fonte mudou de lugar: as respostas em voo eram de outro disco
+    if (!this.posDaFonte.equals(pos)) {
+      this.posDaFonte.copy(pos);
+      for (const m of this.meshes) m.position.copy(pos);
+      for (const c of this.consultas) c.invalidar();
+      this.respostas.fill(null);
+      this.medido = false;
+    }
+    const solNaFrente = this.v.copy(pos).applyMatrix4(cam.matrixWorldInverse).z < 0;
     const raioPx = raioDoDiscoPx(
-      this.v.setFromMatrixPosition(cam.matrixWorld).length(),
+      this.v.setFromMatrixPosition(cam.matrixWorld).sub(pos).length(),
       q.alturaPx,
-      q.tanHalfFov
+      q.tanHalfFov,
+      q.fonte ? q.fonte.raioPc : RAIO_DO_SOL_NA_CENA
     );
     const corre =
       q.ligada && solNaFrente && q.larguraPx > 0 && q.alturaPx > 0 && Number.isFinite(raioPx);
@@ -173,7 +188,7 @@ export class SondaDaLente {
       // Sem medida ainda (corte de filme, lente recém-ligada), o Sol na tela
       // espera apagado as 1–3 respostas, sem clarão de 300 ms; fora da tela,
       // 1, a regra do clarão
-      if (!this.medido) this.valor = ndcNaTela(this.vNdc.set(0, 0, 0).project(cam)) ? 0 : 1;
+      if (!this.medido) this.valor = ndcNaTela(this.vNdc.copy(pos).project(cam)) ? 0 : 1;
     } else if (!this.medido) {
       this.valor = alvo;
       this.medido = true;

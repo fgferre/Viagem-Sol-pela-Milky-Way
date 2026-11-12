@@ -392,8 +392,8 @@ export interface QuadroDoClarao {
    * exatamente onde o filtro completa — clarão nenhum por cima da
    * fotosfera (o círculo branco), e a óptica do RESOLVIDO segue sendo o
    * bloom sobre a imagem real (a conta de ponto nunca é aplicada a um
-   * disco: ela é DESLIGADA pela soltura). Só o candidato 0 a consome;
-   * as nomeadas são pontos sempre.
+   * disco: ela é DESLIGADA pela soltura). As visitadas trazem a delas
+   * (`visitadas`), pela mesma repartição.
    */
   solturaDoSol: number;
   expoM0: number;
@@ -407,6 +407,33 @@ export interface QuadroDoClarao {
    *  emissão do clarão do Sol, antes da compressão — como no disco e no
    *  ponto. Ausente = (1, 1, 1). */
   transmitanciaDoSol?: readonly number[];
+  /**
+   * AS ESTRELAS VISITADAS (12/11, a luz da estrela é uma só): toda
+   * estrela que o motor do Sol monta (`director/estrelasNoQuadro.ts`)
+   * candidata PELA MESMA LEI do Sol — magnitude do ponto que ela
+   * substitui, cor desse ponto e a soltura da repartição dela. Ausente
+   * ou vazia: só o Sol, bit a bit o de antes.
+   */
+  visitadas?: readonly CandidataVisitada[];
+}
+
+/** Quantas vagas de visitada o cadastro reserva (duas por estrela: a
+ *  principal e a companheira) — guarda de memória, não lei. */
+export const VAGAS_DE_VISITADAS = 32;
+
+/**
+ * Uma estrela visitada candidata ao clarão, por quadro. Os números são os
+ * do PONTO que ela é de longe: `mBase` = m − 5·log10(d) (o catálogo:
+ * −0,15 − 2,5·logLum; o ponto próprio: M_V − 5) e a cor do mesmo ponto.
+ */
+export interface CandidataVisitada {
+  /** vaga estável (0..VAGAS_DE_VISITADAS−1): a identidade no orçamento */
+  vaga: number;
+  pos: { x: number; y: number; z: number };
+  mBase: number;
+  cor: readonly [number, number, number];
+  /** a soltura da repartição dela × a cessão à hero de autor (0..1) */
+  soltura: number;
 }
 
 /** Teto de sanidade do billboard, em px: além da diagonal de qualquer
@@ -495,15 +522,23 @@ export class ClaraoDeAsas {
   private readonly pos: Float32Array;
   private readonly mBase: Float64Array;
   private readonly cor: Float32Array;
+  /** a soltura de cada candidato neste quadro (1 = ponto pleno) */
+  private readonly soltura: Float64Array;
+  /** o primeiro índice das vagas de visitadas no cadastro */
+  private readonly inicioDasVisitadas: number;
+  /** quais candidatos entram neste quadro (o Sol + as visitadas) */
+  private readonly daVez: number[] = [];
 
   /** buffer de elegíveis do quadro, reusado — zero alocação por quadro */
   private readonly elegiveis: CandidatoAoClarao[] = [];
 
   constructor(named: readonly NamedStar[]) {
-    const n = named.length + 1;
+    const n = named.length + 1 + VAGAS_DE_VISITADAS;
+    this.inicioDasVisitadas = named.length + 1;
     this.pos = new Float32Array(n * 3);
     this.mBase = new Float64Array(n);
     this.cor = new Float32Array(n * 3);
+    this.soltura = new Float64Array(n).fill(1);
 
     // candidato 0: o Sol
     this.mBase[0] = M_V_SOL_DO_CAMPO - 5;
@@ -632,13 +667,31 @@ export class ClaraoDeAsas {
     }
 
     // RESGATE (16/08, ordem do dono): as nomeadas voltaram às heroes de
-    // autor (world/heroStars.ts) — esta camada fica SÓ com o Sol. A
-    // unificação volta à mesa no M3, com o visto DELE na estética.
-    const n = 1;
-    for (let i = 0; i < n; i++) {
-      if (i === 0 && !q.solVisivel) continue;
+    // autor (world/heroStars.ts) — esta camada fica com o Sol e com as
+    // estrelas VISITADAS (12/11): a que o motor do Sol monta candidata
+    // pela mesma lei, com os números do ponto dela; a cessão à hero de
+    // autor já vem dentro da soltura.
+    this.soltura[0] = solturaDoSol;
+    const daVez = this.daVez;
+    daVez.length = 0;
+    if (q.solVisivel) daVez.push(0);
+    for (const v of q.visitadas ?? []) {
+      if (!(v.vaga >= 0 && v.vaga < VAGAS_DE_VISITADAS) || !Number.isFinite(v.mBase)) continue;
+      const i = this.inicioDasVisitadas + v.vaga;
+      this.pos[i * 3] = v.pos.x;
+      this.pos[i * 3 + 1] = v.pos.y;
+      this.pos[i * 3 + 2] = v.pos.z;
+      this.mBase[i] = v.mBase;
+      this.cor[i * 3] = v.cor[0];
+      this.cor[i * 3 + 1] = v.cor[1];
+      this.cor[i * 3 + 2] = v.cor[2];
+      this.soltura[i] = Number.isFinite(v.soltura) && v.soltura >= 0 && v.soltura <= 1 ? v.soltura : 1;
+      daVez.push(i);
+    }
+    for (const i of daVez) {
+      const soltura = this.soltura[i];
       // superfície é a dona: com a soltura em zero o clarão nem candidata
-      if (i === 0 && !(solturaDoSol > 0)) continue;
+      if (!(soltura > 0)) continue;
       // outro corpo tapa o CENTRO do Sol (a sonda acima): some pela MESMA
       // rampa de saída do orçamento — nenhum gatilho ou tempo novo
       if (i === 0 && this.solOculto) continue;
@@ -656,7 +709,7 @@ export class ClaraoDeAsas {
       // elegível quando a óptica alcança além do que o sprite já desenha
       const nucleo = psfPointSizePx(m, q.expoM0, q.sigmaPx, cssH);
       if (
-        !(2 * this.meiaDaLei(pico, sigma, cssH) * (i === 0 ? solturaDoSol : 1) > nucleo)
+        !(2 * this.meiaDaLei(pico, sigma, cssH) * soltura > nucleo)
       )
         continue;
       // inserção ordenada (pico DESC, índice ASC no empate), teto K
@@ -683,7 +736,7 @@ export class ClaraoDeAsas {
       const dz = this.pos[i * 3 + 2] - q.camPos.z;
       const d2 = dx * dx + dy * dy + dz * dz;
       const m = this.mBase[i] + 2.5 * Math.log10(Math.max(d2, 1e-30));
-      const soltura = i === 0 ? solturaDoSol : 1;
+      const soltura = this.soltura[i];
       const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, cssH);
       const nucleoPx = psfPointSizePx(m, q.expoM0, q.sigmaPx, cssH) * soltura;
       const entrada = ganhoDeEntradaDoFlare(pico) * soltura;

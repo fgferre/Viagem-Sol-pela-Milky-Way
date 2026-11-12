@@ -590,9 +590,13 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     //     (08/10: `transmitanciaDoSol` entrou por decisão — o ar da Terra
     //     no raio até o Sol multiplica a EMISSÃO, não o tamanho; teto
     //     nenhum passa por ela.)
+    //     (12/11: `visitadas` entrou por decisão — as estrelas montadas
+    //     pelo motor do Sol candidatam pela MESMA lei; cada uma traz só
+    //     posição, magnitude, cor e a soltura dela, que é ≤ 1 e só encolhe
+    //     o quad abaixo do MESMO `meiaDaLei` — teto nenhum entra por ela.)
     expect(camposDaInterface(CLARAO, 'QuadroDoClarao')).toEqual([
       'camPos', 'screenH', 'dtS', 'solVisivel', 'solturaDoSol', 'expoM0', 'sigmaPx', 'pr',
-      'transmitanciaDoSol',
+      'transmitanciaDoSol', 'visitadas',
     ]);
     //     ...e o módulo do Sol no quadro não recebe MODO nenhum para
     //     repassar: o `fase: Phase` que sobrava no parâmetro (sem leitor,

@@ -770,6 +770,28 @@ export function cirurgiaDaMatiz(fragment: string): string {
   );
 }
 
+/**
+ * O PESO DA LEI NUMA CAMADA EMISSIVA (coroa, CME, proeminências, laços):
+ * multiplica a cor final por `uPesoDasCamadas`, o mesmo `wResolvido·wMalha`
+ * que a fotosfera recebe em `uWorldFade`. Sem ele a coroa entrava inteira
+ * no quadro em que o gate do palco arma (4 px), por cima do ponto que
+ * ainda carregava toda a luz — a dupla-luz da troca. Mesma âncora e mesmo
+ * contrato de `cirurgiaDaMatiz` (o `}` final do `main`; GLSL3 pelo `out`).
+ */
+export function cirurgiaDoPeso(fragment: string): string {
+  const fim = fragment.lastIndexOf('}');
+  if (fim < 0 || fragment.lastIndexOf('void main') < 0 || fragment.includes('uPesoDasCamadas')) {
+    throw new Error('cirurgiaDoPeso: fragment sem `main` ou já com o peso');
+  }
+  const saida = /\bout\s+(?:(?:highp|mediump|lowp)\s+)?vec4\s+(\w+)\s*;/.exec(fragment)?.[1] ?? 'gl_FragColor';
+  return (
+    'uniform float uPesoDasCamadas;\n' +
+    fragment.slice(0, fim) +
+    `  ${saida}.rgb *= uPesoDasCamadas;\n` +
+    fragment.slice(fim)
+  );
+}
+
 // ============================================================
 // AS DUAS PONTES DE ESCALA PARA O GLSL (F1 da onda do Sol real).
 //
@@ -1158,6 +1180,9 @@ export class StellarBody {
    *  `update` o entrega a `uWorldFade`. Nasce 1: sem director escrevendo
    *  (testes de unidade do corpo), o comportamento é o de sempre. */
   private pesoDaLei = 1;
+  /** o mesmo peso, para as camadas emissivas de fora da fotosfera
+   *  (`cirurgiaDoPeso`) — um objeto só, partilhado pelos materiais */
+  private readonly pesoDasCamadas = { value: 1 };
   /** cache do último `uFiltroSolar` escrito — nasce no valor do uniform */
   private filtroSolarAnterior = 1;
   /** a fase do ciclo VIVA (a da data), escrita pelo director por quadro */
@@ -1471,11 +1496,37 @@ export class StellarBody {
 
     if (params.foraDaOrigem || this.outraCor) this.operarAsCamadas(ctx);
     if (this.qEixo) this.girarPeloEixo(ctx);
+    this.operarOPesoDasCamadas(ctx);
     // a atmosfera estendida: só quem a tem (o Sol nem a constrói). Depois
     // das cirurgias das camadas — ela não usa mundo nem cor embutida
     if ((params.bordaDifusaRaios ?? 1) > 1 && this.filtroSolarLigado) this.criarABordaDifusa(ctx);
 
     this.prime(renderer);
+  }
+
+  /**
+   * UM PESO SÓ PARA A ESTRELA INTEIRA (12/11): toda camada aditiva do
+   * grupo que ainda não bebe `uWorldFade` (a fotosfera, as espículas e a
+   * borda difusa já bebem) passa a sair multiplicada pelo peso da lei. O
+   * sprite da coroa externa não é shader: o peso entra na cor dele, em
+   * `update`. Com o peso em 1 (corpo resolvido) a conta é ×1 exato.
+   */
+  private operarOPesoDasCamadas(ctx: any) {
+    const feitos = new Set<THREE.Material>();
+    this.group.traverse((o: any) => {
+      const lista = (Array.isArray(o.material) ? o.material : [o.material]).filter(
+        (m: unknown) => m instanceof THREE.ShaderMaterial
+      ) as THREE.ShaderMaterial[];
+      for (const m of lista) {
+        if (feitos.has(m)) continue;
+        feitos.add(m);
+        if (m === ctx.sunMesh.material || m.blending !== THREE.AdditiveBlending) continue;
+        if (m.fragmentShader.includes('uWorldFade')) continue;
+        m.fragmentShader = cirurgiaDoPeso(m.fragmentShader);
+        m.uniforms.uPesoDasCamadas = this.pesoDasCamadas;
+        m.needsUpdate = true;
+      }
+    });
   }
 
   /** a atmosfera magnética, na ordem de criação do main.js original */
@@ -2079,6 +2130,7 @@ export class StellarBody {
     // invariante da troca é cobrado PÓS-curva (§5.1 da Lei) e o joelho
     // não pode andar durante a transição.
     ctx.sunUniforms.uWorldFade.value = this.pesoDaLei;
+    this.pesoDasCamadas.value = this.pesoDaLei;
     if (!this.semDinamo) {
       ctx.spiculeUniforms.uWorldFade.value = this.pesoDaLei;
       ctx.coronaRaysUniforms.uRayBoost.value = this.kn.ray;
@@ -2093,7 +2145,9 @@ export class StellarBody {
     ctx.paletaDaCoroa.value.copy(porCurva(tom, SOL_NO_ACES.ganho, SOL_FORA_DO_ACES.coroa));
     if (!this.semDinamo) {
       ctx.absMesh.material = porCurva(tom, ctx.absMat, ctx.absMatTingido);
-      ctx.coronaOuter.material.color.copy(porCurva(tom, SOL_NO_ACES.coroaExterna, SOL_FORA_DO_ACES.coroaExterna));
+      ctx.coronaOuter.material.color
+        .copy(porCurva(tom, SOL_NO_ACES.coroaExterna, SOL_FORA_DO_ACES.coroaExterna))
+        .multiplyScalar(this.pesoDaLei);
     }
     if (this.outraCor) this.matizarPelaTemperatura(ctx);
     if (!this.group.visible) return;

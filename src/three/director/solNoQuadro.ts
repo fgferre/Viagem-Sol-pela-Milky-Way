@@ -22,7 +22,7 @@ import {
 } from '../world/corpos/corpos';
 import { repartir } from '../estrela';
 import type { JanelaDoQuadro, Reparticao } from '../estrela';
-import { ClaraoDeAsas } from '../world/clarao';
+import { ClaraoDeAsas, type CandidataVisitada } from '../world/clarao';
 import type { StellarBody } from '../world/stellarBody';
 import type { Planetas } from '../world/planetas/planetas';
 import type { StarField } from '../world/stars';
@@ -96,6 +96,9 @@ export class SolNoQuadro {
     /** `?solquadro=`, lida uma vez pelo director: a janela da lei (ou a
      *  da bancada `a,b`), ou `'hoje'` = a régua de px de antes */
     janelaDoQuadro: JanelaDoQuadro | 'hoje';
+    /** as estrelas visitadas que candidatam ao clarão pela mesma lei
+     *  (`EstrelasNoQuadro.candidatasAoClarao`); vazio = só o Sol */
+    visitadas: () => readonly CandidataVisitada[];
   };
 
   constructor(fios: SolNoQuadro['fios']) {
@@ -255,6 +258,7 @@ export class SolNoQuadro {
         sigmaPx: stars?.sigmaPx ?? SIGMA_PX,
         pr: q.prAtual,
         transmitanciaDoSol: this.transmitanciaDoSolVisto,
+        visitadas: this.fios.visitadas(),
       });
     }
   }
