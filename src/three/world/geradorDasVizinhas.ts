@@ -192,8 +192,10 @@ export const L_V = {
 
 class Saco {
   readonly p: Float32Array;
+  readonly max: number;
   n = 0;
-  constructor(readonly max: number) {
+  constructor(max: number) {
+    this.max = max;
     this.p = new Float32Array(max * 8);
   }
   put(v: THREE.Vector3, c: readonly number[], tam: number, peso: number) {

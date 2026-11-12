@@ -256,6 +256,23 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
       'aqui é a lei de FLUXO',
   },
   {
+    id: 'galaxias-vizinhas',
+    nome: 'as galáxias vizinhas (Nuvens de Magalhães, M31, M32, M110)',
+    arquivos: ['src/three/world/vizinhas.ts', 'src/three/shaders/vizinhasShaders.ts'],
+    // irmã das partículas da galáxia (12/11/2026): a MESMA lei de tela de
+    // `estrela.ts`, com o alfa já em luminosidade V medida (L☉) e uma régua
+    // única (LUZ_DA_VIA_LACTEA_POR_SOL) — migra junto com elas no M6
+    consomeL1: true,
+    leiVelhaApagada: false,
+    fatorDeBrilho: null,
+    destino: 'migra',
+    migracao: 'M6',
+    emiteGlPointSize: true,
+    razao:
+      'a luz já é física (L_V medida por galáxia, mesma régua da Via Láctea); ' +
+      'o que falta é a lei de FLUXO da casa, a mesma dívida das partículas da galáxia',
+  },
+  {
     id: 'laminas',
     nome: 'as 7 lâminas emissivas',
     arquivos: ['src/three/shaders/galaxyShaders.ts'],

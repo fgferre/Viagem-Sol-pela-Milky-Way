@@ -4465,7 +4465,7 @@ export class Director {
     if (this.vizinhas) {
       const noFilme = this.phase === 'intro' || this.phase === 'journey' || this.phase === 'end';
       this.vizinhas.setFracao(this.engine.quality === 'performance' ? 0.35 : 1);
-      this.vizinhas.update(cam.position, hPx, tanHalfFov, !noFilme && !this.debug.has('noviz'));
+      this.vizinhas.update(cam.position, hPx, tanHalfFov, !noFilme);
     }
     // Nuvens moleculares já entram integradas no structureMap da vista
     // externa. Billboards 3D ficam só no disco, onde a paralaxe comunica
