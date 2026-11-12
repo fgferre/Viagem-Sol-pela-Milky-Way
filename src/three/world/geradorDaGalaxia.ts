@@ -72,15 +72,33 @@ function gauss(rnd: () => number) {
  * plano galáctico (z não se divide), 1 kpc de lado em ±20 kpc; quem cai
  * fora vai para a célula da borda. Estrela jovem resolvida, nó H II,
  * aglomerado (tipos 3–5), halo e anã (6) são indivíduos ou esparsos: ficam
- * num intervalo global no FIM do buffer, a chave CELULAS_DA_GRADE.
+ * num intervalo global no FIM do buffer, a chave CELULAS_DA_GRADE. O
+ * aglomerado nuclear (8) também: 500 pontos num só pixel.
+ * O BOJO E A BARRA (2) são a única população de fato 3D: na coluna do disco
+ * a densidade média da célula valia para o plano, e acima dele o bojo saía
+ * podado como se fosse tão denso quanto o miolo — grãos soltos de raspão.
+ * Ele tem células próprias, a mesma grade em fatias de z de 200 pc. O disco
+ * espesso (1) é o outro 3D (hz 0,6–1 kpc) e saía em pontos laranja soltos
+ * acima do plano pelo mesmo motivo: células de 2 kpc em fatias de 500 pc
+ * (grossas para o plano de cada quadro seguir barato).
  */
 export const LADO_DA_CELULA_PC = 1000;
 export const CELULAS_POR_LADO = 40;
 export const CELULAS_DA_GRADE = CELULAS_POR_LADO * CELULAS_POR_LADO;
+const FATIA_DO_BOJO_PC = 200;
+const FATIAS_DO_BOJO = 13; // ±6 fatias; quem passa fica na última
+const BASE_DO_ESPESSO = CELULAS_DA_GRADE + 1 + CELULAS_DA_GRADE * FATIAS_DO_BOJO;
+const FATIA_DO_ESPESSO_PC = 500;
+const FATIAS_DO_ESPESSO = 7;
+const CHAVES_DAS_CELULAS =
+  BASE_DO_ESPESSO + (CELULAS_DA_GRADE / 4) * FATIAS_DO_ESPESSO;
+/** lado no plano (pc) da célula de uma chave */
+export const ladoDaChave = (chave: number) =>
+  chave >= BASE_DO_ESPESSO ? 2 * LADO_DA_CELULA_PC : LADO_DA_CELULA_PC;
 export function celulaDaParticula(bright: Float32Array, i: number): number {
   const o = i * 8;
   const tipo = Math.floor(bright[o + 6] * 0.001);
-  if (tipo >= 3 && tipo <= 6) return CELULAS_DA_GRADE;
+  if ((tipo >= 3 && tipo <= 6) || tipo === 8) return CELULAS_DA_GRADE;
   const qx = bright[o] - GAL.GC_POS.x;
   const qy = bright[o + 1] - GAL.GC_POS.y;
   const qz = bright[o + 2] - GAL.GC_POS.z;
@@ -89,7 +107,18 @@ export function celulaDaParticula(bright: Float32Array, i: number): number {
     Math.floor((qx * EX.x + qy * EX.y + qz * EX.z) / LADO_DA_CELULA_PC + meio)));
   const iy = Math.min(CELULAS_POR_LADO - 1, Math.max(0,
     Math.floor((qx * EY.x + qy * EY.y + qz * EY.z) / LADO_DA_CELULA_PC + meio)));
-  return iy * CELULAS_POR_LADO + ix;
+  if (tipo !== 2 && tipo !== 1) return iy * CELULAS_POR_LADO + ix;
+  const z = qx * EZ.x + qy * EZ.y + qz * EZ.z;
+  const fatia = (n: number, passo: number) =>
+    Math.min(n - 1, Math.max(0, Math.round(z / passo) + (n - 1) / 2));
+  if (tipo === 1) {
+    const meio2 = CELULAS_POR_LADO / 2;
+    return BASE_DO_ESPESSO +
+      ((iy >> 1) * meio2 + (ix >> 1)) * FATIAS_DO_ESPESSO +
+      fatia(FATIAS_DO_ESPESSO, FATIA_DO_ESPESSO_PC);
+  }
+  return CELULAS_DA_GRADE + 1 + (iy * CELULAS_POR_LADO + ix) * FATIAS_DO_BOJO +
+    fatia(FATIAS_DO_BOJO, FATIA_DO_BOJO_PC);
 }
 
 /**
@@ -99,7 +128,7 @@ export function celulaDaParticula(bright: Float32Array, i: number): number {
  */
 function ordenarPorCelula(bright: Float32Array, n: number) {
   const chave = new Uint16Array(n);
-  const contagem = new Uint32Array(CELULAS_DA_GRADE + 2);
+  const contagem = new Uint32Array(CHAVES_DAS_CELULAS + 1);
   for (let i = 0; i < n; i++) {
     chave[i] = celulaDaParticula(bright, i);
     contagem[chave[i] + 1]++;
@@ -686,22 +715,63 @@ export function buildGalaxy(
   const barAng = GALACTIC_MODEL.barAngleRad;
   const cosB = Math.cos(barAng);
   const sinB = Math.sin(barAng);
+  // Só-partículas: o NÚCLEO sai de um gerador à parte, para o sorteio
+  // principal (e com ele H II, halo, anã e o embaralhamento) seguir o mesmo.
+  const rndN = P ? mulberry32(seed ^ 0x2545f491) : rnd;
+  // Disco estelar nuclear (Launhardt, Zylka & Mezger 2002, de memória:
+  // ~1,4e9 M☉, ρ ∝ R^−0,1 até 120 pc, R^−3,5 até 220 pc e R^−10 depois,
+  // altura de escala 45 pc) e aglomerado nuclear (Schödel 2014; Neumayer
+  // 2020, de memória: 2,5e7 M☉, r_eff 4,2 pc, achatado 0,71). Com ~2e10 M☉
+  // de barra + bojo (Portail 2017, de memória) são 5 % e 0,13 % da luz
+  // deles, tirados do bojo boxy (mesmo M/L): sem eles o centro era o miolo
+  // chato de uma gaussiana de 900 pc — o mais claro ficava a 500 pc.
+  const FRACAO_NSD = 0.05 / FRACAO_BP;
+  const FRACAO_NSC = 0.0013 / FRACAO_BP;
+  const perfilNSD = (r: number) =>
+    r < 120 ? Math.pow(Math.max(r, 1) / 120, -0.1)
+      : r < 220 ? Math.pow(r / 120, -3.5)
+        : Math.pow(220 / 120, -3.5) * Math.pow(r / 220, -10);
   for (let i = 0; i < N_BULGE; i++) {
     let lx: number;
     let ly: number;
     let lz: number;
+    let tipoB = 2;
     if (P) {
       // Só-partículas (σ abaixo são VERDADEIROS, ×G no gauss).
       if (rnd() < FRACAO_BP) {
-        // Bojo boxy/peanut: x:y:z = 1:0,63:0,26 (Wegg & Gerhard 2013),
-        // σx 900 pc; os dois lobos de sempre (|x| ≈ 1,75 kpc) dobram a
-        // espessura fora do centro — o X do bojo de raspão.
+        // Bojo boxy/peanut: x:y = 1:0,63 (Wegg & Gerhard 2013), σx 900 pc.
         lx = gauss(rnd) * G * 900;
         ly = gauss(rnd) * G * 900 * 0.63;
         const peanutX = (Math.abs(lx) - 1750) / 980;
-        lz =
-          gauss(rnd) * G * 900 * 0.26 *
-          (0.8 + 1.2 * Math.exp(-peanutX * peanutX));
+        gauss(rnd); // o z de antes, só para o sorteio principal seguir igual
+        // VERTICAL: sech²(z/2s), cauda e^(−|z|/s) — o perfil quase
+        // exponencial do bojo b/p (Wegg & Gerhard 2013; revisão de
+        // Bland-Hawthorn & Gerhard 2016; z0 0,43 kpc no G2 de Dwek 1995;
+        // tudo de memória). s 200 pc no eixo menor e 1,8× nos lobos
+        // (|x| ≈ 1,75 kpc), o X de raspão. Era gaussiana de σ 199 pc no
+        // centro: de lado, meia-luz 137 pc, abaixo dos 162 do disco a 6–9 kpc.
+        const s = (200 / 1.033) * (1 + 0.8 * Math.exp(-peanutX * peanutX));
+        const u = Math.min(Math.max(rndN(), 1e-6), 1 - 1e-6);
+        lz = s * Math.log(u / (1 - u));
+        const v = rndN();
+        if (v < FRACAO_NSC) {
+          tipoB = 8;
+          lx = gauss(rndN) * G * 3.6;
+          ly = gauss(rndN) * G * 3.6;
+          lz = gauss(rndN) * G * 3.6 * 0.71;
+        } else if (v < FRACAO_NSC + FRACAO_NSD) {
+          // R ∝ R·Σ(R) por rejeição (Σ com a forma de ρ: o disco é fino)
+          let r = 0;
+          for (;;) {
+            r = rndN() * 400;
+            if (rndN() < (r / 120) * perfilNSD(r)) break;
+          }
+          const a = rndN() * 2 * Math.PI;
+          lx = r * Math.cos(a);
+          ly = r * Math.sin(a);
+          const w = Math.max(rndN(), 1e-9);
+          lz = (rndN() < 0.5 ? -45 : 45) * Math.log(w);
+        }
       } else {
         // Barra longa (Wegg 2015): meia-largura 5 kpc com ponta macia,
         // σ 764 pc de través (a barra das lâminas) estreitando nas pontas,
@@ -744,7 +814,14 @@ export function buildGalaxy(
     const ry = lx * sinB + ly * cosB;
     lx = rx;
     ly = ry;
-    const dim = 0.5 + 0.5 * rnd();
+    const uDim = rnd();
+    const uTam = rnd();
+    const uAlfa = rnd();
+    // Só-partículas: o bojo é a população mais velha e menos resolvida —
+    // cada partícula é a soma de milhares de estrelas, sem loteria de
+    // brilho. As médias de antes (cor 0,75, tamanho² 63, alpha 0,055): o
+    // fluxo médio por partícula fica, a variância de 1,6× some.
+    const dim = P ? 0.75 : 0.5 + 0.5 * uDim;
     put(
       lx,
       ly,
@@ -752,10 +829,10 @@ export function buildGalaxy(
       1.0 * dim,
       0.72 * dim,
       0.46 * dim,
-      3 + rnd() * 9,
-      (0.025 + rnd() * 0.06) * innerDim(Math.hypot(lx, ly)) *
+      P ? Math.sqrt(63) : 3 + uTam * 9,
+      (P ? 0.055 : 0.025 + uAlfa * 0.06) * innerDim(Math.hypot(lx, ly)) *
         (P ? (K_BOJO * N_BOJO_REF) / N_BULGE : 1),
-      2
+      tipoB
     );
   }
 
@@ -1006,9 +1083,10 @@ export function gerarNuvensDePoeira(seed = 20260737): NuvensDePoeira {
   // nuvem de massa M: raio pela Σ da nuvem, gaussiana de mesma área a meia
   // altura, alongada q:1 na direção φ
   const por = (
-    comp: string, x: number, y: number, m: number, phi: number, q: number, sMin = 0
+    comp: string, x: number, y: number, m: number, phi: number, q: number, sMin = 0,
+    sigmaNuvem = SIGMA_DA_NUVEM
   ) => {
-    const s = Math.max(0.7 * Math.sqrt(m / (Math.PI * SIGMA_DA_NUVEM)), sMin);
+    const s = Math.max(0.7 * Math.sqrt(m / (Math.PI * sigmaNuvem)), sMin);
     lista.push(x, y, s * Math.sqrt(q), s / Math.sqrt(q), phi, m);
     massas[comp] = (massas[comp] ?? 0) + m;
   };
@@ -1162,13 +1240,24 @@ export function gerarNuvensDePoeira(seed = 20260737): NuvensDePoeira {
     por('barra', x, y, m, Math.atan2(ty, tx), 2 + 2 * rnd());
     acc += m;
   }
+  // A CMZ é um ANEL fino no plano, não uma tampa: o anel de 100 pc de
+  // Molinari 2011 (semieixos ~100 × 60 pc, órbitas x2 alongadas ⊥ à barra)
+  // com ~¾ da massa, e o resto num anel mais largo (~250 × 150 pc) onde as
+  // fendas da barra entregam o gás (Sormani & Barnes 2019; Kruijssen 2015).
+  // Nuvens densas: Σ ~ 1e3 M☉/pc² (Kauffmann 2017), não os 40 do disco —
+  // com 40 as nuvens de 1e6 M☉ tinham σ ~90 pc e fechavam o miolo inteiro
+  // (τ⊥ 4,4 no núcleo, que de cima virava um buraco preto). Tudo de memória.
   const MASSA_CMZ = 3e7;
   for (let acc = 0; acc < MASSA_CMZ; ) {
-    // anel alongado ⊥ à barra (órbitas x2): 120 × 220 pc
     const a = rnd() * 2 * Math.PI;
-    const [x, y] = daBarra(120 * Math.cos(a) + nor() * 30, 220 * Math.sin(a) + nor() * 30);
+    const anel = rnd() < 0.75;
+    const [ax, ay] = anel ? [60, 100] : [150, 250];
+    const larg = anel ? 10 : 30;
+    const [x, y] = daBarra(ax * Math.cos(a) + nor() * larg, ay * Math.sin(a) + nor() * larg);
     const m = massaDoEspectro(1e4, 2e6);
-    por('cmz', x, y, m, rnd() * Math.PI, 1 + rnd());
+    // alongadas ao longo do anel
+    const phi = Math.atan2(ay * Math.cos(a), -ax * Math.sin(a)) + GALACTIC_MODEL.barAngleRad;
+    por('cmz', x, y, m, phi, 1.5 + rnd(), 0, 1000);
     acc += m;
   }
 
@@ -1212,10 +1301,27 @@ export function tauDasNuvens(nuvens: NuvensDePoeira, N: number, meia: number): F
       }
     }
     if (soma <= 0) continue;
-    const k = (kappaDaPoeira(Math.hypot(cx, cy)) * d[o + 5]) / (passo * passo * soma);
+    const kM = kappaDaPoeira(Math.hypot(cx, cy)) * d[o + 5];
+    const k = kM / (passo * passo * soma);
+    // NUVEM ESPESSA MENOR QUE O TEXEL (só as da CMZ, Σ ~ 1e3 M☉/pc²: as do
+    // disco têm τ no miolo ~2–3 e ficam como estão). Média de τ no texel não
+    // é τ médio da luz: uma nuvem opaca tapa só a área dela. Por texel, a
+    // fração coberta f = τ̄/τc e o τ efetivo −ln(1 − f·(1 − e^−τc))
+    // (megagrão, Natta & Panagia 1984); nuvem maior que o texel (f → 1) volta
+    // a τc. Sem isso o anel de 100 pc virava um disco opaco de 33 pc/texel.
+    const tauC = kM / (2 * Math.PI * d[o + 2] * d[o + 3]);
     let p = 0;
+    if (tauC <= 5) {
+      for (let j = j0; j <= j1; j++)
+        for (let i = i0; i <= i1; i++) tau[j * N + i] += pesos[p++] * k;
+      continue;
+    }
+    const cobre = 1 - Math.exp(-tauC);
     for (let j = j0; j <= j1; j++)
-      for (let i = i0; i <= i1; i++) tau[j * N + i] += pesos[p++] * k;
+      for (let i = i0; i <= i1; i++) {
+        const f = Math.min((pesos[p++] * k) / tauC, 1);
+        tau[j * N + i] += -Math.log(Math.max(1 - f * cobre, 1e-30));
+      }
   }
   return tau;
 }

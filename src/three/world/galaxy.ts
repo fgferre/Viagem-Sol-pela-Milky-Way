@@ -24,7 +24,7 @@ import {
   tune,
   celulaDaParticula,
   CELULAS_DA_GRADE,
-  LADO_DA_CELULA_PC,
+  ladoDaChave,
   gerarNuvensDePoeira,
   tauDasNuvens,
 } from './geradorDaGalaxia';
@@ -61,6 +61,8 @@ export class Galaxy {
   /** ?galaxia=particulas: o τ⊥ somado das NUVENS de poeira (R16F, mesma
    *  convenção do τ pintado) — no lugar do 8º bake, que não roda */
   private tauNuvens: THREE.DataTexture | null = null;
+  /** o mesmo τ das nuvens no canal A, que é onde as forjas o leem (?forgetau=1) */
+  private tauNuvensRGBA: THREE.DataTexture | null = null;
   private markerMesh!: THREE.Mesh;
   private dustMap: THREE.Texture;
   private structureMap: THREE.Texture;
@@ -170,6 +172,7 @@ export class Galaxy {
     zMax: Float32Array;
     sigmaZ: Float32Array;
     caixa: Float32Array; // 6 por desenho: min xyz, max xyz (cena)
+    lado: Float32Array; // lado no plano (pc)
     firsts: Int32Array;
     counts: Int32Array;
     insts: Int32Array;
@@ -679,6 +682,20 @@ export class Galaxy {
 
   /** τ⊥ da coluna (o τRT inteiro, canal A), para quem mais precisar da mesma extinção (forges). */
   get tauMapTexture(): THREE.Texture | null {
+    if (this.tauNuvens && this.showGDust) {
+      if (!this.tauNuvensRGBA) {
+        const r = this.tauNuvens.image.data as Uint16Array;
+        const N = this.tauNuvens.image.width;
+        const rgba = new Uint16Array(N * N * 4);
+        for (let k = 0; k < N * N; k++) rgba[4 * k + 3] = r[k];
+        const t = new THREE.DataTexture(rgba, N, N, THREE.RGBAFormat, THREE.HalfFloatType);
+        t.minFilter = THREE.LinearFilter;
+        t.magFilter = THREE.LinearFilter;
+        t.needsUpdate = true;
+        this.tauNuvensRGBA = t;
+      }
+      return this.tauNuvensRGBA;
+    }
     return this.showGDust && this.tauRT ? this.tauRT.texture : null;
   }
 
@@ -728,7 +745,8 @@ export class Galaxy {
     const zMax = new Float32Array(D);
     const sigmaZ = new Float32Array(D);
     const caixa = new Float32Array(D * 6);
-    const area = LADO_DA_CELULA_PC * LADO_DA_CELULA_PC;
+    // lado no plano por célula: o disco espesso tem células de 2 kpc
+    const lado = new Float32Array(D);
     for (let d = 0; d < D; d++) {
       let sz = 0, sz2 = 0, zl0 = Infinity, zl1 = -Infinity;
       let x0 = Infinity, y0 = Infinity, z0 = Infinity;
@@ -748,7 +766,8 @@ export class Galaxy {
       zMin[d] = zl0;
       zMax[d] = zl1;
       sigmaZ[d] = Math.sqrt(Math.max(sz2 / total[d] - m * m, 0));
-      sigma[d] = chaves[d] === CELULAS_DA_GRADE ? 0 : total[d] / area;
+      lado[d] = ladoDaChave(chaves[d]);
+      sigma[d] = chaves[d] === CELULAS_DA_GRADE ? 0 : total[d] / (lado[d] * lado[d]);
       caixa.set([x0, y0, z0, x1, y1, z1], d * 6);
     }
     const largura = 64;
@@ -759,7 +778,7 @@ export class Galaxy {
     const lod = {
       inicio: Int32Array.from(inicio),
       total: Int32Array.from(total),
-      sigma, zMin, zMax, sigmaZ, caixa,
+      sigma, zMin, zMax, sigmaZ, caixa, lado,
       firsts: Int32Array.from(inicio),
       counts: new Int32Array(D),
       insts: new Int32Array(D),
@@ -782,7 +801,7 @@ export class Galaxy {
       L.dados[d * 4] = L.inicio[d];
       L.dados[d * 4 + 1] = L.sigma[d] > 0 ? disp : 0;
       L.dados[d * 4 + 2] = L.sigma[d] * (disp / L.total[d]);
-      L.dados[d * 4 + 3] = (2.5 * L.sigmaZ[d]) / LADO_DA_CELULA_PC;
+      L.dados[d * 4 + 3] = (2.5 * L.sigmaZ[d]) / L.lado[d];
     }
     L.textura.needsUpdate = true;
   }
@@ -1065,6 +1084,7 @@ export class Galaxy {
     this.tauRT?.dispose();
     this.tauParticulasRT?.dispose();
     this.tauNuvens?.dispose();
+    this.tauNuvensRGBA?.dispose();
     this.tauVazio.dispose();
     if (this.ownsDustMap) this.dustMap.dispose();
     this.group.traverse((o) => {

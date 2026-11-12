@@ -16,9 +16,11 @@ Onde: ramo `galaxia-particulas`, cópia `../Viagem-galaxia`. Tudo atrás de `?ga
 
 - [x] Ensaio 7: a poeira é uma população de 13 625 nuvens sorteadas do modelo (gás molecular no anel de 4–6 kpc e nas faixas da borda de dentro dos braços, atômico difuso, duas faixas da barra em S até o centro); a profundidade óptica vem da soma delas, não mais do campo pintado. De cima tira 18,6 % da luz (antes 6,8 %), faixas de ~340 pc; de lado, faixa escura fina no plano com bojo e disco espesso acesos. Fontes citadas de memória (Bohlin 1978, Heyer & Dame 2015, Solomon, Drimmel 2000): conferir.
 
+- [x] Ensaio 8: o centro. Núcleo aceso (aglomerado nuclear e disco nuclear tirados do bojo; a poeira central virou anel fino, τ no núcleo 4,4 → 0,15), bojo com perfil sech² e liso (o chuvisco laranja era o disco espesso: bojo e disco espesso ganharam células em 3D), barra: a elongação está no modelo (b/a 0,41 a 3 kpc) e a curva de tom a achata (linear 0,4–4,7 vira 0,64–0,92). Fontes de memória: conferir. Vídeo lado a lado do filme t=124–160 em `capturas/galaxia-nova/video-saida-lado-a-lado.mp4`.
+
 ## A fazer, em ordem
 1. Medir peso e rodar `npm run done` com a máquina quieta; o teto é contagem fixa e aperta também de cima, onde já era barato — trocar por orçamento de tempo.
-2. Poeira, acabamento: mancha escura redonda bem no núcleo (nuvem central) parece buraco; faixas somem além de 8 kpc; contraste limitado a ~0,5 porque metade das estrelas fica na frente; `tauMapTexture` das forjas fica nulo no modo novo; catálogo real de nuvens de CO não usado (mora no director). De lado o bojo quase não se levanta do disco.
+2. Acabamento que sobra: de lado o bojo sobe pouco (leva 11 % da luz; decidir a fração pela literatura de B/T em luz, não em massa); faixas de poeira somem além de 8 kpc; catálogo real de nuvens de CO não usado; `?forgetau=1` não testado no modo novo; o planejador de células ficou com 3 311 desenhos (medir CPU).
 3. A barra de cima lê como oval e de lado estoura em branco (curva de tom sobre 11 % da luz); nós de H II mais brilhantes saem salmão/brancos. `saindo` ainda bege.
 4. Conferir contra a literatura duas escolhas do ensaio 3: o vão do disco dentro da barra (Freudenreich 1998) e a fração nos braços (0,35).
 5. Filme t=148: os pontos próximos cintilam com o ganho de lado.
