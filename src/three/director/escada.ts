@@ -58,7 +58,8 @@ import {
   orbitaMaisExterna,
   raioDeEnquadramentoEstelar,
 } from '../cinematic/atlasRig';
-import { GAL } from '../world/baseGalactica';
+import { EX, EZ, GAL } from '../world/baseGalactica';
+import { RS_SGR_A_PC } from '../../lib/buracoNegro';
 import {
   CORPOS_DO_SISTEMA,
   LUAS_DO_SISTEMA,
@@ -163,6 +164,28 @@ export interface EstadoDaEscada {
  * quadro, com os braços em volta.
  */
 const RAIO_DO_CENTRO_GALACTICO_PC = 6000;
+
+/**
+ * O DEGRAU DE PERTO de Sagittarius A✱ (12/11/2026): a esfera enquadrada
+ * tem 10 raios de Schwarzschild REAIS (0,85 UA), o que põe a câmera a
+ * ~25 RS sob a lente de 58° — a sombra com ~12° de diâmetro e o anel de
+ * Einstein com ~32°. O piso do zoom é 2 × 3 RS = 6 RS, fora da órbita
+ * circular estável mais interna (3 RS) e longe da esfera de fótons.
+ */
+export const RAIO_DO_DEGRAU_DO_BURACO_PC = 10 * RS_SGR_A_PC;
+const PISO_DO_BURACO_PC = 3 * RS_SGR_A_PC;
+/**
+ * De onde a câmera olha o buraco: do lado do Sol, 5° ABAIXO do plano
+ * galáctico — o disco e o bojo do outro lado passam logo acima da sombra,
+ * dentro do anel de Einstein, e é a luz deles que a lente dobra. (5°
+ * acima, a anã de Sagitário — l = 5,6°, b = −14° — caía atrás da sombra
+ * com o rótulo dela por cima.) O repouso do rig sobe 30° rumo ao polo
+ * (`direcaoDeRepouso`), então o eixo entregue desce 35°.
+ */
+const EIXO_DO_BURACO = EX.clone()
+  .multiplyScalar(Math.cos((35 * Math.PI) / 180))
+  .addScaledVector(EZ, -Math.sin((35 * Math.PI) / 180))
+  .negate();
 
 export class Escada {
   /**
@@ -814,6 +837,7 @@ export class Escada {
       // dos corpos CONSTRUÍDOS, nunca redigitada: a Terra (F2a), os
       // planetas rochosos (F3) e os gigantes (F4)
       podeAproximar:
+        (degrau === 'estrela' && this.focoNoCentro && this.ver !== 'corpo') ||
         (degrau === 'estrela' && this.ver === 'orbita' && this.pilotoEmFoco() !== null) ||
         (degrau === 'orbita' &&
         (this.focoCorpoId === 'earth' ||
@@ -823,6 +847,35 @@ export class Escada {
           ) ||
           this.gigantes.some((g) => g.corpo.planeta && g.corpo.id === this.focoCorpoId))),
     };
+  }
+
+  /** o alvo do rig é o centro galáctico (a galáxia ou o buraco) */
+  private get focoNoCentro(): boolean {
+    return this.focoEstrela && this.atlas.alvo.distanceToSquared(GAL.GC_POS) < 1e-18;
+  }
+
+  /**
+   * O DEGRAU "CORPO" DE SAGITTARIUS A✱: o buraco negro em escala real, a
+   * esfera de `RAIO_DO_DEGRAU_DO_BURACO_PC`. A rampa da escada atravessa
+   * as 9 ordens de grandeza entre a galáxia (kpc) e o buraco (UA) como
+   * atravessa as do Sol; a precisão aguenta porque a posição da câmera é
+   * double na CPU e a lente se calcula RELATIVA ao buraco
+   * (`lenteDoBuracoNegro.ts`).
+   */
+  aproximarDoBuraco() {
+    if (this.phase !== 'atlas') return;
+    this.atlas.focar(GAL.GC_POS.clone(), RAIO_DO_DEGRAU_DO_BURACO_PC, EIXO_DO_BURACO, {
+      rampa: this.rampaDaEscada(),
+      polo: GAL.NGP,
+      pisoRaio: PISO_DO_BURACO_PC,
+    });
+    this.enquadrarAgora();
+    this.focoCorpoId = null;
+    this.focoEstrela = true;
+    this.focoSonda = null;
+    this.ver = 'corpo';
+    this.emitirEscada();
+    this.teletransportou();
   }
 
   /** o `ver` vivo, para o `urlComMomento` espelhar `?ver=corpo`. */
@@ -1027,6 +1080,10 @@ export class Escada {
    */
   aproximarDoCorpo() {
     if (this.phase !== 'atlas') return;
+    if (this.focoNoCentro) {
+      this.aproximarDoBuraco();
+      return;
+    }
     if (this.focoEstrela) {
       this.aproximarDaEstrela();
       return;

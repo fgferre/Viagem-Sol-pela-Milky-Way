@@ -64,6 +64,9 @@ export function escolherAlvo(
     }
     const { nome, x, y, z } = entrada.lugar;
     alvo.visitarEstrela({ n: nome, x, y, z });
+    // `?foco=sagittarius-a&ver=corpo` desce ao buraco negro em escala
+    // real — o mesmo degrau do botão "Aproximar" da ficha
+    if (ver === 'corpo' && entrada.lugar.id === 'sagittarius-a') alvo.aproximarDoCorpo();
     return;
   }
   // UM CORPO É DO ATLAS (item 129: a busca é uma só, e "focar é coisa

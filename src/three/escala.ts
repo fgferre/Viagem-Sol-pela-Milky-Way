@@ -58,6 +58,7 @@
 // `config.ts` volta a valer.
 import { AU_PARA_PC } from '../lib/atlas/frameGalactico';
 import { AU_KM } from '../lib/atlas/elementosOrbitais';
+import { MASSA_SGR_A_MSOL as MASSA_MEDIDA_SGR_A_MSOL, RS_SGR_A_PC } from '../lib/buracoNegro';
 // A UNIDADE DE LUZ (F1). A seta aponta só nesta direção: `luzDaCasa.ts` não
 // importa daqui — toda função dela que precisa de um raio o RECEBE — e é assim
 // que os dois cadastros da casa, o de tamanho e o de brilho, ficam sem ciclo.
@@ -173,7 +174,8 @@ export const LIMIAR_SISTEMA_SOLAR_PC = 0.05;
  */
 export const RS_POR_MASSA_SOLAR_KM = 2.953_250_077;
 
-/** Massa de Sgr A✱ em massas solares — espelho de `world/blackHole.ts:13`. */
+/** Massa do Sgr A✱ DO FILME em massas solares — espelho de `world/blackHole.ts:13`.
+ *  O do Atlas usa a medida da GRAVITY (2022), em `lib/buracoNegro.ts`. */
 export const MASSA_SGR_A_MSOL = 4.15e6;
 
 /** Raio de Schwarzschild de uma massa em massas solares, em pc. */
@@ -248,6 +250,12 @@ export interface EscalaDeclarada {
   endereco: string;
   /** por que está assim, numa frase que o visitante entenderia */
   razao: string;
+  /**
+   * Só um FILME desenha isto. O selo mora no Atlas, então a acusação
+   * dele não o lista — mas o cadastro o guarda, com dívida e fase, para
+   * a mentira do filme continuar escrita.
+   */
+  soNoFilme?: true;
 }
 
 /**
@@ -278,12 +286,26 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
     id: 'sgr-a',
     nome: 'Sagittarius A✱',
     classe: 'corpo',
+    // PAGO em 12/11/2026 (item 13): o buraco que se visita tem o raio que
+    // a massa medida dá, e ele não emite nada — só dobra a luz do resto
+    fator: RS_SGR_A_PC / raioDeSchwarzschildPc(MASSA_MEDIDA_SGR_A_MSOL),
+    fatorDeBrilho: 1,
+    endereco: 'src/lib/buracoNegro.ts:24',
+    razao:
+      'PAGO em 12/11/2026: no Atlas e no voo livre o buraco tem RS = 0,085 UA ' +
+      '(4,30e6 M☉, GRAVITY 2022) e nenhum disco; a lente é a deflexão exata',
+  },
+  {
+    id: 'sgr-a-filme',
+    nome: 'Sagittarius A✱ (filme)',
+    classe: 'corpo',
     fator: ESPELHO_RS_SGR_A_PC / raioDeSchwarzschildPc(MASSA_SGR_A_MSOL),
     fatorDeBrilho: null,
     endereco: 'src/three/world/blackHole.ts:27',
     razao:
       'o disco de acreção foi inflado para ler como Gargantua no periastro do ' +
       'filme; a física do shader é adimensional em RS e não muda com a escala',
+    soNoFilme: true,
   },
   {
     id: 'clarao-estelar',
@@ -450,7 +472,11 @@ export const DIVIDAS_ABERTAS: Readonly<Record<string, string>> = {
   // (a linha do `sol` saiu em 2026-08-13, quando a F3 entrou: o teste
   // apertou sozinho e passou a EXIGIR fator 1 do Sol, que é o que este
   // bloco prometia por escrito desde a F0.)
-  'sgr-a': 'F5 — o raio sai da massa (4,15e6 M☉)',
+  // (a linha do `sgr-a` saiu em 2026-11-12: o buraco do Atlas tem o raio
+  // real; o desenho inflado ficou só no filme galáctico, que é este.)
+  'sgr-a-filme':
+    'SEM FASE — só o filme galáctico desenha este disco inflado; trocá-lo pelo ' +
+    'buraco real é decisão do dono (o filme tem de sair igual até lá)',
 };
 
 // ------------------------------------------------------------
@@ -488,14 +514,14 @@ export const DIVIDAS_DE_BRILHO: Readonly<Record<string, string>> = {
   // emitir a radiância verdadeira com a compressão fixa na emissão, e o
   // que era ~26 magnitudes de dívida virou fator 1. O histórico está no
   // git; o invariante da troca, em `luzDaCasa.test.ts`.)
-  'sgr-a':
-    'SEM FASE MARCADA — a emissão do disco de acreção é autorada e não tem ' +
-    'contraparte medida; entra quando a unidade da luz alcançar o buraco negro',
+  'sgr-a-filme':
+    'SEM FASE MARCADA — a emissão do disco de acreção do filme é autorada e não ' +
+    'tem contraparte medida; o buraco do Atlas não desenha disco',
 };
 
 /** Quem deve brilho, do pior para o melhor. O `null` vai para o fim. */
 export function culpadosDoBrilho(): readonly EscalaDeclarada[] {
-  return CADASTRO_DE_ESCALA.filter(deveDividaDeBrilho).sort(
+  return CADASTRO_DE_ESCALA.filter((e) => deveDividaDeBrilho(e) && !e.soNoFilme).sort(
     (a, b) => Math.abs(Math.log10(b.fatorDeBrilho ?? 1)) - Math.abs(Math.log10(a.fatorDeBrilho ?? 1))
   );
 }
@@ -546,7 +572,8 @@ export function culpadosDaEscala(
     // acusação na hora.
     e.id === 'sol' ? { ...e, fator: raioDoSolPc / RAIO_SOL_PC } : e
   )
-    .filter(deveDivida)
+    // o selo mora no Atlas: o que só um filme desenha não está na vista
+    .filter((e) => deveDivida(e) && !e.soNoFilme)
     .sort((a, b) => (b.fator ?? Infinity) - (a.fator ?? Infinity));
 }
 
