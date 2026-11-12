@@ -194,9 +194,15 @@ export class CamadaWebgpu {
       camada.dispose();
       return null;
     }
+    // Os sorteios assam em paralelo mas entram NA ORDEM (1, 2, 3…): o nível
+    // de detalhe desenha um prefixo deles, e a ordem de chegada mudaria a
+    // imagem de uma carga para outra (md5 instável nas provas).
     camada.pendentes = sorteios - 1;
+    let fila = Promise.resolve();
     for (let s = 1; s < sorteios; s++) {
-      void sortear(s)
+      const assado = sortear(s);
+      fila = fila
+        .then(() => assado)
         .then((b) => {
           if (camada.vivo && !camada.falhou) motor.acrescentar(b.bright, b.brightCount);
         })
