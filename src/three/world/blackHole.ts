@@ -17,12 +17,29 @@
 // física do shader é adimensional em RS e não muda com a escala.
 // A extinção real (~30 mag no visível até o centro) justifica o
 // fade por distância. ?nobh=1 desliga; ?bhgain= e ?bhsteps= varrem.
+//
+// A DESCIDA AO BURACO REAL (12/11/2026) — UMA regra só, pela DISTÂNCIA
+// da câmera ao centro, igual no Atlas, no voo livre e nos filmes (o
+// universo é um só): de 1,4 pc para fora a escala inflada de sempre
+// (o rasante do filme galáctico passa a 1,5 pc e sai igual, bit a bit);
+// de 1,4 pc a 100 RS reais (8,5 UA) o RS desenhado desce, em escala
+// logarítmica, do inflado ao verdadeiro (0,085 UA); dali para dentro o
+// disco tem o tamanho real — ver `entregaDoBuraco`.
+//
+// ?bh= — BOTÃO TEMPORÁRIO, até o dono escolher o "de perto" pela prancha:
+//   gargantua (padrão) — o disco deste shader, na escala real de perto;
+//   lente — o buraco nu da lenteDoBuracoNegro.ts (a lente exata, sem
+//           disco); o Gargantua apaga entre 1,4 e 0,14 pc e a lente assume;
+//   ambos — de perto, a lente exata dobra o fundo e este shader desenha
+//           só o disco e a sombra por cima (sem dobrar o fundo de novo).
 // ============================================================
 import * as THREE from 'three';
 import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { BH_VERT, BH_MARCH_FRAG, BH_COMPOSITE_FRAG } from '../shaders/blackHoleShaders';
 import { GAL, EX, EY, EZ } from './baseGalactica';
 import type { QualityLevel } from '../core/engine';
+import { RS_SGR_A_PC } from '../../lib/buracoNegro';
+import { RAIOS_DA_ENTREGA_DO_BURACO } from '../escala';
 
 const RS_PC = 0.05;
 // 26 RS (a demo usa 40 sobre céu PRETO): contra o fundo dourado do
@@ -42,6 +59,50 @@ const MARCH_B_RS = 60;
 const STEPS: Record<QualityLevel, number> = { cinema: 460, alta: 320, performance: 200 };
 const BUDGET: Record<QualityLevel, number> = { cinema: 2.6e6, alta: 1.7e6, performance: 1.0e6 };
 
+export type ModoDoPerto = 'lente' | 'gargantua' | 'ambos';
+
+/** o `?bh=` (ver o cabeçalho); ausente ou inválido = `gargantua` */
+export function lerModoDoPerto(busca: string): ModoDoPerto {
+  const v = new URLSearchParams(busca).get('bh');
+  return v === 'lente' || v === 'ambos' ? v : 'gargantua';
+}
+
+export interface EntregaDoBuraco {
+  /** o RS desenhado, em pc */
+  rsPc: number;
+  fade: number;
+  /** a lente exata (`lenteDoBuracoNegro.ts`) pode ligar */
+  lente: boolean;
+  /** o fundo já chega dobrado pela lente: este passe não o dobra de novo */
+  fundoDobrado: boolean;
+}
+
+/** de onde para dentro o RS desenhado começa a descer ao real, em pc */
+export const INICIO_DA_DESCIDA_PC = 1.4;
+
+/**
+ * Quem desenha Sgr A✱ com a câmera a `dGC` pc do centro — e SÓ isso decide:
+ * nenhum modo, nenhuma fase. Nunca os dois passes dobram o mesmo fundo: no
+ * `lente` a lente só liga com o Gargantua já apagado; no `ambos`, a lente
+ * dobra e o Gargantua só pinta disco e sombra.
+ */
+export function entregaDoBuraco(dGC: number, modo: ModoDoPerto): EntregaDoBuraco {
+  const fade = 1 - THREE.MathUtils.smoothstep(dGC, 1400, 2400);
+  const fim = RAIOS_DA_ENTREGA_DO_BURACO * RS_SGR_A_PC;
+  let rsPc = RS_PC;
+  if (dGC <= fim) rsPc = RS_SGR_A_PC;
+  else if (dGC < INICIO_DA_DESCIDA_PC) {
+    const t = Math.log(dGC / fim) / Math.log(INICIO_DA_DESCIDA_PC / fim);
+    rsPc = RS_SGR_A_PC * Math.pow(RS_PC / RS_SGR_A_PC, t);
+  }
+  if (modo === 'lente') {
+    const f = fade * THREE.MathUtils.smoothstep(dGC, INICIO_DA_DESCIDA_PC / 10, INICIO_DA_DESCIDA_PC);
+    return { rsPc, fade: f, lente: f === 0, fundoDobrado: false };
+  }
+  const real = modo === 'ambos' && rsPc === RS_SGR_A_PC;
+  return { rsPc, fade, lente: real, fundoDobrado: real };
+}
+
 const _q = new THREE.Vector3();
 const _r = new THREE.Vector3();
 
@@ -59,6 +120,8 @@ export class BlackHolePass extends Pass {
   private width = 1;
   private height = 1;
   private stepsOverride: number | null;
+  /** o `?bh=` lido no boot (ver o cabeçalho) */
+  readonly modoDoPerto: ModoDoPerto;
 
   constructor() {
     super();
@@ -68,6 +131,7 @@ export class BlackHolePass extends Pass {
     const gain = Number.parseFloat(query.get('bhgain') ?? '');
     const steps = Number.parseInt(query.get('bhsteps') ?? '', 10);
     this.stepsOverride = Number.isFinite(steps) ? steps : null;
+    this.modoDoPerto = lerModoDoPerto(window.location.search);
 
     const shared = {
       uRoL: { value: new THREE.Vector3() },
@@ -78,6 +142,7 @@ export class BlackHolePass extends Pass {
       uAspect: { value: 16 / 9 },
       uFade: { value: 0 },
       uMarchB: { value: MARCH_B_RS },
+      uFundoDobrado: { value: 0 },
     };
     // uniforms COMPARTILHADOS por referência: um set alimenta os dois materiais
     this.matMarch = new THREE.ShaderMaterial({
@@ -158,16 +223,19 @@ export class BlackHolePass extends Pass {
     camPos: THREE.Vector3,
     camera: THREE.PerspectiveCamera,
     time: number,
-    fade: number
+    fade: number,
+    rsPc: number = RS_PC,
+    fundoDobrado = false
   ) {
     this.enabled = fade > 0.001;
     if (!this.enabled) return;
     const u = this.matMarch.uniforms;
     u.uFade.value = fade;
+    u.uFundoDobrado.value = fundoDobrado ? 1 : 0;
     u.uTime.value = time;
     u.uTanHalf.value = Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
     u.uAspect.value = camera.aspect;
-    _q.copy(camPos).sub(GAL.GC_POS).divideScalar(RS_PC);
+    _q.copy(camPos).sub(GAL.GC_POS).divideScalar(rsPc);
     toLocal(_q, u.uRoL.value as THREE.Vector3);
     _r.setFromMatrixColumn(camera.matrixWorld, 0);
     toLocal(_r, u.uRightL.value as THREE.Vector3);

@@ -922,14 +922,17 @@ describe('F3 — o Sol saiu da acusação de escala, sem porta nenhuma', () => {
   // seja, o conservadorismo do eixo não alcança o interior do sistema.
   const vista = (portas: string[]) => com({ distanciaPc: 0.1, portas });
 
-  it('a acusação nasce vazia — o Sol pagou na F3 e Sgr A✱ no item 13 (o inflado é só do filme)', () => {
+  it('a acusação sobrou com Sgr A✱ — o Sol pagou a dívida dele na F3', () => {
     const v = estadoDoSelo(vista([]));
     expect(v.escala).toBe('fora');
-    expect(v.culpados).toEqual([]);
+    expect(v.culpados).toEqual(['Sagittarius A✱ está 125.884× maior']);
+    expect(v.culpados.join(' ')).not.toContain('Sol');
   });
 
-  it('perto de Sgr A✱ o selo diz ESCALA REAL — o buraco é desenhado 1:1', () => {
+  it('a menos de 100 RS de Sgr A✱ o selo diz ESCALA REAL — ali o Gargantua é 1:1', () => {
     expect(estadoDoSelo(com({ distanciaPc: 8150, distanciaAoCentroPc: 1e-5 })).escala).toBe('real');
+    // entre 8,5 UA e 5 pc o disco ainda é maior que o real
+    expect(estadoDoSelo(com({ distanciaPc: 8150, distanciaAoCentroPc: 1e-3 })).escala).toBe('fora');
     expect(estadoDoSelo(com({ distanciaPc: 8150, distanciaAoCentroPc: 10 })).escala).toBe('fora');
   });
 

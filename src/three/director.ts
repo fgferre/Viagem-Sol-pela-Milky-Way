@@ -161,7 +161,7 @@ import {
 import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import { filmeDe, type Filme } from './cinematic/filme';
-import { BlackHolePass } from './world/blackHole';
+import { BlackHolePass, entregaDoBuraco } from './world/blackHole';
 import { LenteDoBuracoNegro } from './world/lenteDoBuracoNegro';
 import { loadStarData } from './config';
 import type { NamedStar, StarsMeta } from './config';
@@ -907,7 +907,7 @@ export class Director {
   private sun: StellarBody;
   private dust: Dust;
   private blackHole: BlackHolePass | null = null;
-  /** Sgr A✱ em escala real (fora dos filmes) — ver lenteDoBuracoNegro.ts */
+  /** a lente exata de Sgr A✱ em escala real (`?bh=lente|ambos`) — ver lenteDoBuracoNegro.ts */
   private lenteDoBuraco: LenteDoBuracoNegro | null = null;
   private bgColor = new THREE.Color(0x000106);
   /** o filme em cartaz — o que o `play()` toca e o caminho do filme lê
@@ -4384,17 +4384,16 @@ export class Director {
     this.dust.update(cam.position, hPx, time);
     // Sgr A*: só de perto (a extinção real esconde o centro de longe);
     // as capturas de medição ficam a 24/33 kpc — fade 0, passe desligado.
-    // DOIS DESENHOS, um por lugar: o FILME guarda o disco inflado de
-    // sempre (fora de escala, declarado em `escala.ts`); o Atlas e o voo
-    // livre têm o buraco em escala real, só com a lente.
-    const foraDoFilme = this.phase === 'atlas' || this.phase === 'free';
-    this.blackHole?.updateFrame(
-      cam.position,
-      cam,
-      time,
-      this.hide.has('nobh') || foraDoFilme ? 0 : 1 - THREE.MathUtils.smoothstep(dGC, 1400, 2400)
-    );
-    this.lenteDoBuraco?.updateFrame(cam.position, cam, foraDoFilme && !this.hide.has('nobh'));
+    // O GARGANTUA em toda parte, do mesmo jeito em qualquer modo: inflado
+    // de longe (declarado em `escala.ts`), no tamanho real perto do buraco;
+    // a lente exata só entra pelo `?bh=`. Quem passa a vez a quem é a
+    // distância, e só ela (`entregaDoBuraco`, blackHole.ts).
+    if (this.blackHole) {
+      const semBuraco = this.hide.has('nobh');
+      const e = entregaDoBuraco(dGC, this.blackHole.modoDoPerto);
+      this.blackHole.updateFrame(cam.position, cam, time, semBuraco ? 0 : e.fade, e.rsPc, e.fundoDobrado);
+      this.lenteDoBuraco?.updateFrame(cam.position, cam, e.lente && !semBuraco);
+    }
     // AUTO-EXPOSIÇÃO: a vista externa é outro assunto fotográfico. A
     // rodada 18 venceu com 1,40 (sem knee); a rodada 20, com o knee
     // asinh no pós e chromsat na extinção assumindo a compressão, mediu
