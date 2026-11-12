@@ -99,6 +99,7 @@ uniform highp sampler2D uCelulas;
 uniform int uDesenho; // sem WEBGL_multi_draw: o desenho vem por uniform
 uniform float uRho;   // alvo de partículas desenhadas por pixel do buffer
 uniform float uKMax;  // teto de filhas por partícula
+uniform float uFracK; // fração das filhas que o teto de instâncias deixa (galaxy.ts)
 uniform float uEspLod; // c do desvio das filhas: c·√(K−1) espaçamentos da célula
 // a posição desta instância: a da partícula, ou a da filha deslocada
 vec3 posLod;
@@ -155,7 +156,7 @@ void main() {
     float rhoDisp = cel.b * pcPorPx * pcPorPx / max(proj, 1e-3);
     float m = mix(1.0, uRho / max(rhoDisp, 1e-12), uNucleo * smoothstep(300.0, 1500.0, d0));
     float q = min(m, 1.0);
-    kfLod = clamp(m, 1.0, uKMax);
+    kfLod = clamp(m * uFracK, 1.0, uKMax);
     float rank = float(gl_VertexID) - cel.r;
     pesoLod = clamp(q * cel.g - rank, 0.0, 1.0) *
       clamp(kfLod - float(gl_InstanceID), 0.0, 1.0) / (q * kfLod);

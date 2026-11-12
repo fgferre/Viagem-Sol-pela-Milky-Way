@@ -143,6 +143,19 @@ export class Galaxy {
    */
   private static readonly RHO_LOD = tune('lodrho', 12);
   private static readonly KMAX_LOD = tune('lodk', 8);
+  /**
+   * TETO DE INSTÂNCIAS POR QUADRO (mães + filhas), em milhões (?lodmax=).
+   * O custo do modo é a contagem de instâncias (~5–6 ms por milhão nesta
+   * máquina, ensaio 6): a meia distância pedia 19 M e custava ~105 ms
+   * contra ~63 ms da galáxia de hoje. Quando o pedido passa do teto, caem
+   * primeiro as FILHAS (K × fK, contínuo, a última filha fracionária — nada
+   * estala; a tenda alarga o que falta, borrão em vez de areia); só com
+   * uma filha por mãe e ainda acima do teto é que o alvo ρ desce e os
+   * prefixos do fundo afinam (brilho ÷ q, fluxo igual). O intervalo global
+   * (estrelas jovens resolvidas, nós H II, aglomerados, halo) sai sempre
+   * inteiro.
+   */
+  private static readonly TETO_LOD = tune('lodmax', 5) * 1e6;
   private lod: {
     inicio: Int32Array;
     total: Int32Array;
@@ -160,7 +173,7 @@ export class Galaxy {
     fade: number;
   } | null = null;
   /** medidas do último quadro (?galaxia=particulas) — para as réguas */
-  lodStats = { pais: 0, instancias: 0, desenhos: 0, cpuMs: 0, multiDraw: false };
+  lodStats = { pais: 0, instancias: 0, desenhos: 0, cpuMs: 0, multiDraw: false, rho: 0, fK: 1 };
   private nucleoPc() {
     const a = 3 * GALACTIC_MODEL.stellarScaleLengthPc;
     const x = GALACTIC_MODEL.diskRadiusPc / a;
@@ -242,6 +255,7 @@ export class Galaxy {
       this.brightMat.uniforms.uDesenho = { value: 0 };
       this.brightMat.uniforms.uRho = { value: Galaxy.RHO_LOD };
       this.brightMat.uniforms.uKMax = { value: Galaxy.KMAX_LOD };
+      this.brightMat.uniforms.uFracK = { value: 1 };
       this.brightMat.uniforms.uEspLod = { value: tune('lodesp', 0.6) };
       // a geometria não desenha nada sozinha: os desenhos por célula saem
       // do gancho abaixo, com o programa e os atributos já ligados
@@ -768,19 +782,53 @@ export class Galaxy {
    */
   private planejarCelulas(camera: THREE.Camera) {
     const t0 = performance.now();
+    const u = this.brightMat.uniforms;
+    Galaxy.frustum.setFromProjectionMatrix(
+      Galaxy.mTmp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
+    );
+    // o teto: o plano é monótono em (ρ, fK), então uma bisseção num
+    // parâmetro só — t ∈ [1, 2] encolhe as filhas (fK = t − 1, o K de
+    // cada partícula vezes fK), t ∈ [0, 1] baixa ρ com uma filha por mãe —
+    // acha o maior pedido que cabe. fK e ρ são contínuos: cada célula
+    // ganha ou perde a SUA última instância com peso que nasce em zero,
+    // em degraus de uma célula, e nenhum uniforme salta.
+    const rho0 = Galaxy.RHO_LOD;
+    const teto = Galaxy.TETO_LOD;
+    const params = (t: number): [number, number] =>
+      t >= 1 ? [rho0, Math.min(t - 1, 1)] : [rho0 * Math.max(t, 1e-3), 0];
+    let rho = rho0;
+    let fK = 1;
+    if (this.planejarCom(rho, fK) > teto) {
+      let lo = 0;
+      let hi = 2;
+      for (let i = 0; i < 12; i++) {
+        const t = (lo + hi) / 2;
+        [rho, fK] = params(t);
+        if (this.planejarCom(rho, fK) > teto) hi = t;
+        else lo = t;
+      }
+      [rho, fK] = params(lo);
+      this.planejarCom(rho, fK);
+    }
+    u.uRho.value = rho;
+    u.uFracK.value = fK;
+    this.lodStats.rho = rho;
+    this.lodStats.fK = fK;
+    this.lodStats.cpuMs = performance.now() - t0;
+  }
+
+  /** Um plano com o alvo ρ e a fração fK das filhas; devolve as instâncias. */
+  private planejarCom(rho: number, fK: number) {
     const L = this.lod!;
     const u = this.brightMat.uniforms;
     const cam = u.uCamPos.value as THREE.Vector3;
     const f = (u.uScreenH.value as number) / (2 * (u.uTanHalfFov.value as number));
-    const rho = Galaxy.RHO_LOD;
-    const kmax = Galaxy.KMAX_LOD;
-    const fr = Galaxy.frustum.setFromProjectionMatrix(
-      Galaxy.mTmp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
-    );
+    const fr = Galaxy.frustum;
     const caixa = Galaxy.caixaTmp;
     const zc =
       (cam.x - GAL.GC_POS.x) * EZ.x + (cam.y - GAL.GC_POS.y) * EZ.y + (cam.z - GAL.GC_POS.z) * EZ.z;
     const ss = THREE.MathUtils.smoothstep;
+    const kmax = Galaxy.KMAX_LOD;
     let pais = 0, instancias = 0, desenhos = 0;
     const D = L.inicio.length;
     for (let d = 0; d < D; d++) {
@@ -826,7 +874,7 @@ export class Galaxy {
       const kPerto = this.lod!.fade * ss(dMin, 300, 1500);
       const kLonge = this.lod!.fade * ss(dMax, 300, 1500);
       const qMax = mMax >= 1 ? 1 : 1 - kPerto * (1 - mMax);
-      const kMax = Math.min(kmax, 1 + kLonge * Math.max(mMax - 1, 0));
+      const kMax = Math.min(kmax, (1 + kLonge * Math.max(mMax - 1, 0)) * fK);
       const n = Math.min(disp, Math.ceil(qMax * disp) + 1);
       const k = Math.max(1, Math.ceil(kMax - 1e-4));
       L.counts[d] = n;
@@ -836,7 +884,7 @@ export class Galaxy {
     this.lodStats.pais = pais;
     this.lodStats.instancias = instancias;
     this.lodStats.desenhos = desenhos;
-    this.lodStats.cpuMs = performance.now() - t0;
+    return instancias;
   }
 
   /** Os desenhos por célula, com o programa e os atributos que o three acabou de ligar. */

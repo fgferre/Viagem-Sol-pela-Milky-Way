@@ -12,10 +12,12 @@ Onde: ramo `galaxia-particulas`, cópia `../Viagem-galaxia`. Tudo atrás de `?ga
 
 - [x] Ensaio 5: células de 1 kpc com nível de detalhe (prefixo com brilho compensado longe, filhas perto), um só desenho por quadro. De longe ficou MAIS LEVE que a galáxia de hoje (de-cima 36 contra 65 ms); `saindo` deixou de ser areia; `media` continua granulada e a meia distância custa ~100 ms (≈4,4 ms por milhão de pontos: o limite é o número de pontos no WebGL, não a conta de poeira). Sem saltos nas 6 fotos do voo; cintilação em movimento não testada (precisa de vídeo). Botões: `?lodrho= ?lodk= ?lodesp= ?lodmd=0`.
 
+- [x] Ensaio 6: a cor volta pela luz de cada população, sem tingir (jovens 16,7 → 27 % da luz, 80 % delas nos braços; H II com lei de luminosidade, 5 606 nós, 2,8 %); teto de pontos `?lodmax=` (5 M). Causa medida do amarelado: o corte das jovens de fora, o disco espesso e a barra só de velhas, e o H II encolhido. Braços azul-brancos, centro quente, entre-braços castanho. Tempos NÃO confiáveis: a máquina estava com carga 90–114 por testes de outro projeto do dono; dois testes estouraram 5 s por isso (não tocados).
+
 ## A fazer, em ordem
-1. Teto de pontos por quadro no modo novo, para nunca pesar mais que a galáxia de hoje (a meia distância fica granulada até o item 6).
+1. Medir peso e rodar `npm run done` com a máquina quieta; o teto é contagem fixa e aperta também de cima, onde já era barato — trocar por orçamento de tempo.
 2. Poeira como nuvens de partículas (hoje: de cima tira 7 % e some; de lado tira 82 % e apaga a metade de lá).
-3. Cor dos braços (ficaram quentes depois do ensaio 3: conferir a fração jovem de fora 0,55 → 0,25) e H II visíveis de cima.
+3. A barra de cima lê como oval e de lado estoura em branco (curva de tom sobre 11 % da luz); nós de H II mais brilhantes saem salmão/brancos. `saindo` ainda bege.
 4. Conferir contra a literatura duas escolhas do ensaio 3: o vão do disco dentro da barra (Freudenreich 1998) e a fração nos braços (0,35).
 5. Filme t=148: os pontos próximos cintilam com o ganho de lado.
 6. WebGPU só para a galáxia, como modo opcional: protótipo que deposita os pontos por compute (o ensaio 5 mediu que a meia distância pede ~20 M de pontos, fora do alcance do WebGL nesta máquina). As células e as regras por tipo já servem. Antes: medir em máquina quieta e gravar vídeo do voo.

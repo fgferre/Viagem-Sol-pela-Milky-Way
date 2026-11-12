@@ -244,12 +244,14 @@ export function buildGalaxy(
   // N_BOJO_REF/N_BULGE deixa a luz do bojo igual em qualquer qualidade.
   const FRACAO_BP = 0.45;
   const N_BOJO_REF = 385_000;
-  // Medido (cinema): bojo 3,7 % → 11 % (núcleo + barra das lâminas: 11,5 %),
-  // H II 1,1 % → 3 %, e o disco fecha o fluxo TOTAL das partículas igual
+  // Medido (cinema, em Y): bojo 3,7 % → 11 % (núcleo + barra das lâminas:
+  // 11,5 %), nós H II 3 % (K_HII_FLUXO, o fluxo médio de um nó; K_HII fica
+  // só nos aglomerados), e o disco fecha o fluxo TOTAL das partículas igual
   // ao de sempre — o GANHO_DAS_LAMINAS (galaxy.ts) continua valendo.
   const K_BOJO = 3.31;
-  const K_DISCO = 1.161;
+  const K_DISCO = 1.138;
   const K_HII = 2.92;
+  const K_HII_FLUXO = 235;
   const N_LOCAL = 14000;
   // Preenchimento inferido só completa o lado sem catálogo. O layer
   // observado já contém 1.413 regiões WISE; milhares de nós sintéticos
@@ -366,6 +368,10 @@ export function buildGalaxy(
   }
   // 1,68 = os quatro braços plenos (0,42·2 por par): ali metade no braço
   const SOMA_PLENA = 1.68;
+  // fração jovem do disco fino = JOVEM_0 + JOVEM_1·outward (ver a cor)
+  const JOVEM_0 = 0.1;
+  const JOVEM_1 = 0.45;
+  const JOVEM_NO_BRACO = 0.8;
   const seedArm = P ? new Uint8Array(N_SEED) : null;
   const sementesDeBraco = P ? new Int32Array(N_SEED) : null;
   const sementesFora = P ? new Int32Array(N_SEED) : null;
@@ -533,9 +539,26 @@ export function buildGalaxy(
     // Elas também carregavam brilho escondido (Y de 0,717 a 0,900): quem
     // decide brilho é `lum` logo abaixo, não a escolha de cor. blackbodyLinear
     // é Y ≈ 1 por construção, então isso some junto.
-    // Só-partículas: inclinação 0,25 (as lâminas pesam ~30 % de jovens
-    // na borda; 0,55 dava 62 % e ilhas azuis); o espesso é só velho.
-    const jovem = !espesso && p < 0.07 + (P ? 0.25 : 0.55) * outward;
+    // Só-partículas: A LUZ JOVEM MORA NOS BRAÇOS. A fração jovem do disco
+    // fino (contagem = luz: toda população tem o mesmo fluxo médio por
+    // partícula) cresce para fora como antes, mas não cai igual em braço e
+    // interbraço: JOVEM_NO_BRACO dela é o excesso do braço, e o velho fica
+    // quase liso (o braço da luz velha é fraco: contraste K de 1,2–2 em
+    // espirais tardias, contra o Hα e o UV quase só nos braços). Gigantes
+    // seguem 20 % em todo lugar; o espesso é só velho. Medido no ensaio 6:
+    // jovens 30 % da luz do disco (eram 19 %, a inclinação 0,25 + o espesso
+    // e a barra só velhos), braço mais azul que o interbraço.
+    let jovem: boolean;
+    if (!P) jovem = p < 0.07 + 0.55 * outward;
+    else if (espesso || !somaDoBraco) jovem = false;
+    else {
+      const fJ = JOVEM_0 + JOVEM_1 * outward;
+      const a =
+        FRACAO_NO_BRACO *
+        Math.min(1, somaDoBraco[Math.min(nTabela - 1, Math.round(r / PASSO_TABELA))] / SOMA_PLENA);
+      const noBraco = Math.min(0.8, (fJ * JOVEM_NO_BRACO) / Math.max(a, 1e-6));
+      jovem = p < (inArm ? noBraco : Math.max(0, (fJ - a * noBraco) / (1 - a)));
+    }
     if (espesso) [cr, cg, cb] = p < 0.7 ? POP_OLD : POP_GIANT;
     else if (jovem) [cr, cg, cb] = POP_YOUNG;
     else if (p < 0.80) [cr, cg, cb] = POP_OLD;
@@ -817,16 +840,35 @@ export function buildGalaxy(
     // VISUAL_TARGETS.md já registra como beco. Cor decide matiz, alpha decide
     // fluxo, e nunca os dois na mesma medição.
     if (rnd() < 0.62) {
-      put(
-        lx, ly, lz,
-        POP_HII[0], POP_HII[1], POP_HII[2],
-        P ? 10 + rnd() * 30 : 30 + rnd() * 110,
-        // De 33 kpc um nó de 70 pc tem ~2,7 px: para LER como ponto
-        // vermelho precisa de contraste, não de tamanho — aumentar o
-        // raio só o dissolveria no fundo.
-        (0.05 + rnd() * 0.115) * armWeight * 0.459 * (P ? K_HII * (1 - THREE.MathUtils.smoothstep(r, 14_100, 16_800)) : 1),
-        4
-      );
+      if (P) {
+        // Só-partículas: POUCOS E FORTES. Luminosidade dN/dL ∝ L^−2 (a
+        // função de luminosidade Hα das H II de espirais, Kennicutt 1989),
+        // três décadas (1–1000, média 1 + ln 1000): os ~3 % acima de 30
+        // levam metade da luz e são os nós que se veem de fora. Raio de
+        // Strömgren ∝ L^⅓ (10–100 pc). O fluxo é alpha·tamanho², então
+        // alpha = L/tamanho²: o nó ganha luz por ser luminoso, não grande.
+        const L = Math.min(1000, 1 / Math.max(rnd(), 0.001));
+        const tam = 10 * Math.cbrt(L);
+        put(
+          lx, ly, lz,
+          POP_HII[0], POP_HII[1], POP_HII[2],
+          tam,
+          ((K_HII_FLUXO * L) / (7.9078 * tam * tam)) * armWeight *
+            (1 - THREE.MathUtils.smoothstep(r, 14_100, 16_800)),
+          4
+        );
+      } else {
+        put(
+          lx, ly, lz,
+          POP_HII[0], POP_HII[1], POP_HII[2],
+          30 + rnd() * 110,
+          // De 33 kpc um nó de 70 pc tem ~2,7 px: para LER como ponto
+          // vermelho precisa de contraste, não de tamanho — aumentar o
+          // raio só o dissolveria no fundo.
+          (0.05 + rnd() * 0.115) * armWeight * 0.459,
+          4
+        );
+      }
     } else {
       put(
         lx, ly, lz,
