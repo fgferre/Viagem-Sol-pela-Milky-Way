@@ -74,6 +74,8 @@ import { RETRATO_2026 } from '../world/planetas/retrato2026';
 import type { IdRetrato } from '../world/planetas/retrato2026';
 import { escalaDaUi, larguraDeCss } from '../../lib/uiScale';
 import { Escolha } from './escolha';
+import { estrelaVisitavelPorNome, type EstrelaVisitavel } from '../../lib/atlas/estrelasVisitaveis';
+import { raioDaEstrelaPc } from '../world/corpoDeEstrela';
 // o centro do frame heliocêntrico mora no vizinho neutro
 // (`cinematic/enquadramento.ts`): exportá-lo DAQUI fazia o único ciclo de
 // import de valor do `src/` — a escada precisa da `Escolha`, e a escolha
@@ -169,6 +171,8 @@ export class Escada {
   private ver: VerDaEscada = 'orbita';
   /** o foco vivo é uma ESTRELA (fora da escada de corpos)? */
   private focoEstrela = false;
+  /** QUAL estrela, quando `focoEstrela` — nome e posição do último foco */
+  private estrelaFocada: { nome: string | null; pos: THREE.Vector3 } | null = null;
   /** o corpo em FOCO no Atlas (id do retrato) — só a escada escreve;
    *  o director o lê para o selo (os passos de `stopsDoGloboEmFoco` são dele). */
   focoCorpoId: string | null = null;
@@ -243,6 +247,11 @@ export class Escada {
     gigantes: () => readonly { corpo: GiganteResolvido }[];
     /** o corpo cuja LINHA de órbita está sob o ponteiro (0..1), ou null */
     corpoNaOrbita: (x: number, y: number) => string | null;
+    /** o piloto "toda estrela é um lugar" está ligado (`?estrelaslugar`)? */
+    estrelasComLugar?: () => boolean;
+    /** onde o CORPO da estrela com lugar está (a posição do ponto do
+     *  catálogo, não a do nome arredondada) — null se ainda não sabe */
+    posicaoDaEstrelaComLugar?: (nome: string) => THREE.Vector3 | null;
   };
 
   constructor(dono: {
@@ -414,6 +423,7 @@ export class Escada {
     this.enquadrarAgora();
     this.focoCorpoId = null;
     this.focoEstrela = true;
+    this.estrelaFocada = { nome, pos: pos.clone() };
     this.ver = 'orbita';
     this.pinoDeBoot = null;
     this.events.onFoco(nome);
@@ -481,14 +491,20 @@ export class Escada {
       // continua o de estrela: quem quiser desce a roda até o gás.
       const centroGalactico = pos.distanceToSquared(GAL.GC_POS) < 1;
       const raioEstelar = raioDeEnquadramentoEstelar(pos.length());
+      // a estrela que TEM CORPO (piloto de 12/11) deixa a roda descer até
+      // a superfície: o piso do zoom é o raio físico, como no Sol
+      const piloto =
+        nome && (this.fios.estrelasComLugar?.() ?? false) ? estrelaVisitavelPorNome(nome) : null;
       this.atlas.focar(pos, centroGalactico ? RAIO_DO_CENTRO_GALACTICO_PC : raioEstelar, pos, {
         rampa: this.rampaDaEscada(),
         ...(centroGalactico ? { polo: GAL.NGP, pisoRaio: raioEstelar } : {}),
+        ...(piloto ? { pisoRaio: raioDaEstrelaPc(piloto) } : {}),
       });
       this.enquadrarAgora();
       // estrela em foco: nenhum CORPO em foco — o ΔEV do selo cala
       this.focoCorpoId = null;
       this.focoEstrela = true;
+      this.estrelaFocada = { nome, pos: pos.clone() };
       this.ver = 'orbita';
       this.events.onFoco(nome);
       this.emitirEscada();
@@ -696,19 +712,35 @@ export class Escada {
       // dos corpos CONSTRUÍDOS, nunca redigitada: a Terra (F2a), os
       // planetas rochosos (F3) e os gigantes (F4)
       podeAproximar:
-        degrau === 'orbita' &&
+        (degrau === 'estrela' && this.ver === 'orbita' && this.pilotoEmFoco() !== null) ||
+        (degrau === 'orbita' &&
         (this.focoCorpoId === 'earth' ||
           this.rochosos.some((r) => r.corpo.planeta && r.corpo.id === this.focoCorpoId) ||
           this.rochosos.some(
             (r) => !r.corpo.planeta && HELIO_SEM_PONTO.some((a) => a.id === r.corpo.id) && r.corpo.id === this.focoCorpoId
           ) ||
-          this.gigantes.some((g) => g.corpo.planeta && g.corpo.id === this.focoCorpoId)),
+          this.gigantes.some((g) => g.corpo.planeta && g.corpo.id === this.focoCorpoId))),
     };
   }
 
   /** o `ver` vivo, para o `urlComMomento` espelhar `?ver=corpo`. */
   get verDaEscada(): VerDaEscada {
     return this.ver;
+  }
+
+  /** o NOME da estrela em foco no Atlas (ou null) — quem prepara o corpo
+   *  dela antes da câmera chegar (`estrelasNoQuadro.ts`) lê daqui */
+  get nomeDaEstrelaEmFoco(): string | null {
+    return this.phase === 'atlas' && this.focoEstrela ? (this.estrelaFocada?.nome ?? null) : null;
+  }
+
+  /** a estrela em foco, se ela é do piloto e o piloto está ligado */
+  private pilotoEmFoco(): { dados: EstrelaVisitavel; pos: THREE.Vector3; nome: string } | null {
+    if (!this.focoEstrela || !this.estrelaFocada?.nome || !(this.fios.estrelasComLugar?.() ?? false)) return null;
+    const dados = estrelaVisitavelPorNome(this.estrelaFocada.nome);
+    if (!dados) return null;
+    const pos = this.fios.posicaoDaEstrelaComLugar?.(this.estrelaFocada.nome) ?? this.estrelaFocada.pos;
+    return { dados, pos, nome: this.estrelaFocada.nome };
   }
 
   get escadaViva(): EstadoDaEscada {
@@ -886,6 +918,10 @@ export class Escada {
    */
   aproximarDoCorpo() {
     if (this.phase !== 'atlas') return;
+    if (this.focoEstrela) {
+      this.aproximarDaEstrela();
+      return;
+    }
     const id = this.focoCorpoId ?? 'earth';
     // só corpos com mesh resolvido descem: a Terra, os planetas da F3
     // e os gigantes da F4 (a lista viva dos construídos)
@@ -939,6 +975,28 @@ export class Escada {
     // troca o conserto do `?ver=corpo` acima ENTREGARIA o globo com a
     // legenda apagada.
     this.events.onFoco(nomeDoCorpo(id));
+    this.emitirEscada();
+    this.teletransportou();
+  }
+
+  /**
+   * O DEGRAU "CORPO" DE UMA ESTRELA COM LUGAR (piloto de 12/11): a
+   * estrela em foco enquadrada pelo raio FÍSICO (o equatorial), com a
+   * mesma lente de todo enquadramento privilegiado — Betelgeuse enche o
+   * quadro de muito mais longe que Proxima. A direção é a de repouso do
+   * foco da estrela (o lado do Sol, com o pino de fase): é a vista "de
+   * casa", e em Vega é quase o polo, como da Terra. Estrela sem corpo
+   * (fora do piloto, ou `?estrelaslugar=0`): no-op, o degrau não existe.
+   */
+  private aproximarDaEstrela() {
+    const p = this.pilotoEmFoco();
+    if (!p) return;
+    const raio = raioDaEstrelaPc(p.dados);
+    this.atlas.focar(p.pos, raio, p.pos, { rampa: this.rampaDaEscada(), pisoRaio: raio });
+    this.enquadrarAgora();
+    this.focoCorpoId = null;
+    this.ver = 'corpo';
+    this.events.onFoco(p.nome);
     this.emitirEscada();
     this.teletransportou();
   }
@@ -1259,6 +1317,11 @@ export class Escada {
     }
     if (degrau === 'corpo') {
       this.focarNoCorpo(this.focoCorpoId!, 'orbita');
+      return true;
+    }
+    // do corpo de uma estrela, sobe para o foco da estrela
+    if (degrau === 'estrela' && this.ver === 'corpo' && this.estrelaFocada) {
+      this.irAte(this.estrelaFocada.pos.clone(), 0, this.estrelaFocada.nome);
       return true;
     }
     this.focarNoSistema();

@@ -915,6 +915,9 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   // ?corpos força o palco dos corpos resolvidos (Onda 6, F0) — par de
   // ?nocorpos, no mesmo idioma: o MESMO binário dos dois lados
   porta('corpos', 'camada de corpos forçada'),
+  // ?estrelaslugar=0 desliga o piloto "toda estrela é um lugar" (12/11):
+  // as quatro estrelas voltam a ser só ponto — a bancada do "antes"
+  porta('estrelaslugar', 'corpo das estrelas visitáveis desligado'),
   // --- camadas: TODAS derivadas da tabela única ---------------------
   // Redigitá-las aqui foi o buraco do item 33: quatro flags só-URL
   // (nosun/nodust/noco/noforge) viviam no registro sem linha em

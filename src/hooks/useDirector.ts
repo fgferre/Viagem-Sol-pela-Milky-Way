@@ -65,6 +65,12 @@ export function escolherAlvo(
   if (!alvo) return;
   if (entrada.tipo === 'estrela') {
     alvo.visitarEstrela(entrada.estrela);
+    // a estrela COM LUGAR (piloto de 12/11) tem o degrau do corpo; nas
+    // outras `aproximarDoCorpo` é no-op e o `?ver=corpo` cai na órbita
+    if (ver === 'corpo') {
+      alvo.aproximarDoCorpo();
+      if (raios) alvo.pinarEmRaios(raios);
+    }
     return;
   }
   // UM LUGAR não é estrela, mas o verbo é o mesmo: um ponto do céu com
