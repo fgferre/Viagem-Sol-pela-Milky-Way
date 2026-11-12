@@ -1666,8 +1666,15 @@ export class Orbitas {
     const podeCeder = quadro.larguraPx > 0 && quadro.alturaPx > 0 && borda > raio;
     for (const linha of this.linhas) {
       const alvo = linha.nucleo.value;
-      linha.cessao = 1;
       alvo.set(0, 0, 0, 0);
+      // O RECUO PERTO DO PAI (12/11/2026): de perto de Saturno as linhas
+      // das luas cruzavam os anéis como riscos claros. A órbita da lua não
+      // MORRE no pai (a lei do Eyes abaixo continua): ela recua a
+      // `PISO_PERTO_DO_PAI` quando o globo do pai enche o quadro, e volta
+      // a 1 antes de a vista ser a do sistema. A gaveta continua mandando:
+      // camada desligada não desenha nada.
+      const recuo = linha.corpo.centro === 'sun' ? 1 : this.recuoPertoDoPai(linha.corpo.centro, posicoes, camera, tanHalfFov);
+      linha.cessao = recuo;
       // ONDE ESTÁ O CORPO DESTA LINHA — duas fontes, cada uma com o seu
       // índice, e nenhuma conta refeita aqui: os dez do retrato vêm de
       // `Planetas.posicoes` e as 21 luas do MESMO array que os rótulos
@@ -1695,7 +1702,7 @@ export class Orbitas {
       // continua em 1).
       const raioDoCorpo = this.raioDe(linha.corpo.id);
       if (raioDoCorpo !== null) {
-        linha.cessao = cessaoPorTamanhoAparente(
+        linha.cessao = recuo * cessaoPorTamanhoAparente(
           raioAparenteNdc(
             raioDoCorpo,
             this.pontoDoCorpo.distanceTo(camera.position),
@@ -1703,13 +1710,6 @@ export class Orbitas {
           )
         );
       }
-      // O RECUO PERTO DO PAI (12/11/2026): de perto de Saturno as linhas
-      // das luas cruzavam os anéis como riscos claros. A órbita da lua não
-      // MORRE no pai (a lei do Eyes acima continua): ela recua a
-      // `PISO_PERTO_DO_PAI` quando o globo do pai enche o quadro, e volta
-      // a 1 antes de a vista ser a do sistema. A gaveta continua mandando:
-      // camada desligada não desenha nada.
-      if (daLua) linha.cessao *= this.recuoPertoDoPai(linha.corpo.centro, posicoes, camera, tanHalfFov);
       // O DISCO fica só com os dez do retrato, e a razão é a do
       // cabeçalho: o defeito que ele conserta é o PONTO fotométrico
       // sobre a própria elipse, e as luas não o têm nesta escala.
