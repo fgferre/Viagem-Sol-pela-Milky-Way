@@ -32,6 +32,7 @@ struct U {
   gc: vec3f, escala: f32,
   dims: vec2f, expo: f32, tetoPx: f32,
   n: u32, k: u32, borrifo: u32, base: u32,
+  filtro: u32, pad0: u32, pad1: u32, pad2: u32,
 }
 struct P { pos: vec3f, r: f32, g: f32, b: f32, size: f32, alpha: f32 }
 
@@ -299,16 +300,35 @@ fn tela(linear: vec3f) -> vec4f {
 }
 `;
 
+// ?filtro=1: a soma passa por um [1 2 1]² antes do tom. Conserva o fluxo;
+// alarga a pegada de cada partícula em ~1 px e divide por ~4 o salto que
+// uma partícula dá ao trocar de pixel.
+const FILTRO = /* wgsl */ `
+@fragment
+fn fs(v: VT) -> @location(0) vec4f {
+  let p = vec2i(v.pos.xy);
+  if (u.filtro == 0u) { return tela(ler(p)); }
+  var s = vec3f(0.0);
+  for (var j = -1; j <= 1; j++) {
+    for (var i = -1; i <= 1; i++) {
+      s += ler(p + vec2i(i, j)) * f32((2 - abs(i)) * (2 - abs(j)));
+    }
+  }
+  return tela(s / 16.0);
+}
+`;
+
 export const WGSL_TOM_DO_ACUMULADOR = /* wgsl */ `
 ${COMUM}
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var<storage, read> acc: array<u32>;
 ${TOM}
-@fragment
-fn fs(v: VT) -> @location(0) vec4f {
-  let o = (u32(v.pos.y) * u32(u.dims.x) + u32(v.pos.x)) * 4u;
-  return tela(vec3f(f32(acc[o]), f32(acc[o + 1u]), f32(acc[o + 2u])) / u.escala);
+fn ler(p: vec2i) -> vec3f {
+  let q = clamp(p, vec2i(0), vec2i(u.dims) - 1);
+  let o = u32(q.y * i32(u.dims.x) + q.x) * 4u;
+  return vec3f(f32(acc[o]), f32(acc[o + 1u]), f32(acc[o + 2u])) / u.escala;
 }
+${FILTRO}
 `;
 
 export const WGSL_TOM_DA_TEXTURA = /* wgsl */ `
@@ -316,8 +336,8 @@ ${COMUM}
 @group(0) @binding(0) var<uniform> u: U;
 @group(0) @binding(1) var soma: texture_2d<f32>;
 ${TOM}
-@fragment
-fn fs(v: VT) -> @location(0) vec4f {
-  return tela(textureLoad(soma, vec2i(v.pos.xy), 0).xyz);
+fn ler(p: vec2i) -> vec3f {
+  return textureLoad(soma, clamp(p, vec2i(0), vec2i(u.dims) - 1), 0).xyz;
 }
+${FILTRO}
 `;

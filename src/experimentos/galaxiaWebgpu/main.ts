@@ -56,6 +56,10 @@ interface Pedido {
   /** a luz (extinção) de cada mãe é renovada a cada `fatia` quadros, uma
    *  fatia das mães por quadro; 1 = todas em todo quadro */
   fatia?: number;
+  /** 1 = a soma passa por um filtro [1 2 1]² antes do tom */
+  filtro?: number;
+  /** foto em JPEG (quadros de vídeo) em vez de PNG */
+  jpeg?: boolean;
 }
 
 const q = new URLSearchParams(window.location.search);
@@ -74,6 +78,7 @@ const estado = {
   modo: (q.get('modo') === 'quadrados' ? 'quadrados' : 'deposito') as Modo,
   borrifo: q.has('borrifo') ? Number(q.get('borrifo')) : 1,
   fatia: Number(q.get('fatia')) || 1,
+  filtro: Number(q.get('filtro')) || 0,
   expo: Number(q.get('expo')) || 1.436, // exposição 1,02 do app na régua do neutro
 };
 const SORTEIOS = Math.max(1, Number(q.get('sorteios')) || 1);
@@ -155,7 +160,7 @@ async function iniciar() {
   const bufEsp = gpu.createBuffer({ size: total * 4, usage: USO.storage | USO.copyDst });
   gpu.queue.writeBuffer(bufEsp, 0, esp);
   const bufLuz = gpu.createBuffer({ size: total * 16, usage: USO.storage });
-  const bufU = gpu.createBuffer({ size: 176, usage: USO.uniform | USO.copyDst });
+  const bufU = gpu.createBuffer({ size: 192, usage: USO.uniform | USO.copyDst });
   const texTau = gpu.createTexture({
     size: [N_TAU, N_TAU],
     format: 'r16float',
@@ -259,7 +264,7 @@ async function iniciar() {
       : {};
 
   const camera = new THREE.PerspectiveCamera(58, 1, 1, 400000);
-  const dadosU = new ArrayBuffer(176);
+  const dadosU = new ArrayBuffer(192);
   const uF = new Float32Array(dadosU);
   const uI = new Uint32Array(dadosU);
 
@@ -291,6 +296,7 @@ async function iniciar() {
     uI[42] = estado.borrifo;
     const porFatia = Math.ceil(total / estado.fatia);
     uI[43] = (nQuadro++ % estado.fatia) * porFatia;
+    uI[44] = estado.filtro;
     gpu.queue.writeBuffer(bufU, 0, dadosU);
 
     const grupos = Math.ceil(total / 256);
@@ -384,7 +390,7 @@ async function iniciar() {
     ocupado++;
     aplicar(pedido);
     for (let i = 0; i < estado.fatia; i++) quadro();
-    const url = tela.toDataURL('image/png');
+    const url = tela.toDataURL(pedido.jpeg ? 'image/jpeg' : 'image/png', 0.95);
     await gpu.queue.onSubmittedWorkDone();
     ocupado--;
     return url;

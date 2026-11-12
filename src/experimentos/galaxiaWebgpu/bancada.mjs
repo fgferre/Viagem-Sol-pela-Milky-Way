@@ -6,7 +6,8 @@
 //   node src/experimentos/galaxiaWebgpu/bancada.mjs grao    <saida.json> <webgl.png> x,y,lado x,y,lado
 //   node src/experimentos/galaxiaWebgpu/bancada.mjs foto    <pasta> <vista|todas> <k> [deposito|borrifo|quadrados] [w] [h]
 // Variáveis: SORTEIOS (?sorteios=N), JEITOS (lista), KS (filhas por mãe) e FATIA (?fatia=). Fotos nunca sobrescrevem: ganham -v2, -v3…
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir, loadavg } from 'node:os';
 import { resolve } from 'node:path';
 import {
@@ -134,8 +135,34 @@ try {
       );
       console.log('gravada', destino);
     }
+  } else if (tarefa === 'pares') {
+    // quadros do voo em pares vizinhos (t e t + 1/60 s) e o mesmo t duas
+    // vezes, para medir o que muda entre quadros: pares <pasta> <nome> <pedido JSON>
+    const [pasta, nome, pedido] = args;
+    for (const t of [5, 15, 25, 35, 45]) {
+      for (const [sufixo, dt] of [['a', 0], ['a2', 0], ['b', 1 / 60]]) {
+        const url = await avaliar(`window.__gw.fotoDoVoo(${t + dt}, ${pedido})`);
+        writeFileSync(resolve(pasta, `${nome}-${t}-${sufixo}.png`), Buffer.from(url.split(',')[1], 'base64'));
+      }
+    }
+  } else if (tarefa === 'video') {
+    // uma volta do voo, quadro a quadro: video <saida.mp4> <pedido JSON> [fps] [segundos]
+    const [saida, pedido, fps = '30', segundos = '50'] = args;
+    if (existsSync(saida)) throw new Error(`${saida} já existe: escolha outro nome`);
+    const quadros = resolve(tmpdir(), `gw-video-${process.pid}`);
+    mkdirSync(quadros);
+    const n = Number(fps) * Number(segundos);
+    for (let i = 0; i < n; i++) {
+      const url = await avaliar(`window.__gw.fotoDoVoo(${i / Number(fps)}, ${JSON.stringify({ ...JSON.parse(pedido), jpeg: true })})`);
+      writeFileSync(resolve(quadros, `${String(i).padStart(5, '0')}.jpg`), Buffer.from(url.split(',')[1], 'base64'));
+    }
+    const r = spawnSync('ffmpeg', ['-nostdin', '-hide_banner', '-loglevel', 'error', '-framerate', fps,
+      '-i', resolve(quadros, '%05d.jpg'), '-c:v', 'libx264', '-crf', '18', '-pix_fmt', 'yuv420p', saida], { encoding: 'utf8' });
+    rmSync(quadros, { recursive: true, force: true });
+    if (r.status !== 0) throw new Error(`ffmpeg falhou: ${r.stderr}`);
+    console.log('gravado', saida);
   } else {
-    throw new Error('tarefa: tempos | grao | foto');
+    throw new Error('tarefa: tempos | grao | foto | pares | video');
   }
 } finally {
   fechar();
