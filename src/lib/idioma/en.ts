@@ -350,7 +350,6 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.destino.nosso-lugar': 'Where the Sun sits in the disc',
   'busca.destino.pleiades': 'The Seven Sisters, up close',
   'busca.destino.hyades': 'The open cluster nearest the Sun',
-  'busca.destino.nebulosa-de-orion': 'Where stars are born',
   'busca.destino.ana-de-sagitario': 'A galaxy being swallowed by ours',
 
   // ---- the gesture walkthrough -------------------------------------

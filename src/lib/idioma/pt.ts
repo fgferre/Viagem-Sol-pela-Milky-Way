@@ -373,7 +373,6 @@ export const PT = {
   'busca.destino.nosso-lugar': 'Onde o Sol fica no disco',
   'busca.destino.pleiades': 'As Sete Irmãs, de perto',
   'busca.destino.hyades': 'O aglomerado mais próximo do Sol',
-  'busca.destino.nebulosa-de-orion': 'Onde nascem estrelas',
   'busca.destino.ana-de-sagitario': 'Uma galáxia sendo engolida pela nossa',
 
   // ---- o convite dos gestos (`components/Spotlight.tsx`) ------------

@@ -71,17 +71,16 @@ describe('destinosDaBusca', () => {
       'via-lactea',
       'nosso-lugar',
       'pleiades',
-      'nebulosa-de-orion',
       'hyades',
       'sagittarius-a',
       'ana-de-sagitario',
     ]);
   });
 
-  it('as categorias contam 6/3/7', () => {
+  it('as categorias contam 6/3/6', () => {
     expect(sistema.length).toBe(6);
     expect(estrelas.length).toBe(3);
-    expect(galaxia.length).toBe(7);
+    expect(galaxia.length).toBe(6);
   });
 
   it('o cartão de um corpo leva à distância da prévia dele; estrela e lugar não pedem nenhuma', () => {

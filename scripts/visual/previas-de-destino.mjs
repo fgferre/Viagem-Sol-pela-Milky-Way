@@ -1,5 +1,5 @@
 // Serve: dono — uma imagem-prévia por destino da busca (cartão da lista)
-// Custo: ~0,3 min por destino (16 capturas de Chrome, uma por vez)
+// Custo: ~0,3 min por destino (15 capturas de Chrome, uma por vez)
 //
 // Lote 6 · Prévias (PLAN-UI.md §3.4, bullet "Prévias"): cada cartão da
 // busca ganha uma miniatura carregada só com a caixa aberta e vazia
@@ -9,7 +9,7 @@
 // Corpo/anéis inteiros no quadro para planetas e luas; a estrela no
 // contexto do céu do Atlas para os alvos estelares e o centro galáctico.
 //
-// Orçamento: ≤ 40 KB por arquivo, ≤ 480 KB no total (16 arquivos).
+// Orçamento: ≤ 40 KB por arquivo, ≤ 480 KB no total (15 arquivos).
 //
 //   node scripts/visual/previas-de-destino.mjs             # todos
 //   node scripts/visual/previas-de-destino.mjs earth mars  # só estes (reajustar enquadramento)
@@ -61,7 +61,6 @@ const DESTINOS = [
   { id: 'via-lactea', foco: 'via-lactea' },
   { id: 'nosso-lugar', foco: 'nosso-lugar' },
   { id: 'pleiades', foco: 'pleiades' },
-  { id: 'nebulosa-de-orion', foco: 'nebulosa-de-orion' },
   { id: 'hyades', foco: 'hyades' },
   { id: 'ana-de-sagitario', foco: 'ana-de-sagitario' },
 ];

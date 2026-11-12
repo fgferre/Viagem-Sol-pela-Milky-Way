@@ -153,8 +153,8 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
       },
       {
         campo: 'naCena',
-        pt: 'as nove nomeadas se espalham de 342 a 462 anos-luz na linha de visada: é o erro das paralaxes da era Hipparcos, não o aglomerado. Vistas do lado do Sol a forma é a do céu; de lado, viram um risco.',
-        en: 'the nine named stars spread from 342 to 462 light-years along the line of sight: that is the error of Hipparcos-era parallaxes, not the cluster. Seen from the Sun’s side the shape is the one in the sky; from the side, they become a streak.',
+        pt: 'as distâncias do catálogo para estas estrelas são medidas antigas e espalham o aglomerado ao longo da linha de visada (de 342 a 462 anos-luz); por isso a vista é do lado do Sol, onde a forma é a do céu.',
+        en: 'the catalogue’s distances for these stars are older measurements and spread the cluster along the line of sight (342 to 462 light-years); that is why the view is from the Sun’s side, where the shape is the one in the sky.',
         procedencia: 'derivado',
         fonte: CATALOGO_DA_CASA,
       },
@@ -210,6 +210,13 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
         procedencia: 'derivado',
         fonte: CATALOGO_DA_CASA,
       },
+      {
+        campo: 'naCena',
+        pt: 'as distâncias do catálogo para estas estrelas são medidas antigas e espalham um pouco o aglomerado ao longo da linha de visada.',
+        en: 'the catalogue’s distances for these stars are older measurements and spread the cluster a little along the line of sight.',
+        procedencia: 'derivado',
+        fonte: CATALOGO_DA_CASA,
+      },
     ],
   },
   {
@@ -227,8 +234,8 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     vista: 'doSol',
     distanciaPc: { valor: 414, fonte: 'Menten et al. 2007 (VLBA)' },
     oQueE: {
-      pt: 'Um berçário de estrelas: uma nuvem de hidrogênio acesa por dentro pelas estrelas jovens do Trapézio. É a região de formação de estrelas de grande massa mais próxima do Sol, visível a olho nu na espada de Órion.',
-      en: 'A stellar nursery: a hydrogen cloud lit from inside by the young stars of the Trapezium. It is the nearest region forming massive stars, visible to the naked eye in Orion’s sword.',
+      pt: 'O gás da nebulosa ainda não está desenhado: o que se vê aqui são as estrelas da espada e do cinturão de Órion. A nebulosa de verdade é um berçário de estrelas: uma nuvem de hidrogênio acesa por dentro pelas estrelas jovens do Trapézio. É a região de formação de estrelas de grande massa mais próxima do Sol, visível a olho nu na espada de Órion.',
+      en: 'The nebula’s gas is not drawn yet: what you see here are the stars of Orion’s sword and belt. The real nebula is a stellar nursery: a hydrogen cloud lit from inside by the young stars of the Trapezium. It is the nearest region forming massive stars, visible to the naked eye in Orion’s sword.',
     },
     fatos: [
       {
@@ -254,8 +261,8 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
       },
       {
         campo: 'naCena',
-        pt: 'a nebulosa em si ainda não está desenhada: o gás do app perto de Órion é genérico e a nuvem dele mais próxima fica a ~200 anos-luz daqui. O lugar e a distância são reais; o brilho que se vê não é o de M42.',
-        en: 'the nebula itself is not drawn yet: the app’s gas near Orion is generic and its nearest cloud is ~200 light-years from here. The place and the distance are real; the glow you see is not M42’s.',
+        pt: 'o gás da nebulosa ainda não está desenhado; o que se vê são as estrelas da espada e do cinturão de Órion. O lugar e a distância são reais.',
+        en: 'the nebula’s gas is not drawn yet; what you see are the stars of Orion’s sword and belt. The place and the distance are real.',
         procedencia: 'artistico',
         fonte: MODELO_DA_CASA,
       },

@@ -51,11 +51,13 @@ const LISTA: readonly {
   { id: 'rigil-kentaurus', categoria: 'estrelas', consulta: 'Rigil Kentaurus' },
   // OS LUGARES DO CÉU (céu profundo, 12/11/2026): a galáxia de fora
   // abre a aba (o cartão grande); depois o endereço do Sol, os lugares
-  // perto de casa e, por último, os dois que ficam do outro lado do centro
+  // perto de casa e, por último, os dois que ficam do outro lado do centro.
+  // A NEBULOSA DE ÓRION NÃO TEM CARTÃO (decisão de 12/11): o gás dela não
+  // está desenhado, e cartão sugerido tem de entregar o que mostra — ela
+  // segue na busca pelo nome, com a ficha que confessa isso
   { id: 'via-lactea', categoria: 'galaxia', consulta: 'via-lactea' },
   { id: 'nosso-lugar', categoria: 'galaxia', consulta: 'nosso-lugar' },
   { id: 'pleiades', categoria: 'galaxia', consulta: 'pleiades' },
-  { id: 'nebulosa-de-orion', categoria: 'galaxia', consulta: 'nebulosa-de-orion' },
   { id: 'hyades', categoria: 'galaxia', consulta: 'hyades' },
   { id: 'sagittarius-a', categoria: 'galaxia', consulta: 'sagittarius-a' },
   { id: 'ana-de-sagitario', categoria: 'galaxia', consulta: 'ana-de-sagitario' },
