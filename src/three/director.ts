@@ -61,6 +61,7 @@ import { ClaraoDeAsas } from './world/clarao';
 import { SondaDaLente } from './lente/sondaDaLente';
 import { HeroStars } from './world/heroStars';
 import { Galaxy, GAL, dentroDoDisco } from './world/galaxy';
+import { GalaxiasVizinhas, sortearVizinhas } from './world/vizinhas';
 import type { CartographyMode } from './world/galaxy';
 import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
@@ -648,6 +649,8 @@ export class Director {
    *  `null` com `?estrelaslugar=0` ou antes do catálogo */
   private estrelasNoQuadro: EstrelasNoQuadro | null = null;
   private galaxy!: Galaxy;
+  /** as galáxias vizinhas (pilar 3): nascem junto da carga, em paralelo */
+  private vizinhas: GalaxiasVizinhas | null = null;
   /** os 11 pontos fotométricos do domínio profundo (Onda 4, D3) —
    *  camada IRMÃ do `sun.group`, nunca filha dele */
   private planetas: Planetas | null = null;
@@ -2052,6 +2055,9 @@ export class Director {
     this.catalogos = cartOn ? galactic : null;
     this.cartMode = cartOn ? cartMode : 'off';
     this.tierDoMundo = this.engine.quality;
+    // AS VIZINHAS sorteiam no trabalhador DELAS, em paralelo com a Via
+    // Láctea: ~0,2 s contra os segundos da carga, então ninguém espera
+    const vizinhasSorteadas = sortearVizinhas(1);
     const carga = await montarCarga({
       catalogos: this.catalogos,
       tier: this.tierDoMundo,
@@ -2065,6 +2071,8 @@ export class Director {
     this.structureMapTexture = carga.structureMapTexture;
     this.galaxy = carga.galaxy;
     this.vestirGalaxia(this.galaxy);
+    this.vizinhas = new GalaxiasVizinhas(await vizinhasSorteadas);
+    if (this.disposed) return;
     // congela as lâminas (estáticas) em texturas — depois do modo
     await this.stage('layers');
     if (this.disposed) return;
@@ -2149,6 +2157,7 @@ export class Director {
     this.engine.scene.add(this.heroes.group);
     if (this.estrelasNoQuadro) this.engine.scene.add(this.estrelasNoQuadro.group);
     this.engine.scene.add(this.galaxy.group);
+    if (this.vizinhas) this.engine.scene.add(this.vizinhas.group);
     // O COBERTOR DO CAMPO (R2 do item 44, "cada camada com seu cobertor"):
     // as três camadas de estrelas vivem TAMBÉM na CAMADA_DO_CAMPO — é por
     // ela que o ClaraoDoCampo (post.ts) as re-desenha para vestir o kernel
@@ -4451,6 +4460,13 @@ export class Director {
       cam,
       this.engine.renderer.domElement.width
     );
+    // AS VIZINHAS: fora dos filmes (o filme galáctico fica como foi
+    // aprovado); no celular, a fração do tier, com a luz compensada
+    if (this.vizinhas) {
+      const noFilme = this.phase === 'intro' || this.phase === 'journey' || this.phase === 'end';
+      this.vizinhas.setFracao(this.engine.quality === 'performance' ? 0.35 : 1);
+      this.vizinhas.update(cam.position, hPx, tanHalfFov, !noFilme && !this.debug.has('noviz'));
+    }
     // Nuvens moleculares já entram integradas no structureMap da vista
     // externa. Billboards 3D ficam só no disco, onde a paralaxe comunica
     // profundidade; no zoom-out duplicavam o dado como buracos circulares.
@@ -4723,6 +4739,7 @@ export class Director {
     step('heroes', () => this.heroes?.dispose());
     step('estrelasNoQuadro', () => this.estrelasNoQuadro?.dispose());
     step('galaxy', () => this.galaxy?.dispose());
+    step('vizinhas', () => this.vizinhas?.dispose());
     step('observedClouds', () => this.observedClouds?.dispose());
     step('starForges', () => this.starForges?.dispose());
     step('wrappedStars', () => this.wrappedStars?.dispose());

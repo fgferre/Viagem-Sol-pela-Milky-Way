@@ -63,6 +63,9 @@ const DESTINOS = [
   { id: 'pleiades', foco: 'pleiades' },
   { id: 'hyades', foco: 'hyades' },
   { id: 'ana-de-sagitario', foco: 'ana-de-sagitario' },
+  // AS VIZINHAS (pilar 3, 12/11/2026): a chegada de cada uma
+  { id: 'grande-nuvem-de-magalhaes', foco: 'grande-nuvem-de-magalhaes' },
+  { id: 'andromeda', foco: 'andromeda' },
   // A PRIMEIRA SONDA (pilar 4, 12/11/2026): a chegada dela, o Sol de um
   // lado e a sonda do outro
   { id: 'voyager-1', foco: 'voyager-1' },

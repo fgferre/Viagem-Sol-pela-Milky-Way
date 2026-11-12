@@ -10,7 +10,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import type { NamedStar } from '../three/config';
-import { chaveDoFoco, construirIndice, resolverFoco } from './buscaEstrelas';
+import { buscar, chaveDoFoco, construirIndice, resolverFoco } from './buscaEstrelas';
 import type { LugarBuscavel } from './buscaEstrelas';
 import { LUGARES_DO_FILME } from './lugaresDoFilme';
 
@@ -70,8 +70,19 @@ describe('os lugares do céu', () => {
       ['Onde estamos', 'nosso-lugar'],
       ['Sgr dSph', 'ana-de-sagitario'],
       ['sagittarius-a', 'sagittarius-a'],
+      ['LMC', 'grande-nuvem-de-magalhaes'],
+      ['Grande Nuvem', 'grande-nuvem-de-magalhaes'],
+      ['SMC', 'pequena-nuvem-de-magalhaes'],
+      ['M31', 'andromeda'],
+      ['Andromeda Galaxy', 'andromeda'],
     ];
     for (const [consulta, id] of casos) expect(idDe(consulta), consulta).toBe(id);
+  });
+
+  it('"andrômeda" acha a galáxia primeiro e as estrelas da constelação logo abaixo', () => {
+    const r = buscar('Andrômeda', indice, 8);
+    expect(r[0].entrada.tipo === 'lugar' && r[0].entrada.lugar.id).toBe('andromeda');
+    expect(r.slice(1).some((x) => x.entrada.tipo === 'estrela')).toBe(true);
   });
 
   it('a anã de Sagitário está onde a galáxia a desenha', async () => {

@@ -353,6 +353,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.destino.pleiades': 'The Seven Sisters, up close',
   'busca.destino.hyades': 'The open cluster nearest the Sun',
   'busca.destino.ana-de-sagitario': 'A galaxy being swallowed by ours',
+  'busca.destino.grande-nuvem-de-magalhaes': 'Our galaxy’s largest companion',
+  'busca.destino.andromeda': 'The big spiral next door',
 
   // ---- the gesture walkthrough -------------------------------------
   'convite.olhar': 'drag to look around',
@@ -492,6 +494,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.lugar.sombra': 'shadow',
   'ficha.lugar.anelEht': 'what the EHT saw',
   'ficha.lugar.estrelaS2': 'the star S2',
+  'ficha.lugar.luz': 'the light we see left it',
   'ficha.sonda.doSol': 'distance from the Sun',
   'ficha.sonda.luz': 'light takes, from here to Earth',
   'ficha.sonda.velocidade': 'speed relative to the Sun',
@@ -746,6 +749,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'classe.galáxia espiral barrada': 'barred spiral galaxy',
   'classe.vista da galáxia': 'view of the galaxy',
   'classe.galáxia anã': 'dwarf galaxy',
+  'classe.galáxia satélite': 'satellite galaxy',
+  'classe.galáxia espiral': 'spiral galaxy',
   'classe.sonda': 'spacecraft',
   'classe.cometa': 'comet',
   'classe.cometa interestelar': 'interstellar comet',

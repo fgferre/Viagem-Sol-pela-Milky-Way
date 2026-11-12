@@ -376,6 +376,8 @@ export const PT = {
   'busca.destino.pleiades': 'As Sete Irmãs, de perto',
   'busca.destino.hyades': 'O aglomerado mais próximo do Sol',
   'busca.destino.ana-de-sagitario': 'Uma galáxia sendo engolida pela nossa',
+  'busca.destino.grande-nuvem-de-magalhaes': 'A maior companheira da nossa galáxia',
+  'busca.destino.andromeda': 'A grande espiral vizinha',
 
   // ---- o convite dos gestos (`components/Spotlight.tsx`) ------------
   'convite.olhar': 'arraste para olhar em volta',
@@ -523,6 +525,7 @@ export const PT = {
   'ficha.lugar.sombra': 'sombra',
   'ficha.lugar.anelEht': 'o que o EHT viu',
   'ficha.lugar.estrelaS2': 'a estrela S2',
+  'ficha.lugar.luz': 'a luz que vemos saiu de lá',
   'ficha.sonda.doSol': 'distância do Sol',
   'ficha.sonda.luz': 'a luz leva, daqui à Terra',
   'ficha.sonda.velocidade': 'velocidade em relação ao Sol',
@@ -778,6 +781,8 @@ export const PT = {
   'classe.galáxia espiral barrada': 'galáxia espiral barrada',
   'classe.vista da galáxia': 'vista da galáxia',
   'classe.galáxia anã': 'galáxia anã',
+  'classe.galáxia satélite': 'galáxia satélite',
+  'classe.galáxia espiral': 'galáxia espiral',
   'classe.sonda': 'sonda',
   'classe.cometa': 'cometa',
   'classe.cometa interestelar': 'cometa interestelar',
