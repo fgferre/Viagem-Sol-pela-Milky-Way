@@ -158,6 +158,7 @@ import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import { filmeDe, type Filme } from './cinematic/filme';
 import { BlackHolePass } from './world/blackHole';
+import { LenteDoBuracoNegro } from './world/lenteDoBuracoNegro';
 import { loadStarData } from './config';
 import type { NamedStar, StarsMeta } from './config';
 import type { CorpoBuscavel, LugarBuscavel } from '../lib/buscaEstrelas';
@@ -893,6 +894,8 @@ export class Director {
   private sun: StellarBody;
   private dust: Dust;
   private blackHole: BlackHolePass | null = null;
+  /** Sgr A✱ em escala real (fora dos filmes) — ver lenteDoBuracoNegro.ts */
+  private lenteDoBuraco: LenteDoBuracoNegro | null = null;
   private bgColor = new THREE.Color(0x000106);
   /** o filme em cartaz — o que o `play()` toca e o caminho do filme lê
    *  (planos, carga, calendário, dose do Sol, pinos); sem `?filme=`, o
@@ -2106,6 +2109,8 @@ export class Director {
     this.blackHole = new BlackHolePass();
     this.blackHole.setQuality(this.engine.quality);
     this.post.addBlackHole(this.blackHole);
+    this.lenteDoBuraco = new LenteDoBuracoNegro();
+    this.post.addBlackHole(this.lenteDoBuraco);
     this.engine.scene.add(this.stars.points);
     // a SEGUNDA passada do campo (item 37) — a de quem está na frente de
     // todas as nuvens da visada, desenhada depois do quad multiplicativo.
@@ -2206,6 +2211,7 @@ export class Director {
         comNormal: this.nebula.warmupMaterials,
         semNormal: [
           ...(this.blackHole?.warmupMaterials ?? []),
+          ...(this.lenteDoBuraco?.warmupMaterials ?? []),
           ...this.post.warmupMaterials,
         ],
       });
@@ -4307,13 +4313,18 @@ export class Director {
     }
     this.dust.update(cam.position, hPx, time);
     // Sgr A*: só de perto (a extinção real esconde o centro de longe);
-    // as capturas de medição ficam a 24/33 kpc — fade 0, passe desligado
+    // as capturas de medição ficam a 24/33 kpc — fade 0, passe desligado.
+    // DOIS DESENHOS, um por lugar: o FILME guarda o disco inflado de
+    // sempre (fora de escala, declarado em `escala.ts`); o Atlas e o voo
+    // livre têm o buraco em escala real, só com a lente.
+    const foraDoFilme = this.phase === 'atlas' || this.phase === 'free';
     this.blackHole?.updateFrame(
       cam.position,
       cam,
       time,
-      this.hide.has('nobh') ? 0 : 1 - THREE.MathUtils.smoothstep(dGC, 1400, 2400)
+      this.hide.has('nobh') || foraDoFilme ? 0 : 1 - THREE.MathUtils.smoothstep(dGC, 1400, 2400)
     );
+    this.lenteDoBuraco?.updateFrame(cam.position, cam, foraDoFilme && !this.hide.has('nobh'));
     // AUTO-EXPOSIÇÃO: a vista externa é outro assunto fotográfico. A
     // rodada 18 venceu com 1,40 (sem knee); a rodada 20, com o knee
     // asinh no pós e chromsat na extinção assumindo a compressão, mediu
@@ -4636,6 +4647,7 @@ export class Director {
     // mostrador órfão da sessão anterior na tela.
     step('contadorFps', () => this.contadorFps?.descartar());
     step('blackHole', () => this.blackHole?.dispose());
+    step('lenteDoBuraco', () => this.lenteDoBuraco?.dispose());
     // recursos do mundo ANTES do renderer: material descartado depois
     // de renderer.dispose() não chama deleteProgram
     step('stars', () => this.stars?.dispose());
