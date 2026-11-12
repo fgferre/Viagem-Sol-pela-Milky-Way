@@ -147,6 +147,7 @@ export const PT = {
   // `<title>` do documento (`app.titulo`), nunca escrito na tela.
   'marca.nome': 'Mar de Estrelas',
   'contexto.viaLactea': 'Via Láctea',
+  'contexto.grupoLocal': 'Grupo Local',
   'contexto.sistemaSolar': 'Sistema Solar',
 
   // ---- o painel de ajustes (`components/Ajustes.tsx`) ---------------
@@ -827,6 +828,7 @@ export const PT = {
   'unidade.anoLuz': '{n} ano-luz',
   'unidade.anosLuz': '{n} anos-luz',
   'unidade.milAnosLuz': '{n} mil anos-luz',
+  'unidade.milhoesAnosLuz': '{n} milhões de anos-luz',
   'unidade.vezesTerra': '{n}× Terra',
 
   // ---- o significado dos números (Lote 4, item 5/§10) ----------------

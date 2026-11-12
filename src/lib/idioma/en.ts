@@ -148,6 +148,7 @@ export const EN: Record<keyof typeof PT, string> = {
   // "Sea of Stars", the same name `app.titulo` already uses in English.
   'marca.nome': 'Sea of Stars',
   'contexto.viaLactea': 'The Milky Way',
+  'contexto.grupoLocal': 'Local Group',
   'contexto.sistemaSolar': 'Solar System',
 
   // ---- the settings panel ------------------------------------------
@@ -794,6 +795,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'unidade.anoLuz': '{n} light-year',
   'unidade.anosLuz': '{n} light-years',
   'unidade.milAnosLuz': '{n} thousand light-years',
+  'unidade.milhoesAnosLuz': '{n} million light-years',
   'unidade.vezesTerra': '{n}× Earth',
 
   // ---- what the numbers mean (Lote 4, item 5/§10) ---------------------
