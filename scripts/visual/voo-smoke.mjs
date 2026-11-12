@@ -168,23 +168,23 @@ try {
     return JSON.stringify({
       existe: !!document.querySelector('.spotlight'),
       texto: t,
-      conta: (document.querySelector('.convite-conta') || {}).innerText || '',
+      linhas: document.querySelectorAll('.convite-texto-troca').length,
     });
   })()`);
   const doAtlas = JSON.parse(noAtlas);
   conferir(
     doAtlas.existe && !/w a s d/i.test(doAtlas.texto)
-      && new RegExp(`de ${passosDoConvite('PASSOS_DO_CONVITE_DO_ATLAS')}$`, 'i').test(doAtlas.conta.trim()),
+      && doAtlas.linhas === passosDoConvite('PASSOS_DO_CONVITE_DO_ATLAS'),
     `o convite do voo livre não invade o Atlas — lá o roteiro é outro`
-      + ` ("${doAtlas.conta.trim()}" · "${doAtlas.texto}")`
+      + ` (${doAtlas.linhas} linhas · "${doAtlas.texto}")`
   );
   // ...e fechar o do Atlas não marca o do voo livre como visto
   await js(`[...document.querySelectorAll('.convite-linha button')]
-    .find((b) => b.textContent.trim() === 'pular').click()`);
+    .find((b) => b.textContent.trim() === 'entendi').click()`);
   await sessao.ir(`${VOO}&shot=1`);
   conferir(
     (await js("!!document.querySelector('.spotlight')")) === true,
-    'e pular o do Atlas NÃO consome o do voo livre — são duas chaves'
+    'e fechar o do Atlas NÃO consome o do voo livre — são duas chaves'
   );
   await js("localStorage.removeItem('viagem-prefs')");
 

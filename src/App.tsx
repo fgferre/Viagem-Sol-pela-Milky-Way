@@ -67,6 +67,9 @@ import './hud/07-foto.css';
 import './hud/08-ajustes.css';
 import './hud/09-celular.css';
 
+/** quanto o convite do Atlas fica na tela sem gesto nenhum */
+const CONVITE_DO_ATLAS_MS = 30_000;
+
 /**
  * O QUE OS RÓTULOS CONTORNAM — a lista de peças de HUD cujo retângulo o
  * App MEDE e entrega ao `LabelCanvas`.
@@ -750,6 +753,24 @@ export default function App() {
     if (onde === 'voo' && telaDeToque()) return;
     setConvite({ onde, passo: 0 });
   }, [phase]);
+
+  // O CONVITE DO ATLAS SOME SOZINHO (primeiro minuto, 12/11/2026): no
+  // primeiro gesto que ele ensina — girar, escolher um astro, abrir a
+  // Busca — ou depois de meio minuto na tela. Some e fica visto: quem
+  // já agiu aprendeu, e quem leu e não agiu não precisa dele de novo.
+  useEffect(() => {
+    if (convite?.onde !== 'atlas') return;
+    const sumir = () => {
+      gravarPreferencia('conviteAtlasVisto', true);
+      setConvite(null);
+    };
+    if (girouNoAtlas || foco !== null || gaveta === 'busca') {
+      sumir();
+      return;
+    }
+    const id = window.setTimeout(sumir, CONVITE_DO_ATLAS_MS);
+    return () => window.clearTimeout(id);
+  }, [convite?.onde, girouNoAtlas, foco, gaveta]);
 
   const fecharConvite = () => {
     if (convite) {
@@ -1479,9 +1500,8 @@ export default function App() {
 
       {/* O CONVITE — filho DIRETO de .hud-root como todo overlay da casa
           (a regra do .bare-mode só alcança filhos diretos). Cada fase
-          tem o SEU: os três gestos do voo livre apontam a dica de voo;
-          os quatro do Atlas apontam a dica do rodapé do modo. Os dois só
-          existem onde a dica que eles furam está na tela. */}
+          tem o SEU: os três gestos do voo livre apontam a dica de voo,
+          um por vez; as três linhas do Atlas vêm juntas, sem véu. */}
       {convite?.onde === 'voo' && hud.dicaDeVoo && (
         <Convite
           passo={convite.passo}
@@ -1495,6 +1515,7 @@ export default function App() {
           passos={
             telaDeToque() ? PASSOS_DO_CONVITE_DO_ATLAS_TOQUE : PASSOS_DO_CONVITE_DO_ATLAS
           }
+          juntos
           onPasso={(n) => setConvite({ onde: 'atlas', passo: n })}
           onFechar={fecharConvite}
         />

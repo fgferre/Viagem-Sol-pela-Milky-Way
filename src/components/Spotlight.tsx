@@ -80,7 +80,17 @@ function useCaixaDoAlvo(alvo: string | null): Caixa | null {
   return caixa;
 }
 
-export function Spotlight({ alvo, children }: { alvo: string | null; children: ReactNode }) {
+export function Spotlight({
+  alvo,
+  veu = true,
+  children,
+}: {
+  alvo: string | null;
+  /** sem véu, só o cartão: o convite do Atlas não escurece o sistema que
+   *  ele está convidando a explorar */
+  veu?: boolean;
+  children: ReactNode;
+}) {
   const caixa = useCaixaDoAlvo(alvo);
   // a entrada é um fade de opacidade e mais nada — e sob
   // `prefers-reduced-motion` o CSS tira a transição, então a mesma
@@ -118,33 +128,35 @@ export function Spotlight({ alvo, children }: { alvo: string | null; children: R
 
   return (
     <div className={`spotlight${pronto ? ' pronto' : ''}`}>
-      <svg className="spotlight-mascara" aria-hidden="true">
-        <defs>
-          <mask id="spotlight-furo">
-            <rect x="0" y="0" width="100%" height="100%" fill="#fff" />
-            {furo && (
-              <rect className="spotlight-recorte" style={estiloDoRecorte} rx="4" fill="#000" />
-            )}
-          </mask>
-        </defs>
-        <rect
-          x="0"
-          y="0"
-          width="100%"
-          height="100%"
-          fill="rgba(2, 4, 10, 0.72)"
-          mask="url(#spotlight-furo)"
-        />
-        {furo && (
+      {veu && (
+        <svg className="spotlight-mascara" aria-hidden="true">
+          <defs>
+            <mask id="spotlight-furo">
+              <rect x="0" y="0" width="100%" height="100%" fill="#fff" />
+              {furo && (
+                <rect className="spotlight-recorte" style={estiloDoRecorte} rx="4" fill="#000" />
+              )}
+            </mask>
+          </defs>
           <rect
-            className="spotlight-contorno"
-            style={estiloDoRecorte}
-            rx="4"
-            fill="none"
-            stroke="rgba(255, 214, 150, 0.45)"
+            x="0"
+            y="0"
+            width="100%"
+            height="100%"
+            fill="rgba(2, 4, 10, 0.72)"
+            mask="url(#spotlight-furo)"
           />
-        )}
-      </svg>
+          {furo && (
+            <rect
+              className="spotlight-contorno"
+              style={estiloDoRecorte}
+              rx="4"
+              fill="none"
+              stroke="rgba(255, 214, 150, 0.45)"
+            />
+          )}
+        </svg>
+      )}
       <div className={`hud-cartao spotlight-cartao${cartao ? '' : ' solto'}`} style={cartao}>
         {children}
       </div>
@@ -155,12 +167,16 @@ export function Spotlight({ alvo, children }: { alvo: string | null; children: R
 export function Convite({
   passo,
   passos = PASSOS_DO_CONVITE,
+  juntos = false,
   onPasso,
   onFechar,
 }: {
   passo: number;
-  /** o roteiro: os três do voo livre ou os quatro do Atlas */
+  /** o roteiro: os três do voo livre ou as três linhas do Atlas */
   passos?: readonly PassoDoConvite[];
+  /** todas as linhas de uma vez, sem véu, sem contagem e só com
+   *  "entendi" — o convite do Atlas (primeiro minuto, 12/11) */
+  juntos?: boolean;
   onPasso: (n: number) => void;
   onFechar: () => void;
 }) {
@@ -174,6 +190,29 @@ export function Convite({
   // de ensinar. Quem chega pelo teclado não perde nada — o foco só
   // deixa de ser roubado pelo mouse.
   const semRoubarFoco = (e: MouseEvent) => e.preventDefault();
+  if (juntos) {
+    return (
+      <Spotlight alvo={null} veu={false}>
+        <p className="convite-texto convite-juntos" role="status" aria-live="polite">
+          {passos.map((p) => (
+            <span key={p.texto} className="convite-texto-troca">
+              {t(p.texto)}
+            </span>
+          ))}
+        </p>
+        <div className="convite-linha">
+          <button
+            type="button"
+            className="convite-adiante"
+            onMouseDown={semRoubarFoco}
+            onClick={onFechar}
+          >
+            <span>{t('convite.entendi')}</span>
+          </button>
+        </div>
+      </Spotlight>
+    );
+  }
   return (
     <Spotlight alvo={atual.alvo}>
       {/* A REGIÃO VIVA FICA, o TEXTO troca (C5, U48): `key={passo}` mora

@@ -1782,59 +1782,32 @@ try {
   const N_PASSOS = passosDoConvite('PASSOS_DO_CONVITE_DO_ATLAS');
   const convite = JSON.parse(await sessao.js(`JSON.stringify((() => {
     const spot = document.querySelector('.spotlight');
-    const furo = [...document.querySelectorAll('.spotlight-mascara rect')]
-      .map((r) => ({ w: Number(r.getAttribute('width')), h: Number(r.getAttribute('height')) }))
-      .find((r) => Number.isFinite(r.w) && r.w > 0 && r.w < window.innerWidth);
-    const alvo = document.querySelector('[data-spot="girar"]');
     return {
       existe: Boolean(spot),
       filhaDireta: Boolean(spot && spot.parentElement.classList.contains('hud-root')),
-      texto: (document.querySelector('.convite-texto') || {}).innerText || '',
-      conta: (document.querySelector('.convite-conta') || {}).innerText || '',
-      furoLargura: furo ? furo.w : null,
-      alvoLargura: alvo ? Math.round(alvo.getBoundingClientRect().width) : null,
+      linhas: [...document.querySelectorAll('.convite-texto-troca')].map((n) => n.innerText),
+      veu: Boolean(document.querySelector('.spotlight-mascara')),
+      conta: Boolean(document.querySelector('.convite-conta')),
     };
   })())`));
   conferir(
     convite.existe && convite.filhaDireta,
     'atlas: o convite abre na PRIMEIRA entrada e é filho DIRETO de .hud-root'
   );
+  // um cartão só, com todas as linhas juntas, sem véu, furo nem "1 de N"
   conferir(
-    // o `innerText` volta MAIÚSCULO: a caixa alta é do CSS do cartão
-    new RegExp(`^1 de ${N_PASSOS}$`, 'i').test(convite.conta.trim()) && /girar/i.test(convite.texto),
-    `atlas: o convite tem os ${N_PASSOS} gestos do modo ("${convite.conta.trim()}" ·`
-      + ` "${convite.texto}")`
+    convite.linhas.length === N_PASSOS && /clique num nome/i.test(convite.linhas[0] || '')
+      && !convite.veu && !convite.conta,
+    `atlas: o convite mostra as ${N_PASSOS} linhas juntas, sem véu nem contagem`
+      + ` ("${convite.linhas.join('" · "')}")`
   );
-  // A DICA PERMANENTE SAIU DO ATLAS (item A1.3, relatório de UI de
-  // 09/09) — e com ela os quatro `data-spot` que o furo mirava (o
-  // convite já ensina os gestos pelo TEXTO de cada passo, a razão
-  // declarada da obra). Sem alvo real, o Spotlight não abre furo — a
-  // prova que cobrava "furo ancorado no alvo" agora cobra o oposto: nem
-  // um nem outro existem, e o cartão nasce `solto` (sem `top`/`left`
-  // calculados a partir de um retângulo que não há).
-  conferir(
-    convite.furoLargura === null && convite.alvoLargura === null,
-    `atlas: sem a dica permanente não há alvo para o furo — o convite`
-      + ` segue só pelo texto de cada passo (furo ${convite.furoLargura},`
-      + ` alvo ${convite.alvoLargura})`
-  );
-  // "continuar" até o penúltimo clique chega ao último passo, e "entendi"
-  // fecha e grava a chave PRÓPRIA — não a do voo livre
-  for (let i = 0; i < N_PASSOS - 1; i++) {
-    await sessao.js(`[...document.querySelectorAll('.convite-linha button')]
-      .find((b) => b.textContent.trim() === 'continuar').click()`);
-    await dorme(120);
-  }
-  const noUltimo = await sessao.js(
-    "(document.querySelector('.convite-conta')||{}).innerText||''"
-  );
+  // "entendi" fecha e grava a chave PRÓPRIA — não a do voo livre
   await sessao.js(`[...document.querySelectorAll('.convite-linha button')]
     .find((b) => b.textContent.trim() === 'entendi').click()`);
   await dorme(200);
   const prefs = await sessao.js("window.localStorage.getItem('viagem-prefs') || ''");
   conferir(
-    new RegExp(`^${N_PASSOS} de ${N_PASSOS}$`, 'i').test(noUltimo.trim())
-      && (await sessao.js("!!document.querySelector('.spotlight')")) === false
+    (await sessao.js("!!document.querySelector('.spotlight')")) === false
       && /"conviteAtlasVisto":true/.test(prefs)
       && !/"conviteVisto":true/.test(prefs),
     `atlas: o "entendi" fecha e grava a chave PRÓPRIA (${prefs})`

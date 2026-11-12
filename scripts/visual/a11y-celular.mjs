@@ -245,41 +245,25 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUi
   await s.js("window.localStorage.removeItem('viagem-prefs')");
   await s.ir(`atlas=1&${PIN}`);
   await dorme(300);
-  const passos = [];
   const N_PASSOS = passosDoConvite('PASSOS_DO_CONVITE_DO_ATLAS_TOQUE');
-  for (let i = 0; i < N_PASSOS; i++) {
-    passos.push(JSON.parse(await s.js(`JSON.stringify({
-      texto: (document.querySelector('.convite-texto') || {}).innerText || '',
-      conta: (document.querySelector('.convite-conta') || {}).innerText || '',
-      alvo: (() => {
-        const r = [...document.querySelectorAll('.spotlight-mascara rect')]
-          .map((n) => Number(n.getAttribute('width')))
-          .find((w) => Number.isFinite(w) && w > 0 && w < innerWidth);
-        return r ?? null;
-      })(),
-    })`)));
-    await s.js(`(() => { const b = [...document.querySelectorAll('.convite-linha button')]
-      .find((x) => /continuar|entendi/.test(x.textContent.trim())); if (b) b.click(); })()`);
-    await dorme(150);
-  }
-  // A DICA PERMANENTE SAIU DO ATLAS (item A1.3, relatório de UI de
-  // 09/09) — e com ela saíram os quatro `data-spot` que o furo do
-  // Spotlight mirava (`girar`/`zoom`/`escolher`/`ir` moravam dentro dela,
-  // App.tsx). O convite CONTINUA ensinando pelo TEXTO de cada passo (a
-  // razão declarada da obra: "o convite já ensina os gestos"); o que ele
-  // perdeu foi o FURO — sem alvo real para medir, `alvo` é `null` nos
-  // quatro passos, e é isso que a prova abaixo passa a cobrar.
+  const convite = JSON.parse(await s.js(`JSON.stringify({
+    linhas: [...document.querySelectorAll('.convite-texto-troca')].map((n) => n.innerText),
+    veu: !!document.querySelector('.spotlight-mascara'),
+  })`));
+  // desde o convite em UM cartão com todas as linhas, não há passos, conta
+  // nem véu: lê-se tudo de uma vez e o "entendi" fecha
   conferir(
-    passos.every((p) => p.texto && p.alvo === null),
-    `convite no telefone: os ${N_PASSOS} passos abrem com texto, sem furo real (a`
-      + ` dica que o furo mirava saiu do Atlas) — `
-      + `${passos.map((p) => `${p.conta.trim()}:${p.alvo}`).join(' · ')}`
+    convite.linhas.length === N_PASSOS && !convite.veu,
+    `convite no telefone: as ${N_PASSOS} linhas aparecem juntas, sem véu`
   );
   conferir(
-    /pinça/i.test(passos[1].texto) && /inclinam/i.test(passos[2].texto)
-      && /toque num nome/i.test(passos[3].texto) && /duas vezes/i.test(passos[4].texto),
-    `convite no telefone: os gestos são os do DEDO — "${passos.map((p) => p.texto).join('" · "')}"`
+    /toque num nome/i.test(convite.linhas[0]) && /duas vezes/i.test(convite.linhas[0])
+      && /pinça/i.test(convite.linhas[1]) && /inclinam/i.test(convite.linhas[1]),
+    `convite no telefone: os gestos são os do DEDO — "${convite.linhas.join('" · "')}"`
   );
+  await s.js(`[...document.querySelectorAll('.convite-linha button')]
+    .find((b) => b.textContent.trim() === 'entendi').click()`);
+  await dorme(150);
   conferir(
     (await s.js("!!document.querySelector('.spotlight')")) === false,
     'convite no telefone: o "entendi" fecha, e as partes seguintes medem o regime'

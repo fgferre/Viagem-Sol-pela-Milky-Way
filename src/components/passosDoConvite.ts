@@ -15,43 +15,26 @@ export const PASSOS_DO_CONVITE: readonly PassoDoConvite[] = [
 ];
 
 /**
- * OS GESTOS DO ATLAS (item 73, 22/08), na ordem em que se aprendem:
- * girar em volta do que está em quadro, aproximar com a roda, inclinar a
- * vista rumo ao horizonte (07/10), escolher outro objeto, ir até ele.
- * SEM ALVO (item A1.3, relatório de UI de 09/09): os quatro apontavam pedaços da dica do rodapé do Atlas
- * (`.free-hint`, `data-spot` no `App`), que saiu do modo — o Spotlight
- * já tolera `alvo: null` (sem recorte, só o véu e o cartão), e é o que
- * os passos usam agora. O ÚLTIMO repete o texto do penúltimo de
- * propósito: escolher e ir são o mesmo botão do mouse, e a dica tinha
- * uma linha só para os dois.
+ * O CONVITE DO ATLAS, numa olhada só (primeiro minuto, 12/11/2026). Eram
+ * cinco passos com "continuar" sob um véu escuro, e o que mais importa —
+ * clicar num nome, a Busca — vinha no quarto: quem chegava girava a vista
+ * sem saber que podia escolher um planeta. Agora são TRÊS LINHAS no MESMO
+ * cartão, o essencial primeiro, sem véu (`Convite` com `juntos`); o
+ * cartão some no primeiro gesto do visitante ou sozinho (`App.tsx`).
+ * Sem `alvo`: nada no HUD do Atlas é apontado, o texto basta.
  */
 export const PASSOS_DO_CONVITE_DO_ATLAS: readonly PassoDoConvite[] = [
-  { alvo: null, texto: 'convite.girar' },
-  { alvo: null, texto: 'convite.roda' },
-  { alvo: null, texto: 'convite.inclinarMouse' },
-  { alvo: null, texto: 'convite.escolherMouse' },
-  { alvo: null, texto: 'convite.irMouse' },
+  { alvo: null, texto: 'convite.atlas.escolherMouse' },
+  { alvo: null, texto: 'convite.atlas.gestosMouse' },
+  { alvo: null, texto: 'convite.atlas.busca' },
 ];
 
-/**
- * OS MESMOS GESTOS, NA LÍNGUA DO DEDO (item 62, etapa 2). Até
- * 2026-08-23 o convite do Atlas era PULADO em tela de toque, e a razão
- * escrita era verdadeira: "o gesto do meio é a RODA, que não existe em
- * tela de toque". Com a PINÇA existindo, ela deixou de ser — e um modo
- * que nunca se apresenta ao visitante de telefone é pior que um convite.
- *
- * SEM ALVO, como o roteiro do mouse (item A1.3, 09/09) — a diferença de
- * estrutura entre os dois roteiros não é mais o `alvo` (nenhum dos oito
- * passos aponta nada), e sim só o TEXTO: no mouse escolher e ir são o
- * MESMO botão ("clique — escolher"); no dedo são dois gestos diferentes,
- * e cada um ganha a própria chave.
- */
+/** OS MESMOS, NA LÍNGUA DO DEDO (item 62): no mouse escolher e ir são o
+ *  mesmo botão; no dedo são toque e toque duplo, e a roda vira a pinça. */
 export const PASSOS_DO_CONVITE_DO_ATLAS_TOQUE: readonly PassoDoConvite[] = [
-  { alvo: null, texto: 'convite.girar' },
-  { alvo: null, texto: 'convite.pinca' },
-  { alvo: null, texto: 'convite.inclinarToque' },
-  { alvo: null, texto: 'convite.escolherToque' },
-  { alvo: null, texto: 'convite.irToque' },
+  { alvo: null, texto: 'convite.atlas.escolherToque' },
+  { alvo: null, texto: 'convite.atlas.gestosToque' },
+  { alvo: null, texto: 'convite.atlas.busca' },
 ];
 
 /**
@@ -59,8 +42,8 @@ export const PASSOS_DO_CONVITE_DO_ATLAS_TOQUE: readonly PassoDoConvite[] = [
  * (item 130): o convite é remontado a cada render, e a frase sai na
  * língua de agora sem que o roteiro precise existir duas vezes.
  *
- * `alvo` é `null` quando o passo NÃO aponta nada — o caso dos quatro
- * passos do Atlas desde que a dica do rodapé saiu do modo (item A1.3,
+ * `alvo` é `null` quando o passo NÃO aponta nada — o caso das linhas
+ * do Atlas desde que a dica do rodapé saiu do modo (item A1.3,
  * 09/09): o `Spotlight` (`Spotlight.tsx`) já tolera a ausência (sem
  * `data-spot` para casar, o furo não nasce e só o véu com o cartão
  * aparecem). Os três do voo livre continuam com alvo: a dica que eles
