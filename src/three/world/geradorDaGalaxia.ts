@@ -10,6 +10,7 @@ import * as THREE from 'three';
 import {
   GALACTIC_MODEL,
   LOCAL_ARM,
+  LOCAL_ARM_EXTERNAL_WEIGHT,
   ALL_ARMS,
   armActivityAtRadius,
   armBreakGain,
@@ -945,4 +946,276 @@ export function buildGalaxy(
   if (P) ordenarPorCelula(bright, brightCount);
 
   return { bright, brightCount };
+}
+
+// ============================================================
+// ?galaxia=particulas — A POEIRA COMO POPULAÇÃO DE NUVENS.
+// Cada nuvem é uma partícula (centro no plano, elipse gaussiana, massa de
+// gás). Elas não são desenhadas como luz: `tauDasNuvens` as soma vistas de
+// cima no mapa τ⊥ que a extinção por partícula já lê (GALAXY_VERT). O perfil
+// vertical é o da camada do shader (gaussiana σ 58 pc com flare, no warp):
+// é a distribuição em z das nuvens por construção, então não se guarda z.
+//
+// Fontes (de memória da literatura, salvo onde diz o arquivo):
+// · κ: N_H/A_V = 1,87e21 cm⁻² (Bohlin 1978, R_V 3,1) ⇒ τ_V = 0,045 por
+//   M☉/pc² de gás total (com hélio ×1,36), escalado pelo gradiente de
+//   metalicidade −0,05 dex/kpc (Luck & Lambert 2011), plano dentro de 4 kpc.
+// · Gás molecular: anel de 4–6 kpc e queda para fora (Heyer & Dame 2015;
+//   Nakanishi & Sofue 2006); quase vazio dentro da barra, salvo as fendas
+//   da barra e a CMZ (Sormani & Barnes 2019; Molinari 2011, ~3e7 M☉).
+// · Nuvens: dN/dM ∝ M^−1,7 (Solomon 1987; Rice 2016; Miville-Deschênes
+//   2017), Σ ≈ 40 M☉/pc² por nuvem (Heyer 2009; Miville-Deschênes 2017).
+// · Fenda na borda INTERNA do braço (choque de densidade, Roberts 1969),
+//   que fecha perto da corrotação das espirais, ~10–11 kpc (Gerhard 2011).
+// · O gás traça os QUATRO braços; as estrelas velhas, o par dominante
+//   (Drimmel 2000; Churchwell 2009) — por isso aqui não há peso de par.
+// · Fendas da barra no bordo que AVANÇA (Athanassoula 1992). A galáxia gira
+//   para θ decrescente nesta base (o Sol, em +X, anda para −Y).
+// ============================================================
+export interface NuvensDePoeira {
+  n: number;
+  /** stride 6: x, y (pc, plano galactocêntrico), σ maior, σ menor (pc),
+   *  ângulo do eixo maior (rad), massa de gás (M☉) */
+  dados: Float32Array;
+  /** massa por componente (M☉), para medir */
+  massas: Record<string, number>;
+}
+
+/** τ_V por M☉/pc² de gás total no raio R (ver as fontes acima) */
+export const kappaDaPoeira = (r: number) =>
+  0.045 * Math.pow(10, -0.05 * (Math.max(r, 4000) - 8150) / 1000);
+
+const SIGMA_DA_NUVEM = 40; // M☉/pc²
+const CORROTACAO_INI = 8000;
+const CORROTACAO_FIM = 12000;
+
+export function gerarNuvensDePoeira(seed = 20260737): NuvensDePoeira {
+  const rnd = mulberry32(seed);
+  const ss = THREE.MathUtils.smoothstep;
+  const nor = () => {
+    const u = Math.max(rnd(), 1e-9);
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rnd());
+  };
+  const lista: number[] = [];
+  const massas: Record<string, number> = {};
+  const massaDoEspectro = (mMin: number, mMax: number) => {
+    const a = -0.7; // 1 − 1,7
+    const lo = Math.pow(mMin, a), hi = Math.pow(mMax, a);
+    return Math.pow(lo + rnd() * (hi - lo), 1 / a);
+  };
+  // nuvem de massa M: raio pela Σ da nuvem, gaussiana de mesma área a meia
+  // altura, alongada q:1 na direção φ
+  const por = (
+    comp: string, x: number, y: number, m: number, phi: number, q: number, sMin = 0
+  ) => {
+    const s = Math.max(0.7 * Math.sqrt(m / (Math.PI * SIGMA_DA_NUVEM)), sMin);
+    lista.push(x, y, s * Math.sqrt(q), s / Math.sqrt(q), phi, m);
+    massas[comp] = (massas[comp] ?? 0) + m;
+  };
+
+  // Σ de gás (M☉/pc², média azimutal). Molecular: anel + exponencial, buraco
+  // dentro da barra. Atômico: plano até 13 kpc, raso na barra.
+  const SIGMA_MOL = 8.5; // em 5 kpc, com hélio
+  const forma = (r: number) =>
+    ss(r, 2600, 3600) *
+    (Math.exp(-(r - 4000) / 4000) + 0.6 * Math.exp(-0.5 * ((r - 5000) / 1000) ** 2));
+  const sigmaMol = (r: number) => (SIGMA_MOL / forma(5000)) * forma(r);
+  const SIGMA_AT = 6.0;
+  const sigmaAt = (r: number) =>
+    SIGMA_AT * (0.2 + 0.8 * ss(r, 2000, 3500)) *
+    (r < 13000 ? 1 : Math.exp(-(r - 13000) / 3000));
+  const R_MAX = 16000;
+  // massa total de um perfil Σ(R) e sorteio de R ∝ Σ·R (rejeição)
+  const massaDoPerfil = (sig: (r: number) => number) => {
+    let s = 0;
+    for (let r = 25; r < R_MAX; r += 50) s += sig(r) * 2 * Math.PI * r * 50;
+    return s;
+  };
+  const picoDoPerfil = (sig: (r: number) => number) => {
+    let p = 0;
+    for (let r = 25; r < R_MAX; r += 50) p = Math.max(p, sig(r) * r);
+    return p;
+  };
+  const sortearR = (sig: (r: number) => number, pico: number) => {
+    for (;;) {
+      const r = rnd() * R_MAX;
+      if (rnd() * pico < sig(r) * r) return r;
+    }
+  };
+
+  // os braços do gás: as quatro famílias com peso igual, os de 3 kpc e o
+  // esporão Local
+  const loc = LOCAL_ARM;
+  const atividadeLocal = (r: number) =>
+    ss(r, loc.gate.risePc[0], loc.gate.risePc[1]) *
+    (1 - ss(r, loc.gate.fallPc[0], loc.gate.fallPc[1]));
+  const NB = ALL_ARMS.length + 1;
+  const thetaDe = (r: number, k: number) =>
+    k < ALL_ARMS.length ? armThetaAtRadius(r, ALL_ARMS[k]) : localArmThetaAtRadius(r);
+  const pesoDe = (r: number, k: number) =>
+    k < ALL_ARMS.length
+      ? armActivityAtRadius(r, ALL_ARMS[k]) * (ALL_ARMS[k].symIndex === undefined ? 0.6 : 1)
+      : atividadeLocal(r) * LOCAL_ARM_EXTERNAL_WEIGHT;
+  const pesos = new Float64Array(NB);
+  const sortearBraco = (r: number) => {
+    let s = 0;
+    for (let k = 0; k < NB; k++) s += pesos[k] = pesoDe(r, k);
+    if (s < 0.05) return -1;
+    let t = rnd() * s, k = 0;
+    while (k < NB - 1 && (t -= pesos[k]) > 0) k++;
+    return k;
+  };
+  // ponto da crista do braço k em r, tangente e normal para DENTRO
+  const crista = (r: number, k: number) => {
+    const th = thetaDe(r, k);
+    const dth = (thetaDe(r + 25, k) - thetaDe(r - 25, k)) / 50;
+    const c = Math.cos(th), s = Math.sin(th);
+    let tx = c - r * s * dth, ty = s + r * c * dth;
+    const tl = Math.hypot(tx, ty);
+    tx /= tl; ty /= tl;
+    // (−ty, tx)·r̂ = −r·θ' < 0: aponta para dentro (θ cresce com R)
+    return { x: r * c, y: r * s, tx, ty, nx: -ty, ny: tx };
+  };
+
+  // ---- 1. gás molecular dos braços: fenda + espalhado + entre-braços ----
+  const massaMol = massaDoPerfil(sigmaMol);
+  const picoMol = picoDoPerfil(sigmaMol);
+  const FRACAO_FENDA = 0.6;
+  const FRACAO_ESPALHADO = 0.25; // o resto (0,15) entre os braços
+  for (let acc = 0; acc < massaMol; ) {
+    const r = sortearR(sigmaMol, picoMol);
+    const u = rnd();
+    const w = armWidthPc(r);
+    let k = -1;
+    if (u < FRACAO_FENDA + FRACAO_ESPALHADO) k = sortearBraco(r);
+    if (k < 0) {
+      // entre os braços (ou raio sem braço): nuvens menores, giro qualquer
+      const m = massaDoEspectro(1e4, 3e5);
+      const th = rnd() * 2 * Math.PI;
+      por('molEntre', r * Math.cos(th), r * Math.sin(th), m, rnd() * Math.PI, 1 + rnd());
+      acc += m;
+      continue;
+    }
+    const cr = crista(r, k);
+    // a fenda fica ~1 largura de Reid para dentro da crista estelar e fecha
+    // na corrotação; o espalhado sai da fenda rio abaixo, pela crista
+    const desloc = w * (1 - ss(r, CORROTACAO_INI, CORROTACAO_FIM));
+    const fenda = u < FRACAO_FENDA;
+    const n = fenda ? desloc + nor() * 0.5 * w : desloc - Math.abs(nor()) * 1.2 * w;
+    const along = nor() * 0.5 * w; // o sorteio em r já espalha ao longo
+    const x = cr.x + cr.nx * n + cr.tx * along;
+    const y = cr.y + cr.ny * n + cr.ty * along;
+    const m = massaDoEspectro(3e4, 5e6);
+    // alongadas ao longo do braço, q 1,5–4 (mais que isso a fenda vira fio
+    // de 1 texel e some na vista de cima)
+    const phi = Math.atan2(cr.ty, cr.tx) + nor() * (fenda ? 0.15 : 0.3);
+    por(fenda ? 'molFenda' : 'molBraco', x, y, m, phi, 1.5 + 2.5 * rnd());
+    acc += m;
+  }
+
+  // ---- 2. gás atômico difuso: nuvens largas e ralas; 30 % nos braços ----
+  const massaAt = massaDoPerfil(sigmaAt);
+  const picoAt = picoDoPerfil(sigmaAt);
+  for (let acc = 0; acc < massaAt; ) {
+    const r = sortearR(sigmaAt, picoAt);
+    const k = rnd() < 0.3 ? sortearBraco(r) : -1;
+    let x: number, y: number, phi: number;
+    if (k >= 0) {
+      const cr = crista(r, k);
+      const n = nor() * 1.5 * armWidthPc(r);
+      x = cr.x + cr.nx * n;
+      y = cr.y + cr.ny * n;
+      phi = Math.atan2(cr.ty, cr.tx);
+    } else {
+      const th = rnd() * 2 * Math.PI;
+      x = r * Math.cos(th);
+      y = r * Math.sin(th);
+      phi = th + Math.PI / 2;
+    }
+    // σ 120–480 pc (log-uniforme), cada uma com ~¼ da Σ local (um meio
+    // morno quase contínuo: ~4 nuvens se sobrepõem), dispersão de fator ~1,6
+    const s = 120 * Math.pow(4, rnd());
+    const m = 0.5 * Math.PI * s * s * sigmaAt(r) * Math.exp(0.5 * nor() - 0.125);
+    por('atomico', x, y, m, phi, 1 + rnd(), s);
+    acc += m;
+  }
+
+  // ---- 3. fendas da barra e CMZ (no referencial da barra) ----
+  const cb = Math.cos(GALACTIC_MODEL.barAngleRad), sb = Math.sin(GALACTIC_MODEL.barAngleRad);
+  const daBarra = (bx: number, by: number) => [bx * cb - by * sb, bx * sb + by * cb];
+  const MASSA_FENDAS_BARRA = 6e7;
+  // paralelas ao eixo no bordo da barra estelar (σ de través 764 pc, acima)
+  // e curvando para dentro até a borda da CMZ (~250 pc) no primeiro terço
+  const L0 = 300, L1 = 4000, D0 = 250, D1 = 850;
+  for (let acc = 0; acc < MASSA_FENDAS_BARRA; ) {
+    const lado = rnd() < 0.5 ? -1 : 1;
+    const t = rnd();
+    const ax = L0 + (L1 - L0) * t;
+    if (rnd() > ss(t, 0, 0.08) * (1 - ss(t, 0.8, 1))) continue;
+    // o bordo que avança: −y' na ponta +x' (a barra gira para θ decrescente)
+    const d = D0 + (D1 - D0) * ss(t, 0, 0.35) + nor() * 80;
+    const [x, y] = daBarra(lado * ax, -lado * d);
+    const dd = ((D1 - D0) * (ss(t + 0.01, 0, 0.35) - ss(t - 0.01, 0, 0.35))) / 0.02;
+    const inclin = Math.atan2(-lado * dd, lado * (L1 - L0));
+    const [tx, ty] = daBarra(Math.cos(inclin), Math.sin(inclin));
+    const m = massaDoEspectro(1e4, 2e6);
+    por('barra', x, y, m, Math.atan2(ty, tx), 2 + 2 * rnd());
+    acc += m;
+  }
+  const MASSA_CMZ = 3e7;
+  for (let acc = 0; acc < MASSA_CMZ; ) {
+    // anel alongado ⊥ à barra (órbitas x2): 120 × 220 pc
+    const a = rnd() * 2 * Math.PI;
+    const [x, y] = daBarra(120 * Math.cos(a) + nor() * 30, 220 * Math.sin(a) + nor() * 30);
+    const m = massaDoEspectro(1e4, 2e6);
+    por('cmz', x, y, m, rnd() * Math.PI, 1 + rnd());
+    acc += m;
+  }
+
+  const dados = new Float32Array(lista);
+  return { n: dados.length / 6, dados, massas };
+}
+
+/**
+ * O MAPA τ⊥ DAS NUVENS: cada nuvem soma, vista de cima, a gaussiana dela com
+ * a integral κ·M exata (pesos normalizados por nuvem; a pegada do texel entra
+ * na largura, então nuvem menor que o texel não some nem estoura). Mesma
+ * convenção do mapa pintado: texel (i, j) em ((i + ½)/N − ½)·2·meia.
+ */
+export function tauDasNuvens(nuvens: NuvensDePoeira, N: number, meia: number): Float32Array {
+  const tau = new Float32Array(N * N);
+  const passo = (2 * meia) / N;
+  const pe2 = (0.4 * passo) ** 2;
+  const d = nuvens.dados;
+  const pesos: number[] = [];
+  for (let c = 0; c < nuvens.n; c++) {
+    const o = c * 6;
+    const cx = d[o], cy = d[o + 1];
+    const a2 = d[o + 2] * d[o + 2] + pe2, b2 = d[o + 3] * d[o + 3] + pe2;
+    const co = Math.cos(d[o + 4]), si = Math.sin(d[o + 4]);
+    const ext = 3 * Math.sqrt(a2);
+    const i0 = Math.max(1, Math.floor((cx - ext + meia) / passo));
+    const i1 = Math.min(N - 2, Math.ceil((cx + ext + meia) / passo));
+    const j0 = Math.max(1, Math.floor((cy - ext + meia) / passo));
+    const j1 = Math.min(N - 2, Math.ceil((cy + ext + meia) / passo));
+    if (i0 > i1 || j0 > j1) continue;
+    pesos.length = 0;
+    let soma = 0;
+    for (let j = j0; j <= j1; j++) {
+      const dy = (j + 0.5) * passo - meia - cy;
+      for (let i = i0; i <= i1; i++) {
+        const dx = (i + 0.5) * passo - meia - cx;
+        const du = dx * co + dy * si, dv = -dx * si + dy * co;
+        const w = Math.exp(-0.5 * (du * du / a2 + dv * dv / b2));
+        pesos.push(w);
+        soma += w;
+      }
+    }
+    if (soma <= 0) continue;
+    const k = (kappaDaPoeira(Math.hypot(cx, cy)) * d[o + 5]) / (passo * passo * soma);
+    let p = 0;
+    for (let j = j0; j <= j1; j++)
+      for (let i = i0; i <= i1; i++) tau[j * N + i] += pesos[p++] * k;
+  }
+  return tau;
 }

@@ -25,6 +25,8 @@ import {
   celulaDaParticula,
   CELULAS_DA_GRADE,
   LADO_DA_CELULA_PC,
+  gerarNuvensDePoeira,
+  tauDasNuvens,
 } from './geradorDaGalaxia';
 import { porCurva } from '../core/engine';
 import type { GalaxyBuffers } from './geradorDaGalaxia';
@@ -56,6 +58,9 @@ export class Galaxy {
   private tauRT: THREE.WebGLRenderTarget | null = null;
   /** a cópia compacta (R16F) do τ⊥ que o laço das partículas lê — ver TAU_COMPACTO_FRAG */
   private tauParticulasRT: THREE.WebGLRenderTarget | null = null;
+  /** ?galaxia=particulas: o τ⊥ somado das NUVENS de poeira (R16F, mesma
+   *  convenção do τ pintado) — no lugar do 8º bake, que não roda */
+  private tauNuvens: THREE.DataTexture | null = null;
   private markerMesh!: THREE.Mesh;
   private dustMap: THREE.Texture;
   private structureMap: THREE.Texture;
@@ -546,7 +551,9 @@ export class Galaxy {
       // 8º bake: o mesmo fragmento com uTauExport=1 grava no alpha o τ
       // das PARTÍCULAS (crista suavizada + termo largo) — o mapa que a
       // extinção por partícula usa. Só a lâmina central precisa dele.
-      if (i === 3) {
+      if (i === 3 && this.soParticulas) {
+        this.tauNuvens = Galaxy.texturaDasNuvens(1024);
+      } else if (i === 3) {
         analytic.uniforms.uTauExport.value = 1;
         const tauRt = new THREE.WebGLRenderTarget(1024, 1024, {
           type: THREE.HalfFloatType,
@@ -628,8 +635,20 @@ export class Galaxy {
 
   /** o bind do τ⊥ num lugar só: a cópia compacta assada ou a 1×1 de repouso. */
   private ligarTauMap() {
-    this.brightMat.uniforms.uTauMap.value =
-      this.showGDust && this.tauParticulasRT ? this.tauParticulasRT.texture : this.tauVazio;
+    const tau = this.tauNuvens ?? this.tauParticulasRT?.texture;
+    this.brightMat.uniforms.uTauMap.value = this.showGDust && tau ? tau : this.tauVazio;
+  }
+
+  /** o τ⊥ das nuvens de poeira (gerarNuvensDePoeira) somado de cima, em meia precisão */
+  private static texturaDasNuvens(N: number) {
+    const tau = tauDasNuvens(gerarNuvensDePoeira(), N, GAL.DISK_RADIUS);
+    const meia = new Uint16Array(N * N);
+    for (let k = 0; k < N * N; k++) meia[k] = THREE.DataUtils.toHalfFloat(tau[k]);
+    const t = new THREE.DataTexture(meia, N, N, THREE.RedFormat, THREE.HalfFloatType);
+    t.minFilter = THREE.LinearFilter;
+    t.magFilter = THREE.LinearFilter;
+    t.needsUpdate = true;
+    return t;
   }
 
   /**
@@ -1045,6 +1064,7 @@ export class Galaxy {
     this.discRTs.forEach((rt) => rt.dispose());
     this.tauRT?.dispose();
     this.tauParticulasRT?.dispose();
+    this.tauNuvens?.dispose();
     this.tauVazio.dispose();
     if (this.ownsDustMap) this.dustMap.dispose();
     this.group.traverse((o) => {

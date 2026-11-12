@@ -398,7 +398,10 @@ void main() {
     // frequência de raspão — a lâmina do plano sobrevivia inteira e a
     // faixa escura ficava rasa (medido: laneDepth 0,12 sem, 0,37 com o
     // piso cheio — que por sua vez tirou o face-on da banda de ruído).
+#ifndef GALAXIA_PARTICULAS
+    // (só-partículas: o difuso já são nuvens do mapa — gerarNuvensDePoeira)
     tp += 0.6 * exp(-rS / 5200.0);
+#endif
     tau += tp * g / (2.5066283 * sigmaD);
   }
   }
