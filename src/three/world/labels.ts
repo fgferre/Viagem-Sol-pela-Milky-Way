@@ -314,6 +314,9 @@ export const PRIORIDADE_DO_ROTULO = {
   /** um COMETA (pilar 4, 12/11/2026): ao lado das sondas — o nome só
    *  aparece perto do Sol ou em foco (`world/cometas.ts`) */
   cometa: 19,
+  /** um EXOPLANETA (12/11/2026): só aparece com o sistema dele ativo,
+   *  e lá ele é o assunto — ao lado das sondas e cometas */
+  exoplaneta: 21,
   estrelaPropria: 10,
   estrelaBayer: 5,
   outros: 1,

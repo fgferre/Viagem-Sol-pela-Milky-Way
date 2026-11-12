@@ -43,6 +43,7 @@ import { gravarPreferencia, lerPreferencias } from './lib/preferencias';
 import { LUGARES_DO_FILME } from './lib/lugaresDoFilme';
 import { SONDAS } from './lib/sondas';
 import { COMETAS } from './lib/cometas';
+import { exoplanetaPorNome } from './lib/exoplanetas';
 import { useDirector, escolherAlvo, LUGARES_DA_BUSCA } from './hooks/useDirector';
 import { useAtalhos } from './hooks/useAtalhos';
 import { useChromeDoFilme } from './hooks/useChromeDoFilme';
@@ -929,6 +930,12 @@ export default function App() {
     [escada.degrau, foco]
   );
 
+  /** O EXOPLANETA EM FOCO (12/11) — o nome é o mesmo nas duas línguas */
+  const exoplanetaEmFoco = useMemo(
+    () => (escada.degrau === 'exoplaneta' && foco ? exoplanetaPorNome(foco) : null),
+    [escada.degrau, foco]
+  );
+
   // A URL COMO ESPELHO (corte 6): o gosto nasce dela e volta para ela
   // pelos handlers do hook — a semântica de sempre, noutro endereço.
   const {
@@ -1025,7 +1032,7 @@ export default function App() {
    * fileira, escrita uma vez: sem alvo em foco não há ficha para abrir, e
    * botão que não faz nada é pior que botão nenhum.
    */
-  const ofereceFicha = Boolean(hud.ficha && foco && (escada.corpoId || escada.degrau === 'estrela' || escada.degrau === 'sonda' || escada.degrau === 'cometa'));
+  const ofereceFicha = Boolean(hud.ficha && foco && (escada.corpoId || escada.degrau === 'estrela' || escada.degrau === 'sonda' || escada.degrau === 'cometa' || escada.degrau === 'exoplaneta'));
 
   /**
    * U11 (C5, PLANO-MOTION-UI.md §12.5) — a linha de rumo só confirma a
@@ -1448,6 +1455,7 @@ export default function App() {
         lugar={lugarEmFoco}
         sonda={sondaEmFoco}
         cometa={cometaEmFoco}
+        exoplaneta={exoplanetaEmFoco}
         jd={tempo?.jd ?? null}
         camaraUa={camera}
         fonte={directorRef.current?.efemerideViva ?? null}

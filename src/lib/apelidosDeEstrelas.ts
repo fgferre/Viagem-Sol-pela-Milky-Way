@@ -38,7 +38,8 @@ export const APELIDOS_DE_ESTRELAS: ReadonlyArray<{
   { nome: 'Vega', pt: [], en: [] },
   { nome: 'Altair', pt: [], en: [] },
   { nome: 'Deneb', pt: [], en: [] },
-  { nome: 'Fomalhaut', pt: [], en: [] },
+  // o 'Fomalhaut b' que não era planeta leva à estrela, cuja ficha conta a história
+  { nome: 'Fomalhaut', pt: ['Fomalhaut b'], en: [] },
   { nome: 'Castor', pt: [], en: [] },
   { nome: 'Mizar', pt: [], en: [] },
   { nome: 'Alcor', pt: [], en: [] },
@@ -52,4 +53,7 @@ export const APELIDOS_DE_ESTRELAS: ReadonlyArray<{
   { nome: 'Saiph', pt: [], en: [] },
   { nome: 'Denebola', pt: [], en: [] },
   { nome: 'Alphard', pt: [], en: ['Solitary One'] },
+  // as anfitriãs de exoplanetas pelo nome de Flamsteed (12/11/2026)
+  { nome: 'Helvetios', pt: ['51 Pegasi', '51 Peg'], en: [] },
+  { nome: 'Copernicus', pt: ['55 Cancri', '55 Cnc'], en: [] },
 ];

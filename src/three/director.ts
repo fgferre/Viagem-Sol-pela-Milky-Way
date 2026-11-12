@@ -53,7 +53,7 @@ import { StarField } from './world/stars';
 import { Nebula } from './world/nebula';
 import { StellarBody, SOL_PARAMS } from './world/stellarBody';
 import { Dust } from './world/dust';
-import type { StarLabel } from './world/labels';
+import type { OclusorDeRotulo, StarLabel } from './world/labels';
 // O CLARÃO DE ASAS (M2): a camada única da óptica das fontes fortes,
 // por orçamento de fluxo — no lugar das 16 heroes de autor. Quem o
 // alimenta por quadro é o módulo do Sol (director/solNoQuadro.ts).
@@ -76,6 +76,8 @@ import { Orbitas, type QuadroEmPx } from './world/orbitas';
 import { TrajetoriasDasSondas } from './world/sondas';
 import { OrbitasDosCometas } from './world/cometas';
 import { CaudasDosCometas } from './world/caudasDosCometas';
+import { SistemasPlanetarios } from './world/exoplanetas';
+import { comAnfitrias } from '../lib/exoplanetas';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
 import { exposicaoDoQuadro, stopsDaVisita } from '../lib/atlas/luzDaVisita';
 import { lerPortaLuz } from './selo';
@@ -661,6 +663,9 @@ export class Director {
   /** os cometas (pilar 4): a linha do que está em foco (`nocometas`) e
    *  a coma e as caudas de partículas dos acesos (`nocaudas`) */
   private orbitasDosCometas: OrbitasDosCometas | null = null;
+  /** os sistemas planetários em volta das anfitriãs (12/11): as
+   *  órbitas e a zona habitável do ativo (`noexoplanetas`) e os planetas */
+  private exoplanetas: SistemasPlanetarios | null = null;
   private caudas: CaudasDosCometas | null = null;
   /** as três medidas do quadro que a camada das órbitas lê, num objeto só e
    *  REUSADO — o tick não aloca (ver `QuadroEmPx`, em `world/orbitas.ts`) */
@@ -1238,10 +1243,39 @@ export class Director {
           ? this.orbitas.corpoNoPonto(x, y, this.engine.camera, window.innerWidth, window.innerHeight)
           : null,
       estrelasComLugar: () => lerPortaEstrelasComLugar(this.debug.get('estrelaslugar')),
-      posicaoDaEstrelaComLugar: (nome) => this.estrelasNoQuadro?.posicaoDe(nome) ?? null,
+      posicaoDaEstrelaComLugar: (nome) => this.posicaoDaAnfitria(nome),
     },
   });
   private disposed = false;
+
+  /**
+   * ONDE A ANFITRIÃ ESTÁ: a posição do corpo da estrela (o ponto do
+   * catálogo), e sem o piloto (`?estrelaslugar=0`) a da lista de nomeadas.
+   */
+  private readonly anfitriasPorNome = new Map<string, THREE.Vector3>();
+  /** os discos que escondem nome: as estrelas com lugar e os exoplanetas */
+  private readonly oclusoresJuntos: OclusorDeRotulo[] = [];
+  private oclusoresDoQuadro(): readonly OclusorDeRotulo[] | undefined {
+    const estrelas = this.estrelasNoQuadro?.oclusores();
+    const planetas = this.exoplanetas?.oclusores();
+    if (!planetas?.length) return estrelas;
+    this.oclusoresJuntos.length = 0;
+    if (estrelas) this.oclusoresJuntos.push(...estrelas);
+    this.oclusoresJuntos.push(...planetas);
+    return this.oclusoresJuntos;
+  }
+  private posicaoDaAnfitria(nome: string): THREE.Vector3 | null {
+    const doCorpo = this.estrelasNoQuadro?.posicaoDe(nome);
+    if (doCorpo) return doCorpo;
+    let pos = this.anfitriasPorNome.get(nome);
+    if (!pos) {
+      const s = this.meta?.named.find((n) => n.n === nome);
+      if (!s) return null;
+      pos = new THREE.Vector3(s.x, s.y, s.z);
+      this.anfitriasPorNome.set(nome, pos);
+    }
+    return pos;
+  }
   /** pré-compilação em voo; o dispose do renderer espera por ela */
   private warmup: Promise<unknown> | null = null;
   /** download disparado no construtor, consumido pelo init */
@@ -1955,7 +1989,10 @@ export class Director {
       cartMode,
     } = await this.assets;
     if (this.disposed) return;
-    this.meta = meta;
+    // as anfitriãs de exoplanetas que o catálogo não nomeia (TRAPPIST-1,
+    // Kepler-186, HD 189733) entram nas nomeadas pela posição medida —
+    // daqui em diante a busca, os rótulos e as fichas as conhecem
+    this.meta = { ...meta, named: comAnfitrias(meta.named) };
     await this.stage('stars');
 
     // expoM0 é o "tempo de exposição": a magnitude aparente cujo pico de
@@ -2183,6 +2220,8 @@ export class Director {
     this.engine.scene.add(this.sondas.group);
     this.orbitasDosCometas = new OrbitasDosCometas();
     this.engine.scene.add(this.orbitasDosCometas.group);
+    this.exoplanetas = new SistemasPlanetarios();
+    this.engine.scene.add(this.exoplanetas.group);
     this.caudas = new CaudasDosCometas();
     this.engine.scene.add(this.caudas.group);
     // O PALCO LOCAL (Onda 6, F0): o grupo dos corpos resolvidos entra
@@ -4054,6 +4093,18 @@ export class Director {
       tempoS: time,
       focoNome: this.escada.nomeDaEstrelaEmFoco,
     });
+    // OS SISTEMAS PLANETÁRIOS, no mesmo ponto: os planetas do sistema
+    // ativo entram no palco antes de o near o ler (world/exoplanetas.ts)
+    if (this.exoplanetas) {
+      this.exoplanetas.ligado = !this.hide.has('noexoplanetas');
+      this.exoplanetas.update({
+        jd: this.maquinaDoTempo.jdVivo,
+        camPos: cam.position,
+        focoSistema: this.phase === 'atlas' ? this.escada.sistemaEmFoco : null,
+        posDe: (nome) => this.posicaoDaAnfitria(nome),
+        palco: this.palco,
+      });
+    }
 
     // OS DOZE CORPOS DO PALCO num laço só (item 63, 22/08): o passo
     // mora em `director/palco.ts`, junto do contrato dos quatro traços
@@ -4517,6 +4568,8 @@ export class Director {
       foco: this.escada.focoCorpoId,
       focoSonda: this.escada.focoSonda,
       focoCometa: this.escada.focoCometa,
+      focoExoplaneta: this.escada.focoExoplaneta,
+      sistemaAtivo: this.exoplanetas?.ativo ?? null,
       jd: this.maquinaDoTempo.jdVivo,
       // a camada "Nomes na tela" (item 82, N2) — lida aqui com as
       // outras dezoito, e entregue pronta ao produtor
@@ -4526,7 +4579,7 @@ export class Director {
       // pela rede (import tardio) e, até lá — ou se a carga falhar —,
       // o corpo focado continua com nome (item 109)
       texto3d: this.rotulos3dLigado && !!this.rotulos3d,
-      oclusoresDeEstrelas: this.estrelasNoQuadro?.oclusores(),
+      oclusoresDeEstrelas: this.oclusoresDoQuadro(),
     });
     // a camada 3D espelha o QUE ESTE QUADRO decidiu desenhar — depois
     // do projetar, para o texto nunca correr um quadro atrás do anel.
@@ -4736,6 +4789,7 @@ export class Director {
     step('sondas', () => this.sondas?.dispose());
     step('cometas', () => {
       this.orbitasDosCometas?.dispose();
+      this.exoplanetas?.dispose();
       this.caudas?.dispose();
     });
     // a beta dos rótulos 3D (item 109) nasce de import tardio e pode nem

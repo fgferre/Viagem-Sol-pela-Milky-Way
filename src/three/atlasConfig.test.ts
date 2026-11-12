@@ -558,13 +558,14 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
     expect(naGaveta.map((c) => c.flag).sort()).toEqual(
       CAMADAS.map((c) => c.flag).sort()
     );
-    expect(naGaveta).toHaveLength(23);
+    expect(naGaveta).toHaveLength(24);
     expect(CAMADAS_POR_FAMILIA.map((g) => g.familia)).toEqual(FAMILIAS_DE_CAMADAS);
     // a TERCEIRA das estrelas é `nonomes` (item 82); no sistema solar,
     // `noorbitas` (item 77) e `noicones` (item 89 — o ícone separado do
     // texto) levam a família a SEIS, `nosondas` (pilar 4) a SETE, e as
-    // duas dos cometas (`nocometas`, `nocaudas`) a NOVE
-    expect(CAMADAS_POR_FAMILIA.map((g) => g.camadas.length)).toEqual([11, 3, 9]);
+    // duas dos cometas (`nocometas`, `nocaudas`) a NOVE; nas estrelas,
+    // `noexoplanetas` (12/11) é a QUARTA
+    expect(CAMADAS_POR_FAMILIA.map((g) => g.camadas.length)).toEqual([11, 4, 9]);
   });
 
   it('a família diz o que a flag desliga — as escalas da casa, não a ordem da linha', () => {
@@ -616,6 +617,8 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
       // era 'nohero' até o M2 — a chave passou a desligar a camada do
       // clarão de asas, e o nome acompanhou o que ela desliga
       'noclarao',
+      // 12/11: o ◎ das órbitas dos exoplanetas
+      'noexoplanetas',
       'nomarker',
       'noplan',
       // item 89: o ◎ dos ícones dos corpos

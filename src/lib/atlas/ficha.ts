@@ -71,6 +71,18 @@ import type { Sonda } from '../sondas';
 import { CONSULTADO_EM, estadoDaSonda, janelaDaSonda } from '../sondas';
 import type { Cometa } from '../cometas';
 import {
+  EXOPLANETAS_CONSULTADOS_EM,
+  FONTE_DA_ZONA_HABITAVEL,
+  HZ_TEFF_VALIDA,
+  INCLINACAO_CONVENCIONAL_GRAUS,
+  ehAnfitriaAcrescentada,
+  geometriaDoPlaneta,
+  sistemaDaEstrela,
+  zonaHabitavel,
+  type Exoplaneta,
+  type SistemaPlanetario,
+} from '../exoplanetas';
+import {
   COMETAS_CONSULTADOS_EM,
   LIMIAR_DE_ATIVIDADE,
   brilhoRelativo,
@@ -132,7 +144,12 @@ export type IdDeSecao =
   /** as três de um COMETA (pilar 4, 12/11/2026) */
   | 'cometa'
   | 'orbitaDoCometa'
-  | 'oCometa';
+  | 'oCometa'
+  /** a do sistema planetário de uma anfitriã, e as duas de um EXOPLANETA
+   *  (12/11/2026) */
+  | 'sistemaPlanetario'
+  | 'exoplaneta'
+  | 'oQueSeVe';
 
 export interface SecaoDaFicha {
   id: IdDeSecao;
@@ -1052,7 +1069,8 @@ export function montarFichaDeEstrela(
   const linhas: (LinhaDaFicha | null)[] = [];
   const piloto = estrela ? estrelaVisitavelPorNome(nome) : null;
   if (estrela) {
-    const CATALOGO = t('ficha.fonte.catalogoHyg');
+    // a anfitriã que o catálogo não nomeia veio do arquivo de exoplanetas
+    const CATALOGO = ehAnfitriaAcrescentada(nome) ? ARQUIVO_DE_EXOPLANETAS() : t('ficha.fonte.catalogoHyg');
     const designacao = designacaoDeBayer(estrela.b, estrela.c);
     const catalogos = [
       estrela.hd === undefined ? null : `HD ${estrela.hd}`,
@@ -1096,7 +1114,7 @@ export function montarFichaDeEstrela(
   const cheias = linhas.filter((l): l is LinhaDaFicha => l !== null);
   const extras: SecaoDaFicha[] =
     estrela && piloto
-      ? [secaoDaCompanheira(piloto, estrela.d), secaoImagemDaEstrela(piloto)].filter(
+      ? [secaoDaCompanheira(piloto, estrela.d), secaoDoSistema(nome, piloto), secaoImagemDaEstrela(piloto)].filter(
           (x): x is SecaoDaFicha => x !== null
         )
       : [];
@@ -1346,6 +1364,182 @@ export function montarFichaDeCometa(
     { id: 'oCometa', titulo: TITULO('oCometa'), linhas: so(fatos) },
   ];
   return { id: `cometa:${cometa.id}`, nome: cometa.nome, classe: classeEmTexto(cometa.classe), secoes };
+}
+
+// ─── OS EXOPLANETAS (12/11/2026) ─────────────────────────────────────────
+
+const ARQUIVO_DE_EXOPLANETAS = (): string =>
+  t('ficha.fonte.arquivoDeExoplanetas', { data: dataNaLingua(EXOPLANETAS_CONSULTADOS_EM) });
+const UA_DE_MERCURIO = 0.387;
+const TERRAS_POR_JUPITER_RAIO = 11.21;
+const TERRAS_POR_JUPITER_MASSA = 317.8;
+
+/** a zona habitável em texto ("0,025–0,050 UA") */
+function zonaEmTexto(e: EstrelaVisitavel): string {
+  const hz = zonaHabitavel(e.teffK.v, e.luminosidadeLsol.v);
+  const casas = hz.foraUA < 1 ? 3 : 2;
+  return t('unidade.ua', {
+    n: `${decimalDoIdioma(hz.dentroUA.toFixed(casas))}–${decimalDoIdioma(hz.foraUA.toFixed(casas))}`,
+  });
+}
+
+function fonteDaZona(e: EstrelaVisitavel): string {
+  return zonaHabitavel(e.teffK.v, e.luminosidadeLsol.v).presa
+    ? `${FONTE_DA_ZONA_HABITAVEL}; ${t('ficha.exo.zonaPresa', {
+        a: inteiroDoIdioma(HZ_TEFF_VALIDA[0]),
+        b: inteiroDoIdioma(HZ_TEFF_VALIDA[1]),
+      })}`
+    : FONTE_DA_ZONA_HABITAVEL;
+}
+
+const METODOS = {
+  transito: 'ficha.exo.metodo.transito',
+  velocidadeRadial: 'ficha.exo.metodo.velocidadeRadial',
+  imagem: 'ficha.exo.metodo.imagem',
+} as const satisfies Record<Exoplaneta['metodo'], string>;
+
+/**
+ * O SISTEMA PLANETÁRIO na ficha da anfitriã: quantos planetas, como
+ * foram achados, a zona habitável e a história — e o que a cena mostra.
+ */
+function secaoDoSistema(nome: string, e: EstrelaVisitavel): SecaoDaFicha | null {
+  const sistema = sistemaDaEstrela(nome);
+  if (!sistema) return null;
+  const ingles = idiomaAtual() === 'en';
+  const arquivo = ARQUIVO_DE_EXOPLANETAS();
+  const n = sistema.planetas.length;
+  const contagem = new Map<Exoplaneta['metodo'], number>();
+  for (const pl of sistema.planetas) contagem.set(pl.metodo, (contagem.get(pl.metodo) ?? 0) + 1);
+  const comoAchados = [...contagem].map(([m, k]) => `${t(METODOS[m])} (${k})`).join(' · ');
+  const letras = sistema.planetas.map((pl) => pl.nome.split(' ').pop()).join(', ');
+  const linhas: (LinhaDaFicha | null)[] = [
+    linha(
+      t('ficha.exo.planetas'),
+      n === 0 ? t('ficha.exo.nenhum') : `${n} (${letras})`,
+      'medido',
+      arquivo
+    ),
+    n > 0 ? linha(t('ficha.exo.comoAchados'), comoAchados, 'medido', arquivo) : null,
+    ...(sistema.cinturoes ?? []).map((c) =>
+      linha(ingles ? c.nome.en : c.nome.pt, emUa(c.aUA), 'medido', c.fonte)
+    ),
+    linha(t('ficha.exo.zonaHabitavel'), zonaEmTexto(e), 'derivado', fonteDaZona(e)),
+    linha(t('ficha.exo.historia'), ingles ? sistema.nota.en : sistema.nota.pt, 'medido', sistema.nota.fonte),
+    linha(t('ficha.cometa.naCena'), t('ficha.exo.sistemaNaCena'), 'derivado', arquivo),
+  ];
+  return { id: 'sistemaPlanetario', titulo: TITULO('sistemaPlanetario'), linhas: linhas.filter((l): l is LinhaDaFicha => l !== null) };
+}
+
+/** "× de Mercúrio" para órbitas curtas, "× da Terra" para as longas */
+function distanciaComparada(aUA: number): string {
+  return aUA < 0.6
+    ? t('ficha.exo.comoMercurio', { ua: emUa(aUA), k: decimalDoIdioma((aUA / UA_DE_MERCURIO).toPrecision(2)) })
+    : t('ficha.exo.comoTerra', { ua: emUa(aUA), k: decimalDoIdioma(aUA.toPrecision(2)) });
+}
+
+/** em Terras até 4, em Júpiteres acima (com as Terras ao lado) */
+function emTerrasOuJupiteres(terras: number, porJupiter: number): string {
+  const jup = terras / porJupiter;
+  return terras < 4 || jup < 0.25
+    ? t('ficha.exo.terras', { v: decimalDoIdioma(terras.toPrecision(3)) })
+    : t('ficha.exo.jupiteres', { v: decimalDoIdioma(jup.toPrecision(3)), terras: inteiroDoIdioma(terras) });
+}
+
+/**
+ * A FICHA DE UM EXOPLANETA. "O planeta" é o que o arquivo sabe, cada
+ * número com o selo e a fonte; "o que se vê aqui" separa o medido (a
+ * órbita), o derivado (a zona habitável) e o convencional ou desconhecido
+ * (a orientação no espaço, a fase sem conjunção publicada, a aparência).
+ */
+export function montarFichaDeExoplaneta(
+  planeta: Exoplaneta,
+  sistema: SistemaPlanetario,
+  estrela: EstrelaVisitavel | null
+): Ficha {
+  const arquivo = ARQUIVO_DE_EXOPLANETAS();
+  const R = planeta.raioTerra;
+  const M = planeta.massaTerra;
+  const hz = estrela ? zonaHabitavel(estrela.teffK.v, estrela.luminosidadeLsol.v) : null;
+  const zona = hz
+    ? planeta.aUA < hz.dentroUA
+      ? t('ficha.exo.zona.dentroDaBorda')
+      : planeta.aUA > hz.foraUA
+        ? t('ficha.exo.zona.alemDaBorda')
+        : t('ficha.exo.zona.dentro')
+    : null;
+  const oPlaneta: (LinhaDaFicha | null)[] = [
+    linha(t('ficha.cometa.periodo'), formatarDuracao(planeta.periodoDias), 'medido', arquivo),
+    // o semieixo sai do período e da massa da estrela; na imagem direta, da órbita vista
+    linha(t('ficha.exo.distancia'), distanciaComparada(planeta.aUA), planeta.metodo === 'imagem' ? 'medido' : 'derivado', arquivo),
+    planeta.e > 0 ? linha(t('ficha.cometa.excentricidade'), decimalDoIdioma(planeta.e.toFixed(3)), 'medido', arquivo) : null,
+    linhaDoNumero(t('ficha.exo.tamanho'), emTerrasOuJupiteres(R.v, TERRAS_POR_JUPITER_RAIO), R),
+    linha(
+      t('ficha.exo.massa'),
+      M.minima
+        ? t('ficha.exo.massaMinima', { v: emTerrasOuJupiteres(M.v, TERRAS_POR_JUPITER_MASSA) })
+        : emTerrasOuJupiteres(M.v, TERRAS_POR_JUPITER_MASSA),
+      M.p,
+      M.fonte
+    ),
+    planeta.teqK === null
+      ? null
+      : linha(
+          t('ficha.exo.temperatura'),
+          `${inteiroDoIdioma(planeta.teqK)} K (${inteiroDoIdioma(planeta.teqK - 273.15)} °C)`,
+          'derivado',
+          t('ficha.exo.fonte.equilibrio')
+        ),
+    estrela && zona ? linha(t('ficha.exo.zonaHabitavel'), `${zona} (${zonaEmTexto(estrela)})`, 'derivado', fonteDaZona(estrela)) : null,
+    linha(t('ficha.exo.descoberta'), `${t(METODOS[planeta.metodo])}, ${planeta.ano}`, 'medido', arquivo),
+    linha(
+      t('ficha.exo.situacao'),
+      t(planeta.contestado ? 'ficha.exo.contestado' : 'ficha.exo.confirmado'),
+      'medido',
+      arquivo
+    ),
+  ];
+  const g = geometriaDoPlaneta(planeta, sistema);
+  const orientacao = t('ficha.exo.orientacao.valor', {
+    i: g.iMedida
+      ? t('ficha.exo.medida', { v: `${decimalDoIdioma(g.iGraus.toFixed(1))}°` })
+      : t('ficha.exo.convencional', { v: `${INCLINACAO_CONVENCIONAL_GRAUS}°` }),
+    nodo: g.nodoMedido
+      ? t('ficha.exo.medida', { v: `${decimalDoIdioma(g.nodoGraus.toFixed(1))}°` })
+      : t('ficha.exo.convencional', { v: '0°' }),
+  });
+  const naCena: (LinhaDaFicha | null)[] = [
+    linha(t('ficha.exo.orbita'), t('ficha.exo.orbita.valor'), 'medido', arquivo),
+    linha(
+      t('ficha.exo.orientacao'),
+      orientacao,
+      g.iMedida && g.nodoMedido ? 'medido' : 'artistico',
+      g.nodoMedido ? (sistema.nodo?.fonte ?? arquivo) : t('ficha.exo.fonte.convencao')
+    ),
+    planeta.tc !== null
+      ? linha(
+          t('ficha.exo.fase'),
+          t(planeta.origemDoTc === 'transito' ? 'ficha.exo.fase.transito' : 'ficha.exo.fase.conjuncao', {
+            data: dataNaLingua(isoDoJd(planeta.tc)),
+          }),
+          'medido',
+          arquivo
+        )
+      : linha(t('ficha.exo.fase'), t('ficha.exo.fase.arbitraria'), 'artistico', t('ficha.exo.fonte.convencao')),
+    estrela ? linha(t('ficha.exo.zonaHabitavel'), t('ficha.exo.zona.naCena'), 'derivado', fonteDaZona(estrela)) : null,
+    planeta.albedo
+      ? linha(t('ficha.exo.aparencia'), t('ficha.exo.aparencia.medida'), 'medido', planeta.albedo.fonte)
+      : linha(t('ficha.exo.aparencia'), t('ficha.exo.aparencia.desconhecida'), 'artistico', t('ficha.exo.fonte.semImagem')),
+  ];
+  const so = (l: (LinhaDaFicha | null)[]) => l.filter((x): x is LinhaDaFicha => x !== null);
+  return {
+    id: `exoplaneta:${planeta.id}`,
+    nome: planeta.nome,
+    classe: classeEmTexto('exoplaneta'),
+    secoes: [
+      { id: 'exoplaneta', titulo: TITULO('exoplaneta'), linhas: so(oPlaneta) },
+      { id: 'oQueSeVe', titulo: TITULO('oQueSeVe'), linhas: so(naCena) },
+    ],
+  };
 }
 
 /**
