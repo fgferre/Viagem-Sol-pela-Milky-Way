@@ -197,6 +197,116 @@ export const COR_B_DO_PERFIL = [0.9996, 0.9589, 0.9424] as const;
 export const ALBEDO_GEO_SATURNO = 0.499;
 
 /**
+ * O QUE O PERFIL MEDIDO NÃO SABE, POR REGIÃO (12/11/2026, pilar 4).
+ *
+ * MEDIDO NO APP, antes desta tabela: com o τ certo do dado mas a MESMA
+ * partícula em todo raio, a face iluminada saía B : divisão : A ≈
+ * 1 : 0,62 : 0,8 (vista de alta abertura, fase baixa, luz linear) — a
+ * divisão de Cassini e o C quase tão claros quanto o B. As fotos dizem
+ * ~1 : 0,2 : 0,7. A causa é a CROMA do dado: cada canal foi normalizado ao
+ * próprio máximo na fonte, então o nível do brilho se perdeu e só a cor
+ * relativa ficou ({@link COR_B_DO_PERFIL}). O albedo da partícula tinha de
+ * voltar de algum lugar, e volta daqui.
+ *
+ * TRÊS COLUNAS, todas DERIVADAS da literatura (de memória do assistente,
+ * não de arquivo do repositório — o selo diz "derivado"), por região, com
+ * fronteiras nos raios clássicos (km):
+ *  - `albedo`: ϖ₀ RELATIVO ao do B. A e B ≈ 0,5–0,6; C e divisão ≈ 0,2–0,3
+ *    (Cuzzi et al. 2009, "Ring particle composition and size
+ *    distribution", em Saturn from Cassini-Huygens; Porco et al. 2005,
+ *    Science 307, 1226): partículas sujas pela poeira de meteoróides.
+ *  - `poeira`: a fração do LOBO PARA A FRENTE ({@link K_DIFRACAO}). Grão de
+ *    mícron espalha para a frente; pedra de cm–m não (o lobo dela tem
+ *    segundos de arco). O D, a borda de fora do A e os vãos são poeirentos
+ *    — é o que acende na contraluz; o miolo do B e do A, não. Antes desta
+ *    tabela o lobo valia o mesmo no anel inteiro, e o B ACENDIA contra o
+ *    Sol, o oposto da foto da Cassini (PIA08329, "In Saturn's Shadow").
+ *  - `fatorTau`: o τ do B no dado sai de opacidade em 8 bits de um
+ *    fotômetro da Voyager (média ≈ 1,9, e 0,7–0,9 no B1); as ocultações da
+ *    Cassini dão B1 ≈ 1–2, B2 ≈ 2–3, B3 > 5 (Colwell et al. 2009, no mesmo
+ *    livro). Dobrar o τ do B preserva a estrutura medida e põe a média na
+ *    ordem certa — é o que deixa o B ESCURO visto por trás.
+ *
+ * O VALOR NUM RAIO é a linha 0 mais os degraus suaves de cada fronteira:
+ * `v = v₀ + Σ (vᵢ − vᵢ₋₁)·smoothstep(kmᵢ − meiaᵢ, kmᵢ + meiaᵢ, km)`, a
+ * mesma conta na CPU ({@link regiaoDoAnelCpu}, o ringshine) e no GLSL
+ * ({@link GLSL_REGIAO_DO_ANEL}), gerado desta tabela — uma fonte só.
+ */
+export const REGIOES_DO_ANEL: readonly {
+  readonly nome: string;
+  readonly km: number;
+  readonly meia: number;
+  readonly albedo: number;
+  readonly poeira: number;
+  readonly fatorTau: number;
+}[] = [
+  { nome: 'D', km: 0, meia: 0, albedo: 0.4, poeira: 1, fatorTau: 1 },
+  { nome: 'C', km: 74490, meia: 150, albedo: 0.42, poeira: 0.25, fatorTau: 1 },
+  // a borda de dentro do B é uma rampa de ~600 km, a de fora é afiada
+  { nome: 'B', km: 91980, meia: 300, albedo: 1, poeira: 0, fatorTau: 2 },
+  { nome: 'divisão de Cassini', km: 117580, meia: 60, albedo: 0.48, poeira: 0.4, fatorTau: 1 },
+  // a RAMPA de fora da divisão (~120 800–122 100 km) já é o A subindo
+  { nome: 'A', km: 121450, meia: 650, albedo: 0.85, poeira: 0.1, fatorTau: 1 },
+  { nome: 'além do A', km: 136775, meia: 60, albedo: 0.6, poeira: 1, fatorTau: 1 },
+];
+
+/**
+ * O SURTO DE OPOSIÇÃO: perto da fase zero o anel acende — sombras mútuas
+ * que somem e retroespalhamento coerente no regolito. Amplitude e largura
+ * de memória (French et al. 2007, PASP 119, 623, fotometria do HST; Déau
+ * et al. 2009): o A e o B sobem ~1,3–1,5× entre 6° e ~0,1° de fase. A
+ * âncora {@link IF_RETRO_DO_GELO} é o I/F de "fase baixa" das sondas
+ * (alguns graus), por isso o surto mora EM CIMA dela e só vale abaixo de
+ * ~3°: a mancha clara em volta da sombra da câmera no anel.
+ */
+export const SURTO_DE_OPOSICAO = 0.4;
+/** largura do surto, em radianos de fase (1°) */
+export const LARGURA_DO_SURTO_RAD = Math.PI / 180;
+
+const suaveCpu = (a: number, b: number, x: number): number => {
+  const t = Math.min(Math.max((x - a) / (b - a), 0), 1);
+  return t * t * (3 - 2 * t);
+};
+
+/** {@link REGIOES_DO_ANEL} num raio, na CPU — o gêmeo do GLSL. */
+export function regiaoDoAnelCpu(km: number): { albedo: number; poeira: number; fatorTau: number } {
+  const [r0, ...resto] = REGIOES_DO_ANEL;
+  let albedo = r0!.albedo;
+  let poeira = r0!.poeira;
+  let fatorTau = r0!.fatorTau;
+  let antes = r0!;
+  for (const r of resto) {
+    const s = suaveCpu(r.km - r.meia, r.km + r.meia, km);
+    albedo += (r.albedo - antes.albedo) * s;
+    poeira += (r.poeira - antes.poeira) * s;
+    fatorTau += (r.fatorTau - antes.fatorTau) * s;
+    antes = r;
+  }
+  return { albedo, poeira, fatorTau };
+}
+
+const glslNum = (x: number): string => {
+  const curto = String(Number(x.toFixed(4)));
+  return curto.includes('.') ? curto : `${curto}.0`;
+};
+
+/** A tabela em GLSL: `regiaoDoAnel(km)` devolve (albedo, poeira, fatorTau). */
+export const GLSL_REGIAO_DO_ANEL = /* glsl */ `
+const float KM_POR_RAIO = ${glslNum(BODY_AXES.saturn[0]!)};
+vec3 regiaoDoAnel(float km) {
+  vec3 v = vec3(${[REGIOES_DO_ANEL[0]!.albedo, REGIOES_DO_ANEL[0]!.poeira, REGIOES_DO_ANEL[0]!.fatorTau].map(glslNum).join(', ')});
+${REGIOES_DO_ANEL.slice(1)
+  .map((r, i) => {
+    const a = REGIOES_DO_ANEL[i]!;
+    const d = [r.albedo - a.albedo, r.poeira - a.poeira, r.fatorTau - a.fatorTau].map(glslNum);
+    return `  v += vec3(${d.join(', ')}) * smoothstep(${glslNum(r.km - r.meia)}, ${glslNum(r.km + r.meia)}, km);`;
+  })
+  .join('\n')}
+  return v;
+}
+`;
+
+/**
  * Anéis U/N/Q/H — raios CITADOS de DADOS-ANEIS-F6.md, em unidades do
  * raio equatorial BODY_AXES. Urano: anel 6 → ε (French24 / PDS-U).
  * Netuno: Le Verrier → Adams (dePater18). Quaoar: Q2R → Q1R (Pereira23)
@@ -364,9 +474,20 @@ float sombraDoAnel(vec3 p) {
   // agora do lado de cá. Três amostras ¼-½-¼ do perfil trocam o degrau
   // por borda; o teto de 0,9 fica, que é dose desta casa.
   float meia = min(abs(t) * uSolAngRad / vao * U_ESCALA, 0.04);
-  float a = texture2D(uMapaAnel, vec2(clamp(u, 0.0, 1.0), 0.5)).a * 0.5
-    + texture2D(uMapaAnel, vec2(clamp(u - meia, 0.0, 1.0), 0.5)).a * 0.25
-    + texture2D(uMapaAnel, vec2(clamp(u + meia, 0.0, 1.0), 0.5)).a * 0.25;
+  vec3 alfas = vec3(
+    texture2D(uMapaAnel, vec2(clamp(u, 0.0, 1.0), 0.5)).a,
+    texture2D(uMapaAnel, vec2(clamp(u - meia, 0.0, 1.0), 0.5)).a,
+    texture2D(uMapaAnel, vec2(clamp(u + meia, 0.0, 1.0), 0.5)).a
+  );
+  // O CAMINHO INCLINADO (12/11/2026): o alfa do dado é a opacidade vista
+  // de CIMA; o raio de Sol atravessa o anel inclinado e enxerga τ/μ₀. Com
+  // o Sol baixo o C e a divisão sombreiam bem mais que o alfa deles — e a
+  // divisão continua sendo a linha clara dentro da sombra do B. O τ leva o
+  // mesmo fator do B que a placa (REGIOES_DO_ANEL).
+  float mu0Sol = max(abs(uDirSolLocal.y), 0.02);
+  vec3 tauInclinado = -log(max(1.0 - alfas, vec3(1.0e-3)))
+    * (regiaoDoAnel(r * KM_POR_RAIO).z / mu0Sol);
+  float a = dot(1.0 - exp(-tauInclinado), vec3(0.5, 0.25, 0.25));
   if (t <= 0.0) return 1.0;
   if (r <= uAnelRaios.x || r >= uAnelRaios.y) return 1.0;
   return 1.0 - a * 0.9;
@@ -456,11 +577,13 @@ float ringshineDoAnel(vec3 n, float ndotl) {
 
 /** `faseDoAnel` do GLSL, na CPU — o integrador do ringshine usa a MESMA
  *  curva que o fragmento do anel, e não uma cópia com outro número. */
-function faseDoAnelCpu(cosTheta: number): number {
+function faseDoAnelCpu(cosTheta: number, poeira: number): number {
   const g2 = G_DO_ANEL * G_DO_ANEL;
   const hg = (1 - g2) * (1 + g2 - 2 * G_DO_ANEL * cosTheta) ** -1.5;
   const retro = (1 - g2) * (1 + g2 + 2 * G_DO_ANEL) ** -1.5;
-  return hg / retro + K_DIFRACAO * Math.max(cosTheta, 0) ** 6;
+  const alfaFase = Math.sqrt(Math.max(2 * (1 + cosTheta), 0));
+  const oposicao = 1 + SURTO_DE_OPOSICAO * Math.exp(-alfaFase / LARGURA_DO_SURTO_RAD);
+  return (hg / retro) * oposicao + K_DIFRACAO * Math.max(cosTheta, 0) ** 6 * poeira;
 }
 
 /** `camadaDeParticulas` do GLSL, na CPU, devolvendo o I/F JÁ NA ÁREA (o
@@ -500,7 +623,7 @@ function anelNaSombraDoGlobo(
 class RingshineDoAnel {
   readonly textura: THREE.DataTexture;
   private readonly bytes: Uint8Array;
-  private readonly aneis: readonly { r: number; tau: number }[];
+  private readonly aneis: readonly { r: number; tau: number; albedo: number; poeira: number }[];
   private readonly kPolar: number;
   private senoEscrito = Number.NaN;
 
@@ -514,7 +637,7 @@ class RingshineDoAnel {
     this.textura.wrapT = THREE.ClampToEdgeWrapping;
     this.textura.needsUpdate = true;
     const caixas = PERFIL_DO_ANEL.caixas;
-    const aneis: { r: number; tau: number }[] = [];
+    const aneis: { r: number; tau: number; albedo: number; poeira: number }[] = [];
     for (let i = 0; i < RINGSHINE_ANEIS; i++) {
       const t = (i + 0.5) / RINGSHINE_ANEIS;
       const idx = Math.min(
@@ -522,9 +645,13 @@ class RingshineDoAnel {
         Math.max(0, Math.round((t * U_PERFIL_ESCALA + U_PERFIL_BASE) * caixas))
       );
       const alfa = (perfil[idx * 4 + 3] ?? 0) / 255;
+      const r = ANEL_SATURNO.rInt + t * (ANEL_SATURNO.rExt - ANEL_SATURNO.rInt);
+      const regiao = regiaoDoAnelCpu(r * BODY_AXES.saturn[0]!);
       aneis.push({
-        r: ANEL_SATURNO.rInt + t * (ANEL_SATURNO.rExt - ANEL_SATURNO.rInt),
-        tau: -Math.log(Math.max(1 - alfa, 1e-3)),
+        r,
+        tau: -Math.log(Math.max(1 - alfa, 1e-3)) * regiao.fatorTau,
+        albedo: regiao.albedo,
+        poeira: regiao.poeira,
       });
     }
     this.aneis = aneis;
@@ -566,8 +693,8 @@ class RingshineDoAnel {
           if (anelNaSombraDoGlobo(ax, az, sx, sy, k)) continue;
           const mu = Math.max(cosEmis, 0.02);
           const cosTheta = (sx * dx + sy * dy) / dist;
-          const iF = camadaDeParticulasCpu(
-            anel.tau, mu0, mu, faseDoAnelCpu(cosTheta), mesmoLado
+          const iF = anel.albedo * camadaDeParticulasCpu(
+            anel.tau, mu0, mu, faseDoAnelCpu(cosTheta, anel.poeira), mesmoLado
           );
           soma += iF * cosInc * ((anel.r * largura * dPsi * 2 * cosEmis) / (dist * dist));
         }
@@ -643,6 +770,7 @@ ${GLSL_NORMAL_ELIPSOIDE}
 ${GLSL_SOMBRA_ECLIPSE}
 ${GLSL_LUZ_DA_VISITA}
 ${GLSL_VEU_DE_SATURNO}
+${GLSL_REGIAO_DO_ANEL}
 ${GLSL_SOMBRA_ANEL_NO_PLANETA}
 ${GLSL_RINGSHINE_NO_GLOBO}
 void main() {
@@ -748,6 +876,8 @@ const float G_DO_ANEL = ${G_DO_ANEL};
 // sobrevive a um pixel: a LARGURA aqui é de cinema (expoente 6, o
 // mesmo que a casa já usava), a presença é física.
 const float K_DIFRACAO = ${K_DIFRACAO};
+const float LARGURA_DO_SURTO = ${glslNum(LARGURA_DO_SURTO_RAD)};
+const float SURTO_DE_OPOSICAO = ${glslNum(SURTO_DE_OPOSICAO)};
 
 // opacidade e profundidade óptica são a mesma coisa em duas línguas:
 // a placa guarda α = 1 − e^{−τ} visto de cima.
@@ -770,8 +900,14 @@ float hgDoAnel(float cosTheta) {
   float retro = (1.0 - g2) * pow(1.0 + g2 + 2.0 * G_DO_ANEL, -1.5);
   return hg / retro;
 }
-float faseDoAnel(float cosTheta) {
-  return hgDoAnel(cosTheta) + K_DIFRACAO * pow(max(cosTheta, 0.0), 6.0);
+// poeira: a fração do lobo para a frente (REGIOES_DO_ANEL; 1 nos anéis
+// procedurais, que ficam como eram). surto: a amplitude do surto de
+// oposição (0 nos procedurais). A fase α sai sem acos: 1 + cosθ = 1 − cos α
+// ≈ α²/2 na janela estreita em que o surto vale alguma coisa.
+float faseDoAnel(float cosTheta, float poeira, float surto) {
+  float alfaFase = sqrt(max(2.0 * (1.0 + cosTheta), 0.0));
+  float oposicao = 1.0 + surto * exp(-alfaFase / LARGURA_DO_SURTO);
+  return hgDoAnel(cosTheta) * oposicao + K_DIFRACAO * pow(max(cosTheta, 0.0), 6.0) * poeira;
 }
 
 // x = brilho ONDE a camada cobre, em unidades da âncora de retro;
@@ -1024,6 +1160,7 @@ uniform float uDafnisLon;
 varying vec3 vPos;
 const float PI = 3.14159265358979;
 ${GLSL_CONSTANTES_DO_ANEL}
+${GLSL_REGIAO_DO_ANEL}
 vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_SOMBRA_DO_PLANETA_NO_ANEL}
 ${GLSL_CAMADA_DO_ANEL}
@@ -1048,9 +1185,12 @@ void main() {
   float mu = max(abs(nDotV), 0.02);
   float cosTheta = clamp(-dot(uDirSolLocal, view), -1.0, 1.0);
   float mesmoLado = nDotL * nDotV;
-  float tau = tauDaOpacidade(alfa);
+  // o que o dado não sabe (REGIOES_DO_ANEL): x = albedo relativo ao B,
+  // y = poeira (lobo para a frente), z = fator do τ do B
+  vec3 regiao = regiaoDoAnel(r * KM_POR_RAIO);
+  float tau = tauDaOpacidade(alfa) * regiao.z;
   vec2 camada = camadaDeParticulas(
-    tau, mu0, mu, faseDoAnel(cosTheta), mesmoLado
+    tau, mu0, mu, faseDoAnel(cosTheta, regiao.y, SURTO_DE_OPOSICAO), mesmoLado
   );
   // a croma do dado é RELATIVA (cada canal normalizado ao próprio
   // máximo pela fonte, e saturado em 255 em 1.052 texels): dividir pela
@@ -1060,6 +1200,9 @@ void main() {
   vec3 tinta = COR_DO_GELO
     * (razao / max(dot(razao, vec3(0.2126, 0.7152, 0.0722)), 1.0e-4));
   if (dot(tinta, tinta) < 1.0e-6) tinta = COR_DO_GELO;
+  // a partícula do C e da divisão é mais escura que a do B: o nível que a
+  // croma do dado perdeu (ϖ₀ entra linear no espalhamento simples)
+  tinta *= regiao.x;
   // OS RAIOS DO B (S5): a poeira levitada TAPA o anel visto do lado
   // iluminado e ACENDE visto contra o Sol — os dois termos dele, com a
   // fase de corotação girando o padrão sobre o anel.
@@ -1169,7 +1312,7 @@ void main() {
   float cosTheta = clamp(-dot(uDirSolLocal, view), -1.0, 1.0);
   float mesmoLado = nDotL * nDotV;
   vec2 camada = camadaDeParticulas(
-    tauDaOpacidade(alpha), mu0, mu, faseDoAnel(cosTheta), mesmoLado
+    tauDaOpacidade(alpha), mu0, mu, faseDoAnel(cosTheta, 1.0, 0.0), mesmoLado
   );
   // carvão (Urano/Netuno), o cinza avermelhado de Quaoar e o cinza neutro de
   // Haumea (albedo não medido: a fonte só dá raio, largura e opacidade): é o
