@@ -1,6 +1,6 @@
 // ============================================================
 // A LISTA FECHADA de destinos da busca vazia (Lote 6, PLAN-UI.md §3.4)
-// — dez portas fixas para quem abre a busca sem saber o que digitar.
+// — portas fixas para quem abre a busca sem saber o que digitar.
 // Cada linha aqui é um NOME OU ID que a própria busca já resolve por
 // degrau exato (`resolverFoco`, o mesmo motor do "?foco="); este
 // arquivo não monta índice novo nem busca em outro lugar — só aponta a
@@ -49,7 +49,16 @@ const LISTA: readonly {
   { id: 'sirius', categoria: 'estrelas', consulta: 'Sirius' },
   { id: 'betelgeuse', categoria: 'estrelas', consulta: 'Betelgeuse' },
   { id: 'rigil-kentaurus', categoria: 'estrelas', consulta: 'Rigil Kentaurus' },
+  // OS LUGARES DO CÉU (céu profundo, 12/11/2026): a galáxia de fora
+  // abre a aba (o cartão grande); depois o endereço do Sol, os lugares
+  // perto de casa e, por último, os dois que ficam do outro lado do centro
+  { id: 'via-lactea', categoria: 'galaxia', consulta: 'via-lactea' },
+  { id: 'nosso-lugar', categoria: 'galaxia', consulta: 'nosso-lugar' },
+  { id: 'pleiades', categoria: 'galaxia', consulta: 'pleiades' },
+  { id: 'nebulosa-de-orion', categoria: 'galaxia', consulta: 'nebulosa-de-orion' },
+  { id: 'hyades', categoria: 'galaxia', consulta: 'hyades' },
   { id: 'sagittarius-a', categoria: 'galaxia', consulta: 'sagittarius-a' },
+  { id: 'ana-de-sagitario', categoria: 'galaxia', consulta: 'ana-de-sagitario' },
 ];
 
 /**

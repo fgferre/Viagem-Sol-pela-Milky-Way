@@ -92,14 +92,14 @@ function notaDaEntrada(entrada: EntradaDaBusca): string {
  * Vem de dado que já existe: a `classe` do corpo (a mesma que a nota
  * mostrava antes) ou, para uma estrela nomeada, a própria classe
  * "estrela" (`classe.estrela`, a mesma chave que o Sol usa). UM LUGAR
- * não tem `classe` na `LugarBuscavel` — inventar uma aqui seria a
- * mesma mentira que a nota já recusa (comentário acima), e por isso o
- * selo simplesmente não aparece nessa linha.
+ * leva a classe que a curadoria dele escreveu (`lugaresDoFilme.ts`);
+ * sem ela (o centro galáctico) o selo não aparece — inventar uma aqui
+ * seria a mesma mentira que a nota já recusa (comentário acima).
  */
 function tipoDaEntrada(entrada: EntradaDaBusca): string | null {
   if (entrada.tipo === 'estrela') return classeEmTexto('estrela');
   if (entrada.tipo === 'corpo') return classeEmTexto(entrada.corpo.classe);
-  return null;
+  return entrada.lugar.classe ? classeEmTexto(entrada.lugar.classe) : null;
 }
 
 /**

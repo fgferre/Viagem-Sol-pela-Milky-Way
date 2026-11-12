@@ -9,6 +9,7 @@
 // visitar continua no director (é gesto de navegação): ele lê a última
 // projeção pelo getter `alvos` — a mesma lista única da pendência 30.
 // ============================================================
+import { projetarLugares } from '../world/lugaresDoCeu';
 import * as THREE from 'three';
 import {
   PRIORIDADE_DO_ROTULO,
@@ -874,7 +875,9 @@ export class Rotulos {
         // `PENDENCIAS.md`, que é onde o dono decide; repeti-las aqui
         // seria a segunda cópia que envelhece calada.
         for (const e of estrelas) e.prioridade = prioridadeDeEstrela(e.tier);
-        const lista = [...corpos, ...luas, ...estrelas];
+        // OS LUGARES DO CÉU (céu profundo, 12/11): só fora do sistema
+        // solar, e cada um só enquanto lê como objeto (`projetarLugares`)
+        const lista = [...corpos, ...luas, ...estrelas, ...projetarLugares(cam)];
         // O ALVO ESCOLHIDO NÃO CEDE A NADA. A chave do corpo em foco é a
         // mesma que o hit-test reconhece; o `sol-home` cobre o caso da
         // estrela da casa vista de longe.

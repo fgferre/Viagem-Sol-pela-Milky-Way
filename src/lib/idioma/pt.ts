@@ -368,6 +368,13 @@ export const PT = {
   // faz o MESMO que a entrada "lugar" da busca já faz — enquadra o
   // centro galáctico no Atlas, não entra no filme.
   'busca.destino.sagittarius-a': 'A galáxia inteira, em volta do centro',
+  // os lugares do céu profundo (12/11/2026) — `lugaresDoFilme.ts`
+  'busca.destino.via-lactea': 'A galáxia inteira, vista de fora',
+  'busca.destino.nosso-lugar': 'Onde o Sol fica no disco',
+  'busca.destino.pleiades': 'As Sete Irmãs, de perto',
+  'busca.destino.hyades': 'O aglomerado mais próximo do Sol',
+  'busca.destino.nebulosa-de-orion': 'Onde nascem estrelas',
+  'busca.destino.ana-de-sagitario': 'Uma galáxia sendo engolida pela nossa',
 
   // ---- o convite dos gestos (`components/Spotlight.tsx`) ------------
   'convite.olhar': 'arraste para olhar em volta',
@@ -423,6 +430,7 @@ export const PT = {
   'ficha.secao.curiosidades': 'curiosidades',
   'ficha.secao.imagem': 'a imagem',
   'ficha.secao.estrela': 'a estrela',
+  'ficha.secao.lugar': 'o lugar',
   // A REFERÊNCIA vem depois de um travessão, como nas maquetes m3/m13
   // ("Distância — Sol", "Distance — Sun"): sem preposição nem artigo, o
   // mesmo rótulo serve a Sol, Terra e Saturno nas duas línguas. O "ao
@@ -496,6 +504,14 @@ export const PT = {
   'ficha.campo.corBV': 'cor B−V',
   'ficha.campo.temperatura': 'temperatura',
   'ficha.campo.catalogos': 'catálogos',
+  'ficha.lugar.doSolAoCentro': 'do Sol ao centro',
+  'ficha.lugar.tamanho': 'tamanho',
+  'ficha.lugar.idade': 'idade',
+  'ficha.lugar.membros': 'estrelas',
+  'ficha.lugar.orbita': 'volta na galáxia',
+  'ficha.lugar.nucleo': 'núcleo',
+  'ficha.lugar.noCatalogo': 'no catálogo da casa',
+  'ficha.lugar.naCena': 'o que se vê aqui',
   'ficha.fonte.daEfemeride': 'da efeméride',
   'ficha.fonte.daCamera': 'do ponto de vista da câmera',
   'ficha.fonte.deGmEDoRaio': 'de GM e do raio',
@@ -514,6 +530,7 @@ export const PT = {
   'ficha.fonte.bayerIau': 'Bayer, sigla IAU',
   'ficha.fonte.paralaxe': 'paralaxe Gaia DR3',
   'ficha.fonte.ballesteros': 'de B−V, por Ballesteros',
+  'ficha.fonte.sinteseDaLiteratura': 'síntese da literatura',
   'ficha.hora': 'hora',
   'ficha.horas': 'horas',
   'ficha.dia': 'dia',
@@ -671,6 +688,11 @@ export const PT = {
   'classe.lua': 'lua',
   'classe.asteroide': 'asteroide',
   'classe.buraco negro': 'buraco negro',
+  'classe.aglomerado aberto': 'aglomerado aberto',
+  'classe.nebulosa de emissão': 'nebulosa de emissão',
+  'classe.galáxia espiral barrada': 'galáxia espiral barrada',
+  'classe.vista da galáxia': 'vista da galáxia',
+  'classe.galáxia anã': 'galáxia anã',
 
   // ---- a máquina do tempo (`three/tempoDoAtlas.ts`) -----------------
   'tempo.mes.0': 'janeiro',

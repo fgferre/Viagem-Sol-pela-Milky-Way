@@ -300,6 +300,11 @@ export const PRIORIDADE_DO_ROTULO = {
   anao: 28,
   lua: 25,
   asteroide: 15,
+  /** um LUGAR do céu (aglomerado, nebulosa, vista da galáxia — céu
+   *  profundo, 12/11/2026): acima das estrelas, que são a parte dele,
+   *  abaixo de qualquer corpo da casa. Fora do mapa do Eyes, que não tem
+   *  céu profundo. */
+  lugar: 12,
   estrelaPropria: 10,
   estrelaBayer: 5,
   outros: 1,

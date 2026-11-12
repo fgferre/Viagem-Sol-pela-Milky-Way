@@ -65,6 +65,7 @@ import { REGISTRO_ORBITAL } from './registroOrbital';
 import { designacaoDeBayer } from './constelacoes';
 import { temperatureFromBV } from './stellarPhysics';
 import type { NamedStar } from '../../three/config';
+import type { LugarDoCeu } from '../lugaresDoFilme';
 import { REGUA_DOS_MAPAS, alvoDoMapa, type Matiz, type MedidaDoCorpo } from './reguaDosMapas';
 import RELATORIO_DA_REGUA from './reguaDosMapas.relatorio.json';
 import type {
@@ -107,7 +108,9 @@ export type IdDeSecao =
   | 'curiosidades'
   | 'imagem'
   /** a única de ESTRELA — as outras sete são todas de corpo */
-  | 'estrela';
+  | 'estrela'
+  /** a de um LUGAR do céu (céu profundo, 12/11/2026) */
+  | 'lugar';
 
 export interface SecaoDaFicha {
   id: IdDeSecao;
@@ -947,6 +950,56 @@ export function montarFichaDeEstrela(
     classe: classeEmTexto(estrela ? 'estrela' : 'buraco negro'),
     secoes:
       cheias.length > 0 ? [{ id: 'estrela', titulo: TITULO('estrela'), linhas: cheias }] : [],
+  };
+}
+
+/**
+ * A FICHA DE UM LUGAR DO CÉU (céu profundo, 12/11/2026) — irmã da de
+ * estrela, separada dela de propósito: o caminho da ESTRELA tem dono
+ * próprio (os corpos de estrela) e o do lugar não deve tocá-lo.
+ *
+ * DUAS SEÇÕES. "O lugar" vem primeiro, aberta: a distância (da
+ * literatura, em anos-luz — parsec não aparece) e os fatos da curadoria,
+ * cada um com o selo e a citação dele (`lugaresDoFilme.ts`). "Contexto"
+ * leva o "o que é", e é dela que a ficha tira a introdução — o mesmo
+ * caminho da prosa de um corpo.
+ */
+export function montarFichaDeLugar(lugar: LugarDoCeu): Ficha {
+  const ingles = idiomaAtual() === 'en';
+  const no = (texto: { pt: string; en: string }) => (ingles ? texto.en : texto.pt);
+  const linhas: (LinhaDaFicha | null)[] = [];
+  if (lugar.distanciaPc) {
+    linhas.push(
+      linha(
+        t(lugar.distanciaPc.doSolAoCentro ? 'ficha.lugar.doSolAoCentro' : 'ficha.campo.distancia'),
+        notaDeDistancia(lugar.distanciaPc.valor * UA_POR_PC, numeroDoIdioma),
+        'medido',
+        lugar.distanciaPc.fonte
+      )
+    );
+  }
+  for (const fato of lugar.fatos ?? []) {
+    linhas.push(
+      linha(
+        t(`ficha.lugar.${fato.campo}` as 'ficha.lugar.tamanho'),
+        no(fato),
+        fato.procedencia,
+        typeof fato.fonte === 'string' ? fato.fonte : no(fato.fonte)
+      )
+    );
+  }
+  const contexto = lugar.oQueE
+    ? [linha(t('ficha.campo.oQueE'), no(lugar.oQueE), 'derivado', t('ficha.fonte.sinteseDaLiteratura'))]
+    : [];
+  const secoes: SecaoDaFicha[] = [
+    { id: 'lugar', titulo: TITULO('lugar'), linhas: linhas.filter((l): l is LinhaDaFicha => l !== null) },
+    { id: 'contexto', titulo: TITULO('contexto'), linhas: contexto.filter((l): l is LinhaDaFicha => l !== null) },
+  ];
+  return {
+    id: `lugar:${lugar.id}`,
+    nome: ingles ? (lugar.nomeEn ?? lugar.nome) : lugar.nome,
+    classe: lugar.classe ? classeEmTexto(lugar.classe) : '',
+    secoes: secoes.filter((secao) => secao.linhas.length > 0),
   };
 }
 
