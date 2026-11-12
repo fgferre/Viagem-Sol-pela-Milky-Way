@@ -28,6 +28,14 @@ import { ORIGEM } from '../cinematic/enquadramento';
 import { CHAVE_DE_CORPO } from '../atlasConfig';
 import { GAL } from '../world/baseGalactica';
 import { raioDeEnquadramentoEstelar } from '../cinematic/atlasRig';
+import type { LugarBuscavel } from '../../lib/buscaEstrelas';
+import { CHAVE_DE_LUGAR, LUGARES_DA_BUSCA } from '../world/lugaresDoCeu';
+
+/** o lugar do céu cujo rótulo tem esta chave, ou `undefined` */
+const lugarDaChave = (chave: string): LugarBuscavel | undefined =>
+  chave.startsWith(CHAVE_DE_LUGAR)
+    ? LUGARES_DA_BUSCA.find((l) => l.id === chave.slice(CHAVE_DE_LUGAR.length))
+    : undefined;
 
 export class Escolha {
   /**
@@ -40,7 +48,7 @@ export class Escolha {
    * acertou rótulo nenhum, e aí não há para onde mergulhar.
    */
   private escolhaDoClique:
-    | { id: string | null; pos: THREE.Vector3; nome: string }
+    | { id: string | null; pos: THREE.Vector3; nome: string; lugar?: LugarBuscavel }
     | null = null;
 
   /** a escada — as transições de estado que o gesto dispara moram lá */
@@ -177,6 +185,11 @@ export class Escolha {
       this.escada.irAte(GAL.GC_POS.clone(), 7, best.name);
       return;
     }
+    const lugar = lugarDaChave(best.key);
+    if (lugar) {
+      this.escada.visitarLugar(lugar);
+      return;
+    }
     const star =
       best.key === 'sol-home'
         ? { n: 'Sol', x: 0, y: 0, z: 0 }
@@ -207,6 +220,11 @@ export class Escolha {
       // dele; `focarNoCorpo('sun')` sem `ver=` é a casa, que é o oposto
       if (escolha.id === 'sun') this.escada.focarNoCorpo('sun', 'corpo');
       else this.escada.focarNoCorpo(escolha.id);
+      return;
+    }
+    // um lugar do céu: o enquadramento DELE (raio e vista)
+    if (escolha.lugar) {
+      this.escada.visitarLugar(escolha.lugar);
       return;
     }
     // uma estrela ou o centro galáctico: o enquadramento da D5, com
@@ -259,6 +277,14 @@ export class Escolha {
         raioDeEnquadramentoEstelar(GAL.GC_POS.length()),
         best.name
       );
+      return;
+    }
+    // UM LUGAR DO CÉU: escolhe com o raio dele, sem mover a câmera
+    const lugar = lugarDaChave(best.key);
+    if (lugar?.raioPc) {
+      const pos = new THREE.Vector3(lugar.x, lugar.y, lugar.z);
+      this.escolhaDoClique = { id: null, pos, nome: best.name, lugar };
+      this.escada.selecionarPonto(pos, lugar.raioPc, best.name);
       return;
     }
     const star = this.meta.named.find((s) => s.n === best.name);

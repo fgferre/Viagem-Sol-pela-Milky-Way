@@ -159,7 +159,7 @@ import { filmeDe, type Filme } from './cinematic/filme';
 import { BlackHolePass } from './world/blackHole';
 import { loadStarData } from './config';
 import type { NamedStar, StarsMeta } from './config';
-import type { CorpoBuscavel } from '../lib/buscaEstrelas';
+import type { CorpoBuscavel, LugarBuscavel } from '../lib/buscaEstrelas';
 
 /**
  * O INSTRUMENTO DA CASA na parte que não muda com o quadro (M4 da Lei
@@ -2599,6 +2599,12 @@ export class Director {
   /** o destino do clique num rótulo, escolhido pelo NOME (busca, F3) */
   visitarEstrela(estrela: { n: string; x: number; y: number; z: number }) {
     this.escada.visitarEstrela(estrela);
+  }
+
+  /** um LUGAR do céu (aglomerado, nebulosa, vista da galáxia) — o
+   *  enquadramento dele (`poseDoLugar`), pela mesma escada */
+  visitarLugar(lugar: LugarBuscavel) {
+    this.escada.visitarLugar(lugar);
   }
 
   /** as 1.726 nomeadas — o índice da busca monta sobre esta lista */

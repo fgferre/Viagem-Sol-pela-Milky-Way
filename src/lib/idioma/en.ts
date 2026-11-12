@@ -346,6 +346,11 @@ export const EN: Record<keyof typeof PT, string> = {
   // SAME thing the "place" search entry already does — frames the
   // galactic centre in the Atlas, does not start the film.
   'busca.destino.sagittarius-a': 'The whole galaxy, around its centre',
+  'busca.destino.via-lactea': 'The whole galaxy, from outside',
+  'busca.destino.nosso-lugar': 'Where the Sun sits in the disc',
+  'busca.destino.pleiades': 'The Seven Sisters, up close',
+  'busca.destino.hyades': 'The open cluster nearest the Sun',
+  'busca.destino.ana-de-sagitario': 'A galaxy being swallowed by ours',
 
   // ---- the gesture walkthrough -------------------------------------
   'convite.olhar': 'drag to look around',
@@ -401,6 +406,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.secao.curiosidades': 'trivia',
   'ficha.secao.imagem': 'the image',
   'ficha.secao.estrela': 'the star',
+  'ficha.secao.lugar': 'the place',
   // The reference follows an em dash, as in mockups m3/m13 ("Distance —
   // Sun"): no preposition, no article, so one label fits Sun, Earth and
   // Saturn in both languages. The old "to the {pai}" (Lote 5) was right
@@ -466,6 +472,14 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.campo.corBV': 'B−V color',
   'ficha.campo.temperatura': 'temperature',
   'ficha.campo.catalogos': 'catalogs',
+  'ficha.lugar.doSolAoCentro': 'Sun to centre',
+  'ficha.lugar.tamanho': 'size',
+  'ficha.lugar.idade': 'age',
+  'ficha.lugar.membros': 'stars',
+  'ficha.lugar.orbita': 'galactic orbit',
+  'ficha.lugar.nucleo': 'core',
+  'ficha.lugar.noCatalogo': 'in the app’s catalogue',
+  'ficha.lugar.naCena': 'what you see here',
   'ficha.fonte.daEfemeride': 'from the ephemeris',
   'ficha.fonte.daCamera': "from the camera's point of view",
   'ficha.fonte.deGmEDoRaio': 'from GM and the radius',
@@ -484,6 +498,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.fonte.bayerIau': 'Bayer, IAU abbreviation',
   'ficha.fonte.paralaxe': 'Gaia DR3 parallax',
   'ficha.fonte.ballesteros': 'from B−V, after Ballesteros',
+  'ficha.fonte.sinteseDaLiteratura': 'summary of the literature',
   'ficha.hora': 'hour',
   'ficha.horas': 'hours',
   'ficha.dia': 'day',
@@ -640,6 +655,11 @@ export const EN: Record<keyof typeof PT, string> = {
   'classe.lua': 'moon',
   'classe.asteroide': 'asteroid',
   'classe.buraco negro': 'black hole',
+  'classe.aglomerado aberto': 'open cluster',
+  'classe.nebulosa de emissão': 'emission nebula',
+  'classe.galáxia espiral barrada': 'barred spiral galaxy',
+  'classe.vista da galáxia': 'view of the galaxy',
+  'classe.galáxia anã': 'dwarf galaxy',
 
   // ---- the time machine --------------------------------------------
   'tempo.mes.0': 'January',

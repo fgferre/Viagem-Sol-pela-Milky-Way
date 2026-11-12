@@ -40,6 +40,7 @@ import {
 import { PASSOS_DO_CONVITE_DO_ATLAS, PASSOS_DO_CONVITE_DO_ATLAS_TOQUE } from './components/passosDoConvite';
 import { Ajustes } from './components/Ajustes';
 import { gravarPreferencia, lerPreferencias } from './lib/preferencias';
+import { LUGARES_DO_FILME } from './lib/lugaresDoFilme';
 import { useDirector, escolherAlvo, LUGARES_DA_BUSCA } from './hooks/useDirector';
 import { useAtalhos } from './hooks/useAtalhos';
 import { useChromeDoFilme } from './hooks/useChromeDoFilme';
@@ -898,6 +899,22 @@ export default function App() {
     [escada.degrau, foco, nomeadas]
   );
 
+  /**
+   * O LUGAR DO CÉU EM FOCO (céu profundo, 12/11) — a linha da tabela que
+   * o nome anunciado endereça, nas duas grafias (o foco chega na língua
+   * em que foi publicado). Só os lugares com ficha própria; o centro
+   * galáctico segue na ficha só de cabeçalho, como sempre.
+   */
+  const lugarEmFoco = useMemo(
+    () =>
+      escada.degrau === 'estrela' && foco
+        ? (LUGARES_DO_FILME.find(
+            (l) => l.fatos !== undefined && (l.nome === foco || l.nomeEn === foco)
+          ) ?? null)
+        : null,
+    [escada.degrau, foco]
+  );
+
   // A URL COMO ESPELHO (corte 6): o gosto nasce dela e volta para ela
   // pelos handlers do hook — a semântica de sempre, noutro endereço.
   const {
@@ -1414,6 +1431,7 @@ export default function App() {
         corpoId={escada.corpoId}
         estrelaEmFoco={escada.degrau === 'estrela' ? foco : null}
         estrela={estrelaEmFoco}
+        lugar={lugarEmFoco}
         jd={tempo?.jd ?? null}
         camaraUa={camera}
         fonte={directorRef.current?.efemerideViva ?? null}

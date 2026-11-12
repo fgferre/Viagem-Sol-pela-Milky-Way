@@ -45,7 +45,9 @@ import type { VerDaEscada } from '../selo';
 import type { NamedStar, StarsMeta } from '../config';
 import type { Planetas } from '../world/planetas/planetas';
 import type { FreeRoam } from '../cinematic/cameraRig';
-import type { CorpoBuscavel } from '../../lib/buscaEstrelas';
+import type { CorpoBuscavel, LugarBuscavel } from '../../lib/buscaEstrelas';
+import { nomeDoLugar } from '../../lib/buscaEstrelas';
+import { poseDoLugar } from '../world/lugaresDoCeu';
 import type { MaquinaDoTempo } from './maquinaDoTempo';
 import type { Rotulos } from './rotulos';
 import type { AtlasRig } from '../cinematic/atlasRig';
@@ -452,6 +454,40 @@ export class Escada {
       ),
       estrela.n
     );
+  }
+
+  /**
+   * UM LUGAR DO CÉU (céu profundo, 12/11/2026) — o verbo é o de
+   * `irAte`, com a régua do LUGAR: a esfera é o raio dele e a vista é a
+   * dele (`poseDoLugar`: do lado do Sol para um aglomerado, do polo
+   * galáctico para a galáxia inteira). O piso do zoom é o de estrela,
+   * como no centro galáctico: quem quiser desce a roda até as membros.
+   * No voo livre a câmera VOA até ele e para a três raios do centro.
+   * Sem lei própria cai na porta das estrelas, como sempre caiu.
+   */
+  visitarLugar(lugar: LugarBuscavel) {
+    const pose = poseDoLugar(lugar);
+    const nome = nomeDoLugar(lugar);
+    if (!pose) {
+      this.visitarEstrela({ n: nome, x: lugar.x, y: lugar.y, z: lugar.z });
+      return;
+    }
+    if (this.phase !== 'atlas') {
+      this.roam.startVisit({ pos: pose.alvo, arriveDist: pose.raio * 3 });
+      return;
+    }
+    this.atlas.focar(pose.alvo, pose.raio, pose.eixoDe, {
+      rampa: this.rampaDaEscada(),
+      polo: pose.polo,
+      pisoRaio: raioDeEnquadramentoEstelar(pose.alvo.length()),
+    });
+    this.enquadrarAgora();
+    this.focoCorpoId = null;
+    this.focoEstrela = true;
+    this.ver = 'orbita';
+    this.events.onFoco(nome);
+    this.emitirEscada();
+    this.teletransportou();
   }
 
   /**

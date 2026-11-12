@@ -1,5 +1,5 @@
 // Serve: dono — uma imagem-prévia por destino da busca (cartão da lista)
-// Custo: ~0,3 min por destino (10 capturas de Chrome, uma por vez)
+// Custo: ~0,3 min por destino (15 capturas de Chrome, uma por vez)
 //
 // Lote 6 · Prévias (PLAN-UI.md §3.4, bullet "Prévias"): cada cartão da
 // busca ganha uma miniatura carregada só com a caixa aberta e vazia
@@ -9,9 +9,9 @@
 // Corpo/anéis inteiros no quadro para planetas e luas; a estrela no
 // contexto do céu do Atlas para os alvos estelares e o centro galáctico.
 //
-// Orçamento: ≤ 40 KB por arquivo, ≤ 300 KB no total (10 arquivos).
+// Orçamento: ≤ 40 KB por arquivo, ≤ 480 KB no total (15 arquivos).
 //
-//   node scripts/visual/previas-de-destino.mjs             # os dez
+//   node scripts/visual/previas-de-destino.mjs             # todos
 //   node scripts/visual/previas-de-destino.mjs earth mars  # só estes (reajustar enquadramento)
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
@@ -24,13 +24,13 @@ const OUT = resolve(ROOT, 'public/previas');
 const APP = process.env.APP_URL || APP_PADRAO;
 
 const LIMITE_ARQUIVO = 40 * 1024;
-const LIMITE_TOTAL = 300 * 1024;
+const LIMITE_TOTAL = 480 * 1024;
 
 // O instante fixo do céu — o mesmo `jd` de ab-identidade.mjs, para as
 // prévias serem reproduzíveis entre corridas.
 const CINEMA = 'q=cinema&shot=2&jd=2460409.26395835';
 
-// A tabela dos dez destinos: `d` é a distância de câmera em raios do
+// A tabela dos destinos: `d` é a distância de câmera em raios do
 // corpo (só planetas/luas, `ver=corpo`); estrelas e o centro galáctico
 // dispensam ver/d porque a vista é o céu ao redor do alvo, e não o
 // corpo dele. Números aqui para reajustar o enquadramento sem mexer no
@@ -56,6 +56,13 @@ const DESTINOS = [
   // PLAN-UI.md já previa (`?t=…&shot=2`); `consulta` vale inteira, sem
   // `atlas=1`.
   { id: 'sagittarius-a', consulta: 't=148&q=cinema&shot=2' },
+  // OS LUGARES DO CÉU (céu profundo, 12/11/2026): a vista de chegada de
+  // cada um, pelo mesmo `?foco=` do cartão — o enquadramento é do lugar
+  { id: 'via-lactea', foco: 'via-lactea' },
+  { id: 'nosso-lugar', foco: 'nosso-lugar' },
+  { id: 'pleiades', foco: 'pleiades' },
+  { id: 'hyades', foco: 'hyades' },
+  { id: 'ana-de-sagitario', foco: 'ana-de-sagitario' },
 ];
 
 function urlDoDestino({ foco, ver, d, consulta }) {
