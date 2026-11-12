@@ -112,6 +112,10 @@ export function notaDeDistancia(
     const inteiro = Math.round(al);
     return t(chaveDoAnoLuz(inteiro), { n: formatar(inteiro) });
   }
+  // ACIMA DE UM MILHÃO (as galáxias vizinhas: Andrômeda a 2,48 milhões):
+  // "2482,1 mil" é conta que o leitor teria de fazer; duas casas porque
+  // o milhão inteiro é grosso demais para a régua (2,5 esconderia 20 mil al)
+  if (al >= 1_000_000) return t('unidade.milhoesAnosLuz', { n: comCasas(al / 1_000_000, 2) });
   return t('unidade.milAnosLuz', { n: formatar(al / 1000) });
 }
 

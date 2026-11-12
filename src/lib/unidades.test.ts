@@ -74,6 +74,11 @@ describe('notaDeDistancia — o degrau dos anos-luz', () => {
     expect(emAl(26_000)).toBe('26 mil anos-luz');
   });
 
+  it('acima de um milhão, conta em milhões com duas casas (Andrômeda)', () => {
+    expect(emAl(2_482_100)).toBe('2,48 milhões de anos-luz');
+    expect(emAl(161_700)).toBe('161,7 mil anos-luz');
+  });
+
   it('abaixo de 0,1 al a régua volta para UA — a escada é contínua', () => {
     // é o degrau que o rótulo do canvas usa quando a câmera está no
     // sistema: 6.324 UA ainda é UA, 6.325 já é ano-luz

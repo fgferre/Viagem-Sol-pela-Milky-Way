@@ -71,6 +71,10 @@ const LISTA: readonly {
   { id: 'hyades', categoria: 'galaxia', consulta: 'hyades' },
   { id: 'sagittarius-a', categoria: 'galaxia', consulta: 'sagittarius-a' },
   { id: 'ana-de-sagitario', categoria: 'galaxia', consulta: 'ana-de-sagitario' },
+  // AS VIZINHAS (pilar 3, 12/11/2026): além da nossa galáxia, a maior
+  // companheira e a grande espiral do lado
+  { id: 'grande-nuvem-de-magalhaes', categoria: 'galaxia', consulta: 'grande-nuvem-de-magalhaes' },
+  { id: 'andromeda', categoria: 'galaxia', consulta: 'andromeda' },
 ];
 
 /**

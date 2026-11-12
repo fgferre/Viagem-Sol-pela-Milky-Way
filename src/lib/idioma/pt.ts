@@ -147,6 +147,7 @@ export const PT = {
   // `<title>` do documento (`app.titulo`), nunca escrito na tela.
   'marca.nome': 'Mar de Estrelas',
   'contexto.viaLactea': 'Via Láctea',
+  'contexto.grupoLocal': 'Grupo Local',
   'contexto.sistemaSolar': 'Sistema Solar',
 
   // ---- o painel de ajustes (`components/Ajustes.tsx`) ---------------
@@ -377,6 +378,8 @@ export const PT = {
   'busca.destino.pleiades': 'As Sete Irmãs, de perto',
   'busca.destino.hyades': 'O aglomerado mais próximo do Sol',
   'busca.destino.ana-de-sagitario': 'Uma galáxia sendo engolida pela nossa',
+  'busca.destino.grande-nuvem-de-magalhaes': 'A maior companheira da nossa galáxia',
+  'busca.destino.andromeda': 'A grande espiral vizinha',
 
   // ---- o convite dos gestos (`components/Spotlight.tsx`) ------------
   'convite.olhar': 'arraste para olhar em volta',
@@ -527,6 +530,7 @@ export const PT = {
   'ficha.lugar.sombra': 'sombra',
   'ficha.lugar.anelEht': 'o que o EHT viu',
   'ficha.lugar.estrelaS2': 'a estrela S2',
+  'ficha.lugar.luz': 'a luz que vemos saiu de lá',
   'ficha.sonda.doSol': 'distância do Sol',
   'ficha.sonda.luz': 'a luz leva, daqui à Terra',
   'ficha.sonda.velocidade': 'velocidade em relação ao Sol',
@@ -831,6 +835,8 @@ export const PT = {
   'classe.galáxia espiral barrada': 'galáxia espiral barrada',
   'classe.vista da galáxia': 'vista da galáxia',
   'classe.galáxia anã': 'galáxia anã',
+  'classe.galáxia satélite': 'galáxia satélite',
+  'classe.galáxia espiral': 'galáxia espiral',
   'classe.sonda': 'sonda',
   'classe.cometa': 'cometa',
   'classe.cometa interestelar': 'cometa interestelar',
@@ -876,6 +882,7 @@ export const PT = {
   'unidade.anoLuz': '{n} ano-luz',
   'unidade.anosLuz': '{n} anos-luz',
   'unidade.milAnosLuz': '{n} mil anos-luz',
+  'unidade.milhoesAnosLuz': '{n} milhões de anos-luz',
   'unidade.vezesTerra': '{n}× Terra',
 
   // ---- o significado dos números (Lote 4, item 5/§10) ----------------

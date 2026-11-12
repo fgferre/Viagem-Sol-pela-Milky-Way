@@ -18,6 +18,7 @@ import type { LugarDoCeu } from '../../lib/lugaresDoFilme';
 import { classeEmTexto } from '../atlasConfig';
 import { GRAU, PHASE_OFFSET_GRAUS } from '../cinematic/enquadramento';
 import { EX, EY, EZ, GAL } from './baseGalactica';
+import { CENTRO_PNM, GNM, M31 } from './geradorDasVizinhas';
 import { PRIORIDADE_DO_ROTULO, projectForced } from './labels';
 import type { StarLabel } from './labels';
 
@@ -49,6 +50,11 @@ function posicaoDe(lugar: LugarDoCeu): THREE.Vector3 | null {
   const alvo = lugar.alvo;
   if ('centroGalactico' in alvo) return GAL.GC_POS.clone();
   if ('pc' in alvo) return new THREE.Vector3(alvo.pc[0], alvo.pc[1], alvo.pc[2]);
+  if ('vizinha' in alvo) {
+    if (alvo.vizinha === 'gnm') return GNM.centro.clone();
+    if (alvo.vizinha === 'pnm') return CENTRO_PNM.clone();
+    return M31.centro.clone();
+  }
   if ('cena' in alvo) {
     if (alvo.cena === 'centroGalactico') return GAL.GC_POS.clone();
     if (alvo.cena === 'anaDeSagitario') return CENTRO_DA_ANA_DE_SAGITARIO.clone();
@@ -154,6 +160,19 @@ export function poseDoLugar(lugar: Pick<LugarBuscavel, 'id' | 'x' | 'y' | 'z'>):
       const deLado = new THREE.Vector3().crossVectors(ngp, paraFora).normalize();
       dir = deLado.multiplyScalar(Math.cos(30 * GRAU)).addScaledVector(ngp, -Math.sin(30 * GRAU)).normalize();
       polo = ngp.clone();
+      break;
+    }
+    case 'comAViaLactea': {
+      // do lado de FORA da Grande Nuvem (centro galáctico atrás dela),
+      // girado 35° para longe da Pequena Nuvem no plano dos três: a Via
+      // Láctea cai ~23° de um lado do quadro e a Pequena Nuvem ~34° do
+      // outro (medido a 25 kpc, 12/11), e o polo deitado nesse plano põe
+      // os três numa linha horizontal
+      const fora = alvo.clone().sub(GAL.GC_POS).normalize();
+      const rumoPnm = CENTRO_PNM.clone().sub(alvo);
+      rumoPnm.addScaledVector(fora, -rumoPnm.dot(fora)).normalize();
+      dir = fora.multiplyScalar(Math.cos(35 * GRAU)).addScaledVector(rumoPnm, -Math.sin(35 * GRAU)).normalize();
+      polo = new THREE.Vector3().crossVectors(dir, rumoPnm).normalize();
       break;
     }
   }

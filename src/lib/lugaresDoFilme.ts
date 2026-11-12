@@ -37,9 +37,12 @@ export type CategoriaDeLugar = 'aglomerado' | 'nebulosa' | 'galaxia';
  * - `sobreOSol`: atrás e acima do Sol, polo norte galáctico no alto,
  *   com o Sol e o centro no mesmo quadro;
  * - `abaixoDoDisco`: do lado sul do disco e de lado, com a anã de
- *   Sagitário no centro e a galáxia ao lado dela.
+ *   Sagitário no centro e a galáxia ao lado dela;
+ * - `comAViaLactea`: de trás da Grande Nuvem, de lado, com a Via Láctea
+ *   de um lado do quadro e a Pequena Nuvem do outro — "a nossa galáxia
+ *   tem companheiras".
  */
-export type VistaDoLugar = 'doSol' | 'deCimaDoDisco' | 'sobreOSol' | 'abaixoDoDisco';
+export type VistaDoLugar = 'doSol' | 'deCimaDoDisco' | 'sobreOSol' | 'abaixoDoDisco' | 'comAViaLactea';
 
 /** uma linha da ficha de um lugar — as palavras nas duas línguas */
 export interface FatoDoLugar {
@@ -55,7 +58,8 @@ export interface FatoDoLugar {
     | 'horizonte'
     | 'sombra'
     | 'anelEht'
-    | 'estrelaS2';
+    | 'estrelaS2'
+    | 'luz';
   pt: string;
   en: string;
   procedencia: Procedencia;
@@ -80,7 +84,10 @@ export interface LugarDoCeu {
     /** posição fixa na cena (pc, equatorial J2000, Sol na origem) */
     | { pc: readonly [number, number, number] }
     /** posição que só o three conhece (`lugaresDoCeu.ts`) */
-    | { cena: 'centroGalactico' | 'rumoAoCentro' | 'anaDeSagitario' };
+    | { cena: 'centroGalactico' | 'rumoAoCentro' | 'anaDeSagitario' }
+    /** as galáxias vizinhas: o centro mora no modelo delas
+     *  (`three/world/geradorDasVizinhas.ts`) */
+    | { vizinha: 'gnm' | 'pnm' | 'm31' };
   /** as nomeadas do catálogo que pertencem ao lugar */
   membros?: readonly string[];
   categoria?: CategoriaDeLugar;
@@ -100,9 +107,26 @@ export interface LugarDoCeu {
   fatos?: readonly FatoDoLugar[];
 }
 
+/**
+ * FORA DA VIA LÁCTEA? — um nome anunciado (pt ou en) que é de uma galáxia
+ * vizinha. A linha de contexto o põe sob o Grupo Local, nunca sob a Via
+ * Láctea: nem as Nuvens de Magalhães, satélites dela, moram dentro dela.
+ */
+export function foraDaViaLactea(nome: string): boolean {
+  return LUGARES_DO_FILME.some(
+    (l) => 'vizinha' in l.alvo && (l.nome === nome || l.nomeEn === nome)
+  );
+}
+
 const SINTESE = { pt: 'síntese da literatura', en: 'summary of the literature' };
 const CATALOGO_DA_CASA = { pt: 'catálogo da casa (AT-HYG)', en: 'the app’s catalogue (AT-HYG)' };
 const MODELO_DA_CASA = { pt: 'modelo da galáxia da casa', en: 'the app’s galaxy model' };
+const MODELO_DAS_VIZINHAS = { pt: 'modelo de partículas da casa', en: 'the app’s particle model' };
+const MASSA_POR_ESTRELA = {
+  pt: 'massa estelar ÷ massa média de uma estrela (0,3–0,5 M☉)',
+  en: 'stellar mass ÷ the mean mass of a star (0.3–0.5 M☉)',
+};
+const TEMPO_DA_LUZ = { pt: 'distância ÷ velocidade da luz', en: 'distance ÷ speed of light' };
 
 export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
   {
@@ -459,6 +483,171 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
         en: 'drawn as an elongated cloud of particles at the measured place; the tidal stream is not drawn',
         procedencia: 'artistico',
         fonte: MODELO_DA_CASA,
+      },
+    ],
+  },
+  {
+    id: 'grande-nuvem-de-magalhaes',
+    nome: 'Grande Nuvem de Magalhães',
+    nomeEn: 'Large Magellanic Cloud',
+    pt: ['Grande Nuvem de Magalhães', 'Grande Nuvem', 'GNM', 'Nuvens de Magalhães', 'Nuvem de Magalhães'],
+    en: ['Large Magellanic Cloud', 'LMC', 'Magellanic Clouds', 'Magellanic Cloud'],
+    alvo: { vizinha: 'gnm' },
+    categoria: 'galaxia',
+    classe: 'galáxia satélite',
+    raioPc: 9_300,
+    vista: 'comAViaLactea',
+    distanciaPc: { valor: 49_590, fonte: 'Pietrzyński et al. 2019' },
+    oQueE: {
+      pt: 'A maior galáxia satélite da Via Láctea, a olho nu no céu do sul como um pedaço solto da faixa. Tem uma barra fora do centro, um braço dominante e o 30 Dourado (a Tarântula), o berçário de estrelas mais brilhante do Grupo Local. Daqui se vê a nossa galáxia de um lado e a Pequena Nuvem do outro.',
+      en: 'The largest satellite galaxy of the Milky Way, seen with the naked eye in the southern sky as a loose piece of the band. It has an off-centre bar, one dominant arm and 30 Doradus (the Tarantula), the brightest stellar nursery in the Local Group. From here our galaxy is on one side and the Small Cloud on the other.',
+    },
+    fatos: [
+      {
+        campo: 'tamanho',
+        pt: 'cerca de 32 mil anos-luz de um lado a outro',
+        en: 'about 32,000 light-years across',
+        procedencia: 'derivado',
+        fonte: { pt: 'de Vaucouleurs RC3 (10,75°) × distância', en: 'de Vaucouleurs RC3 (10.75°) × distance' },
+      },
+      {
+        campo: 'massa',
+        pt: 'estrelas: cerca de 3 bilhões de sóis; com a matéria escura, ~140 bilhões',
+        en: 'stars: about 3 billion suns; with dark matter, ~140 billion',
+        procedencia: 'medido',
+        fonte: 'van der Marel et al. 2002; Erkal et al. 2019',
+      },
+      {
+        campo: 'membros',
+        pt: 'da ordem de 10 bilhões de estrelas',
+        en: 'of the order of 10 billion stars',
+        procedencia: 'derivado',
+        fonte: MASSA_POR_ESTRELA,
+      },
+      {
+        campo: 'luz',
+        pt: 'há cerca de 160 mil anos',
+        en: 'about 160,000 years ago',
+        procedencia: 'derivado',
+        fonte: TEMPO_DA_LUZ,
+      },
+      {
+        campo: 'naCena',
+        pt: 'posição, distância e inclinação medidas; barra, braço, 30 Dourado e poeira são partículas de um modelo — não é foto',
+        en: 'position, distance and tilt are measured; bar, arm, 30 Doradus and dust are particles of a model — not a photograph',
+        procedencia: 'artistico',
+        fonte: MODELO_DAS_VIZINHAS,
+      },
+    ],
+  },
+  {
+    id: 'pequena-nuvem-de-magalhaes',
+    nome: 'Pequena Nuvem de Magalhães',
+    nomeEn: 'Small Magellanic Cloud',
+    pt: ['Pequena Nuvem de Magalhães', 'Pequena Nuvem', 'PNM'],
+    en: ['Small Magellanic Cloud', 'SMC'],
+    alvo: { vizinha: 'pnm' },
+    categoria: 'galaxia',
+    classe: 'galáxia satélite',
+    raioPc: 4_500,
+    vista: 'doSol',
+    distanciaPc: { valor: 62_440, fonte: 'Graczyk et al. 2020' },
+    oQueE: {
+      pt: 'A companheira menor da Grande Nuvem, deformada pela maré das duas maiores: é comprida na direção da nossa visada, com a Asa voltada para a Grande Nuvem e uma ponte de gás e estrelas jovens entre as duas.',
+      en: 'The smaller companion of the Large Cloud, bent out of shape by the tides of the two bigger galaxies: it is stretched along our line of sight, with its Wing pointing to the Large Cloud and a bridge of gas and young stars between the two.',
+    },
+    fatos: [
+      {
+        campo: 'tamanho',
+        pt: 'cerca de 19 mil anos-luz no céu, e mais ainda em profundidade',
+        en: 'about 19,000 light-years on the sky, and more in depth',
+        procedencia: 'derivado',
+        fonte: {
+          pt: 'de Vaucouleurs RC3 (5,3°) × distância; Scowcroft et al. 2016',
+          en: 'de Vaucouleurs RC3 (5.3°) × distance; Scowcroft et al. 2016',
+        },
+      },
+      {
+        campo: 'massa',
+        pt: 'estrelas: cerca de 300 milhões de sóis',
+        en: 'stars: about 300 million suns',
+        procedencia: 'medido',
+        fonte: 'Stanimirović et al. 2004',
+      },
+      {
+        campo: 'membros',
+        pt: 'da ordem de 1 bilhão de estrelas',
+        en: 'of the order of 1 billion stars',
+        procedencia: 'derivado',
+        fonte: MASSA_POR_ESTRELA,
+      },
+      {
+        campo: 'luz',
+        pt: 'há cerca de 200 mil anos',
+        en: 'about 200,000 years ago',
+        procedencia: 'derivado',
+        fonte: TEMPO_DA_LUZ,
+      },
+      {
+        campo: 'naCena',
+        pt: 'posição e distância medidas; a forma alongada, a Asa e a ponte até a Grande Nuvem são partículas de um modelo — não é foto',
+        en: 'position and distance are measured; the stretched shape, the Wing and the bridge to the Large Cloud are particles of a model — not a photograph',
+        procedencia: 'artistico',
+        fonte: MODELO_DAS_VIZINHAS,
+      },
+    ],
+  },
+  {
+    id: 'andromeda',
+    nome: 'Galáxia de Andrômeda',
+    nomeEn: 'Andromeda Galaxy',
+    pt: ['Galáxia de Andrômeda', 'Andrômeda', 'M31', 'Messier 31', 'NGC 224'],
+    en: ['Andromeda Galaxy', 'Andromeda', 'M31', 'Messier 31', 'NGC 224'],
+    alvo: { vizinha: 'm31' },
+    categoria: 'galaxia',
+    classe: 'galáxia espiral',
+    raioPc: 40_000,
+    vista: 'doSol',
+    distanciaPc: { valor: 761_000, fonte: 'Li et al. 2021 (HST)' },
+    oQueE: {
+      pt: 'A grande espiral mais próxima, maior que a Via Láctea: vista daqui quase de lado, com o bojo amarelo, o anel de estrelas novas a 30 mil anos-luz do centro e faixas de poeira no lado mais perto. Ao lado dela, M32 e M110. É o objeto mais distante que se vê a olho nu.',
+      en: 'The nearest big spiral, larger than the Milky Way: seen from here almost edge-on, with its yellow bulge, the ring of young stars 30,000 light-years from the centre and dust lanes on the near side. Beside it, M32 and M110. It is the most distant thing you can see with the naked eye.',
+    },
+    fatos: [
+      {
+        campo: 'tamanho',
+        pt: 'cerca de 150 mil anos-luz de um lado a outro (o disco de estrelas)',
+        en: 'about 150,000 light-years across (the stellar disc)',
+        procedencia: 'derivado',
+        fonte: { pt: 'de Vaucouleurs RC3 (190′) × distância', en: 'de Vaucouleurs RC3 (190′) × distance' },
+      },
+      {
+        campo: 'massa',
+        pt: 'estrelas: 100 a 150 bilhões de sóis; com a matéria escura, ~1,5 trilhão',
+        en: 'stars: 100 to 150 billion suns; with dark matter, ~1.5 trillion',
+        procedencia: 'medido',
+        fonte: 'Tamm et al. 2012; Watkins et al. 2010',
+      },
+      {
+        campo: 'membros',
+        pt: 'da ordem de 300 bilhões de estrelas',
+        en: 'of the order of 300 billion stars',
+        procedencia: 'derivado',
+        fonte: MASSA_POR_ESTRELA,
+      },
+      {
+        campo: 'luz',
+        pt: 'há cerca de 2,5 milhões de anos',
+        en: 'about 2.5 million years ago',
+        procedencia: 'derivado',
+        fonte: TEMPO_DA_LUZ,
+      },
+      {
+        campo: 'naCena',
+        pt: 'posição, distância, inclinação (77°) e ângulo medidos; bojo, disco, anel, poeira, M32 e M110 são partículas de um modelo — não é foto',
+        en: 'position, distance, tilt (77°) and angle are measured; bulge, disc, ring, dust, M32 and M110 are particles of a model — not a photograph',
+        procedencia: 'artistico',
+        fonte: MODELO_DAS_VIZINHAS,
       },
     ],
   },

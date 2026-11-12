@@ -148,6 +148,7 @@ export const EN: Record<keyof typeof PT, string> = {
   // "Sea of Stars", the same name `app.titulo` already uses in English.
   'marca.nome': 'Sea of Stars',
   'contexto.viaLactea': 'The Milky Way',
+  'contexto.grupoLocal': 'Local Group',
   'contexto.sistemaSolar': 'Solar System',
 
   // ---- the settings panel ------------------------------------------
@@ -354,6 +355,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.destino.pleiades': 'The Seven Sisters, up close',
   'busca.destino.hyades': 'The open cluster nearest the Sun',
   'busca.destino.ana-de-sagitario': 'A galaxy being swallowed by ours',
+  'busca.destino.grande-nuvem-de-magalhaes': 'Our galaxy’s largest companion',
+  'busca.destino.andromeda': 'The big spiral next door',
 
   // ---- the gesture walkthrough -------------------------------------
   'convite.olhar': 'drag to look around',
@@ -496,6 +499,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.lugar.sombra': 'shadow',
   'ficha.lugar.anelEht': 'what the EHT saw',
   'ficha.lugar.estrelaS2': 'the star S2',
+  'ficha.lugar.luz': 'the light we see left it',
   'ficha.sonda.doSol': 'distance from the Sun',
   'ficha.sonda.luz': 'light takes, from here to Earth',
   'ficha.sonda.velocidade': 'speed relative to the Sun',
@@ -799,6 +803,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'classe.galáxia espiral barrada': 'barred spiral galaxy',
   'classe.vista da galáxia': 'view of the galaxy',
   'classe.galáxia anã': 'dwarf galaxy',
+  'classe.galáxia satélite': 'satellite galaxy',
+  'classe.galáxia espiral': 'spiral galaxy',
   'classe.sonda': 'spacecraft',
   'classe.cometa': 'comet',
   'classe.cometa interestelar': 'interstellar comet',
@@ -843,6 +849,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'unidade.anoLuz': '{n} light-year',
   'unidade.anosLuz': '{n} light-years',
   'unidade.milAnosLuz': '{n} thousand light-years',
+  'unidade.milhoesAnosLuz': '{n} million light-years',
   'unidade.vezesTerra': '{n}× Earth',
 
   // ---- what the numbers mean (Lote 4, item 5/§10) ---------------------

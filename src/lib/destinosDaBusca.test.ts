@@ -81,13 +81,15 @@ describe('destinosDaBusca', () => {
       'hyades',
       'sagittarius-a',
       'ana-de-sagitario',
+      'grande-nuvem-de-magalhaes',
+      'andromeda',
     ]);
   });
 
-  it('as categorias contam 8/4/6', () => {
+  it('as categorias contam 8/4/8', () => {
     expect(sistema.length).toBe(8);
     expect(estrelas.length).toBe(4);
-    expect(galaxia.length).toBe(6);
+    expect(galaxia.length).toBe(8);
   });
 
   it('o cartão de um corpo leva à distância da prévia dele; estrela e lugar não pedem nenhuma', () => {
