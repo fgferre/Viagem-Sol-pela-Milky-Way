@@ -35,5 +35,6 @@ engana). Rede pelo `capturas/peso/rede-medir.mjs`. Prancha antes × depois para 
 ## Estado (18/10, tarde) — primeira leva aprovada para publicar
 - Publicado com a palavra dele: Sol (9141b0fe), rede (92157341, 59240976, 7786caef, fb81784f) e o teto 4096 do
   telefone (7c8ba94b, aprovado por A/B). `npm run done` verde no conjunto; Safari do iPhone simulado carrega a Terra.
-- Próxima leva: bloom + clarão em meia resolução onde não muda a imagem; os pontos da galáxia de fora. Esperam a
+- Os pontos da galáxia de fora (12/11/2026): agora é feito pela rodada "galáxia só de partículas" (ramo `galaxia-particulas`, plano `PLAN-GALAXIA.md` naquele ramo); não espera mais aqui. O corte dos vértices invisíveis (brilho × alfa < 1e-4) já está em `src/three/shaders/galaxyShaders.ts`.
+- Próxima leva: bloom + clarão em meia resolução onde não muda a imagem; os pontos da galáxia de fora (ver a linha acima). Esperam a
   palavra dele: MSAA só nas fases com órbita; orçamento de pixels / menu de gráficos.
