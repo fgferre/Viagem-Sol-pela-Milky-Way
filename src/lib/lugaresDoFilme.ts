@@ -198,8 +198,8 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
       },
       {
         campo: 'membros',
-        pt: '≈ 400 estrelas dentro do raio de maré',
-        en: '≈ 400 stars within the tidal radius',
+        pt: '≈ 500 estrelas a até 60 anos-luz do centro',
+        en: '≈ 500 stars within 60 light-years of the centre',
         procedencia: 'derivado',
         fonte: 'Röser et al. 2019 (Gaia DR2)',
       },
@@ -254,8 +254,8 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
       },
       {
         campo: 'membros',
-        pt: '≈ 2.000 estrelas jovens no aglomerado da nebulosa',
-        en: '≈ 2,000 young stars in the nebula’s cluster',
+        pt: 'mais de mil estrelas jovens no aglomerado da nebulosa',
+        en: 'more than a thousand young stars in the nebula’s cluster',
         procedencia: 'derivado',
         fonte: 'Hillenbrand 1997',
       },
@@ -343,8 +343,8 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
       },
       {
         campo: 'orbita',
-        pt: 'uma volta do Sol em torno do centro leva ≈ 230 milhões de anos',
-        en: 'one lap of the Sun around the centre takes ≈ 230 million years',
+        pt: 'uma volta do Sol em torno do centro leva de 200 a 230 milhões de anos',
+        en: 'one lap of the Sun around the centre takes 200 to 230 million years',
         procedencia: 'derivado',
         fonte: SINTESE,
       },
@@ -379,7 +379,7 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
         pt: 'o aglomerado globular M54 fica no seu núcleo',
         en: 'the globular cluster M54 sits at its core',
         procedencia: 'derivado',
-        fonte: 'Ibata, Gilmore & Irwin 1994',
+        fonte: 'Ibata et al. 1994; Bellazzini et al. 2008',
       },
       {
         campo: 'naCena',
