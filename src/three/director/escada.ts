@@ -69,7 +69,7 @@ import { RAIO_LUA_PC } from '../world/corpos/lua';
 import type { RochosoResolvido } from '../world/corpos/rochoso';
 import { fatorDoRaioMaximo, posicaoDoRochosoUA, raiosDoRochosoPc } from '../world/corpos/rochoso';
 import type { GiganteResolvido } from '../world/corpos/gigante';
-import { posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
+import { ANEIS_CITADOS, posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
 import { RETRATO_2026 } from '../world/planetas/retrato2026';
 import type { IdRetrato } from '../world/planetas/retrato2026';
 import { escalaDaUi, larguraDeCss } from '../../lib/uiScale';
@@ -924,6 +924,9 @@ export class Escada {
       rampa: this.rampaDaEscada(),
       // o eixo do PLANETA no alto da tela, não o da eclíptica (Onda 7)
       polo: this.poloDoCorpo(id),
+      // corpo com anel chega pela face que o Sol ilumina (12/11/2026); o
+      // anel mora no equador, então o polo dele é o do corpo
+      poloDoAnel: id in ANEIS_CITADOS ? this.poloDoCorpo(id) : null,
       ...this.soloDe(id),
     });
     this.enquadrarAgora();

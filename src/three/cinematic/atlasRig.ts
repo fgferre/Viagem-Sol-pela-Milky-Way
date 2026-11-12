@@ -202,6 +202,21 @@ const _eixoDaTela = new THREE.Vector3();
 const _passoDoGiro = new THREE.Quaternion();
 /** a MIRA da pose que está na tela (câmera→frente) no quadro do clique */
 const _miraNaTela = new THREE.Vector3();
+/** o polo do anel, o Sol visto do alvo, o repouso, a chegada e o alto dela
+ *  (`chegarPeloLadoIluminado`) — rascunhos próprios, para não pisar nos
+ *  da partida da rampa */
+const _nDoAnel = new THREE.Vector3();
+const _solDoAlvo = new THREE.Vector3();
+const _repousoDoAnel = new THREE.Vector3();
+const _chegadaDoAnel = new THREE.Vector3();
+const _upDoAnel = new THREE.Vector3();
+
+/**
+ * A SOLEIRA DO EQUINÓCIO (12/11/2026): com o Sol a menos de 1° do plano do
+ * anel as duas faces estão quase igualmente no escuro, e a chegada fica no
+ * lado de sempre.
+ */
+export const SOLEIRA_DO_EQUINOCIO_RAD = Math.PI / 180;
 /** a base de uma pose pura, montada como o `lookAt` da câmera monta */
 const _baseDaPose = new THREE.Matrix4();
 /** o eixo `z` do frame de repouso — a mira, e o eixo do roll */
@@ -418,6 +433,12 @@ export class AtlasRig {
       pisoRaio?: number | null;
       /** quantos `pisoRaio` dá o piso; ausente = `K_MIN_RAIOS` */
       kDoPiso?: number;
+      /**
+       * o polo do plano do ANEL, quando o alvo tem anel: a chegada vai
+       * para a face que o Sol ilumina (ver `chegarPeloLadoIluminado`).
+       * Ausente = a chegada de sempre, bit a bit.
+       */
+      poloDoAnel?: THREE.Vector3 | null;
     } = {}
   ) {
     const pai = opcoes.pai ?? null;
@@ -503,6 +524,7 @@ export class AtlasRig {
     this.polo.copy(polo);
     this.guardarSolo(opcoes);
     this.giro.identity();
+    if (opcoes.poloDoAnel) this.chegarPeloLadoIluminado(opcoes.poloDoAnel);
     // alvo novo nasce olhando o alvo: a rampa (se houver) leva a
     // inclinação da partida a zero, junto com o resto da pose
     this.incl = 0;
@@ -1285,6 +1307,34 @@ export class AtlasRig {
    * O DEGRAU "LUA" tem lei própria (`direcaoDaLua`, a mistura que põe o
    * pai no quadro), e é só aqui que a diferença mora.
    */
+  /**
+   * A CHEGADA PELA FACE ILUMINADA DO ANEL (12/11/2026). O repouso sobe
+   * `PHASE_OFFSET_GRAUS` rumo ao polo do corpo, e desde o equinócio de 2025
+   * o Sol ilumina o SUL de Saturno: quem chegava via a face escura do anel,
+   * com o B preto por transmissão — física certa, primeira imagem errada.
+   * Quando o repouso e o Sol estão em lados OPOSTOS do plano do anel, a
+   * chegada é o repouso ESPELHADO no plano: a mesma elevação em módulo, o
+   * mesmo azimute, o mesmo polo no alto da tela. É só onde a câmera nasce —
+   * a luz não muda, e o visitante gira até a face escura quando quiser.
+   */
+  private chegarPeloLadoIluminado(poloDoAnel: THREE.Vector3) {
+    const n = _nDoAnel.copy(poloDoAnel);
+    if (n.lengthSq() === 0) return;
+    n.normalize();
+    // o Sol mora na origem: do alvo para ele é −(eixoDe − origem)
+    const sol = _solDoAlvo.copy(ORIGEM).sub(this.eixoDe);
+    if (sol.lengthSq() === 0) return;
+    sol.normalize();
+    const senSol = sol.dot(n);
+    if (Math.abs(senSol) < Math.sin(SOLEIRA_DO_EQUINOCIO_RAD)) return;
+    const repouso = this.repousoDe(this.eixoDe, this.alvo, this.pai, this.polo, _repousoDoAnel);
+    const senCam = repouso.dot(n);
+    if (senCam * senSol >= 0) return;
+    const chegada = _chegadaDoAnel.copy(repouso).addScaledVector(n, -2 * senCam);
+    upDoAtlas(chegada, this.polo, _upDoAnel);
+    giroQueProduz(chegada, _upDoAnel, repouso, this.polo, this.giro);
+  }
+
   private repousoDe(
     eixoDe: THREE.Vector3,
     alvo: THREE.Vector3,
