@@ -72,7 +72,7 @@ import { BETA_DA_EMISSAO, STAR_FRAG } from '../shaders/starShaders';
 import { GLSL_PONTO_NA_BORDA, GLSL_PONTO_NA_BORDA_VARYINGS } from '../shaders/pontoNaBorda';
 import { AU_PARA_PC } from '../../lib/atlas/frameGalactico';
 import type { PoliticaDeLuz } from '../../lib/atlas/luz';
-import { SOL_FORA_DO_ACES, SOL_NO_ACES, TEFF_SEM_FILTRO_K } from './stellarBody';
+import { SOL_FORA_DO_ACES, SOL_NO_ACES, TEFF_SEM_FILTRO_K, rocheDe } from './stellarBody';
 import { porCurva } from '../core/engine';
 
 const GRAU = Math.PI / 180;
@@ -81,48 +81,9 @@ const DIAS_POR_ANO = 365.25;
 
 // ─── AS PARTES PURAS (testadas sem GPU) ──────────────────────────────────
 
-/**
- * A FORMA E A TEMPERATURA DE UMA ROTADORA RÁPIDA — modelo de Roche com
- * rotação rígida (massa central, Rp = 1, GM = 1). A razão Re/Rp medida
- * fixa Ω² = 2(1 − Rp/Re)/Re²; a superfície r(θ) sai de
- * 1/r + ½Ω²r²sin²θ = 1 (Newton), e g_eff é o gradiente do potencial.
- *
- * A temperatura é von Zeipel, T ∝ g_eff^β, NORMALIZADA nas duas pontas
- * medidas (polo e equador de Monnier 2012): o β efetivo que faz isso com
- * esta forma é 0,2307 contra os 0,231 publicados (0,1 %), porque o
- * modelo do artigo também ajusta a lei de escurecimento de borda.
- */
-export interface Roche {
-  /** raio em unidades do raio EQUATORIAL (1 no equador) */
-  raio: number;
-  teffK: number;
-  /** normal externa em (radial, colatitude) — para a normal da malha */
-  nr: number;
-  nt: number;
-}
-
-export function rocheDe(colatRad: number, a: Achatamento): Roche {
-  const re = a.raioEquatorialRsol.v / a.raioPolarRsol.v;
-  const w2 = (2 * (1 - 1 / re)) / (re * re);
-  const s = Math.sin(colatRad);
-  const c = Math.cos(colatRad);
-  let r = 1;
-  for (let i = 0; i < 30; i++) {
-    const f = 1 / r + 0.5 * w2 * r * r * s * s - 1;
-    const df = -1 / (r * r) + w2 * r * s * s;
-    const passo = f / df;
-    r -= passo;
-    if (Math.abs(passo) < 1e-14) break;
-  }
-  // ∂Φ/∂r e (1/r)∂Φ/∂θ de Φ = −1/r − ½Ω²r²sin²θ: o vetor aponta para FORA
-  const gr = 1 / (r * r) - w2 * r * s * s;
-  const gt = -w2 * r * s * c;
-  const g = Math.hypot(gr, gt);
-  const gEq = 1 / (re * re) - w2 * re;
-  const tp = a.teffPoloK.v;
-  const beta = Math.log(a.teffEquadorK.v / tp) / Math.log(gEq);
-  return { raio: r / re, teffK: tp * Math.pow(g, beta), nr: gr / g, nt: gt / g };
-}
+// A FORMA E A TEMPERATURA DE UMA ROTADORA RÁPIDA (Roche + von Zeipel)
+// moram com o motor do Sol desde que ele desenha Vega (`stellarBody.ts`)
+export { rocheDe, type Roche } from './stellarBody';
 
 /**
  * A POSIÇÃO DA COMPANHEIRA RELATIVA À PRINCIPAL (hoje: Sirius B), em pc na base da cena

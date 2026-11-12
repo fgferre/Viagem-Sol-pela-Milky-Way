@@ -56,7 +56,14 @@
 import * as THREE from 'three';
 import { CAMADA_DOS_OCULTADORES } from '../core/post';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_DO_SOL_NA_CENA } from '../escala';
-import { RADIANCIA_DA_FOTOSFERA, TEFF_SOL_K, blackbodyLinear, radianciaDeTela } from '../luzDaCasa';
+import {
+  RADIANCIA_DA_FOTOSFERA,
+  TEFF_SOL_K,
+  blackbodyLinear,
+  radianciaDeTela,
+  radianciaVisivelDeCorpoNegro,
+} from '../luzDaCasa';
+import type { Achatamento } from '../../lib/atlas/estrelasVisitaveis';
 import type { EstadoDaEstrela, FaseDoCiclo } from '../estrela';
 import { UNIDADES_POR_CICLO, tempoDoCiclo } from '../estrela';
 import { GLSL_COMPRESSAO } from '../shaders/common';
@@ -276,11 +283,11 @@ export interface StellarParams {
    */
   readonly teffK: number;
   /**
-   * RESERVADO: envelope convectivo (granulação). O núcleo do doador não
-   * tem caminho radiativo — `sol/granulation.js` roda incondicionalmente
-   * — e abrir um exigiria editar os 14 vendorizados. Fica declarado
-   * porque é o parâmetro que decide se uma estrela tem grânulos, e a
-   * Onda 7 vai precisar dele para as classes quentes.
+   * ENVELOPE CONVECTIVO — o portão do dínamo (12/11). Sem ele (estrelas
+   * A, anãs brancas) não há manchas, ciclo, laços, proeminências,
+   * espículas, erupções, CME nem coroa quente: essas camadas nem nascem, o
+   * retrato da superfície é o mínimo (`TIER_SEM_DINAMO`) e a cirurgia
+   * `cirurgiaDaEstrela` apaga fibrilas, plage, filamentos e o fio do limbo.
    */
   readonly convective: boolean;
   /*
@@ -314,6 +321,246 @@ export interface StellarParams {
    * centro na origem). O Sol, na origem, não a recebe: sai bit a bit.
    */
   readonly foraDaOrigem?: boolean;
+  /**
+   * O CONTRASTE DA TEXTURA QUIETA relativo ao do Sol (1 = o Sol; omitido =
+   * 1): multiplica o desvio do calor em torno do meio (a disciplina tonal de
+   * `sol/sun.js`) e as fibrilas — manchas, plage, filamentos e erupções
+   * ficam de fora (são atividade, não convecção). A lei é dos dados:
+   * `contrasteGranulos / 0,15` (o rms do Sol).
+   */
+  readonly contrasteRelativoAoSol?: number;
+  /** O u da lei linear de borda (omitido = o 0,30 de `sol/sun.js`). */
+  readonly bordaU?: number;
+  /**
+   * ROTADORA RÁPIDA (omitido = esfera): a forma por um termo zonal ESTÁTICO
+   * de grau 2 no deslocamento do vertex (o P20 dos modos p), com polo e
+   * equador nos raios medidos e a normal da forma; e o escurecimento
+   * gravitacional, a Teff local de von Zeipel (`rocheDe`) na cor e no
+   * brilho de cada ponto. `radiusPc` é o raio EQUATORIAL.
+   */
+  readonly achatamento?: Achatamento;
+  /**
+   * O EIXO DE ROTAÇÃO na base da cena (unitário). Omitido: o +Y do motor
+   * inclinado por `tiltRad` (o Sol). Entra POR MALHA (quaternion), nunca no
+   * `group` — as coroas são billboards no referencial do group.
+   */
+  readonly eixoNaCena?: readonly [number, number, number];
+}
+
+/**
+ * A FORMA E A TEMPERATURA DE UMA ROTADORA RÁPIDA — modelo de Roche com
+ * rotação rígida (massa central, Rp = 1, GM = 1). A razão Re/Rp medida
+ * fixa Ω² = 2(1 − Rp/Re)/Re²; a superfície r(θ) sai de
+ * 1/r + ½Ω²r²sin²θ = 1 (Newton), e g_eff é o gradiente do potencial.
+ *
+ * A temperatura é von Zeipel, T ∝ g_eff^β, NORMALIZADA nas duas pontas
+ * medidas (polo e equador de Monnier 2012): o β efetivo que faz isso com
+ * esta forma é 0,2307 contra os 0,231 publicados (0,1 %), porque o
+ * modelo do artigo também ajusta a lei de escurecimento de borda.
+ * (Mora aqui desde que o motor do Sol a usa; `corpoDeEstrela.ts` a reexporta.)
+ */
+export interface Roche {
+  /** raio em unidades do raio EQUATORIAL (1 no equador) */
+  raio: number;
+  teffK: number;
+  /** normal externa em (radial, colatitude) — para a normal da malha */
+  nr: number;
+  nt: number;
+}
+
+export function rocheDe(colatRad: number, a: Achatamento): Roche {
+  const re = a.raioEquatorialRsol.v / a.raioPolarRsol.v;
+  const w2 = (2 * (1 - 1 / re)) / (re * re);
+  const s = Math.sin(colatRad);
+  const c = Math.cos(colatRad);
+  let r = 1;
+  for (let i = 0; i < 30; i++) {
+    const f = 1 / r + 0.5 * w2 * r * r * s * s - 1;
+    const df = -1 / (r * r) + w2 * r * s * s;
+    const passo = f / df;
+    r -= passo;
+    if (Math.abs(passo) < 1e-14) break;
+  }
+  // ∂Φ/∂r e (1/r)∂Φ/∂θ de Φ = −1/r − ½Ω²r²sin²θ: o vetor aponta para FORA
+  const gr = 1 / (r * r) - w2 * r * s * s;
+  const gt = -w2 * r * s * c;
+  const g = Math.hypot(gr, gt);
+  const gEq = 1 / (re * re) - w2 * re;
+  const tp = a.teffPoloK.v;
+  const beta = Math.log(a.teffEquadorK.v / tp) / Math.log(gEq);
+  return { raio: r / re, teffK: tp * Math.pow(g, beta), nr: gr / g, nt: gt / g };
+}
+
+/**
+ * O TERMO ZONAL DE GRAU 2 da forma achatada: r(μ) = R₀·(1 + a·P20(μ)), com
+ * P20 = 1,5μ² − 0,5 e μ = sen(latitude). Polo (P20 = 1) e equador
+ * (P20 = −½) caem exatamente nos raios medidos: a = 2(q − 1)/(2 + q), com
+ * q = Rp/Re. Devolve `a` e o fator que põe o EQUADOR no raio da malha
+ * (`1/(1 − a/2)`), porque `radiusPc` é o raio equatorial.
+ */
+export function termoZonalDaForma(raioPolar: number, raioEquatorial: number): { a: number; norma: number } {
+  const q = raioPolar / raioEquatorial;
+  const a = (2 * (q - 1)) / (2 + q);
+  return { a, norma: 1 / (1 - a / 2) };
+}
+
+/** O tier de uma estrela SEM DÍNAMO: o menor retrato que ainda desenha uma
+ *  fotosfera limpa (a textura quieta dela é quase plana). Custo, não física. */
+const TIER_SEM_DINAMO = { chromo: 256, simW: 192, simH: 96 } as const;
+
+/** Teto do multiplicador de laços pela atividade (o regime saturado de
+ *  Wright 2011 já é ~2× o Sol no `nivel`) — artístico, declarado. */
+const TETO_DOS_LACOS_PELA_ATIVIDADE = 2;
+
+interface Tier {
+  fbm: number;
+  seg: number;
+  simW: number;
+  simH: number;
+  simStep: number;
+  prom: number;
+  chromo: number;
+  granFreq: number;
+  lic7: boolean;
+  loops: number;
+  larc: number;
+  lseg: number;
+  cstep: number;
+  cmestep: number;
+  cmen: number;
+}
+
+/**
+ * O TIER DA ESTRELA sobre o do aparelho. No Sol devolve O MESMO objeto
+ * (nenhuma chave nova). Outra estrela: a frequência da convecção dividida
+ * pelo grânulo relativo (`granuloRelativoAoSol`); os laços ambientes pela
+ * atividade (até `TETO_DOS_LACOS_PELA_ATIVIDADE`×); sem dínamo, o retrato
+ * mínimo (`TIER_SEM_DINAMO`).
+ */
+export function tierDaEstrela(tier: Tier, p: StellarParams): Tier {
+  const g = p.granuloRelativoAoSol;
+  const granulo = g !== undefined && g !== 1 && g > 0 && Number.isFinite(g);
+  const lacos =
+    p.convective && p.activityLevel !== 1
+      ? Math.min(Math.max(p.activityLevel, 0), TETO_DOS_LACOS_PELA_ATIVIDADE)
+      : 1;
+  if (!granulo && p.convective && lacos === 1) return tier;
+  return {
+    ...tier,
+    ...(granulo ? { granFreq: tier.granFreq / g } : {}),
+    ...(!p.convective ? TIER_SEM_DINAMO : lacos !== 1 ? { loops: Math.max(1, Math.round(tier.loops * lacos)) } : {}),
+  };
+}
+
+/**
+ * A FREQUÊNCIA DAS ERUPÇÕES relativa ao Sol pela atividade (`activityLevel`
+ * = (L_X/L_bol relativa)^0,3): nivel² = razão^0,6. Proxima (razão ~11) sai
+ * ~4× mais frequente que o Sol — uma COMPRESSÃO ARTÍSTICA declarada (a taxa
+ * real de erupções de uma anã M ativa passa de 10× a do Sol). 1 no Sol.
+ */
+export function taxaDeErupcoesPelaAtividade(nivel: number): number {
+  return Number.isFinite(nivel) && nivel > 0 ? nivel * nivel : 0;
+}
+
+/** uma troca de texto com âncora ÚNICA — ausente ou repetida LANÇA */
+function trocarUma(texto: string, ancora: string, novo: string, quem: string): string {
+  const i = texto.indexOf(ancora);
+  if (i < 0 || texto.indexOf(ancora, i + 1) >= 0) {
+    throw new Error(`${quem}: a âncora \`${ancora.trim()}\` sumiu ou se repetiu no vendorizado (sol/sun.js)`);
+  }
+  return texto.slice(0, i) + novo + texto.slice(i + ancora.length);
+}
+
+/**
+ * A FOTOSFERA DE OUTRA ESTRELA, por cirurgia de texto no fragment de
+ * `sol/sun.js` (molde de `cirurgiaDaFotosfera`; cada âncora lança se sumir).
+ * Só entra o que a instância pede — o Sol não passa por aqui:
+ *  · `contraste` (≠ 1): a textura quieta (o achatamento tonal e as fibrilas);
+ *  · `bordaU` (≠ 0,30): o coeficiente da lei linear de borda;
+ *  · `semDinamo`: sem campo não há fibrilas, plage, filamentos nem o fio
+ *    cromosférico do limbo — a estrela sem envelope convectivo;
+ *  · `gravidade`: a cor × brilho da Teff local (`aGravidade`, por vértice).
+ */
+export function cirurgiaDaEstrela(
+  fragment: string,
+  o: { contraste?: number; bordaU?: number; semDinamo?: boolean; gravidade?: boolean }
+): string {
+  const quem = 'cirurgiaDaEstrela';
+  let f = fragment;
+  if (o.contraste !== undefined && o.contraste !== 1) {
+    const k = literalGlsl(Math.max(0, o.contraste));
+    f = trocarUma(
+      f,
+      '  heat = 0.50 + (heat - 0.52)*(mix(0.31, 0.26, close) + uMaxK*mix(0.39, 0.20, close));',
+      `  heat = 0.50 + (heat - 0.52)*(mix(0.31, 0.26, close) + uMaxK*mix(0.39, 0.20, close))*${k};`,
+      quem
+    );
+    f = trocarUma(
+      f,
+      '  heat += fibC * mix(0.055, 0.12, close) * (0.65 + 0.70*st.r);',
+      `  heat += fibC * mix(0.055, 0.12, close) * (0.65 + 0.70*st.r) * ${k};`,
+      quem
+    );
+    f = trocarUma(f, '    heat += close * fibF * 0.16;', `    heat += close * fibF * 0.16 * ${k};`, quem);
+    f = trocarUma(
+      f,
+      '      heat += closer * licFibril(sp, fdir, uGranFreq*7.0, 0.08, t*1.6) * 0.20;',
+      `      heat += closer * licFibril(sp, fdir, uGranFreq*7.0, 0.08, t*1.6) * 0.20 * ${k};`,
+      quem
+    );
+  }
+  if (o.bordaU !== undefined && o.bordaU !== 0.3) {
+    f = trocarUma(f, '  float limbU = 0.30;', `  float limbU = ${literalGlsl(o.bordaU)};`, quem);
+  }
+  if (o.semDinamo) {
+    f = trocarUma(f, '  float fibC = st.a*2.0 - 1.0;', '  float fibC = 0.0;', quem);
+    f = trocarUma(f, '  if (close > 0.003){', '  if (false){', quem);
+    f = trocarUma(f, '  float plage = st.b * (', '  float plage = 0.0 * st.b * (', quem);
+    f = trocarUma(f, '  float fil = st.g * ', '  float fil = 0.0 * st.g * ', quem);
+    f = trocarUma(
+      f,
+      '  color += uCorDoLimbo * pow(1.0-mu, 3.5)',
+      '  color += 0.0 * uCorDoLimbo * pow(1.0-mu, 3.5)',
+      quem
+    );
+  }
+  if (o.gravidade) {
+    f = 'varying vec3 vGravidade;\n' + trocarUma(f, '  color *= uPaleta;', '  color *= vGravidade;\n  color *= uPaleta;', quem);
+  }
+  return f;
+}
+
+/**
+ * A FORMA DE UMA ROTADORA RÁPIDA no vertex de `sol/sun.js`: o termo zonal
+ * estático (`termoZonalDaForma`) entra no MESMO deslocamento ao longo da
+ * normal que os modos p usam, e a normal passa a ser a da forma —
+ * n ∝ û − (r'/r)(ŷ − μû), com r'/r = 3aμ/(1 + a·P20). O eixo é o +Y do
+ * objeto (o do giro). Leva junto o fator da gravidade (`aGravidade`).
+ */
+export function cirurgiaDaForma(vertex: string, a: number, norma: number): string {
+  const quem = 'cirurgiaDaForma';
+  const A = literalGlsl(a);
+  const N = literalGlsl(norma);
+  let v = trocarUma(
+    vertex,
+    '  vec3 displaced = position + normal * (n * uDispScale + pmSum * 0.008 * length(position));',
+    [
+      '  vec3 uAch = normalize(position);',
+      '  float muAch = uAch.y;',
+      '  float p20Ach = 1.5*muAch*muAch - 0.5;',
+      `  float fAch = (1.0 + ${A}*p20Ach) * ${N};`,
+      '  vGravidade = aGravidade;',
+      '  vec3 displaced = position + normal * ((fAch - 1.0) * length(position) + n * uDispScale + pmSum * 0.008 * length(position));',
+    ].join('\n'),
+    quem
+  );
+  v = trocarUma(
+    v,
+    '  vNormalW = normalize(mat3(modelMatrix) * normal);',
+    `  vNormalW = normalize(mat3(modelMatrix) * normalize(uAch - (3.0*${A}*muAch/(1.0 + ${A}*p20Ach)) * (vec3(0.0, 1.0, 0.0) - muAch*uAch)));`,
+    quem
+  );
+  return 'attribute vec3 aGravidade;\nvarying vec3 vGravidade;\n' + v;
 }
 
 // ============================================================
@@ -407,10 +654,12 @@ export function cirurgiaDaMatiz(fragment: string): string {
   if (fim < 0 || fragment.lastIndexOf('void main') < 0 || fragment.includes('uMatizDaCamada')) {
     throw new Error('cirurgiaDaMatiz: fragment sem `main` ou já com a matiz');
   }
+  // GLSL3 (as partículas da CME) escreve num `out vec4`, não no gl_FragColor
+  const saida = /\bout\s+(?:(?:highp|mediump|lowp)\s+)?vec4\s+(\w+)\s*;/.exec(fragment)?.[1] ?? 'gl_FragColor';
   return (
     'uniform vec3 uMatizDaCamada;\n' +
     fragment.slice(0, fim) +
-    '  gl_FragColor.rgb *= uMatizDaCamada;\n' +
+    `  ${saida}.rgb *= uMatizDaCamada;\n` +
     fragment.slice(fim)
   );
 }
@@ -742,6 +991,8 @@ export const SOL_PARAMS: StellarParams = {
  * outra — regiões ativas e grupos de manchas nascem no mesmo instante e
  * têm de ser independentes.
  */
+const EIXO_Y = new THREE.Vector3(0, 1, 0);
+
 const FAMILIAS_DA_VIDA: Record<string, number> = { regiao: 1, mancha: 2 };
 
 /**
@@ -842,6 +1093,18 @@ export class StellarBody {
     uVistaLocalInv: { value: new THREE.Matrix4() },
     uCameraLocal: { value: new THREE.Vector3() },
   };
+  /**
+   * SEM DÍNAMO (`convective: false`, sem envelope convectivo): nada de
+   * manchas, ciclo, laços, proeminências, espículas, erupções, CME nem
+   * coroa quente — essas camadas nem nascem. Sobra a fotosfera.
+   */
+  private readonly semDinamo: boolean;
+  /** a frequência das erupções relativa ao Sol (1 = a do Sol, pulada) */
+  private readonly taxaDeErupcoes: number;
+  /** o eixo na base da cena (`eixoNaCena`) e o giro em torno dele */
+  private readonly qEixo: THREE.Quaternion | null = null;
+  private readonly qGiro = new THREE.Quaternion();
+  private giro = 0;
 
   constructor(
     params: StellarParams,
@@ -860,10 +1123,21 @@ export class StellarBody {
     this.faseDoCicloViva = cicloInicial;
     this.rotSpeed = rotSpeedFromPeriod(params.rotPeriodDays);
     this.outraCor = params.teffK !== TEFF_SOL_K;
+    this.semDinamo = !params.convective;
+    this.taxaDeErupcoes =
+      !this.semDinamo && params.activityLevel !== 1 ? taxaDeErupcoesPelaAtividade(params.activityLevel) : 1;
+    if (params.eixoNaCena) {
+      const [ex, ey, ez] = params.eixoNaCena;
+      this.qEixo = new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        new THREE.Vector3(ex, ey, ez).normalize()
+      );
+    }
     this.scale = params.radiusPc / DONOR_RADIUS;
     this.group.scale.setScalar(this.scale);
 
-    const tier = TIERS[TIER_FOR[quality]];
+    // o tier DA ESTRELA: no Sol é o objeto de sempre (nenhuma chave nova)
+    const tier = tierDaEstrela(TIERS[TIER_FOR[quality]], params);
     const srand = mulberry32(params.seed);
     // knobs por URL (?solcvol=0 etc.) — a URL é a fonte de verdade,
     // como no resto do app; sem query, os defaults de fábrica valem.
@@ -893,12 +1167,8 @@ export class StellarBody {
       // raio antes do primeiro passo. Ver o bloco acima de SOL_PARAMS.
       SUN_R_GLSL: literalGlsl(params.radiusPc),
       SEG_EPS_GLSL: epsilonDeSegmentoGlsl(params.radiusPc),
-      // a convecção da ESTRELA: a frequência do tier dividida pelo grânulo
-      // relativo (no Sol a chave nem existe, e o objeto é o tier de sempre)
-      TP:
-        params.granuloRelativoAoSol === undefined || params.granuloRelativoAoSol === 1
-          ? tier
-          : { ...tier, granFreq: tier.granFreq / params.granuloRelativoAoSol },
+      // o tier DA ESTRELA (`tierDaEstrela`): no Sol, o objeto de sempre
+      TP: tier,
       TIER: TIER_FOR[quality],
       FBM_OCTAVES: tier.fbm,
       SPHERE_SEG: tier.seg,
@@ -1009,6 +1279,16 @@ export class StellarBody {
     ctx.act = createActivity(ctx);
     ctx.charges = ctx.act.charges;
     ctx.pairStates = ctx.act.pairStates;
+    // SEM DÍNAMO, SEM CARGAS: as regiões e o dipolo polar vão a zero (o
+    // `prime` re-semeia o sim e re-assa com elas zeradas). Sobra o tapete
+    // misto do sim, que a cirurgia abaixo também não deixa virar plage
+    if (this.semDinamo) {
+      ctx.cycleAmpK = 0;
+      ctx.doseDoSol = 0;
+      ctx.act.cyclePolarN.w = 0;
+      ctx.act.cyclePolarS.w = 0;
+      ctx.act.updateActiveRegions(ctx.tempoDoCiclo);
+    }
     createSunUniforms(ctx);
     ctx.chromo = createChromo(ctx);
     createSunMesh(ctx);
@@ -1071,7 +1351,27 @@ export class StellarBody {
       this.filtroSolarLigado = true;
       mat.needsUpdate = true;
     }
+    // A FOTOSFERA DE OUTRA ESTRELA (contraste, borda, sem dínamo, forma
+    // achatada + gravidade): só o que a instância pede — o Sol não passa
+    this.operarAFotosfera(ctx);
     ctx.sunInvRot = new THREE.Matrix3();
+    // sem dínamo a atmosfera magnética inteira (coroa, CME, espículas,
+    // proeminências, laços, erupções) NEM NASCE
+    if (!this.semDinamo) this.criarAAtmosfera(ctx);
+    // o passo do sim escreve a textura viva também nas espículas
+    // (`granulation.js`): sem elas, um ralo no lugar
+    else ctx.spiculeUniforms = { uSimTex: { value: null } };
+    ctx.sunMesh.rotation.z = params.tiltRad;
+
+    if (params.foraDaOrigem || this.outraCor) this.operarAsCamadas(ctx);
+    if (this.qEixo) this.girarPeloEixo(ctx);
+
+    this.prime(renderer);
+  }
+
+  /** a atmosfera magnética, na ordem de criação do main.js original */
+  private criarAAtmosfera(ctx: any) {
+    const params = this.params;
     createCoronaRays(ctx);
     createCoronaVolume(ctx);
     createCME(ctx);
@@ -1094,16 +1394,77 @@ export class StellarBody {
     ctx.prom = createProminences(ctx);
     createLoops(ctx);
     createFlares(ctx);
+    // a primeira erupção também na frequência da estrela (no Sol, pulado)
+    if (this.taxaDeErupcoes !== 1) ctx.surfFlareCooldown /= Math.max(this.taxaDeErupcoes, 1e-3);
 
-    // inclinação do eixo (Sol: ~7,25°, como no original)
-    ctx.sunMesh.rotation.z = params.tiltRad;
+    // inclinação do eixo (Sol: ~7,25°, como no original; a fotosfera a
+    // recebe no construtor, porque sem dínamo esta função nem roda)
     ctx.prominenceGroup.rotation.z = params.tiltRad;
     ctx.spiculeMesh.rotation.z = params.tiltRad;
     ctx.loopGroup.rotation.z = params.tiltRad;
+  }
 
-    if (params.foraDaOrigem || this.outraCor) this.operarAsCamadas(ctx);
+  /**
+   * As cirurgias da fotosfera de OUTRA estrela (`cirurgiaDaEstrela`,
+   * `cirurgiaDaForma`), antes da primeira compilação. Sem nenhum campo
+   * novo nos parâmetros (o Sol) não toca em nada.
+   */
+  private operarAFotosfera(ctx: any) {
+    const p = this.params;
+    const a = p.achatamento;
+    const o = {
+      contraste: p.contrasteRelativoAoSol,
+      bordaU: p.bordaU,
+      semDinamo: this.semDinamo,
+      gravidade: Boolean(a),
+    };
+    if ((o.contraste === undefined || o.contraste === 1) && (o.bordaU === undefined || o.bordaU === 0.3) && !o.semDinamo && !a) {
+      return;
+    }
+    const mat = ctx.sunMesh.material as THREE.ShaderMaterial;
+    mat.fragmentShader = cirurgiaDaEstrela(mat.fragmentShader, o);
+    // o RELEVO da fotosfera (o fbm do vertex, `uDispScale`) é o da mesma
+    // convecção: escala com o contraste dela (A: quase liso)
+    if (o.contraste !== undefined && o.contraste !== 1) {
+      ctx.sunUniforms.uDispScale.value *= Math.max(0, o.contraste);
+    }
+    if (a) {
+      const { a: k, norma } = termoZonalDaForma(a.raioPolarRsol.v, a.raioEquatorialRsol.v);
+      mat.vertexShader = cirurgiaDaForma(mat.vertexShader, k, norma);
+      // a GRAVIDADE por vértice: cor × brilho da Teff local (von Zeipel,
+      // `rocheDe`) relativos à média da estrela (`teffK`, a que a matiz e o
+      // brilho de CPU já usam) — interpolada por fragmento
+      const geo = ctx.sunMesh.geometry as THREE.BufferGeometry;
+      const pos = geo.getAttribute('position') as THREE.BufferAttribute;
+      const fator = new Float32Array(pos.count * 3);
+      const Tm = p.teffK;
+      const cm = corpoNegroUnitario(Tm);
+      const rm = radianciaVisivelDeCorpoNegro(Tm);
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        const colat = Math.acos(Math.max(-1, Math.min(1, y / Math.hypot(x, y, z))));
+        const T = rocheDe(colat, a).teffK;
+        const c = corpoNegroUnitario(T);
+        const b = radianciaVisivelDeCorpoNegro(T) / rm;
+        for (let k2 = 0; k2 < 3; k2++) fator[i * 3 + k2] = (c[k2] / cm[k2]) * b;
+      }
+      geo.setAttribute('aGravidade', new THREE.BufferAttribute(fator, 3));
+    }
+    mat.needsUpdate = true;
+  }
 
-    this.prime(renderer);
+  /**
+   * O EIXO NA BASE DA CENA, por malha (`eixoNaCena`): o quaternion de cada
+   * corpo girante é eixo × giro. Chamado no nascimento e a cada quadro.
+   */
+  private girarPeloEixo(ctx: any) {
+    this.qGiro.setFromAxisAngle(EIXO_Y, this.giro);
+    const q = ctx.sunMesh.quaternion.copy(this.qEixo!).multiply(this.qGiro);
+    for (const m of [ctx.prominenceGroup, ctx.spiculeMesh, ctx.loopGroup, ...(ctx.cmePts?.meshes ?? [])]) {
+      if (m) m.quaternion.copy(q);
+    }
   }
 
   /**
@@ -1512,8 +1873,10 @@ export class StellarBody {
     // Fisicamente proeminências/loops somem a distâncias estelares.
     const fk = (ctx.camDist - 35) / 25;
     this.limboFade = fk <= 0 ? 1 : fk >= 1 ? 0 : 1 - fk * fk * (3 - 2 * fk);
-    ctx.prominenceGroup.visible = this.limboFade > 0.01;
-    ctx.loopGroup.visible = this.limboFade > 0.01;
+    if (!this.semDinamo) {
+      ctx.prominenceGroup.visible = this.limboFade > 0.01;
+      ctx.loopGroup.visible = this.limboFade > 0.01;
+    }
 
     // O PESO DA LEI (M1). `uWorldFade` — que a F3 deixou em 1 SEMPRE por
     // ausência de lei — voltou a ter dono: é o peso da representação
@@ -1527,18 +1890,22 @@ export class StellarBody {
     // invariante da troca é cobrado PÓS-curva (§5.1 da Lei) e o joelho
     // não pode andar durante a transição.
     ctx.sunUniforms.uWorldFade.value = this.pesoDaLei;
-    ctx.spiculeUniforms.uWorldFade.value = this.pesoDaLei;
-    ctx.coronaRaysUniforms.uRayBoost.value = this.kn.ray;
-    ctx.coronaRaysUniforms.uHalo.value = this.kn.halo;
+    if (!this.semDinamo) {
+      ctx.spiculeUniforms.uWorldFade.value = this.pesoDaLei;
+      ctx.coronaRaysUniforms.uRayBoost.value = this.kn.ray;
+      ctx.coronaRaysUniforms.uHalo.value = this.kn.halo;
+    }
     // R1b: a calibração de arte pela curva viva do renderer (`SOL_FORA_DO_ACES`)
     const tom = ctx.renderer.toneMapping;
     ctx.paleta.value.copy(porCurva(tom, SOL_NO_ACES.ganho, SOL_FORA_DO_ACES.paleta));
     ctx.corFria.value.copy(porCurva(tom, SOL_NO_ACES.corFria, SOL_FORA_DO_ACES.corFria));
     ctx.corQuente.value.copy(porCurva(tom, SOL_NO_ACES.corQuente, SOL_FORA_DO_ACES.corQuente));
     ctx.corDoLimbo.value.copy(porCurva(tom, SOL_NO_ACES.limbo, SOL_FORA_DO_ACES.limbo));
-    ctx.absMesh.material = porCurva(tom, ctx.absMat, ctx.absMatTingido);
     ctx.paletaDaCoroa.value.copy(porCurva(tom, SOL_NO_ACES.ganho, SOL_FORA_DO_ACES.coroa));
-    ctx.coronaOuter.material.color.copy(porCurva(tom, SOL_NO_ACES.coroaExterna, SOL_FORA_DO_ACES.coroaExterna));
+    if (!this.semDinamo) {
+      ctx.absMesh.material = porCurva(tom, ctx.absMat, ctx.absMatTingido);
+      ctx.coronaOuter.material.color.copy(porCurva(tom, SOL_NO_ACES.coroaExterna, SOL_FORA_DO_ACES.coroaExterna));
+    }
     if (this.outraCor) this.matizarPelaTemperatura(ctx);
     if (!this.group.visible) return;
 
@@ -1615,30 +1982,43 @@ export class StellarBody {
     ctx.sunUniforms.uBakeMix.value = Math.min(1, (ctx.elapsed - ctx.bakeSwapT) / ctx.bakeCycleDt);
 
     // --- rotação + inversa compartilhada (tilt+spin) ---
-    ctx.sunMesh.rotation.y = anguloDoGiro(
-      ctx.sunMesh.rotation.y,
-      this.rotSpeed,
-      delta,
-      this.jdDaCena,
-      this.params.rotPeriodDays
-    );
-    ctx.prominenceGroup.rotation.y = ctx.sunMesh.rotation.y;
-    ctx.spiculeMesh.rotation.y = ctx.sunMesh.rotation.y;
-    ctx.loopGroup.rotation.y = ctx.sunMesh.rotation.y;
+    if (this.qEixo) {
+      // eixo na base da cena (`eixoNaCena`): o mesmo giro, por quaternion
+      this.giro = anguloDoGiro(this.giro, this.rotSpeed, delta, this.jdDaCena, this.params.rotPeriodDays);
+      this.girarPeloEixo(ctx);
+    } else {
+      ctx.sunMesh.rotation.y = anguloDoGiro(
+        ctx.sunMesh.rotation.y,
+        this.rotSpeed,
+        delta,
+        this.jdDaCena,
+        this.params.rotPeriodDays
+      );
+      if (!this.semDinamo) {
+        ctx.prominenceGroup.rotation.y = ctx.sunMesh.rotation.y;
+        ctx.spiculeMesh.rotation.y = ctx.sunMesh.rotation.y;
+        ctx.loopGroup.rotation.y = ctx.sunMesh.rotation.y;
+      }
+    }
     this.sunRotM4.makeRotationFromQuaternion(ctx.sunMesh.quaternion);
     ctx.sunInvRot.setFromMatrix4(this.sunRotM4).transpose();
-    ctx.spiculeUniforms.uTime.value = ctx.elapsed;
+    if (!this.semDinamo) ctx.spiculeUniforms.uTime.value = ctx.elapsed;
 
     // --- ciclo de 11 anos + regiões ativas ---------------------------
     // O relógio LENTO é a data e chega escrito (`escreverCiclo`): não há
     // o que integrar aqui, e é por isso que ele anda para trás de graça.
     // A dramaturgia por torção de fase morreu — o filme atenua OCUPAÇÃO
     // (`escreverDose`), nunca a fase.
-    if (ctx.act.cycleDepth() > 0.001) ctx.act.updateCycleState();
-    else if (ctx.solarMaxK !== 0) ctx.solarMaxK = 0;
+    // (sem dínamo não há ciclo: as cargas ficam no zero do nascimento)
+    if (!this.semDinamo) {
+      if (ctx.act.cycleDepth() > 0.001) ctx.act.updateCycleState();
+      else if (ctx.solarMaxK !== 0) ctx.solarMaxK = 0;
+    }
     ctx.sunUniforms.uMaxK.value = ctx.solarMaxK;
     ctx.act.updateActiveRegions(ctx.tempoDoCiclo);
     if (this.reassar !== null) this.passoDoReassar();
+    // daqui para baixo é a atmosfera magnética — sem dínamo ela não nasceu
+    if (this.semDinamo) return;
 
     // --- flare de superfície (duas fases; sem CME na fase 1) ---
     if (delta > 0) {
@@ -1651,6 +2031,8 @@ export class StellarBody {
         }
         ctx.surfFlareCooldown =
           (12 + ctx.srand() * 14) / (0.5 + 1.1 * ctx.coronaRaysUniforms.uActivity.value);
+        // a frequência DA ESTRELA pela atividade (no Sol, pulado)
+        if (this.taxaDeErupcoes !== 1) ctx.surfFlareCooldown /= Math.max(this.taxaDeErupcoes, 1e-3);
       }
       ctx.surfFlareT += delta;
     }
@@ -1674,7 +2056,7 @@ export class StellarBody {
     ctx.updateLoops(delta);
 
     // --- CME: relógio, casca e partículas (episódico; custo ~zero fora) ---
-    if (ctx.cmePts?.on) {
+    if (ctx.cmePts?.on && !this.qEixo) {
       ctx.cmePts.meshes[0].rotation.y = ctx.sunMesh.rotation.y;
       ctx.cmePts.meshes[1].rotation.y = ctx.sunMesh.rotation.y;
     }
@@ -1808,6 +2190,7 @@ export class StellarBody {
     }
     const Pc = ctx.paletaDaCoroa.value as THREE.Vector3;
     Pc.multiply(matizDe(Pc, T, this.matizTmp));
+    if (this.semDinamo) return;
     const sprite = ctx.coronaOuter.material.color as THREE.Color;
     matizDe(this.corTmp.set(sprite.r, sprite.g, sprite.b), T, this.matizTmp);
     sprite.setRGB(sprite.r * this.matizTmp.x, sprite.g * this.matizTmp.y, sprite.b * this.matizTmp.z);

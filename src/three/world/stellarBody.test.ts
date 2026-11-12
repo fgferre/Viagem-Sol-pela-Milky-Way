@@ -32,11 +32,17 @@ import {
   StellarBody,
   anguloDoGiro,
   cirurgiaDaCoroaOcultavel,
+  cirurgiaDaEstrela,
+  cirurgiaDaForma,
   cirurgiaDaFotosfera,
+  cirurgiaDaMatiz,
   coroaOcultavel,
   epsilonDeSegmentoGlsl,
   literalGlsl,
   rotSpeedFromPeriod,
+  taxaDeErupcoesPelaAtividade,
+  termoZonalDaForma,
+  tierDaEstrela,
 } from './stellarBody';
 import { uvMeshVertex } from './sol/common.js';
 
@@ -159,17 +165,15 @@ describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
     expect(SOL_PARAMS.knobs.spots * 0.5).toBe(0.5);
   });
 
-  it('teffK ganhou o primeiro consumidor no M1; convective segue RESERVADO', () => {
+  it('teffK é lido pela lei e pela gravidade; convective virou o PORTÃO DO DÍNAMO (12/11)', () => {
     expect(SOL_PARAMS.teffK).toBe(5772);
     expect(SOL_PARAMS.convective).toBe(true);
     const src = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
-    // o consumidor é o ESTADO DA LEI: a instância declara quem ela é e
-    // `repartir` deriva radiância e cor da temperatura — exatamente uma
-    // leitura, dentro de `estadoDaLei`
-    expect(src.match(/p\.teffK/g)).toHaveLength(1);
-    // convective continua declarado e não lido (o núcleo do doador não
-    // tem caminho radiativo — `sol/granulation.js` roda incondicional)
-    expect(src.match(/params\.convective|p\.convective/g)).toBeNull();
+    // o estado da lei e a média da gravidade (`operarAFotosfera`)
+    expect(src.match(/p\.teffK/g)).toHaveLength(2);
+    // sem envelope convectivo não há dínamo: o construtor (`semDinamo`) e
+    // o tier da estrela (`tierDaEstrela`) leem o campo
+    expect(src).toContain('this.semDinamo = !params.convective;');
   });
 });
 
@@ -585,5 +589,39 @@ describe('F4 — a coroa testa profundidade contra os globos, na frente do próp
     expect(ordem('./sol/coronaRays.js', 'coronaRays', '-1')).toBe(true);
     expect(ordem('./sol/coronaVolume.js', 'coronaVol', '-1')).toBe(true);
     expect(ordem('./sol/cme.js', 'cmeMesh', '-0.75')).toBe(true);
+  });
+});
+
+describe('um motor, qualquer estrela — os parâmetros novos são neutros no Sol', () => {
+  const sunJs = readFileSync(new URL('./sol/sun.js', import.meta.url), 'utf8');
+  const tier = { fbm: 5, seg: 128, simW: 768, simH: 384, simStep: 1 / 26, prom: 7, chromo: 2048, granFreq: 34, lic7: true, loops: 16, larc: 9, lseg: 44, cstep: 36, cmestep: 24, cmen: 2048 };
+
+  it('o tier do Sol é o MESMO objeto; sem dínamo, o retrato mínimo; laços pela atividade com teto', () => {
+    expect(tierDaEstrela(tier, SOL_PARAMS)).toBe(tier);
+    const a = tierDaEstrela(tier, { ...SOL_PARAMS, convective: false, activityLevel: 0 });
+    expect([a.chromo, a.simW, a.simH, a.loops]).toEqual([256, 192, 96, 16]);
+    expect(tierDaEstrela(tier, { ...SOL_PARAMS, activityLevel: 2.06 }).loops).toBe(32);
+    expect(taxaDeErupcoesPelaAtividade(1)).toBe(1);
+  });
+
+  it('o termo zonal de grau 2 põe polo e equador nos raios medidos (Vega)', () => {
+    const { a, norma } = termoZonalDaForma(2.418, 2.726);
+    expect((1 + a * -0.5) * norma).toBeCloseTo(1, 12);
+    expect((1 + a) * norma).toBeCloseTo(2.418 / 2.726, 12);
+  });
+
+  it('as âncoras da fotosfera existem UMA vez no vendorizado real; sem pedido, nada muda', () => {
+    expect(cirurgiaDaEstrela(sunJs, {})).toBe(sunJs);
+    const f = cirurgiaDaEstrela(sunJs, { contraste: 0.1, bordaU: 0.5, semDinamo: true, gravidade: true });
+    expect(f).toContain('float limbU = 0.500000;');
+    expect(f).toContain('float plage = 0.0 * st.b');
+    expect(f).toContain('color *= vGravidade;');
+    expect(() => cirurgiaDaForma(sunJs, -0.078, 1.04)).not.toThrow();
+  });
+
+  it('a matiz escreve na saída GLSL3 quando ela existe (as partículas da CME)', () => {
+    const g3 = 'out vec4 fragColor;\nvoid main(){\n  fragColor = vec4(1.0);\n}';
+    expect(cirurgiaDaMatiz(g3)).toContain('fragColor.rgb *= uMatizDaCamada;');
+    expect(cirurgiaDaMatiz('void main(){\n  gl_FragColor = vec4(1.0);\n}')).toContain('gl_FragColor.rgb *= uMatizDaCamada;');
   });
 });

@@ -46,6 +46,7 @@ import {
   fotosferaDaCompanheira,
   fotosferaDe,
   ganhoDaVisita,
+  CONTRASTE_REAL_DO_SOL,
   granuloNaTelaEmRaios,
   posicaoDaCompanheira,
   raioDaEstrelaPc,
@@ -73,12 +74,12 @@ export function lerPortaMotorDoSol(bruto: string | null): boolean {
 }
 
 /**
- * QUEM O MOTOR DO SOL DESENHA (12/11, teste da rota "um motor só"): por ora
- * só Proxima — as outras três seguem no motor simples (`corpoDeEstrela.ts`)
- * até a forma achatada, as células gigantes e a borda difusa virarem
- * parâmetros do motor do Sol.
+ * QUEM O MOTOR DO SOL DESENHA (12/11, "um motor só"): Proxima, Sirius A e
+ * B, e Vega — cada uma por parâmetros físicos do mesmo motor. Betelgeuse
+ * segue no motor simples (`corpoDeEstrela.ts`) até as células gigantes e a
+ * borda difusa virarem parâmetros (a próxima rodada).
  */
-const NO_MOTOR_DO_SOL: ReadonlySet<string> = new Set(['proxima']);
+const NO_MOTOR_DO_SOL: ReadonlySet<string> = new Set(['proxima', 'sirius', 'vega']);
 
 /** A distância (pc) além da qual a estrela do motor do Sol, fora de foco, é
  *  desmontada (2× o preparo: histerese, para não remontar na borda). */
@@ -87,17 +88,27 @@ const RAIO_DE_DESMONTE_PC = 2 * RAIO_DE_PREPARO_PC;
 /**
  * Os parâmetros do motor do Sol PELA FÍSICA de uma estrela visitável. Cada
  * campo é a lei dos dados; o que não tem lei é o do Sol, declarado:
- *  · raio físico; período medido; Teff (cor e brilho, `stellarBody.ts`);
+ *  · raio físico (o EQUATORIAL, o de enquadramento); período medido; Teff
+ *    (cor e brilho, `stellarBody.ts`);
+ *  · envelope convectivo pela Teff (`TEFF_SEM_ENVELOPE_K`): sem ele, sem
+ *    dínamo — o motor nem constrói a atmosfera magnética;
  *  · grânulo na tela relativo ao do Sol (`granuloNaTelaEmRaios`, Hp ∝ T·R/M);
+ *  · contraste da textura quieta relativo ao do Sol (`contrasteGranulos`
+ *    sobre o rms real do Sol, 0,15);
+ *  · borda pelo u linear de Claret (`bordaU`);
  *  · atividade pelo número de Rossby (`atividadeDe`, Wright 2011) — no lugar
- *    de `manchas`/`erupcoes`, que ficam só para o motor simples;
- *  · eixo: o +Y do motor sem inclinação (ARTÍSTICO — nenhuma das três tem
- *    eixo medido; o piloto usa o polo celeste, o motor não gira o grupo
- *    porque as coroas são billboards no referencial do grupo);
+ *    de `manchas`/`erupcoes`, que ficam só para o motor simples; ela move
+ *    manchas, ciclo, a frequência das erupções e a contagem de laços;
+ *  · rotadora rápida (Vega): forma achatada + escurecimento gravitacional
+ *    (`achatamento`), com o eixo na base da cena (`eixo`, o do piloto:
+ *    6,2° da linha até o Sol medido, ângulo de posição ARTÍSTICO);
+ *  · eixo das outras: o +Y do motor sem inclinação (ARTÍSTICO — nenhuma tem
+ *    eixo medido);
  *  · semente: a do Sol ⊕ HIP (outra superfície, mesma receita);
  *  · knobs de URL com o prefixo do id (`?proximaspots=`).
  */
-export function parametrosDoMotor(e: EstrelaVisitavel): StellarParams {
+export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): StellarParams {
+  const s = e.superficie;
   return {
     ...SOL_PARAMS,
     nome: e.id,
@@ -110,7 +121,38 @@ export function parametrosDoMotor(e: EstrelaVisitavel): StellarParams {
     seed: (SOL_PARAMS.seed ^ e.hip) >>> 0,
     knobPrefix: e.id,
     granuloRelativoAoSol:
-      granuloNaTelaEmRaios(e.superficie.granuloEmRaios.v) / granuloNaTelaEmRaios(GRANULO_SOL_EM_RAIOS),
+      granuloNaTelaEmRaios(s.granuloEmRaios.v) / granuloNaTelaEmRaios(GRANULO_SOL_EM_RAIOS),
+    contrasteRelativoAoSol: s.contrasteGranulos.v / CONTRASTE_REAL_DO_SOL,
+    bordaU: s.bordaU.v,
+    foraDaOrigem: true,
+    ...(e.achatamento ? { achatamento: e.achatamento } : {}),
+    ...(e.achatamento && eixo ? { eixoNaCena: [eixo.x, eixo.y, eixo.z] as const } : {}),
+  };
+}
+
+/**
+ * A COMPANHEIRA (Sirius B) como SEGUNDA INSTÂNCIA do mesmo motor — um
+ * binário são duas instâncias, nada de binário dentro do motor. Anã branca:
+ * raio e Teff medidos, sem envelope convectivo (sem dínamo, sem grânulo
+ * visível — Hp de metros), u = 0,3 (a escolha declarada do piloto, que é o
+ * mesmo 0,30 do Sol), contraste 0. Sem eixo medido.
+ */
+export function parametrosDaCompanheira(e: EstrelaVisitavel): StellarParams | null {
+  const c = e.companheira;
+  if (!c) return null;
+  return {
+    ...SOL_PARAMS,
+    nome: `${e.id}-b`,
+    radiusPc: c.raioRsol.v * RAIO_SOL_PC,
+    rotPeriodDays: SOL_PARAMS.rotPeriodDays,
+    tiltRad: 0,
+    activityLevel: 0,
+    teffK: c.teffK.v,
+    convective: false,
+    seed: (SOL_PARAMS.seed ^ e.hip ^ 0x0b0b0b0b) >>> 0,
+    knobPrefix: `${e.id}b`,
+    contrasteRelativoAoSol: 0,
+    bordaU: 0.3,
     foraDaOrigem: true,
   };
 }
@@ -130,11 +172,13 @@ export class EstrelaPeloMotorDoSol {
   readonly fotosfera: { readonly teffK: number };
   /** o custo da construção (prime: sim + bake + coroa), ms */
   readonly msDeConstrucao: number;
+  /** o tier com que nasceu — trocar de tier REMONTA (`EstrelasNoQuadro`) */
+  readonly quality: QualityLevel;
   private readonly meios: MeiosDoMotor;
-  constructor(e: EstrelaVisitavel, meios: MeiosDoMotor, jd: number) {
+  constructor(params: StellarParams, meios: MeiosDoMotor, jd: number) {
     this.meios = meios;
+    this.quality = meios.quality;
     const t0 = performance.now();
-    const params = parametrosDoMotor(e);
     this.corpo = new StellarBody(params, meios.renderer, meios.camera, meios.quality, faseDoCiclo(jd));
     this.msDeConstrucao = performance.now() - t0;
     this.group = this.corpo.group;
@@ -281,7 +325,9 @@ export class EstrelasNoQuadro {
   private criar(p: Piloto, jd: number) {
     const f = fotosferaDe(p.dados);
     const meios = NO_MOTOR_DO_SOL.has(p.dados.id) ? this.fios.motorDoSol() : null;
-    const corpo = meios ? new EstrelaPeloMotorDoSol(p.dados, meios, jd) : new CorpoDeEstrela(f);
+    const corpo = meios
+      ? new EstrelaPeloMotorDoSol(parametrosDoMotor(p.dados, p.eixo), meios, jd)
+      : new CorpoDeEstrela(f);
     if (corpo instanceof EstrelaPeloMotorDoSol) corpo.group.position.copy(p.pos);
     this.group.add(corpo.group);
     p.principal = {
@@ -290,8 +336,11 @@ export class EstrelasNoQuadro {
       estado: estadoDe(p.dados.id, corpo.raioPc, f.teffK, p.pos),
     };
     const fb = fotosferaDaCompanheira(p.dados);
+    const pb = meios ? parametrosDaCompanheira(p.dados) : null;
     if (fb) {
-      const cb = new CorpoDeEstrela(fb);
+      // a companheira pelo MESMO motor (segunda instância) quando a
+      // principal está nele; o ponto de luz fica — de longe ela é sub-pixel
+      const cb = pb ? new EstrelaPeloMotorDoSol(pb, meios!, jd) : new CorpoDeEstrela(fb);
       const stars = this.fios.stars();
       const ponto = new PontoDeEstrela(fb, stars?.expoM0 ?? EXPO_M0, stars?.sigmaPx ?? SIGMA_PX);
       this.group.add(cb.group, ponto.points);
@@ -371,18 +420,16 @@ export class EstrelasNoQuadro {
     for (const p of this.pilotos) {
       const emFoco = q.focoNome === p.dados.nomeNoCatalogo;
       // o motor do Sol é PESADO (sim, bakes, coroa 3D): fora de foco e longe,
-      // desmonta — e devolve o ponto, o palco e a memória
-      if (
-        p.principal?.corpo instanceof EstrelaPeloMotorDoSol &&
-        !emFoco &&
-        q.camPos.distanceTo(p.pos) > RAIO_DE_DESMONTE_PC
-      ) {
-        p.principal.corpo.dispose();
-        this.fios.palco().remover(`estrela:${p.principal.estado.id}`);
-        p.principal = null;
-        if (stars && p.indice >= 0 && p.cedeu !== 0) stars.writeFocus(p.indice, 0);
-        p.cedeu = 0;
-        continue;
+      // desmonta — e devolve o ponto, o palco e a memória. Trocar de TIER
+      // também: o corpo nasce com o tier do aparelho (como o Sol, que o
+      // director refaz na troca) e renasce logo abaixo, no tier novo
+      if (p.principal?.corpo instanceof EstrelaPeloMotorDoSol) {
+        const longe = !emFoco && q.camPos.distanceTo(p.pos) > RAIO_DE_DESMONTE_PC;
+        const tierNovo = this.fios.motorDoSol()?.quality;
+        if (longe || (tierNovo !== undefined && tierNovo !== p.principal.corpo.quality)) {
+          this.desmontar(p);
+          if (longe) continue;
+        }
       }
       if (!p.principal) {
         const perto = q.camPos.distanceTo(p.pos) < RAIO_DE_PREPARO_PC;
@@ -418,6 +465,25 @@ export class EstrelasNoQuadro {
         });
       }
     }
+  }
+
+  /** devolve o ponto, o palco e a memória das duas superfícies de um piloto */
+  private desmontar(p: Piloto) {
+    const stars = this.fios.stars();
+    for (const s of [p.principal, p.companheira]) {
+      if (!s) continue;
+      s.corpo.group.removeFromParent();
+      s.corpo.dispose();
+      this.fios.palco().remover(`estrela:${s.estado.id}`);
+    }
+    if (p.companheira) {
+      p.companheira.ponto.points.removeFromParent();
+      p.companheira.ponto.dispose();
+    }
+    p.principal = null;
+    p.companheira = null;
+    if (stars && p.indice >= 0 && p.cedeu !== 0) stars.writeFocus(p.indice, 0);
+    p.cedeu = 0;
   }
 
   private passo(
