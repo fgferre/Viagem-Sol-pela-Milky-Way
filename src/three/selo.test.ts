@@ -936,6 +936,17 @@ describe('F3 — o Sol saiu da acusação de escala, sem porta nenhuma', () => {
     expect(estadoDoSelo(com({ distanciaPc: 8150, distanciaAoCentroPc: 10 })).escala).toBe('fora');
   });
 
+  it('em escala real perto de Sgr A✱ o brilho do disco é declarado de autor; de longe, não', () => {
+    const linha = (d: number, camadasEscondidas: string[] = []) =>
+      estadoDoSelo(com({ distanciaPc: 8150, distanciaAoCentroPc: d, camadasEscondidas })).desvios.find(
+        (c) => c.chave === 'brilho-do-buraco'
+      );
+    expect(linha(1e-5)?.rotulo).toContain('brilho é artístico');
+    expect(linha(1e-5)?.volta).toBe('nenhuma');
+    expect(linha(1e-3)).toBeUndefined();
+    expect(linha(1e-5, ['nobh'])).toBeUndefined();
+  });
+
   it('`?solreal=1` virou porta DESCONHECIDA: quem a digitar hoje é avisado', () => {
     // ela foi porta declarada da F1 à F3. Agora não existe caminho no
     // código que a leia, e o selo tem de dizer isso em vez de fingir que

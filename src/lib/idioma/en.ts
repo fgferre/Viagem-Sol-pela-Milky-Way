@@ -670,6 +670,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.desvio.lente': 'cinema lens on: camera reflections, not the sky',
   'selo.desvio.doseDoSol': 'the opening shows the Sun cleaner than the date asks for',
   'selo.desvio.luzDoRoteiro': 'the light is in a scripted transition, between assisted and real',
+  'selo.desvio.brilhoDoBuraco':
+    "Sagittarius A✱'s disc is true to size, but its brightness is artistic: the real gas barely shines",
   'selo.desvio.amostragem': 'sampling below cinema',
   'selo.desvio.camada': 'layer turned off: {nome}',
   'selo.desvio.msaa': 'edge smoothing set by hand',

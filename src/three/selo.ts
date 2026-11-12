@@ -654,6 +654,22 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     desvia: (e) => e.luz === 'assistida' && e.luzDoRoteiro > 0,
   },
   /**
+   * O BRILHO DO GARGANTUA DE PERTO (12/11/2026). Onde o selo diz ESCALA
+   * REAL perto de Sgr A✱ (`escalaDaVista`) o disco tem o tamanho verdadeiro,
+   * mas a luz dele é de autor: o gás real do buraco é ralo e quase não
+   * brilha. De longe quem fala é a linha de culpados do eixo ESCALA; aqui,
+   * esta. `volta: 'nenhuma'`: é o desenho do objeto, não gesto do
+   * visitante — só some com a camada do buraco desligada.
+   */
+  {
+    chave: 'brilho-do-buraco',
+    eixo: 'brilho',
+    get rotulo() { return t('selo.desvio.brilhoDoBuraco'); },
+    volta: 'nenhuma',
+    desvia: (e) =>
+      (e.distanciaAoCentroPc ?? Infinity) < ENTREGA_DO_BURACO_PC && !e.camadasEscondidas.includes('nobh'),
+  },
+  /**
    * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8; reescrita no
    * item 91) — a linha da lei de luz, no eixo BRILHO existente (registro
    * único, NUNCA eixo novo). `assistida` é o DEFAULT do Atlas: o globo

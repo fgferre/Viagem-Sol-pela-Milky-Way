@@ -89,10 +89,8 @@ e o voo baixo sobre relevo medido.
   mentiroso de escala, declarado no selo; a regra é só a distância, igual
   em qualquer modo: ele encolhe a partir de 1,4 pc e tem o tamanho real a
   menos de 8,5 UA (100 RS), com o brilho do disco de autor (o real quase
-  não brilha). A lente exata
-  sem disco (`lenteDoBuracoNegro.ts`) é candidata de perto, escolha do dono
-  pela prancha. Generalização de comportamento estelar tem de aparecer no
-  selo também.
+  não brilha — o selo diz isso de perto). Generalização de comportamento
+  estelar tem de aparecer no selo também.
 ## Atlas e câmera
 - O código do atlas-orbital é **especificação do problema, não
   fornecedor da solução**: dados e oráculos (efemérides, IAU, fixtures,
