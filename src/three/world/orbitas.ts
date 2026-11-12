@@ -823,6 +823,18 @@ const REALCE_ASSENTADO = 1e-3;
  */
 const COR_NEUTRA: readonly [number, number, number] = [0.62, 0.70, 0.85];
 
+/**
+ * O RECUO DAS LUAS PERTO DO PAI (12/11/2026), em raio aparente do globo do
+ * pai em NDC (meia-altura = 1). Até 0,08 a linha fica inteira — Saturno na
+ * vista do sistema mede ~0,03 —; de 0,35 para cima ela fica no piso: na
+ * chegada de perto o globo mede ~0,5. O piso de 0,2 deixa a órbita LEGÍVEL
+ * sem riscar os anéis (o mesmo raciocínio do `RECUO_FORA_DO_FOCO`: recuar
+ * não é apagar).
+ */
+const NDC_DO_PAI_COMECA = 0.08;
+const NDC_DO_PAI_PERTO = 0.35;
+const PISO_PERTO_DO_PAI = 0.2;
+
 /** Abaixo disto o alfa não vale um passo de 8 bits — a linha sai da cena. */
 const ALFA_INVISIVEL = 1 / 512;
 
@@ -1335,6 +1347,7 @@ export class Orbitas {
   private readonly raiosDeCorpo = new Map<string, number | null>();
   /** raio do sistema por PAI neste quadro — ver `raiosDoSistema` */
   private readonly raioDoSistemaPc = new Map<string, number>();
+  private readonly pontoDoPai = new THREE.Vector3();
 
   constructor(corpos: readonly CorpoComOrbita[] = CORPOS_COM_ORBITA) {
     this.group.name = 'orbitas';
@@ -1690,6 +1703,13 @@ export class Orbitas {
           )
         );
       }
+      // O RECUO PERTO DO PAI (12/11/2026): de perto de Saturno as linhas
+      // das luas cruzavam os anéis como riscos claros. A órbita da lua não
+      // MORRE no pai (a lei do Eyes acima continua): ela recua a
+      // `PISO_PERTO_DO_PAI` quando o globo do pai enche o quadro, e volta
+      // a 1 antes de a vista ser a do sistema. A gaveta continua mandando:
+      // camada desligada não desenha nada.
+      if (daLua) linha.cessao *= this.recuoPertoDoPai(linha.corpo.centro, posicoes, camera, tanHalfFov);
       // O DISCO fica só com os dez do retrato, e a razão é a do
       // cabeçalho: o defeito que ele conserta é o PONTO fotométrico
       // sobre a própria elipse, e as luas não o têm nesta escala.
@@ -1711,6 +1731,23 @@ export class Orbitas {
    * `pck00011.tpc`). Memoiza porque `raiosDoRochosoPc` faz conta, e isto
    * roda 30 vezes por quadro.
    */
+  /** ver o recuo no laço de `escreverNucleos`; 1 sem posição do pai */
+  private recuoPertoDoPai(
+    pai: string,
+    posicoes: Float32Array | null,
+    camera: THREE.PerspectiveCamera,
+    tanHalfFov: number
+  ): number {
+    const i = IDS_FOTOMETRIA.indexOf(pai as (typeof IDS_FOTOMETRIA)[number]);
+    const raio = this.raioDe(pai);
+    if (!posicoes || i < 0 || raio === null || i * 3 + 2 >= posicoes.length) return 1;
+    this.pontoDoPai.set(posicoes[i * 3]!, posicoes[i * 3 + 1]!, posicoes[i * 3 + 2]!);
+    if (!Number.isFinite(this.pontoDoPai.x)) return 1;
+    const ndc = raioAparenteNdc(raio, this.pontoDoPai.distanceTo(camera.position), tanHalfFov);
+    const perto = THREE.MathUtils.smoothstep(ndc, NDC_DO_PAI_COMECA, NDC_DO_PAI_PERTO);
+    return 1 - (1 - PISO_PERTO_DO_PAI) * perto;
+  }
+
   private raioDe(id: string): number | null {
     const guardado = this.raiosDeCorpo.get(id);
     if (guardado !== undefined) return guardado;
