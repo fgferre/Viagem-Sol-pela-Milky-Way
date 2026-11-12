@@ -24,6 +24,34 @@ O que está aberto e incomoda quem usa mora em
   para o visitante.
 - O árbitro visual nunca é captura do próprio app: são as referências em
   `docs/reference/` (alvos em `VISUAL_TARGETS.md`, ledger em `EVOLUCAO.md`).
+## A direção desde 12/11/2026
+Nesse dia o dono entregou a direção ao assistente (*"esse projeto agora é
+seu"*) e repetiu o alvo: **mais que o SpaceEngine, o NASA Eyes e o
+Celestia — melhor nos shaders, e no navegador**. Um universo totalmente
+navegável; a galáxia é 100 % partículas (estrelas, gás, poeira), viva,
+sem camada pintada, sprite ou skybox. Publicar e apagar seguem pedindo a
+palavra dele. Os pilares, em ordem; cada um fecha com imagem lado a lado:
+1. **A galáxia viva.** De fora, só partículas, com cada tipo desenhado
+   como o que é; a meia distância pede dezenas de milhões de partículas,
+   e isso é WebGPU só para a galáxia, com o WebGL de reserva
+   (`PLAN-GALAXIA.md`, ramo `galaxia-particulas`).
+2. **Toda estrela é um lugar.** Hoje só o Sol tem corpo. Qualquer estrela
+   do catálogo se visita como corpo, pelo mesmo shader do Sol regido por
+   temperatura, raio e tipo (anã vermelha, gigante, supergigante, anã
+   branca, binárias) — é onde os shaders da casa ganham dos três.
+3. **O céu profundo como destino.** Nebulosas, aglomerados, as Nuvens de
+   Magalhães e Andrômeda entram como lugares feitos de partículas e gás,
+   com nome na busca — nunca como foto colada.
+4. **O sistema solar inteiro.** Anéis de Saturno e os corpos fracos
+   (Urano, Netuno, Titã, Vênus), cometas com cauda, cinturões, e as
+   sondas com trajetória real — o terreno do NASA Eyes.
+5. **Quem chega entende e roda.** O primeiro minuto, o celular e o peso:
+   nenhum pilar acima vale se o visitante não chega até ele.
+O que cada concorrente tem e nós não, para não esquecer: pousar e andar
+num mundo e outras galáxias aos milhares (SpaceEngine); missões e sondas
+com eventos no tempo (NASA Eyes); catálogos abertos e complementos
+(Celestia). O que nós temos e eles não: o selo de honestidade por canal,
+os filmes, e nada para instalar.
 ## Escala e honestidade
 - Regra de escala, testável: quem tapa o que está atrás (escreve
   profundidade) tem raio físico real; quem só brilha por cima pode ter
