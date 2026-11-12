@@ -701,6 +701,8 @@ export const PT = {
   'selo.desvio.lente': 'lente de cinema ligada: reflexos da câmera, não do céu',
   'selo.desvio.doseDoSol': 'o arranque mostra o Sol mais limpo do que a data pede',
   'selo.desvio.luzDoRoteiro': 'a luz está em transição pelo roteiro, entre a assistida e a real',
+  'selo.desvio.brilhoDoBuraco':
+    'o disco de Sagittarius A✱ tem o tamanho real, mas o brilho é artístico: o gás de verdade quase não brilha',
   'selo.desvio.amostragem': 'amostragem abaixo de cinema',
   'selo.desvio.camada': 'camada desligada: {nome}',
   'selo.desvio.msaa': 'suavização de bordas escolhida à mão',

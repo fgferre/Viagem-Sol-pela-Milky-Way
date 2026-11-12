@@ -87,12 +87,11 @@ e o voo baixo sobre relevo medido.
 - Sagittarius A✱ é o Gargantua em toda parte (Atlas, voo livre, filmes):
   de longe, inflado 125.884× por ser composição aprovada — o segundo
   mentiroso de escala, declarado no selo; a regra é só a distância, igual
-  em qualquer modo: ele encolhe a partir de 1,4 pc e tem o tamanho real a
-  menos de 8,5 UA (100 RS), com o brilho do disco de autor (o real quase
-  não brilha). A lente exata
-  sem disco (`lenteDoBuracoNegro.ts`) é candidata de perto, escolha do dono
-  pela prancha. Generalização de comportamento estelar tem de aparecer no
-  selo também.
+  em qualquer modo: ele encolhe a partir de 1,4 pc, sem nunca diminuir na
+  tela durante a descida, e tem o tamanho real a menos de 2,0 UA (24 RS, a
+  vista de perto), com o brilho do disco de autor (o real quase não brilha
+  — o selo diz isso de perto). Generalização de comportamento estelar tem
+  de aparecer no selo também.
 ## Atlas e câmera
 - O código do atlas-orbital é **especificação do problema, não
   fornecedor da solução**: dados e oráculos (efemérides, IAU, fixtures,
