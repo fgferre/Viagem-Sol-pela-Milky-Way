@@ -64,6 +64,7 @@ import type { PosicaoEcliptica } from './kepler';
 import { REGISTRO_ORBITAL } from './registroOrbital';
 import { designacaoDeBayer } from './constelacoes';
 import { temperatureFromBV } from './stellarPhysics';
+import { estrelaVisitavelPorNome, type EstrelaVisitavel, type Numero } from './estrelasVisitaveis';
 import type { NamedStar } from '../../three/config';
 import { REGUA_DOS_MAPAS, alvoDoMapa, type Matiz, type MedidaDoCorpo } from './reguaDosMapas';
 import RELATORIO_DA_REGUA from './reguaDosMapas.relatorio.json';
@@ -107,7 +108,9 @@ export type IdDeSecao =
   | 'curiosidades'
   | 'imagem'
   /** a única de ESTRELA — as outras sete são todas de corpo */
-  | 'estrela';
+  | 'estrela'
+  /** a companheira de uma estrela do piloto (Sirius B) */
+  | 'companheira';
 
 export interface SecaoDaFicha {
   id: IdDeSecao;
@@ -867,6 +870,133 @@ function secaoImagem(
 /** O título de cada seção, na língua de agora (item 130). */
 const TITULO = (id: IdDeSecao): string => t(`ficha.secao.${id}` as 'ficha.secao.agora');
 
+const RSOL_KM = 695_700;
+
+/** Inteiro com separador de milhar da língua de agora (5.600 · 5,600). */
+function inteiroDoIdioma(v: number): string {
+  return Math.round(v).toLocaleString(idiomaAtual() === 'en' ? 'en-US' : 'pt-BR');
+}
+
+/** Três algarismos significativos na língua de agora (0,154 · 24,7 · 764 ·
+ *  87.100) — a precisão das medidas do piloto. */
+function tresSignificativos(v: number): string {
+  const r = Number(v.toPrecision(3));
+  return r >= 1000 ? inteiroDoIdioma(r) : decimalDoIdioma(String(r));
+}
+
+/** Uma linha de número do piloto: o selo e a fonte vêm do próprio número. */
+function linhaDoNumero(rotulo: string, valor: string | null, n: Numero): LinhaDaFicha | null {
+  return linha(rotulo, valor, n.p, n.fonte);
+}
+
+/** Raio em R☉ e em km (1 R☉ = 695 700 km). */
+function raioEmTexto(rsol: number): string {
+  return t('ficha.estrela.raioEmKm', {
+    rsol: tresSignificativos(rsol),
+    km: inteiroDoIdioma(Number((rsol * RSOL_KM).toPrecision(3))),
+  });
+}
+
+const kelvin = (n: Numero) => `${inteiroDoIdioma(n.v)} K`;
+
+/** As linhas físicas das estrelas do piloto (`estrelasVisitaveis.ts`). */
+function linhasDoPiloto(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
+  const a = e.achatamento;
+  const lum = e.luminosidadeLsol.v;
+  return [
+    linhaDoNumero(t('ficha.campo.tipoEspectral'), e.tipo.texto, e.tipo),
+    linhaDoNumero(t('ficha.campo.temperatura'), kelvin(e.teffK), e.teffK),
+    linhaDoNumero(t('ficha.campo.raioSolar'), raioEmTexto(e.raioRsol.v), e.raioRsol),
+    linhaDoNumero(
+      t('ficha.campo.massa'),
+      t('ficha.estrela.massaEmMsol', { v: tresSignificativos(e.massaMsol.v) }),
+      e.massaMsol
+    ),
+    linhaDoNumero(
+      t('ficha.campo.luminosidade'),
+      t('ficha.estrela.luminosidadeEmLsol', {
+        v: tresSignificativos(lum),
+      }),
+      e.luminosidadeLsol
+    ),
+    e.rotacaoDias
+      ? linhaDoNumero(t('ficha.campo.rotacao'), formatarDuracao(e.rotacaoDias.v), e.rotacaoDias)
+      : null,
+    ...(a
+      ? [
+          linhaDoNumero(t('ficha.campo.raioPolar'), raioEmTexto(a.raioPolarRsol.v), a.raioPolarRsol),
+          linhaDoNumero(
+            t('ficha.campo.raioEquatorial'),
+            raioEmTexto(a.raioEquatorialRsol.v),
+            a.raioEquatorialRsol
+          ),
+          linhaDoNumero(t('ficha.campo.temperaturaPolo'), kelvin(a.teffPoloK), a.teffPoloK),
+          linhaDoNumero(t('ficha.campo.temperaturaEquador'), kelvin(a.teffEquadorK), a.teffEquadorK),
+          linhaDoNumero(
+            t('ficha.campo.inclinacaoDoEixo'),
+            t('ficha.estrela.vistaPeloPolo', { graus: numeroDoIdioma(a.inclinacaoGraus.v) }),
+            a.inclinacaoGraus
+          ),
+        ]
+      : []),
+    e.superficie.bordaDifusaRaios.v > 1
+      ? linhaDoNumero(
+          t('ficha.campo.bordaDifusa'),
+          t('ficha.estrela.bordaDifusa', { raios: numeroDoIdioma(e.superficie.bordaDifusaRaios.v) }),
+          e.superficie.bordaDifusaRaios
+        )
+      : null,
+  ];
+}
+
+/** A companheira (Sirius B); a separação em UA é aSegArco × distância em pc. */
+function secaoDaCompanheira(e: EstrelaVisitavel, distanciaPc: number): SecaoDaFicha | null {
+  const c = e.companheira;
+  if (!c) return null;
+  const o = c.orbita;
+  const linhas = [
+    linha(t('ficha.campo.tipoEspectral'), c.tipo, 'medido', o.fonte),
+    linhaDoNumero(t('ficha.campo.temperatura'), kelvin(c.teffK), c.teffK),
+    linhaDoNumero(
+      t('ficha.campo.raioSolar'),
+      t('ficha.estrela.doTamanhoDaTerra', {
+        km: inteiroDoIdioma(Number((c.raioRsol.v * RSOL_KM).toPrecision(2))),
+      }),
+      c.raioRsol
+    ),
+    linhaDoNumero(
+      t('ficha.campo.massa'),
+      t('ficha.estrela.massaEmMsol', { v: tresSignificativos(c.massaMsol.v) }),
+      c.massaMsol
+    ),
+    linha(t('ficha.campo.periodo'), formatarDuracao(o.periodoAnos * DIAS_POR_ANO), 'medido', o.fonte),
+    linha(
+      t('ficha.campo.separacaoMedia'),
+      t('ficha.estrela.separacaoEmUa', { ua: numeroDoIdioma(o.aSegArco * distanciaPc) }),
+      'medido',
+      o.fonte
+    ),
+  ].filter((l): l is LinhaDaFicha => l !== null);
+  return { id: 'companheira', titulo: t('ficha.secao.companheira', { nome: c.nome }), linhas };
+}
+
+/** A SEÇÃO DA IMAGEM da estrela do piloto: o que é medida e o que é desenho. */
+function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
+  return {
+    id: 'imagem',
+    titulo: TITULO('imagem'),
+    linhas: [
+      linha(t('ficha.campo.corEBrilho'), t('ficha.estrela.corPelaTemperatura'), 'derivado'),
+      linha(t('ficha.campo.tamanhoNaImagem'), t('ficha.estrela.tamanhoPeloRaio'), e.raioRsol.p, e.raioRsol.fonte),
+      linha(
+        t('ficha.campo.desenhoDaSuperficie'),
+        t('ficha.estrela.desenhoInventado', { lei: e.superficie.granuloEmRaios.fonte }),
+        'artistico'
+      ),
+    ].filter((l): l is LinhaDaFicha => l !== null),
+  };
+}
+
 /**
  * A FICHA DE UMA ESTRELA (item 74; o cabeçalho na parte A, o conteúdo aqui).
  *
@@ -898,6 +1028,7 @@ export function montarFichaDeEstrela(
 ): Ficha | null {
   if (!nome) return null;
   const linhas: (LinhaDaFicha | null)[] = [];
+  const piloto = estrela ? estrelaVisitavelPorNome(nome) : null;
   if (estrela) {
     const CATALOGO = t('ficha.fonte.catalogoHyg');
     const designacao = designacaoDeBayer(estrela.b, estrela.c);
@@ -917,27 +1048,36 @@ export function montarFichaDeEstrela(
         t('ficha.fonte.paralaxe')
       ),
       linha(t('ficha.campo.magnitude'), comCasas(estrela.m, 2), 'medido', CATALOGO),
-      linha(t('ficha.campo.tipoEspectral'), estrela.s || null, 'medido', CATALOGO),
+      piloto ? null : linha(t('ficha.campo.tipoEspectral'), estrela.s || null, 'medido', CATALOGO),
       linha(
         t('ficha.campo.corBV'),
         estrela.ci === undefined ? null : comCasas(estrela.ci, 3),
         'medido',
         CATALOGO
       ),
-      linha(
-        t('ficha.campo.temperatura'),
-        estrela.ci === undefined
-          ? null
-          : `${numeroDoIdioma(Number(temperatureFromBV(estrela.ci).toPrecision(3)))} K`,
-        'derivado',
-        t('ficha.fonte.ballesteros')
-      ),
+      piloto
+        ? null
+        : linha(
+            t('ficha.campo.temperatura'),
+            estrela.ci === undefined
+              ? null
+              : `${numeroDoIdioma(Number(temperatureFromBV(estrela.ci).toPrecision(3)))} K`,
+            'derivado',
+            t('ficha.fonte.ballesteros')
+          ),
+      ...(piloto ? linhasDoPiloto(piloto) : []),
       // OS TRÊS ÍNDICES NUMA LINHA SÓ: eles não são três fatos, são três
       // endereços do mesmo objeto, e é assim que se procura por ele.
       linha(t('ficha.campo.catalogos'), catalogos.join(' · ') || null, 'medido', CATALOGO)
     );
   }
   const cheias = linhas.filter((l): l is LinhaDaFicha => l !== null);
+  const extras: SecaoDaFicha[] =
+    estrela && piloto
+      ? [secaoDaCompanheira(piloto, estrela.d), secaoImagemDaEstrela(piloto)].filter(
+          (x): x is SecaoDaFicha => x !== null
+        )
+      : [];
   return {
     id: 'estrela',
     nome,
@@ -946,7 +1086,9 @@ export function montarFichaDeEstrela(
     // galáctico, e ele é um buraco negro, não uma estrela do catálogo.
     classe: classeEmTexto(estrela ? 'estrela' : 'buraco negro'),
     secoes:
-      cheias.length > 0 ? [{ id: 'estrela', titulo: TITULO('estrela'), linhas: cheias }] : [],
+      cheias.length > 0
+        ? [{ id: 'estrela', titulo: TITULO('estrela'), linhas: cheias }, ...extras]
+        : [],
   };
 }
 

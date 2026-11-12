@@ -21,6 +21,7 @@ import { decodeEfemerides, MotorEfemerides } from './efemerides';
 import type { StarsMeta } from '../../three/config';
 import type { EntradaDeTextura, ManifestDeTexturas } from '../../three/world/corpos/texturas';
 import type { CorpoNoJson, CorposDoAtlas, EditorialDoCorpo, Ficha } from './ficha';
+import { estrelaVisitavelPorNome } from './estrelasVisitaveis';
 import { formatarDuracao, montarFicha, montarFichaDeEstrela } from './ficha';
 import { temperatureFromBV } from './stellarPhysics';
 import { dateToTDB } from './time';
@@ -808,26 +809,25 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     const f = montarFichaDeEstrela('Sirius', sirius)!;
     expect(f.nome).toBe('Sirius');
     expect(f.classe).toBe('estrela');
-    expect(f.secoes).toHaveLength(1);
+    expect(f.secoes.map((x) => x.id)).toEqual(['estrela', 'companheira', 'imagem']);
     const l = linhasDe(f);
     expect(l.get('designação')!.valor).toBe('α Canis Majoris');
     expect(l.get('distância')!.valor).toBe('8,6 anos-luz');
     expect(l.get('magnitude aparente')!.valor).toBe('-1,44');
-    expect(l.get('tipo espectral')!.valor).toBe(sirius.s);
+    expect(l.get('tipo espectral')!.valor).toBe('A1V');
     expect(l.get('cor B−V')!.valor).toBe('0,009');
     expect(l.get('catálogos')!.valor).toBe('HD 48915 · HIP 32349 · Gl 244A');
   });
 
   it('a temperatura é DERIVADA, e é o primeiro consumidor de tela de temperatureFromBV', () => {
-    const linha = linhasDe(montarFichaDeEstrela('Sirius', sirius)!).get('temperatura')!;
+    const arcturus = starsMeta.named.find((s) => s.n === 'Arcturus')!;
+    const linha = linhasDe(montarFichaDeEstrela('Arcturus', arcturus)!).get('temperatura')!;
     expect(linha.procedencia).toBe('derivado');
     expect(linha.fonte).toContain('Ballesteros');
     // três algarismos significativos: Ballesteros não vale mais que isso, e
     // "9927 K" fingiria uma precisão que a fórmula não tem.
-    const t = temperatureFromBV(sirius.ci!);
-    expect(linha.valor).toBe(`${Number(t.toPrecision(3))} K`);
-    expect(t).toBeGreaterThan(9000);
-    expect(t).toBeLessThan(11000);
+    const t = temperatureFromBV(arcturus.ci!);
+    expect(linha.valor).toBe(`${Number(t.toPrecision(3))} K`.replace('.', ','));
   });
 
   it('a distância sai na escada da casa: anos-luz, nunca parsec', () => {
@@ -843,13 +843,42 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     const EDITORIAL = ['o que é', 'curiosidade', 'fato', 'recorde', 'exploração'];
     for (const estrela of starsMeta.named) {
       const f = montarFichaDeEstrela(estrela.n, estrela)!;
-      expect(f.secoes.length, estrela.n).toBe(1);
-      for (const l of f.secoes[0]!.linhas) {
+      expect(f.secoes.length, estrela.n).toBe(estrela.n === 'Sirius' ? 3 : estrelaVisitavelPorNome(estrela.n) ? 2 : 1);
+      for (const l of f.secoes.flatMap((x) => x.linhas)) {
         expect(l.valor.length, `${estrela.n}/${l.rotulo}`).toBeGreaterThan(0);
         expect(`${l.valor}`, `${estrela.n}/${l.rotulo}`).not.toMatch(/undefined|NaN/);
         expect(EDITORIAL, estrela.n).not.toContain(l.rotulo);
       }
     }
+  });
+
+  it('as quatro do piloto trazem a física com selo; as outras ficam como eram', () => {
+    const bet = montarFichaDeEstrela('Betelgeuse', starsMeta.named.find((s) => s.n === 'Betelgeuse'))!;
+    const raio = linhasDe(bet).get('raio')!;
+    expect(raio.procedencia).toBe('derivado');
+    expect(raio.valor).toContain('764');
+    expect(raio.fonte).toContain('Joyce');
+    expect(linhasDe(bet).get('borda')!.procedencia).toBe('medido');
+
+    const sir = montarFichaDeEstrela('Sirius', sirius)!;
+    // três algarismos significativos, a precisão das medidas
+    expect(linhasDe(sir).get('massa')!.valor).toBe('2,06 M☉');
+    expect(linhasDe(sir).get('luminosidade')!.valor).toBe('24,7 L☉');
+    const prox = montarFichaDeEstrela('Proxima Centauri', starsMeta.named.find((s) => s.n === 'Proxima Centauri'))!;
+    expect(linhasDe(prox).get('raio')!.valor).toContain('0,154 R☉');
+    const comp = sir.secoes.find((x) => x.id === 'companheira')!;
+    expect(comp.titulo).toBe('Sirius B (anã branca)');
+    const dist = comp.linhas.find((l) => l.rotulo === 'separação média')!;
+    expect(dist.valor).toContain(`${Math.round(7.4957 * sirius.d * 10) / 10}`.replace('.', ','));
+    const img = sir.secoes.find((x) => x.id === 'imagem')!;
+    expect(img.linhas.map((l) => l.procedencia)).toEqual(['derivado', 'derivado', 'artistico']);
+
+    const arc = starsMeta.named.find((s) => s.n === 'Arcturus')!;
+    const f = montarFichaDeEstrela('Arcturus', arc)!;
+    expect(f.secoes.map((x) => x.id)).toEqual(['estrela']);
+    expect(f.secoes[0]!.linhas.map((l) => l.rotulo)).toEqual([
+      'designação', 'distância', 'magnitude aparente', 'tipo espectral', 'cor B−V', 'temperatura', 'catálogos',
+    ]);
   });
 
   it('as 204 sem Bayer não inventam designação', () => {
