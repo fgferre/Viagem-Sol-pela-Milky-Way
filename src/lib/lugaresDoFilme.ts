@@ -486,7 +486,7 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     classe: 'galáxia satélite',
     raioPc: 9_300,
     vista: 'comAViaLactea',
-    distanciaPc: { valor: 49_590, fonte: 'Pietrzyński et al. 2019 (binárias eclipsantes)' },
+    distanciaPc: { valor: 49_590, fonte: 'Pietrzyński et al. 2019' },
     oQueE: {
       pt: 'A maior galáxia satélite da Via Láctea, a olho nu no céu do sul como um pedaço solto da faixa. Tem uma barra fora do centro, um braço dominante e o 30 Dourado (a Tarântula), o berçário de estrelas mais brilhante do Grupo Local. Daqui se vê a nossa galáxia de um lado e a Pequena Nuvem do outro.',
       en: 'The largest satellite galaxy of the Milky Way, seen with the naked eye in the southern sky as a loose piece of the band. It has an off-centre bar, one dominant arm and 30 Doradus (the Tarantula), the brightest stellar nursery in the Local Group. From here our galaxy is on one side and the Small Cloud on the other.',
@@ -497,7 +497,7 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
         pt: 'cerca de 32 mil anos-luz de um lado a outro',
         en: 'about 32,000 light-years across',
         procedencia: 'derivado',
-        fonte: 'de Vaucouleurs RC3 (10,75°) × distância',
+        fonte: { pt: 'de Vaucouleurs RC3 (10,75°) × distância', en: 'de Vaucouleurs RC3 (10.75°) × distance' },
       },
       {
         campo: 'massa',
@@ -540,7 +540,7 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     classe: 'galáxia satélite',
     raioPc: 4_500,
     vista: 'doSol',
-    distanciaPc: { valor: 62_440, fonte: 'Graczyk et al. 2020 (binárias eclipsantes)' },
+    distanciaPc: { valor: 62_440, fonte: 'Graczyk et al. 2020' },
     oQueE: {
       pt: 'A companheira menor da Grande Nuvem, deformada pela maré das duas maiores: é comprida na direção da nossa visada, com a Asa voltada para a Grande Nuvem e uma ponte de gás e estrelas jovens entre as duas.',
       en: 'The smaller companion of the Large Cloud, bent out of shape by the tides of the two bigger galaxies: it is stretched along our line of sight, with its Wing pointing to the Large Cloud and a bridge of gas and young stars between the two.',
@@ -551,7 +551,10 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
         pt: 'cerca de 19 mil anos-luz no céu, e mais ainda em profundidade',
         en: 'about 19,000 light-years on the sky, and more in depth',
         procedencia: 'derivado',
-        fonte: 'de Vaucouleurs RC3 (5,3°) × distância; Scowcroft et al. 2016',
+        fonte: {
+          pt: 'de Vaucouleurs RC3 (5,3°) × distância; Scowcroft et al. 2016',
+          en: 'de Vaucouleurs RC3 (5.3°) × distance; Scowcroft et al. 2016',
+        },
       },
       {
         campo: 'massa',
@@ -594,7 +597,7 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     classe: 'galáxia espiral',
     raioPc: 40_000,
     vista: 'doSol',
-    distanciaPc: { valor: 761_000, fonte: 'Li et al. 2021 (cefeidas, Hubble)' },
+    distanciaPc: { valor: 761_000, fonte: 'Li et al. 2021 (HST)' },
     oQueE: {
       pt: 'A grande espiral mais próxima, maior que a Via Láctea: vista daqui quase de lado, com o bojo amarelo, o anel de estrelas novas a 30 mil anos-luz do centro e faixas de poeira no lado mais perto. Ao lado dela, M32 e M110. É o objeto mais distante que se vê a olho nu.',
       en: 'The nearest big spiral, larger than the Milky Way: seen from here almost edge-on, with its yellow bulge, the ring of young stars 30,000 light-years from the centre and dust lanes on the near side. Beside it, M32 and M110. It is the most distant thing you can see with the naked eye.',
@@ -605,7 +608,7 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
         pt: 'cerca de 150 mil anos-luz de um lado a outro (o disco de estrelas)',
         en: 'about 150,000 light-years across (the stellar disc)',
         procedencia: 'derivado',
-        fonte: 'de Vaucouleurs RC3 (190′) × distância',
+        fonte: { pt: 'de Vaucouleurs RC3 (190′) × distância', en: 'de Vaucouleurs RC3 (190′) × distance' },
       },
       {
         campo: 'massa',
