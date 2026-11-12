@@ -191,21 +191,28 @@ export async function montarCarga(opts: {
   aoAvancar: (etapa: EtapaDaCadeia) => void;
 }): Promise<CargaDoMundo> {
   const { catalogos, tier, aoAvancar } = opts;
-  const carga = await assarCargaEmWorker(
-    {
-      seed: SEMENTE_DA_GALAXIA,
-      catalogos,
-      populationScale: tier === 'performance' ? 0.28 : 1,
-      soParticulas:
-        new URLSearchParams(window.location.search).get('galaxia') === 'particulas',
-      search: window.location.search,
-    },
-    aoAvancar
-  );
+  const query = new URLSearchParams(window.location.search);
+  const modo = query.get('galaxia');
+  const pedido = {
+    seed: SEMENTE_DA_GALAXIA,
+    catalogos,
+    populationScale: tier === 'performance' ? 0.28 : 1,
+    soParticulas: modo === 'particulas' || modo === 'webgpu',
+    search: window.location.search,
+  };
+  const carga = await assarCargaEmWorker(pedido, aoAvancar);
   const dustMapTexture = texturaDoMapa(carga.poeira);
   const structureMapTexture = texturaDoMapa(carga.estrutura);
+  const galaxy = new Galaxy(carga, dustMapTexture, structureMapTexture);
+  // ?galaxia=webgpu: mais sorteios do MESMO modelo (outra semente cada um),
+  // em trabalhadores, depois que o app já abriu; no telefone, só o primeiro
+  galaxy.ligarWebgpu(
+    carga,
+    tier === 'performance' ? 1 : Number(query.get('sorteios')) || 4,
+    (s) => assarCargaEmWorker({ ...pedido, seed: SEMENTE_DA_GALAXIA + s * 7919 }, () => {})
+  );
   return {
-    galaxy: new Galaxy(carga, dustMapTexture, structureMapTexture),
+    galaxy,
     dustMapTexture,
     structureMapTexture,
     coberturaDaPoeira: carga.coberturaDaPoeira,

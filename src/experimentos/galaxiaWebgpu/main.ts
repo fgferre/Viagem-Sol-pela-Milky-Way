@@ -16,7 +16,7 @@ import { loadGalacticAssets } from '../../three/cartography/galacticAssets';
 import { EX, EY, EZ, GAL } from '../../three/world/baseGalactica';
 import type { CargaAssada } from '../../three/world/cadeiaDaCarga';
 import type { PedidoDaCarga, RespostaDaCarga } from '../../three/world/cargaEmWorker';
-import { MotorDaGalaxia } from './motor';
+import { MotorDaGalaxia } from '../../three/world/galaxiaWebgpu/motor';
 
 const SEMENTE = 20260730; // a do app (director/carregamento.ts)
 const GANHO = 7.99; // uFade da vista de fora: 1 + 6,99 (galaxy.ts)

@@ -4357,7 +4357,9 @@ export class Director {
       time,
       this.hide.has('nogal') ? 0 : galaxyFade,
       this.hide.has('nomarker') ? 0 : markerFade,
-      this.hide.has('nogal') ? 0 : localBandFade
+      this.hide.has('nogal') ? 0 : localBandFade,
+      cam,
+      this.engine.renderer.domElement.width
     );
     // Nuvens moleculares já entram integradas no structureMap da vista
     // externa. Billboards 3D ficam só no disco, onde a paralaxe comunica

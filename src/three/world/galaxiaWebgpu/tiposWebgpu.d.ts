@@ -1,7 +1,6 @@
-// Tipos mínimos da API WebGPU, só o que o experimento usa. O TypeScript da
-// casa (5.9) não traz WebGPU no lib.dom e o projeto não ganha dependência
-// por causa de um ensaio; se a galáxia em WebGPU for ao app, isto dá lugar
-// ao pacote oficial de tipos.
+// Tipos mínimos da API WebGPU, só o que a galáxia usa. O TypeScript da
+// casa (5.9) não traz WebGPU no lib.dom e o caminho ainda é opcional
+// (?galaxia=webgpu); quando virar padrão, isto dá lugar ao pacote oficial.
 type DescGPU = Record<string, unknown>;
 
 interface GPUBuffer {
@@ -75,6 +74,7 @@ interface GPUDevice extends EventTarget {
   createBindGroup(d: DescGPU): GPUBindGroup;
   createCommandEncoder(): GPUCommandEncoder;
   createQuerySet(d: DescGPU): GPUQuerySet;
+  destroy(): void;
 }
 interface GPUAdapter {
   readonly features: ReadonlySet<string>;

@@ -15,17 +15,24 @@
 //     bilinear nos 4 pixels vizinhos — contínua quando a partícula anda.
 //     Jovens, aglomerados e nós H II (tipos 3–5) acima de 2 px: a gaussiana
 //     do tamanho físico.
-//  3. TOM (render): filtro [1 2 1]² opcional, Khronos Neutral e sRGB.
+//  3. TOM (render): filtro [1 2 1]² opcional e, na página de teste, Khronos
+//     Neutral e sRGB; para o app a saída é linear (rgba16float) e é o app
+//     quem aplica brilho e tom.
 //
 // A partícula ocupa 20 bytes: posição (3 × f32), tamanho com o tipo no
 // milhar (f32) e a cor já multiplicada pelo alpha em rgb9e5 (u32).
 // ============================================================
-import { GALACTIC_MODEL } from '../../three/cartography/galacticModel';
+import { GALACTIC_MODEL } from '../../cartography/galacticModel';
+import { GLSL_UNRESOLVED } from '../wrappedStars';
 
 const n = (v: number) => (Number.isInteger(v) ? `${v}.0` : `${v}`);
 
 /** bytes do bloco de uniformes */
 export const BYTES_DOS_UNIFORMES = 208;
+
+// a fração da luz que as cascas de estrelas do app NÃO resolvem a esta
+// distância (1,0 além de ~5 kpc): o mesmo polinômio, em WGSL
+const WGSL_UNRESOLVED = GLSL_UNRESOLVED.replace('float unresolved(float d) {', 'fn unresolved(d: f32) -> f32 {');
 
 const COMUM = /* wgsl */ `
 struct U {
@@ -38,7 +45,7 @@ struct U {
   dims: vec2f, expo: f32, tetoPx: f32,
   n: u32, k: u32, borrifo: u32, base: u32,
   filtro: u32, linha: u32, pesoDasCelulas: f32, alfa: f32,
-  fundo: f32, pesoParcial: f32, nCheio: u32, nTotal: u32,
+  linear: f32, pesoParcial: f32, nCheio: u32, nTotal: u32,
 }
 struct P { x: f32, y: f32, z: f32, tam: f32, cor: u32 }
 
@@ -141,6 +148,7 @@ fn posDaFilha(p0: vec3f, i: u32, k: u32, kk: u32, e: f32) -> vec3f {
   return p0 + u.ex * (r * cos(a)) + u.ey * (r * sin(a)) + u.ez * vz;
 }
 
+${WGSL_UNRESOLVED}
 fn deposita(ix: i32, iy: i32, v: vec3f, semente: u32) {
   let w = i32(u.dims.x);
   if (ix < 0 || iy < 0 || ix >= w || iy >= i32(u.dims.y)) { return; }
@@ -176,7 +184,7 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
   let peso = select(select(u.pesoParcial, u.pesoDasCelulas, i < u.nCheio), 1.0, individuo);
   // fluxo total em unidade de cena × pixel: 0,1726 = 0,690376/4, a integral
   // da pegada (tenda ou gaussiana) por px² de largura
-  let fluxo = peso * u.ganho * 0.172594 * pxDep * pxDep / 0.49;
+  let fluxo = peso * u.ganho * unresolved(dist) * 0.172594 * pxDep * pxDep / 0.49;
   // a cor em rgb9e5, já vezes o alpha da partícula
   let escalaDaCor = exp2(f32(p.cor >> 27u) - 24.0);
   let cor = vec3f(f32(p.cor & 511u), f32((p.cor >> 9u) & 511u), f32((p.cor >> 18u) & 511u)) * escalaDaCor;
@@ -284,6 +292,8 @@ fn fs(v: VT) -> @location(0) vec4f {
     }
     s /= 16.0;
   }
+  // saída linear (o app aplica o próprio brilho e o próprio tom)
+  if (u.linear > 0.5) { return vec4f(s, 1.0); }
   let c = clamp(neutro(s * u.expo), vec3f(0.0), vec3f(1.0));
   let t = select(1.055 * pow(c, vec3f(1.0 / 2.4)) - 0.055, 12.92 * c, c <= vec3f(0.0031308));
   return vec4f(t, 1.0);

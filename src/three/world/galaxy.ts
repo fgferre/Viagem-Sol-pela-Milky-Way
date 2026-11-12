@@ -29,6 +29,7 @@ import {
   tauDasNuvens,
 } from './geradorDaGalaxia';
 import { porCurva } from '../core/engine';
+import { CamadaWebgpu } from './galaxiaWebgpu/camadaWebgpu';
 import type { GalaxyBuffers } from './geradorDaGalaxia';
 
 // A FACHADA da onda da arquitetura (corte 5): a base e o gerador
@@ -84,6 +85,7 @@ export class Galaxy {
   private dwarfMesh!: THREE.Mesh;
   private static scratch = new THREE.Vector3();
   private static dbg = new URLSearchParams(window.location.search);
+  private static readonly MODO = Galaxy.dbg.get('galaxia');
   // AS TRÊS DA GALÁXIA. A URL só as SEMEIA no boot (ler `has()` por quadro
   // seria lixo evitável); daí em diante quem manda é `setLayerHidden`, e
   // elas são VIVAS — nenhuma é lida no bake. `bakeDiscLayers` roda
@@ -115,7 +117,15 @@ export class Galaxy {
    * da câmera ao centro) em todo fragmento: debaixo da câmera, de 3 kpc,
    * isso as deixava ~2,6× mais claras que o μ local daria.
    */
-  private soParticulas = Galaxy.dbg.get('galaxia') === 'particulas';
+  private soParticulas = Galaxy.MODO === 'particulas' || Galaxy.MODO === 'webgpu';
+  /**
+   * ?galaxia=webgpu — o modo só-partículas com a vista de FORA desenhada
+   * pelo motor WebGPU (camadaWebgpu.ts: 16 M de partículas sorteadas em vez
+   * de 4 M com filhas). De dentro do disco, e em navegador sem WebGPU,
+   * segue o caminho WebGL acima. `null` até o motor ficar pronto.
+   */
+  private camadaWebgpu: CamadaWebgpu | null = null;
+  private descartada = false;
   private static readonly GANHO_DAS_LAMINAS = 6.99;
   /**
    * Largura do núcleo das partículas de FUNDO em ESPAÇAMENTOS médios
@@ -968,7 +978,10 @@ export class Galaxy {
     time: number,
     externalFade: number,
     markerFade: number,
-    localBandFade: number
+    localBandFade: number,
+    /** só o ?galaxia=webgpu usa: a câmera e a largura do buffer */
+    camera?: THREE.PerspectiveCamera,
+    screenW?: number
   ) {
     this.group.visible =
       externalFade > 0.001 || markerFade > 0.001 || localBandFade > 0.001;
@@ -1006,6 +1019,16 @@ export class Galaxy {
       u.uFade.value = this.soParticulas
         ? (brightFade + Galaxy.GANHO_DAS_LAMINAS * externalFade) / this.fracaoDeParticulas
         : brightFade / this.fracaoDeParticulas;
+      if (this.camadaWebgpu && camera && screenW) {
+        // A CESSÃO: fora do disco (externalFade = 1) a luz das partículas é
+        // toda da camada WebGPU e o WebGL não desenha; na borda do disco as
+        // duas se cruzam; dentro, só o WebGL. A camada não tem a rampa de
+        // perto (< 1,5 kpc) do GALAXY_VERT — por isso só entra quando a
+        // câmera já está a ~1,7 kpc do plano.
+        const cessao = THREE.MathUtils.smoothstep(externalFade, 0.8, 1);
+        this.camadaWebgpu.update(camera, screenW, screenH, tanHalfFov, u.uFade.value as number, cessao);
+        u.uFade.value = (u.uFade.value as number) * (1 - cessao);
+      }
       if (this.soParticulas) {
         // o núcleo entra pela MESMA rampa que acende a luz das lâminas
         u.uNucleo.value = externalFade;
@@ -1062,7 +1085,8 @@ export class Galaxy {
     // dentro do disco — tem termo próprio de localBandFade; halo e anã
     // não, e sem gate desenhavam um billboard quase de tela cheia
     // somando exatamente zero durante toda a viagem interna.
-    this.brightPts.visible = this.showPts && brightFade > 0.001;
+    this.brightPts.visible =
+      this.showPts && brightFade > 0.001 && (this.brightMat.uniforms.uFade.value as number) > 0;
     this.glowMesh.visible =
       this.showGlow && (this.glowMat.uniforms.uFade.value as number) > 0.001;
     this.haloMesh.visible =
@@ -1073,7 +1097,27 @@ export class Galaxy {
       this.showGlow && (this.dwarfMat.uniforms.uFade.value as number) > 0.001;
   }
 
+  /**
+   * ?galaxia=webgpu: liga a camada. `buffers` é o sorteio que este objeto
+   * já desenha; `sortear(s)` entrega os sorteios extras do mesmo modelo.
+   * Sem o interruptor, ou sem WebGPU, não faz nada.
+   */
+  ligarWebgpu(buffers: GalaxyBuffers, sorteios: number, sortear: (s: number) => Promise<GalaxyBuffers>) {
+    if (Galaxy.MODO !== 'webgpu') return;
+    void CamadaWebgpu.criar(buffers, sorteios, sortear).then((camada) => {
+      if (!camada) return;
+      if (this.descartada) {
+        camada.dispose();
+        return;
+      }
+      this.camadaWebgpu = camada;
+      this.group.add(camada.mesh);
+    });
+  }
+
   dispose() {
+    this.descartada = true;
+    this.camadaWebgpu?.dispose();
     this.brightMat.dispose();
     this.glowMat.dispose();
     this.haloMat.dispose();

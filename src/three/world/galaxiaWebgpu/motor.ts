@@ -2,18 +2,19 @@
 // A GALÁXIA DE PARTÍCULAS EM WebGPU — o motor. Recebe os sorteios do
 // gerador (o buffer `bright` de sempre), guarda cada partícula em 20 bytes
 // na GPU e desenha um quadro para uma câmera. Não conhece página nem app:
-// quem chama dá a tela, a câmera e as opções.
+// quem chama dá a tela, a câmera e as opções (a página de teste em
+// src/experimentos/galaxiaWebgpu e a camada do app, camadaWebgpu.ts).
 // ============================================================
 import * as THREE from 'three';
-import { GALACTIC_MODEL } from '../../three/cartography/galacticModel';
-import { EX, EY, EZ, GAL } from '../../three/world/baseGalactica';
+import { GALACTIC_MODEL } from '../../cartography/galacticModel';
+import { EX, EY, EZ, GAL } from '../baseGalactica';
 import {
   celulaDaParticula,
   CELULAS_DA_GRADE,
   gerarNuvensDePoeira,
   ladoDaChave,
   tauDasNuvens,
-} from '../../three/world/geradorDaGalaxia';
+} from '../geradorDaGalaxia';
 import { BYTES_DOS_UNIFORMES, WGSL_DEPOSITO, WGSL_EXTINCAO, WGSL_TOM } from './motorWgsl';
 
 const ESCALA = 65536; // ponto fixo do acumulador: 1 unidade de cena = 2^16
@@ -71,7 +72,8 @@ export class MotorDaGalaxia {
 
   private readonly gpu: GPUDevice;
   private readonly ctx: GPUCanvasContext;
-  private readonly tela: HTMLCanvasElement;
+  private readonly tela: HTMLCanvasElement | OffscreenCanvas;
+  private readonly linear: boolean;
   private readonly formato: string;
   private readonly bufP: GPUBuffer;
   private readonly bufExt: GPUBuffer;
@@ -94,9 +96,10 @@ export class MotorDaGalaxia {
   private readonly limites: number[] = [];
 
   private constructor(
-    gpu: GPUDevice, tela: HTMLCanvasElement, capacidade: number,
+    gpu: GPUDevice, tela: HTMLCanvasElement | OffscreenCanvas, capacidade: number,
     pipelines: { ext: GPUPipeline; dep: GPUPipeline; tom: GPUPipeline }, formato: string
   ) {
+    this.linear = formato === 'rgba16float';
     this.gpu = gpu;
     this.tela = tela;
     this.capacidade = capacidade;
@@ -133,7 +136,11 @@ export class MotorDaGalaxia {
   }
 
   /** `null` quando o navegador não tem WebGPU (ou não entrega adaptador) */
-  static async criar(tela: HTMLCanvasElement, capacidade: number): Promise<MotorDaGalaxia | null> {
+  static async criar(
+    tela: HTMLCanvasElement | OffscreenCanvas, capacidade: number,
+    /** saída linear em rgba16float (para virar textura do app) em vez de imagem pronta */
+    linear = false
+  ): Promise<MotorDaGalaxia | null> {
     if (!navigator.gpu) return null;
     const adaptador = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
     if (!adaptador) return null;
@@ -151,7 +158,7 @@ export class MotorDaGalaxia {
       }
       return m;
     };
-    const formato = navigator.gpu.getPreferredCanvasFormat();
+    const formato = linear ? 'rgba16float' : navigator.gpu.getPreferredCanvasFormat();
     const mTom = await modulo(WGSL_TOM, 'tom');
     return new MotorDaGalaxia(gpu, tela, capacidade, {
       ext: gpu.createComputePipeline({
@@ -222,7 +229,10 @@ export class MotorDaGalaxia {
     this.altura = h;
     this.tela.width = w;
     this.tela.height = h;
-    this.ctx.configure({ device: this.gpu, format: this.formato, alphaMode: 'opaque' });
+    this.ctx.configure({
+      device: this.gpu, format: this.formato, alphaMode: 'opaque',
+      ...(this.linear ? { toneMapping: { mode: 'extended' } } : {}),
+    });
     this.bufAcc?.destroy();
     this.bufAcc = this.gpu.createBuffer({ size: w * h * 16, usage: USO.storage | USO.copyDst });
     this.gDep = this.liga(this.pDep, [
@@ -274,6 +284,7 @@ export class MotorDaGalaxia {
     uI[44] = op.filtro;
     uI[45] = linha;
     uF[46] = 1 / s;
+    uF[48] = this.linear ? 1 : 0;
     uF[49] = (s - cheios) / s;
     uI[50] = this.limites[cheios - 1];
     uI[51] = this.total;
@@ -312,6 +323,11 @@ export class MotorDaGalaxia {
       enc.copyBufferToBuffer(this.bufRelogio, 0, this.bufLeitura, 0, 48);
     }
     this.gpu.queue.submit([enc.finish()]);
+  }
+
+  /** solta o dispositivo e, com ele, todos os buffers */
+  destruir() {
+    this.gpu.destroy();
   }
 
   /** a GPU terminou tudo o que foi enviado */
