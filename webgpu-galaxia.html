@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ensaio: galáxia de partículas em WebGPU</title>
+    <!-- Página de teste, só de desenvolvimento: abra com o servidor de dev em
+         /webgpu-galaxia.html. Não é entrada do build (o Vite só empacota o
+         index.html) e nenhuma tela do app aponta para cá. -->
+    <style>
+      html, body { margin: 0; background: #010208; color: #cfd6e4; font: 13px/1.4 system-ui, sans-serif; }
+      #barra { position: fixed; top: 0; left: 0; right: 0; padding: 6px 10px; background: #010208cc; display: flex; gap: 10px; align-items: center; z-index: 1; }
+      #tela { display: block; max-width: 100vw; margin-top: 34px; }
+    </style>
+  </head>
+  <body>
+    <div id="barra">
+      <select id="vista">
+        <option>de-cima</option><option>inclinada</option><option>media</option><option>saindo</option><option>de-lado</option>
+      </select>
+      <select id="k">
+        <option value="1">4 M</option><option value="2">8 M</option><option value="4">16 M</option>
+        <option value="8">32 M</option><option value="16">64 M</option>
+      </select>
+      <select id="modo">
+        <option value="deposito">depósito por compute</option><option value="quadrados">quadrados instanciados</option>
+      </select>
+      <span id="painel">carregando…</span>
+    </div>
+    <canvas id="tela"></canvas>
+    <script type="module" src="/src/experimentos/galaxiaWebgpu/main.ts"></script>
+  </body>
+</html>
