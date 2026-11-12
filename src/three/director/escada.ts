@@ -84,8 +84,7 @@ import { RETRATO_2026 } from '../world/planetas/retrato2026';
 import type { IdRetrato } from '../world/planetas/retrato2026';
 import { escalaDaUi, larguraDeCss } from '../../lib/uiScale';
 import { Escolha } from './escolha';
-import { estrelaVisitavelPorNome, type EstrelaVisitavel } from '../../lib/atlas/estrelasVisitaveis';
-import { raioDaEstrelaPc } from '../world/corpoDeEstrela';
+import { estrelaVisitavelPorNome, raioDaEstrelaPc, type EstrelaVisitavel } from '../../lib/atlas/estrelasVisitaveis';
 // o centro do frame heliocêntrico mora no vizinho neutro
 // (`cinematic/enquadramento.ts`): exportá-lo DAQUI fazia o único ciclo de
 // import de valor do `src/` — a escada precisa da `Escolha`, e a escolha

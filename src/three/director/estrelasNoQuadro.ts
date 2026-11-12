@@ -1,7 +1,9 @@
 // ============================================================
 // AS ESTRELAS COM LUGAR NO QUADRO — o piloto do pilar 2 do NORTE (12/11):
-// Proxima, Sirius A+B, Betelgeuse e Vega viram corpos (`world/
-// corpoDeEstrela.ts`) nas posições do catálogo, sob a MESMA lei do Sol
+// as estrelas visitáveis (`lib/atlas/estrelasVisitaveis.ts` — Proxima,
+// Sirius A+B, Betelgeuse, Vega e as anfitriãs dos exoplanetas) viram corpos
+// pelo MOTOR DO SOL (`world/stellarBody.ts`, um motor só: cada uma pelos
+// seus números físicos) nas posições do catálogo, sob a MESMA lei do Sol
 // (`solNoQuadro.ts`), linha por linha:
 //  · o GATE do palco (4 px de diâmetro, histerese 2×) arma o corpo e o
 //    registra no palco — o near passa a respeitar a superfície;
@@ -27,36 +29,25 @@ import { diametroAparentePx, gateBinario, LIMIAR_DO_GATE_PX } from '../world/cor
 import type { StarField } from '../world/stars';
 import type { OclusorDeRotulo } from '../world/labels';
 import { faseDoCiclo, repartir, type JanelaDoQuadro, type EstadoDaEstrela } from '../estrela';
-import {
-  EXPO_M0,
-  SIGMA_PX,
-  radianciaDeTela,
-  radianciaVisivelDeCorpoNegro,
-  RADIANCIA_DA_FOTOSFERA,
-} from '../luzDaCasa';
+import { EXPO_M0, SIGMA_PX, radianciaVisivelDeCorpoNegro } from '../luzDaCasa';
 import type { QualityLevel } from '../core/engine';
-import { SOL_PARAMS, StellarBody, type StellarParams } from '../world/stellarBody';
+import { SOL_PARAMS, StellarBody, pesoDoFiltro, type StellarParams } from '../world/stellarBody';
+import { PontoDeEstrela } from '../world/pontoDeEstrela';
 import { RAIO_SOL_PC } from '../escala';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
 import { cessaoDoSol } from './solNoQuadro';
+import type { PoliticaDeLuz } from '../../lib/atlas/luz';
 import {
-  CorpoDeEstrela,
-  PontoDeEstrela,
-  eixoDeRotacao,
-  fotosferaDaCompanheira,
-  fotosferaDe,
-  ganhoDaVisita,
   CONTRASTE_REAL_DO_SOL,
+  ESTRELAS_VISITAVEIS,
+  FRACAO_DOS_GRANULOS_SOB_AS_GIGANTES,
+  GRANULO_SOL_EM_RAIOS,
+  atividadeDe,
   granuloNaTelaEmRaios,
   posicaoDaCompanheira,
   raioDaEstrelaPc,
-} from '../world/corpoDeEstrela';
-import type { PoliticaDeLuz } from '../../lib/atlas/luz';
-import {
-  ESTRELAS_VISITAVEIS,
-  GRANULO_SOL_EM_RAIOS,
-  TEFF_SEM_ENVELOPE_K,
-  atividadeDe,
+  rotacaoDe,
+  temDinamoSolar,
   type EstrelaVisitavel,
 } from '../../lib/atlas/estrelasVisitaveis';
 
@@ -68,18 +59,55 @@ export function lerPortaEstrelasComLugar(bruto: string | null): boolean {
   return bruto !== '0';
 }
 
-/** A porta `?motorsol=`: só `0` volta Proxima ao motor simples do piloto. */
-export function lerPortaMotorDoSol(bruto: string | null): boolean {
-  return bruto !== '0';
+const GRAU = Math.PI / 180;
+
+/**
+ * O EIXO DE ROTAÇÃO na base da cena. Vega: 6,2° da linha até o Sol
+ * (medido — vemos quase o polo, como da Terra); o ÂNGULO DE POSIÇÃO da
+ * inclinação é ARTÍSTICO (para o norte celeste). As outras não têm eixo
+ * medido: o polo celeste norte, escolha artística declarada (o motor só o
+ * usa para a forma achatada; sem ela, o +Y do motor).
+ */
+export function eixoDeRotacao(e: EstrelaVisitavel, pos: THREE.Vector3, out: THREE.Vector3): THREE.Vector3 {
+  if (!e.achatamento) return out.set(0, 0, 1);
+  const r = pos.clone().normalize();
+  const norte = new THREE.Vector3(0, 0, 1).addScaledVector(r, -r.z).normalize();
+  const i = e.achatamento.inclinacaoGraus.v * GRAU;
+  return out.copy(r).multiplyScalar(-Math.cos(i)).addScaledVector(norte, Math.sin(i)).normalize();
 }
 
 /**
- * QUEM O MOTOR DO SOL DESENHA (12/11, "um motor só"): Proxima, Sirius A e
- * B, e Vega — cada uma por parâmetros físicos do mesmo motor. Betelgeuse
- * segue no motor simples (`corpoDeEstrela.ts`) até as células gigantes e a
- * borda difusa virarem parâmetros (a próxima rodada).
+ * O EXPOENTE DO BRILHO ASSISTIDO — ARTÍSTICO, declarado. A estrela
+ * visitada aparece no nível de tela do Sol escalado por (radiância
+ * visível / a do Sol)^¼: Proxima ~0,37×, Betelgeuse ~0,51×. A ordem
+ * física fica e a M não sai lama. É a "exposição de foto" da visita que
+ * os planetas já têm (`lib/atlas/luzDaVisita.ts`), aplicada à fotosfera.
+ *
+ * Ele vale para quem o FILTRO fotográfico do Sol vale (`pesoDoFiltro`:
+ * inteiro até 5.772 K) e esmaece junto com o filtro: a estrela quente
+ * (≥ 8.000 K) aparece na radiância visível VERDADEIRA relativa ao Sol —
+ * Sirius ~6,9×, Vega ~6,5× (12/11, a tarefa das estrelas quentes). Com ¼
+ * elas ficavam a 1,6×, com o canal azul no ombro da curva de tom: o disco
+ * saía lilás e chapado, mais pobre que o Sol ("gesso"). Na radiância de
+ * verdade o núcleo branqueia no ombro, o azul sobra na borda escurecida e
+ * o disco passa do limiar do bloom. O Sol e as mais frias: o ¼ de sempre.
  */
-const NO_MOTOR_DO_SOL: ReadonlySet<string> = new Set(['proxima', 'sirius', 'vega']);
+export const EXPOENTE_DO_BRILHO_ASSISTIDO = 0.25;
+
+/**
+ * O ganho que leva a radiância verdadeira de uma fotosfera ao nível da
+ * visita: 1 no modo REAL; no ASSISTIDO, rad^(e − 1), com e = ¼ esmaecendo
+ * a 1 junto com o filtro do Sol (ver acima). Propriedade do CORPO (a Teff
+ * dele), não do foco da câmera. Quem o aplica é a rampa do filtro
+ * (`ganho^(1 − g)`): com o disco pequeno (g = 1) a emissão é a verdadeira
+ * e a troca com o ponto conserva a luz.
+ */
+export function ganhoDaVisita(teffK: number, politica: PoliticaDeLuz): number {
+  if (politica === 'real') return 1;
+  const w = pesoDoFiltro(teffK);
+  const e = w * EXPOENTE_DO_BRILHO_ASSISTIDO + (1 - w);
+  return Math.pow(radianciaVisivelDeCorpoNegro(teffK), e - 1);
+}
 
 /** A distância (pc) além da qual a estrela do motor do Sol, fora de foco, é
  *  desmontada (2× o preparo: histerese, para não remontar na borda). */
@@ -88,16 +116,19 @@ const RAIO_DE_DESMONTE_PC = 2 * RAIO_DE_PREPARO_PC;
 /**
  * Os parâmetros do motor do Sol PELA FÍSICA de uma estrela visitável. Cada
  * campo é a lei dos dados; o que não tem lei é o do Sol, declarado:
- *  · raio físico (o EQUATORIAL, o de enquadramento); período medido; Teff
- *    (cor e brilho, `stellarBody.ts`);
- *  · envelope convectivo pela Teff (`TEFF_SEM_ENVELOPE_K`): sem ele, sem
- *    dínamo — o motor nem constrói a atmosfera magnética;
+ *  · raio físico (o EQUATORIAL, o de enquadramento); o período pela lei
+ *    única `rotacaoDe` (medido, ou o Rossby do Sol); Teff (cor e brilho,
+ *    `stellarBody.ts`);
+ *  · o dínamo de tipo solar (`temDinamoSolar`: envelope convectivo e aquém
+ *    da linha de Linsky & Haisch): sem ele o motor nem constrói a atmosfera
+ *    magnética;
  *  · grânulo na tela relativo ao do Sol (`granuloNaTelaEmRaios`, Hp ∝ T·R/M);
  *  · contraste da textura quieta relativo ao do Sol (`contrasteGranulos`
- *    sobre o rms real do Sol, 0,15);
+ *    sobre o rms real do Sol, 0,15); com células gigantes, o contraste dos
+ *    dados é o DELAS, e os grânulos levam só a fração declarada;
+ *  · células gigantes e borda difusa quando os dados as têm (Betelgeuse);
  *  · borda pelo u linear de Claret (`bordaU`);
- *  · atividade pelo número de Rossby (`atividadeDe`, Wright 2011) — no lugar
- *    de `manchas`/`erupcoes`, que ficam só para o motor simples; ela move
+ *  · atividade pelo número de Rossby (`atividadeDe`, Wright 2011): ela move
  *    manchas, ciclo, a frequência das erupções e a contagem de laços;
  *  · rotadora rápida (Vega): forma achatada + escurecimento gravitacional
  *    (`achatamento`), com o eixo na base da cena (`eixo`, o do piloto:
@@ -120,22 +151,26 @@ function sementeDe(e: EstrelaVisitavel): number {
 
 export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): StellarParams {
   const s = e.superficie;
+  const gig = s.celulasGigantesEmRaios;
+  const contrasteDosGranulos = s.contrasteGranulos.v * (gig ? FRACAO_DOS_GRANULOS_SOB_AS_GIGANTES : 1);
   return {
     ...SOL_PARAMS,
     nome: e.id,
     radiusPc: raioDaEstrelaPc(e),
-    rotPeriodDays: e.rotacaoDias?.v ?? SOL_PARAMS.rotPeriodDays,
+    rotPeriodDays: rotacaoDe(e).v,
     tiltRad: 0,
     activityLevel: atividadeDe(e).nivel,
     teffK: e.teffK.v,
-    convective: e.teffK.v < TEFF_SEM_ENVELOPE_K,
+    dinamo: temDinamoSolar(e),
     seed: (SOL_PARAMS.seed ^ sementeDe(e)) >>> 0,
     knobPrefix: e.id,
     granuloRelativoAoSol:
       granuloNaTelaEmRaios(s.granuloEmRaios.v) / granuloNaTelaEmRaios(GRANULO_SOL_EM_RAIOS),
-    contrasteRelativoAoSol: s.contrasteGranulos.v / CONTRASTE_REAL_DO_SOL,
+    contrasteRelativoAoSol: contrasteDosGranulos / CONTRASTE_REAL_DO_SOL,
     bordaU: s.bordaU.v,
     foraDaOrigem: true,
+    ...(gig ? { celulasGigantes: { tamanhoEmRaios: gig.v, contraste: s.contrasteGranulos.v } } : {}),
+    ...(s.bordaDifusaRaios.v > 1 ? { bordaDifusaRaios: s.bordaDifusaRaios.v } : {}),
     ...(e.achatamento ? { achatamento: e.achatamento } : {}),
     ...(e.achatamento && eixo ? { eixoNaCena: [eixo.x, eixo.y, eixo.z] as const } : {}),
   };
@@ -159,7 +194,7 @@ export function parametrosDaCompanheira(e: EstrelaVisitavel): StellarParams | nu
     tiltRad: 0,
     activityLevel: 0,
     teffK: c.teffK.v,
-    convective: false,
+    dinamo: false,
     seed: (SOL_PARAMS.seed ^ sementeDe(e) ^ 0x0b0b0b0b) >>> 0,
     knobPrefix: `${e.id}b`,
     contrasteRelativoAoSol: 0,
@@ -227,7 +262,7 @@ export class EstrelaPeloMotorDoSol {
 }
 
 interface Superficie {
-  corpo: CorpoDeEstrela | EstrelaPeloMotorDoSol;
+  corpo: EstrelaPeloMotorDoSol;
   armado: boolean;
   estado: EstadoDaEstrela;
 }
@@ -243,7 +278,7 @@ interface Piloto {
    * O PONTO DE QUEM NÃO ESTÁ NO BINÁRIO (as anfitriãs de exoplanetas
    * fracas demais para `stars.bin`, como TRAPPIST-1): sem ponto do
    * catálogo para ceder, a estrela ganha o seu, pela lei da Sirius B.
-   * As quatro do piloto estão no binário: para elas fica `null`.
+   * Quem está no binário fica com `null`.
    */
   pontoProprio: PontoDeEstrela | null;
   companheira: (Superficie & { ponto: PontoDeEstrela; pos: THREE.Vector3 }) | null;
@@ -278,12 +313,10 @@ export class EstrelasNoQuadro {
     palco: () => CorposResolvidos;
     escondido: (flag: string) => boolean;
     janelaDoQuadro: JanelaDoQuadro | 'hoje';
-    /** a curva de tom viva — a receita do Sol troca de calibração com ela */
-    toneMapping: () => THREE.ToneMapping;
     /** brilho assistido × real (o selo do HUD) — a exposição da visita */
     politicaDeLuz: () => PoliticaDeLuz;
-    /** `?motorsol=` (null = desligado): os meios do motor do Sol */
-    motorDoSol: () => MeiosDoMotor | null;
+    /** os meios do motor do Sol (renderer, câmera e o tier vivo) */
+    motorDoSol: () => MeiosDoMotor;
   };
 
   constructor(named: readonly NamedStar[], fios: EstrelasNoQuadro['fios']) {
@@ -342,37 +375,41 @@ export class EstrelasNoQuadro {
   }
 
   private criar(p: Piloto, jd: number) {
-    const f = fotosferaDe(p.dados);
-    const meios = NO_MOTOR_DO_SOL.has(p.dados.id) ? this.fios.motorDoSol() : null;
-    const corpo = meios
-      ? new EstrelaPeloMotorDoSol(parametrosDoMotor(p.dados, p.eixo), meios, jd)
-      : new CorpoDeEstrela(f);
-    if (corpo instanceof EstrelaPeloMotorDoSol) corpo.group.position.copy(p.pos);
+    const meios = this.fios.motorDoSol();
+    const d = p.dados;
+    const corpo = new EstrelaPeloMotorDoSol(parametrosDoMotor(d, p.eixo), meios, jd);
+    corpo.group.position.copy(p.pos);
     this.group.add(corpo.group);
     p.principal = {
       corpo,
       armado: false,
-      estado: estadoDe(p.dados.id, corpo.raioPc, f.teffK, p.pos),
+      estado: estadoDe(d.id, corpo.raioPc, d.teffK.v, p.pos),
     };
+    const stars = this.fios.stars();
     if (p.indice < 0) {
-      const stars = this.fios.stars();
-      p.pontoProprio = new PontoDeEstrela(f, stars?.expoM0 ?? EXPO_M0, stars?.sigmaPx ?? SIGMA_PX);
+      p.pontoProprio = new PontoDeEstrela(
+        { teffK: d.teffK.v, raioRsol: d.raioRsol.v },
+        stars?.expoM0 ?? EXPO_M0,
+        stars?.sigmaPx ?? SIGMA_PX
+      );
       this.group.add(p.pontoProprio.points);
     }
-    const fb = fotosferaDaCompanheira(p.dados);
-    const pb = meios ? parametrosDaCompanheira(p.dados) : null;
-    if (fb) {
-      // a companheira pelo MESMO motor (segunda instância) quando a
-      // principal está nele; o ponto de luz fica — de longe ela é sub-pixel
-      const cb = pb ? new EstrelaPeloMotorDoSol(pb, meios!, jd) : new CorpoDeEstrela(fb);
-      const stars = this.fios.stars();
-      const ponto = new PontoDeEstrela(fb, stars?.expoM0 ?? EXPO_M0, stars?.sigmaPx ?? SIGMA_PX);
+    const pb = parametrosDaCompanheira(d);
+    if (pb && d.companheira) {
+      // a companheira pelo MESMO motor (segunda instância); o ponto de luz
+      // fica — de longe ela é sub-pixel
+      const cb = new EstrelaPeloMotorDoSol(pb, meios, jd);
+      const ponto = new PontoDeEstrela(
+        { teffK: d.companheira.teffK.v, raioRsol: d.companheira.raioRsol.v },
+        stars?.expoM0 ?? EXPO_M0,
+        stars?.sigmaPx ?? SIGMA_PX
+      );
       this.group.add(cb.group, ponto.points);
       const posB = new THREE.Vector3();
       p.companheira = {
         corpo: cb,
         armado: false,
-        estado: estadoDe(fb.id, cb.raioPc, fb.teffK, posB),
+        estado: estadoDe(pb.nome, cb.raioPc, pb.teffK, posB),
         ponto,
         pos: posB,
       };
@@ -453,10 +490,9 @@ export class EstrelasNoQuadro {
       // desmonta — e devolve o ponto, o palco e a memória. Trocar de TIER
       // também: o corpo nasce com o tier do aparelho (como o Sol, que o
       // director refaz na troca) e renasce logo abaixo, no tier novo
-      if (p.principal?.corpo instanceof EstrelaPeloMotorDoSol) {
+      if (p.principal) {
         const longe = !emFoco && q.camPos.distanceTo(p.pos) > RAIO_DE_DESMONTE_PC;
-        const tierNovo = this.fios.motorDoSol()?.quality;
-        if (longe || (tierNovo !== undefined && tierNovo !== p.principal.corpo.quality)) {
+        if (longe || this.fios.motorDoSol().quality !== p.principal.corpo.quality) {
           this.desmontar(p);
           if (longe) continue;
         }
@@ -467,7 +503,7 @@ export class EstrelasNoQuadro {
         this.criar(p, q.jd);
       }
       const a = p.principal!;
-      const leiA = this.passo(a, p.pos, p.eixo, q, alturaCss, tanHalfFov, escondido);
+      const leiA = this.passo(a, p.pos, q, alturaCss, tanHalfFov, escondido);
       // a cessão do ponto do catálogo: a MESMA do Sol-ponto
       const cede = a.corpo.group.visible ? cessaoDoSol(leiA) : 0;
       if (stars && p.indice >= 0 && cede !== p.cedeu) {
@@ -493,7 +529,7 @@ export class EstrelasNoQuadro {
           p.pos.length()
         );
         b.pos.set(p.pos.x + rel[0], p.pos.y + rel[1], p.pos.z + rel[2]);
-        const leiB = this.passo(b, b.pos, p.eixo, q, alturaCss, tanHalfFov, escondido);
+        const leiB = this.passo(b, b.pos, q, alturaCss, tanHalfFov, escondido);
         const cedeB = b.corpo.group.visible ? cessaoDoSol(leiB) : 0;
         b.ponto.points.visible = !escondido;
         b.ponto.escrever({
@@ -507,7 +543,8 @@ export class EstrelasNoQuadro {
     }
   }
 
-  /** devolve o ponto, o palco e a memória das duas superfícies de um piloto */
+  /** devolve o ponto, o palco e a memória das duas superfícies de um piloto
+   *  — e o ponto próprio, como antes de a estrela ser preparada */
   private desmontar(p: Piloto) {
     const stars = this.fios.stars();
     for (const s of [p.principal, p.companheira]) {
@@ -516,10 +553,11 @@ export class EstrelasNoQuadro {
       s.corpo.dispose();
       this.fios.palco().remover(`estrela:${s.estado.id}`);
     }
-    if (p.companheira) {
-      p.companheira.ponto.points.removeFromParent();
-      p.companheira.ponto.dispose();
+    for (const ponto of [p.companheira?.ponto, p.pontoProprio]) {
+      ponto?.points.removeFromParent();
+      ponto?.dispose();
     }
+    p.pontoProprio = null;
     p.principal = null;
     p.companheira = null;
     if (stars && p.indice >= 0 && p.cedeu !== 0) stars.writeFocus(p.indice, 0);
@@ -529,7 +567,6 @@ export class EstrelasNoQuadro {
   private passo(
     s: Superficie,
     pos: THREE.Vector3,
-    eixo: THREE.Vector3,
     q: { camPos: THREE.Vector3; hPx: number; fovDeg: number; jd: number; tempoS: number },
     alturaCss: number,
     tanHalfFov: number,
@@ -563,42 +600,21 @@ export class EstrelasNoQuadro {
         janelaDoQuadro: this.fios.janelaDoQuadro,
       }
     );
-    if (s.corpo instanceof EstrelaPeloMotorDoSol) {
-      const g = lei.overrideExpoente;
-      s.corpo.escrever({
-        posPc: pos,
-        g,
-        alturaCss,
-        exposicao: Math.pow(
-          ganhoDaVisita(s.corpo.fotosfera.teffK, this.fios.politicaDeLuz()),
-          1 - Math.min(1, Math.max(0, g))
-        ),
-        peso: lei.wResolvido * lei.wMalha,
-        jd: q.jd,
-        tempoS: q.tempoS,
-      });
-    } else if (s.corpo.group.visible) {
-      // a ponte casa → tela com o raio do SOL (a unidade é a superfície
-      // do Sol), na altura viva, descida em stops pelo filtro da lei
-      const g = lei.overrideExpoente;
-      const fator = Math.pow(radianciaDeTela(RADIANCIA_DA_FOTOSFERA, RAIO_SOL_PC, alturaCss), g);
-      // a exposição da visita entra pela MESMA rampa, ao contrário: plena
-      // com o disco enchendo o quadro (g = 0), nenhuma no ponto (g = 1)
-      const exposicao = Math.pow(
+    const g = lei.overrideExpoente;
+    // a exposição da visita entra pela MESMA rampa do filtro, ao contrário:
+    // plena com o disco enchendo o quadro (g = 0), nenhuma no ponto (g = 1)
+    s.corpo.escrever({
+      posPc: pos,
+      g,
+      alturaCss,
+      exposicao: Math.pow(
         ganhoDaVisita(s.corpo.fotosfera.teffK, this.fios.politicaDeLuz()),
         1 - Math.min(1, Math.max(0, g))
-      );
-      s.corpo.escrever({
-        posPc: pos,
-        eixo,
-        jd: q.jd,
-        tempoS: q.tempoS,
-        fator,
-        exposicao,
-        peso: lei.wResolvido * lei.wMalha,
-        toneMapping: this.fios.toneMapping(),
-      });
-    }
+      ),
+      peso: lei.wResolvido * lei.wMalha,
+      jd: q.jd,
+      tempoS: q.tempoS,
+    });
     return lei;
   }
 

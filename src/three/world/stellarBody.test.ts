@@ -39,12 +39,15 @@ import {
   coroaOcultavel,
   epsilonDeSegmentoGlsl,
   literalGlsl,
+  pesoDoFiltro,
+  rocheDe,
   rotSpeedFromPeriod,
   taxaDeErupcoesPelaAtividade,
   termoZonalDaForma,
   tierDaEstrela,
 } from './stellarBody';
 import { uvMeshVertex } from './sol/common.js';
+import { estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
 
 describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
   it('raio: é o FÍSICO, pela fonte única do cadastro (F3)', () => {
@@ -165,15 +168,16 @@ describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
     expect(SOL_PARAMS.knobs.spots * 0.5).toBe(0.5);
   });
 
-  it('teffK é lido pela lei e pela gravidade; convective virou o PORTÃO DO DÍNAMO (12/11)', () => {
+  it('teffK é lido pela lei e pela gravidade; dinamo é o PORTÃO DA ATMOSFERA MAGNÉTICA (12/11)', () => {
     expect(SOL_PARAMS.teffK).toBe(5772);
-    expect(SOL_PARAMS.convective).toBe(true);
+    expect(SOL_PARAMS.dinamo).toBe(true);
     const src = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
-    // o estado da lei e a média da gravidade (`operarAFotosfera`)
-    expect(src.match(/p\.teffK/g)).toHaveLength(2);
+    // o estado da lei, o avermelhamento do limbo e a média da gravidade
+    // (`operarAFotosfera`)
+    expect(src.match(/p\.teffK/g)).toHaveLength(3);
     // sem envelope convectivo não há dínamo: o construtor (`semDinamo`) e
     // o tier da estrela (`tierDaEstrela`) leem o campo
-    expect(src).toContain('this.semDinamo = !params.convective;');
+    expect(src).toContain('this.semDinamo = !params.dinamo;');
   });
 });
 
@@ -598,10 +602,29 @@ describe('um motor, qualquer estrela — os parâmetros novos são neutros no So
 
   it('o tier do Sol é o MESMO objeto; sem dínamo, o retrato mínimo; laços pela atividade com teto', () => {
     expect(tierDaEstrela(tier, SOL_PARAMS)).toBe(tier);
-    const a = tierDaEstrela(tier, { ...SOL_PARAMS, convective: false, activityLevel: 0 });
+    const a = tierDaEstrela(tier, { ...SOL_PARAMS, dinamo: false, activityLevel: 0 });
     expect([a.chromo, a.simW, a.simH, a.loops]).toEqual([256, 192, 96, 16]);
     expect(tierDaEstrela(tier, { ...SOL_PARAMS, activityLevel: 2.06 }).loops).toBe(32);
     expect(taxaDeErupcoesPelaAtividade(1)).toBe(1);
+    // o regime saturado (nivel ~8) não vira tempestade contínua: teto 6×
+    expect(taxaDeErupcoesPelaAtividade(8.2)).toBe(6);
+    expect(taxaDeErupcoesPelaAtividade(2.06)).toBeCloseTo(4.24, 2);
+  });
+
+  it('o peso do filtro do Sol: exatamente 1 no Sol e abaixo dele, 0 nas quentes', () => {
+    expect(pesoDoFiltro(5772)).toBe(1);
+    expect(pesoDoFiltro(3054)).toBe(1);
+    expect(pesoDoFiltro(9845)).toBe(0);
+  });
+
+  it('Vega: forma de Roche e escurecimento gravitacional (Monnier 2012) nas duas pontas', () => {
+    const a = estrelaVisitavelPorNome('Vega')!.achatamento!;
+    const polo = rocheDe(0, a);
+    expect(polo.teffK).toBeCloseTo(10070, 6);
+    expect(polo.raio).toBeCloseTo(a.raioPolarRsol.v / a.raioEquatorialRsol.v, 12);
+    const eq = rocheDe(Math.PI / 2, a);
+    expect(eq.teffK).toBeCloseTo(8910, 6);
+    expect(eq.raio).toBeCloseTo(1, 12);
   });
 
   it('o termo zonal de grau 2 põe polo e equador nos raios medidos (Vega)', () => {
@@ -617,6 +640,11 @@ describe('um motor, qualquer estrela — os parâmetros novos são neutros no So
     expect(f).toContain('float plage = 0.0 * st.b');
     expect(f).toContain('color *= vGravidade;');
     expect(() => cirurgiaDaForma(sunJs, -0.078, 1.04)).not.toThrow();
+    // avermelhamento 1 e sem gigantes: nada muda
+    expect(cirurgiaDaEstrela(sunJs, { avermelhamento: 1 })).toBe(sunJs);
+    const q = cirurgiaDaEstrela(sunJs, { avermelhamento: 0, gigantes: { tamanhoEmRaios: 0.6, contraste: 0.25 } });
+    expect(q).toContain('color.b *= 1.0 - edge*0.50*0.000000;');
+    expect(q.split('celulasGigantes(sp/0.600000').length - 1).toBe(1);
   });
 
   it('a matiz escreve na saída GLSL3 quando ela existe (as partículas da CME)', () => {

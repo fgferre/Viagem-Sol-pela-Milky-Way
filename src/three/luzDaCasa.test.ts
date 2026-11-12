@@ -376,7 +376,10 @@ describe('3. o invariante da troca — o teste que a casa não tinha', () => {
     // `vaoRadiometricoNaTroca` direto lá dentro faria a conversão de unidade
     // existir em dois lugares, que é como uma delas envelhece calada.
     const malha = ler('src/three/world/stellarBody.ts');
-    expect(malha).toContain('radianciaDeTela(RADIANCIA_DA_FOTOSFERA, params.radiusPc)');
+    // (12/11: o raio da ponte é o do SOL, não o da instância — a unidade da
+    // casa é a superfície do Sol, e o motor agora desenha outras estrelas;
+    // com o raio delas a ponte erraria por (R☉/R)². No Sol é o mesmo símbolo.)
+    expect(malha).toContain('radianciaDeTela(RADIANCIA_DA_FOTOSFERA, RAIO_DO_SOL_NA_CENA)');
     expect(malha).not.toMatch(/vaoRadiometricoNaTroca\(/);
   });
 });

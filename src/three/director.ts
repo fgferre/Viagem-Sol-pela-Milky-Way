@@ -122,7 +122,7 @@ import { ligarGestos } from './director/gestos';
 import { distanciaAposEstalos } from './zoomDaRoda';
 import { Rotulos } from './director/rotulos';
 import { SolNoQuadro } from './director/solNoQuadro';
-import { EstrelasNoQuadro, lerPortaEstrelasComLugar, lerPortaMotorDoSol } from './director/estrelasNoQuadro';
+import { EstrelasNoQuadro, lerPortaEstrelasComLugar } from './director/estrelasNoQuadro';
 import { faseDoCiclo, lerPortaSolQuadro } from './estrela';
 import type { CalibracaoDaCasa } from './estrela';
 import { BETA_DA_EMISSAO } from './shaders/starShaders';
@@ -2034,21 +2034,21 @@ export class Director {
     // era, byte a byte, e o clarão da lei fica só com o Sol. Palavras
     // dele: "resgata no git a versão certa antes de entrar o atlas".
     this.heroes = new HeroStars(this.meta.named);
-    // TODA ESTRELA É UM LUGAR (piloto de 12/11): as quatro com corpo,
-    // preguiçosas — nada nasce enquanto nenhuma estiver por perto
+    // TODA ESTRELA É UM LUGAR (piloto de 12/11): as visitáveis com corpo,
+    // todas pelo motor do Sol, preguiçosas — nada nasce enquanto nenhuma
+    // estiver por perto
     if (lerPortaEstrelasComLugar(this.debug.get('estrelaslugar'))) {
       this.estrelasNoQuadro = new EstrelasNoQuadro(this.meta.named, {
         stars: () => this.stars,
         palco: () => this.palco,
         escondido: (flag) => this.hide.has(flag),
         janelaDoQuadro: lerPortaSolQuadro(this.debug.get('solquadro')),
-        toneMapping: () => this.engine.renderer.toneMapping,
         politicaDeLuz: () => this.politicaDeLuz,
-        // ?motorsol=0: Proxima volta ao motor simples (a bancada do A/B)
-        motorDoSol: () =>
-          lerPortaMotorDoSol(this.debug.get('motorsol'))
-            ? { renderer: this.engine.renderer, camera: this.engine.camera, quality: this.engine.quality }
-            : null,
+        motorDoSol: () => ({
+          renderer: this.engine.renderer,
+          camera: this.engine.camera,
+          quality: this.engine.quality,
+        }),
       });
     }
 
