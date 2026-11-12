@@ -176,6 +176,10 @@ export const CAMADAS: readonly Camada[] = [
   // que a chave desliga é a curva, nunca um fóton. Com ícone ela entra
   // na gaveta de graça e o selo a declara pela derivação de sempre.
   { flag: 'noorbitas', get nome() { return t('camada.noorbitas'); }, get nota() { return t('camada.noorbitas.nota'); }, familia: 'Sistema solar', viva: true, icone: '◜' },
+  // AS TRAJETÓRIAS DAS SONDAS (pilar 4, 12/11/2026) — `world/sondas.ts`.
+  // Instrumento de leitura como as órbitas: a linha da sonda EM FOCO,
+  // percorrida e a percorrer; nunca um fóton
+  { flag: 'nosondas', get nome() { return t('camada.nosondas'); }, get nota() { return t('camada.nosondas.nota'); }, familia: 'Sistema solar', viva: true, icone: '↗' },
 ];
 
 /**

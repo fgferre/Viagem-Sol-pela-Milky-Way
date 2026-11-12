@@ -63,6 +63,9 @@ const DESTINOS = [
   { id: 'pleiades', foco: 'pleiades' },
   { id: 'hyades', foco: 'hyades' },
   { id: 'ana-de-sagitario', foco: 'ana-de-sagitario' },
+  // A PRIMEIRA SONDA (pilar 4, 12/11/2026): a chegada dela, o Sol de um
+  // lado e a sonda do outro
+  { id: 'voyager-1', foco: 'voyager-1' },
 ];
 
 function urlDoDestino({ foco, ver, d, consulta }) {

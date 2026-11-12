@@ -66,6 +66,8 @@ import { designacaoDeBayer } from './constelacoes';
 import { temperatureFromBV } from './stellarPhysics';
 import type { NamedStar } from '../../three/config';
 import type { LugarDoCeu } from '../lugaresDoFilme';
+import type { Sonda } from '../sondas';
+import { CONSULTADO_EM, estadoDaSonda, janelaDaSonda } from '../sondas';
 import { REGUA_DOS_MAPAS, alvoDoMapa, type Matiz, type MedidaDoCorpo } from './reguaDosMapas';
 import RELATORIO_DA_REGUA from './reguaDosMapas.relatorio.json';
 import type {
@@ -110,7 +112,10 @@ export type IdDeSecao =
   /** a única de ESTRELA — as outras sete são todas de corpo */
   | 'estrela'
   /** a de um LUGAR do céu (céu profundo, 12/11/2026) */
-  | 'lugar';
+  | 'lugar'
+  /** as duas de uma SONDA (pilar 4, 12/11/2026) */
+  | 'sonda'
+  | 'missao';
 
 export interface SecaoDaFicha {
   id: IdDeSecao;
@@ -1001,6 +1006,84 @@ export function montarFichaDeLugar(lugar: LugarDoCeu): Ficha {
     classe: lugar.classe ? classeEmTexto(lugar.classe) : '',
     secoes: secoes.filter((secao) => secao.linhas.length > 0),
   };
+}
+
+/** uma data AAAA-MM-DD do jeito da língua de agora ("25 ago. 1989") */
+function dataNaLingua(iso: string): string {
+  return new Date(`${iso}T12:00:00Z`).toLocaleDateString(idiomaAtual() === 'en' ? 'en-GB' : 'pt-BR', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
+/** segundos de luz por UA (IAU: 1 UA / c) */
+const SEGUNDOS_DE_LUZ_POR_UA = 499.004_783_8;
+
+/**
+ * A FICHA DE UMA SONDA (pilar 4, 12/11/2026). "Agora" é viva — a
+ * distância ao Sol em UA, o tempo da luz e a velocidade, no instante
+ * mostrado, da trajetória do Horizons (`lib/sondas.ts`); "a missão" são
+ * as datas e a situação, cada uma com a página da NASA/JPL que a diz, e
+ * a situação traz a data em que foi consultada.
+ *
+ * O TEMPO DA LUZ é do Sol à sonda: daqui à Terra a diferença é de no
+ * máximo 1 UA (8 minutos), menos que o arredondamento a minutos de
+ * uma viagem de horas — e a ficha diz "daqui" do jeito que o visitante
+ * lê, sem prometer a geometria Terra–sonda que ela não calcula.
+ */
+export function montarFichaDeSonda(sonda: Sonda, jd: number | null | undefined): Ficha {
+  const ingles = idiomaAtual() === 'en';
+  const no = (texto: { pt: string; en: string }) => (ingles ? texto.en : texto.pt);
+  const horizons = t('ficha.fonte.horizons', { data: dataNaLingua(CONSULTADO_EM) });
+  const agora: (LinhaDaFicha | null)[] = [];
+  const e = jd !== null && jd !== undefined ? estadoDaSonda(sonda.id, jd) : null;
+  if (e) {
+    const ua = Math.hypot(e[0], e[1], e[2]);
+    agora.push(linha(t('ficha.sonda.doSol'), t('unidade.ua', { n: numeroDoIdioma(ua) }), 'derivado', horizons));
+    const minutos = Math.round((ua * SEGUNDOS_DE_LUZ_POR_UA) / 60);
+    const luz =
+      minutos >= 60
+        ? `${Math.floor(minutos / 60)} h ${String(minutos % 60).padStart(2, '0')} min`
+        : `${minutos} min`;
+    agora.push(linha(t('ficha.sonda.luz'), luz, 'derivado', t('ficha.fonte.daTrajetoria')));
+    const v = Math.hypot(e[3], e[4], e[5]) * KM_POR_S_POR_UA_DIA;
+    agora.push(linha(t('ficha.sonda.velocidade'), `${numeroDoIdioma(v)} km/s`, 'derivado', horizons));
+  } else {
+    const janela = janelaDaSonda(sonda.id);
+    const depois = janela && jd !== null && jd !== undefined && jd > janela[1];
+    agora.push(
+      linha(t('ficha.sonda.doSol'), t(depois ? 'ficha.sonda.depoisDaJanela' : 'ficha.sonda.foraDaJanela'), null)
+    );
+  }
+  agora.push(linha(t('ficha.sonda.naCena'), t('ficha.sonda.naCena.valor'), 'artistico', t('ficha.fonte.reguaDeEscala')));
+  const missao: (LinhaDaFicha | null)[] = [
+    linha(t('ficha.sonda.lancamento'), dataNaLingua(sonda.lancamento.data), 'medido', sonda.lancamento.fonte),
+    ...sonda.sobrevoos.map((sv) =>
+      linha(
+        t('ficha.sonda.sobrevoo', { corpo: sv.nome ? no(sv.nome) : (nomeDoCorpo(sv.corpo) ?? sv.corpo) }),
+        dataNaLingua(sv.data),
+        'medido',
+        sv.fonte
+      )
+    ),
+    sonda.heliopausa
+      ? linha(t('ficha.sonda.heliopausa'), dataNaLingua(sonda.heliopausa.data), 'medido', sonda.heliopausa.fonte)
+      : null,
+    linha(
+      t('ficha.sonda.estado', { data: dataNaLingua(CONSULTADO_EM) }),
+      no(sonda.estado.texto),
+      'medido',
+      sonda.estado.fonte
+    ),
+    linha(t('ficha.sonda.trajetoria'), no(sonda.notaDaTrajetoria), 'derivado', horizons),
+  ];
+  const secoes: SecaoDaFicha[] = [
+    { id: 'sonda', titulo: TITULO('sonda'), linhas: agora.filter((l): l is LinhaDaFicha => l !== null) },
+    { id: 'missao', titulo: TITULO('missao'), linhas: missao.filter((l): l is LinhaDaFicha => l !== null) },
+  ];
+  return { id: `sonda:${sonda.id}`, nome: sonda.nome, classe: classeEmTexto('sonda'), secoes };
 }
 
 /**

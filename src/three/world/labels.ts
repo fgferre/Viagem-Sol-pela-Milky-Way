@@ -49,6 +49,9 @@ export interface StarLabel {
   /** a cor CSS do anel — a mesma da linha de órbita do corpo (item 83);
    *  ausente, o anel sai na tinta âmbar padrão dos rótulos. */
   corDoAnel?: string;
+  /** a FORMA do marcador: ausente = o anel dos corpos; `losango` = a
+   *  sonda (pilar 4), instrumento e não corpo */
+  formaDoIcone?: 'losango';
   /**
    * O que a etiqueta escreve ao lado do nome quando o detalhe NÃO é
    * tipo espectral — os corpos do sistema trazem aqui a classe deles em
@@ -305,6 +308,9 @@ export const PRIORIDADE_DO_ROTULO = {
    *  abaixo de qualquer corpo da casa. Fora do mapa do Eyes, que não tem
    *  céu profundo. */
   lugar: 12,
+  /** uma SONDA (pilar 4, 12/11/2026): marcador de instrumento, abaixo
+   *  das luas e acima dos asteroides — ela é assunto, mas não é corpo */
+  sonda: 20,
   estrelaPropria: 10,
   estrelaBayer: 5,
   outros: 1,

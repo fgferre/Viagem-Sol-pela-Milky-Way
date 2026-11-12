@@ -558,12 +558,12 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
     expect(naGaveta.map((c) => c.flag).sort()).toEqual(
       CAMADAS.map((c) => c.flag).sort()
     );
-    expect(naGaveta).toHaveLength(20);
+    expect(naGaveta).toHaveLength(21);
     expect(CAMADAS_POR_FAMILIA.map((g) => g.familia)).toEqual(FAMILIAS_DE_CAMADAS);
     // a TERCEIRA das estrelas é `nonomes` (item 82); no sistema solar,
     // `noorbitas` (item 77) e `noicones` (item 89 — o ícone separado do
-    // texto) levam a família a SEIS
-    expect(CAMADAS_POR_FAMILIA.map((g) => g.camadas.length)).toEqual([11, 3, 6]);
+    // texto) levam a família a SEIS, e `nosondas` (pilar 4) a SETE
+    expect(CAMADAS_POR_FAMILIA.map((g) => g.camadas.length)).toEqual([11, 3, 7]);
   });
 
   it('a família diz o que a flag desliga — as escalas da casa, não a ordem da linha', () => {
@@ -581,7 +581,7 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
     // os NOMES entram pela família de onde veio a queixa: a abertura
     // desenhava cinco nomes de corpo e dezessete de estrela (item 82)
     expect(de('nonomes')).toBe('Estrelas');
-    for (const local of ['nosun', 'nomarker', 'noplan', 'noicones', 'nocorpos', 'noorbitas']) {
+    for (const local of ['nosun', 'nomarker', 'noplan', 'noicones', 'nocorpos', 'noorbitas', 'nosondas']) {
       expect(de(local), local).toBe('Sistema solar');
     }
   });
@@ -622,6 +622,8 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
       'nocorpos',
       // item 77: o arco ◜ das linhas de órbita
       'noorbitas',
+      // pilar 4: a seta ↗ das trajetórias das sondas
+      'nosondas',
     ]);
     for (const c of comIcone) expect(c.icone).toHaveLength(1);
   });

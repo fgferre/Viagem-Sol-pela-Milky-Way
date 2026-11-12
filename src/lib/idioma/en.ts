@@ -339,6 +339,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.destino.jupiter': 'The giant and its four moons',
   'busca.destino.saturn': 'The rings, up close',
   'busca.destino.pluto': 'The edge of the system',
+  'busca.destino.voyager-1': 'The farthest human-made object',
   'busca.destino.sirius': 'The brightest star in the sky',
   'busca.destino.betelgeuse': 'A supergiant in Orion',
   'busca.destino.rigil-kentaurus': 'The nearest star system',
@@ -407,6 +408,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.secao.imagem': 'the image',
   'ficha.secao.estrela': 'the star',
   'ficha.secao.lugar': 'the place',
+  'ficha.secao.sonda': 'now',
+  'ficha.secao.missao': 'the mission',
   // The reference follows an em dash, as in mockups m3/m13 ("Distance —
   // Sun"): no preposition, no article, so one label fits Sun, Earth and
   // Saturn in both languages. The old "to the {pai}" (Lote 5) was right
@@ -480,6 +483,21 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.lugar.nucleo': 'core',
   'ficha.lugar.noCatalogo': 'in the app’s catalogue',
   'ficha.lugar.naCena': 'what you see here',
+  'ficha.sonda.doSol': 'distance from the Sun',
+  'ficha.sonda.luz': 'light takes, from here to Earth',
+  'ficha.sonda.velocidade': 'speed relative to the Sun',
+  'ficha.sonda.lancamento': 'launch',
+  'ficha.sonda.sobrevoo': '{corpo} flyby',
+  'ficha.sonda.heliopausa': 'crossed the heliopause',
+  'ficha.sonda.estado': 'status on {data}',
+  'ficha.sonda.trajetoria': 'the trajectory',
+  'ficha.sonda.foraDaJanela': 'on this date the spacecraft had not been launched yet',
+  'ficha.sonda.depoisDaJanela': 'the app’s table runs until 2040',
+  'ficha.sonda.naCena': 'what you see here',
+  'ficha.sonda.naCena.valor': 'an instrument-sized marker, not the spacecraft — it is a few metres across',
+  'ficha.fonte.horizons': 'JPL Horizons, retrieved on {data}',
+  'ficha.fonte.daTrajetoria': 'computed from the Horizons trajectory',
+  'ficha.fonte.reguaDeEscala': 'the app’s scale rule',
   'ficha.fonte.daEfemeride': 'from the ephemeris',
   'ficha.fonte.daCamera': "from the camera's point of view",
   'ficha.fonte.deGmEDoRaio': 'from GM and the radius',
@@ -636,6 +654,9 @@ export const EN: Record<keyof typeof PT, string> = {
     'Turns off the 3D globes of bodies seen up close, distinct from the distant photometric points.',
   'camada.noorbitas.nota':
     "Turns off the solar system's orbit lines around the Sun.",
+  'camada.nosondas': 'Spacecraft trajectories',
+  'camada.nosondas.nota':
+    'Turns off the path of the chosen spacecraft: travelled so far, solid; the rest until 2040, faint.',
   'qualidade.cinema': 'Cinema',
   'qualidade.alta': 'High',
   'qualidade.performance': 'Performance',
@@ -660,6 +681,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'classe.galáxia espiral barrada': 'barred spiral galaxy',
   'classe.vista da galáxia': 'view of the galaxy',
   'classe.galáxia anã': 'dwarf galaxy',
+  'classe.sonda': 'spacecraft',
 
   // ---- the time machine --------------------------------------------
   'tempo.mes.0': 'January',

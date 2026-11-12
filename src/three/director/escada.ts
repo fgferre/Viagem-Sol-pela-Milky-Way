@@ -48,6 +48,8 @@ import type { FreeRoam } from '../cinematic/cameraRig';
 import type { CorpoBuscavel, LugarBuscavel } from '../../lib/buscaEstrelas';
 import { nomeDoLugar } from '../../lib/buscaEstrelas';
 import { poseDoLugar } from '../world/lugaresDoCeu';
+import { poseDaSonda } from '../world/sondas';
+import { SONDAS, estadoDaSonda, sondaPorId } from '../../lib/sondas';
 import type { MaquinaDoTempo } from './maquinaDoTempo';
 import type { Rotulos } from './rotulos';
 import type { AtlasRig } from '../cinematic/atlasRig';
@@ -127,7 +129,7 @@ export function soloDoCorpo(
  * corpo resolvido dela é Onda 7), mas o botão "sistema" e o Esc valem.
  */
 export interface EstadoDaEscada {
-  degrau: 'sistema' | 'ceu' | 'orbita' | 'corpo' | 'lua' | 'estrela';
+  degrau: 'sistema' | 'ceu' | 'orbita' | 'corpo' | 'lua' | 'estrela' | 'sonda';
   /** existe degrau abaixo alcançável pelo botão "aproximar"? Só quando
    *  o corpo em foco tem MESH resolvido (Terra nesta fase) — aproximar
    *  de um ponto fotométrico enquadraria um clarão sem corpo. */
@@ -171,6 +173,9 @@ export class Escada {
   private ver: VerDaEscada = 'orbita';
   /** o foco vivo é uma ESTRELA (fora da escada de corpos)? */
   private focoEstrela = false;
+  /** a SONDA em foco (pilar 4, 12/11/2026) — id de `lib/sondas.ts`; só
+   *  a escada escreve, e toda outra escrita do foco a apaga */
+  focoSonda: string | null = null;
   /** o corpo em FOCO no Atlas (id do retrato) — só a escada escreve;
    *  o director o lê para o selo (os passos de `stopsDoGloboEmFoco` são dele). */
   focoCorpoId: string | null = null;
@@ -400,6 +405,7 @@ export class Escada {
     this.enquadrarAgora();
     this.focoCorpoId = id;
     this.focoEstrela = false;
+    this.focoSonda = null;
     this.ver = r.ver;
     this.pinoDeBoot = null;
     this.events.onFoco(nomeDoCorpo(id));
@@ -416,6 +422,7 @@ export class Escada {
     this.enquadrarAgora();
     this.focoCorpoId = null;
     this.focoEstrela = true;
+    this.focoSonda = null;
     this.ver = 'orbita';
     this.pinoDeBoot = null;
     this.events.onFoco(nome);
@@ -484,7 +491,59 @@ export class Escada {
     this.enquadrarAgora();
     this.focoCorpoId = null;
     this.focoEstrela = true;
+    this.focoSonda = null;
     this.ver = 'orbita';
+    this.events.onFoco(nome);
+    this.emitirEscada();
+    this.teletransportou();
+  }
+
+  /**
+   * UMA SONDA (pilar 4, 12/11/2026): o alvo é ela, a esfera é a
+   * distância dela ao Sol e a câmera olha de lado (`poseDaSonda`) — o
+   * quadro é "até onde ela já foi". Antes do lançamento ela não existe:
+   * o quadro é o do sistema, e a ficha diz por quê.
+   */
+  visitarSonda(id: string) {
+    const sonda = sondaPorId(id);
+    if (!sonda || this.phase !== 'atlas') return;
+    const pose = poseDaSonda(id, this.maquinaDoTempo.jdVivo);
+    if (pose) {
+      this.atlas.focar(pose.alvo, pose.raio, pose.eixoDe, {
+        rampa: this.rampaDaEscada(),
+        polo: pose.polo,
+        pisoRaio: pose.pisoRaio,
+      });
+      this.enquadrarAgora();
+    } else {
+      // a vista da casa, pela porta dela — e o foco volta a ser a sonda
+      this.focarNoSistema();
+    }
+    this.marcarSonda(sonda.nome, id);
+  }
+
+  /** escolhe uma sonda SEM mover a câmera — o clique simples no rótulo */
+  selecionarSonda(id: string) {
+    const sonda = sondaPorId(id);
+    const pose = sonda ? poseDaSonda(id, this.maquinaDoTempo.jdVivo) : null;
+    if (!sonda || !pose) return;
+    this.atlas.selecionar(pose.alvo, pose.raio, pose.eixoDe, {
+      rampa: this.rampaDaEscada(),
+      polo: pose.polo,
+      pisoRaio: pose.pisoRaio,
+    });
+    this.enquadrarAgora();
+    this.marcarSonda(sonda.nome, id);
+  }
+
+  /** o trio do foco, escrito para uma sonda */
+  private marcarSonda(nome: string, id: string) {
+    this.focoCorpoId = null;
+    this.focoEstrela = false;
+    this.noCeu = false;
+    this.ver = 'orbita';
+    this.pinoDeBoot = null;
+    this.focoSonda = id;
     this.events.onFoco(nome);
     this.emitirEscada();
     this.teletransportou();
@@ -525,6 +584,7 @@ export class Escada {
       // estrela em foco: nenhum CORPO em foco — o ΔEV do selo cala
       this.focoCorpoId = null;
       this.focoEstrela = true;
+      this.focoSonda = null;
       this.ver = 'orbita';
       this.events.onFoco(nome);
       this.emitirEscada();
@@ -658,6 +718,7 @@ export class Escada {
     this.enquadrarAgora();
     this.focoCorpoId = null;
     this.focoEstrela = false;
+    this.focoSonda = null;
     this.noCeu = false;
     this.ver = 'orbita';
     this.events.onFoco(null);
@@ -720,8 +781,10 @@ export class Escada {
           ? this.ver === 'corpo'
             ? 'corpo'
             : 'orbita'
-          : this.focoEstrela
-            ? 'estrela'
+          : this.focoSonda
+            ? 'sonda'
+            : this.focoEstrela
+              ? 'estrela'
             : this.noCeu
               ? 'ceu'
               : 'sistema';
@@ -794,6 +857,12 @@ export class Escada {
    */
   focarNoCorpo(id: string, ver: VerDaEscada = 'orbita') {
     if (this.phase !== 'atlas') return;
+    // UMA SONDA entra pela porta dos corpos (a busca e o `?foco=` a
+    // tratam como alvo do sistema), mas o enquadramento é o dela
+    if (sondaPorId(id)) {
+      this.visitarSonda(id);
+      return;
+    }
     if (id === 'sun') {
       if (ver === 'corpo') this.aproximarDoSol();
       else this.focarNoSistema();
@@ -860,6 +929,7 @@ export class Escada {
     // o selo lê o ΔEV DESTE corpo enquanto ele estiver em foco (D2)
     this.focoCorpoId = id;
     this.focoEstrela = false;
+    this.focoSonda = null;
     this.ver = 'orbita';
     this.events.onFoco(nomeDoCorpo(CORPOS_DO_SISTEMA[i].id));
     this.emitirEscada();
@@ -968,6 +1038,7 @@ export class Escada {
     this.enquadrarAgora();
     this.focoCorpoId = id;
     this.focoEstrela = false;
+    this.focoSonda = null;
     this.ver = 'corpo';
     // O NOME SAI DA TABELA ÚNICA (item 92): esta linha lia só os DEZ
     // corpos da camada, então descer ao globo de um anão ou de um
@@ -1028,6 +1099,7 @@ export class Escada {
     this.enquadrarAgora();
     this.focoCorpoId = 'sun';
     this.focoEstrela = false;
+    this.focoSonda = null;
     this.ver = 'corpo';
     this.events.onFoco(nomeDoCorpo('sun'));
     this.emitirEscada();
@@ -1048,6 +1120,7 @@ export class Escada {
     if (!entrada) return;
     this.focoCorpoId = id;
     this.focoEstrela = false;
+    this.focoSonda = null;
     this.ver = 'corpo';
     this.events.onFoco(nomeDoCorpo(entrada.id));
     this.emitirEscada();
@@ -1114,6 +1187,12 @@ export class Escada {
     const jd = this.maquinaDoTempo.jdVivo;
     const { degrau } = this.escada;
     if (degrau === 'estrela') return null;
+    // A SONDA ANDA COM O RELÓGIO: a mesma pose da chegada, no instante
+    // vivo — fora da tabela (antes do lançamento) não há o que recompor
+    if (degrau === 'sonda') {
+      const pose = this.focoSonda ? poseDaSonda(this.focoSonda, jd) : null;
+      return pose ? { alvo: pose.alvo, raio: pose.raio, eixoDe: pose.eixoDe, pai: null, polo: pose.polo } : null;
+    }
     if (degrau === 'lua') {
       if (!this.maquinaDoTempo.efemeride) return null;
       // A LUA EM FOCO, e não a Lua: o mesmo literal da Onda 7 do ramo
@@ -1433,7 +1512,19 @@ export class Escada {
       }
       return { id: a.id, nome: a.nome, nomeEn: a.nomeEn, classe: a.classe, rUA };
     });
-    return [...dez, ...luas, ...anoes];
+    // AS SONDAS (pilar 4): a distância ao Sol no instante vivo; antes
+    // do lançamento, sem número
+    const sondas = SONDAS.map((sonda) => {
+      const e = estadoDaSonda(sonda.id, jd);
+      return {
+        id: sonda.id,
+        nome: sonda.nome,
+        classe: 'sonda',
+        rUA: e ? Math.hypot(e[0], e[1], e[2]) : Number.NaN,
+        apelidos: sonda.apelidos,
+      };
+    });
+    return [...dez, ...luas, ...anoes, ...sondas];
   }
 
   /**
@@ -1454,6 +1545,7 @@ export class Escada {
     if (!entrada) return;
     this.focoCorpoId = id;
     this.focoEstrela = false;
+    this.focoSonda = null;
     this.ver = 'orbita';
     this.events.onFoco(nomeDoCorpo(entrada.id));
     this.emitirEscada();
@@ -1554,6 +1646,7 @@ export class Escada {
     this.enquadrarAgora();
     this.focoCorpoId = p.corpoId;
     this.focoEstrela = false;
+    this.focoSonda = null;
     this.noCeu = p.degrau === 'ceu';
     this.ver = p.corpoId ? 'corpo' : 'orbita';
     this.events.onFoco(p.corpoId ? nomeDoCorpo(p.corpoId) : null);

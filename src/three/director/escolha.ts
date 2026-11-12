@@ -30,6 +30,7 @@ import { GAL } from '../world/baseGalactica';
 import { raioDeEnquadramentoEstelar } from '../cinematic/atlasRig';
 import type { LugarBuscavel } from '../../lib/buscaEstrelas';
 import { CHAVE_DE_LUGAR, LUGARES_DA_BUSCA } from '../world/lugaresDoCeu';
+import { CHAVE_DE_SONDA } from '../world/sondas';
 
 /** o lugar do céu cujo rótulo tem esta chave, ou `undefined` */
 const lugarDaChave = (chave: string): LugarBuscavel | undefined =>
@@ -259,6 +260,14 @@ export class Escolha {
     if (!best) return;
     if (best.key === 'sol-home') {
       this.escada.focarNoSistema();
+      return;
+    }
+    // UMA SONDA (pilar 4): escolhe sem mover a câmera; o duplo clique
+    // cai em `focarNoCorpo`, que a reconhece e a enquadra
+    if (best.key.startsWith(CHAVE_DE_SONDA)) {
+      const id = best.key.slice(CHAVE_DE_SONDA.length);
+      this.escolhaDoClique = { id, pos: ORIGEM.clone(), nome: best.name };
+      this.escada.selecionarSonda(id);
       return;
     }
     if (best.key.startsWith(CHAVE_DE_CORPO)) {

@@ -28,6 +28,7 @@ const corpos: readonly CorpoBuscavel[] = [
   { id: 'jupiter', nome: 'Júpiter', nomeEn: 'Jupiter', classe: 'planeta', rUA: 5.2 },
   { id: 'saturn', nome: 'Saturno', nomeEn: 'Saturn', classe: 'planeta', rUA: 9.58 },
   { id: 'pluto', nome: 'Plutão', nomeEn: 'Pluto', classe: 'anão', rUA: 39.5 },
+  { id: 'voyager-1', nome: 'Voyager 1', classe: 'sonda', rUA: 169, apelidos: ['Voyager', 'V1'] },
 ];
 // os lugares do céu — os ids e nomes da tabela única (`lugaresDoFilme.ts`);
 // a geometria não importa para quem resolve por texto
@@ -56,6 +57,7 @@ describe('destinosDaBusca', () => {
       'jupiter',
       'saturn',
       'pluto',
+      'voyager-1',
     ]);
 
     const nomesDeEstrela = estrelas.map((d) =>
@@ -78,14 +80,14 @@ describe('destinosDaBusca', () => {
   });
 
   it('as categorias contam 6/3/6', () => {
-    expect(sistema.length).toBe(6);
+    expect(sistema.length).toBe(7);
     expect(estrelas.length).toBe(3);
     expect(galaxia.length).toBe(6);
   });
 
   it('o cartão de um corpo leva à distância da prévia dele; estrela e lugar não pedem nenhuma', () => {
     // a mesma tabela de `scripts/visual/previas-de-destino.mjs` (`d`)
-    expect(sistema.map((d) => d.raios)).toEqual([4, 4, 4, 10, 12, 5]);
+    expect(sistema.map((d) => d.raios)).toEqual([4, 4, 4, 10, 12, 5, undefined]);
     expect([...estrelas, ...galaxia].every((d) => d.raios === undefined)).toBe(true);
   });
 
