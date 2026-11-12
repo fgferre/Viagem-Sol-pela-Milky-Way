@@ -26,6 +26,7 @@ import type { StarLabel } from './labels';
 // para agradar ao runner.
 (globalThis as { window?: unknown }).window = { location: { search: '' } };
 const {
+  nomeDoSolEmCaixaAlta,
   projectCorpos,
   prioridadeDeCorpo,
   prioridadeDeEstrela,
@@ -929,6 +930,12 @@ describe('o rótulo 3D na língua viva', () => {
 
     definirIdioma('pt-BR');
     expect(nomes().get(`${CHAVE_DE_CORPO}mercury`)).toBe('Mercúrio');
+  });
+
+  it('o marcador de casa diz SOL em português e SUN em inglês', () => {
+    expect(nomeDoSolEmCaixaAlta()).toBe('SOL');
+    definirIdioma('en');
+    expect(nomeDoSolEmCaixaAlta()).toBe('SUN');
   });
 
   it('a CHAVE do rótulo NÃO muda de língua — é por ela que o hit-test acha o corpo', () => {

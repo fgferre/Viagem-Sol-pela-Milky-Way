@@ -5,7 +5,13 @@
 import * as THREE from 'three';
 import type { NamedStar } from '../config';
 import { GAL } from './baseGalactica';
-import { classeEmTexto, nomeNaLingua } from '../atlasConfig';
+import { classeEmTexto, nomeDoCorpo, nomeNaLingua } from '../atlasConfig';
+
+/** o marcador de casa ("SOL" / "SUN"): o nome do corpo na língua de agora,
+ *  em caixa alta como sempre foi — o rótulo é produzido por quadro, então a
+ *  troca de língua chega no quadro seguinte */
+export const nomeDoSolEmCaixaAlta = (): string =>
+  (nomeDoCorpo('sun') ?? 'Sol').toLocaleUpperCase('pt-BR');
 
 /** a caixa julgada pela disputa, em px CSS do canvas (ver `StarLabel`) */
 export interface CaixaDaDisputa {
@@ -858,7 +864,7 @@ export function projectLabels(
     const p = projectPoint(camera, { x: 0, y: 0, z: 0 });
     if (p) {
       out.push({
-        name: 'SOL',
+        name: nomeDoSolEmCaixaAlta(),
         spect: 'G2V',
         distPc: dHome,
         x: p.x,
@@ -913,7 +919,7 @@ export function projectLabels(
     const p = projectPoint(camera, { x: 0, y: 0, z: 0 });
     if (p) {
       out.push({
-        name: 'SOL',
+        name: nomeDoSolEmCaixaAlta(),
         spect: 'G2V',
         distPc: dHome,
         x: p.x,
