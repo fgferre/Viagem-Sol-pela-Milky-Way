@@ -107,6 +107,17 @@ const RAIO_DE_DESMONTE_PC = 2 * RAIO_DE_PREPARO_PC;
  *  · semente: a do Sol ⊕ HIP (outra superfície, mesma receita);
  *  · knobs de URL com o prefixo do id (`?proximaspots=`).
  */
+/**
+ * A semente da estrela: o HIP quando há; para quem está fora do Hipparcos
+ * (TRAPPIST-1, Kepler-186), um hash do id — estável entre sessões.
+ */
+function sementeDe(e: EstrelaVisitavel): number {
+  if (e.hip !== undefined) return e.hip;
+  let h = 2166136261;
+  for (let i = 0; i < e.id.length; i++) h = Math.imul(h ^ e.id.charCodeAt(i), 16777619);
+  return h >>> 0;
+}
+
 export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): StellarParams {
   const s = e.superficie;
   return {
@@ -118,7 +129,7 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
     activityLevel: atividadeDe(e).nivel,
     teffK: e.teffK.v,
     convective: e.teffK.v < TEFF_SEM_ENVELOPE_K,
-    seed: (SOL_PARAMS.seed ^ e.hip) >>> 0,
+    seed: (SOL_PARAMS.seed ^ sementeDe(e)) >>> 0,
     knobPrefix: e.id,
     granuloRelativoAoSol:
       granuloNaTelaEmRaios(s.granuloEmRaios.v) / granuloNaTelaEmRaios(GRANULO_SOL_EM_RAIOS),
@@ -149,7 +160,7 @@ export function parametrosDaCompanheira(e: EstrelaVisitavel): StellarParams | nu
     activityLevel: 0,
     teffK: c.teffK.v,
     convective: false,
-    seed: (SOL_PARAMS.seed ^ e.hip ^ 0x0b0b0b0b) >>> 0,
+    seed: (SOL_PARAMS.seed ^ sementeDe(e) ^ 0x0b0b0b0b) >>> 0,
     knobPrefix: `${e.id}b`,
     contrasteRelativoAoSol: 0,
     bordaU: 0.3,
