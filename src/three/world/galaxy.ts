@@ -87,8 +87,11 @@ export class Galaxy {
   /**
    * ?galaxia=particulas (ensaio, desligado por padrão) — a galáxia vista de
    * fora só de partículas: as sete lâminas não acendem e a luz que a
-   * EMISSÃO delas entregava passa para os pontos, pela mesma rampa
-   * (`discFade`), então dentro do disco nada muda. O ganho é a razão de
+   * EMISSÃO delas entregava passa para os pontos, pela rampa de FORA
+   * (`externalFade`), então dentro do disco nada muda. Sem a rampa de
+   * abertura das lâminas: elas não tinham lei de caminho e precisavam
+   * apagar de raspão; uma distribuição 3D clareia de perfil sozinha.
+   * O ganho é a razão de
    * fluxo lâminas÷partículas medida em linear (o grupo da galáxia rendido
    * num alvo float, sem curva nem bloom, uma camada por vez, as duas com
    * uFade 1) na vista de cima a ~38 kpc. Com a lei de fluxo única do
@@ -102,13 +105,14 @@ export class Galaxy {
   private soParticulas = Galaxy.dbg.get('galaxia') === 'particulas';
   private static readonly GANHO_DAS_LAMINAS = 6.99;
   /**
-   * Largura do núcleo de densidade em ESPAÇAMENTOS médios entre
-   * partículas (ver GALAXY_VERT). O espaçamento sai da contagem
+   * Largura do núcleo das partículas de FUNDO em ESPAÇAMENTOS médios
+   * entre partículas (ver GALAXY_VERT): o mínimo para as vizinhas se
+   * encostarem — 24 borrava a imagem inteira. O espaçamento sai da contagem
    * desenhada: o gerador sorteia o disco com Σ ∝ e^(−R/a), a = 3·Rd,
    * truncado no raio do disco, então Σ₀ = N / (2π a² Z) com
    * Z = 1 − (1 + x)e^(−x), x = R_disco/a — e o espaçamento é 1/√Σ₀.
    */
-  private static readonly NUCLEO_EM_ESPACAMENTOS = 24;
+  private static readonly NUCLEO_EM_ESPACAMENTOS = 1.5;
   private nucleoPc() {
     const a = 3 * GALACTIC_MODEL.stellarScaleLengthPc;
     const x = GALACTIC_MODEL.diskRadiusPc / a;
@@ -642,11 +646,11 @@ export class Galaxy {
       // mais brilhante — o fluxo INTEGRADO da galáxia não muda com o
       // ajuste, só a granulação.
       u.uFade.value = this.soParticulas
-        ? (brightFade + Galaxy.GANHO_DAS_LAMINAS * discFade) / this.fracaoDeParticulas
+        ? (brightFade + Galaxy.GANHO_DAS_LAMINAS * externalFade) / this.fracaoDeParticulas
         : brightFade / this.fracaoDeParticulas;
       if (this.soParticulas) {
         // o núcleo entra pela MESMA rampa que acende a luz das lâminas
-        u.uNucleo.value = discFade;
+        u.uNucleo.value = externalFade;
         u.uNucleoPc.value = this.nucleoPc();
       }
     }

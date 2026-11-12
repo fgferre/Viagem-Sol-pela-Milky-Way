@@ -226,17 +226,24 @@ export function buildGalaxy(
     return armArea.length - 1;
   };
 
+  // Só-partículas: o TIPO da partícula viaja no milhar do tamanho (o
+  // tamanho em pc fica abaixo de 1000; o shader separa os dois). Cada tipo
+  // é desenhado como o que é: fundo não resolvido (núcleo mínimo) ou
+  // objeto resolvido (ponto nítido). Ver GALAXY_VERT.
+  // 0 disco fino (fundo) · 1 disco espesso · 2 bojo/barra · 3 estrela
+  // jovem de braço resolvida · 4 nó H II · 5 aglomerado jovem · 6 halo e
+  // anã · 7 esporão
   const put = (
     lx: number, ly: number, lz: number,
     cr: number, cg: number, cb: number,
-    size: number, alpha: number
+    size: number, alpha: number, tipo = 0
   ) => {
     const o = b * 8;
     localToWorld(lx, ly, lz, bright, o);
     bright[o + 3] = cr;
     bright[o + 4] = cg;
     bright[o + 5] = cb;
-    bright[o + 6] = size;
+    bright[o + 6] = P ? size + 1000 * tipo : size;
     bright[o + 7] = alpha;
     b++;
   };
@@ -472,8 +479,9 @@ export function buildGalaxy(
     // é Y ≈ 1 por construção, então isso some junto.
     // Só-partículas: inclinação 0,25 (as lâminas pesam ~30 % de jovens
     // na borda; 0,55 dava 62 % e ilhas azuis); o espesso é só velho.
+    const jovem = !espesso && p < 0.07 + (P ? 0.25 : 0.55) * outward;
     if (espesso) [cr, cg, cb] = p < 0.7 ? POP_OLD : POP_GIANT;
-    else if (p < 0.07 + (P ? 0.25 : 0.55) * outward) [cr, cg, cb] = POP_YOUNG;
+    else if (jovem) [cr, cg, cb] = POP_YOUNG;
     else if (p < 0.80) [cr, cg, cb] = POP_OLD;
     else [cr, cg, cb] = POP_GIANT;
     if (inArm) {
@@ -486,7 +494,23 @@ export function buildGalaxy(
     // 0,051 contra 0,075 do alvo, e MAIS partículas só alisavam mais. O
     // alvo é um mar de pontos fracos com algumas estrelas resolvidas.
     // u^-0.55 tem média 2,22; dividir por ela conserva o fluxo total.
-    const lum = Math.min(7, Math.pow(Math.max(rnd(), 1e-4), -0.42)) / 1.72;
+    // Só-partículas: CADA TIPO COM A LUZ DO QUE É. A partícula de fundo
+    // (disco velho, espesso, jovem fora do braço) soma milhares de estrelas
+    // não resolvidas, e a soma não tem a loteria de brilho de uma estrela
+    // só: brilho fixo na média da lei de cima (1,6748). A estrela jovem de
+    // BRAÇO segue u^-0,75 (teto 100; dN/dL ≈ L^-1,75, a função de
+    // luminosidade de aglomerados): os 5 % mais brilhantes viram objetos
+    // RESOLVIDOS com 37 % da luz jovem do braço (a lei de cima põe 15 %);
+    // os outros 95 % ficam no fundo com a média deles (2,2195), sem o meio
+    // da cauda que só fazia areia. 0,4994 = 1,6748 ÷ 3,3537 (as médias): o
+    // fluxo médio por partícula é o de antes, em todo tipo.
+    const uLum = Math.max(rnd(), 1e-4);
+    const resolvida = P && jovem && inArm && uLum < 0.05;
+    const lum = !P
+      ? Math.min(7, Math.pow(uLum, -0.42)) / 1.72
+      : jovem && inArm
+        ? ((resolvida ? Math.min(100, Math.pow(uLum, -0.75)) : 2.2195) * 0.4994) / 1.72
+        : 1.6748 / 1.72;
     const dim = 0.35 + 0.65 * rnd() * rnd();
     const youngResponse = effectiveYoungResponseAt(lx, ly);
     // O braço DOMINANTE tem de ser mais brilhante que o interbraço — mas
@@ -533,7 +557,8 @@ export function buildGalaxy(
           ? (1 - THREE.MathUtils.smoothstep(r, 14_100, 16_800)) *
             buracoDoDisco(r) *
             K_DISCO
-          : 1)
+          : 1),
+      espesso ? 1 : resolvida ? 3 : 0
     );
   }
 
@@ -572,7 +597,8 @@ export function buildGalaxy(
       4 + rnd() * 15,
       (0.045 + rnd() * 0.105) *
         LOCAL_ARM.weight *
-        (0.62 + effectiveYoungResponseAt(lx, ly) * 0.38)
+        (0.62 + effectiveYoungResponseAt(lx, ly) * 0.38),
+      7
     );
   }
 
@@ -648,7 +674,8 @@ export function buildGalaxy(
       0.46 * dim,
       3 + rnd() * 9,
       (0.025 + rnd() * 0.06) * innerDim(Math.hypot(lx, ly)) *
-        (P ? (K_BOJO * N_BOJO_REF) / N_BULGE : 1)
+        (P ? (K_BOJO * N_BOJO_REF) / N_BULGE : 1),
+      2
     );
   }
 
@@ -741,14 +768,16 @@ export function buildGalaxy(
         // De 33 kpc um nó de 70 pc tem ~2,7 px: para LER como ponto
         // vermelho precisa de contraste, não de tamanho — aumentar o
         // raio só o dissolveria no fundo.
-        (0.05 + rnd() * 0.115) * armWeight * 0.459 * (P ? K_HII * (1 - THREE.MathUtils.smoothstep(r, 14_100, 16_800)) : 1)
+        (0.05 + rnd() * 0.115) * armWeight * 0.459 * (P ? K_HII * (1 - THREE.MathUtils.smoothstep(r, 14_100, 16_800)) : 1),
+        4
       );
     } else {
       put(
         lx, ly, lz,
         POP_YOUNG[0], POP_YOUNG[1], POP_YOUNG[2],
         P ? 10 + rnd() * 30 : 30 + rnd() * 110,
-        (0.05 + rnd() * 0.11) * armWeight * 0.716 * (P ? K_HII * (1 - THREE.MathUtils.smoothstep(r, 14_100, 16_800)) : 1)
+        (0.05 + rnd() * 0.11) * armWeight * 0.716 * (P ? K_HII * (1 - THREE.MathUtils.smoothstep(r, 14_100, 16_800)) : 1),
+        5
       );
     }
   }
@@ -759,7 +788,7 @@ export function buildGalaxy(
     const a = rnd() * Math.PI * 2;
     const u = rnd() * 2 - 1;
     const s = Math.sqrt(1 - u * u);
-    put(r * s * Math.cos(a), r * s * Math.sin(a), r * u, 0.9, 0.85, 0.8, 3 + rnd() * 9, 0.055);
+    put(r * s * Math.cos(a), r * s * Math.sin(a), r * u, 0.9, 0.85, 0.8, 3 + rnd() * 9, 0.055, 6);
   }
 
   // ---- Galáxia Anã Elíptica de Sagitário -------------------
@@ -789,7 +818,8 @@ export function buildGalaxy(
       0.74 * dim,
       0.56 * dim,
       3 + rnd() * 8,
-      0.018 + rnd() * 0.045
+      0.018 + rnd() * 0.045,
+      6
     );
   }
 

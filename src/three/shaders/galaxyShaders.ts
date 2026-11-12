@@ -90,6 +90,8 @@ uniform float uNucleo;
 // largura do núcleo em pc no centro galáctico visto de frente:
 // C × o espaçamento médio 1/√Σ₀ das partículas DESENHADAS (galaxy.ts)
 uniform float uNucleoPc;
+// 1 = pegada em TENDA (ver GALAXY_FRAG), 0 = a gaussiana de sempre
+varying float vTenda;
 // erf de Abramowitz–Stegun 7.1.26 (erro absoluto ≤ 1,5e-7)
 float erfAprox(float x) {
   float a = abs(x);
@@ -110,7 +112,13 @@ ${GLSL_LEI_DE_TELA_NA_REGUA}
 void main() {
   float dist = length(position - uCamPos);
   // tamanho angular real: pc/dist → fração da tela → pixels
+#ifdef GALAXIA_PARTICULAS
+  // o TIPO da partícula mora no milhar de aSize (geradorDaGalaxia, put)
+  float tipo = floor(aSize * 0.001);
+  float px = (aSize - 1000.0 * tipo) * uScreenH / (2.0 * uTanHalfFov * max(dist, 1.0));
+#else
   float px = aSize * uScreenH / (2.0 * uTanHalfFov * max(dist, 1.0));
+#endif
   // A LEI DE TELA (M5) — os três regimes vêm de estrela.ts, não daqui.
   // Os números eram os MESMOS que a lei nasceu carregando (0,7 / 20 /
   // px²÷0,49): esta camada não move um pixel no M5, o que muda é a
@@ -131,25 +139,31 @@ void main() {
   // o mesmo fluxo e baixa o pico. O corte segue julgando o pico que o
   // ponto de sempre teria, senão a luz espalhada some por ser larga.
   float corteDoNucleo = 1.0;
+  vTenda = 0.0;
   if (uNucleo > 0.0) {
-    // NÚCLEO DE DENSIDADE. Longe, cada partícula é muitas estrelas: ela
-    // vira um núcleo gaussiano cuja largura em tela é o ESPAÇAMENTO local
-    // entre partículas projetado na tela, para os vizinhos se sobreporem
-    // num campo contínuo. Espaçamento: a densidade de SORTEIO do disco é
-    // Σ ∝ e^(−R/a), a = 3·Rd (o viés radial do gerador), então o
-    // espaçamento cresce com e^(R/2a); inclinado, a coluna da linha de
-    // visada empilha 1/μ vezes mais partículas por área de tela e o
-    // espaçamento encolhe com √μ (piso 0,1: de raspão a coluna deixa de
-    // ser fina e quem decide é a espessura).
+    // CADA TIPO COMO O QUE É. Longe, a partícula de fundo (disco velho,
+    // espesso, bojo/barra, halo, esporão) é muitas estrelas fracas não
+    // resolvidas: vira um núcleo do tamanho MÍNIMO para encostar nas
+    // vizinhas — C espaçamentos locais projetados na tela (uNucleoPc,
+    // galaxy.ts). Espaçamento: a densidade de SORTEIO do disco é
+    // Σ ∝ e^(−R/a), a = 3·Rd (o viés radial do gerador), então ele cresce
+    // com e^(R/2a); inclinado, a coluna empilha 1/μ partículas por área de
+    // tela e ele encolhe com √μ (piso 0,1: de raspão decide a espessura).
+    // Estrela jovem, aglomerado e nó H II (tipos 3–5) são objetos
+    // RESOLVIDOS: ponto nítido com o próprio fluxo, sem núcleo; o nó que
+    // passa de ~2 px vira o brilho do tamanho físico dele (10–40 pc).
     vec3 qn = position - uGC;
     float rN = length(vec2(dot(qn, uEX), dot(qn, uEY)));
     float muN = abs(dot(position - uCamPos, uEZ)) / max(dist, 1.0);
     float nucleoPx = uNucleoPc *
       exp(rN * ${glslNumber(1 / (2 * 3 * GALACTIC_MODEL.stellarScaleLengthPc))}) *
       sqrt(max(muN, 0.1)) * uScreenH / (2.0 * uTanHalfFov * max(dist, 1.0));
+    float resolvido = step(2.5, tipo) * step(tipo, 5.5);
     // teto de preenchimento: 40 px na régua de 1080 linhas
     float tetoPx = 40.0 * max(uScreenH, 1.0) / ${glslNumber(ALTURA_DE_CALIBRACAO_DO_SIGMA_PX)};
-    float largura = clamp(max(px, nucleoPx), 1.0, tetoPx);
+    // PISO DE 2 px = a tenda de ±1 px: a menor pegada que entrega o fluxo
+    // inteiro em QUALQUER fase sub-pixel (ver GALAXY_FRAG).
+    float largura = clamp(max(px, nucleoPx * (1.0 - resolvido)), 2.0, tetoPx);
     // UMA LEI DE FLUXO: o depósito é o brilho de superfície constante,
     // px²/0,49 em px do buffer — a continuação do ramo sub-pixel da lei
     // (onde ela já é exata), sem o platô nem o teto que tiram fluxo de
@@ -164,6 +178,7 @@ void main() {
     corteDoNucleo = (largura2 * largura2) / (escritoPx * escritoPx);
     fluxoDaTela = mix(depVelho, depNovo, k) / (largura2 * largura2);
     escritoPx = largura2;
+    vTenda = k * (1.0 - resolvido * smoothstep(2.0, 4.0, px));
   }
 #endif
 
@@ -345,12 +360,27 @@ precision highp float;
 
 varying vec3 vColor;
 varying float vAlpha;
+#ifdef GALAXIA_PARTICULAS
+varying float vTenda;
+#endif
 
 void main() {
   vec2 uv = gl_PointCoord * 2.0 - 1.0;
   float r2 = dot(uv, uv);
+#ifdef GALAXIA_PARTICULAS
+  // A TENDA (?galaxia=particulas, longe). A gaussiana amostrada num ponto
+  // de 1–2 px deposita conforme a FASE sub-pixel do centro: no ponto de
+  // 1 px o peso vai de 1 a 0 (coeficiente de variação ~1,4 sobre a média
+  // 0,1726) — era essa loteria, não a contagem, o grosso da areia. A tenda
+  // separável (1−|u|)(1−|v|) soma exatamente a mesma luz em qualquer fase
+  // (partição da unidade nos centros de pixel); 0,690376 = π(1−e^−4,5)/4,5
+  // iguala a integral dela à da gaussiana, então vAlpha vale para as duas.
+  float tenda = max(1.0 - abs(uv.x), 0.0) * max(1.0 - abs(uv.y), 0.0) * 0.690376;
+  float i = mix(r2 > 1.0 ? 0.0 : exp(-r2 * 4.5), tenda, vTenda);
+#else
   if (r2 > 1.0) discard;
   float i = exp(-r2 * 4.5);
+#endif
   vec3 col = vColor * i * vAlpha;
   gl_FragColor = vec4(col, 1.0);
 }
