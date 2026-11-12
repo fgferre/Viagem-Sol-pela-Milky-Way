@@ -4459,12 +4459,12 @@ export class Director {
       cam,
       this.engine.renderer.domElement.width
     );
-    // AS VIZINHAS: fora dos filmes (o filme galáctico fica como foi
-    // aprovado); no celular, a fração do tier, com a luz compensada
+    // AS VIZINHAS: um universo só — no filme, no Atlas e no voo livre o
+    // mesmo desenho, que só depende de onde a câmera está; no celular, a
+    // fração do tier, com a luz compensada
     if (this.vizinhas) {
-      const noFilme = this.phase === 'intro' || this.phase === 'journey' || this.phase === 'end';
       this.vizinhas.setFracao(this.engine.quality === 'performance' ? 0.35 : 1);
-      this.vizinhas.update(cam.position, hPx, tanHalfFov, !noFilme);
+      this.vizinhas.update(cam.position, hPx, tanHalfFov);
     }
     // Nuvens moleculares já entram integradas no structureMap da vista
     // externa. Billboards 3D ficam só no disco, onde a paralaxe comunica

@@ -139,9 +139,7 @@ export class GalaxiasVizinhas {
     for (const d of this.desenhos) d.pontos.geometry.setDrawRange(0, Math.round(d.n * this.fracao));
   }
 
-  update(camPos: THREE.Vector3, screenH: number, tanHalfFov: number, visivel: boolean) {
-    this.group.visible = visivel;
-    if (!visivel) return;
+  update(camPos: THREE.Vector3, screenH: number, tanHalfFov: number) {
     // O PRIMEIRO PLANO: de dentro do disco a luz delas atravessa a nossa
     // poeira (A_V medido do Sol); de fora dele, não
     const dentro = dentroDoDisco(camPos);
