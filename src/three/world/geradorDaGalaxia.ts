@@ -274,12 +274,13 @@ export function buildGalaxy(
   // N_BOJO_REF/N_BULGE deixa a luz do bojo igual em qualquer qualidade.
   const FRACAO_BP = 0.45;
   const N_BOJO_REF = 385_000;
-  // Medido (cinema, em Y): bojo 3,7 % → 11 % (núcleo + barra das lâminas:
-  // 11,5 %), nós H II 3 % (K_HII_FLUXO, o fluxo médio de um nó; K_HII fica
-  // só nos aglomerados), e o disco fecha o fluxo TOTAL das partículas igual
-  // ao de sempre — o GANHO_DAS_LAMINAS (galaxy.ts) continua valendo.
-  const K_BOJO = 3.31;
-  const K_DISCO = 1.138;
+  // Medido (cinema, em Y): bojo + barra + núcleo 3,7 % → 11 % → 15 % (massa
+  // publicada 15–30 %, luz no infravermelho ~20 %, menos no visível), nós
+  // H II 3 % (K_HII_FLUXO, o fluxo médio de um nó; K_HII fica só nos
+  // aglomerados), e o disco (tipos 0, 1, 3) fecha o fluxo TOTAL das
+  // partículas igual ao de sempre — o GANHO_DAS_LAMINAS (galaxy.ts) vale.
+  const K_BOJO = 4.53;
+  const K_DISCO = 1.0834;
   const K_HII = 2.92;
   const K_HII_FLUXO = 235;
   const N_LOCAL = 14000;
@@ -1037,7 +1038,7 @@ export function buildGalaxy(
 // · κ: N_H/A_V = 1,87e21 cm⁻² (Bohlin 1978, R_V 3,1) ⇒ τ_V = 0,045 por
 //   M☉/pc² de gás total (com hélio ×1,36), escalado pelo gradiente de
 //   metalicidade −0,05 dex/kpc (Luck & Lambert 2011), plano dentro de 4 kpc.
-// · Gás molecular: anel de 4–6 kpc e queda para fora (Heyer & Dame 2015;
+// · Gás molecular: anel de 3–6 kpc e queda para fora (Heyer & Dame 2015;
 //   Nakanishi & Sofue 2006); quase vazio dentro da barra, salvo as fendas
 //   da barra e a CMZ (Sormani & Barnes 2019; Molinari 2011, ~3e7 M☉).
 // · Nuvens: dN/dM ∝ M^−1,7 (Solomon 1987; Rice 2016; Miville-Deschênes
@@ -1093,12 +1094,17 @@ export function gerarNuvensDePoeira(seed = 20260737): NuvensDePoeira {
 
   // Σ de gás (M☉/pc², média azimutal). Molecular: anel + exponencial, buraco
   // dentro da barra. Atômico: plano até 13 kpc, raso na barra.
+  // O anel começa em 3 kpc (patamar 3–5,5, meia altura ~2,5 kpc); as fendas
+  // da barra seguem visíveis por dentro. SIGMA_AT não é o HI medido (~6 com
+  // hélio): é o τ_V entre braços de pares de galáxias que se ocultam (Keel &
+  // White) e de modelos de M33, 0,1–0,2 — mediana de τ⊥ em 3–8 kpc 0,41 → 0,15
+  // (mapa 1024², as fendas como estavam).
   const SIGMA_MOL = 8.5; // em 5 kpc, com hélio
   const forma = (r: number) =>
-    ss(r, 2600, 3600) *
+    ss(r, 2000, 3000) *
     (Math.exp(-(r - 4000) / 4000) + 0.6 * Math.exp(-0.5 * ((r - 5000) / 1000) ** 2));
   const sigmaMol = (r: number) => (SIGMA_MOL / forma(5000)) * forma(r);
-  const SIGMA_AT = 6.0;
+  const SIGMA_AT = 2.0;
   const sigmaAt = (r: number) =>
     SIGMA_AT * (0.2 + 0.8 * ss(r, 2000, 3500)) *
     (r < 13000 ? 1 : Math.exp(-(r - 13000) / 3000));
