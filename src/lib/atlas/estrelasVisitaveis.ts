@@ -256,3 +256,96 @@ export const ESTRELAS_VISITAVEIS: readonly EstrelaVisitavel[] = [PROXIMA, SIRIUS
 export function estrelaVisitavelPorNome(nomeNoCatalogo: string): EstrelaVisitavel | null {
   return ESTRELAS_VISITAVEIS.find((e) => e.nomeNoCatalogo === nomeNoCatalogo) ?? null;
 }
+
+// ─── A ATIVIDADE MAGNÉTICA PELA FÍSICA (o motor do Sol para outra estrela) ──
+
+/** O período de rotação do Sol que esta régua usa (o mesmo do motor:
+ *  Carrington sideral, `SOL_ROT_PERIOD_DAYS` de `stellarBody.ts`). */
+const ROTACAO_SOL_DIAS = 25.38;
+/** Faixa de massa em que a calibração de τ vale (Wright et al. 2011). */
+const MASSA_MIN_WRIGHT = 0.09;
+const MASSA_MAX_WRIGHT = 1.36;
+/** Ro de saturação e expoente do regime não saturado (Wright et al. 2011). */
+const RO_SATURACAO = 0.13;
+const EXPOENTE_ROSSBY = -2.7;
+/** Acima desta temperatura não há envelope convectivo que sustente dínamo. */
+export const TEFF_SEM_ENVELOPE_K = 7000;
+/**
+ * O FALLBACK DECLARADO fora da calibração (supergigantes, gigantes, massas
+ * fora de 0,09–1,36 M☉): atividade BAIXA, 1 % da do Sol em L_X/L_bol —
+ * ARTÍSTICO. Betelgeuse não tem dínamo do tipo solar medido; não há lei a
+ * extrapolar, e zero apagaria o motor inteiro.
+ */
+export const ATIVIDADE_FORA_DA_CALIBRACAO = 0.01;
+/**
+ * A COMPRESSÃO da razão física para o `activityLevel` do motor (que
+ * multiplica os knobs `spots`/`cycle`): nivel = razão^0,3 — ARTÍSTICO,
+ * declarado. A razão em L_X/L_bol varia ~4 ordens entre estrelas; o knob
+ * do motor foi calibrado num Sol só, e Proxima (~11× o Sol pela lei) sai ~2×.
+ */
+export const EXPOENTE_DO_NIVEL_DE_ATIVIDADE = 0.3;
+
+/**
+ * O tempo de renovação convectiva, em dias — Wright et al. 2011 (ApJ 743,
+ * 48), eq. 11: log τ = 1,16 − 1,49 log(M/M☉) − 0,54 log²(M/M☉), válida em
+ * 0,09–1,36 M☉. Fora da faixa devolve null.
+ */
+export function tempoConvectivoDias(massaMsol: number): number | null {
+  if (!(massaMsol >= MASSA_MIN_WRIGHT && massaMsol <= MASSA_MAX_WRIGHT)) return null;
+  const l = Math.log10(massaMsol);
+  return Math.pow(10, 1.16 - 1.49 * l - 0.54 * l * l);
+}
+
+export interface AtividadeMagnetica {
+  /** número de Rossby P_rot/τ (null: sem envelope ou fora da calibração) */
+  readonly rossby: number | null;
+  /** L_X/L_bol relativa ao Sol (Sol = 1) */
+  readonly razao: number;
+  /** o `activityLevel` do motor: razao^EXPOENTE (Sol = 1) */
+  readonly nivel: number;
+  readonly regime: 'sem envelope' | 'saturado' | 'nao saturado' | 'fora da calibracao';
+}
+
+/**
+ * A ATIVIDADE MAGNÉTICA pela rotação e pela massa (Wright et al. 2011):
+ * L_X/L_bol ∝ Ro^−2,7 abaixo da saturação, constante para Ro < 0,13;
+ * normalizada pelo Sol (M = 1, P = 25,38 d → 1 exato: (Ro/Ro☉) = 1).
+ * Sem envelope convectivo (T ≳ 7.000 K) → 0. Fora da faixa de massa ou sem
+ * período → o fallback declarado.
+ */
+export function atividadeMagnetica(
+  teffK: number,
+  massaMsol: number,
+  rotacaoDias: number | undefined
+): AtividadeMagnetica {
+  if (teffK >= TEFF_SEM_ENVELOPE_K) return { rossby: null, razao: 0, nivel: 0, regime: 'sem envelope' };
+  const tau = tempoConvectivoDias(massaMsol);
+  if (tau === null || !(rotacaoDias !== undefined && rotacaoDias > 0)) {
+    return {
+      rossby: null,
+      razao: ATIVIDADE_FORA_DA_CALIBRACAO,
+      nivel: Math.pow(ATIVIDADE_FORA_DA_CALIBRACAO, EXPOENTE_DO_NIVEL_DE_ATIVIDADE),
+      regime: 'fora da calibracao',
+    };
+  }
+  const rossby = rotacaoDias / tau;
+  const roSol = ROTACAO_SOL_DIAS / tempoConvectivoDias(1)!;
+  const saturado = rossby < RO_SATURACAO;
+  const razao = Math.pow((saturado ? RO_SATURACAO : rossby) / roSol, EXPOENTE_ROSSBY);
+  return {
+    rossby,
+    razao,
+    nivel: Math.pow(razao, EXPOENTE_DO_NIVEL_DE_ATIVIDADE),
+    regime: saturado ? 'saturado' : 'nao saturado',
+  };
+}
+
+/**
+ * A ATIVIDADE DE UMA ESTRELA VISITÁVEL. Onde o motor do Sol a desenha, esta
+ * função SUBSTITUI os campos `superficie.manchas` e `superficie.erupcoes`
+ * como motor da atividade (eles seguem valendo para o motor simples do
+ * piloto, `corpoDeEstrela.ts`, e ficam redundantes quando a estrela migrar).
+ */
+export function atividadeDe(e: EstrelaVisitavel): AtividadeMagnetica {
+  return atividadeMagnetica(e.teffK.v, e.massaMsol.v, e.rotacaoDias?.v);
+}

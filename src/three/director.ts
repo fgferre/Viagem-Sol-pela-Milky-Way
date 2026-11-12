@@ -116,7 +116,7 @@ import { ligarGestos } from './director/gestos';
 import { distanciaAposEstalos } from './zoomDaRoda';
 import { Rotulos } from './director/rotulos';
 import { SolNoQuadro } from './director/solNoQuadro';
-import { EstrelasNoQuadro, lerPortaEstrelasComLugar } from './director/estrelasNoQuadro';
+import { EstrelasNoQuadro, lerPortaEstrelasComLugar, lerPortaMotorDoSol } from './director/estrelasNoQuadro';
 import { faseDoCiclo, lerPortaSolQuadro } from './estrela';
 import type { CalibracaoDaCasa } from './estrela';
 import { BETA_DA_EMISSAO } from './shaders/starShaders';
@@ -1992,6 +1992,11 @@ export class Director {
         janelaDoQuadro: lerPortaSolQuadro(this.debug.get('solquadro')),
         toneMapping: () => this.engine.renderer.toneMapping,
         politicaDeLuz: () => this.politicaDeLuz,
+        // ?motorsol=0: Proxima volta ao motor simples (a bancada do A/B)
+        motorDoSol: () =>
+          lerPortaMotorDoSol(this.debug.get('motorsol'))
+            ? { renderer: this.engine.renderer, camera: this.engine.camera, quality: this.engine.quality }
+            : null,
       });
     }
 

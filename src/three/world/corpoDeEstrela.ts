@@ -72,7 +72,7 @@ import { BETA_DA_EMISSAO, STAR_FRAG } from '../shaders/starShaders';
 import { GLSL_PONTO_NA_BORDA, GLSL_PONTO_NA_BORDA_VARYINGS } from '../shaders/pontoNaBorda';
 import { AU_PARA_PC } from '../../lib/atlas/frameGalactico';
 import type { PoliticaDeLuz } from '../../lib/atlas/luz';
-import { SOL_FORA_DO_ACES, SOL_NO_ACES } from './stellarBody';
+import { SOL_FORA_DO_ACES, SOL_NO_ACES, TEFF_SEM_FILTRO_K } from './stellarBody';
 import { porCurva } from '../core/engine';
 
 const GRAU = Math.PI / 180;
@@ -240,9 +240,8 @@ const CAMPO_GIGANTE = { media: 0.0092, desvio: 0.3142 };
 // sobre o perfil radial, 0,60–1,49). Passa de 1 porque a ponte de tela
 // (asinh) e a curva de tom achatam o contraste em log.
 const GANHO_DAS_GIGANTES_NA_TELA = 3.6;
-/** Acima desta temperatura o filtro fotográfico do Sol já esmaeceu
- *  inteiro (ver `pelaTemperatura`) — artístico, declarado. */
-export const TEFF_SEM_FILTRO_K = 8000;
+// o limite do filtro mora com a gêmea em JS da lei (`stellarBody.ts`)
+export { TEFF_SEM_FILTRO_K };
 
 /**
  * A CONCESSÃO CINEMATOGRÁFICA DOS GRÂNULOS — a MESMA que o Sol já faz, e

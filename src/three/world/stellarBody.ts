@@ -56,7 +56,7 @@
 import * as THREE from 'three';
 import { CAMADA_DOS_OCULTADORES } from '../core/post';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_DO_SOL_NA_CENA } from '../escala';
-import { RADIANCIA_DA_FOTOSFERA, radianciaDeTela } from '../luzDaCasa';
+import { RADIANCIA_DA_FOTOSFERA, TEFF_SOL_K, blackbodyLinear, radianciaDeTela } from '../luzDaCasa';
 import type { EstadoDaEstrela, FaseDoCiclo } from '../estrela';
 import { UNIDADES_POR_CICLO, tempoDoCiclo } from '../estrela';
 import { GLSL_COMPRESSAO } from '../shaders/common';
@@ -298,6 +298,121 @@ export interface StellarParams {
   readonly knobPrefix: string;
   /** Defaults de fábrica dos knobs que o NÚCLEO lê. */
   readonly knobs: Readonly<Record<string, number>>;
+  /**
+   * O GRÂNULO NA TELA relativo ao do Sol (1 = o Sol; omitido = 1). A
+   * frequência da convecção do tier (`granFreq`, lida pela fotosfera e pela
+   * cromosfera) é DIVIDIDA por ele: grânulo menor, frequência maior. Quem o
+   * calcula é a lei física dos dados (`granuloNaTelaEmRaios`, Hp ∝ T·R/M).
+   */
+  readonly granuloRelativoAoSol?: number;
+  /**
+   * A instância mora FORA DA ORIGEM (uma estrela do catálogo, a 1,3–150 pc).
+   * Liga a cirurgia do REFERENCIAL LOCAL (`cirurgiaDoReferencialLocal`): em
+   * float32 a 1,3 pc um ULP de posição (1,2e-7 pc) é maior que a estrela
+   * inteira, e as camadas vendorizadas sombreiam em espaço de MUNDO
+   * (`modelMatrix`, `viewMatrix`, `cameraPosition`, `normalize(vWPos)` com o
+   * centro na origem). O Sol, na origem, não a recebe: sai bit a bit.
+   */
+  readonly foraDaOrigem?: boolean;
+}
+
+// ============================================================
+// UM MOTOR, QUALQUER ESTRELA (12/11/2026) — o que a instância de outra
+// estrela pede, e que no Sol vale exatamente "nada":
+//  · COR pela temperatura (`pelaTemperatura`, a lei do piloto em
+//    `corpoDeEstrela.ts`, aqui na CPU): só quando `teffK` ≠ 5.772 K;
+//  · BRILHO da fotosfera pela radiância visível × exposição da visita
+//    (`uBrilhoDaEstrela`, cirurgia só fora dos 5.772 K);
+//  · GRANULAÇÃO pela frequência relativa (`granuloRelativoAoSol`, 1 no Sol);
+//  · REFERENCIAL LOCAL (`foraDaOrigem`, ausente no Sol).
+// ============================================================
+
+/** Acima desta temperatura o filtro fotográfico do Sol já esmaeceu
+ *  inteiro (ver `pelaTemperatura`) — artístico, declarado. */
+export const TEFF_SEM_FILTRO_K = 8000;
+
+const LUMA_R = 0.2126;
+const LUMA_G = 0.7152;
+const LUMA_B = 0.0722;
+
+function corpoNegroUnitario(T: number): [number, number, number] {
+  const [r, g, b] = blackbodyLinear(T).map((x) => Math.max(x, 1e-4));
+  const y = r * LUMA_R + g * LUMA_G + b * LUMA_B;
+  return [r / y, g / y, b / y];
+}
+
+/**
+ * A COR DA ESTRELA, gêmea em JS do `pelaTemperatura` GLSL do piloto
+ * (`corpoDeEstrela.ts`): cor(T) = corpoNegro(T) × (C / corpoNegro(5772))^w(T),
+ * com a luminância de C preservada; w = 1 até 5.772 K e cai a 0 em 8.000 K
+ * (artístico, declarado — senão as quentes sairiam laranja). Escreve em
+ * `out` (pode ser o próprio C).
+ */
+export function pelaTemperatura(C: THREE.Vector3, T: number, out: THREE.Vector3): THREE.Vector3 {
+  const Y = Math.max(C.x * LUMA_R + C.y * LUMA_G + C.z * LUMA_B, 1e-6);
+  const sol = corpoNegroUnitario(TEFF_SOL_K);
+  const bb = corpoNegroUnitario(T);
+  const t = Math.min(1, Math.max(0, (T - TEFF_SOL_K) / (TEFF_SEM_FILTRO_K - TEFF_SOL_K)));
+  const w = 1 - t * t * (3 - 2 * t);
+  const c = [C.x, C.y, C.z].map((v, i) => bb[i] * Math.pow(Math.max(v / (Y * sol[i]), 1e-4), w));
+  const yc = Math.max(c[0] * LUMA_R + c[1] * LUMA_G + c[2] * LUMA_B, 1e-6);
+  return out.set((Y * c[0]) / yc, (Y * c[1]) / yc, (Y * c[2]) / yc);
+}
+
+/** a matiz de uma cor C por T, como fator por canal (C' = C ⊙ fator) */
+function matizDe(C: THREE.Vector3, T: number, out: THREE.Vector3): THREE.Vector3 {
+  pelaTemperatura(C, T, out);
+  return out.set(
+    C.x > 0 ? out.x / C.x : 1,
+    C.y > 0 ? out.y / C.y : 1,
+    C.z > 0 ? out.z / C.z : 1
+  );
+}
+
+/**
+ * O REFERENCIAL LOCAL, por cirurgia de texto (molde de `cirurgiaDaFotosfera`).
+ * Três macros trocam, no texto de um material vendorizado, as grandezas de
+ * MUNDO pelas da estrela com origem no centro dela, compostas em float64 na
+ * CPU (`escreverReferencialLocal`):
+ *   viewMatrix     → V·T(o)            (vista com a estrela na origem)
+ *   cameraPosition → c − o
+ *   modelMatrix    → (V·T(o))⁻¹ · modelViewMatrix   (só no vertex)
+ * O produto `projectionMatrix * viewMatrix * (modelMatrix * p)` volta a ser
+ * exatamente `projectionMatrix * modelViewMatrix * p` (a mesma profundidade
+ * que os outros objetos), e tudo que o shader faz "em mundo" passa a ser
+ * feito num mundo do tamanho da estrela. Aplicar duas vezes LANÇA.
+ */
+const MARCA_DO_REFERENCIAL = 'uVistaLocal';
+const UNIFORMES_DO_REFERENCIAL = 'uniform mat4 uVistaLocal;\nuniform mat4 uVistaLocalInv;\nuniform vec3 uCameraLocal;\n';
+export function cirurgiaDoReferencialLocal(texto: string, vertex: boolean): string {
+  if (texto.includes(MARCA_DO_REFERENCIAL)) {
+    throw new Error('cirurgiaDoReferencialLocal: o referencial local já foi aplicado neste texto');
+  }
+  return (
+    UNIFORMES_DO_REFERENCIAL +
+    '#define viewMatrix uVistaLocal\n#define cameraPosition uCameraLocal\n' +
+    (vertex ? '#define modelMatrix (uVistaLocalInv * modelViewMatrix)\n' : '') +
+    texto
+  );
+}
+
+/**
+ * A MATIZ DE UMA CAMADA EMISSIVA de cor embutida (espículas, proeminências,
+ * laços, CME): multiplica a cor final pela matiz da temperatura. A âncora é
+ * o `}` que fecha o `main` — o último do texto (conferido: em todas elas o
+ * `main` é a última função).
+ */
+export function cirurgiaDaMatiz(fragment: string): string {
+  const fim = fragment.lastIndexOf('}');
+  if (fim < 0 || fragment.lastIndexOf('void main') < 0 || fragment.includes('uMatizDaCamada')) {
+    throw new Error('cirurgiaDaMatiz: fragment sem `main` ou já com a matiz');
+  }
+  return (
+    'uniform vec3 uMatizDaCamada;\n' +
+    fragment.slice(0, fim) +
+    '  gl_FragColor.rgb *= uMatizDaCamada;\n' +
+    fragment.slice(fim)
+  );
 }
 
 // ============================================================
@@ -713,6 +828,20 @@ export class StellarBody {
   /** as geometrias das cenas de quad (`makeFullscreenScene`) — elas não
    *  moram no `group`, então só esta lista as leva ao `dispose()` */
   private readonly geoDosQuads: THREE.PlaneGeometry[] = [];
+  /** a câmera relativa ao centro DESTA estrela (o Sol: a própria posição) */
+  private readonly camRel = new THREE.Vector3();
+  /** outra cor que não a do Sol (`teffK` ≠ 5.772 K): a matiz por quadro */
+  private readonly outraCor: boolean;
+  private readonly matizTmp = new THREE.Vector3();
+  private readonly corTmp = new THREE.Vector3();
+  /** a matiz das camadas emissivas de cor embutida (`cirurgiaDaMatiz`) */
+  private readonly matizDaCamada = { value: new THREE.Vector3(1, 1, 1) };
+  /** o referencial local (`foraDaOrigem`), composto em float64 por quadro */
+  private readonly referencial = {
+    uVistaLocal: { value: new THREE.Matrix4() },
+    uVistaLocalInv: { value: new THREE.Matrix4() },
+    uCameraLocal: { value: new THREE.Vector3() },
+  };
 
   constructor(
     params: StellarParams,
@@ -730,6 +859,7 @@ export class StellarBody {
     this.params = params;
     this.faseDoCicloViva = cicloInicial;
     this.rotSpeed = rotSpeedFromPeriod(params.rotPeriodDays);
+    this.outraCor = params.teffK !== TEFF_SOL_K;
     this.scale = params.radiusPc / DONOR_RADIUS;
     this.group.scale.setScalar(this.scale);
 
@@ -763,7 +893,12 @@ export class StellarBody {
       // raio antes do primeiro passo. Ver o bloco acima de SOL_PARAMS.
       SUN_R_GLSL: literalGlsl(params.radiusPc),
       SEG_EPS_GLSL: epsilonDeSegmentoGlsl(params.radiusPc),
-      TP: tier,
+      // a convecção da ESTRELA: a frequência do tier dividida pelo grânulo
+      // relativo (no Sol a chave nem existe, e o objeto é o tier de sempre)
+      TP:
+        params.granuloRelativoAoSol === undefined || params.granuloRelativoAoSol === 1
+          ? tier
+          : { ...tier, granFreq: tier.granFreq / params.granuloRelativoAoSol },
       TIER: TIER_FOR[quality],
       FBM_OCTAVES: tier.fbm,
       SPHERE_SEG: tier.seg,
@@ -904,9 +1039,24 @@ export class StellarBody {
       const mat = ctx.sunMesh.material as THREE.ShaderMaterial;
       mat.fragmentShader = cirurgiaDaFotosfera(
         mat.fragmentShader,
-        radianciaDeTela(RADIANCIA_DA_FOTOSFERA, params.radiusPc),
+        // o raio da PONTE é o do Sol para toda instância: a unidade da casa
+        // é "a superfície do Sol", e o vão é troca de unidade — com o raio
+        // de outra estrela ele erraria por (R☉/R)² (o mesmo argumento do
+        // piloto, `corpoDeEstrela.ts`). No Sol é o mesmo número de antes.
+        radianciaDeTela(RADIANCIA_DA_FOTOSFERA, RAIO_DO_SOL_NA_CENA),
         BETA_DA_EMISSAO
       );
+      // o BRILHO DE OUTRA ESTRELA (radiância visível × exposição da visita,
+      // escrito por `escreverBrilho`): só fora dos 5.772 K — o Sol nem o tem
+      if (this.outraCor) {
+        mat.fragmentShader =
+          'uniform float uBrilhoDaEstrela;\n' +
+          mat.fragmentShader.replace('* uTransmitancia, ', '* uTransmitancia * uBrilhoDaEstrela, ');
+        if (!mat.fragmentShader.includes('uBrilhoDaEstrela, ')) {
+          throw new Error('StellarBody: a âncora do brilho (`* uTransmitancia, `) sumiu da fotosfera');
+        }
+        ctx.sunUniforms.uBrilhoDaEstrela = { value: 1 };
+      }
       // O FILTRO nasce em 1 — radiância verdadeira, o comportamento da F2
       // crua — e só desce quando o director escreve. O uniform entra no
       // MESMO objeto que o vendorizado entregou ao material (`uniforms:
@@ -951,7 +1101,95 @@ export class StellarBody {
     ctx.spiculeMesh.rotation.z = params.tiltRad;
     ctx.loopGroup.rotation.z = params.tiltRad;
 
+    if (params.foraDaOrigem || this.outraCor) this.operarAsCamadas(ctx);
+
     this.prime(renderer);
+  }
+
+  /**
+   * As cirurgias de OUTRA ESTRELA nas camadas do `group` (nunca nas cenas de
+   * quad — sim e bakes não têm mundo nem cor): o referencial local em todo
+   * material de shader (`foraDaOrigem`), e a matiz nas camadas aditivas de cor
+   * embutida (`outraCor`). As raias e o volume da coroa já bebem a cor de
+   * `paletaDaCoroa` e a fotosfera da sua paleta: essas a matiz pega na CPU
+   * (`update`). Absorções (blending de multiplicação) não ganham matiz.
+   */
+  private operarAsCamadas(ctx: any) {
+    const coroa = new Set<THREE.Material>(
+      [ctx.coronaRays?.material, ctx.coronaVol?.material].filter(Boolean)
+    );
+    const feitos = new Set<THREE.ShaderMaterial>();
+    const operar = (m: THREE.ShaderMaterial) => {
+      if (feitos.has(m)) return;
+      feitos.add(m);
+      if (this.params.foraDaOrigem) {
+        m.vertexShader = cirurgiaDoReferencialLocal(m.vertexShader, true);
+        m.fragmentShader = cirurgiaDoReferencialLocal(m.fragmentShader, false);
+        Object.assign(m.uniforms, this.referencial);
+      }
+      if (
+        this.outraCor &&
+        m !== ctx.sunMesh.material &&
+        !coroa.has(m) &&
+        m.blending === THREE.AdditiveBlending
+      ) {
+        m.fragmentShader = cirurgiaDaMatiz(m.fragmentShader);
+        m.uniforms.uMatizDaCamada = this.matizDaCamada;
+      }
+      m.needsUpdate = true;
+    };
+    const escrever = (_r: unknown, _s: unknown, camera: THREE.Camera) => this.escreverReferencialLocal(camera);
+    this.group.traverse((o: any) => {
+      const lista = (Array.isArray(o.material) ? o.material : [o.material]).filter(
+        (m: unknown) => m instanceof THREE.ShaderMaterial
+      );
+      if (!lista.length) return;
+      lista.forEach(operar);
+      if (this.params.foraDaOrigem) {
+        const antes = o.onBeforeRender;
+        o.onBeforeRender = function (this: THREE.Object3D, ...a: any[]) {
+          escrever(a[0], a[1], a[2]);
+          antes.apply(this, a);
+        };
+      }
+    });
+    // o gêmeo da absorção que a curva troca (só um está pendurado na malha)
+    for (const m of [ctx.absMat, ctx.absMatTingido]) if (m) operar(m);
+  }
+
+  /**
+   * O REFERENCIAL LOCAL deste quadro, em float64: a câmera relativa ao
+   * centro da estrela (c − o) e a vista com a estrela na origem. Chamado no
+   * `onBeforeRender` de cada camada, com a câmera QUE VAI DESENHAR — a mesma
+   * conta repetida é idempotente, e não há quadro de atraso.
+   */
+  private escreverReferencialLocal(camera: THREE.Camera) {
+    const c = camera.matrixWorld.elements;
+    const o = this.group.matrixWorld.elements;
+    const dx = c[12] - o[12];
+    const dy = c[13] - o[13];
+    const dz = c[14] - o[14];
+    const v = this.referencial.uVistaLocal.value.copy(camera.matrixWorldInverse).elements;
+    v[12] = -(v[0] * dx + v[4] * dy + v[8] * dz);
+    v[13] = -(v[1] * dx + v[5] * dy + v[9] * dz);
+    v[14] = -(v[2] * dx + v[6] * dy + v[10] * dz);
+    const inv = this.referencial.uVistaLocalInv.value.copy(camera.matrixWorld).elements;
+    inv[12] = dx;
+    inv[13] = dy;
+    inv[14] = dz;
+    this.referencial.uCameraLocal.value.set(dx, dy, dz);
+  }
+
+  /**
+   * O BRILHO DE OUTRA ESTRELA na unidade da casa (a superfície do Sol = 1):
+   * radiância visível(T) × exposição da visita — o mesmo produto do piloto
+   * (`brilhoDe` × `uExposicao`). Entra na radiância ANTES da compressão,
+   * junto com a transmitância. No Sol não existe (no-op).
+   */
+  escreverBrilho(k: number) {
+    const u = this.ctx.sunUniforms.uBrilhoDaEstrela;
+    if (!u || !Number.isFinite(k) || k < 0) return;
+    u.value = k;
   }
 
   // Sim + bake síncronos: põe as regiões NA FASE PEDIDA, evolui o Br na
@@ -1105,8 +1343,8 @@ export class StellarBody {
     // exato. Sem altura (`?solquadro=hoje`), a régua de referência de antes.
     if (alturaPx !== undefined) {
       const k =
-        Math.log(radianciaDeTela(RADIANCIA_DA_FOTOSFERA, this.params.radiusPc, alturaPx)) /
-        Math.log(radianciaDeTela(RADIANCIA_DA_FOTOSFERA, this.params.radiusPc));
+        Math.log(radianciaDeTela(RADIANCIA_DA_FOTOSFERA, RAIO_DO_SOL_NA_CENA, alturaPx)) /
+        Math.log(radianciaDeTela(RADIANCIA_DA_FOTOSFERA, RAIO_DO_SOL_NA_CENA));
       if (k > 0 && Number.isFinite(k)) v *= k;
     }
     if (v === this.filtroSolarAnterior) return;
@@ -1260,9 +1498,12 @@ export class StellarBody {
     // de lá foi calibrado a fov 42° — mesmo enquadramento, mesmo LOD
     const fovCorr =
       Math.tan((camera.fov * Math.PI) / 360) / DONOR_HALF_FOV;
-    ctx.camDist = (camera.position.length() / this.scale) * fovCorr;
+    // relativa ao CENTRO desta estrela (o group mora na raiz da cena ou num
+    // grupo sem transformação); no Sol a posição é zero e x − 0 é x
+    this.camRel.copy(camera.position).sub(this.group.position);
+    ctx.camDist = (this.camRel.length() / this.scale) * fovCorr;
     ctx.sunUniforms.uCamDist.value = ctx.camDist;
-    this.camDirN.copy(camera.position).normalize();
+    this.camDirN.copy(this.camRel).normalize();
     ctx.camDirN = this.camDirN;
 
     // Fade das camadas de LIMBO além do regime do doador: o zoom de lá
@@ -1298,6 +1539,7 @@ export class StellarBody {
     ctx.absMesh.material = porCurva(tom, ctx.absMat, ctx.absMatTingido);
     ctx.paletaDaCoroa.value.copy(porCurva(tom, SOL_NO_ACES.ganho, SOL_FORA_DO_ACES.coroa));
     ctx.coronaOuter.material.color.copy(porCurva(tom, SOL_NO_ACES.coroaExterna, SOL_FORA_DO_ACES.coroaExterna));
+    if (this.outraCor) this.matizarPelaTemperatura(ctx);
     if (!this.group.visible) return;
 
     // O RELÓGIO RÁPIDO, aqui e não lá em cima (item 16): corpo fora de
@@ -1546,6 +1788,33 @@ export class StellarBody {
     // e do volume, uma vez por quadro, DEPOIS de todo uniform da coroa
     // deste quadro (tempo, base da câmera, giro, cargas, atividade) ---
     ctx.coronaPorAngulo.desenhar();
+  }
+
+  /**
+   * A COR DE OUTRA ESTRELA, sobre a receita do Sol recém-copiada (por curva):
+   * as pontas da rampa da fotosfera e o fio do limbo levados a T DEPOIS do
+   * ganho `paleta` (C' = pelaT(C⊙P)⊘P, que é como o piloto a aplica);
+   * a coroa (raias, volume e sprite: luz da fotosfera espalhada, Thomson) pela
+   * matiz da própria cor; as camadas H-alfa de cor embutida (espículas,
+   * proeminências, laços, CME) pela matiz do limbo.
+   */
+  private matizarPelaTemperatura(ctx: any) {
+    const T = this.params.teffK;
+    const P = ctx.paleta.value as THREE.Vector3;
+    for (const u of [ctx.corFria, ctx.corQuente, ctx.corDoLimbo]) {
+      const C = u.value as THREE.Vector3;
+      pelaTemperatura(this.corTmp.copy(C).multiply(P), T, this.corTmp);
+      C.set(this.corTmp.x / P.x, this.corTmp.y / P.y, this.corTmp.z / P.z);
+    }
+    const Pc = ctx.paletaDaCoroa.value as THREE.Vector3;
+    Pc.multiply(matizDe(Pc, T, this.matizTmp));
+    const sprite = ctx.coronaOuter.material.color as THREE.Color;
+    matizDe(this.corTmp.set(sprite.r, sprite.g, sprite.b), T, this.matizTmp);
+    sprite.setRGB(sprite.r * this.matizTmp.x, sprite.g * this.matizTmp.y, sprite.b * this.matizTmp.z);
+    // o limbo ANTES da matiz (a receita do Sol, pela curva viva) × o ganho
+    const tom = ctx.renderer.toneMapping;
+    this.corTmp.copy(porCurva(tom, SOL_NO_ACES.limbo, SOL_FORA_DO_ACES.limbo)).multiply(P);
+    matizDe(this.corTmp, T, this.matizDaCamada.value);
   }
 
   dispose() {
