@@ -294,6 +294,15 @@ export class AtlasRig {
    * `[0, tetoDaInclinacao]`; trocar de alvo a devolve a zero pela rampa.
    */
   private incl = 0;
+  /**
+   * O POLO DO ANEL enquanto a chegada pela face iluminada ainda é a pose
+   * (ver `chegarPeloLadoIluminado`): o boot por `?ver=corpo` foca ANTES de o
+   * relógio chegar ao instante pedido, e o lado certo só se sabe com o Sol
+   * do instante vivo. O `recompor` refaz a chegada enquanto isto não for
+   * `null`; o primeiro gesto do visitante (ou outro alvo) o solta.
+   */
+  private anelDaChegada: THREE.Vector3 | null = null;
+  private readonly poloDaChegada = new THREE.Vector3();
   /** a caixa de entrada e o filtro da inércia de θ — a lei do giro */
   private readonly entradaDaIncl = { caixa: 0, suav: 0 };
   /**
@@ -524,7 +533,8 @@ export class AtlasRig {
     this.polo.copy(polo);
     this.guardarSolo(opcoes);
     this.giro.identity();
-    if (opcoes.poloDoAnel) this.chegarPeloLadoIluminado(opcoes.poloDoAnel);
+    this.anelDaChegada = opcoes.poloDoAnel ? this.poloDaChegada.copy(opcoes.poloDoAnel) : null;
+    if (this.anelDaChegada) this.chegarPeloLadoIluminado(this.anelDaChegada);
     // alvo novo nasce olhando o alvo: a rampa (se houver) leva a
     // inclinação da partida a zero, junto com o resto da pose
     this.incl = 0;
@@ -628,6 +638,7 @@ export class AtlasRig {
     // 2. o referencial novo — e o gesto que trouxe a câmera até aqui
     //    acabou: a inércia não segue para o alvo escolhido
     this.esquecerOGiro();
+    this.anelDaChegada = null;
     const polo = opcoes.polo ?? POLO_ECLIPTICO;
     this.alvo.copy(alvo);
     this.raio = raio;
@@ -730,6 +741,7 @@ export class AtlasRig {
     // 2. o referencial novo (o passo 1 do `selecionar` é o argumento) —
     //    a câmera vem do FILME, e nada do Atlas anterior a acompanha
     this.esquecerOGiro();
+    this.anelDaChegada = null;
     const polo = opcoes.polo ?? POLO_ECLIPTICO;
     this.alvo.copy(alvo);
     this.raio = raio;
@@ -818,6 +830,10 @@ export class AtlasRig {
       this.pai = null;
     }
     this.polo.copy(opcoes.polo ?? POLO_ECLIPTICO);
+    if (this.anelDaChegada) {
+      this.giro.identity();
+      this.chegarPeloLadoIluminado(this.anelDaChegada);
+    }
   }
 
   /**
@@ -1147,6 +1163,7 @@ export class AtlasRig {
    * `pointermove` o navegador entregou.
    */
   addOrbitDelta(dx: number, dy: number) {
+    this.anelDaChegada = null;
     if (Number.isFinite(dx)) this.entrada.volta += dx * ARRASTO_RAD_POR_PX;
     if (Number.isFinite(dy)) this.entrada.altura += dy * ARRASTO_RAD_POR_PX;
   }
@@ -1159,6 +1176,7 @@ export class AtlasRig {
    * sensibilidade e a mesma caixa de entrada filtrada do giro.
    */
   addTiltDelta(dy: number) {
+    this.anelDaChegada = null;
     if (Number.isFinite(dy)) this.entradaDaIncl.caixa -= dy * ARRASTO_RAD_POR_PX;
   }
 
