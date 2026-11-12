@@ -671,8 +671,11 @@ export class Galaxy {
     const dGC = camPos.distanceTo(GAL.GC_POS);
     const glowGate = THREE.MathUtils.smoothstep(dGC, 5000, 13000);
     this.glowMat.uniforms.uTime.value = time;
-    this.glowMat.uniforms.uFade.value =
-      externalFade * glowGate * 0.32 + localBandFade * 0.11;
+    // só-partículas: o bojo agora é 3D nas partículas (barra + boxy/
+    // peanut com ~11 % da luz); o cartaz contaria a mesma luz duas vezes
+    this.glowMat.uniforms.uFade.value = this.soParticulas
+      ? 0
+      : externalFade * glowGate * 0.32 + localBandFade * 0.11;
     // a fenda no bojo abre exatamente onde as lâminas fecham (vista
     // rasante) — mesma rampa do discFade, invertida
     this.glowMat.uniforms.uLaneGate.value =

@@ -196,6 +196,8 @@ export async function montarCarga(opts: {
       seed: SEMENTE_DA_GALAXIA,
       catalogos,
       populationScale: tier === 'performance' ? 0.28 : 1,
+      soParticulas:
+        new URLSearchParams(window.location.search).get('galaxia') === 'particulas',
       search: window.location.search,
     },
     aoAvancar
