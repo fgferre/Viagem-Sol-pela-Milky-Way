@@ -352,7 +352,7 @@ export const SISTEMAS_PLANETARIOS: readonly SistemaPlanetario[] = [
     cinturoes: [
       {
         nome: { pt: 'cinturão de poeira', en: 'dust belt' },
-        aUA: 139,
+        aUA: 136.3,
         e: 0.12,
         iGraus: 65.6,
         nodoGraus: 337.9,

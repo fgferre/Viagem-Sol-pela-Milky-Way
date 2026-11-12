@@ -260,7 +260,11 @@ export const REGIOES_DO_ANEL: readonly {
  * ~3°: a mancha clara em volta da sombra da câmera no anel.
  */
 export const SURTO_DE_OPOSICAO = 0.4;
-/** largura do surto, em radianos de fase (1°) */
+/**
+ * largura do surto, em radianos de fase (1°). ALARGADA de propósito: o
+ * medido pelo Hubble é ~0,1° de meia largura (French et al. 2007) — com
+ * ele a mancha não ocuparia um pixel; a amplitude acima é a medida.
+ */
 export const LARGURA_DO_SURTO_RAD = Math.PI / 180;
 
 const suaveCpu = (a: number, b: number, x: number): number => {
