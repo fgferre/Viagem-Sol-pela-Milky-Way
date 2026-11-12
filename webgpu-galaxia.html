@@ -7,9 +7,11 @@
          /webgpu-galaxia.html. Não é entrada do build (o Vite só empacota o
          index.html) e nenhuma tela do app aponta para cá. -->
     <style>
-      html, body { margin: 0; background: #010208; color: #cfd6e4; font: 13px/1.4 system-ui, sans-serif; }
-      #barra { position: fixed; top: 0; left: 0; right: 0; padding: 6px 10px; background: #010208cc; display: flex; gap: 10px; align-items: center; z-index: 1; }
-      #tela { display: block; max-width: 100vw; margin-top: 34px; }
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #010208; color: #e6ebf5; font: 14px/1.4 system-ui, sans-serif; }
+      #tela { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; touch-action: none; cursor: grab; }
+      #barra { position: fixed; top: 0; left: 0; right: 0; padding: 8px 10px; background: #010208b0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; z-index: 1; }
+      #barra select, #barra button { font: inherit; padding: 4px 8px; }
+      #painel { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; margin-left: 6px; }
     </style>
   </head>
   <body>
@@ -22,8 +24,11 @@
         <option value="8">32 M</option><option value="16">64 M</option>
       </select>
       <select id="modo">
-        <option value="deposito">depósito por compute</option><option value="quadrados">quadrados instanciados</option>
+        <option value="borrifo">depósito por compute (borrifo)</option>
+        <option value="deposito">depósito por compute (tenda)</option>
+        <option value="quadrados">quadrados instanciados</option>
       </select>
+      <button id="voo" type="button">voo</button>
       <span id="painel">carregando…</span>
     </div>
     <canvas id="tela"></canvas>

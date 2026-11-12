@@ -7,7 +7,10 @@
 // modelo; acima dos ~4 M do gerador, as partículas extras são FILHAS de
 // cada mãe (ensaio 5) ou, com ?sorteios=N, sorteios independentes do mesmo
 // modelo. Parâmetros: ?vista= ?pos= ?look= ?fov= ?w= ?h= ?k= (filhas por
-// mãe) ?modo=deposito|quadrados ?borrifo=1 ?fatia= ?sorteios= ?expo=.
+// mãe) ?modo=deposito|quadrados ?borrifo=0|1 ?fatia= ?sorteios= ?expo=.
+// Ao vivo: arrastar gira em volta do centro galáctico, roda/pinça aproxima
+// e afasta, o botão "voo" passeia pelas cinco vistas em laço. Sem ?w=&h= o
+// quadro acompanha a janela (com teto de pixels).
 // ============================================================
 import * as THREE from 'three';
 import { loadGalacticAssets } from '../../three/cartography/galacticAssets';
@@ -67,9 +70,9 @@ const estado = {
   fov: Number(q.get('fov')) || 58,
   w: Number(q.get('w')) || 1280,
   h: Number(q.get('h')) || 800,
-  k: Number(q.get('k')) || 1,
+  k: Number(q.get('k')) || 4,
   modo: (q.get('modo') === 'quadrados' ? 'quadrados' : 'deposito') as Modo,
-  borrifo: Number(q.get('borrifo')) || 0,
+  borrifo: q.has('borrifo') ? Number(q.get('borrifo')) : 1,
   fatia: Number(q.get('fatia')) || 1,
   expo: Number(q.get('expo')) || 1.436, // exposição 1,02 do app na régua do neutro
 };
@@ -261,6 +264,8 @@ async function iniciar() {
   const uI = new Uint32Array(dadosU);
 
   let nQuadro = 0;
+  let ocupado = 0; // a bancada mede ou fotografa: o laço ao vivo espera
+  let auto = !q.has('w') && !q.has('h'); // o quadro acompanha a janela
   /** codifica e envia um quadro; com `medir`, resolve o relógio no fim */
   const quadro = (medir = false) => {
     const pos = estado.pos ?? VISTAS[estado.vista] ?? VISTAS.media;
@@ -333,6 +338,7 @@ async function iniciar() {
   };
 
   const aplicar = (pedido: Pedido) => {
+    if (pedido.w || pedido.h) auto = false;
     if (pedido.vista) {
       estado.vista = pedido.vista;
       estado.pos = undefined;
@@ -345,6 +351,7 @@ async function iniciar() {
   /** ms por quadro: os três passos pelo relógio da GPU e o intervalo real
    *  entre quadros seguidos sem vsync (envio → GPU terminou) */
   const medir = async (pedido: Pedido, quadros = 12) => {
+    ocupado++;
     aplicar(pedido);
     for (let i = 0; i < Math.max(3, estado.fatia); i++) quadro();
     await gpu.queue.onSubmittedWorkDone();
@@ -361,6 +368,7 @@ async function iniciar() {
       bufLeitura.unmap();
       for (let j = 0; j < 3; j++) passos[j].push(Number(t[j * 2 + 1] - t[j * 2]) / 1e6);
     }
+    ocupado--;
     const [luz, desenho, tomMs] = passos.map((v) => (v.length ? mediana(v) : NaN));
     return {
       vista: estado.vista, modo: estado.modo, borrifo: estado.borrifo, fatia: estado.fatia, w: largura, h: altura,
@@ -373,10 +381,12 @@ async function iniciar() {
 
   /** desenha e devolve o PNG do quadro (data URL) */
   const foto = async (pedido: Pedido) => {
+    ocupado++;
     aplicar(pedido);
     for (let i = 0; i < estado.fatia; i++) quadro();
     const url = tela.toDataURL('image/png');
     await gpu.queue.onSubmittedWorkDone();
+    ocupado--;
     return url;
   };
 
@@ -426,25 +436,176 @@ async function iniciar() {
     adaptador: adaptador.info ? `${adaptador.info.vendor} ${adaptador.info.architecture}` : '?',
     catalogos: Boolean(catalogos),
   };
-  const mostrar = async () => {
-    const m = await medir({}, 6);
-    diz(
-      `${m.vista} · ${m.modo} · ${m.milhoes.toFixed(1)} M · ${m.w}×${m.h} · ` +
-        `GPU ${m.gpu.toFixed(1)} ms (luz ${m.luz.toFixed(1)} + desenho ${m.desenho.toFixed(1)} + tom ${m.tom.toFixed(1)}) · ` +
-        `quadro ${m.parede.toFixed(1)} ms${m.erros.length ? ` · ERRO ${m.erros[0]}` : ''}`
-    );
-    quadro();
+  // ---------- ao vivo: câmera em órbita, voo e mostrador ----------
+  interface Orbita { az: number; el: number; r: number }
+  const orbitaDe = (pos: number[]): Orbita => {
+    const d = new THREE.Vector3(pos[0], pos[1], pos[2]).sub(GAL.GC_POS);
+    const r = d.length();
+    return { az: Math.atan2(d.dot(EY), d.dot(EX)), el: Math.asin(d.dot(EZ) / r), r };
   };
-  for (const id of ['vista', 'k', 'modo'] as const) {
-    const sel = document.getElementById(id) as HTMLSelectElement;
-    sel.value = String(estado[id]);
-    sel.addEventListener('change', () => {
-      aplicar(id === 'k' ? { k: Number(sel.value) } : id === 'modo' ? { modo: sel.value as Modo } : { vista: sel.value });
-      void mostrar();
-    });
+  const posDa = (o: Orbita) => {
+    const c = Math.cos(o.el) * o.r;
+    return GAL.GC_POS.clone()
+      .addScaledVector(EX, c * Math.cos(o.az))
+      .addScaledVector(EY, c * Math.sin(o.az))
+      .addScaledVector(EZ, Math.sin(o.el) * o.r)
+      .toArray();
+  };
+  let orbita = orbitaDe(estado.pos ?? VISTAS[estado.vista] ?? VISTAS.media);
+  const usarOrbita = () => {
+    estado.pos = posDa(orbita);
+    estado.look = undefined;
+  };
+  // limites da mão: de 1,5 kpc acima do disco até 60 kpc do centro
+  const limitar = () => {
+    orbita.r = Math.min(Math.max(orbita.r, 2500), 60000);
+    orbita.el = Math.min(Math.max(orbita.el, Math.asin(1500 / orbita.r)), 1.55);
+  };
+
+  // O VOO: de-cima → inclinada → media → saindo → de-lado e de volta, em
+  // laço, por Catmull-Rom em (azimute, elevação, log da distância)
+  const CHAVES = ['de-cima', 'inclinada', 'media', 'saindo', 'de-lado'].map((v) => orbitaDe(VISTAS[v]));
+  const NC = CHAVES.length;
+  const VOLTA_S = 50;
+  const azs = [CHAVES[0].az];
+  for (let i = 1; i <= NC; i++) {
+    const d = CHAVES[i % NC].az - CHAVES[i - 1].az;
+    azs.push(azs[i - 1] + Math.atan2(Math.sin(d), Math.cos(d)));
   }
-  await mostrar();
-  Object.assign(window, { __gw: { info, medir, foto, grao } });
+  const chave = (i: number) => {
+    const m = ((i % NC) + NC) % NC;
+    return [azs[m] + (azs[NC] - azs[0]) * Math.floor(i / NC), CHAVES[m].el, Math.log(CHAVES[m].r)];
+  };
+  const catmull = (a: number, b: number, c: number, d: number, t: number) =>
+    0.5 * (2 * b + (c - a) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (3 * b - a - 3 * c + d) * t * t * t);
+  let voo = false;
+  let tVoo = 0;
+  const voar = () => {
+    const u = (tVoo / VOLTA_S) * NC;
+    const i = Math.floor(u);
+    const [az, el, lr] = [0, 1, 2].map((c) =>
+      catmull(chave(i - 1)[c], chave(i)[c], chave(i + 1)[c], chave(i + 2)[c], u - i)
+    );
+    orbita = { az, el, r: Math.exp(lr) };
+    usarOrbita();
+  };
+  const botaoVoo = document.getElementById('voo') as HTMLButtonElement;
+  const ligarVoo = (ligado: boolean) => {
+    voo = ligado;
+    botaoVoo.textContent = ligado ? 'parar o voo' : 'voo';
+  };
+  botaoVoo.addEventListener('click', () => ligarVoo(!voo));
+
+  const dedos = new Map<number, { x: number; y: number }>();
+  tela.addEventListener('pointerdown', (e) => {
+    tela.setPointerCapture(e.pointerId);
+    dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (voo) ligarVoo(false);
+    else orbita = orbitaDe(estado.pos ?? VISTAS[estado.vista] ?? VISTAS.media);
+  });
+  tela.addEventListener('pointermove', (e) => {
+    const a = dedos.get(e.pointerId);
+    if (!a) return;
+    if (dedos.size === 1) {
+      orbita.az -= (e.clientX - a.x) * 0.005;
+      orbita.el += (e.clientY - a.y) * 0.005;
+    } else {
+      const outro = [...dedos.entries()].find(([id]) => id !== e.pointerId)?.[1];
+      if (outro) {
+        const antes = Math.hypot(a.x - outro.x, a.y - outro.y);
+        const depois = Math.hypot(e.clientX - outro.x, e.clientY - outro.y);
+        orbita.r *= antes / Math.max(depois, 1);
+      }
+    }
+    a.x = e.clientX;
+    a.y = e.clientY;
+    limitar();
+    usarOrbita();
+  });
+  for (const fim of ['pointerup', 'pointercancel'] as const) {
+    tela.addEventListener(fim, (e) => dedos.delete(e.pointerId));
+  }
+  tela.addEventListener(
+    'wheel',
+    (e) => {
+      e.preventDefault();
+      if (voo) ligarVoo(false);
+      else orbita = orbitaDe(estado.pos ?? VISTAS[estado.vista] ?? VISTAS.media);
+      orbita.r *= Math.exp(e.deltaY * 0.0015);
+      limitar();
+      usarOrbita();
+    },
+    { passive: false }
+  );
+
+  const JEITOS: Record<string, Pedido> = {
+    borrifo: { modo: 'deposito', borrifo: 1 },
+    deposito: { modo: 'deposito', borrifo: 0 },
+    quadrados: { modo: 'quadrados', borrifo: 0 },
+  };
+  const seletor = (id: string, valor: string, aoMudar: (v: string) => void) => {
+    const sel = document.getElementById(id) as HTMLSelectElement;
+    sel.value = valor;
+    sel.addEventListener('change', () => aoMudar(sel.value));
+  };
+  seletor('vista', estado.vista, (v) => {
+    ligarVoo(false);
+    aplicar({ vista: v });
+  });
+  seletor('k', String(estado.k), (v) => aplicar({ k: Number(v) }));
+  seletor('modo', estado.modo === 'quadrados' ? 'quadrados' : estado.borrifo ? 'borrifo' : 'deposito', (v) =>
+    aplicar(JEITOS[v])
+  );
+
+  // O LAÇO. Quadros por segundo = quadros que a GPU TERMINOU, não os que a
+  // página pediu; com dois na fila, o pedido seguinte espera.
+  const TETO_DE_PIXELS = 2560 * 1600;
+  let ultimo = performance.now();
+  let desde = ultimo;
+  let feitos = 0;
+  let naFila = 0;
+  const laco = (agora: number) => {
+    requestAnimationFrame(laco);
+    const dt = Math.min((agora - ultimo) / 1000, 0.1);
+    ultimo = agora;
+    if (ocupado || naFila >= 2) return;
+    if (voo) {
+      tVoo += dt;
+      voar();
+    }
+    if (auto) {
+      const w = tela.clientWidth * window.devicePixelRatio;
+      const h = tela.clientHeight * window.devicePixelRatio;
+      const e = Math.min(1, Math.sqrt(TETO_DE_PIXELS / Math.max(w * h, 1)));
+      estado.w = Math.max(2, Math.round(w * e));
+      estado.h = Math.max(2, Math.round(h * e));
+    }
+    quadro();
+    naFila++;
+    void gpu.queue.onSubmittedWorkDone().then(() => {
+      naFila--;
+      feitos++;
+    });
+    if (agora - desde >= 500) {
+      diz(
+        `${Math.round((feitos * 1000) / (agora - desde))} quadros/s · ` +
+          `${Math.round((total * estado.k) / 1e6)} milhões de partículas · ${largura}×${altura}` +
+          (erros.length ? ` · ERRO ${erros[0]}` : '')
+      );
+      feitos = 0;
+      desde = agora;
+    }
+  };
+  requestAnimationFrame(laco);
+  /** o quadro do voo no instante t (s), parado: para julgar o movimento
+   *  quadro a quadro sem depender do relógio */
+  const fotoDoVoo = (t: number, pedido: Pedido) => {
+    ligarVoo(false);
+    tVoo = t;
+    voar();
+    return foto(pedido);
+  };
+  Object.assign(window, { __gw: { info, medir, foto, fotoDoVoo, grao, voo: ligarVoo } });
 }
 
 iniciar().catch((e: unknown) => {
