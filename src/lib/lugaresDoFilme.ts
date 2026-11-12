@@ -270,7 +270,7 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     alvo: { cena: 'centroGalactico' },
     categoria: 'galaxia',
     classe: 'galáxia espiral barrada',
-    raioPc: 10_000,
+    raioPc: 11_500,
     vista: 'deCimaDoDisco',
     semRotulo: true,
     distanciaPc: { valor: 8150, fonte: 'Reid et al. 2019 (VLBI)', doSolAoCentro: true },
