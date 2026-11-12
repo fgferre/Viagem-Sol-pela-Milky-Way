@@ -15,6 +15,7 @@ import {
   RampasDeRotulo,
   aplicarReguaDeRelevancia,
   alvoDoCanalDeTexto,
+  nomeDoSolEmCaixaAlta,
   prioridadeDeEstrela,
   projectCorpos,
   projectLabels,
@@ -505,7 +506,7 @@ export class Rotulos {
     planetas: Planetas | null
   ): StarLabel | null {
     if (name === 'SOL') {
-      return projectForced(cam, 'SOL', 'G2V', { x: 0, y: 0, z: 0 }, 'sol-home');
+      return projectForced(cam, nomeDoSolEmCaixaAlta(), 'G2V', { x: 0, y: 0, z: 0 }, 'sol-home');
     }
     if (name === 'SGR') {
       return projectForced(cam, 'Sagittarius A✱', 'SMBH', GAL.GC_POS, 'sgr-a');

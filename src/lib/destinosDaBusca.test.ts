@@ -74,6 +74,12 @@ describe('destinosDaBusca', () => {
     expect(galaxia.length).toBe(1);
   });
 
+  it('o cartão de um corpo leva à distância da prévia dele; estrela e lugar não pedem nenhuma', () => {
+    // a mesma tabela de `scripts/visual/previas-de-destino.mjs` (`d`)
+    expect(sistema.map((d) => d.raios)).toEqual([4, 4, 4, 10, 12, 5]);
+    expect([...estrelas, ...galaxia].every((d) => d.raios === undefined)).toBe(true);
+  });
+
   it('o primeiro de cada categoria é o principal', () => {
     expect(sistema[0]?.id).toBe('earth');
     expect(estrelas[0]?.id).toBe('sirius');

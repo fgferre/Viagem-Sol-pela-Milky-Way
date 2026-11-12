@@ -345,21 +345,17 @@ export const EN: Record<keyof typeof PT, string> = {
   // NO film promise (item 129/F5 still holds): the click here does the
   // SAME thing the "place" search entry already does — frames the
   // galactic centre in the Atlas, does not start the film.
-  'busca.destino.sagittarius-a': 'To the galactic centre',
+  'busca.destino.sagittarius-a': 'The whole galaxy, around its centre',
 
   // ---- the gesture walkthrough -------------------------------------
   'convite.olhar': 'drag to look around',
   'convite.voar': 'w a s d to fly · q e to rise and sink',
   'convite.visitar': 'click a name to visit the star',
-  'convite.girar': 'drag to orbit whatever is in frame',
-  'convite.roda': 'the wheel moves closer to and away from the chosen object',
-  'convite.pinca': 'a two-finger pinch moves closer and away',
-  'convite.inclinarMouse': 'shift + drag up (or the right button) tilts the view toward the horizon',
-  'convite.inclinarToque': 'two fingers moving up together tilt the view toward the horizon',
-  'convite.escolherMouse': 'click a name to choose the object',
-  'convite.escolherToque': 'tap a name to choose the object',
-  'convite.irMouse': 'double-click to travel to it',
-  'convite.irToque': 'double-tap to travel to it',
+  'convite.atlas.escolherMouse': 'click a name to choose it — double-click to travel there',
+  'convite.atlas.escolherToque': 'tap a name to choose it — double-tap to travel there',
+  'convite.atlas.gestosMouse': 'drag to orbit · the wheel zooms · shift + drag tilts the view',
+  'convite.atlas.gestosToque': 'drag to orbit · pinch to zoom · two fingers up tilt the view',
+  'convite.atlas.busca': "or open Search for ready-made trips, like Saturn's rings",
   'convite.conta': '{n} of {total}',
   'convite.pular': 'skip',
   'convite.continuar': 'next',

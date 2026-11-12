@@ -57,7 +57,10 @@ export const LUGARES_DA_BUSCA: readonly LugarBuscavel[] = LUGARES_DO_FILME.flatM
 export function escolherAlvo(
   entrada: EntradaDaBusca,
   alvo: Director | null,
-  ver: VerDaEscada = 'orbita'
+  ver: VerDaEscada = 'orbita',
+  /** a distância em raios do corpo (a mesma régua do `?d=`) — o cartão de
+   *  destino a pede para chegar onde a prévia dele foi tirada */
+  raios?: number
 ) {
   if (!alvo) return;
   if (entrada.tipo === 'estrela') {
@@ -78,8 +81,12 @@ export function escolherAlvo(
   // livre —, a escolha ENTRA no Atlas pelo véu e enquadra ao chegar: o
   // mesmo destino que o `?foco=` já dava por URL. Voar até a Terra pela
   // lei das estrelas pararia a 0,8 pc dela — por isso o corpo nunca voa.
-  if (alvo.fase === 'atlas') alvo.focarNoCorpo(entrada.corpo.id, ver);
-  else alvo.entrarNoAtlas({ aoChegar: () => alvo.focarNoCorpo(entrada.corpo.id, ver) });
+  const focar = () => {
+    alvo.focarNoCorpo(entrada.corpo.id, ver);
+    if (raios) alvo.pinarEmRaios(raios);
+  };
+  if (alvo.fase === 'atlas') focar();
+  else alvo.entrarNoAtlas({ aoChegar: focar });
 }
 
 /** Tudo que o boot escreve — os fios do App, por nome. */

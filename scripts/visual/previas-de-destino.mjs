@@ -34,7 +34,8 @@ const CINEMA = 'q=cinema&shot=2&jd=2460409.26395835';
 // corpo (só planetas/luas, `ver=corpo`); estrelas e o centro galáctico
 // dispensam ver/d porque a vista é o céu ao redor do alvo, e não o
 // corpo dele. Números aqui para reajustar o enquadramento sem mexer no
-// resto do script.
+// resto do script. O `d` dos corpos é também a distância de CHEGADA do
+// cartão (`raios` em `src/lib/destinosDaBusca.ts`): mexeu aqui, mexa lá.
 const DESTINOS = [
   { id: 'earth', foco: 'earth', ver: 'corpo', d: 4 },
   { id: 'moon', foco: 'moon', ver: 'corpo', d: 4 },

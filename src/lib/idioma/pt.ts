@@ -367,21 +367,17 @@ export const PT = {
   // SEM promessa de filme (item 129/F5 continua valendo): o clique aqui
   // faz o MESMO que a entrada "lugar" da busca já faz — enquadra o
   // centro galáctico no Atlas, não entra no filme.
-  'busca.destino.sagittarius-a': 'Até o centro da galáxia',
+  'busca.destino.sagittarius-a': 'A galáxia inteira, em volta do centro',
 
   // ---- o convite dos gestos (`components/Spotlight.tsx`) ------------
   'convite.olhar': 'arraste para olhar em volta',
   'convite.voar': 'w a s d para voar · q e para subir e descer',
   'convite.visitar': 'clique num nome para visitar a estrela',
-  'convite.girar': 'arraste para girar em volta do que está em quadro',
-  'convite.roda': 'a roda aproxima e afasta do objeto escolhido',
-  'convite.pinca': 'a pinça de dois dedos aproxima e afasta',
-  'convite.inclinarMouse': 'shift + arrastar para cima (ou o botão direito) inclina a vista rumo ao horizonte',
-  'convite.inclinarToque': 'dois dedos juntos para cima inclinam a vista rumo ao horizonte',
-  'convite.escolherMouse': 'clique num nome para escolher o objeto',
-  'convite.escolherToque': 'toque num nome para escolher o objeto',
-  'convite.irMouse': 'dois cliques para ir até ele',
-  'convite.irToque': 'toque duas vezes para ir até ele',
+  'convite.atlas.escolherMouse': 'clique num nome para escolher o astro — dois cliques vão até ele',
+  'convite.atlas.escolherToque': 'toque num nome para escolher o astro — toque duas vezes para ir até ele',
+  'convite.atlas.gestosMouse': 'arraste para girar · a roda aproxima · shift + arrastar inclina a vista',
+  'convite.atlas.gestosToque': 'arraste para girar · a pinça aproxima · dois dedos para cima inclinam a vista',
+  'convite.atlas.busca': 'ou abra a Busca: destinos prontos, como os anéis de Saturno',
   'convite.conta': '{n} de {total}',
   'convite.pular': 'pular',
   'convite.continuar': 'continuar',
