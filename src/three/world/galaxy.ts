@@ -19,7 +19,13 @@ import {
 } from '../shaders/galaxyShaders';
 import { GAL, EX, EY, EZ } from './baseGalactica';
 import { GALACTIC_MODEL } from '../cartography/galacticModel';
-import { SGR_DWARF_POS, tune } from './geradorDaGalaxia';
+import {
+  SGR_DWARF_POS,
+  tune,
+  celulaDaParticula,
+  CELULAS_DA_GRADE,
+  LADO_DA_CELULA_PC,
+} from './geradorDaGalaxia';
 import { porCurva } from '../core/engine';
 import type { GalaxyBuffers } from './geradorDaGalaxia';
 
@@ -113,6 +119,48 @@ export class Galaxy {
    * Z = 1 − (1 + x)e^(−x), x = R_disco/a — e o espaçamento é 1/√Σ₀.
    */
   private static readonly NUCLEO_EM_ESPACAMENTOS = 1.5;
+  /**
+   * NÍVEL DE DETALHE POR CÉLULA (só ?galaxia=particulas). O buffer vem
+   * ordenado por célula do plano (`celulaDaParticula`), embaralhado dentro
+   * de cada uma, com as tipos 3–6 num intervalo global no fim. Cada célula
+   * é UM desenho instanciado de uma única chamada multi-draw (fallback:
+   * um drawArraysInstanced por célula visível). Quem decide, partícula a
+   * partícula, é o vértice (GALAXY_VERT): com a densidade disponível na
+   * tela ρd = Σ·(d/f)²/proj e o alvo ρ, m = ρ/ρd; m < 1 desenha o prefixo
+   * da célula com o brilho ÷ m, m > 1 desdobra a partícula em até KMAX
+   * filhas com o brilho ÷ m — as duas com a última peça fracionária, então
+   * nada estala. Aqui a CPU só dá a cada célula o PIOR caso (o maior
+   * prefixo e o maior K que alguma partícula dela pode pedir) e corta as
+   * células fora do frustum.
+   * ρ = 12 partículas por pixel do buffer (medido, ensaio 5): a tenda de
+   * 2 px com pesos iguais daria grão (2/3)/√ρ, mas a dispersão do brilho
+   * entre partículas (tamanho² e luz sorteados) dobra a variância — o grão
+   * 0,27 da vista de cima do ensaio 4 era ρ ≈ 20. Com 6 a vista de cima
+   * piorava para 0,38 e a meia distância não mudava; 12 é o meio-termo de
+   * custo. KMAX = 8: 16 não baixa o grão medido (a tenda alarga o que falta
+   * no teto) e custa ~25 % a mais de quadro a meia distância; 4 já deixa
+   * borrões no primeiro plano. ?lodrho= e ?lodk= varrem.
+   */
+  private static readonly RHO_LOD = tune('lodrho', 12);
+  private static readonly KMAX_LOD = tune('lodk', 8);
+  private lod: {
+    inicio: Int32Array;
+    total: Int32Array;
+    /** partículas por pc² da coluna da célula (contagem cheia ÷ área) */
+    sigma: Float32Array;
+    zMin: Float32Array;
+    zMax: Float32Array;
+    sigmaZ: Float32Array;
+    caixa: Float32Array; // 6 por desenho: min xyz, max xyz (cena)
+    firsts: Int32Array;
+    counts: Int32Array;
+    insts: Int32Array;
+    dados: Float32Array;
+    textura: THREE.DataTexture;
+    fade: number;
+  } | null = null;
+  /** medidas do último quadro (?galaxia=particulas) — para as réguas */
+  lodStats = { pais: 0, instancias: 0, desenhos: 0, cpuMs: 0, multiDraw: false };
   private nucleoPc() {
     const a = 3 * GALACTIC_MODEL.stellarScaleLengthPc;
     const x = GALACTIC_MODEL.diskRadiusPc / a;
@@ -187,8 +235,24 @@ export class Galaxy {
       this.brightMat.defines = { GALAXIA_PARTICULAS: '' };
       this.brightMat.uniforms.uNucleo = { value: 0 };
       this.brightMat.uniforms.uNucleoPc = { value: 0 };
+      this.lod = Galaxy.celulasDoBuffer(bd, buffers.brightCount);
+      this.dadosDasCelulas();
+      this.brightMat.extensions.multiDraw = Galaxy.dbg.get('lodmd') !== '0';
+      this.brightMat.uniforms.uCelulas = { value: this.lod.textura };
+      this.brightMat.uniforms.uDesenho = { value: 0 };
+      this.brightMat.uniforms.uRho = { value: Galaxy.RHO_LOD };
+      this.brightMat.uniforms.uKMax = { value: Galaxy.KMAX_LOD };
+      this.brightMat.uniforms.uEspLod = { value: tune('lodesp', 0.6) };
+      // a geometria não desenha nada sozinha: os desenhos por célula saem
+      // do gancho abaixo, com o programa e os atributos já ligados
+      geo.setDrawRange(0, 0);
     }
     const brightPts = new THREE.Points(geo, this.brightMat);
+    if (this.lod) {
+      brightPts.onBeforeRender = (_r, _s, camera) => this.planejarCelulas(camera);
+      brightPts.onAfterRender = (renderer, _s, _c, _g, material) =>
+        this.desenharCelulas(renderer, material);
+    }
     brightPts.frustumCulled = false;
     brightPts.renderOrder = 2;
     this.group.add(brightPts);
@@ -595,7 +659,215 @@ export class Galaxy {
    */
   setFracaoDeParticulas(fracao: number) {
     this.fracaoDeParticulas = fracao;
+    // só-partículas: a fração vira o prefixo de CADA célula (embaralhada
+    // por dentro), e a geometria segue sem desenho próprio
+    if (this.lod) {
+      this.dadosDasCelulas();
+      return;
+    }
     this.brightPts.geometry.setDrawRange(0, Math.round(this.totalParticulas * fracao));
+  }
+
+  /**
+   * Varre o buffer ordenado por célula (antes do upload, que o solta) e
+   * monta os desenhos: um por célula não vazia e o intervalo global por
+   * último. Por célula guarda a caixa na cena, a contagem, a altura média
+   * e o desvio vertical (a espessura que entra na área projetada).
+   */
+  private static celulasDoBuffer(bd: Float32Array, n: number) {
+    const inicio: number[] = [];
+    const total: number[] = [];
+    const chaves: number[] = [];
+    let chaveAtual = -1;
+    for (let i = 0; i < n; i++) {
+      const c = celulaDaParticula(bd, i);
+      if (c !== chaveAtual) {
+        inicio.push(i);
+        total.push(0);
+        chaves.push(c);
+        chaveAtual = c;
+      }
+      total[total.length - 1]++;
+    }
+    const D = inicio.length;
+    const sigma = new Float32Array(D);
+    const zMin = new Float32Array(D);
+    const zMax = new Float32Array(D);
+    const sigmaZ = new Float32Array(D);
+    const caixa = new Float32Array(D * 6);
+    const area = LADO_DA_CELULA_PC * LADO_DA_CELULA_PC;
+    for (let d = 0; d < D; d++) {
+      let sz = 0, sz2 = 0, zl0 = Infinity, zl1 = -Infinity;
+      let x0 = Infinity, y0 = Infinity, z0 = Infinity;
+      let x1 = -Infinity, y1 = -Infinity, z1 = -Infinity;
+      for (let i = inicio[d], fim = inicio[d] + total[d]; i < fim; i++) {
+        const o = i * 8;
+        const x = bd[o], y = bd[o + 1], z = bd[o + 2];
+        const zl = (x - GAL.GC_POS.x) * EZ.x + (y - GAL.GC_POS.y) * EZ.y + (z - GAL.GC_POS.z) * EZ.z;
+        sz += zl;
+        sz2 += zl * zl;
+        zl0 = Math.min(zl0, zl);
+        zl1 = Math.max(zl1, zl);
+        x0 = Math.min(x0, x); y0 = Math.min(y0, y); z0 = Math.min(z0, z);
+        x1 = Math.max(x1, x); y1 = Math.max(y1, y); z1 = Math.max(z1, z);
+      }
+      const m = sz / total[d];
+      zMin[d] = zl0;
+      zMax[d] = zl1;
+      sigmaZ[d] = Math.sqrt(Math.max(sz2 / total[d] - m * m, 0));
+      sigma[d] = chaves[d] === CELULAS_DA_GRADE ? 0 : total[d] / area;
+      caixa.set([x0, y0, z0, x1, y1, z1], d * 6);
+    }
+    const largura = 64;
+    const dados = new Float32Array(largura * Math.ceil(D / largura) * 4);
+    const textura = new THREE.DataTexture(
+      dados, largura, Math.ceil(D / largura), THREE.RGBAFormat, THREE.FloatType
+    );
+    const lod = {
+      inicio: Int32Array.from(inicio),
+      total: Int32Array.from(total),
+      sigma, zMin, zMax, sigmaZ, caixa,
+      firsts: Int32Array.from(inicio),
+      counts: new Int32Array(D),
+      insts: new Int32Array(D),
+      dados, textura, fade: 0,
+    };
+    return lod;
+  }
+
+  /**
+   * A textura por desenho que o vértice lê (texelFetch por gl_DrawID):
+   * R início no buffer · G partículas disponíveis (0 = intervalo global,
+   * sem nível de detalhe) · B as mesmas por pc² da coluna · A a razão de
+   * espessura 2,5·σz / lado, que dá a área de perfil da célula.
+   */
+  private dadosDasCelulas() {
+    const L = this.lod!;
+    const f = this.fracaoDeParticulas;
+    for (let d = 0; d < L.inicio.length; d++) {
+      const disp = Math.max(1, Math.round(L.total[d] * f));
+      L.dados[d * 4] = L.inicio[d];
+      L.dados[d * 4 + 1] = L.sigma[d] > 0 ? disp : 0;
+      L.dados[d * 4 + 2] = L.sigma[d] * (disp / L.total[d]);
+      L.dados[d * 4 + 3] = (2.5 * L.sigmaZ[d]) / LADO_DA_CELULA_PC;
+    }
+    L.textura.needsUpdate = true;
+  }
+
+  private static frustum = new THREE.Frustum();
+  private static caixaTmp = new THREE.Box3();
+  private static mTmp = new THREE.Matrix4();
+
+  /**
+   * O pior caso de cada célula visível, com as MESMAS contas do vértice:
+   * a menor distância à caixa dá o maior m; a abertura μ varia na caixa e
+   * a área projetada ∝ μ + t·√(1−μ²) é tomada no máximo do intervalo; a
+   * rampa k = fade·smoothstep(300, 1500, d) entra na menor distância para
+   * o prefixo e na maior para as filhas. Pedir de mais só custa vértices
+   * que saem cedo; pedir de menos tiraria luz.
+   */
+  private planejarCelulas(camera: THREE.Camera) {
+    const t0 = performance.now();
+    const L = this.lod!;
+    const u = this.brightMat.uniforms;
+    const cam = u.uCamPos.value as THREE.Vector3;
+    const f = (u.uScreenH.value as number) / (2 * (u.uTanHalfFov.value as number));
+    const rho = Galaxy.RHO_LOD;
+    const kmax = Galaxy.KMAX_LOD;
+    const fr = Galaxy.frustum.setFromProjectionMatrix(
+      Galaxy.mTmp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
+    );
+    const caixa = Galaxy.caixaTmp;
+    const zc =
+      (cam.x - GAL.GC_POS.x) * EZ.x + (cam.y - GAL.GC_POS.y) * EZ.y + (cam.z - GAL.GC_POS.z) * EZ.z;
+    const ss = THREE.MathUtils.smoothstep;
+    let pais = 0, instancias = 0, desenhos = 0;
+    const D = L.inicio.length;
+    for (let d = 0; d < D; d++) {
+      const disp = L.dados[d * 4 + 1];
+      const o = d * 6;
+      caixa.min.set(L.caixa[o], L.caixa[o + 1], L.caixa[o + 2]);
+      caixa.max.set(L.caixa[o + 3], L.caixa[o + 4], L.caixa[o + 5]);
+      if (disp === 0) {
+        // intervalo global: inteiro, uma instância
+        const n = Math.max(1, Math.round(L.total[d] * this.fracaoDeParticulas));
+        L.counts[d] = n;
+        L.insts[d] = 1;
+        pais += n; instancias += n; desenhos++;
+        continue;
+      }
+      const dMin = Math.max(caixa.distanceToPoint(cam), 1);
+      const dx = Math.max(Math.abs(cam.x - caixa.min.x), Math.abs(cam.x - caixa.max.x));
+      const dy = Math.max(Math.abs(cam.y - caixa.min.y), Math.abs(cam.y - caixa.max.y));
+      const dz = Math.max(Math.abs(cam.z - caixa.min.z), Math.abs(cam.z - caixa.max.z));
+      const dMax = Math.max(Math.hypot(dx, dy, dz), dMin);
+      // margem de 300 pc: o ponto é um quadrado de até 40 px e o corte do
+      // vértice já tem a sua; aqui só não pode faltar
+      caixa.expandByScalar(300);
+      if (!fr.intersectsBox(caixa)) {
+        L.counts[d] = 0;
+        L.insts[d] = 0;
+        continue;
+      }
+      // abertura: altura da câmera sobre a fatia z da célula
+      const zLo = L.zMin[d];
+      const zHi = L.zMax[d];
+      const hPerto = zc < zLo ? zLo - zc : zc > zHi ? zc - zHi : 0;
+      const hLonge = Math.max(Math.abs(zc - zLo), Math.abs(zc - zHi));
+      const muLo = Math.min(hPerto / dMax, 1);
+      const muHi = Math.min(hLonge / dMin, 1);
+      const t = L.dados[d * 4 + 3];
+      const proj = (mu: number) => mu + t * Math.sqrt(Math.max(1 - mu * mu, 0));
+      const muPico = 1 / Math.sqrt(1 + t * t);
+      let projMax = Math.max(proj(muLo), proj(muHi));
+      if (muPico > muLo && muPico < muHi) projMax = Math.max(projMax, proj(muPico));
+      const sig = L.dados[d * 4 + 2];
+      const mMax = (rho * f * f * projMax) / (sig * dMin * dMin);
+      const kPerto = this.lod!.fade * ss(dMin, 300, 1500);
+      const kLonge = this.lod!.fade * ss(dMax, 300, 1500);
+      const qMax = mMax >= 1 ? 1 : 1 - kPerto * (1 - mMax);
+      const kMax = Math.min(kmax, 1 + kLonge * Math.max(mMax - 1, 0));
+      const n = Math.min(disp, Math.ceil(qMax * disp) + 1);
+      const k = Math.max(1, Math.ceil(kMax - 1e-4));
+      L.counts[d] = n;
+      L.insts[d] = k;
+      pais += n; instancias += n * k; desenhos++;
+    }
+    this.lodStats.pais = pais;
+    this.lodStats.instancias = instancias;
+    this.lodStats.desenhos = desenhos;
+    this.lodStats.cpuMs = performance.now() - t0;
+  }
+
+  /** Os desenhos por célula, com o programa e os atributos que o three acabou de ligar. */
+  private desenharCelulas(renderer: THREE.WebGLRenderer, material: THREE.Material) {
+    const L = this.lod!;
+    const gl = renderer.getContext() as WebGL2RenderingContext;
+    const D = L.inicio.length;
+    // ?lodmd=0 força um desenho por célula: o gpu-profile só cronometra
+    // gl.draw*, não a chamada da extensão
+    if (this.brightMat.extensions.multiDraw && renderer.extensions.has('WEBGL_multi_draw')) {
+      const ext = renderer.extensions.get('WEBGL_multi_draw') as {
+        multiDrawArraysInstancedWEBGL(
+          mode: number, firsts: Int32Array, firstsOffset: number,
+          counts: Int32Array, countsOffset: number,
+          instances: Int32Array, instancesOffset: number, drawCount: number
+        ): void;
+      };
+      ext.multiDrawArraysInstancedWEBGL(gl.POINTS, L.firsts, 0, L.counts, 0, L.insts, 0, D);
+      this.lodStats.multiDraw = true;
+      return;
+    }
+    this.lodStats.multiDraw = false;
+    const programa = (renderer.properties.get(material) as {
+      currentProgram: { getUniforms(): { setValue(gl: WebGL2RenderingContext, nome: string, v: number): void } };
+    }).currentProgram;
+    const uniforms = programa.getUniforms();
+    for (let d = 0; d < D; d++) {
+      if (L.counts[d] === 0) continue;
+      uniforms.setValue(gl, 'uDesenho', d);
+      gl.drawArraysInstanced(gl.POINTS, L.firsts[d], L.counts[d], L.insts[d]);
+    }
   }
 
   /**
@@ -652,6 +924,7 @@ export class Galaxy {
         // o núcleo entra pela MESMA rampa que acende a luz das lâminas
         u.uNucleo.value = externalFade;
         u.uNucleoPc.value = this.nucleoPc();
+        if (this.lod) this.lod.fade = externalFade;
       }
     }
     // As lâminas contínuas só entram na vista externa. De dentro

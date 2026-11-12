@@ -92,6 +92,23 @@ uniform float uNucleo;
 uniform float uNucleoPc;
 // 1 = pegada em TENDA (ver GALAXY_FRAG), 0 = a gaussiana de sempre
 varying float vTenda;
+// NÍVEL DE DETALHE POR CÉLULA (galaxy.ts, planejarCelulas): por desenho,
+// R início no buffer · G partículas disponíveis (0 = intervalo global) ·
+// B as mesmas por pc² da coluna · A a razão de espessura 2,5·σz/lado
+uniform highp sampler2D uCelulas;
+uniform int uDesenho; // sem WEBGL_multi_draw: o desenho vem por uniform
+uniform float uRho;   // alvo de partículas desenhadas por pixel do buffer
+uniform float uKMax;  // teto de filhas por partícula
+uniform float uEspLod; // c do desvio das filhas: c·√(K−1) espaçamentos da célula
+// a posição desta instância: a da partícula, ou a da filha deslocada
+vec3 posLod;
+uint hashLod(uint x) {
+  x ^= x >> 16; x *= 0x7feb352du;
+  x ^= x >> 15; x *= 0x846ca68bu;
+  x ^= x >> 16;
+  return x;
+}
+float u01Lod(uint x) { return float(hashLod(x) >> 8) * ${(1 / 16777216).toExponential(8)}; }
 // erf de Abramowitz–Stegun 7.1.26 (erro absoluto ≤ 1,5e-7)
 float erfAprox(float x) {
   float a = abs(x);
@@ -110,6 +127,68 @@ ${GLSL_UNRESOLVED}
 ${GLSL_LEI_DE_TELA_NA_REGUA}
 
 void main() {
+#ifdef GALAXIA_PARTICULAS
+  // NÍVEL DE DETALHE. m = ρ/ρd, com ρd as partículas DISPONÍVEIS por pixel
+  // aqui: Σ da célula × (pc por pixel)² ÷ a área projetada da coluna
+  // (μ de cima, t·√(1−μ²) de perfil). m < 1: só o prefixo q = m da célula
+  // (embaralhada por dentro, então o prefixo é sorteio sem viés), com o
+  // brilho ÷ q e a última partícula fracionária. m > 1: K = m cópias
+  // (instâncias), a filha k com peso min(K − k, 1) e o brilho ÷ K — a
+  // nova nasce apagada. Tudo calculado na posição da MÃE, para as K
+  // instâncias concordarem. Perto (< ~1 kpc) e dentro do disco a rampa
+  // k do núcleo leva m a 1: o desenho de sempre.
+  posLod = position;
+  float pesoLod = 1.0;
+  float kfLod = 1.0;
+  float rhoLod = -1.0; // partículas desenhadas por px²; −1 = intervalo global
+#ifdef GL_ANGLE_multi_draw
+  int idLod = gl_DrawID;
+#else
+  int idLod = uDesenho;
+#endif
+  vec4 cel = texelFetch(uCelulas, ivec2(idLod % 64, idLod / 64), 0);
+  if (cel.g > 0.0) {
+    float d0 = max(length(position - uCamPos), 1.0);
+    float pcPorPx = 2.0 * uTanHalfFov * d0 / uScreenH;
+    float mu0 = abs(dot(position - uCamPos, uEZ)) / d0;
+    float proj = mu0 + cel.a * sqrt(max(1.0 - mu0 * mu0, 0.0));
+    float rhoDisp = cel.b * pcPorPx * pcPorPx / max(proj, 1e-3);
+    float m = mix(1.0, uRho / max(rhoDisp, 1e-12), uNucleo * smoothstep(300.0, 1500.0, d0));
+    float q = min(m, 1.0);
+    kfLod = clamp(m, 1.0, uKMax);
+    float rank = float(gl_VertexID) - cel.r;
+    pesoLod = clamp(q * cel.g - rank, 0.0, 1.0) *
+      clamp(kfLod - float(gl_InstanceID), 0.0, 1.0) / (q * kfLod);
+    if (pesoLod <= 0.0) {
+      gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+      gl_PointSize = 1.0;
+      vColor = vec3(0.0);
+      vAlpha = 0.0;
+      vTenda = 0.0;
+      return;
+    }
+    if (gl_InstanceID > 0) {
+      // A FILHA. Cópia exata da mãe não acrescenta amostra nenhuma: o grão
+      // do pixel é o número de MÃES que caem na pegada. Para a pegada de
+      // cada pixel receber ~ρ mães, a luz de cada mãe se espalha numa área
+      // A com ρm·(A + Atenda) = ρ·Atenda, Atenda = 2,25 px² (área efetiva
+      // da tenda de 2 px): A = Atenda·(K − 1)/ρm, gaussiana de desvio
+      // √(A/2π) = 0,6·√(K − 1) espaçamentos das mães. No plano, onde a
+      // projeção encurta igual o espaçamento e o desvio. Cresce a partir da
+      // mãe conforme K sobe; no teto de K, ~2,3 espaçamentos. Na vertical
+      // 1/5 do espaçamento — ≪ a altura de escala de qualquer população,
+      // então a lei de espessura da mãe fica.
+      uint h = uint(gl_VertexID) * 16u + uint(gl_InstanceID);
+      float esp = inversesqrt(max(cel.b * q, 1e-9));
+      float r = uEspLod * sqrt(kfLod - 1.0) * esp * sqrt(-2.0 * log(max(u01Lod(h), 1e-7)));
+      float a = 6.2831853 * u01Lod(h + 0x9e3779b9u);
+      float vz = (u01Lod(h + 0x3c6ef372u) + u01Lod(h + 0xdaa66d2bu) - 1.0) * 0.2 * esp;
+      posLod += uEX * (r * cos(a)) + uEY * (r * sin(a)) + uEZ * vz;
+    }
+    rhoLod = rhoDisp * q * kfLod;
+  }
+#define position posLod
+#endif
   float dist = length(position - uCamPos);
   // tamanho angular real: pc/dist → fração da tela → pixels
 #ifdef GALAXIA_PARTICULAS
@@ -158,6 +237,12 @@ void main() {
     float nucleoPx = uNucleoPc *
       exp(rN * ${glslNumber(1 / (2 * 3 * GALACTIC_MODEL.stellarScaleLengthPc))}) *
       sqrt(max(muN, 0.1)) * uScreenH / (2.0 * uTanHalfFov * max(dist, 1.0));
+    // nas células, a largura que deixa o grão no do alvo: a tenda de meia
+    // largura h com densidade ρL tem variação (2/3)/√(ρL·h²); h = √(ρ/ρL)
+    // dá o grão de ρ partículas por pixel. Onde o nível de detalhe alcança
+    // o alvo, ρL = ρ e a tenda fica no piso de 2 px; onde as filhas batem
+    // no teto, ela alarga só o que falta.
+    if (rhoLod > 0.0) nucleoPx = 2.0 * sqrt(uRho / rhoLod);
     float resolvido = step(2.5, tipo) * step(tipo, 5.5);
     // teto de preenchimento: 40 px na régua de 1080 linhas
     float tetoPx = 40.0 * max(uScreenH, 1.0) / ${glslNumber(ALTURA_DE_CALIBRACAO_DO_SIGMA_PX)};
@@ -326,6 +411,11 @@ void main() {
   // como estrelas individuais a esta distância sai da integrada.
   // Além de ~5 kpc unresolved ≡ 1,0 — a vista externa não move.
   vAlpha = aAlpha * uFade * fluxoDaTela * unresolved(dist);
+#ifdef GALAXIA_PARTICULAS
+  vAlpha *= pesoLod;
+  // o corte julga a MÃE: K filhas fracas somam a luz de uma forte
+  corteDoNucleo *= kfLod;
+#endif
 
   // O CORTE DO QUE NÃO PINTA (01/10). Com a galáxia inteira no quadro
   // (t=150–160 do filme: 99,3–99,99% dos 4 M pontos no frustum) o custo

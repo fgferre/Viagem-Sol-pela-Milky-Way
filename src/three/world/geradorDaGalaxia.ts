@@ -66,6 +66,62 @@ function gauss(rnd: () => number) {
   return (rnd() + rnd() + rnd() - 1.5) * 0.8165; // ~N(0, 1/2²) prático
 }
 
+/**
+ * ?galaxia=particulas — CÉLULAS DO NÍVEL DE DETALHE. A grade é quadrada no
+ * plano galáctico (z não se divide), 1 kpc de lado em ±20 kpc; quem cai
+ * fora vai para a célula da borda. Estrela jovem resolvida, nó H II,
+ * aglomerado (tipos 3–5), halo e anã (6) são indivíduos ou esparsos: ficam
+ * num intervalo global no FIM do buffer, a chave CELULAS_DA_GRADE.
+ */
+export const LADO_DA_CELULA_PC = 1000;
+export const CELULAS_POR_LADO = 40;
+export const CELULAS_DA_GRADE = CELULAS_POR_LADO * CELULAS_POR_LADO;
+export function celulaDaParticula(bright: Float32Array, i: number): number {
+  const o = i * 8;
+  const tipo = Math.floor(bright[o + 6] * 0.001);
+  if (tipo >= 3 && tipo <= 6) return CELULAS_DA_GRADE;
+  const qx = bright[o] - GAL.GC_POS.x;
+  const qy = bright[o + 1] - GAL.GC_POS.y;
+  const qz = bright[o + 2] - GAL.GC_POS.z;
+  const meio = CELULAS_POR_LADO / 2;
+  const ix = Math.min(CELULAS_POR_LADO - 1, Math.max(0,
+    Math.floor((qx * EX.x + qy * EX.y + qz * EX.z) / LADO_DA_CELULA_PC + meio)));
+  const iy = Math.min(CELULAS_POR_LADO - 1, Math.max(0,
+    Math.floor((qx * EY.x + qy * EY.y + qz * EY.z) / LADO_DA_CELULA_PC + meio)));
+  return iy * CELULAS_POR_LADO + ix;
+}
+
+/**
+ * Ordena o buffer por célula, ESTÁVEL: o embaralhamento de antes fica
+ * dentro de cada célula, então qualquer prefixo dela é subamostra sem viés.
+ * Contagem + permutação no lugar (sem cópia de 128 MiB).
+ */
+function ordenarPorCelula(bright: Float32Array, n: number) {
+  const chave = new Uint16Array(n);
+  const contagem = new Uint32Array(CELULAS_DA_GRADE + 2);
+  for (let i = 0; i < n; i++) {
+    chave[i] = celulaDaParticula(bright, i);
+    contagem[chave[i] + 1]++;
+  }
+  for (let c = 1; c < contagem.length; c++) contagem[c] += contagem[c - 1];
+  const destino = new Uint32Array(n);
+  for (let i = 0; i < n; i++) destino[i] = contagem[chave[i]]++;
+  for (let i = 0; i < n; i++) {
+    while (destino[i] !== i) {
+      const j = destino[i];
+      const oi = i * 8;
+      const oj = j * 8;
+      for (let k = 0; k < 8; k++) {
+        const tmp = bright[oi + k];
+        bright[oi + k] = bright[oj + k];
+        bright[oj + k] = tmp;
+      }
+      destino[i] = destino[j];
+      destino[j] = j;
+    }
+  }
+}
+
 export interface GalaxyBuffers {
   bright: Float32Array; // stride 8: x,y,z,r,g,b,size,alpha
   brightCount: number;
@@ -843,6 +899,8 @@ export function buildGalaxy(
       bright[oj + k] = tmp;
     }
   }
+  // só-partículas: o embaralhamento acima vira a ordem DENTRO de cada célula
+  if (P) ordenarPorCelula(bright, brightCount);
 
   return { bright, brightCount };
 }
