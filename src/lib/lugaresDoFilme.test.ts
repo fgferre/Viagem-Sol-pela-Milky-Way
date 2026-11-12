@@ -74,6 +74,14 @@ describe('os lugares do céu', () => {
     for (const [consulta, id] of casos) expect(idDe(consulta), consulta).toBe(id);
   });
 
+  it('a anã de Sagitário está onde a galáxia a desenha', async () => {
+    // o gerador lê a URL ao ser importado; aqui não há página
+    (globalThis as { window?: unknown }).window ??= { location: { search: '' } };
+    const { SGR_DWARF_POS } = await import('../three/world/geradorDaGalaxia');
+    const { CENTRO_DA_ANA_DE_SAGITARIO } = await import('../three/world/lugaresDoCeu');
+    expect(CENTRO_DA_ANA_DE_SAGITARIO.distanceTo(SGR_DWARF_POS)).toBeLessThan(1e-6);
+  });
+
   it('o foco publicado numa língua é reconhecido na outra', () => {
     expect(chaveDoFoco('Plêiades', indice)).toBe('pleiades');
     expect(chaveDoFoco('Pleiades', indice)).toBe('pleiades');

@@ -17,13 +17,30 @@ import { LUGARES_DO_FILME } from '../../lib/lugaresDoFilme';
 import type { LugarDoCeu } from '../../lib/lugaresDoFilme';
 import { classeEmTexto } from '../atlasConfig';
 import { GRAU, PHASE_OFFSET_GRAUS } from '../cinematic/enquadramento';
-import { GAL } from './baseGalactica';
-import { SGR_DWARF_POS } from './geradorDaGalaxia';
+import { EX, EY, EZ, GAL } from './baseGalactica';
 import { PRIORIDADE_DO_ROTULO, projectForced } from './labels';
 import type { StarLabel } from './labels';
 
 /** o prefixo da chave do rótulo de um lugar — o clique o reconhece */
 export const CHAVE_DE_LUGAR = 'lugar:';
+
+/**
+ * O CENTRO DA ANÃ DE SAGITÁRIO como a galáxia a desenha: l = 5,6°,
+ * b = −14,2°, 26 kpc do Sol — a mesma conta de `SGR_DWARF_POS`
+ * (`geradorDaGalaxia.ts`), refeita aqui porque aquele módulo lê
+ * `window` ao ser importado e quebraria quem só quer a geometria (os
+ * testes da escolha). `lugaresDoFilme.test.ts` cobra que as duas batem.
+ */
+export const CENTRO_DA_ANA_DE_SAGITARIO = (() => {
+  const l = 5.6 * (Math.PI / 180);
+  const b = -14.2 * (Math.PI / 180);
+  return EX.clone()
+    .multiplyScalar(-Math.cos(b) * Math.cos(l))
+    .addScaledVector(EY, -Math.cos(b) * Math.sin(l))
+    .addScaledVector(EZ, Math.sin(b))
+    .normalize()
+    .multiplyScalar(26_000);
+})();
 
 /** "o meio do caminho" de "Nosso lugar": a fração Sol→centro enquadrada */
 const FRACAO_RUMO_AO_CENTRO = 0.5;
@@ -34,7 +51,7 @@ function posicaoDe(lugar: LugarDoCeu): THREE.Vector3 | null {
   if ('pc' in alvo) return new THREE.Vector3(alvo.pc[0], alvo.pc[1], alvo.pc[2]);
   if ('cena' in alvo) {
     if (alvo.cena === 'centroGalactico') return GAL.GC_POS.clone();
-    if (alvo.cena === 'anaDeSagitario') return SGR_DWARF_POS.clone();
+    if (alvo.cena === 'anaDeSagitario') return CENTRO_DA_ANA_DE_SAGITARIO.clone();
     return GAL.GC_POS.clone().multiplyScalar(FRACAO_RUMO_AO_CENTRO);
   }
   // a linha cujo alvo é uma ESTRELA vira apelido dela no índice
