@@ -12,6 +12,8 @@
 import { projetarLugares } from '../world/lugaresDoCeu';
 import { projetarSondas } from '../world/sondas';
 import { projetarCometas } from '../world/cometas';
+import { projetarExoplanetas } from '../world/exoplanetas';
+import type { SistemaPlanetario } from '../../lib/exoplanetas';
 import * as THREE from 'three';
 import {
   PRIORIDADE_DO_ROTULO,
@@ -59,6 +61,9 @@ export interface QuadroDeRotulos {
   focoSonda?: string | null;
   /** o COMETA em foco (pilar 4) — o nome dele aparece mesmo longe do Sol */
   focoCometa?: string | null;
+  /** o EXOPLANETA em foco (12/11) e o sistema ativo, cujos planetas têm nome */
+  focoExoplaneta?: string | null;
+  sistemaAtivo?: { sistema: SistemaPlanetario; pos: THREE.Vector3 } | null;
   /** o instante vivo (JD TDB) — as sondas se põem no lugar por ele;
    *  ausente = nenhuma sonda (os quadros de teste antigos) */
   jd?: number;
@@ -897,7 +902,18 @@ export class Rotulos {
         // OS COMETAS (pilar 4, 12/11): perto do Sol ou em foco
         const cometas =
           fase === 'atlas' ? projetarCometas(cam, quadro.jd ?? Number.NaN, quadro.focoCometa ?? null, !quadro.iconesEscondidos) : [];
-        const lista = [...corpos, ...luas, ...estrelas, ...projetarLugares(cam), ...sondas, ...cometas];
+        // OS EXOPLANETAS (12/11): só os do sistema ativo
+        const exoplanetas =
+          fase === 'atlas'
+            ? projetarExoplanetas(
+                cam,
+                quadro.jd ?? Number.NaN,
+                quadro.sistemaAtivo ?? null,
+                quadro.focoExoplaneta ?? null,
+                !quadro.iconesEscondidos
+              )
+            : [];
+        const lista = [...corpos, ...luas, ...estrelas, ...projetarLugares(cam), ...sondas, ...cometas, ...exoplanetas];
         // O ALVO ESCOLHIDO NÃO CEDE A NADA. A chave do corpo em foco é a
         // mesma que o hit-test reconhece; o `sol-home` cobre o caso da
         // estrela da casa vista de longe.

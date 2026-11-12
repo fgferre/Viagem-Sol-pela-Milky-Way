@@ -48,6 +48,8 @@ const DESTINOS = [
   { id: 'sirius', foco: 'sirius' },
   { id: 'betelgeuse', foco: 'betelgeuse' },
   { id: 'rigil-kentaurus', foco: 'rigil kentaurus' },
+  // O PRIMEIRO SISTEMA PLANETÁRIO (12/11/2026): os sete na chegada
+  { id: 'trappist-1', foco: 'TRAPPIST-1' },
   // O CENTRO DA GALÁXIA NÃO SE FOTOGRAFA DE DENTRO: visitar o lugar põe a
   // câmera no gás do bojo e a captura sai uma névoa bege sem estrela
   // (1ª rodada, 08/09). A prévia usa o quadro do FILME na chegada — a

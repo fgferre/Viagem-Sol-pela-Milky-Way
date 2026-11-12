@@ -32,6 +32,7 @@ import type { LugarBuscavel } from '../../lib/buscaEstrelas';
 import { CHAVE_DE_LUGAR, LUGARES_DA_BUSCA } from '../world/lugaresDoCeu';
 import { CHAVE_DE_SONDA } from '../world/sondas';
 import { CHAVE_DE_COMETA } from '../world/cometas';
+import { CHAVE_DE_EXOPLANETA } from '../world/exoplanetas';
 
 /** o lugar do céu cujo rótulo tem esta chave, ou `undefined` */
 const lugarDaChave = (chave: string): LugarBuscavel | undefined =>
@@ -270,7 +271,9 @@ export class Escolha {
       ? CHAVE_DE_SONDA
       : best.key.startsWith(CHAVE_DE_COMETA)
         ? CHAVE_DE_COMETA
-        : null;
+        : best.key.startsWith(CHAVE_DE_EXOPLANETA)
+          ? CHAVE_DE_EXOPLANETA
+          : null;
     if (chaveDoPequeno) {
       const id = best.key.slice(chaveDoPequeno.length);
       this.escolhaDoClique = { id, pos: ORIGEM.clone(), nome: best.name };

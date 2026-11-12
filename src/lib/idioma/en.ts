@@ -344,6 +344,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.destino.sirius': 'The brightest star in the sky',
   'busca.destino.betelgeuse': 'A supergiant in Orion',
   'busca.destino.rigil-kentaurus': 'The nearest star system',
+  'busca.destino.trappist-1': 'Seven Earth-sized planets',
   // NO film promise (item 129/F5 still holds): the click here does the
   // SAME thing the "place" search entry already does — frames the
   // galactic centre in the Atlas, does not start the film.
@@ -414,6 +415,9 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.secao.cometa': 'now',
   'ficha.secao.orbitaDoCometa': 'the orbit',
   'ficha.secao.oCometa': 'the comet',
+  'ficha.secao.sistemaPlanetario': 'the planetary system',
+  'ficha.secao.exoplaneta': 'the planet',
+  'ficha.secao.oQueSeVe': 'what you see here',
   // The reference follows an em dash, as in mockups m3/m13 ("Distance —
   // Sun"): no preposition, no article, so one label fits Sun, Earth and
   // Saturn in both languages. The old "to the {pai}" (Lote 5) was right
@@ -531,6 +535,53 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.fonte.modeloDeAtividade': 'water sublimation, Marsden et al. (1973)',
   'ficha.fonte.modeloDasCaudas': 'Finson & Probstein (1968); Haser (1957); the app’s brightness gain',
   'ficha.fonte.horizons': 'JPL Horizons, retrieved on {data}',
+  'ficha.fonte.arquivoDeExoplanetas': 'NASA Exoplanet Archive, retrieved on {data}',
+  'ficha.exo.zonaPresa': 'temperature outside the valid range ({a}–{b} K): clamped to the edge',
+  'ficha.exo.metodo.transito': 'transit',
+  'ficha.exo.metodo.velocidadeRadial': 'radial velocity',
+  'ficha.exo.metodo.imagem': 'direct imaging',
+  'ficha.exo.planetas': 'known planets',
+  'ficha.exo.nenhum': 'none confirmed',
+  'ficha.exo.comoAchados': 'how they were found',
+  'ficha.exo.zonaHabitavel': 'habitable zone',
+  'ficha.exo.historia': 'the story',
+  'ficha.exo.sistemaNaCena':
+    'the measured orbits, in AU and true to scale; the habitable zone (the green ring) computed from the star’s light; what the planets look like is not known',
+  'ficha.exo.distancia': 'distance from its star',
+  'ficha.exo.comoMercurio': '{ua} · {k}× Mercury’s from the Sun',
+  'ficha.exo.comoTerra': '{ua} · {k}× Earth’s from the Sun',
+  'ficha.exo.tamanho': 'size (radius)',
+  'ficha.exo.massa': 'mass',
+  'ficha.exo.terras': '{v} × Earth',
+  'ficha.exo.jupiteres': '{v} × Jupiter ({terras} Earths)',
+  'ficha.exo.massaMinima': 'at least {v} (only M·sin i is measured)',
+  'ficha.exo.temperatura': 'equilibrium temperature',
+  'ficha.exo.fonte.equilibrio': 'from the star’s light and the distance, with no atmosphere and an assumed albedo (NASA Exoplanet Archive)',
+  'ficha.exo.zona.dentro': 'inside',
+  'ficha.exo.zona.dentroDaBorda': 'outside: closer to the star than the inner edge',
+  'ficha.exo.zona.alemDaBorda': 'outside: beyond the outer edge',
+  'ficha.exo.descoberta': 'discovery',
+  'ficha.exo.situacao': 'status',
+  'ficha.exo.confirmado': 'confirmed',
+  'ficha.exo.contestado': 'controversial: the archive flags the planet as disputed',
+  'ficha.exo.orbita': 'the orbit',
+  'ficha.exo.orbita.valor': 'measured: period, distance and eccentricity, true to scale',
+  'ficha.exo.orientacao': 'orientation in space',
+  'ficha.exo.orientacao.valor': 'inclination {i}; node {nodo}',
+  'ficha.exo.medida': '{v}, measured',
+  'ficha.exo.convencional': '{v}, convention (not measured)',
+  'ficha.exo.fonte.convencao': 'the app’s convention, for lack of a measurement',
+  'ficha.exo.fase': 'position on the orbit',
+  'ficha.exo.fase.transito': 'real: from the transit of {data}',
+  'ficha.exo.fase.conjuncao': 'real: from the conjunction of {data}, by radial velocity',
+  'ficha.exo.fase.arbitraria': 'arbitrary: no published conjunction time',
+  'ficha.exo.zona.naCena': 'the green ring, computed from the star’s luminosity and temperature',
+  'ficha.exo.aparencia': 'appearance',
+  'ficha.exo.aparencia.medida':
+    'measured colour: deep blue (albedo 0.40 in blue, under 0.12 in green); red was not measured',
+  'ficha.exo.aparencia.desconhecida':
+    'unknown: a grey sphere the size on this sheet, lit by the star’s colour, with brightness raised for the visit',
+  'ficha.exo.fonte.semImagem': 'no telescope has resolved this planet’s disk',
   'ficha.fonte.daTrajetoria': 'computed from the Horizons trajectory',
   'ficha.fonte.reguaDeEscala': 'the app’s scale rule',
   'ficha.secao.companheira': '{nome} (white dwarf)',
@@ -722,6 +773,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'camada.nocaudas': 'Comet tails',
   'camada.nocaudas.nota':
     'Turns off the particle comae and tails of comets near the Sun — the heaviest effect in the solar system.',
+  'camada.noexoplanetas': 'Exoplanet orbits',
+  'camada.noexoplanetas.nota': 'Turns off the orbits and habitable zone of the nearby planetary system.',
   'qualidade.cinema': 'Cinema',
   'qualidade.alta': 'High',
   'qualidade.performance': 'Performance',
@@ -749,6 +802,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'classe.sonda': 'spacecraft',
   'classe.cometa': 'comet',
   'classe.cometa interestelar': 'interstellar comet',
+  'classe.exoplaneta': 'exoplanet',
 
   // ---- the time machine --------------------------------------------
   'tempo.mes.0': 'January',

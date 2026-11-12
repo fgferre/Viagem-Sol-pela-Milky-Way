@@ -155,6 +155,10 @@ export const CAMADAS: readonly Camada[] = [
   // `heroes.group` e o clarão de asas (`world/clarao.ts`, o Sol) pela
   // mesma `hide.has('noclarao')`.
   { flag: 'noclarao', get nome() { return t('camada.noclarao'); }, get nota() { return t('camada.noclarao.nota'); }, familia: 'Estrelas', viva: true, icone: '✦' },
+  // OS EXOPLANETAS (12/11/2026) — `world/exoplanetas.ts`. As órbitas e
+  // a zona habitável do sistema por perto são instrumento de leitura,
+  // como as do Sistema Solar; os planetas (corpos) ficam
+  { flag: 'noexoplanetas', get nome() { return t('camada.noexoplanetas'); }, get nota() { return t('camada.noexoplanetas.nota'); }, familia: 'Estrelas', viva: true, icone: '◎' },
   // o Sol inteiro em cena — o gate por quadro vive em
   // `director/solNoQuadro.ts` (`fios.escondido('nosun')`)
   { flag: 'nosun', get nome() { return t('camada.nosun'); }, get nota() { return t('camada.nosun.nota'); }, familia: 'Sistema solar', viva: true },

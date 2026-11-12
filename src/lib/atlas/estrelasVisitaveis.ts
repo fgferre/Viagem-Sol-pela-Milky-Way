@@ -88,7 +88,8 @@ export interface EstrelaVisitavel {
   readonly id: string;
   /** `n` do catálogo (`stars_meta.json`), por onde a busca acha a estrela */
   readonly nomeNoCatalogo: string;
-  readonly hip: number;
+  /** ausente nas anfitriãs sem número Hipparcos (TRAPPIST-1, Kepler-186) */
+  readonly hip?: number;
   readonly tipo: Numero & { readonly texto: string };
   readonly teffK: Numero;
   readonly raioRsol: Numero;
@@ -246,12 +247,100 @@ const VEGA: EstrelaVisitavel = {
 };
 
 /**
+ * AS ANFITRIÃS DOS EXOPLANETAS (`lib/exoplanetas.ts`, 12/11/2026): as
+ * estrelas dos primeiros sistemas planetários entram pelo MESMO motor das
+ * quatro do piloto. A ficha física é a da tabela PSCompPars do NASA
+ * Exoplanet Archive (consultada em 12/11/2026), salvo onde dito; a
+ * superfície sai da física pela temperatura, como nas quatro:
+ *   - grânulo pela lei de Tremblay (T·R/M);
+ *   - contraste: anã M 0,04 (Beeck et al. 2013), F/G/K 0,15 (o do Sol,
+ *     `CONTRASTE_REAL_DO_SOL`), A 0,015 (Tremblay et al. 2013);
+ *   - borda de Claret aproximada por classe (M 0,7 · K 0,72 · G 0,62 ·
+ *     F 0,55 · A 0,5);
+ *   - manchas: só onde a atividade foi medida, com o padrão inventado;
+ *     sem medida, disco limpo — escolha declarada (`artistico`).
+ * Rotação e achatamento não entram (sem medida no arquivo usada aqui).
+ */
+const PSCOMP = 'NASA Exoplanet Archive, PSCompPars (12/11/2026)';
+const ARTE_SEM_MANCHAS = 'sem medida de manchas: disco limpo, escolha nossa';
+
+function anfitria(c: {
+  id: string;
+  nome: string;
+  hip?: number;
+  tipo: string;
+  teffK: number;
+  raioRsol: number;
+  massaMsol: number;
+  lum: number;
+  fonte?: string;
+  manchas?: { v: number; fonte: string };
+  erupcoes?: boolean;
+}): EstrelaVisitavel {
+  const fonte = c.fonte ?? PSCOMP;
+  const T = c.teffK;
+  const contraste =
+    T < 3900
+      ? { v: 0.04, p: 'derivado' as const, fonte: 'Beeck et al. 2013, A&A 558, A48 (simulação)' }
+      : T < 7000
+        ? { v: 0.15, p: 'derivado' as const, fonte: 'como o Sol (estrela F/G/K); Tremblay et al. 2013, A&A 557, A7' }
+        : { v: 0.015, p: 'derivado' as const, fonte: 'Tremblay et al. 2013, A&A 557, A7 (contraste cai acima de ~7000 K)' };
+  const u = T < 3900 ? 0.7 : T < 5300 ? 0.72 : T < 6200 ? 0.62 : T < 7500 ? 0.55 : 0.5;
+  return {
+    id: c.id,
+    nomeNoCatalogo: c.nome,
+    ...(c.hip === undefined ? {} : { hip: c.hip }),
+    tipo: { texto: c.tipo, v: 0, p: 'medido', fonte },
+    teffK: { v: T, p: 'medido', fonte },
+    raioRsol: { v: c.raioRsol, p: 'medido', fonte },
+    massaMsol: { v: c.massaMsol, p: 'derivado', fonte },
+    luminosidadeLsol: { v: c.lum, p: 'derivado', fonte },
+    superficie: {
+      granuloEmRaios: granulo(T, c.raioRsol, c.massaMsol),
+      contrasteGranulos: contraste,
+      bordaU: { v: u, p: 'derivado', fonte: CLARET },
+      manchas: c.manchas
+        ? { v: c.manchas.v, p: 'artistico', fonte: c.manchas.fonte }
+        : { v: 0, p: 'artistico', fonte: ARTE_SEM_MANCHAS },
+      erupcoes: c.erupcoes ?? false,
+      bordaDifusaRaios: { v: 1, p: 'derivado', fonte: 'fotosfera de anã: borda nítida' },
+    },
+  };
+}
+
+const ANFITRIAS: readonly EstrelaVisitavel[] = [
+  anfitria({
+    id: 'trappist-1', nome: 'TRAPPIST-1', tipo: 'M8.0 V', teffK: 2566, raioRsol: 0.1192, massaMsol: 0.0898,
+    lum: 10 ** -3.25727,
+    manchas: { v: 0.05, fonte: 'erupções e manchas vistas pelo K2 (Vida et al. 2017, ApJ 841, 124); padrão inventado' },
+    erupcoes: true,
+  }),
+  anfitria({ id: '51-peg', nome: 'Helvetios', hip: 113357, tipo: 'G5 V', teffK: 5761, raioRsol: 1.19, massaMsol: 1.07, lum: 10 ** 0.13631 }),
+  anfitria({ id: '55-cnc', nome: 'Copernicus', hip: 43587, tipo: 'G8 V', teffK: 5198, raioRsol: 0.98, massaMsol: 1.015, lum: 10 ** -0.19695 }),
+  anfitria({ id: 'tau-cet', nome: 'τ Cet', hip: 8102, tipo: 'G8.5 V', teffK: 5310, raioRsol: 0.83, massaMsol: 0.783, lum: 10 ** -0.30539 }),
+  anfitria({
+    id: 'eps-eri', nome: 'Ran', hip: 16537, tipo: 'K2 V', teffK: 5020, raioRsol: 0.759, massaMsol: 0.82, lum: 10 ** -0.41928,
+    manchas: { v: 0.03, fonte: 'manchas medidas pela fotometria do MOST (Croll et al. 2006, ApJ 648, 607); padrão inventado' },
+  }),
+  anfitria({ id: 'kepler-186', nome: 'Kepler-186', tipo: 'M1 V', teffK: 3788, raioRsol: 0.472, massaMsol: 0.478, lum: 10 ** -1.385 }),
+  anfitria({
+    id: 'hd-189733', nome: 'HD 189733', hip: 98505, tipo: 'K2 V', teffK: 5052, raioRsol: 0.75, massaMsol: 0.79, lum: 10 ** -0.46119,
+    manchas: { v: 0.02, fonte: 'manchas cruzadas nos trânsitos (Pont et al. 2008, MNRAS 385, 109); padrão inventado' },
+  }),
+  anfitria({
+    id: 'fomalhaut', nome: 'Fomalhaut', hip: 113368, tipo: 'A3 V', teffK: 8590, raioRsol: 1.842, massaMsol: 1.92, lum: 16.63,
+    fonte: 'Mamajek 2012, ApJL 754, L20 (de memória)',
+  }),
+  anfitria({ id: 'bet-pic', nome: 'β Pic', hip: 27321, tipo: 'A6 V', teffK: 8039, raioRsol: 1.544, massaMsol: 1.789, lum: 10 ** 0.95282 }),
+];
+
+/**
  * As quatro do piloto. Vega e não Rigel: a forma achatada e o equador
  * mais frio de Vega foram MEDIDOS por interferometria (Monnier 2012) a
  * 7,7 pc; Rigel está a 260 ± 20 pc sem paralaxe boa, e a luminosidade
  * dela varia de 61 mil a 363 mil sóis conforme o método.
  */
-export const ESTRELAS_VISITAVEIS: readonly EstrelaVisitavel[] = [PROXIMA, SIRIUS, BETELGEUSE, VEGA];
+export const ESTRELAS_VISITAVEIS: readonly EstrelaVisitavel[] = [PROXIMA, SIRIUS, BETELGEUSE, VEGA, ...ANFITRIAS];
 
 export function estrelaVisitavelPorNome(nomeNoCatalogo: string): EstrelaVisitavel | null {
   return ESTRELAS_VISITAVEIS.find((e) => e.nomeNoCatalogo === nomeNoCatalogo) ?? null;
