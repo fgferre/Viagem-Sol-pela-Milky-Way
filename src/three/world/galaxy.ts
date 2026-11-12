@@ -84,6 +84,19 @@ export class Galaxy {
   /** ?nopts=1 — sem as partículas, a quarta régua da divisão de fluxo */
   private showPts = !Galaxy.dbg.has('nopts');
   /**
+   * ?galaxia=particulas (ensaio, desligado por padrão) — a galáxia vista de
+   * fora só de partículas: as sete lâminas não acendem e a luz que a
+   * EMISSÃO delas entregava passa para os pontos, pela mesma rampa
+   * (`discFade`), então dentro do disco nada muda. O ganho é a razão de
+   * fluxo lâminas÷partículas medida em linear (o grupo da galáxia rendido
+   * num alvo float, sem curva nem bloom, uma camada por vez, as duas com
+   * uFade 1) na vista de cima a ~38 kpc: 7,46 no quadro inteiro e no miolo.
+   * Inclinada a 26 kpc deu 8,46; perto (3 kpc do Sol) 24 — os pontos acima
+   * do platô da lei de tela perdem fluxo e as lâminas não, e isso é do M6.
+   */
+  private soParticulas = Galaxy.dbg.get('galaxia') === 'particulas';
+  private static readonly GANHO_DAS_LAMINAS = 7.46;
+  /**
    * A 1×1 zerada do `uTauMap` (τ⊥ = 0 ⇒ exp(0) = 1): o valor de REPOUSO
    * do uniform — antes do bake e sempre que a extinção por partícula
    * está desligada. Instância única, e não uma textura nova por troca:
@@ -600,13 +613,15 @@ export class Galaxy {
       // ÷ fracaoDeParticulas (item 149): menos pontos desenhados, cada um
       // mais brilhante — o fluxo INTEGRADO da galáxia não muda com o
       // ajuste, só a granulação.
-      u.uFade.value = brightFade / this.fracaoDeParticulas;
+      u.uFade.value = this.soParticulas
+        ? (brightFade + Galaxy.GANHO_DAS_LAMINAS * discFade) / this.fracaoDeParticulas
+        : brightFade / this.fracaoDeParticulas;
     }
     // As lâminas contínuas só entram na vista externa. De dentro
     // seriam planos infinitos; a faixa local vem das partículas 3D.
     // Com fade 0 os meshes ficam invisíveis: cada lâmina de 33,6 kpc
     // custa milhões de fragmentos de FBM que somariam exatamente zero.
-    const discVisible = discFade > 0.001 && this.showDisc;
+    const discVisible = discFade > 0.001 && this.showDisc && !this.soParticulas;
     for (const material of this.discMats) {
       material.uniforms.uFade.value = discFade;
       // openness É o μ da coluna: |cos| entre a visada e a normal do disco.
