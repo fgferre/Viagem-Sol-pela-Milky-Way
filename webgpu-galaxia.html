@@ -19,14 +19,14 @@
       <select id="vista">
         <option>de-cima</option><option>inclinada</option><option>media</option><option>saindo</option><option>de-lado</option>
       </select>
-      <select id="k">
-        <option value="1">4 M</option><option value="2">8 M</option><option value="4">16 M</option>
-        <option value="8">32 M</option><option value="16">64 M</option>
+      <select id="k" title="filhas por partícula sorteada">
+        <option value="1">sem filhas</option><option value="2">× 2 filhas</option><option value="4">× 4 filhas</option>
       </select>
       <select id="modo">
-        <option value="borrifo">depósito por compute (borrifo)</option>
-        <option value="deposito">depósito por compute (tenda)</option>
-        <option value="quadrados">quadrados instanciados</option>
+        <option value="tenda">tenda (calma)</option><option value="borrifo">borrifo (rápido, ferve)</option>
+      </select>
+      <select id="filtro">
+        <option value="1">filtro ligado</option><option value="0">filtro desligado</option>
       </select>
       <button id="voo" type="button">voo</button>
       <span id="painel">carregando…</span>

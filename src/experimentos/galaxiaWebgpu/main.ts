@@ -1,40 +1,25 @@
 // ============================================================
 // ENSAIO WebGPU DA GALÁXIA DE PARTÍCULAS — página de teste, só de
 // desenvolvimento (webgpu-galaxia.html na raiz; não entra no build nem é
-// referenciada pelo app). Pergunta: desenhar em WebGPU resolve o grão a
-// meia distância? Quantos milhões de partículas por quadro a máquina
-// aguenta? Os dados são os do modo ?galaxia=particulas, sem reescrever o
-// modelo; acima dos ~4 M do gerador, as partículas extras são FILHAS de
-// cada mãe (ensaio 5) ou, com ?sorteios=N, sorteios independentes do mesmo
-// modelo. Parâmetros: ?vista= ?pos= ?look= ?fov= ?w= ?h= ?k= (filhas por
-// mãe) ?modo=deposito|quadrados ?borrifo=0|1 ?fatia= ?sorteios= ?expo=.
+// referenciada pelo app). Os dados são os do modo ?galaxia=particulas, sem
+// reescrever o modelo: ?sorteios=N sorteios independentes do gerador (4 por
+// padrão, ~16 M de partículas), cada um num trabalhador, em paralelo; a
+// página desenha assim que o primeiro chega e afina com os seguintes.
+// Parâmetros: ?vista= ?pos= ?look= ?fov= ?w= ?h= ?k= (filhas por partícula)
+// ?borrifo=0|1 ?fatia= ?filtro=0|1 ?lod= ?sorteios= ?expo=.
 // Ao vivo: arrastar gira em volta do centro galáctico, roda/pinça aproxima
 // e afasta, o botão "voo" passeia pelas cinco vistas em laço. Sem ?w=&h= o
 // quadro acompanha a janela (com teto de pixels).
 // ============================================================
 import * as THREE from 'three';
 import { loadGalacticAssets } from '../../three/cartography/galacticAssets';
-import { GALACTIC_MODEL } from '../../three/cartography/galacticModel';
 import { EX, EY, EZ, GAL } from '../../three/world/baseGalactica';
-import { assarCarga } from '../../three/world/cadeiaDaCarga';
-import {
-  celulaDaParticula,
-  CELULAS_DA_GRADE,
-  gerarNuvensDePoeira,
-  ladoDaChave,
-  tauDasNuvens,
-} from '../../three/world/geradorDaGalaxia';
-import {
-  WGSL_DEPOSITO,
-  WGSL_LUZ,
-  WGSL_QUADRADOS,
-  WGSL_TOM_DA_TEXTURA,
-  WGSL_TOM_DO_ACUMULADOR,
-} from './wgsl';
+import type { CargaAssada } from '../../three/world/cadeiaDaCarga';
+import type { PedidoDaCarga, RespostaDaCarga } from '../../three/world/cargaEmWorker';
+import { MotorDaGalaxia } from './motor';
 
 const SEMENTE = 20260730; // a do app (director/carregamento.ts)
 const GANHO = 7.99; // uFade da vista de fora: 1 + 6,99 (galaxy.ts)
-const ESCALA = 65536; // ponto fixo do acumulador: 1 unidade de cena = 2^16
 const VISTAS: Record<string, [number, number, number]> = {
   'de-cima': [-35149, -15040, 14294],
   inclinada: [-14414, 15521, 18777],
@@ -42,7 +27,6 @@ const VISTAS: Record<string, [number, number, number]> = {
   saindo: [-2603, -594, 1368],
   'de-lado': [2853, 36554, 18244],
 };
-type Modo = 'deposito' | 'quadrados';
 interface Pedido {
   vista?: string;
   pos?: number[];
@@ -50,14 +34,14 @@ interface Pedido {
   w?: number;
   h?: number;
   k?: number;
-  modo?: Modo;
-  /** 1 = cada partícula deposita num só pixel sorteado (só no depósito) */
+  /** 1 = cada partícula deposita num só pixel sorteado */
   borrifo?: number;
-  /** a luz (extinção) de cada mãe é renovada a cada `fatia` quadros, uma
-   *  fatia das mães por quadro; 1 = todas em todo quadro */
+  /** a extinção de cada partícula é renovada a cada `fatia` quadros */
   fatia?: number;
   /** 1 = a soma passa por um filtro [1 2 1]² antes do tom */
   filtro?: number;
+  /** partículas por pixel do disco que bastam (0 = sempre todas) */
+  lod?: number;
   /** foto em JPEG (quadros de vídeo) em vez de PNG */
   jpeg?: boolean;
 }
@@ -67,282 +51,79 @@ const numeros = (s: string | null) => {
   const v = (s ?? '').split(',').map(Number);
   return v.length === 3 && v.every(Number.isFinite) ? v : undefined;
 };
+const numero = (nome: string, padrao: number) => (q.has(nome) ? Number(q.get(nome)) : padrao);
 const estado = {
   vista: q.get('vista') ?? 'media',
   pos: numeros(q.get('pos')),
   look: numeros(q.get('look')),
-  fov: Number(q.get('fov')) || 58,
-  w: Number(q.get('w')) || 1280,
-  h: Number(q.get('h')) || 800,
-  k: Number(q.get('k')) || 4,
-  modo: (q.get('modo') === 'quadrados' ? 'quadrados' : 'deposito') as Modo,
-  borrifo: q.has('borrifo') ? Number(q.get('borrifo')) : 1,
-  fatia: Number(q.get('fatia')) || 1,
-  filtro: Number(q.get('filtro')) || 0,
-  expo: Number(q.get('expo')) || 1.436, // exposição 1,02 do app na régua do neutro
+  fov: numero('fov', 58),
+  w: numero('w', 1280),
+  h: numero('h', 800),
+  k: numero('k', 1),
+  borrifo: numero('borrifo', 0),
+  fatia: numero('fatia', 4),
+  filtro: numero('filtro', 1),
+  lod: numero('lod', 12),
+  expo: numero('expo', 1.436), // exposição 1,02 do app na régua do neutro
 };
-const SORTEIOS = Math.max(1, Number(q.get('sorteios')) || 1);
+const SORTEIOS = Math.max(1, numero('sorteios', 4));
 
 const painel = document.getElementById('painel') as HTMLElement;
 const diz = (t: string) => {
   painel.textContent = t;
 };
 
+/** um sorteio do gerador, no trabalhador de carga do próprio app */
+function sortear(s: number, catalogos: PedidoDaCarga['catalogos']): Promise<CargaAssada> {
+  return new Promise((resolve, reject) => {
+    const w = new Worker(new URL('../../three/world/cargaEmWorker.ts', import.meta.url), { type: 'module' });
+    w.onmessage = (e: MessageEvent<RespostaDaCarga>) => {
+      if ('etapa' in e.data) return;
+      w.terminate();
+      resolve(e.data);
+    };
+    w.onerror = (e) => {
+      w.terminate();
+      reject(new Error(e.message));
+    };
+    // `search` vazio: os parâmetros desta página não são botões do gerador
+    w.postMessage({
+      seed: SEMENTE + s * 7919, catalogos, populationScale: 1, soParticulas: true, search: '',
+    } satisfies PedidoDaCarga);
+  });
+}
+
 async function iniciar() {
-  if (!navigator.gpu) throw new Error('este navegador não tem WebGPU');
-  const adaptador = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
-  if (!adaptador) throw new Error('WebGPU sem adaptador');
-  const pedir = ['timestamp-query', 'float32-blendable'].filter((f) => adaptador.features.has(f));
-  const gpu = await adaptador.requestDevice({
-    requiredFeatures: pedir,
-    requiredLimits: {
-      maxBufferSize: adaptador.limits.maxBufferSize,
-      maxStorageBufferBindingSize: adaptador.limits.maxStorageBufferBindingSize,
-    },
-  });
-  const erros: string[] = [];
-  gpu.addEventListener('uncapturederror', (e) => {
-    const m = (e as Event & { error: { message: string } }).error.message;
-    erros.push(m);
-    console.error('[webgpu]', m);
-  });
-  const temRelogio = gpu.features.has('timestamp-query');
-  const somaEm32 = gpu.features.has('float32-blendable');
-
-  // ---------- os dados: o modelo do app, sem reescrever ----------
-  diz('gerando a galáxia…');
-  const catalogos = await loadGalacticAssets();
-  let bright = new Float32Array(0);
-  let total = 0;
-  for (let s = 0; s < SORTEIOS; s++) {
-    const carga = await assarCarga(
-      { seed: SEMENTE + s * 7919, catalogos, populationScale: 1, soParticulas: true },
-      () => {}
-    );
-    if (s === 0) {
-      bright = new Float32Array(carga.brightCount * 8 * SORTEIOS);
-      bright.set(carga.bright.subarray(0, carga.brightCount * 8));
-      total = carga.brightCount;
-      continue;
-    }
-    // sorteio extra: só as populações contínuas (as das células); estrela
-    // jovem, nó H II, aglomerado, halo e núcleo são indivíduos do 1º sorteio
-    for (let i = 0; i < carga.brightCount; i++) {
-      if (celulaDaParticula(carga.bright, i) === CELULAS_DA_GRADE) continue;
-      bright.set(carga.bright.subarray(i * 8, i * 8 + 8), total * 8);
-      total++;
-    }
-  }
-  // espaçamento local das mães (pc): 1/√Σ da célula; 0 = indivíduo, sem filhas
-  const chaves = new Uint16Array(total);
-  const porChave = new Map<number, number>();
-  for (let i = 0; i < total; i++) {
-    const c = celulaDaParticula(bright, i);
-    chaves[i] = c;
-    porChave.set(c, (porChave.get(c) ?? 0) + 1);
-  }
-  const esp = new Float32Array(total);
-  for (let i = 0; i < total; i++) {
-    const c = chaves[i];
-    if (c === CELULAS_DA_GRADE) continue;
-    esp[i] = ladoDaChave(c) / Math.sqrt(porChave.get(c) ?? 1);
-    bright[i * 8 + 7] /= SORTEIOS;
-  }
-  const N_TAU = 1024;
-  const tau = tauDasNuvens(gerarNuvensDePoeira(), N_TAU, GALACTIC_MODEL.diskRadiusPc);
-  const tauMeio = new Uint16Array(tau.length);
-  for (let i = 0; i < tau.length; i++) tauMeio[i] = THREE.DataUtils.toHalfFloat(tau[i]);
-
-  // ---------- GPU: buffers fixos ----------
-  const USO = { storage: 0x80, copyDst: 0x08, copySrc: 0x04, uniform: 0x40, mapRead: 0x01, queryResolve: 0x200 };
-  const bufMaes = gpu.createBuffer({ size: total * 32, usage: USO.storage | USO.copyDst });
-  gpu.queue.writeBuffer(bufMaes, 0, bright.subarray(0, total * 8));
-  const bufEsp = gpu.createBuffer({ size: total * 4, usage: USO.storage | USO.copyDst });
-  gpu.queue.writeBuffer(bufEsp, 0, esp);
-  const bufLuz = gpu.createBuffer({ size: total * 16, usage: USO.storage });
-  const bufU = gpu.createBuffer({ size: 192, usage: USO.uniform | USO.copyDst });
-  const texTau = gpu.createTexture({
-    size: [N_TAU, N_TAU],
-    format: 'r16float',
-    usage: 0x04 | 0x02, // TEXTURE_BINDING | COPY_DST
-  });
-  gpu.queue.writeTexture({ texture: texTau }, tauMeio, { bytesPerRow: N_TAU * 2 }, [N_TAU, N_TAU]);
-  const amostrador = gpu.createSampler({ magFilter: 'linear', minFilter: 'linear' });
-
+  const t0 = performance.now();
   const tela = document.getElementById('tela') as HTMLCanvasElement;
-  const ctx = tela.getContext('webgpu') as unknown as GPUCanvasContext;
-  const formatoDaTela = navigator.gpu.getPreferredCanvasFormat();
-  const formatoDaSoma = somaEm32 ? 'rgba32float' : 'rgba16float';
-
-  const modulo = async (code: string, nome: string) => {
-    const m = gpu.createShaderModule({ code });
-    const info = await m.getCompilationInfo();
-    for (const msg of info.messages) {
-      if (msg.type === 'error') throw new Error(`${nome}:${msg.lineNum} ${msg.message}`);
-    }
-    return m;
-  };
-  const pLuz = gpu.createComputePipeline({
-    layout: 'auto',
-    compute: { module: await modulo(WGSL_LUZ, 'luz'), entryPoint: 'main' },
-  });
-  const pDeposito = gpu.createComputePipeline({
-    layout: 'auto',
-    compute: { module: await modulo(WGSL_DEPOSITO, 'deposito'), entryPoint: 'main' },
-  });
-  const mQuadrados = await modulo(WGSL_QUADRADOS, 'quadrados');
-  const pQuadrados = gpu.createRenderPipeline({
-    layout: 'auto',
-    vertex: { module: mQuadrados, entryPoint: 'vs' },
-    fragment: {
-      module: mQuadrados,
-      entryPoint: 'fs',
-      targets: [
-        {
-          format: formatoDaSoma,
-          blend: {
-            color: { srcFactor: 'one', dstFactor: 'one' },
-            alpha: { srcFactor: 'one', dstFactor: 'one' },
-          },
-        },
-      ],
-    },
-    primitive: { topology: 'triangle-strip' },
-  });
-  const tom = async (code: string, nome: string) => {
-    const m = await modulo(code, nome);
-    return gpu.createRenderPipeline({
-      layout: 'auto',
-      vertex: { module: m, entryPoint: 'vs' },
-      fragment: { module: m, entryPoint: 'fs', targets: [{ format: formatoDaTela }] },
-      primitive: { topology: 'triangle-list' },
-    });
-  };
-  const pTomAcc = await tom(WGSL_TOM_DO_ACUMULADOR, 'tom do acumulador');
-  const pTomTex = await tom(WGSL_TOM_DA_TEXTURA, 'tom da textura');
-
-  const liga = (p: GPUPipeline, entradas: unknown[]) =>
-    gpu.createBindGroup({
-      layout: p.getBindGroupLayout(0),
-      entries: entradas.map((resource, binding) => ({ binding, resource })),
-    });
-  const gLuz = liga(pLuz, [{ buffer: bufU }, { buffer: bufMaes }, { buffer: bufLuz }, texTau.createView(), amostrador]);
-
-  // ---------- GPU: o que depende do tamanho do quadro ----------
-  let bufAcc: GPUBuffer | null = null;
-  let texSoma: GPUTexture | null = null;
-  let gDeposito: GPUBindGroup, gQuadrados: GPUBindGroup, gTomAcc: GPUBindGroup, gTomTex: GPUBindGroup;
-  let vistaDaSoma: GPUTextureView;
-  let largura = 0;
-  let altura = 0;
-  const redimensionar = (w: number, h: number) => {
-    if (w === largura && h === altura) return;
-    largura = w;
-    altura = h;
-    tela.width = w;
-    tela.height = h;
-    ctx.configure({ device: gpu, format: formatoDaTela, alphaMode: 'opaque' });
-    bufAcc?.destroy();
-    texSoma?.destroy();
-    bufAcc = gpu.createBuffer({ size: w * h * 16, usage: USO.storage | USO.copyDst });
-    texSoma = gpu.createTexture({ size: [w, h], format: formatoDaSoma, usage: 0x10 | 0x04 });
-    vistaDaSoma = texSoma.createView();
-    const comuns = [{ buffer: bufU }, { buffer: bufMaes }, { buffer: bufLuz }, { buffer: bufEsp }];
-    gDeposito = liga(pDeposito, [...comuns, { buffer: bufAcc }]);
-    gQuadrados = liga(pQuadrados, comuns);
-    gTomAcc = liga(pTomAcc, [{ buffer: bufU }, { buffer: bufAcc }]);
-    gTomTex = liga(pTomTex, [{ buffer: bufU }, vistaDaSoma]);
-  };
-
-  // ---------- relógio da GPU ----------
-  const relogio = temRelogio ? gpu.createQuerySet({ type: 'timestamp', count: 6 }) : null;
-  const bufRelogio = gpu.createBuffer({ size: 48, usage: USO.queryResolve | USO.copySrc });
-  const bufLeitura = gpu.createBuffer({ size: 48, usage: USO.mapRead | USO.copyDst });
-  const marca = (i: number) =>
-    relogio
-      ? { timestampWrites: { querySet: relogio, beginningOfPassWriteIndex: i, endOfPassWriteIndex: i + 1 } }
-      : {};
+  const catalogos = await loadGalacticAssets();
+  const sorteios = Array.from({ length: SORTEIOS }, (_, s) => sortear(s, catalogos));
+  const motor = await MotorDaGalaxia.criar(tela, SORTEIOS * 4_100_000);
+  if (!motor) throw new Error('este navegador não tem WebGPU');
+  diz('sorteando a galáxia…');
 
   const camera = new THREE.PerspectiveCamera(58, 1, 1, 400000);
-  const dadosU = new ArrayBuffer(192);
-  const uF = new Float32Array(dadosU);
-  const uI = new Uint32Array(dadosU);
-
-  let nQuadro = 0;
-  let ocupado = 0; // a bancada mede ou fotografa: o laço ao vivo espera
-  let auto = !q.has('w') && !q.has('h'); // o quadro acompanha a janela
+  const vp = new THREE.Matrix4();
   /** codifica e envia um quadro; com `medir`, resolve o relógio no fim */
   const quadro = (medir = false) => {
     const pos = estado.pos ?? VISTAS[estado.vista] ?? VISTAS.media;
     const look = estado.look ?? GAL.GC_POS.toArray();
-    redimensionar(estado.w, estado.h);
     camera.fov = estado.fov;
-    camera.aspect = largura / altura;
+    camera.aspect = estado.w / estado.h;
     camera.position.set(pos[0], pos[1], pos[2]);
     camera.up.copy(EZ);
     camera.lookAt(look[0], look[1], look[2]);
     camera.updateProjectionMatrix();
     camera.updateMatrixWorld(true);
-    const vp = new THREE.Matrix4().multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
-    uF.set(vp.elements, 0);
-    uF.set([pos[0], pos[1], pos[2], altura], 16);
-    uF.set([EX.x, EX.y, EX.z, Math.tan(THREE.MathUtils.degToRad(estado.fov) / 2)], 20);
-    uF.set([EY.x, EY.y, EY.z, GANHO], 24);
-    uF.set([EZ.x, EZ.y, EZ.z, 0.6], 28);
-    uF.set([GAL.GC_POS.x, GAL.GC_POS.y, GAL.GC_POS.z, ESCALA], 32);
-    uF.set([largura, altura, estado.expo, (40 * altura) / 1080], 36);
-    uI[40] = total;
-    uI[41] = estado.k;
-    uI[42] = estado.borrifo;
-    const porFatia = Math.ceil(total / estado.fatia);
-    uI[43] = (nQuadro++ % estado.fatia) * porFatia;
-    uI[44] = estado.filtro;
-    gpu.queue.writeBuffer(bufU, 0, dadosU);
-
-    const grupos = Math.ceil(total / 256);
-    const enc = gpu.createCommandEncoder();
-    let p = enc.beginComputePass(marca(0));
-    p.setPipeline(pLuz);
-    p.setBindGroup(0, gLuz);
-    p.dispatchWorkgroups(Math.ceil(porFatia / 256));
-    p.end();
-    const alvoDaTela = {
-      colorAttachments: [
-        { view: ctx.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 1] },
-      ],
-    };
-    if (estado.modo === 'deposito') {
-      enc.clearBuffer(bufAcc as GPUBuffer);
-      p = enc.beginComputePass(marca(2));
-      p.setPipeline(pDeposito);
-      p.setBindGroup(0, gDeposito);
-      p.dispatchWorkgroups(grupos);
-      p.end();
-      p = enc.beginRenderPass({ ...alvoDaTela, ...marca(4) });
-      p.setPipeline(pTomAcc);
-      p.setBindGroup(0, gTomAcc);
-    } else {
-      p = enc.beginRenderPass({
-        colorAttachments: [{ view: vistaDaSoma, loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }],
-        ...marca(2),
-      });
-      p.setPipeline(pQuadrados);
-      p.setBindGroup(0, gQuadrados);
-      p.draw(4, total * estado.k);
-      p.end();
-      p = enc.beginRenderPass({ ...alvoDaTela, ...marca(4) });
-      p.setPipeline(pTomTex);
-      p.setBindGroup(0, gTomTex);
-    }
-    p.draw(3);
-    p.end();
-    if (medir && relogio) {
-      enc.resolveQuerySet(relogio, 0, 6, bufRelogio, 0);
-      enc.copyBufferToBuffer(bufRelogio, 0, bufLeitura, 0, 48);
-    }
-    gpu.queue.submit([enc.finish()]);
+    vp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    motor.quadro(
+      { viewProj: vp.elements, pos, tanMeioFov: Math.tan(THREE.MathUtils.degToRad(estado.fov) / 2) },
+      estado.w, estado.h, { ...estado, ganho: GANHO }, medir
+    );
   };
 
+  let ocupado = 0; // a bancada mede ou fotografa: o laço ao vivo espera
+  let auto = !q.has('w') && !q.has('h'); // o quadro acompanha a janela
   const aplicar = (pedido: Pedido) => {
     if (pedido.w || pedido.h) auto = false;
     if (pedido.vista) {
@@ -354,44 +135,41 @@ async function iniciar() {
   };
   const mediana = (v: number[]) => [...v].sort((a, b) => a - b)[Math.floor(v.length / 2)];
 
-  /** ms por quadro: os três passos pelo relógio da GPU e o intervalo real
-   *  entre quadros seguidos sem vsync (envio → GPU terminou) */
+  /** ms por quadro: os passos pelo relógio da GPU e o intervalo real entre
+   *  quadros seguidos sem vsync (envio → GPU terminou) */
   const medir = async (pedido: Pedido, quadros = 12) => {
     ocupado++;
     aplicar(pedido);
     for (let i = 0; i < Math.max(3, estado.fatia); i++) quadro();
-    await gpu.queue.onSubmittedWorkDone();
+    await motor.terminou();
     const passos: number[][] = [[], [], []];
     const parede: number[] = [];
     for (let i = 0; i < quadros; i++) {
-      const t0 = performance.now();
+      const t = performance.now();
       quadro(true);
-      await gpu.queue.onSubmittedWorkDone();
-      parede.push(performance.now() - t0);
-      if (!relogio) continue;
-      await bufLeitura.mapAsync(USO.mapRead);
-      const t = new BigInt64Array(bufLeitura.getMappedRange().slice(0));
-      bufLeitura.unmap();
-      for (let j = 0; j < 3; j++) passos[j].push(Number(t[j * 2 + 1] - t[j * 2]) / 1e6);
+      await motor.terminou();
+      parede.push(performance.now() - t);
+      (await motor.lerRelogio()).forEach((ms, j) => passos[j].push(ms));
     }
     ocupado--;
-    const [luz, desenho, tomMs] = passos.map((v) => (v.length ? mediana(v) : NaN));
+    const [extincao, deposito, tom] = passos.map(mediana);
     return {
-      vista: estado.vista, modo: estado.modo, borrifo: estado.borrifo, fatia: estado.fatia, w: largura, h: altura,
-      milhoes: (total * estado.k) / 1e6,
-      luz, desenho, tom: tomMs, gpu: luz + desenho + tomMs,
+      vista: estado.vista, borrifo: estado.borrifo, fatia: estado.fatia, filtro: estado.filtro,
+      w: motor.largura, h: motor.altura,
+      milhoes: (motor.usadas * estado.k) / 1e6,
+      extincao, deposito, tom,
       parede: mediana(parede),
-      erros: erros.splice(0),
+      erros: motor.erros.splice(0),
     };
   };
 
-  /** desenha e devolve o PNG do quadro (data URL) */
+  /** desenha e devolve o quadro (data URL) */
   const foto = async (pedido: Pedido) => {
     ocupado++;
     aplicar(pedido);
-    for (let i = 0; i < estado.fatia; i++) quadro();
+    for (let i = 0; i < estado.fatia + 1; i++) quadro();
     const url = tela.toDataURL(pedido.jpeg ? 'image/jpeg' : 'image/png', 0.95);
-    await gpu.queue.onSubmittedWorkDone();
+    await motor.terminou();
     ocupado--;
     return url;
   };
@@ -434,14 +212,6 @@ async function iniciar() {
     });
   };
 
-  const info = {
-    particulas: total,
-    sorteios: SORTEIOS,
-    relogio: temRelogio,
-    soma: formatoDaSoma,
-    adaptador: adaptador.info ? `${adaptador.info.vendor} ${adaptador.info.architecture}` : '?',
-    catalogos: Boolean(catalogos),
-  };
   // ---------- ao vivo: câmera em órbita, voo e mostrador ----------
   interface Orbita { az: number; el: number; r: number }
   const orbitaDe = (pos: number[]): Orbita => {
@@ -502,12 +272,15 @@ async function iniciar() {
   };
   botaoVoo.addEventListener('click', () => ligarVoo(!voo));
 
+  const pegarOrbita = () => {
+    if (voo) ligarVoo(false);
+    else orbita = orbitaDe(estado.pos ?? VISTAS[estado.vista] ?? VISTAS.media);
+  };
   const dedos = new Map<number, { x: number; y: number }>();
   tela.addEventListener('pointerdown', (e) => {
     tela.setPointerCapture(e.pointerId);
     dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
-    if (voo) ligarVoo(false);
-    else orbita = orbitaDe(estado.pos ?? VISTAS[estado.vista] ?? VISTAS.media);
+    pegarOrbita();
   });
   tela.addEventListener('pointermove', (e) => {
     const a = dedos.get(e.pointerId);
@@ -535,8 +308,7 @@ async function iniciar() {
     'wheel',
     (e) => {
       e.preventDefault();
-      if (voo) ligarVoo(false);
-      else orbita = orbitaDe(estado.pos ?? VISTAS[estado.vista] ?? VISTAS.media);
+      pegarOrbita();
       orbita.r *= Math.exp(e.deltaY * 0.0015);
       limitar();
       usarOrbita();
@@ -544,11 +316,6 @@ async function iniciar() {
     { passive: false }
   );
 
-  const JEITOS: Record<string, Pedido> = {
-    borrifo: { modo: 'deposito', borrifo: 1 },
-    deposito: { modo: 'deposito', borrifo: 0 },
-    quadrados: { modo: 'quadrados', borrifo: 0 },
-  };
   const seletor = (id: string, valor: string, aoMudar: (v: string) => void) => {
     const sel = document.getElementById(id) as HTMLSelectElement;
     sel.value = valor;
@@ -559,9 +326,8 @@ async function iniciar() {
     aplicar({ vista: v });
   });
   seletor('k', String(estado.k), (v) => aplicar({ k: Number(v) }));
-  seletor('modo', estado.modo === 'quadrados' ? 'quadrados' : estado.borrifo ? 'borrifo' : 'deposito', (v) =>
-    aplicar(JEITOS[v])
-  );
+  seletor('modo', estado.borrifo ? 'borrifo' : 'tenda', (v) => aplicar({ borrifo: v === 'borrifo' ? 1 : 0 }));
+  seletor('filtro', String(estado.filtro), (v) => aplicar({ filtro: Number(v) }));
 
   // O LAÇO. Quadros por segundo = quadros que a GPU TERMINOU, não os que a
   // página pediu; com dois na fila, o pedido seguinte espera.
@@ -574,7 +340,7 @@ async function iniciar() {
     requestAnimationFrame(laco);
     const dt = Math.min((agora - ultimo) / 1000, 0.1);
     ultimo = agora;
-    if (ocupado || naFila >= 2) return;
+    if (ocupado || naFila >= 2 || !motor.total) return;
     if (voo) {
       tVoo += dt;
       voar();
@@ -588,21 +354,40 @@ async function iniciar() {
     }
     quadro();
     naFila++;
-    void gpu.queue.onSubmittedWorkDone().then(() => {
+    void motor.terminou().then(() => {
       naFila--;
       feitos++;
     });
     if (agora - desde >= 500) {
       diz(
         `${Math.round((feitos * 1000) / (agora - desde))} quadros/s · ` +
-          `${Math.round((total * estado.k) / 1e6)} milhões de partículas · ${largura}×${altura}` +
-          (erros.length ? ` · ERRO ${erros[0]}` : '')
+          `${Math.round((motor.usadas * estado.k) / 1e6)} milhões de partículas · ${motor.largura}×${motor.altura}` +
+          (motor.sorteios < SORTEIOS ? ` · sorteando ${motor.sorteios}/${SORTEIOS}` : '') +
+          (motor.erros.length ? ` · ERRO ${motor.erros[0]}` : '')
       );
       feitos = 0;
       desde = agora;
     }
   };
   requestAnimationFrame(laco);
+
+  // os sorteios entram na ordem (o primeiro traz os indivíduos); a página
+  // já desenha com o que chegou
+  let primeiraImagem = 0;
+  for (const sorteio of sorteios) {
+    const carga = await sorteio;
+    motor.acrescentar(carga.bright, carga.brightCount);
+    primeiraImagem ||= performance.now() - t0;
+  }
+  const info = {
+    particulas: motor.total,
+    sorteios: SORTEIOS,
+    relogio: motor.temRelogio,
+    catalogos: Boolean(catalogos),
+    msAtePrimeiraImagem: Math.round(primeiraImagem),
+    msAteCompleta: Math.round(performance.now() - t0),
+    megabytesNaGpu: Math.round((motor.total * 28) / 1e6),
+  };
   /** o quadro do voo no instante t (s), parado: para julgar o movimento
    *  quadro a quadro sem depender do relógio */
   const fotoDoVoo = (t: number, pedido: Pedido) => {
@@ -611,7 +396,23 @@ async function iniciar() {
     voar();
     return foto(pedido);
   };
-  Object.assign(window, { __gw: { info, medir, foto, fotoDoVoo, grao, voo: ligarVoo } });
+  /** o mesmo instante, mas chegando EM VOO: 8 quadros seguidos a 1/60 s,
+   *  um por instante, sem esperar a extinção assentar (prova da fatia) */
+  const fotoEmVoo = async (t: number, pedido: Pedido) => {
+    ocupado++;
+    ligarVoo(false);
+    aplicar(pedido);
+    for (let j = 8; j >= 0; j--) {
+      tVoo = t - j / 60;
+      voar();
+      quadro();
+    }
+    const url = tela.toDataURL('image/png');
+    await motor.terminou();
+    ocupado--;
+    return url;
+  };
+  Object.assign(window, { __gw: { info, medir, foto, fotoDoVoo, fotoEmVoo, grao, voo: ligarVoo } });
 }
 
 iniciar().catch((e: unknown) => {
