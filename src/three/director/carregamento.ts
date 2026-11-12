@@ -24,7 +24,9 @@ import { LuaResolvida } from '../world/corpos/lua';
 import { ROCHOSOS, RochosoResolvido } from '../world/corpos/rochoso';
 import { GIGANTES, GiganteResolvido } from '../world/corpos/gigante';
 import type { AtorDoPalco, PostoNoPalco } from './palco';
-import type { QualityLevel } from '../core/engine';
+import type { CaminhoDaGalaxia, QualityLevel } from '../core/engine';
+import { PRESETS } from '../core/engine';
+import { webgpuFalhouNestaPagina } from '../world/galaxiaWebgpu/camadaWebgpu';
 
 /**
  * O POSTO de um corpo no palco — os quatro traços que o distinguem no
@@ -185,32 +187,75 @@ export function descartarCarga(carga: CargaDoMundo) {
  * caminho, com o mundo velho ainda desenhando, e a única diferença
  * entre os dois é o número que entra aqui.
  */
+/**
+ * O ORÇAMENTO DA GALÁXIA DE PARTÍCULAS POR TIER (12/11/2026, a nova virou
+ * padrão): `sorteios` do motor WebGPU (4 M partículas cada) e o teto de
+ * instâncias do caminho WebGL, em milhões. Medidos contra a clássica no
+ * mesmo tier (PLAN-GALAXIA.md): a nova não pode custar mais de longe nem
+ * no filme. `?sorteios=` e `?lodmax=` varrem.
+ */
+export const ORCAMENTO_DA_GALAXIA: Record<QualityLevel, { sorteios: number; tetoLodMilhoes: number }> = {
+  cinema: { sorteios: 4, tetoLodMilhoes: 5 },
+  alta: { sorteios: 4, tetoLodMilhoes: 5 },
+  performance: { sorteios: 1, tetoLodMilhoes: 2 },
+};
+
 export async function montarCarga(opts: {
   catalogos: GalacticAssets | null;
   tier: QualityLevel;
+  /** a galáxia escolhida à mão (`?galaxia=`, Ajustes); `null` = a do preset */
+  galaxia: CaminhoDaGalaxia | null;
   aoAvancar: (etapa: EtapaDaCadeia) => void;
 }): Promise<CargaDoMundo> {
   const { catalogos, tier, aoAvancar } = opts;
   const query = new URLSearchParams(window.location.search);
-  const modo = query.get('galaxia');
+  // A CADEIA (12/11/2026): WebGPU → partículas no WebGL → clássica. O
+  // primeiro degrau é o pedido; um WebGPU que já falhou nesta página não
+  // é tentado de novo (a camada cai sozinha para o WebGL, `Galaxy`).
+  const pedidoDoCaminho = opts.galaxia ?? PRESETS[tier].galaxia;
+  const caminho: CaminhoDaGalaxia =
+    pedidoDoCaminho === 'webgpu' && webgpuFalhouNestaPagina() ? 'particulas' : pedidoDoCaminho;
+  const orcamento = ORCAMENTO_DA_GALAXIA[tier];
   const pedido = {
     seed: SEMENTE_DA_GALAXIA,
     catalogos,
     populationScale: tier === 'performance' ? 0.28 : 1,
-    soParticulas: modo === 'particulas' || modo === 'webgpu',
+    soParticulas: caminho !== 'classica',
     search: window.location.search,
   };
-  const carga = await assarCargaEmWorker(pedido, aoAvancar);
-  const dustMapTexture = texturaDoMapa(carga.poeira);
-  const structureMapTexture = texturaDoMapa(carga.estrutura);
-  const galaxy = new Galaxy(carga, dustMapTexture, structureMapTexture);
-  // ?galaxia=webgpu: mais sorteios do MESMO modelo (outra semente cada um),
-  // em trabalhadores, depois que o app já abriu; no telefone, só o primeiro
-  galaxy.ligarWebgpu(
-    carga,
-    tier === 'performance' ? 1 : Number(query.get('sorteios')) || 4,
-    (s) => assarCargaEmWorker({ ...pedido, seed: SEMENTE_DA_GALAXIA + s * 7919 }, () => {})
-  );
+  const assar = async (soParticulas: boolean) => {
+    const carga = await assarCargaEmWorker({ ...pedido, soParticulas }, aoAvancar);
+    const dustMapTexture = texturaDoMapa(carga.poeira);
+    const structureMapTexture = texturaDoMapa(carga.estrutura);
+    try {
+      const galaxy = new Galaxy(carga, dustMapTexture, structureMapTexture, {
+        soParticulas,
+        tetoLodMilhoes: orcamento.tetoLodMilhoes,
+      });
+      return { carga, galaxy, dustMapTexture, structureMapTexture };
+    } catch (e) {
+      dustMapTexture.dispose();
+      structureMapTexture.dispose();
+      throw e;
+    }
+  };
+  // o último degrau: se as partículas não montam, a clássica — e só ela
+  const montado = pedido.soParticulas
+    ? await assar(true).catch((e: unknown) => {
+        console.warn('[galáxia] as partículas não montaram — segue a clássica.', e);
+        return assar(false);
+      })
+    : await assar(false);
+  const { carga, galaxy, dustMapTexture, structureMapTexture } = montado;
+  // O MOTOR WEBGPU: mais sorteios do MESMO modelo (outra semente cada um),
+  // em trabalhadores, depois que o app já abriu
+  if (caminho === 'webgpu') {
+    galaxy.ligarWebgpu(
+      carga,
+      Number(query.get('sorteios')) || orcamento.sorteios,
+      (s) => assarCargaEmWorker({ ...pedido, seed: SEMENTE_DA_GALAXIA + s * 7919 }, () => {})
+    );
+  }
   return {
     galaxy,
     dustMapTexture,

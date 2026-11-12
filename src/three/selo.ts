@@ -36,6 +36,7 @@ import {
   varianteDaTerraEmTexto,
   nivelDaNebulosaEmTexto,
   particulasDaGalaxiaEmTexto,
+  galaxiaEmTexto,
   poeiraEmTexto,
   rotuloDaEscalaDeResolucao,
 } from './atlasConfig';
@@ -47,6 +48,7 @@ import type {
   VarianteDaTerra,
   NivelDaNebulosa,
   ParticulasDaGalaxia,
+  CaminhoDaGalaxia,
   QualityLevel,
   TipoDePoeira,
   ToneMapMode,
@@ -414,6 +416,11 @@ export interface EstadoDaVista {
    * Director, não a porta `?particulas=`.
    */
   particulas: ParticulasDaGalaxia | null;
+  /**
+   * A GALÁXIA DE FORA escolhida à mão (12/11/2026) — `null` = a cadeia do
+   * preset (WebGPU → partículas → clássica). Estado vivo do Director.
+   */
+  galaxia: CaminhoDaGalaxia | null;
   /**
    * A POEIRA PERTO DE CASA escolhida à mão (pedido do dono, 27/09) —
    * `null` = a variante do preset. Mesmo contrato do `particulas`:
@@ -839,6 +846,21 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
       t('selo.desvio.particulasCom', {
         nivel: e.particulas === null ? '' : particulasDaGalaxiaEmTexto(e.particulas),
       }),
+  },
+  /**
+   * A GALÁXIA ESCOLHIDA À MÃO (12/11/2026), no molde das partículas:
+   * estado VIVO, `volta: 'vivo'`, a porta `?galaxia=` como espelho. A
+   * clássica desenha lâminas pintadas; as outras duas trocam o número de
+   * partículas da mesma galáxia — as três mudam a imagem.
+   */
+  {
+    chave: 'galaxia',
+    eixo: 'brilho',
+    get rotulo() { return t('selo.desvio.galaxia'); },
+    volta: 'vivo',
+    desvia: (e) => e.galaxia !== null,
+    rotuloVivo: (e) =>
+      t('selo.desvio.galaxiaCom', { caminho: e.galaxia === null ? '' : galaxiaEmTexto(e.galaxia) }),
   },
   /**
    * O SEXTO CONTROLE DA GAVETA AVANÇADO (pedido do dono, 27/09), no

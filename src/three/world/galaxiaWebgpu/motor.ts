@@ -325,6 +325,28 @@ export class MotorDaGalaxia {
     this.gpu.queue.submit([enc.finish()]);
   }
 
+  /** resolve quando o dispositivo se perde (driver, GPU reiniciada…) ou é destruído */
+  get perdido(): Promise<{ message: string }> {
+    return this.gpu.lost;
+  }
+
+  /**
+   * Pinta a tela inteira com `cor` (luz linear) e espera a GPU: a sonda da
+   * PONTE — quem a lê do outro lado é o WebGL do app (`camadaWebgpu.ts`).
+   */
+  async pintar(w: number, h: number, cor: readonly number[]) {
+    this.redimensionar(w, h);
+    const enc = this.gpu.createCommandEncoder();
+    const p = enc.beginRenderPass({
+      colorAttachments: [
+        { view: this.ctx.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'store', clearValue: cor },
+      ],
+    });
+    p.end();
+    this.gpu.queue.submit([enc.finish()]);
+    await this.gpu.queue.onSubmittedWorkDone();
+  }
+
   /** solta o dispositivo e, com ele, todos os buffers */
   destruir() {
     this.gpu.destroy();

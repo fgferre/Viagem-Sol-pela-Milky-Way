@@ -235,6 +235,12 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.particulas.todas': 'All',
   'ajustes.particulas.metade': 'Half',
   'ajustes.particulas.quarto': '¼',
+  'ajustes.galaxiaControle': 'Galaxy',
+  'ajustes.galaxiaNota':
+    'How the galaxy seen from outside is drawn. WebGPU: tens of millions of particles. WebGL: the same particles, fewer of them (the fallback without WebGPU). Classic: the old one, with painted layers. On Preset the app tries them in that order and marks the one drawing now.',
+  'ajustes.galaxia.webgpu': 'WebGPU',
+  'ajustes.galaxia.particulas': 'WebGL',
+  'ajustes.galaxia.classica': 'Classic',
   'ajustes.texto': 'Text size · {degrau}',
   'ajustes.textoNota':
     'Applies to the whole HUD — captions, controls, seal and the star names. It does not touch the scene: inside the Atlas the framing backs off a little so the larger text does not cover the target.',
@@ -686,6 +692,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.desvio.relevoCom': 'Earth relief enhanced {fator}×',
   'selo.desvio.particulas': 'galaxy particles set by hand',
   'selo.desvio.particulasCom': 'galaxy particles set by hand: {nivel}',
+  'selo.desvio.galaxia': 'galaxy set by hand',
+  'selo.desvio.galaxiaCom': 'galaxy set by hand: {caminho}',
   'selo.desvio.poeira': 'dust near home set by hand',
   'selo.desvio.poeiraCom': 'dust near home set by hand: {variante}',
   'selo.desvio.poeiraTeste': 'test (synthetic volume)',

@@ -65,6 +65,7 @@ import {
   gasVolumetricoEmTexto,
   nivelDaNebulosaEmTexto,
   particulasDaGalaxiaEmTexto,
+  galaxiaEmTexto,
   poeiraEmTexto,
   rotuloDaEscalaDeResolucao,
   rotuloDaQualidade,
@@ -78,6 +79,7 @@ import type {
   ModoDaLente,
   NivelDaNebulosa,
   ParticulasDaGalaxia,
+  CaminhoDaGalaxia,
   RelevoDaTerra,
   TipoDePoeira,
   ToneMapMode,
@@ -191,6 +193,19 @@ const PARTICULAS: { valor: ParticulasDaGalaxia | null; nome: () => string }[] = 
 ];
 
 /**
+ * OS QUATRO ESTADOS DA GALÁXIA DE FORA (12/11/2026), no molde das
+ * partículas: `null` é "do preset" — a cadeia WebGPU → WebGL → clássica —,
+ * e os valores são as chaves que vão à URL (`?galaxia=`) e ao selo.
+ */
+const GALAXIAS: { valor: CaminhoDaGalaxia | null; nome: () => string }[] = [
+  { valor: null, nome: () => t('ajustes.preset') },
+  ...(['webgpu', 'particulas', 'classica'] as const).map((c) => ({
+    valor: c,
+    nome: () => galaxiaEmTexto(c),
+  })),
+];
+
+/**
  * OS QUATRO ESTADOS DA POEIRA PERTO DE CASA (pedido do dono, 27/09) — o
  * sexto controle da gaveta, no mesmo molde do gás: `null` é "do
  * preset", e os valores são as chaves que vão à URL (`?poeira=`) e ao
@@ -265,6 +280,7 @@ export function Ajustes({
   onTerra,
   onRelevo,
   onParticulas,
+  onGalaxia,
   onPoeira,
   tom,
   onTom,
@@ -305,6 +321,8 @@ export function Ajustes({
   onRelevo: (relevo: RelevoDaTerra) => void;
   /** a fração de partículas da galáxia escolhida à mão (item 149); `null` = do preset */
   onParticulas: (nivel: ParticulasDaGalaxia | null) => void;
+  /** a galáxia de fora escolhida à mão (12/11/2026); `null` = a cadeia do preset */
+  onGalaxia: (caminho: CaminhoDaGalaxia | null) => void;
   /** a poeira perto de casa escolhida à mão (pedido do dono, 27/09); `null` = do preset */
   onPoeira: (variante: TipoDePoeira | null) => void;
   tom: ToneMapMode;
@@ -776,6 +794,27 @@ export function Ajustes({
               p.valor === presetVivo.particulas,
           }))}
           onEscolher={onParticulas}
+        />
+      </LinhaDeAjuste>
+
+      {/* A GALÁXIA (12/11/2026): o `.efetivo` marca quem ESTÁ desenhando —
+          a cadeia do preset pode ter caído para o degrau de baixo */}
+      <LinhaDeAjuste
+        id="galaxia"
+        rotulo={t('ajustes.galaxiaControle')}
+        dica={t('ajustes.galaxiaNota')}
+        dicaPresa={dicaPresa}
+        onAlternarDica={alternarDica}
+      >
+        <Segmentado
+          aria={t('ajustes.galaxiaControle')}
+          valor={qualidade.galaxia}
+          opcoes={GALAXIAS.map((g) => ({
+            valor: g.valor,
+            nome: g.nome(),
+            efetivo: qualidade.galaxia === null && g.valor === qualidade.galaxiaViva,
+          }))}
+          onEscolher={onGalaxia}
         />
       </LinhaDeAjuste>
 
