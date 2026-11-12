@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Ensaio: galáxia de partículas em WebGPU</title>
+    <!-- Página de teste, só de desenvolvimento: abra com o servidor de dev em
+         /webgpu-galaxia.html. Não é entrada do build (o Vite só empacota o
+         index.html) e nenhuma tela do app aponta para cá. -->
+    <style>
+      html, body { margin: 0; height: 100%; overflow: hidden; background: #010208; color: #e6ebf5; font: 14px/1.4 system-ui, sans-serif; }
+      #tela { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; touch-action: none; cursor: grab; }
+      #barra { position: fixed; top: 0; left: 0; right: 0; padding: 8px 10px; background: #010208b0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; z-index: 1; }
+      #barra select, #barra button { font: inherit; padding: 4px 8px; }
+      #painel { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; margin-left: 6px; }
+    </style>
+  </head>
+  <body>
+    <div id="barra">
+      <select id="vista">
+        <option>de-cima</option><option>inclinada</option><option>media</option><option>saindo</option><option>de-lado</option>
+      </select>
+      <select id="k" title="filhas por partícula sorteada">
+        <option value="1">sem filhas</option><option value="2">× 2 filhas</option><option value="4">× 4 filhas</option>
+      </select>
+      <select id="modo">
+        <option value="tenda">tenda (calma)</option><option value="borrifo">borrifo (rápido, ferve)</option>
+      </select>
+      <select id="filtro">
+        <option value="1">filtro ligado</option><option value="0">filtro desligado</option>
+      </select>
+      <button id="voo" type="button">voo</button>
+      <span id="painel">carregando…</span>
+    </div>
+    <canvas id="tela"></canvas>
+    <script type="module" src="/src/experimentos/galaxiaWebgpu/main.ts"></script>
+  </body>
+</html>

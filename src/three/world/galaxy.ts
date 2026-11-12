@@ -18,8 +18,18 @@ import {
   TAU_COMPACTO_FRAG,
 } from '../shaders/galaxyShaders';
 import { GAL, EX, EY, EZ } from './baseGalactica';
-import { SGR_DWARF_POS, tune } from './geradorDaGalaxia';
+import { GALACTIC_MODEL } from '../cartography/galacticModel';
+import {
+  SGR_DWARF_POS,
+  tune,
+  celulaDaParticula,
+  CELULAS_DA_GRADE,
+  ladoDaChave,
+  gerarNuvensDePoeira,
+  tauDasNuvens,
+} from './geradorDaGalaxia';
 import { porCurva } from '../core/engine';
+import { CamadaWebgpu } from './galaxiaWebgpu/camadaWebgpu';
 import type { GalaxyBuffers } from './geradorDaGalaxia';
 
 // A FACHADA da onda da arquitetura (corte 5): a base e o gerador
@@ -49,6 +59,11 @@ export class Galaxy {
   private tauRT: THREE.WebGLRenderTarget | null = null;
   /** a cópia compacta (R16F) do τ⊥ que o laço das partículas lê — ver TAU_COMPACTO_FRAG */
   private tauParticulasRT: THREE.WebGLRenderTarget | null = null;
+  /** ?galaxia=particulas: o τ⊥ somado das NUVENS de poeira (R16F, mesma
+   *  convenção do τ pintado) — no lugar do 8º bake, que não roda */
+  private tauNuvens: THREE.DataTexture | null = null;
+  /** o mesmo τ das nuvens no canal A, que é onde as forjas o leem (?forgetau=1) */
+  private tauNuvensRGBA: THREE.DataTexture | null = null;
   private markerMesh!: THREE.Mesh;
   private dustMap: THREE.Texture;
   private structureMap: THREE.Texture;
@@ -70,6 +85,7 @@ export class Galaxy {
   private dwarfMesh!: THREE.Mesh;
   private static scratch = new THREE.Vector3();
   private static dbg = new URLSearchParams(window.location.search);
+  private static readonly MODO = Galaxy.dbg.get('galaxia');
   // AS TRÊS DA GALÁXIA. A URL só as SEMEIA no boot (ler `has()` por quadro
   // seria lixo evitável); daí em diante quem manda é `setLayerHidden`, e
   // elas são VIVAS — nenhuma é lida no bake. `bakeDiscLayers` roda
@@ -83,6 +99,107 @@ export class Galaxy {
   private showDisc = !Galaxy.dbg.has('nodisc');
   /** ?nopts=1 — sem as partículas, a quarta régua da divisão de fluxo */
   private showPts = !Galaxy.dbg.has('nopts');
+  /**
+   * ?galaxia=particulas (ensaio, desligado por padrão) — a galáxia vista de
+   * fora só de partículas: as sete lâminas não acendem e a luz que a
+   * EMISSÃO delas entregava passa para os pontos, pela rampa de FORA
+   * (`externalFade`), então dentro do disco nada muda. Sem a rampa de
+   * abertura das lâminas: elas não tinham lei de caminho e precisavam
+   * apagar de raspão; uma distribuição 3D clareia de perfil sozinha.
+   * O ganho é a razão de
+   * fluxo lâminas÷partículas medida em linear (o grupo da galáxia rendido
+   * num alvo float, sem curva nem bloom, uma camada por vez, as duas com
+   * uFade 1) na vista de cima a ~38 kpc. Com a lei de fluxo única do
+   * núcleo de densidade (GALAXY_VERT) o ganho é 6,99 no quadro inteiro, e
+   * o brilho de superfície das partículas num MESMO pedaço do disco não
+   * depende mais da distância (medido de 3 a 40 kpc). O quadro de perto
+   * ainda sai mais escuro que o das lâminas porque elas usam um μ só (o
+   * da câmera ao centro) em todo fragmento: debaixo da câmera, de 3 kpc,
+   * isso as deixava ~2,6× mais claras que o μ local daria.
+   */
+  private soParticulas = Galaxy.MODO === 'particulas' || Galaxy.MODO === 'webgpu';
+  /**
+   * ?galaxia=webgpu — o modo só-partículas com a vista de FORA desenhada
+   * pelo motor WebGPU (camadaWebgpu.ts: 16 M de partículas sorteadas em vez
+   * de 4 M com filhas). De dentro do disco, e em navegador sem WebGPU,
+   * segue o caminho WebGL acima. `null` até o motor ficar pronto.
+   */
+  private camadaWebgpu: CamadaWebgpu | null = null;
+  private descartada = false;
+  private static readonly GANHO_DAS_LAMINAS = 6.99;
+  /**
+   * Largura do núcleo das partículas de FUNDO em ESPAÇAMENTOS médios
+   * entre partículas (ver GALAXY_VERT): o mínimo para as vizinhas se
+   * encostarem — 24 borrava a imagem inteira. O espaçamento sai da contagem
+   * desenhada: o gerador sorteia o disco com Σ ∝ e^(−R/a), a = 3·Rd,
+   * truncado no raio do disco, então Σ₀ = N / (2π a² Z) com
+   * Z = 1 − (1 + x)e^(−x), x = R_disco/a — e o espaçamento é 1/√Σ₀.
+   */
+  private static readonly NUCLEO_EM_ESPACAMENTOS = 1.5;
+  /**
+   * NÍVEL DE DETALHE POR CÉLULA (só ?galaxia=particulas). O buffer vem
+   * ordenado por célula do plano (`celulaDaParticula`), embaralhado dentro
+   * de cada uma, com as tipos 3–6 num intervalo global no fim. Cada célula
+   * é UM desenho instanciado de uma única chamada multi-draw (fallback:
+   * um drawArraysInstanced por célula visível). Quem decide, partícula a
+   * partícula, é o vértice (GALAXY_VERT): com a densidade disponível na
+   * tela ρd = Σ·(d/f)²/proj e o alvo ρ, m = ρ/ρd; m < 1 desenha o prefixo
+   * da célula com o brilho ÷ m, m > 1 desdobra a partícula em até KMAX
+   * filhas com o brilho ÷ m — as duas com a última peça fracionária, então
+   * nada estala. Aqui a CPU só dá a cada célula o PIOR caso (o maior
+   * prefixo e o maior K que alguma partícula dela pode pedir) e corta as
+   * células fora do frustum.
+   * ρ = 12 partículas por pixel do buffer (medido, ensaio 5): a tenda de
+   * 2 px com pesos iguais daria grão (2/3)/√ρ, mas a dispersão do brilho
+   * entre partículas (tamanho² e luz sorteados) dobra a variância — o grão
+   * 0,27 da vista de cima do ensaio 4 era ρ ≈ 20. Com 6 a vista de cima
+   * piorava para 0,38 e a meia distância não mudava; 12 é o meio-termo de
+   * custo. KMAX = 8: 16 não baixa o grão medido (a tenda alarga o que falta
+   * no teto) e custa ~25 % a mais de quadro a meia distância; 4 já deixa
+   * borrões no primeiro plano. ?lodrho= e ?lodk= varrem.
+   */
+  private static readonly RHO_LOD = tune('lodrho', 12);
+  private static readonly KMAX_LOD = tune('lodk', 8);
+  /**
+   * TETO DE INSTÂNCIAS POR QUADRO (mães + filhas), em milhões (?lodmax=).
+   * O custo do modo é a contagem de instâncias (~5–6 ms por milhão nesta
+   * máquina, ensaio 6): a meia distância pedia 19 M e custava ~105 ms
+   * contra ~63 ms da galáxia de hoje. Quando o pedido passa do teto, caem
+   * primeiro as FILHAS (K × fK, contínuo, a última filha fracionária — nada
+   * estala; a tenda alarga o que falta, borrão em vez de areia); só com
+   * uma filha por mãe e ainda acima do teto é que o alvo ρ desce e os
+   * prefixos do fundo afinam (brilho ÷ q, fluxo igual). O intervalo global
+   * (estrelas jovens resolvidas, nós H II, aglomerados, halo) sai sempre
+   * inteiro.
+   */
+  private static readonly TETO_LOD = tune('lodmax', 5) * 1e6;
+  private lod: {
+    inicio: Int32Array;
+    total: Int32Array;
+    /** partículas por pc² da coluna da célula (contagem cheia ÷ área) */
+    sigma: Float32Array;
+    zMin: Float32Array;
+    zMax: Float32Array;
+    sigmaZ: Float32Array;
+    caixa: Float32Array; // 6 por desenho: min xyz, max xyz (cena)
+    lado: Float32Array; // lado no plano (pc)
+    firsts: Int32Array;
+    counts: Int32Array;
+    insts: Int32Array;
+    dados: Float32Array;
+    textura: THREE.DataTexture;
+    fade: number;
+  } | null = null;
+  /** medidas do último quadro (?galaxia=particulas) — para as réguas */
+  lodStats = { pais: 0, instancias: 0, desenhos: 0, cpuMs: 0, multiDraw: false, rho: 0, fK: 1 };
+  private nucleoPc() {
+    const a = 3 * GALACTIC_MODEL.stellarScaleLengthPc;
+    const x = GALACTIC_MODEL.diskRadiusPc / a;
+    const z = 1 - (1 + x) * Math.exp(-x);
+    const n = this.totalParticulas * this.fracaoDeParticulas;
+    const sigma0 = n / (2 * Math.PI * a * a * z);
+    return Galaxy.NUCLEO_EM_ESPACAMENTOS / Math.sqrt(Math.max(sigma0, 1e-12));
+  }
   /**
    * A 1×1 zerada do `uTauMap` (τ⊥ = 0 ⇒ exp(0) = 1): o valor de REPOUSO
    * do uniform — antes do bake e sempre que a extinção por partícula
@@ -143,7 +260,31 @@ export class Galaxy {
       depthWrite: false,
       transparent: true,
     });
+    // o núcleo de densidade só existe no ensaio: sem o interruptor o
+    // fonte do shader é o de sempre, letra por letra
+    if (this.soParticulas) {
+      this.brightMat.defines = { GALAXIA_PARTICULAS: '' };
+      this.brightMat.uniforms.uNucleo = { value: 0 };
+      this.brightMat.uniforms.uNucleoPc = { value: 0 };
+      this.lod = Galaxy.celulasDoBuffer(bd, buffers.brightCount);
+      this.dadosDasCelulas();
+      this.brightMat.extensions.multiDraw = Galaxy.dbg.get('lodmd') !== '0';
+      this.brightMat.uniforms.uCelulas = { value: this.lod.textura };
+      this.brightMat.uniforms.uDesenho = { value: 0 };
+      this.brightMat.uniforms.uRho = { value: Galaxy.RHO_LOD };
+      this.brightMat.uniforms.uKMax = { value: Galaxy.KMAX_LOD };
+      this.brightMat.uniforms.uFracK = { value: 1 };
+      this.brightMat.uniforms.uEspLod = { value: tune('lodesp', 0.6) };
+      // a geometria não desenha nada sozinha: os desenhos por célula saem
+      // do gancho abaixo, com o programa e os atributos já ligados
+      geo.setDrawRange(0, 0);
+    }
     const brightPts = new THREE.Points(geo, this.brightMat);
+    if (this.lod) {
+      brightPts.onBeforeRender = (_r, _s, camera) => this.planejarCelulas(camera);
+      brightPts.onAfterRender = (renderer, _s, _c, _g, material) =>
+        this.desenharCelulas(renderer, material);
+    }
     brightPts.frustumCulled = false;
     brightPts.renderOrder = 2;
     this.group.add(brightPts);
@@ -423,7 +564,9 @@ export class Galaxy {
       // 8º bake: o mesmo fragmento com uTauExport=1 grava no alpha o τ
       // das PARTÍCULAS (crista suavizada + termo largo) — o mapa que a
       // extinção por partícula usa. Só a lâmina central precisa dele.
-      if (i === 3) {
+      if (i === 3 && this.soParticulas) {
+        this.tauNuvens = Galaxy.texturaDasNuvens(1024);
+      } else if (i === 3) {
         analytic.uniforms.uTauExport.value = 1;
         const tauRt = new THREE.WebGLRenderTarget(1024, 1024, {
           type: THREE.HalfFloatType,
@@ -505,8 +648,20 @@ export class Galaxy {
 
   /** o bind do τ⊥ num lugar só: a cópia compacta assada ou a 1×1 de repouso. */
   private ligarTauMap() {
-    this.brightMat.uniforms.uTauMap.value =
-      this.showGDust && this.tauParticulasRT ? this.tauParticulasRT.texture : this.tauVazio;
+    const tau = this.tauNuvens ?? this.tauParticulasRT?.texture;
+    this.brightMat.uniforms.uTauMap.value = this.showGDust && tau ? tau : this.tauVazio;
+  }
+
+  /** o τ⊥ das nuvens de poeira (gerarNuvensDePoeira) somado de cima, em meia precisão */
+  private static texturaDasNuvens(N: number) {
+    const tau = tauDasNuvens(gerarNuvensDePoeira(), N, GAL.DISK_RADIUS);
+    const meia = new Uint16Array(N * N);
+    for (let k = 0; k < N * N; k++) meia[k] = THREE.DataUtils.toHalfFloat(tau[k]);
+    const t = new THREE.DataTexture(meia, N, N, THREE.RedFormat, THREE.HalfFloatType);
+    t.minFilter = THREE.LinearFilter;
+    t.magFilter = THREE.LinearFilter;
+    t.needsUpdate = true;
+    return t;
   }
 
   /**
@@ -537,6 +692,20 @@ export class Galaxy {
 
   /** τ⊥ da coluna (o τRT inteiro, canal A), para quem mais precisar da mesma extinção (forges). */
   get tauMapTexture(): THREE.Texture | null {
+    if (this.tauNuvens && this.showGDust) {
+      if (!this.tauNuvensRGBA) {
+        const r = this.tauNuvens.image.data as Uint16Array;
+        const N = this.tauNuvens.image.width;
+        const rgba = new Uint16Array(N * N * 4);
+        for (let k = 0; k < N * N; k++) rgba[4 * k + 3] = r[k];
+        const t = new THREE.DataTexture(rgba, N, N, THREE.RGBAFormat, THREE.HalfFloatType);
+        t.minFilter = THREE.LinearFilter;
+        t.magFilter = THREE.LinearFilter;
+        t.needsUpdate = true;
+        this.tauNuvensRGBA = t;
+      }
+      return this.tauNuvensRGBA;
+    }
     return this.showGDust && this.tauRT ? this.tauRT.texture : null;
   }
 
@@ -550,7 +719,251 @@ export class Galaxy {
    */
   setFracaoDeParticulas(fracao: number) {
     this.fracaoDeParticulas = fracao;
+    // só-partículas: a fração vira o prefixo de CADA célula (embaralhada
+    // por dentro), e a geometria segue sem desenho próprio
+    if (this.lod) {
+      this.dadosDasCelulas();
+      return;
+    }
     this.brightPts.geometry.setDrawRange(0, Math.round(this.totalParticulas * fracao));
+  }
+
+  /**
+   * Varre o buffer ordenado por célula (antes do upload, que o solta) e
+   * monta os desenhos: um por célula não vazia e o intervalo global por
+   * último. Por célula guarda a caixa na cena, a contagem, a altura média
+   * e o desvio vertical (a espessura que entra na área projetada).
+   */
+  private static celulasDoBuffer(bd: Float32Array, n: number) {
+    const inicio: number[] = [];
+    const total: number[] = [];
+    const chaves: number[] = [];
+    let chaveAtual = -1;
+    for (let i = 0; i < n; i++) {
+      const c = celulaDaParticula(bd, i);
+      if (c !== chaveAtual) {
+        inicio.push(i);
+        total.push(0);
+        chaves.push(c);
+        chaveAtual = c;
+      }
+      total[total.length - 1]++;
+    }
+    const D = inicio.length;
+    const sigma = new Float32Array(D);
+    const zMin = new Float32Array(D);
+    const zMax = new Float32Array(D);
+    const sigmaZ = new Float32Array(D);
+    const caixa = new Float32Array(D * 6);
+    // lado no plano por célula: o disco espesso tem células de 2 kpc
+    const lado = new Float32Array(D);
+    for (let d = 0; d < D; d++) {
+      let sz = 0, sz2 = 0, zl0 = Infinity, zl1 = -Infinity;
+      let x0 = Infinity, y0 = Infinity, z0 = Infinity;
+      let x1 = -Infinity, y1 = -Infinity, z1 = -Infinity;
+      for (let i = inicio[d], fim = inicio[d] + total[d]; i < fim; i++) {
+        const o = i * 8;
+        const x = bd[o], y = bd[o + 1], z = bd[o + 2];
+        const zl = (x - GAL.GC_POS.x) * EZ.x + (y - GAL.GC_POS.y) * EZ.y + (z - GAL.GC_POS.z) * EZ.z;
+        sz += zl;
+        sz2 += zl * zl;
+        zl0 = Math.min(zl0, zl);
+        zl1 = Math.max(zl1, zl);
+        x0 = Math.min(x0, x); y0 = Math.min(y0, y); z0 = Math.min(z0, z);
+        x1 = Math.max(x1, x); y1 = Math.max(y1, y); z1 = Math.max(z1, z);
+      }
+      const m = sz / total[d];
+      zMin[d] = zl0;
+      zMax[d] = zl1;
+      sigmaZ[d] = Math.sqrt(Math.max(sz2 / total[d] - m * m, 0));
+      lado[d] = ladoDaChave(chaves[d]);
+      sigma[d] = chaves[d] === CELULAS_DA_GRADE ? 0 : total[d] / (lado[d] * lado[d]);
+      caixa.set([x0, y0, z0, x1, y1, z1], d * 6);
+    }
+    const largura = 64;
+    const dados = new Float32Array(largura * Math.ceil(D / largura) * 4);
+    const textura = new THREE.DataTexture(
+      dados, largura, Math.ceil(D / largura), THREE.RGBAFormat, THREE.FloatType
+    );
+    const lod = {
+      inicio: Int32Array.from(inicio),
+      total: Int32Array.from(total),
+      sigma, zMin, zMax, sigmaZ, caixa, lado,
+      firsts: Int32Array.from(inicio),
+      counts: new Int32Array(D),
+      insts: new Int32Array(D),
+      dados, textura, fade: 0,
+    };
+    return lod;
+  }
+
+  /**
+   * A textura por desenho que o vértice lê (texelFetch por gl_DrawID):
+   * R início no buffer · G partículas disponíveis (0 = intervalo global,
+   * sem nível de detalhe) · B as mesmas por pc² da coluna · A a razão de
+   * espessura 2,5·σz / lado, que dá a área de perfil da célula.
+   */
+  private dadosDasCelulas() {
+    const L = this.lod!;
+    const f = this.fracaoDeParticulas;
+    for (let d = 0; d < L.inicio.length; d++) {
+      const disp = Math.max(1, Math.round(L.total[d] * f));
+      L.dados[d * 4] = L.inicio[d];
+      L.dados[d * 4 + 1] = L.sigma[d] > 0 ? disp : 0;
+      L.dados[d * 4 + 2] = L.sigma[d] * (disp / L.total[d]);
+      L.dados[d * 4 + 3] = (2.5 * L.sigmaZ[d]) / L.lado[d];
+    }
+    L.textura.needsUpdate = true;
+  }
+
+  private static frustum = new THREE.Frustum();
+  private static caixaTmp = new THREE.Box3();
+  private static mTmp = new THREE.Matrix4();
+
+  /**
+   * O pior caso de cada célula visível, com as MESMAS contas do vértice:
+   * a menor distância à caixa dá o maior m; a abertura μ varia na caixa e
+   * a área projetada ∝ μ + t·√(1−μ²) é tomada no máximo do intervalo; a
+   * rampa k = fade·smoothstep(300, 1500, d) entra na menor distância para
+   * o prefixo e na maior para as filhas. Pedir de mais só custa vértices
+   * que saem cedo; pedir de menos tiraria luz.
+   */
+  private planejarCelulas(camera: THREE.Camera) {
+    const t0 = performance.now();
+    const u = this.brightMat.uniforms;
+    Galaxy.frustum.setFromProjectionMatrix(
+      Galaxy.mTmp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
+    );
+    // o teto: o plano é monótono em (ρ, fK), então uma bisseção num
+    // parâmetro só — t ∈ [1, 2] encolhe as filhas (fK = t − 1, o K de
+    // cada partícula vezes fK), t ∈ [0, 1] baixa ρ com uma filha por mãe —
+    // acha o maior pedido que cabe. fK e ρ são contínuos: cada célula
+    // ganha ou perde a SUA última instância com peso que nasce em zero,
+    // em degraus de uma célula, e nenhum uniforme salta.
+    const rho0 = Galaxy.RHO_LOD;
+    const teto = Galaxy.TETO_LOD;
+    const params = (t: number): [number, number] =>
+      t >= 1 ? [rho0, Math.min(t - 1, 1)] : [rho0 * Math.max(t, 1e-3), 0];
+    let rho = rho0;
+    let fK = 1;
+    if (this.planejarCom(rho, fK) > teto) {
+      let lo = 0;
+      let hi = 2;
+      for (let i = 0; i < 12; i++) {
+        const t = (lo + hi) / 2;
+        [rho, fK] = params(t);
+        if (this.planejarCom(rho, fK) > teto) hi = t;
+        else lo = t;
+      }
+      [rho, fK] = params(lo);
+      this.planejarCom(rho, fK);
+    }
+    u.uRho.value = rho;
+    u.uFracK.value = fK;
+    this.lodStats.rho = rho;
+    this.lodStats.fK = fK;
+    this.lodStats.cpuMs = performance.now() - t0;
+  }
+
+  /** Um plano com o alvo ρ e a fração fK das filhas; devolve as instâncias. */
+  private planejarCom(rho: number, fK: number) {
+    const L = this.lod!;
+    const u = this.brightMat.uniforms;
+    const cam = u.uCamPos.value as THREE.Vector3;
+    const f = (u.uScreenH.value as number) / (2 * (u.uTanHalfFov.value as number));
+    const fr = Galaxy.frustum;
+    const caixa = Galaxy.caixaTmp;
+    const zc =
+      (cam.x - GAL.GC_POS.x) * EZ.x + (cam.y - GAL.GC_POS.y) * EZ.y + (cam.z - GAL.GC_POS.z) * EZ.z;
+    const ss = THREE.MathUtils.smoothstep;
+    const kmax = Galaxy.KMAX_LOD;
+    let pais = 0, instancias = 0, desenhos = 0;
+    const D = L.inicio.length;
+    for (let d = 0; d < D; d++) {
+      const disp = L.dados[d * 4 + 1];
+      const o = d * 6;
+      caixa.min.set(L.caixa[o], L.caixa[o + 1], L.caixa[o + 2]);
+      caixa.max.set(L.caixa[o + 3], L.caixa[o + 4], L.caixa[o + 5]);
+      if (disp === 0) {
+        // intervalo global: inteiro, uma instância
+        const n = Math.max(1, Math.round(L.total[d] * this.fracaoDeParticulas));
+        L.counts[d] = n;
+        L.insts[d] = 1;
+        pais += n; instancias += n; desenhos++;
+        continue;
+      }
+      const dMin = Math.max(caixa.distanceToPoint(cam), 1);
+      const dx = Math.max(Math.abs(cam.x - caixa.min.x), Math.abs(cam.x - caixa.max.x));
+      const dy = Math.max(Math.abs(cam.y - caixa.min.y), Math.abs(cam.y - caixa.max.y));
+      const dz = Math.max(Math.abs(cam.z - caixa.min.z), Math.abs(cam.z - caixa.max.z));
+      const dMax = Math.max(Math.hypot(dx, dy, dz), dMin);
+      // margem de 300 pc: o ponto é um quadrado de até 40 px e o corte do
+      // vértice já tem a sua; aqui só não pode faltar
+      caixa.expandByScalar(300);
+      if (!fr.intersectsBox(caixa)) {
+        L.counts[d] = 0;
+        L.insts[d] = 0;
+        continue;
+      }
+      // abertura: altura da câmera sobre a fatia z da célula
+      const zLo = L.zMin[d];
+      const zHi = L.zMax[d];
+      const hPerto = zc < zLo ? zLo - zc : zc > zHi ? zc - zHi : 0;
+      const hLonge = Math.max(Math.abs(zc - zLo), Math.abs(zc - zHi));
+      const muLo = Math.min(hPerto / dMax, 1);
+      const muHi = Math.min(hLonge / dMin, 1);
+      const t = L.dados[d * 4 + 3];
+      const proj = (mu: number) => mu + t * Math.sqrt(Math.max(1 - mu * mu, 0));
+      const muPico = 1 / Math.sqrt(1 + t * t);
+      let projMax = Math.max(proj(muLo), proj(muHi));
+      if (muPico > muLo && muPico < muHi) projMax = Math.max(projMax, proj(muPico));
+      const sig = L.dados[d * 4 + 2];
+      const mMax = (rho * f * f * projMax) / (sig * dMin * dMin);
+      const kPerto = this.lod!.fade * ss(dMin, 300, 1500);
+      const kLonge = this.lod!.fade * ss(dMax, 300, 1500);
+      const qMax = mMax >= 1 ? 1 : 1 - kPerto * (1 - mMax);
+      const kMax = Math.min(kmax, (1 + kLonge * Math.max(mMax - 1, 0)) * fK);
+      const n = Math.min(disp, Math.ceil(qMax * disp) + 1);
+      const k = Math.max(1, Math.ceil(kMax - 1e-4));
+      L.counts[d] = n;
+      L.insts[d] = k;
+      pais += n; instancias += n * k; desenhos++;
+    }
+    this.lodStats.pais = pais;
+    this.lodStats.instancias = instancias;
+    this.lodStats.desenhos = desenhos;
+    return instancias;
+  }
+
+  /** Os desenhos por célula, com o programa e os atributos que o three acabou de ligar. */
+  private desenharCelulas(renderer: THREE.WebGLRenderer, material: THREE.Material) {
+    const L = this.lod!;
+    const gl = renderer.getContext() as WebGL2RenderingContext;
+    const D = L.inicio.length;
+    // ?lodmd=0 força um desenho por célula: o gpu-profile só cronometra
+    // gl.draw*, não a chamada da extensão
+    if (this.brightMat.extensions.multiDraw && renderer.extensions.has('WEBGL_multi_draw')) {
+      const ext = renderer.extensions.get('WEBGL_multi_draw') as {
+        multiDrawArraysInstancedWEBGL(
+          mode: number, firsts: Int32Array, firstsOffset: number,
+          counts: Int32Array, countsOffset: number,
+          instances: Int32Array, instancesOffset: number, drawCount: number
+        ): void;
+      };
+      ext.multiDrawArraysInstancedWEBGL(gl.POINTS, L.firsts, 0, L.counts, 0, L.insts, 0, D);
+      this.lodStats.multiDraw = true;
+      return;
+    }
+    this.lodStats.multiDraw = false;
+    const programa = (renderer.properties.get(material) as {
+      currentProgram: { getUniforms(): { setValue(gl: WebGL2RenderingContext, nome: string, v: number): void } };
+    }).currentProgram;
+    const uniforms = programa.getUniforms();
+    for (let d = 0; d < D; d++) {
+      if (L.counts[d] === 0) continue;
+      uniforms.setValue(gl, 'uDesenho', d);
+      gl.drawArraysInstanced(gl.POINTS, L.firsts[d], L.counts[d], L.insts[d]);
+    }
   }
 
   /**
@@ -565,7 +978,10 @@ export class Galaxy {
     time: number,
     externalFade: number,
     markerFade: number,
-    localBandFade: number
+    localBandFade: number,
+    /** só o ?galaxia=webgpu usa: a câmera e a largura do buffer */
+    camera?: THREE.PerspectiveCamera,
+    screenW?: number
   ) {
     this.group.visible =
       externalFade > 0.001 || markerFade > 0.001 || localBandFade > 0.001;
@@ -600,13 +1016,31 @@ export class Galaxy {
       // ÷ fracaoDeParticulas (item 149): menos pontos desenhados, cada um
       // mais brilhante — o fluxo INTEGRADO da galáxia não muda com o
       // ajuste, só a granulação.
-      u.uFade.value = brightFade / this.fracaoDeParticulas;
+      u.uFade.value = this.soParticulas
+        ? (brightFade + Galaxy.GANHO_DAS_LAMINAS * externalFade) / this.fracaoDeParticulas
+        : brightFade / this.fracaoDeParticulas;
+      if (this.camadaWebgpu && camera && screenW) {
+        // A CESSÃO: fora do disco (externalFade = 1) a luz das partículas é
+        // toda da camada WebGPU e o WebGL não desenha; na borda do disco as
+        // duas se cruzam; dentro, só o WebGL. A camada não tem a rampa de
+        // perto (< 1,5 kpc) do GALAXY_VERT — por isso só entra quando a
+        // câmera já está a ~1,7 kpc do plano.
+        const cessao = THREE.MathUtils.smoothstep(externalFade, 0.8, 1);
+        this.camadaWebgpu.update(camera, screenW, screenH, tanHalfFov, u.uFade.value as number, cessao);
+        u.uFade.value = (u.uFade.value as number) * (1 - cessao);
+      }
+      if (this.soParticulas) {
+        // o núcleo entra pela MESMA rampa que acende a luz das lâminas
+        u.uNucleo.value = externalFade;
+        u.uNucleoPc.value = this.nucleoPc();
+        if (this.lod) this.lod.fade = externalFade;
+      }
     }
     // As lâminas contínuas só entram na vista externa. De dentro
     // seriam planos infinitos; a faixa local vem das partículas 3D.
     // Com fade 0 os meshes ficam invisíveis: cada lâmina de 33,6 kpc
     // custa milhões de fragmentos de FBM que somariam exatamente zero.
-    const discVisible = discFade > 0.001 && this.showDisc;
+    const discVisible = discFade > 0.001 && this.showDisc && !this.soParticulas;
     for (const material of this.discMats) {
       material.uniforms.uFade.value = discFade;
       // openness É o μ da coluna: |cos| entre a visada e a normal do disco.
@@ -623,8 +1057,11 @@ export class Galaxy {
     const dGC = camPos.distanceTo(GAL.GC_POS);
     const glowGate = THREE.MathUtils.smoothstep(dGC, 5000, 13000);
     this.glowMat.uniforms.uTime.value = time;
-    this.glowMat.uniforms.uFade.value =
-      externalFade * glowGate * 0.32 + localBandFade * 0.11;
+    // só-partículas: o bojo agora é 3D nas partículas (barra + boxy/
+    // peanut com ~11 % da luz); o cartaz contaria a mesma luz duas vezes
+    this.glowMat.uniforms.uFade.value = this.soParticulas
+      ? 0
+      : externalFade * glowGate * 0.32 + localBandFade * 0.11;
     // a fenda no bojo abre exatamente onde as lâminas fecham (vista
     // rasante) — mesma rampa do discFade, invertida
     this.glowMat.uniforms.uLaneGate.value =
@@ -648,7 +1085,8 @@ export class Galaxy {
     // dentro do disco — tem termo próprio de localBandFade; halo e anã
     // não, e sem gate desenhavam um billboard quase de tela cheia
     // somando exatamente zero durante toda a viagem interna.
-    this.brightPts.visible = this.showPts && brightFade > 0.001;
+    this.brightPts.visible =
+      this.showPts && brightFade > 0.001 && (this.brightMat.uniforms.uFade.value as number) > 0;
     this.glowMesh.visible =
       this.showGlow && (this.glowMat.uniforms.uFade.value as number) > 0.001;
     this.haloMesh.visible =
@@ -659,7 +1097,27 @@ export class Galaxy {
       this.showGlow && (this.dwarfMat.uniforms.uFade.value as number) > 0.001;
   }
 
+  /**
+   * ?galaxia=webgpu: liga a camada. `buffers` é o sorteio que este objeto
+   * já desenha; `sortear(s)` entrega os sorteios extras do mesmo modelo.
+   * Sem o interruptor, ou sem WebGPU, não faz nada.
+   */
+  ligarWebgpu(buffers: GalaxyBuffers, sorteios: number, sortear: (s: number) => Promise<GalaxyBuffers>) {
+    if (Galaxy.MODO !== 'webgpu') return;
+    void CamadaWebgpu.criar(buffers, sorteios, sortear).then((camada) => {
+      if (!camada) return;
+      if (this.descartada) {
+        camada.dispose();
+        return;
+      }
+      this.camadaWebgpu = camada;
+      this.group.add(camada.mesh);
+    });
+  }
+
   dispose() {
+    this.descartada = true;
+    this.camadaWebgpu?.dispose();
     this.brightMat.dispose();
     this.glowMat.dispose();
     this.haloMat.dispose();
@@ -669,6 +1127,8 @@ export class Galaxy {
     this.discRTs.forEach((rt) => rt.dispose());
     this.tauRT?.dispose();
     this.tauParticulasRT?.dispose();
+    this.tauNuvens?.dispose();
+    this.tauNuvensRGBA?.dispose();
     this.tauVazio.dispose();
     if (this.ownsDustMap) this.dustMap.dispose();
     this.group.traverse((o) => {
