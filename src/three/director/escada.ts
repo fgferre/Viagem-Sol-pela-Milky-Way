@@ -173,14 +173,16 @@ const RAIO_DO_CENTRO_GALACTICO_PC = 6000;
 export const RAIO_DO_DEGRAU_DO_BURACO_PC = 10 * RS_SGR_A_PC;
 const PISO_DO_BURACO_PC = 3 * RS_SGR_A_PC;
 /**
- * De onde a câmera olha o buraco: do lado do Sol, 5° acima do plano
- * galáctico — o disco e o bojo do outro lado passam ATRÁS da sombra, e é
- * a luz deles que a lente dobra. O repouso do rig sobe 30° rumo ao polo
- * (`direcaoDeRepouso`), então o eixo entregue desce 25°.
+ * De onde a câmera olha o buraco: do lado do Sol, 5° ABAIXO do plano
+ * galáctico — o disco e o bojo do outro lado passam logo acima da sombra,
+ * dentro do anel de Einstein, e é a luz deles que a lente dobra. (5°
+ * acima, a anã de Sagitário — l = 5,6°, b = −14° — caía atrás da sombra
+ * com o rótulo dela por cima.) O repouso do rig sobe 30° rumo ao polo
+ * (`direcaoDeRepouso`), então o eixo entregue desce 35°.
  */
 const EIXO_DO_BURACO = EX.clone()
-  .multiplyScalar(Math.cos((25 * Math.PI) / 180))
-  .addScaledVector(EZ, -Math.sin((25 * Math.PI) / 180))
+  .multiplyScalar(Math.cos((35 * Math.PI) / 180))
+  .addScaledVector(EZ, -Math.sin((35 * Math.PI) / 180))
   .negate();
 
 export class Escada {

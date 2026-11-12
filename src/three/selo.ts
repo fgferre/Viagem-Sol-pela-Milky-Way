@@ -353,6 +353,12 @@ export function lerPortaVer(bruto: string | null | undefined): VerDaEscada | nul
 export interface EstadoDaVista {
   /** distância da câmera a casa, em pc — o eixo ESCALA sai daqui */
   distanciaPc: number;
+  /**
+   * distância da câmera a Sagittarius A✱, em pc — ausente = longe. Desde
+   * 12/11/2026 o buraco é desenhado em escala real, e a vizinhança dele
+   * é o segundo lugar onde tudo que se desenha é 1:1.
+   */
+  distanciaAoCentroPc?: number;
   /** as chaves presentes na URL AGORA (a URL é a fonte de verdade) */
   portas: readonly string[];
   /** exposição escolhida à mão (painel, ?exp= ou link) */
@@ -1089,8 +1095,9 @@ export interface VereditoDoSelo {
  * quadro. "Real" é o domínio do sistema solar (`LIMIAR_SISTEMA_SOLAR_PC`,
  * a constante CONGELADA de `escala.ts`): ali tudo que se desenha é 1:1 —
  * corpos com raio físico e pontos fotométricos. Além dele o selo declara
- * desvio porque NÃO SABE GARANTIR 1:1: Sagittarius A✱ segue 125.884×
- * inflado (item 13) e pode entrar em qualquer enquadramento fundo. É
+ * desvio porque NÃO SABE GARANTIR 1:1 (até 12/11/2026 a razão concreta
+ * era Sagittarius A✱ 125.884× inflado, item 13 — hoje pago no Atlas; o
+ * inflado vive só no filme, que não tem selo). É
  * conservadorismo declarado — o selo, na dúvida, declara o desvio em vez
  * de prometer o que não sabe — e `VereditoDoSelo.culpados` diz QUEM está
  * inflado e QUANTO, lendo o cadastro.
@@ -1099,14 +1106,22 @@ export interface VereditoDoSelo {
  * ponto→clarão (fronteira em 0,035 pc, o MEIO da janela morta). A
  * entrega morreu com o `SunStar`; a fronteira passou a ser a constante
  * de escala com âncora escrita (0,05 pc), que é o que ela sempre quis
- * dizer. Quando o item 13 pagar a dívida do Sgr A✱, a acusação nasce
- * vazia e este eixo poderá deixar de ser conservador.
+ * dizer. O item 13 pagou a dívida do Sgr A✱ no Atlas: a acusação nasce
+ * vazia, e deixar este eixo de ser conservador é decisão ainda aberta.
  *
  * Distância envenenada (NaN) devolve 'fora', pelo mesmo motivo
  * (NaN < limiar é falso por construção).
  */
-export function escalaDaVista(distanciaPc: number): 'real' | 'fora' {
-  return distanciaPc < LIMIAR_SISTEMA_SOLAR_PC ? 'real' : 'fora';
+export function escalaDaVista(
+  distanciaPc: number,
+  distanciaAoCentroPc: number = Infinity
+): 'real' | 'fora' {
+  // O SEGUNDO DOMÍNIO 1:1 (12/11/2026): a menos de 0,05 pc de Sgr A✱ o
+  // que se desenha é o buraco em escala real e as partículas da galáxia,
+  // que são instrumento declarado — a mesma situação de casa.
+  return distanciaPc < LIMIAR_SISTEMA_SOLAR_PC || distanciaAoCentroPc < LIMIAR_SISTEMA_SOLAR_PC
+    ? 'real'
+    : 'fora';
 }
 
 /**
@@ -1204,7 +1219,7 @@ export function estadoDoSelo(e: EstadoDaVista): VereditoDoSelo {
   for (const chave of e.portas) {
     if (!PORTAS_CONHECIDAS.has(chave)) desvios.push(desconhecida(chave));
   }
-  const escala = escalaDaVista(e.distanciaPc);
+  const escala = escalaDaVista(e.distanciaPc, e.distanciaAoCentroPc);
   // O RAIO DO SOL saía das PRÓPRIAS PORTAS até a F3, porque `?solreal=1`
   // podia trocá-lo por vista. Agora ele é um só e o cadastro fala
   // sozinho pelo padrão — `acusacaoDaEscala()` sem argumento. O que

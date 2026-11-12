@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { LUGARES_DO_FILME } from './lugaresDoFilme';
 import {
   B_CRITICO,
+  MASSA_SGR_A_MSOL,
+  ORBITA_S2,
   PERIASTRO_S2_UA,
+  RS_SGR_A_KM,
   RS_SGR_A_UA,
   azimuteDeEscape,
   deflexaoTotal,
@@ -53,6 +57,21 @@ describe('Sagittarius A✱ — os números', () => {
     expect(PERIASTRO_S2_UA).toBeGreaterThan(115);
     expect(PERIASTRO_S2_UA).toBeLessThan(125);
     expect(distanciaDeS2(2018.379)).toBeCloseTo(PERIASTRO_S2_UA, 0);
+  });
+});
+
+describe('a ficha diz os números desta física', () => {
+  it('massa, horizonte, sombra e S2 batem com as contas', () => {
+    const fatos = LUGARES_DO_FILME.find((l) => l.id === 'sagittarius-a')!.fatos!;
+    const de = (campo: string) => fatos.find((f) => f.campo === campo)!.pt;
+    const br = (x: number, casas: number) => x.toFixed(casas).replace('.', ',');
+    expect(de('massa')).toContain(br(MASSA_SGR_A_MSOL / 1e6, 2));
+    expect(de('horizonte')).toContain(br(RS_SGR_A_UA, 3));
+    expect(de('horizonte')).toContain(br(RS_SGR_A_KM / 1e6, 1));
+    expect(de('sombra')).toContain(br(2 * B_CRITICO * RS_SGR_A_UA, 2));
+    expect(de('sombra')).toContain(String(Math.round(sombraEmMicroArcsec())));
+    expect(de('estrelaS2')).toContain(br(ORBITA_S2.periodoAnos, 2));
+    expect(de('estrelaS2')).toContain(String(Math.round(PERIASTRO_S2_UA / 10) * 10));
   });
 });
 

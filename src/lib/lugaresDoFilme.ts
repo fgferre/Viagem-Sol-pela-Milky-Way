@@ -43,7 +43,19 @@ export type VistaDoLugar = 'doSol' | 'deCimaDoDisco' | 'sobreOSol' | 'abaixoDoDi
 
 /** uma linha da ficha de um lugar — as palavras nas duas línguas */
 export interface FatoDoLugar {
-  campo: 'tamanho' | 'idade' | 'membros' | 'orbita' | 'nucleo' | 'noCatalogo' | 'naCena';
+  campo:
+    | 'tamanho'
+    | 'idade'
+    | 'membros'
+    | 'orbita'
+    | 'nucleo'
+    | 'noCatalogo'
+    | 'naCena'
+    | 'massa'
+    | 'horizonte'
+    | 'sombra'
+    | 'anelEht'
+    | 'estrelaS2';
   pt: string;
   en: string;
   procedencia: Procedencia;
@@ -99,6 +111,66 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     pt: ['Sagittarius A*', 'Sgr A*', 'Buraco negro', 'Centro da galáxia', 'Centro galáctico'],
     en: ['Sagittarius A*', 'Sgr A*', 'Black hole', 'Galactic center', 'Galactic centre'],
     alvo: { centroGalactico: true },
+    classe: 'buraco negro',
+    distanciaPc: { valor: 8150, fonte: 'Reid et al. 2019 (VLBI)', doSolAoCentro: true },
+    oQueE: {
+      pt: 'O buraco negro supermassivo no centro da Via Láctea: 4 milhões de vezes a massa do Sol num espaço menor que a órbita de Mercúrio. Ele quase não brilha — o gás que cai nele é ralo — e se revela pelo que faz: as estrelas mais próximas giram em volta dele em poucos anos, e a luz que passa perto se curva.',
+      en: 'The supermassive black hole at the centre of the Milky Way: 4 million times the Sun’s mass in a space smaller than Mercury’s orbit. It barely shines — the gas falling in is thin — and it shows itself by what it does: the nearest stars circle it in a few years, and light passing close to it bends.',
+    },
+    // os números saem de `lib/buracoNegro.ts` (o teste da linha os cobra)
+    fatos: [
+      {
+        campo: 'massa',
+        pt: '≈ 4,30 milhões de massas solares',
+        en: '≈ 4.30 million solar masses',
+        procedencia: 'medido',
+        fonte: {
+          pt: 'GRAVITY Collaboration 2022 (órbitas das estrelas S)',
+          en: 'GRAVITY Collaboration 2022 (orbits of the S stars)',
+        },
+      },
+      {
+        campo: 'horizonte',
+        pt: '0,085 UA (12,7 milhões de km) de raio — pouco mais de 1/5 do raio da órbita de Mercúrio',
+        en: '0.085 AU (12.7 million km) in radius — just over 1/5 of the radius of Mercury’s orbit',
+        procedencia: 'derivado',
+        fonte: { pt: '2GM/c² com a massa medida', en: '2GM/c² from the measured mass' },
+      },
+      {
+        campo: 'sombra',
+        pt: '0,44 UA de diâmetro (5,2 raios de Schwarzschild); daqui da Terra, 54 microssegundos de arco',
+        en: '0.44 AU across (5.2 Schwarzschild radii); seen from Earth, 54 microarcseconds',
+        procedencia: 'derivado',
+        fonte: {
+          pt: 'relatividade geral, buraco sem rotação (Synge 1966)',
+          en: 'general relativity, non-rotating hole (Synge 1966)',
+        },
+      },
+      {
+        campo: 'anelEht',
+        pt: 'um anel de 51,8 ± 2,3 microssegundos de arco, em ondas de rádio de 1,3 mm (observado em 2017, publicado em 2022)',
+        en: 'a ring 51.8 ± 2.3 microarcseconds across, in 1.3 mm radio waves (observed in 2017, published in 2022)',
+        procedencia: 'medido',
+        fonte: 'Event Horizon Telescope Collaboration 2022 (ApJL 930, L12)',
+      },
+      {
+        campo: 'estrelaS2',
+        pt: 'uma volta a cada 16,05 anos; no ponto mais perto passa a 120 UA do buraco, a ≈ 7.700 km/s (o último foi em maio de 2018, o próximo em 2034)',
+        en: 'one orbit every 16.05 years; at closest approach it passes 120 AU from the hole at ≈ 7,700 km/s (the last was in May 2018, the next in 2034)',
+        procedencia: 'medido',
+        fonte: 'GRAVITY Collaboration 2020 (A&A 636, L5)',
+      },
+      {
+        campo: 'naCena',
+        pt: 'a sombra tem o tamanho real, e a luz das estrelas e do gás atrás dela é desviada pela deflexão exata da relatividade geral, calculada aqui (buraco sem rotação). Não há disco desenhado: o gás que cai em Sgr A✱ é ralo e brilha em rádio e raios X, não em luz visível. Colado na sombra, o céu que estaria atrás de você é completado dobrando a imagem da frente — uma extrapolação.',
+        en: 'the shadow is true to size, and the light of the stars and gas behind it is bent by the exact deflection of general relativity, computed here (non-rotating hole). No disc is drawn: the gas falling into Sgr A✱ is thin and shines in radio and X-rays, not visible light. Right next to the shadow, the sky that would be behind you is filled in by folding the image in front — an extrapolation.',
+        procedencia: 'derivado',
+        fonte: {
+          pt: 'relatividade geral (Schwarzschild 1916)',
+          en: 'general relativity (Schwarzschild 1916)',
+        },
+      },
+    ],
   },
   {
     id: 'pleiades',

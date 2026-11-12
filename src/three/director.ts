@@ -3672,6 +3672,7 @@ export class Director {
   get selo(): EstadoDaVista {
     return {
       distanciaPc: this.engine.camera.position.length(),
+      distanciaAoCentroPc: this.engine.camera.position.distanceTo(GAL.GC_POS),
       portas: [...new URLSearchParams(window.location.search).keys()],
       exposicaoManual: this.expOverride,
       tom: modoDoToneMapping(this.engine.renderer.toneMapping),

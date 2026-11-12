@@ -8,18 +8,20 @@
 // casa (R0 = 8.150 pc, Reid et al. 2019), que é onde a galáxia desenhada
 // põe o centro — a sombra sai das duas.
 // ============================================================
+import { AU_KM } from './atlas/elementosOrbitais';
+import { AU_PARA_PC } from './atlas/frameGalactico';
 import { resolverKepler } from './atlas/kepler';
-import { UA_POR_PC } from './unidades';
 
 /** massa, M☉ — GRAVITY Collaboration 2022, A&A 657, L12 (±0,25 %) */
 export const MASSA_SGR_A_MSOL = 4.3e6;
 /** 2GM/c² por massa solar, km (IAU: GM☉ = 1,327 124 4e20 m³/s²) */
 const RS_POR_MSOL_KM = 2.953_250_077;
-const UA_KM = 149_597_870.7;
-/** o raio de Schwarzschild de Sgr A✱ em km, em UA e em pc */
+/** o raio de Schwarzschild de Sgr A✱ em km, em UA e em pc — a conta de
+ *  `kmParaPc` (`three/escala.ts`), letra a letra: o cadastro de escala
+ *  cobra fator 1 exato deste número */
 export const RS_SGR_A_KM = RS_POR_MSOL_KM * MASSA_SGR_A_MSOL;
-export const RS_SGR_A_UA = RS_SGR_A_KM / UA_KM;
-export const RS_SGR_A_PC = RS_SGR_A_UA / UA_POR_PC;
+export const RS_SGR_A_UA = RS_SGR_A_KM / AU_KM;
+export const RS_SGR_A_PC = RS_SGR_A_UA * AU_PARA_PC;
 /** a distância da casa ao centro, pc (Reid et al. 2019, a de `medidasDaGalaxia`) */
 export const DISTANCIA_SGR_A_PC = 8150;
 
