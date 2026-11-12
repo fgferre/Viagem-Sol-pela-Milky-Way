@@ -47,11 +47,19 @@ palavra dele. Os pilares, em ordem; cada um fecha com imagem lado a lado:
    sondas com trajetória real — o terreno do NASA Eyes.
 5. **Quem chega entende e roda.** O primeiro minuto, o celular e o peso:
    nenhum pilar acima vale se o visitante não chega até ele.
-O que cada concorrente tem e nós não, para não esquecer: pousar e andar
-num mundo e outras galáxias aos milhares (SpaceEngine); missões e sondas
-com eventos no tempo (NASA Eyes); catálogos abertos e complementos
-(Celestia). O que nós temos e eles não: o selo de honestidade por canal,
-os filmes, e nada para instalar.
+Placar contra os três, pela documentação de cada um (12/11/2026; beleza
+de imagem não julgada). À frente: nada para instalar e roda no telefone;
+o selo de honestidade por canal; catálogo real de estrelas dentro de uma
+galáxia de partículas, numa viagem só; os filmes. Ausente ou atrás, na
+ordem em que um visitante sente: pousar e voar baixo sobre um mundo
+(SpaceEngine); nada além da nossa galáxia (SpaceEngine); exoplanetas
+(Eyes on Exoplanets, 5.500+ sistemas); asteroides e cometas (Eyes on
+Asteroids, 30.000+); poucas sondas e nenhum evento de missão (Eyes, 150+);
+buraco negro com lente gravitacional (SpaceEngine); complementos do
+usuário (Celestia); só duas línguas. A fila sai daqui: primeiro o que é
+vitrine de shader e não pede dado novo (buraco negro, cometas), depois as
+galáxias vizinhas de partículas, exoplanetas em volta das estrelas-lugar,
+e o voo baixo sobre relevo medido.
 ## Escala e honestidade
 - Regra de escala, testável: quem tapa o que está atrás (escreve
   profundidade) tem raio físico real; quem só brilha por cima pode ter
@@ -76,9 +84,15 @@ os filmes, e nada para instalar.
   a penumbra física verdadeira (Saturno mais escuro que a Terra) — quando
   um relatório de terceiro e uma decisão do dono discordam, vence a
   decisão, e a discordância fica escrita nos dois lugares (`luz.ts`).
-- Sagittarius A* segue 125.884× maior que o real — segundo mentiroso de
-  escala, dívida aberta (item 13 do PENDENCIAS). Generalização de
-  comportamento estelar tem de aparecer no selo também.
+- Sagittarius A✱ é o Gargantua em toda parte (Atlas, voo livre, filmes):
+  de longe, inflado 125.884× por ser composição aprovada — o segundo
+  mentiroso de escala, declarado no selo; a regra é só a distância, igual
+  em qualquer modo: ele encolhe a partir de 1,4 pc e tem o tamanho real a
+  menos de 8,5 UA (100 RS), com o brilho do disco de autor (o real quase
+  não brilha). A lente exata
+  sem disco (`lenteDoBuracoNegro.ts`) é candidata de perto, escolha do dono
+  pela prancha. Generalização de comportamento estelar tem de aparecer no
+  selo também.
 ## Atlas e câmera
 - O código do atlas-orbital é **especificação do problema, não
   fornecedor da solução**: dados e oráculos (efemérides, IAU, fixtures,

@@ -58,6 +58,7 @@
 // `config.ts` volta a valer.
 import { AU_PARA_PC } from '../lib/atlas/frameGalactico';
 import { AU_KM } from '../lib/atlas/elementosOrbitais';
+import { RS_SGR_A_PC } from '../lib/buracoNegro';
 // A UNIDADE DE LUZ (F1). A seta aponta só nesta direção: `luzDaCasa.ts` não
 // importa daqui — toda função dela que precisa de um raio o RECEBE — e é assim
 // que os dois cadastros da casa, o de tamanho e o de brilho, ficam sem ciclo.
@@ -173,7 +174,8 @@ export const LIMIAR_SISTEMA_SOLAR_PC = 0.05;
  */
 export const RS_POR_MASSA_SOLAR_KM = 2.953_250_077;
 
-/** Massa de Sgr A✱ em massas solares — espelho de `world/blackHole.ts:13`. */
+/** Massa do Sgr A✱ INFLADO em massas solares — espelho de `world/blackHole.ts:13`.
+ *  O de perto usa a medida da GRAVITY (2022), em `lib/buracoNegro.ts`. */
 export const MASSA_SGR_A_MSOL = 4.15e6;
 
 /** Raio de Schwarzschild de uma massa em massas solares, em pc. */
@@ -184,8 +186,18 @@ export function raioDeSchwarzschildPc(massaMsol: number): number {
 // ---- os espelhos dos arquivos que importam three -------------------
 // Cada um destes tem um teste que confere contra a fonte real.
 
-/** Espelho de `world/blackHole.ts:27` (`RS_PC`). */
+/** Espelho de `world/blackHole.ts:43` (`RS_PC`). */
 export const ESPELHO_RS_SGR_A_PC = 0.05;
+/**
+ * A ENTREGA DO GARGANTUA (12/11/2026): a menos de 100 raios de Schwarzschild
+ * REAIS do centro (8,5 UA) o disco é desenhado no tamanho verdadeiro do
+ * buraco, em qualquer modo; entre 1,4 pc e ali o RS desenhado desce do
+ * inflado ao real (`world/blackHole.ts`, `entregaDoBuraco`), e de 1,4 pc
+ * para fora é o inflado.
+ */
+export const RAIOS_DA_ENTREGA_DO_BURACO = 100;
+/** a mesma fronteira em pc — de onde o selo diz ESCALA REAL perto do buraco */
+export const ENTREGA_DO_BURACO_PC = RAIOS_DA_ENTREGA_DO_BURACO * RS_SGR_A_PC;
 /** Espelho de `world/observedClouds.ts:20` (`CO_RADIUS_SCALE`). */
 export const ESPELHO_ESCALA_NUVEM_CO = 2.1;
 /** Espelho de `world/observedClouds.ts:21` (`LARGE_RADIUS_SCALE`). */
@@ -278,12 +290,15 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
     id: 'sgr-a',
     nome: 'Sagittarius A✱',
     classe: 'corpo',
+    // o pior caso, que é o de longe: de perto (a menos de
+    // `ENTREGA_DO_BURACO_PC`) o RS desenhado é o real, 0,085 UA
     fator: ESPELHO_RS_SGR_A_PC / raioDeSchwarzschildPc(MASSA_SGR_A_MSOL),
     fatorDeBrilho: null,
-    endereco: 'src/three/world/blackHole.ts:27',
+    endereco: 'src/three/world/blackHole.ts:43',
     razao:
-      'o disco de acreção foi inflado para ler como Gargantua no periastro do ' +
-      'filme; a física do shader é adimensional em RS e não muda com a escala',
+      'de longe, o disco de acreção é inflado até 125.884× para ler como Gargantua; ' +
+      'a menos de 8,5 UA do buraco ele tem o tamanho real (RS = 0,085 UA, 4,30e6 M☉, ' +
+      'GRAVITY 2022). A física do shader é adimensional em RS; o brilho do disco é de autor',
   },
   {
     id: 'clarao-estelar',
@@ -382,6 +397,21 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
       'tela a lei ESCURECE a estrela quando a câmera se aproxima dela',
   },
   {
+    id: 'caudas-dos-cometas',
+    nome: 'coma e caudas dos cometas',
+    classe: 'instrumento',
+    fator: null,
+    fatorDeBrilho: null,
+    endereco: 'src/three/world/caudasDosCometas.ts:86',
+    razao:
+      'a FORMA tem tamanho real (a cauda tem de 10⁶ a 10⁸ km, calculada grão a grão) ' +
+      'e só soma luz por cima, sem escrever profundidade; cada partícula é um borrão ' +
+      'de instrumento que representa uma multidão, e o GANHO absoluto do brilho é ' +
+      'artístico (um número só para os oito cometas) — a queda com a distância ao ' +
+      'Sol e a lei de atividade são físicas. De longe, o núcleo é um marcador de ' +
+      'instrumento (o anel dos rótulos); de perto, um corpo de diâmetro medido',
+  },
+  {
     id: 'plumas-de-encelado',
     nome: 'jatos de Encélado',
     classe: 'instrumento',
@@ -450,7 +480,11 @@ export const DIVIDAS_ABERTAS: Readonly<Record<string, string>> = {
   // (a linha do `sol` saiu em 2026-08-13, quando a F3 entrou: o teste
   // apertou sozinho e passou a EXIGIR fator 1 do Sol, que é o que este
   // bloco prometia por escrito desde a F0.)
-  'sgr-a': 'F5 — o raio sai da massa (4,15e6 M☉)',
+  // (de 12/11/2026 a linha esteve dividida em `sgr-a` real e `sgr-a-filme`
+  // inflado; o Gargantua voltou ao Atlas no mesmo dia e a divisão saiu.)
+  'sgr-a':
+    'SEM FASE — o Gargantua inflado de longe é composição aprovada pelo dono; ' +
+    'de perto (menos de 8,5 UA) o tamanho já é o real',
 };
 
 // ------------------------------------------------------------
@@ -490,7 +524,7 @@ export const DIVIDAS_DE_BRILHO: Readonly<Record<string, string>> = {
   // git; o invariante da troca, em `luzDaCasa.test.ts`.)
   'sgr-a':
     'SEM FASE MARCADA — a emissão do disco de acreção é autorada e não tem ' +
-    'contraparte medida; entra quando a unidade da luz alcançar o buraco negro',
+    'contraparte medida (o gás real de Sgr A✱ é ralo e quase não brilha no visível)',
 };
 
 /** Quem deve brilho, do pior para o melhor. O `null` vai para o fim. */

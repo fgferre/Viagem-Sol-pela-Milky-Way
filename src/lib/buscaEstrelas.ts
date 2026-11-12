@@ -87,6 +87,8 @@ export interface CorpoBuscavel {
   /** id do PAI, presente só nas luas — é ele que muda a régua da nota
    *  (km, não UA) e que o degrau "lua" mantém em quadro */
   pai?: string;
+  /** outros nomes que a busca reconhece (as sondas: "Voyager", "NH") */
+  apelidos?: readonly string[];
 }
 
 // A NOTA DE DISTÂNCIA (o degrau km/UA da emenda P-E10a) MUDOU DE CASA
@@ -97,17 +99,25 @@ export interface CorpoBuscavel {
 // de busca e os rótulos das estrelas a importam. Aqui ficou só a busca.
 
 /**
- * UM LUGAR DO CÉU que não é estrela nem corpo do sistema — hoje só o
- * centro galáctico (`LUGARES_DO_FILME`). As PALAVRAS dele vêm da
- * tabela; a GEOMETRIA entra injetada, porque `GAL.GC_POS` mora no three
- * e esta biblioteca é pura (ver `LUGARES_DA_BUSCA`, em `useDirector`).
+ * UM LUGAR DO CÉU que não é estrela nem corpo do sistema — o centro
+ * galáctico, os aglomerados, as nebulosas e as vistas da galáxia
+ * (`LUGARES_DO_FILME`). As PALAVRAS dele vêm da tabela; a GEOMETRIA
+ * entra injetada, porque `GAL.GC_POS` mora no three e esta biblioteca é
+ * pura (ver `LUGARES_DA_BUSCA`, em `three/world/lugaresDoCeu.ts`).
  */
 export interface LugarBuscavel {
   /** o id da linha em `LUGARES_DO_FILME` — é a chave do link */
   id: string;
   /** o nome que o Director ANUNCIA no rótulo ('Sagittarius A✱'), que é
-   *  por onde `chaveDoFoco` o reconhece em quadro */
+   *  por onde `chaveDoFoco` o reconhece em quadro — em pt-BR */
   nome: string;
+  /** o mesmo nome em inglês; ausente = `nome` (ver `nomeDoLugar`) */
+  nomeEn?: string;
+  /** o raio da esfera enquadrada, em pc; ausente = a lei antiga do
+   *  centro galáctico (`escada.irAte`) */
+  raioPc?: number;
+  /** a palavra da classe ('aglomerado aberto'); ausente = sem selo */
+  classe?: string;
   /** distância ao Sol em PARSECS, como `NamedStar.d` — a nota da paleta */
   d: number;
   x: number;
@@ -283,7 +293,7 @@ export function construirIndice(
   // digita "terra" está em casa procurando casa. Quem os põe na frente
   // no resultado é `ordemDoTipo`, não esta ordem: desde o item 115 o
   // índice é só o ÚLTIMO critério do `buscar`, o que sobra para dois
-  // alvos com nome idêntico. Os LUGARES vêm logo atrás (é um só).
+  // alvos com nome idêntico. Os LUGARES vêm logo atrás.
   const entradas: EntradaDaBusca[] = [
     ...corpos.map((corpo) => ({ tipo: 'corpo', corpo }) as const),
     ...lugares.map((lugar) => ({ tipo: 'lugar', lugar }) as const),
@@ -307,6 +317,8 @@ export function construirIndice(
       // o lado que LÊ. "jupiter" é id e nome ao mesmo tempo: `anotar`
       // não repete a mesma entrada na mesma chave.
       anotar(entrada.corpo.id, indice);
+      // os APELIDOS (as sondas: "Voyager", "NH") — mais portas de leitura
+      for (const apelido of entrada.corpo.apelidos ?? []) anotar(apelido, indice);
       return;
     }
     if (entrada.tipo === 'lugar') {
@@ -315,6 +327,7 @@ export function construirIndice(
       // da tabela, junto com as dos lugares que são estrela
       anotar(entrada.lugar.id, indice);
       anotar(entrada.lugar.nome, indice);
+      if (entrada.lugar.nomeEn) anotar(entrada.lugar.nomeEn, indice);
       porIdDeLugar.set(entrada.lugar.id, indice);
       return;
     }
@@ -406,8 +419,13 @@ export function nomeDaEntrada(entrada: EntradaDaBusca): string {
     const corpo = entrada.corpo;
     return idiomaAtual() === 'en' ? (corpo.nomeEn ?? corpo.nome) : corpo.nome;
   }
-  if (entrada.tipo === 'lugar') return entrada.lugar.nome;
+  if (entrada.tipo === 'lugar') return nomeDoLugar(entrada.lugar);
   return entrada.estrela.n;
+}
+
+/** o nome de um LUGAR na língua de agora — a mesma regra do corpo */
+export function nomeDoLugar(lugar: { nome: string; nomeEn?: string }): string {
+  return idiomaAtual() === 'en' ? (lugar.nomeEn ?? lugar.nome) : lugar.nome;
 }
 
 /** casa antes do céu: com o mesmo score, um corpo do sistema vem antes */
@@ -596,7 +614,9 @@ export function chaveDoFoco(nome: string, indice: IndiceEstrelas): string | null
   const entrada = indice.entradas.find((e) =>
     e.tipo === 'corpo'
       ? e.corpo.nome === nome || e.corpo.nomeEn === nome
-      : nomeDaEntrada(e) === nome
+      : e.tipo === 'lugar'
+        ? e.lugar.nome === nome || e.lugar.nomeEn === nome
+        : nomeDaEntrada(e) === nome
   );
   return entrada ? chaveDeLink(entrada) : null;
 }

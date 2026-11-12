@@ -105,7 +105,10 @@ describe('near/far — acima do limiar o par é IDÊNTICO ao de antes (D5)', () 
   it('e em toda a faixa de 0,05 a 400.000 pc, ponto a ponto', () => {
     for (const d of ACIMA) {
       expect(Object.is(nearPlanePc(d), nearAntigo(d))).toBe(true);
-      expect(Object.is(farPlanePc(d), farAntigo(d))).toBe(true);
+      // além de 200 kpc o far é o DOBRO da distância (as galáxias vizinhas,
+      // 12/11/2026: a Via Láctea vista de Andrômeda); até lá, o de antes
+      if (d <= 200_000) expect(Object.is(farPlanePc(d), farAntigo(d))).toBe(true);
+      else expect(farPlanePc(d)).toBe(2 * d);
     }
   });
 

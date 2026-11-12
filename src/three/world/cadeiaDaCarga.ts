@@ -32,6 +32,9 @@ export interface EntradaDaCarga {
    *  ANTES de quem aloca — aqui só chega a decisão tomada. */
   catalogos: GalacticAssets | null;
   populationScale: number;
+  /** ?galaxia=particulas: as partículas carregam a galáxia inteira (ensaio);
+   *  ausente = o buffer de sempre, bit a bit */
+  soParticulas?: boolean;
 }
 
 export interface CargaAssada {
@@ -55,7 +58,7 @@ export interface CargaAssada {
  * worker a thread congela como sempre congelou, mas o rótulo pinta.
  */
 export async function assarCarga(
-  { seed, catalogos, populationScale }: EntradaDaCarga,
+  { seed, catalogos, populationScale, soParticulas }: EntradaDaCarga,
   aoAvancar: (etapa: EtapaDaCadeia) => void | Promise<void>
 ): Promise<CargaAssada> {
   const poeira = bakeDustMap(catalogos ? catalogos.dustDensity : null);
@@ -77,7 +80,8 @@ export async function assarCarga(
       size: DUST_MAP_SIZE,
       halfExtentPc: DUST_MAP_HALF_EXTENT,
     },
-    populationScale
+    populationScale,
+    soParticulas
   );
   return {
     poeira: poeira.pixels,

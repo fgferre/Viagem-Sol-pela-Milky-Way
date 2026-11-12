@@ -53,7 +53,7 @@ import { StarField } from './world/stars';
 import { Nebula } from './world/nebula';
 import { StellarBody, SOL_PARAMS } from './world/stellarBody';
 import { Dust } from './world/dust';
-import type { StarLabel } from './world/labels';
+import type { OclusorDeRotulo, StarLabel } from './world/labels';
 // O CLARÃO DE ASAS (M2): a camada única da óptica das fontes fortes,
 // por orçamento de fluxo — no lugar das 16 heroes de autor. Quem o
 // alimenta por quadro é o módulo do Sol (director/solNoQuadro.ts).
@@ -61,6 +61,7 @@ import { ClaraoDeAsas } from './world/clarao';
 import { SondaDaLente } from './lente/sondaDaLente';
 import { HeroStars } from './world/heroStars';
 import { Galaxy, GAL, dentroDoDisco } from './world/galaxy';
+import { GalaxiasVizinhas, sortearVizinhas } from './world/vizinhas';
 import type { CartographyMode } from './world/galaxy';
 import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
@@ -73,6 +74,11 @@ import { RochosoResolvido } from './world/corpos/rochoso';
 import { GiganteResolvido } from './world/corpos/gigante';
 import { Planetas, UA_POR_PC } from './world/planetas/planetas';
 import { Orbitas, type QuadroEmPx } from './world/orbitas';
+import { TrajetoriasDasSondas } from './world/sondas';
+import { OrbitasDosCometas } from './world/cometas';
+import { CaudasDosCometas } from './world/caudasDosCometas';
+import { SistemasPlanetarios } from './world/exoplanetas';
+import { comAnfitrias } from '../lib/exoplanetas';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
 import { exposicaoDoQuadro, stopsDaVisita } from '../lib/atlas/luzDaVisita';
 import { lerPortaLuz } from './selo';
@@ -157,10 +163,11 @@ import {
 import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import { filmeDe, type Filme } from './cinematic/filme';
-import { BlackHolePass } from './world/blackHole';
+import { BlackHolePass, entregaDoBuraco } from './world/blackHole';
+import { LenteDoBuracoNegro } from './world/lenteDoBuracoNegro';
 import { loadStarData } from './config';
 import type { NamedStar, StarsMeta } from './config';
-import type { CorpoBuscavel } from '../lib/buscaEstrelas';
+import type { CorpoBuscavel, LugarBuscavel } from '../lib/buscaEstrelas';
 
 /**
  * O INSTRUMENTO DA CASA na parte que não muda com o quadro (M4 da Lei
@@ -644,6 +651,8 @@ export class Director {
    *  `null` com `?estrelaslugar=0` ou antes do catálogo */
   private estrelasNoQuadro: EstrelasNoQuadro | null = null;
   private galaxy!: Galaxy;
+  /** as galáxias vizinhas (pilar 3): nascem junto da carga, em paralelo */
+  private vizinhas: GalaxiasVizinhas | null = null;
   /** os 11 pontos fotométricos do domínio profundo (Onda 4, D3) —
    *  camada IRMÃ do `sun.group`, nunca filha dele */
   private planetas: Planetas | null = null;
@@ -652,6 +661,15 @@ export class Director {
    *  escala do doador. Só desenha com efeméride viva (ver `orbitas.ts`,
    *  §6): a curva sai do estado do instante, nunca do retrato. */
   private orbitas: Orbitas | null = null;
+  /** a linha da sonda em foco (pilar 4) — a camada `nosondas` */
+  private sondas: TrajetoriasDasSondas | null = null;
+  /** os cometas (pilar 4): a linha do que está em foco (`nocometas`) e
+   *  a coma e as caudas de partículas dos acesos (`nocaudas`) */
+  private orbitasDosCometas: OrbitasDosCometas | null = null;
+  /** os sistemas planetários em volta das anfitriãs (12/11): as
+   *  órbitas e a zona habitável do ativo (`noexoplanetas`) e os planetas */
+  private exoplanetas: SistemasPlanetarios | null = null;
+  private caudas: CaudasDosCometas | null = null;
   /** as três medidas do quadro que a camada das órbitas lê, num objeto só e
    *  REUSADO — o tick não aloca (ver `QuadroEmPx`, em `world/orbitas.ts`) */
   private readonly quadroDasOrbitas: QuadroEmPx = {
@@ -894,6 +912,8 @@ export class Director {
   private sun: StellarBody;
   private dust: Dust;
   private blackHole: BlackHolePass | null = null;
+  /** a lente exata de Sgr A✱ em escala real (`?bh=lente|ambos`) — ver lenteDoBuracoNegro.ts */
+  private lenteDoBuraco: LenteDoBuracoNegro | null = null;
   private bgColor = new THREE.Color(0x000106);
   /** o filme em cartaz — o que o `play()` toca e o caminho do filme lê
    *  (planos, carga, calendário, dose do Sol, pinos); sem `?filme=`, o
@@ -1226,10 +1246,39 @@ export class Director {
           ? this.orbitas.corpoNoPonto(x, y, this.engine.camera, window.innerWidth, window.innerHeight)
           : null,
       estrelasComLugar: () => lerPortaEstrelasComLugar(this.debug.get('estrelaslugar')),
-      posicaoDaEstrelaComLugar: (nome) => this.estrelasNoQuadro?.posicaoDe(nome) ?? null,
+      posicaoDaEstrelaComLugar: (nome) => this.posicaoDaAnfitria(nome),
     },
   });
   private disposed = false;
+
+  /**
+   * ONDE A ANFITRIÃ ESTÁ: a posição do corpo da estrela (o ponto do
+   * catálogo), e sem o piloto (`?estrelaslugar=0`) a da lista de nomeadas.
+   */
+  private readonly anfitriasPorNome = new Map<string, THREE.Vector3>();
+  /** os discos que escondem nome: as estrelas com lugar e os exoplanetas */
+  private readonly oclusoresJuntos: OclusorDeRotulo[] = [];
+  private oclusoresDoQuadro(): readonly OclusorDeRotulo[] | undefined {
+    const estrelas = this.estrelasNoQuadro?.oclusores();
+    const planetas = this.exoplanetas?.oclusores();
+    if (!planetas?.length) return estrelas;
+    this.oclusoresJuntos.length = 0;
+    if (estrelas) this.oclusoresJuntos.push(...estrelas);
+    this.oclusoresJuntos.push(...planetas);
+    return this.oclusoresJuntos;
+  }
+  private posicaoDaAnfitria(nome: string): THREE.Vector3 | null {
+    const doCorpo = this.estrelasNoQuadro?.posicaoDe(nome);
+    if (doCorpo) return doCorpo;
+    let pos = this.anfitriasPorNome.get(nome);
+    if (!pos) {
+      const s = this.meta?.named.find((n) => n.n === nome);
+      if (!s) return null;
+      pos = new THREE.Vector3(s.x, s.y, s.z);
+      this.anfitriasPorNome.set(nome, pos);
+    }
+    return pos;
+  }
   /** pré-compilação em voo; o dispose do renderer espera por ela */
   private warmup: Promise<unknown> | null = null;
   /** download disparado no construtor, consumido pelo init */
@@ -1943,7 +1992,10 @@ export class Director {
       cartMode,
     } = await this.assets;
     if (this.disposed) return;
-    this.meta = meta;
+    // as anfitriãs de exoplanetas que o catálogo não nomeia (TRAPPIST-1,
+    // Kepler-186, HD 189733) entram nas nomeadas pela posição medida —
+    // daqui em diante a busca, os rótulos e as fichas as conhecem
+    this.meta = { ...meta, named: comAnfitrias(meta.named) };
     await this.stage('stars');
 
     // expoM0 é o "tempo de exposição": a magnitude aparente cujo pico de
@@ -2045,6 +2097,9 @@ export class Director {
     this.catalogos = cartOn ? galactic : null;
     this.cartMode = cartOn ? cartMode : 'off';
     this.tierDoMundo = this.engine.quality;
+    // AS VIZINHAS sorteiam no trabalhador DELAS, em paralelo com a Via
+    // Láctea: ~0,2 s contra os segundos da carga, então ninguém espera
+    const vizinhasSorteadas = sortearVizinhas(1);
     const carga = await montarCarga({
       catalogos: this.catalogos,
       tier: this.tierDoMundo,
@@ -2058,6 +2113,8 @@ export class Director {
     this.structureMapTexture = carga.structureMapTexture;
     this.galaxy = carga.galaxy;
     this.vestirGalaxia(this.galaxy);
+    this.vizinhas = new GalaxiasVizinhas(await vizinhasSorteadas);
+    if (this.disposed) return;
     // congela as lâminas (estáticas) em texturas — depois do modo
     await this.stage('layers');
     if (this.disposed) return;
@@ -2126,6 +2183,8 @@ export class Director {
     this.blackHole = new BlackHolePass();
     this.blackHole.setQuality(this.engine.quality);
     this.post.addBlackHole(this.blackHole);
+    this.lenteDoBuraco = new LenteDoBuracoNegro();
+    this.post.addBlackHole(this.lenteDoBuraco);
     this.engine.scene.add(this.stars.points);
     // a SEGUNDA passada do campo (item 37) — a de quem está na frente de
     // todas as nuvens da visada, desenhada depois do quad multiplicativo.
@@ -2140,6 +2199,7 @@ export class Director {
     this.engine.scene.add(this.heroes.group);
     if (this.estrelasNoQuadro) this.engine.scene.add(this.estrelasNoQuadro.group);
     this.engine.scene.add(this.galaxy.group);
+    if (this.vizinhas) this.engine.scene.add(this.vizinhas.group);
     // O COBERTOR DO CAMPO (R2 do item 44, "cada camada com seu cobertor"):
     // as três camadas de estrelas vivem TAMBÉM na CAMADA_DO_CAMPO — é por
     // ela que o ClaraoDoCampo (post.ts) as re-desenha para vestir o kernel
@@ -2170,6 +2230,14 @@ export class Director {
     // cônica é escrita no tick, quando o motor existir (`orbitas.ts`, §6).
     this.orbitas = new Orbitas();
     this.engine.scene.add(this.orbitas.group);
+    this.sondas = new TrajetoriasDasSondas();
+    this.engine.scene.add(this.sondas.group);
+    this.orbitasDosCometas = new OrbitasDosCometas();
+    this.engine.scene.add(this.orbitasDosCometas.group);
+    this.exoplanetas = new SistemasPlanetarios();
+    this.engine.scene.add(this.exoplanetas.group);
+    this.caudas = new CaudasDosCometas();
+    this.engine.scene.add(this.caudas.group);
     // O PALCO LOCAL (Onda 6, F0): o grupo dos corpos resolvidos entra
     // irmão dos dois acima. Desde a F2a ele tem o primeiro morador: a
     // Terra — construtor barato, sem geometria e sem um byte de textura
@@ -2225,6 +2293,7 @@ export class Director {
         comNormal: this.nebula.warmupMaterials,
         semNormal: [
           ...(this.blackHole?.warmupMaterials ?? []),
+          ...(this.lenteDoBuraco?.warmupMaterials ?? []),
           ...this.post.warmupMaterials,
         ],
       });
@@ -2623,6 +2692,12 @@ export class Director {
   /** o destino do clique num rótulo, escolhido pelo NOME (busca, F3) */
   visitarEstrela(estrela: { n: string; x: number; y: number; z: number }) {
     this.escada.visitarEstrela(estrela);
+  }
+
+  /** um LUGAR do céu (aglomerado, nebulosa, vista da galáxia) — o
+   *  enquadramento dele (`poseDoLugar`), pela mesma escada */
+  visitarLugar(lugar: LugarBuscavel) {
+    this.escada.visitarLugar(lugar);
   }
 
   /** as 1.726 nomeadas — o índice da busca monta sobre esta lista */
@@ -3679,6 +3754,7 @@ export class Director {
   get selo(): EstadoDaVista {
     return {
       distanciaPc: this.engine.camera.position.length(),
+      distanciaAoCentroPc: this.engine.camera.position.distanceTo(GAL.GC_POS),
       portas: [...new URLSearchParams(window.location.search).keys()],
       exposicaoManual: this.expOverride,
       tom: modoDoToneMapping(this.engine.renderer.toneMapping),
@@ -4031,6 +4107,18 @@ export class Director {
       tempoS: time,
       focoNome: this.escada.nomeDaEstrelaEmFoco,
     });
+    // OS SISTEMAS PLANETÁRIOS, no mesmo ponto: os planetas do sistema
+    // ativo entram no palco antes de o near o ler (world/exoplanetas.ts)
+    if (this.exoplanetas) {
+      this.exoplanetas.ligado = !this.hide.has('noexoplanetas');
+      this.exoplanetas.update({
+        jd: this.maquinaDoTempo.jdVivo,
+        camPos: cam.position,
+        focoSistema: this.phase === 'atlas' ? this.escada.sistemaEmFoco : null,
+        posDe: (nome) => this.posicaoDaAnfitria(nome),
+        palco: this.palco,
+      });
+    }
 
     // OS DOZE CORPOS DO PALCO num laço só (item 63, 22/08): o passo
     // mora em `director/palco.ts`, junto do contrato dos quatro traços
@@ -4103,7 +4191,11 @@ export class Director {
       this.quadrosTentandoFonte = 0;
     }
     this.saltoDeCamera = false;
-    const superficie = this.palco.superficieMaisProxima(cam.position);
+    let superficie = this.palco.superficieMaisProxima(cam.position);
+    // O NÚCLEO DO COMETA EM FOCO também é superfície (pilar 4): quilômetros
+    // de corpo que o near do Sol cortaria de perto
+    const nucleo = this.caudas?.superficieDoFoco(cam.position, this.escada.focoCometa) ?? null;
+    if (nucleo && !(superficie.dSuperficiePc <= nucleo.dSuperficiePc)) superficie = nucleo;
     this.engine.updateClip(Math.min(dHome, dGC), superficie.dSuperficiePc, superficie.raioPc);
 
     // A Via Láctea não é um plano: os fades de AMBIENTE respondem à
@@ -4322,15 +4414,42 @@ export class Director {
         this.phase
       );
     }
+    // A LINHA DA SONDA EM FOCO (pilar 4): a gaveta e o foco, lidos no
+    // mesmo passo das órbitas; o foco só existe no Atlas
+    if (this.sondas) {
+      this.sondas.ligado = !this.hide.has('nosondas');
+      this.sondas.foco = this.phase === 'atlas' ? this.escada.focoSonda : null;
+      this.sondas.update(this.maquinaDoTempo.jdVivo);
+    }
+    // OS COMETAS (pilar 4): a órbita do que está em foco e as caudas dos
+    // acesos — as caudas só no Atlas, onde a máquina do tempo as move
+    if (this.orbitasDosCometas && this.caudas) {
+      this.orbitasDosCometas.ligado = !this.hide.has('nocometas');
+      this.orbitasDosCometas.foco = this.phase === 'atlas' ? this.escada.focoCometa : null;
+      this.orbitasDosCometas.update(this.maquinaDoTempo.jdVivo);
+      this.caudas.update({
+        jd: this.maquinaDoTempo.jdVivo,
+        camera: this.engine.camera,
+        alturaPx: hPx,
+        tier: this.engine.quality,
+        ligado: !this.hide.has('nocaudas'),
+        noAtlas: this.phase === 'atlas',
+        foco: this.escada.focoCometa,
+      });
+    }
     this.dust.update(cam.position, hPx, time);
     // Sgr A*: só de perto (a extinção real esconde o centro de longe);
-    // as capturas de medição ficam a 24/33 kpc — fade 0, passe desligado
-    this.blackHole?.updateFrame(
-      cam.position,
-      cam,
-      time,
-      this.hide.has('nobh') ? 0 : 1 - THREE.MathUtils.smoothstep(dGC, 1400, 2400)
-    );
+    // as capturas de medição ficam a 24/33 kpc — fade 0, passe desligado.
+    // O GARGANTUA em toda parte, do mesmo jeito em qualquer modo: inflado
+    // de longe (declarado em `escala.ts`), no tamanho real perto do buraco;
+    // a lente exata só entra pelo `?bh=`. Quem passa a vez a quem é a
+    // distância, e só ela (`entregaDoBuraco`, blackHole.ts).
+    if (this.blackHole) {
+      const semBuraco = this.hide.has('nobh');
+      const e = entregaDoBuraco(dGC, this.blackHole.modoDoPerto);
+      this.blackHole.updateFrame(cam.position, cam, time, semBuraco ? 0 : e.fade, e.rsPc, e.fundoDobrado);
+      this.lenteDoBuraco?.updateFrame(cam.position, cam, e.lente && !semBuraco);
+    }
     // AUTO-EXPOSIÇÃO: a vista externa é outro assunto fotográfico. A
     // rodada 18 venceu com 1,40 (sem knee); a rodada 20, com o knee
     // asinh no pós e chromsat na extinção assumindo a compressão, mediu
@@ -4392,8 +4511,17 @@ export class Director {
       time,
       this.hide.has('nogal') ? 0 : galaxyFade,
       this.hide.has('nomarker') ? 0 : markerFade,
-      this.hide.has('nogal') ? 0 : localBandFade
+      this.hide.has('nogal') ? 0 : localBandFade,
+      cam,
+      this.engine.renderer.domElement.width
     );
+    // AS VIZINHAS: um universo só — no filme, no Atlas e no voo livre o
+    // mesmo desenho, que só depende de onde a câmera está; no celular, a
+    // fração do tier, com a luz compensada
+    if (this.vizinhas) {
+      this.vizinhas.setFracao(this.engine.quality === 'performance' ? 0.35 : 1);
+      this.vizinhas.update(cam.position, hPx, tanHalfFov);
+    }
     // Nuvens moleculares já entram integradas no structureMap da vista
     // externa. Billboards 3D ficam só no disco, onde a paralaxe comunica
     // profundidade; no zoom-out duplicavam o dado como buracos circulares.
@@ -4458,6 +4586,11 @@ export class Director {
       // o alvo escolhido tem prioridade 100 na disputa dos nomes (item
       // 73): o dono do foco é a escada, e o rótulo só precisa do id
       foco: this.escada.focoCorpoId,
+      focoSonda: this.escada.focoSonda,
+      focoCometa: this.escada.focoCometa,
+      focoExoplaneta: this.escada.focoExoplaneta,
+      sistemaAtivo: this.exoplanetas?.ativo ?? null,
+      jd: this.maquinaDoTempo.jdVivo,
       // a camada "Nomes na tela" (item 82, N2) — lida aqui com as
       // outras dezoito, e entregue pronta ao produtor
       nomesEscondidos: this.hide.has('nonomes'),
@@ -4466,7 +4599,7 @@ export class Director {
       // pela rede (import tardio) e, até lá — ou se a carga falhar —,
       // o corpo focado continua com nome (item 109)
       texto3d: this.rotulos3dLigado && !!this.rotulos3d,
-      oclusoresDeEstrelas: this.estrelasNoQuadro?.oclusores(),
+      oclusoresDeEstrelas: this.oclusoresDoQuadro(),
     });
     // a camada 3D espelha o QUE ESTE QUADRO decidiu desenhar — depois
     // do projetar, para o texto nunca correr um quadro atrás do anel.
@@ -4650,6 +4783,7 @@ export class Director {
     // mostrador órfão da sessão anterior na tela.
     step('contadorFps', () => this.contadorFps?.descartar());
     step('blackHole', () => this.blackHole?.dispose());
+    step('lenteDoBuraco', () => this.lenteDoBuraco?.dispose());
     // recursos do mundo ANTES do renderer: material descartado depois
     // de renderer.dispose() não chama deleteProgram
     step('stars', () => this.stars?.dispose());
@@ -4662,6 +4796,7 @@ export class Director {
     step('heroes', () => this.heroes?.dispose());
     step('estrelasNoQuadro', () => this.estrelasNoQuadro?.dispose());
     step('galaxy', () => this.galaxy?.dispose());
+    step('vizinhas', () => this.vizinhas?.dispose());
     step('observedClouds', () => this.observedClouds?.dispose());
     step('starForges', () => this.starForges?.dispose());
     step('wrappedStars', () => this.wrappedStars?.dispose());
@@ -4672,6 +4807,12 @@ export class Director {
     // com ela indefinida
     step('planetas', () => this.planetas?.dispose());
     step('orbitas', () => this.orbitas?.dispose());
+    step('sondas', () => this.sondas?.dispose());
+    step('cometas', () => {
+      this.orbitasDosCometas?.dispose();
+      this.exoplanetas?.dispose();
+      this.caudas?.dispose();
+    });
     // a beta dos rótulos 3D (item 109) nasce de import tardio e pode nem
     // existir; sem este passo, até 31 Texts do troika (geometria +
     // material derivado + textura SDF cada) sobreviviam ao dispose — a

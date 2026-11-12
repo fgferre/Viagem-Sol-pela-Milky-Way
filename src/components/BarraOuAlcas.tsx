@@ -27,6 +27,8 @@ import { useIdioma } from '../hooks/useIdioma';
 import { useRealce } from '../hooks/useRealce';
 import { usePresenca } from '../hooks/usePresenca';
 import { REGISTRO_ORBITAL } from '../lib/atlas/registroOrbital';
+import { exoplanetaPorNome } from '../lib/exoplanetas';
+import { foraDaViaLactea } from '../lib/lugaresDoFilme';
 import { FILMES_EM_CARTAZ, filmeDe } from '../three/cinematic/filme';
 import { BotaoDaGaveta, BotaoDoTempo } from './HudDoAtlas';
 import { BotaoDaBusca } from './PaletaDeBusca';
@@ -144,7 +146,25 @@ function trechosDoContexto(
   // "Via Láctea › Sirius", sem o degrau "Sistema Solar" no meio — o alvo
   // não é do sistema.
   if (escada.degrau === 'estrela') {
+    // UMA GALÁXIA VIZINHA mora no Grupo Local, não na Via Láctea (as
+    // Nuvens de Magalhães também: satélites, mas fora dela)
+    if (foco && foraDaViaLactea(foco)) {
+      const grupoLocal: TrechoDoContexto[] = comViaLactea
+        ? [{ chave: 'grupo-local', texto: t('contexto.grupoLocal') }]
+        : [];
+      return [...grupoLocal, { chave: 'alvo', texto: foco, atual: true }];
+    }
     return foco ? [...viaLactea, { chave: 'alvo', texto: foco, atual: true }] : viaLactea;
+  }
+  // UM EXOPLANETA (12/11): "Via Láctea › TRAPPIST-1 › TRAPPIST-1 e" — o
+  // sistema dele, nunca o Solar
+  if (escada.degrau === 'exoplaneta') {
+    const sistema = foco ? exoplanetaPorNome(foco)?.sistema : null;
+    return [
+      ...viaLactea,
+      ...(sistema ? [{ chave: 'sistema', texto: sistema.nome }] : []),
+      ...(foco ? [{ chave: 'alvo', texto: foco, atual: true }] : []),
+    ];
   }
   const sistemaSolar: TrechoDoContexto = {
     chave: 'sistema-solar',

@@ -49,6 +49,9 @@ export interface StarLabel {
   /** a cor CSS do anel — a mesma da linha de órbita do corpo (item 83);
    *  ausente, o anel sai na tinta âmbar padrão dos rótulos. */
   corDoAnel?: string;
+  /** a FORMA do marcador: ausente = o anel dos corpos; `losango` = a
+   *  sonda (pilar 4), instrumento e não corpo */
+  formaDoIcone?: 'losango';
   /**
    * O que a etiqueta escreve ao lado do nome quando o detalhe NÃO é
    * tipo espectral — os corpos do sistema trazem aqui a classe deles em
@@ -300,6 +303,20 @@ export const PRIORIDADE_DO_ROTULO = {
   anao: 28,
   lua: 25,
   asteroide: 15,
+  /** um LUGAR do céu (aglomerado, nebulosa, vista da galáxia — céu
+   *  profundo, 12/11/2026): acima das estrelas, que são a parte dele,
+   *  abaixo de qualquer corpo da casa. Fora do mapa do Eyes, que não tem
+   *  céu profundo. */
+  lugar: 12,
+  /** uma SONDA (pilar 4, 12/11/2026): marcador de instrumento, abaixo
+   *  das luas e acima dos asteroides — ela é assunto, mas não é corpo */
+  sonda: 20,
+  /** um COMETA (pilar 4, 12/11/2026): ao lado das sondas — o nome só
+   *  aparece perto do Sol ou em foco (`world/cometas.ts`) */
+  cometa: 19,
+  /** um EXOPLANETA (12/11/2026): só aparece com o sistema dele ativo,
+   *  e lá ele é o assunto — ao lado das sondas e cometas */
+  exoplaneta: 21,
   estrelaPropria: 10,
   estrelaBayer: 5,
   outros: 1,

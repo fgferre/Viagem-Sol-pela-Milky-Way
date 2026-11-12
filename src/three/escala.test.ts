@@ -31,6 +31,7 @@ import {
   DIVIDAS_ABERTAS,
   ESPELHO_ESCALA_COMPLEXO,
   ESPELHO_ESCALA_NUVEM_CO,
+  ENTREGA_DO_BURACO_PC,
   ESPELHO_RS_SGR_A_PC,
   MASSA_SGR_A_MSOL,
   RAIO_ARTISTICO_DO_SOL_PC,
@@ -51,6 +52,8 @@ import {
   type EscalaDeclarada,
 } from './escala';
 import { SOBRETAXA_DO_HALO } from './luzDaCasa';
+import { RS_SGR_A_PC } from '../lib/buracoNegro';
+import { AU_PARA_PC } from '../lib/atlas/frameGalactico';
 import { FRACAO_DA_ASA } from './estrela';
 
 const ler = (caminhoDoRepo: string) =>
@@ -354,10 +357,15 @@ describe('4. os números, pinados', () => {
     expect(Math.round(RAIO_ARTISTICO_DO_SOL_PC / RAIO_SOL_PC)).toBe(487_441);
   });
 
-  it('Sgr A✱ está 125.884× maior, e o real SAI DA MASSA', () => {
+  it('Sgr A✱ de longe está 125.884× maior, e o real SAI DA MASSA', () => {
     const bh = CADASTRO_DE_ESCALA.find((e) => e.id === 'sgr-a')!;
     expect(raioDeSchwarzschildPc(MASSA_SGR_A_MSOL)).toBeCloseTo(3.971895e-7, 13);
     expect(Math.round(bh.fator!)).toBe(125_884);
+  });
+
+  it('de perto, o Gargantua tem o RS real: a entrega fica a 100 RS (8,5 UA)', () => {
+    expect(ENTREGA_DO_BURACO_PC / RS_SGR_A_PC).toBeCloseTo(100, 12);
+    expect(ENTREGA_DO_BURACO_PC / AU_PARA_PC).toBeCloseTo(8.5, 1);
   });
 
   it('o clarão das estrelas declara a LEI, não um fator de autor (M2)', () => {

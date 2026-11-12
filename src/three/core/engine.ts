@@ -783,9 +783,15 @@ export function nearPlanePc(
  * domínio profundo é o quão PERTO se enxerga, não o quão longe. Fica
  * como função só para o oráculo poder julgar o PAR (near, far) que o
  * `updateClip` entrega, que é o que o gate promete.
+ *
+ * ALÉM DE 200 kpc (as galáxias vizinhas, 12/11/2026) o teto de 400 kpc
+ * cortaria a Via Láctea vista de Andrômeda (761 kpc): o far passa a ser o
+ * DOBRO da distância. Até 200 kpc o `max` devolve o par de sempre, bit a
+ * bit (2·d ≤ 400 kpc ≤ o grampo). Quem mora além do far (as vizinhas
+ * vistas daqui) é puxado para dentro dele pelo próprio desenho.
  */
 export function farPlanePc(distFromSun: number): number {
-  return THREE.MathUtils.clamp(distFromSun * 12, 60000, 400000);
+  return Math.max(THREE.MathUtils.clamp(distFromSun * 12, 60000, 400000), distFromSun * 2);
 }
 
 /**

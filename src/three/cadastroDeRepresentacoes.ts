@@ -256,6 +256,23 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
       'aqui é a lei de FLUXO',
   },
   {
+    id: 'galaxias-vizinhas',
+    nome: 'as galáxias vizinhas (Nuvens de Magalhães, M31, M32, M110)',
+    arquivos: ['src/three/world/vizinhas.ts', 'src/three/shaders/vizinhasShaders.ts'],
+    // irmã das partículas da galáxia (12/11/2026): a MESMA lei de tela de
+    // `estrela.ts`, com o alfa já em luminosidade V medida (L☉) e uma régua
+    // única (LUZ_DA_VIA_LACTEA_POR_SOL) — migra junto com elas no M6
+    consomeL1: true,
+    leiVelhaApagada: false,
+    fatorDeBrilho: null,
+    destino: 'migra',
+    migracao: 'M6',
+    emiteGlPointSize: true,
+    razao:
+      'a luz já é física (L_V medida por galáxia, mesma régua da Via Láctea); ' +
+      'o que falta é a lei de FLUXO da casa, a mesma dívida das partículas da galáxia',
+  },
+  {
     id: 'laminas',
     nome: 'as 7 lâminas emissivas',
     arquivos: ['src/three/shaders/galaxyShaders.ts'],
@@ -417,6 +434,26 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
       'critério de visibilidade PRÓPRIO (cone < texel, limboFade) — nunca o LOD ' +
       'do renderer; a EMISSÃO dele ainda não consome a lei: entra na unidade da ' +
       'casa no M7, com o resto emissivo (divergência do L1 declarada no M2)',
+  },
+  {
+    // pilar 4 (12/11/2026): nasce com a linha do cadastro de ESCALA
+    // (`caudas-dos-cometas`) e esta do censo da LUZ
+    id: 'caudas-dos-cometas',
+    nome: 'a coma e as caudas dos cometas (Points aditivos)',
+    arquivos: ['src/three/world/caudasDosCometas.ts'],
+    consomeL1: false,
+    leiVelhaApagada: false,
+    fatorDeBrilho: null,
+    destino: 'fora-da-lei',
+    migracao: null,
+    emiteGlPointSize: true,
+    razao:
+      'não é fonte estelar: cada sprite é luz do SOL espalhada por poeira, ou ' +
+      'fluorescência de íons e de C2, com o 1/r² do Sol no lugar da partícula e a ' +
+      'produção da lei de atividade; o tamanho é geométrico (o borrão cresce com a ' +
+      'distância ao núcleo), com teto de 48 px DECLARADO no shader. O ganho absoluto ' +
+      'é artístico e ainda não foi medido na unidade da casa: fatorDeBrilho null é a ' +
+      'dívida escrita, o mesmo molde das plumas',
   },
   {
     // item 134/S4: a peça nasceu com a linha do cadastro de ESCALA

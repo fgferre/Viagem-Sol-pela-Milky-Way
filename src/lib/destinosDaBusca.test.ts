@@ -1,4 +1,4 @@
-// Serve: dono — os dez destinos da busca vazia resolvem para o alvo real, não para um nome parecido
+// Serve: dono — os destinos da busca vazia resolvem para o alvo real, não para um nome parecido
 // ============================================================
 // A LISTA FECHADA (Lote 6, PLAN-UI.md §3.4), julgada contra as 1.726
 // nomeadas do DADO VIVO (a mesma receita de `buscaEstrelas.test.ts`) —
@@ -14,11 +14,15 @@ import type { NamedStar } from '../three/config';
 import { construirIndice } from './buscaEstrelas';
 import type { CorpoBuscavel, LugarBuscavel } from './buscaEstrelas';
 import { destinosDaBusca } from './destinosDaBusca';
+import { LUGARES_DO_FILME } from './lugaresDoFilme';
+import { comAnfitrias } from './exoplanetas';
 
 const meta = JSON.parse(
   readFileSync(new URL('../../public/data/stars_meta.json', import.meta.url), 'utf8')
 ) as { named: NamedStar[] };
-const nomeadas = meta.named;
+// as nomeadas COMO O APP AS TEM: o catálogo mais as anfitriãs de
+// exoplanetas que ele não nomeia (`director.ts`, no boot)
+const nomeadas = comAnfitrias(meta.named);
 
 const corpos: readonly CorpoBuscavel[] = [
   { id: 'earth', nome: 'Terra', nomeEn: 'Earth', classe: 'planeta', rUA: 1 },
@@ -27,18 +31,21 @@ const corpos: readonly CorpoBuscavel[] = [
   { id: 'jupiter', nome: 'Júpiter', nomeEn: 'Jupiter', classe: 'planeta', rUA: 5.2 },
   { id: 'saturn', nome: 'Saturno', nomeEn: 'Saturn', classe: 'planeta', rUA: 9.58 },
   { id: 'pluto', nome: 'Plutão', nomeEn: 'Pluto', classe: 'anão', rUA: 39.5 },
+  { id: 'voyager-1', nome: 'Voyager 1', classe: 'sonda', rUA: 169, apelidos: ['Voyager', 'V1'] },
+  { id: 'halley', nome: 'Halley', classe: 'cometa', rUA: 35, apelidos: ['1P/Halley', '1P'] },
 ];
-// o centro galáctico — mesmo id de `LUGARES_DA_BUSCA` (useDirector.ts);
+// os lugares do céu — os ids e nomes da tabela única (`lugaresDoFilme.ts`);
 // a geometria não importa para quem resolve por texto
-const sagitario: LugarBuscavel = {
-  id: 'sagittarius-a',
-  nome: 'Sagittarius A✱',
-  d: 8178,
+const lugares: readonly LugarBuscavel[] = LUGARES_DO_FILME.map((l) => ({
+  id: l.id,
+  nome: l.nome,
+  ...(l.nomeEn ? { nomeEn: l.nomeEn } : {}),
+  d: 1,
   x: 0,
   y: 0,
-  z: -8178,
-};
-const indice = construirIndice(nomeadas, corpos, [sagitario]);
+  z: 1,
+}));
+const indice = construirIndice(nomeadas, corpos, lugares);
 
 describe('destinosDaBusca', () => {
   const sistema = destinosDaBusca(indice, 'sistema');
@@ -54,6 +61,8 @@ describe('destinosDaBusca', () => {
       'jupiter',
       'saturn',
       'pluto',
+      'voyager-1',
+      'halley',
     ]);
 
     const nomesDeEstrela = estrelas.map((d) =>
@@ -62,27 +71,36 @@ describe('destinosDaBusca', () => {
     expect(
       nomesDeEstrela,
       'alguma estrela da lista fechada não resolveu para o nome certo'
-    ).toEqual(['Sirius', 'Betelgeuse', 'Rigil Kentaurus']);
+    ).toEqual(['Sirius', 'Betelgeuse', 'Rigil Kentaurus', 'TRAPPIST-1']);
 
     const idsDeLugar = galaxia.map((d) => (d.entrada.tipo === 'lugar' ? d.entrada.lugar.id : null));
-    expect(idsDeLugar, 'o centro galáctico não resolveu').toEqual(['sagittarius-a']);
+    expect(idsDeLugar, 'algum lugar do céu não resolveu').toEqual([
+      'via-lactea',
+      'nosso-lugar',
+      'pleiades',
+      'hyades',
+      'sagittarius-a',
+      'ana-de-sagitario',
+      'grande-nuvem-de-magalhaes',
+      'andromeda',
+    ]);
   });
 
-  it('as categorias contam 6/3/1', () => {
-    expect(sistema.length).toBe(6);
-    expect(estrelas.length).toBe(3);
-    expect(galaxia.length).toBe(1);
+  it('as categorias contam 8/4/8', () => {
+    expect(sistema.length).toBe(8);
+    expect(estrelas.length).toBe(4);
+    expect(galaxia.length).toBe(8);
   });
 
   it('o cartão de um corpo leva à distância da prévia dele; estrela e lugar não pedem nenhuma', () => {
     // a mesma tabela de `scripts/visual/previas-de-destino.mjs` (`d`)
-    expect(sistema.map((d) => d.raios)).toEqual([4, 4, 4, 10, 12, 5]);
+    expect(sistema.map((d) => d.raios)).toEqual([4, 4, 4, 10, 12, 5, undefined, undefined]);
     expect([...estrelas, ...galaxia].every((d) => d.raios === undefined)).toBe(true);
   });
 
   it('o primeiro de cada categoria é o principal', () => {
     expect(sistema[0]?.id).toBe('earth');
     expect(estrelas[0]?.id).toBe('sirius');
-    expect(galaxia[0]?.id).toBe('sagittarius-a');
+    expect(galaxia[0]?.id).toBe('via-lactea');
   });
 });

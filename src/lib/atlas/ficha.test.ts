@@ -16,6 +16,7 @@ import {
   LUAS_DO_SISTEMA,
 } from '../../three/atlasConfig';
 import { PROCEDENCIA } from '../../three/selo';
+import { sistemaDaEstrela } from '../exoplanetas';
 import type { MetaEfemerides } from './efemerides';
 import { decodeEfemerides, MotorEfemerides } from './efemerides';
 import type { StarsMeta } from '../../three/config';
@@ -843,7 +844,9 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     const EDITORIAL = ['o que é', 'curiosidade', 'fato', 'recorde', 'exploração'];
     for (const estrela of starsMeta.named) {
       const f = montarFichaDeEstrela(estrela.n, estrela)!;
-      expect(f.secoes.length, estrela.n).toBe(estrela.n === 'Sirius' ? 3 : estrelaVisitavelPorNome(estrela.n) ? 2 : 1);
+      // + 1 para a anfitriã de exoplanetas: a seção do sistema planetário
+      const doSistema = sistemaDaEstrela(estrela.n) ? 1 : 0;
+      expect(f.secoes.length, estrela.n).toBe((estrela.n === 'Sirius' ? 3 : estrelaVisitavelPorNome(estrela.n) ? 2 : 1) + doSistema);
       for (const l of f.secoes.flatMap((x) => x.linhas)) {
         expect(l.valor.length, `${estrela.n}/${l.rotulo}`).toBeGreaterThan(0);
         expect(`${l.valor}`, `${estrela.n}/${l.rotulo}`).not.toMatch(/undefined|NaN/);

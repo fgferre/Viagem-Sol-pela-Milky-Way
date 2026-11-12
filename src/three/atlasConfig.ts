@@ -155,6 +155,10 @@ export const CAMADAS: readonly Camada[] = [
   // `heroes.group` e o clarão de asas (`world/clarao.ts`, o Sol) pela
   // mesma `hide.has('noclarao')`.
   { flag: 'noclarao', get nome() { return t('camada.noclarao'); }, get nota() { return t('camada.noclarao.nota'); }, familia: 'Estrelas', viva: true, icone: '✦' },
+  // OS EXOPLANETAS (12/11/2026) — `world/exoplanetas.ts`. As órbitas e
+  // a zona habitável do sistema por perto são instrumento de leitura,
+  // como as do Sistema Solar; os planetas (corpos) ficam
+  { flag: 'noexoplanetas', get nome() { return t('camada.noexoplanetas'); }, get nota() { return t('camada.noexoplanetas.nota'); }, familia: 'Estrelas', viva: true, icone: '◎' },
   // o Sol inteiro em cena — o gate por quadro vive em
   // `director/solNoQuadro.ts` (`fios.escondido('nosun')`)
   { flag: 'nosun', get nome() { return t('camada.nosun'); }, get nota() { return t('camada.nosun.nota'); }, familia: 'Sistema solar', viva: true },
@@ -176,6 +180,16 @@ export const CAMADAS: readonly Camada[] = [
   // que a chave desliga é a curva, nunca um fóton. Com ícone ela entra
   // na gaveta de graça e o selo a declara pela derivação de sempre.
   { flag: 'noorbitas', get nome() { return t('camada.noorbitas'); }, get nota() { return t('camada.noorbitas.nota'); }, familia: 'Sistema solar', viva: true, icone: '◜' },
+  // AS TRAJETÓRIAS DAS SONDAS (pilar 4, 12/11/2026) — `world/sondas.ts`.
+  // Instrumento de leitura como as órbitas: a linha da sonda EM FOCO,
+  // percorrida e a percorrer; nunca um fóton
+  { flag: 'nosondas', get nome() { return t('camada.nosondas'); }, get nota() { return t('camada.nosondas.nota'); }, familia: 'Sistema solar', viva: true, icone: '↗' },
+  // OS COMETAS (pilar 4, 12/11/2026) — `world/cometas.ts` e
+  // `world/caudasDosCometas.ts`. A órbita é instrumento de leitura, como
+  // a das sondas; as caudas são luz de verdade (poeira e gás), e a chave
+  // existe porque são o efeito mais caro do sistema solar
+  { flag: 'nocometas', get nome() { return t('camada.nocometas'); }, get nota() { return t('camada.nocometas.nota'); }, familia: 'Sistema solar', viva: true, icone: '⊙' },
+  { flag: 'nocaudas', get nome() { return t('camada.nocaudas'); }, get nota() { return t('camada.nocaudas.nota'); }, familia: 'Sistema solar', viva: true, icone: '☄' },
 ];
 
 /**

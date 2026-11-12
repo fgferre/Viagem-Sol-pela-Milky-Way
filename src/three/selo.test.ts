@@ -929,6 +929,13 @@ describe('F3 — o Sol saiu da acusação de escala, sem porta nenhuma', () => {
     expect(v.culpados.join(' ')).not.toContain('Sol');
   });
 
+  it('a menos de 100 RS de Sgr A✱ o selo diz ESCALA REAL — ali o Gargantua é 1:1', () => {
+    expect(estadoDoSelo(com({ distanciaPc: 8150, distanciaAoCentroPc: 1e-5 })).escala).toBe('real');
+    // entre 8,5 UA e 5 pc o disco ainda é maior que o real
+    expect(estadoDoSelo(com({ distanciaPc: 8150, distanciaAoCentroPc: 1e-3 })).escala).toBe('fora');
+    expect(estadoDoSelo(com({ distanciaPc: 8150, distanciaAoCentroPc: 10 })).escala).toBe('fora');
+  });
+
   it('`?solreal=1` virou porta DESCONHECIDA: quem a digitar hoje é avisado', () => {
     // ela foi porta declarada da F1 à F3. Agora não existe caminho no
     // código que a leia, e o selo tem de dizer isso em vez de fingir que

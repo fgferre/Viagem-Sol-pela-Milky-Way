@@ -1,6 +1,6 @@
 // ============================================================
 // A LISTA FECHADA de destinos da busca vazia (Lote 6, PLAN-UI.md §3.4)
-// — dez portas fixas para quem abre a busca sem saber o que digitar.
+// — portas fixas para quem abre a busca sem saber o que digitar.
 // Cada linha aqui é um NOME OU ID que a própria busca já resolve por
 // degrau exato (`resolverFoco`, o mesmo motor do "?foco="); este
 // arquivo não monta índice novo nem busca em outro lugar — só aponta a
@@ -46,10 +46,35 @@ const LISTA: readonly {
   { id: 'jupiter', categoria: 'sistema', consulta: 'jupiter', raios: 10 },
   { id: 'saturn', categoria: 'sistema', consulta: 'saturn', raios: 12 },
   { id: 'pluto', categoria: 'sistema', consulta: 'pluto', raios: 5 },
+  // A PRIMEIRA SONDA (pilar 4, 12/11/2026): a mais longe, no quadro de
+  // chegada dela — o Sol e os planetas do outro lado (sem `raios`)
+  { id: 'voyager-1', categoria: 'sistema', consulta: 'voyager-1' },
+  // O PRIMEIRO COMETA (pilar 4, 12/11/2026): Halley, no quadro de chegada
+  // dele — o Sol de um lado, o núcleo do outro (sem `raios`)
+  { id: 'halley', categoria: 'sistema', consulta: 'halley' },
   { id: 'sirius', categoria: 'estrelas', consulta: 'Sirius' },
   { id: 'betelgeuse', categoria: 'estrelas', consulta: 'Betelgeuse' },
   { id: 'rigil-kentaurus', categoria: 'estrelas', consulta: 'Rigil Kentaurus' },
+  // O PRIMEIRO SISTEMA PLANETÁRIO (12/11/2026): os sete de TRAPPIST-1,
+  // no quadro de chegada do sistema — a anfitriã que o catálogo não
+  // nomeia entra na lista pela `comAnfitrias`, como no app
+  { id: 'trappist-1', categoria: 'estrelas', consulta: 'TRAPPIST-1' },
+  // OS LUGARES DO CÉU (céu profundo, 12/11/2026): a galáxia de fora
+  // abre a aba (o cartão grande); depois o endereço do Sol, os lugares
+  // perto de casa e, por último, os dois que ficam do outro lado do centro.
+  // A NEBULOSA DE ÓRION NÃO TEM CARTÃO (decisão de 12/11): o gás dela não
+  // está desenhado, e cartão sugerido tem de entregar o que mostra — ela
+  // segue na busca pelo nome, com a ficha que confessa isso
+  { id: 'via-lactea', categoria: 'galaxia', consulta: 'via-lactea' },
+  { id: 'nosso-lugar', categoria: 'galaxia', consulta: 'nosso-lugar' },
+  { id: 'pleiades', categoria: 'galaxia', consulta: 'pleiades' },
+  { id: 'hyades', categoria: 'galaxia', consulta: 'hyades' },
   { id: 'sagittarius-a', categoria: 'galaxia', consulta: 'sagittarius-a' },
+  { id: 'ana-de-sagitario', categoria: 'galaxia', consulta: 'ana-de-sagitario' },
+  // AS VIZINHAS (pilar 3, 12/11/2026): além da nossa galáxia, a maior
+  // companheira e a grande espiral do lado
+  { id: 'grande-nuvem-de-magalhaes', categoria: 'galaxia', consulta: 'grande-nuvem-de-magalhaes' },
+  { id: 'andromeda', categoria: 'galaxia', consulta: 'andromeda' },
 ];
 
 /**

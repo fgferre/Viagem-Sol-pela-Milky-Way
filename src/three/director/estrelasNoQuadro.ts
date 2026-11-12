@@ -228,6 +228,13 @@ interface Piloto {
   /** índice no catálogo (`stars.bin`); −1 = não achado */
   indice: number;
   principal: Superficie | null;
+  /**
+   * O PONTO DE QUEM NÃO ESTÁ NO BINÁRIO (as anfitriãs de exoplanetas
+   * fracas demais para `stars.bin`, como TRAPPIST-1): sem ponto do
+   * catálogo para ceder, a estrela ganha o seu, pela lei da Sirius B.
+   * As quatro do piloto estão no binário: para elas fica `null`.
+   */
+  pontoProprio: PontoDeEstrela | null;
   companheira: (Superficie & { ponto: PontoDeEstrela; pos: THREE.Vector3 }) | null;
   /** a última cessão escrita no campo (evita escrita por quadro) */
   cedeu: number;
@@ -280,6 +287,7 @@ export class EstrelasNoQuadro {
         eixo: eixoDeRotacao(dados, pos, new THREE.Vector3()),
         indice: -1,
         principal: null,
+        pontoProprio: null,
         companheira: null,
         cedeu: 0,
       });
@@ -335,6 +343,11 @@ export class EstrelasNoQuadro {
       armado: false,
       estado: estadoDe(p.dados.id, corpo.raioPc, f.teffK, p.pos),
     };
+    if (p.indice < 0) {
+      const stars = this.fios.stars();
+      p.pontoProprio = new PontoDeEstrela(f, stars?.expoM0 ?? EXPO_M0, stars?.sigmaPx ?? SIGMA_PX);
+      this.group.add(p.pontoProprio.points);
+    }
     const fb = fotosferaDaCompanheira(p.dados);
     const pb = meios ? parametrosDaCompanheira(p.dados) : null;
     if (fb) {
@@ -377,14 +390,20 @@ export class EstrelasNoQuadro {
     return true;
   }
 
-  /** a estrela do catálogo na posição do nome (a mais próxima, < 1e-3 pc) */
+  /**
+   * a estrela do catálogo na posição do nome (a mais próxima, < 0,01 pc).
+   * Era 1e-3 pc; β Pictoris tem o ponto do binário a 1,08e-3 pc do nome
+   * (a quantização angular de ~20″ a 19,6 pc) e HD 189733, sem nome no
+   * catálogo, a 5,4e-3 pc da posição do Gaia. As quatro do piloto casam
+   * a < 1,2e-4 pc, então o ponto delas não muda.
+   */
   private indiceNoCatalogo(pos: THREE.Vector3): number {
     const stars = this.fios.stars();
     if (!stars) return -1;
     const xyz = (stars.points.geometry.getAttribute('position') as THREE.BufferAttribute)
       .array as Float32Array;
     let melhor = -1;
-    let dMin = 1e-6; // (1e-3 pc)²
+    let dMin = 1e-4; // (0,01 pc)²
     for (let i = 0; i < xyz.length; i += 3) {
       const dx = xyz[i] - pos.x;
       const dy = xyz[i + 1] - pos.y;
@@ -443,6 +462,16 @@ export class EstrelasNoQuadro {
       if (stars && p.indice >= 0 && cede !== p.cedeu) {
         stars.writeFocus(p.indice, cede);
         p.cedeu = cede;
+      }
+      if (p.pontoProprio) {
+        p.pontoProprio.points.visible = !escondido;
+        p.pontoProprio.escrever({
+          posPc: p.pos,
+          distPc: q.camPos.distanceTo(p.pos),
+          screenH: q.hPx,
+          pr2: q.prAtual * q.prAtual,
+          peso: 1 - cede,
+        });
       }
       const b = p.companheira;
       if (b && p.dados.companheira) {
@@ -565,6 +594,7 @@ export class EstrelasNoQuadro {
   dispose() {
     for (const p of this.pilotos) {
       p.principal?.corpo.dispose();
+      p.pontoProprio?.dispose();
       p.companheira?.corpo.dispose();
       p.companheira?.ponto.dispose();
     }

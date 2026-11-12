@@ -45,7 +45,16 @@ import type { VerDaEscada } from '../selo';
 import type { NamedStar, StarsMeta } from '../config';
 import type { Planetas } from '../world/planetas/planetas';
 import type { FreeRoam } from '../cinematic/cameraRig';
-import type { CorpoBuscavel } from '../../lib/buscaEstrelas';
+import type { CorpoBuscavel, LugarBuscavel } from '../../lib/buscaEstrelas';
+import { nomeDoLugar } from '../../lib/buscaEstrelas';
+import { poseDoLugar } from '../world/lugaresDoCeu';
+import { poseDaSonda } from '../world/sondas';
+import { poseDoCometa } from '../world/cometas';
+import { poseDoExoplaneta, poseDoSistema } from '../world/exoplanetas';
+import { SISTEMAS_PLANETARIOS, exoplanetaPorId, sistemaDaEstrela } from '../../lib/exoplanetas';
+import { UA_POR_PC } from '../../lib/unidades';
+import { SONDAS, estadoDaSonda, sondaPorId } from '../../lib/sondas';
+import { COMETAS, cometaPorId, estadoDoCometa } from '../../lib/cometas';
 import type { MaquinaDoTempo } from './maquinaDoTempo';
 import type { Rotulos } from './rotulos';
 import type { AtlasRig } from '../cinematic/atlasRig';
@@ -54,7 +63,8 @@ import {
   orbitaMaisExterna,
   raioDeEnquadramentoEstelar,
 } from '../cinematic/atlasRig';
-import { GAL } from '../world/baseGalactica';
+import { EX, EZ, GAL } from '../world/baseGalactica';
+import { RS_SGR_A_PC } from '../../lib/buracoNegro';
 import {
   CORPOS_DO_SISTEMA,
   LUAS_DO_SISTEMA,
@@ -69,7 +79,7 @@ import { RAIO_LUA_PC } from '../world/corpos/lua';
 import type { RochosoResolvido } from '../world/corpos/rochoso';
 import { fatorDoRaioMaximo, posicaoDoRochosoUA, raiosDoRochosoPc } from '../world/corpos/rochoso';
 import type { GiganteResolvido } from '../world/corpos/gigante';
-import { posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
+import { ANEIS_CITADOS, posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
 import { RETRATO_2026 } from '../world/planetas/retrato2026';
 import type { IdRetrato } from '../world/planetas/retrato2026';
 import { escalaDaUi, larguraDeCss } from '../../lib/uiScale';
@@ -127,7 +137,7 @@ export function soloDoCorpo(
  * corpo resolvido dela é Onda 7), mas o botão "sistema" e o Esc valem.
  */
 export interface EstadoDaEscada {
-  degrau: 'sistema' | 'ceu' | 'orbita' | 'corpo' | 'lua' | 'estrela';
+  degrau: 'sistema' | 'ceu' | 'orbita' | 'corpo' | 'lua' | 'estrela' | 'sonda' | 'cometa' | 'exoplaneta';
   /** existe degrau abaixo alcançável pelo botão "aproximar"? Só quando
    *  o corpo em foco tem MESH resolvido (Terra nesta fase) — aproximar
    *  de um ponto fotométrico enquadraria um clarão sem corpo. */
@@ -160,6 +170,28 @@ export interface EstadoDaEscada {
  */
 const RAIO_DO_CENTRO_GALACTICO_PC = 6000;
 
+/**
+ * O DEGRAU DE PERTO de Sagittarius A✱ (12/11/2026): a esfera enquadrada
+ * tem 10 raios de Schwarzschild REAIS (0,85 UA), o que põe a câmera a
+ * ~25 RS sob a lente de 58° — a sombra com ~12° de diâmetro e o anel de
+ * Einstein com ~32°. O piso do zoom é 2 × 3 RS = 6 RS, fora da órbita
+ * circular estável mais interna (3 RS) e longe da esfera de fótons.
+ */
+export const RAIO_DO_DEGRAU_DO_BURACO_PC = 10 * RS_SGR_A_PC;
+const PISO_DO_BURACO_PC = 3 * RS_SGR_A_PC;
+/**
+ * De onde a câmera olha o buraco: do lado do Sol, 5° ABAIXO do plano
+ * galáctico — o disco e o bojo do outro lado passam logo acima da sombra,
+ * dentro do anel de Einstein, e é a luz deles que a lente dobra. (5°
+ * acima, a anã de Sagitário — l = 5,6°, b = −14° — caía atrás da sombra
+ * com o rótulo dela por cima.) O repouso do rig sobe 30° rumo ao polo
+ * (`direcaoDeRepouso`), então o eixo entregue desce 35°.
+ */
+const EIXO_DO_BURACO = EX.clone()
+  .multiplyScalar(Math.cos((35 * Math.PI) / 180))
+  .addScaledVector(EZ, -Math.sin((35 * Math.PI) / 180))
+  .negate();
+
 export class Escada {
   /**
    * O DEGRAU DA ESCADA (F2b/D7): `orbita` é a semântica de sempre do
@@ -173,6 +205,40 @@ export class Escada {
   private focoEstrela = false;
   /** QUAL estrela, quando `focoEstrela` — nome e posição do último foco */
   private estrelaFocada: { nome: string | null; pos: THREE.Vector3 } | null = null;
+  /** o OBJETO PEQUENO em foco — uma sonda ou um cometa (pilar 4,
+   *  12/11/2026): os dois moram num campo só, então toda escrita do foco
+   *  que zera `focoSonda` zera também o cometa */
+  private pequeno: { tipo: 'sonda' | 'cometa' | 'exoplaneta'; id: string } | null = null;
+  /** a SONDA em foco — id de `lib/sondas.ts`; `null` também apaga um cometa */
+  get focoSonda(): string | null {
+    return this.pequeno?.tipo === 'sonda' ? this.pequeno.id : null;
+  }
+  set focoSonda(id: string | null) {
+    this.pequeno = id ? { tipo: 'sonda', id } : null;
+  }
+  /** o COMETA em foco — id de `lib/cometas.ts` */
+  get focoCometa(): string | null {
+    return this.pequeno?.tipo === 'cometa' ? this.pequeno.id : null;
+  }
+  /** o EXOPLANETA em foco (12/11/2026) — id de `lib/exoplanetas.ts`;
+   *  mora no mesmo campo dos objetos pequenos, pela mesma razão */
+  get focoExoplaneta(): string | null {
+    return this.pequeno?.tipo === 'exoplaneta' ? this.pequeno.id : null;
+  }
+  /** o SISTEMA PLANETÁRIO em foco: o do planeta, ou o da estrela focada */
+  get sistemaEmFoco(): string | null {
+    if (this.phase !== 'atlas') return null;
+    if (this.pequeno?.tipo === 'exoplaneta') return exoplanetaPorId(this.pequeno.id)?.sistema.id ?? null;
+    if (this.focoEstrela && this.estrelaFocada?.nome) return sistemaDaEstrela(this.estrelaFocada.nome)?.id ?? null;
+    return null;
+  }
+  /** onde a anfitriã está: o corpo da estrela, ou o nome do catálogo */
+  private posDaAnfitria(nome: string): THREE.Vector3 | null {
+    const viva = this.fios.posicaoDaEstrelaComLugar?.(nome);
+    if (viva) return viva;
+    const s = this.meta?.named.find((n) => n.n === nome);
+    return s ? new THREE.Vector3(s.x, s.y, s.z) : null;
+  }
   /** o corpo em FOCO no Atlas (id do retrato) — só a escada escreve;
    *  o director o lê para o selo (os passos de `stopsDoGloboEmFoco` são dele). */
   focoCorpoId: string | null = null;
@@ -407,6 +473,7 @@ export class Escada {
     this.enquadrarAgora();
     this.focoCorpoId = id;
     this.focoEstrela = false;
+    this.focoSonda = null;
     this.ver = r.ver;
     this.pinoDeBoot = null;
     this.events.onFoco(nomeDoCorpo(id));
@@ -423,6 +490,7 @@ export class Escada {
     this.enquadrarAgora();
     this.focoCorpoId = null;
     this.focoEstrela = true;
+    this.focoSonda = null;
     this.estrelaFocada = { nome, pos: pos.clone() };
     this.ver = 'orbita';
     this.pinoDeBoot = null;
@@ -465,6 +533,124 @@ export class Escada {
   }
 
   /**
+   * UM LUGAR DO CÉU (céu profundo, 12/11/2026) — o verbo é o de
+   * `irAte`, com a régua do LUGAR: a esfera é o raio dele e a vista é a
+   * dele (`poseDoLugar`: do lado do Sol para um aglomerado, do polo
+   * galáctico para a galáxia inteira). O piso do zoom é o de estrela,
+   * como no centro galáctico: quem quiser desce a roda até as membros.
+   * No voo livre a câmera VOA até ele e para a três raios do centro.
+   * Sem lei própria cai na porta das estrelas, como sempre caiu.
+   */
+  visitarLugar(lugar: LugarBuscavel) {
+    const pose = poseDoLugar(lugar);
+    const nome = nomeDoLugar(lugar);
+    if (!pose) {
+      this.visitarEstrela({ n: nome, x: lugar.x, y: lugar.y, z: lugar.z });
+      return;
+    }
+    if (this.phase !== 'atlas') {
+      this.roam.startVisit({ pos: pose.alvo, arriveDist: pose.raio * 3 });
+      return;
+    }
+    this.atlas.focar(pose.alvo, pose.raio, pose.eixoDe, {
+      rampa: this.rampaDaEscada(),
+      polo: pose.polo,
+      pisoRaio: raioDeEnquadramentoEstelar(pose.alvo.length()),
+    });
+    this.enquadrarAgora();
+    this.focoCorpoId = null;
+    this.focoEstrela = true;
+    this.focoSonda = null;
+    // um lugar não é estrela do piloto: sem isto o nome da estrela anterior
+    // sobrevivia e o "Aproximar" da ficha do lugar descia até ela
+    this.estrelaFocada = null;
+    this.ver = 'orbita';
+    this.events.onFoco(nome);
+    this.emitirEscada();
+    this.teletransportou();
+  }
+
+  /**
+   * UMA SONDA (pilar 4, 12/11/2026): o alvo é ela, a esfera é a
+   * distância dela ao Sol e a câmera olha de lado (`poseDaSonda`) — o
+   * quadro é "até onde ela já foi". Antes do lançamento ela não existe:
+   * o quadro é o do sistema, e a ficha diz por quê.
+   */
+  visitarSonda(id: string) {
+    const objeto = this.objetoPequeno(id);
+    if (!objeto || this.phase !== 'atlas') return;
+    const pose = objeto.pose(this.maquinaDoTempo.jdVivo);
+    if (pose) {
+      this.atlas.focar(pose.alvo, pose.raio, pose.eixoDe, {
+        rampa: this.rampaDaEscada(),
+        polo: pose.polo,
+        pisoRaio: pose.pisoRaio,
+      });
+      this.enquadrarAgora();
+    } else {
+      // a vista da casa, pela porta dela — e o foco volta a ser a sonda
+      this.focarNoSistema();
+    }
+    this.marcarSonda(objeto.nome, objeto.tipo, id);
+  }
+
+  /**
+   * UMA SONDA OU UM COMETA — os dois são "um objeto pequeno numa
+   * trajetória real" e chegam pelo mesmo quadro (o segmento Sol→objeto
+   * de `poseDoSegmento`); o cometa abre mais o quadro para as caudas.
+   */
+  private objetoPequeno(id: string) {
+    const sonda = sondaPorId(id);
+    if (sonda) return { tipo: 'sonda' as const, nome: sonda.nome, pose: (jd: number) => poseDaSonda(id, jd) };
+    const cometa = cometaPorId(id);
+    if (cometa) {
+      const raio = cometa.nucleo.km ? cometa.nucleo.km / 2 : null;
+      return { tipo: 'cometa' as const, nome: cometa.nome, pose: (jd: number) => poseDoCometa(id, jd, raio) };
+    }
+    // UM EXOPLANETA (12/11): a mesma porta — anda com o relógio, em volta
+    // da anfitriã, e chega-se pelo globo (`poseDoExoplaneta`)
+    const exo = exoplanetaPorId(id);
+    if (exo) {
+      return {
+        tipo: 'exoplaneta' as const,
+        nome: exo.planeta.nome,
+        pose: (jd: number) => {
+          const pos = this.posDaAnfitria(exo.sistema.estrela);
+          return pos ? poseDoExoplaneta(id, jd, pos) : null;
+        },
+      };
+    }
+    return null;
+  }
+
+  /** escolhe uma sonda ou um cometa SEM mover a câmera — o clique simples no rótulo */
+  selecionarSonda(id: string) {
+    const objeto = this.objetoPequeno(id);
+    const pose = objeto ? objeto.pose(this.maquinaDoTempo.jdVivo) : null;
+    if (!objeto || !pose) return;
+    this.atlas.selecionar(pose.alvo, pose.raio, pose.eixoDe, {
+      rampa: this.rampaDaEscada(),
+      polo: pose.polo,
+      pisoRaio: pose.pisoRaio,
+    });
+    this.enquadrarAgora();
+    this.marcarSonda(objeto.nome, objeto.tipo, id);
+  }
+
+  /** o trio do foco, escrito para uma sonda ou um cometa */
+  private marcarSonda(nome: string, tipo: 'sonda' | 'cometa' | 'exoplaneta', id: string) {
+    this.focoCorpoId = null;
+    this.focoEstrela = false;
+    this.noCeu = false;
+    this.ver = 'orbita';
+    this.pinoDeBoot = null;
+    this.pequeno = { tipo, id };
+    this.events.onFoco(nome);
+    this.emitirEscada();
+    this.teletransportou();
+  }
+
+  /**
    * O mesmo alvo, os dois modos — e DUAS leis, porque o número significa
    * duas coisas. No voo livre `arriveDist` é a distância de CHEGADA de um
    * voo, e sair de onde se está é o certo. No Atlas ele seria o raio da
@@ -495,15 +681,31 @@ export class Escada {
       // a superfície: o piso do zoom é o raio físico, como no Sol
       const piloto =
         nome && (this.fios.estrelasComLugar?.() ?? false) ? estrelaVisitavelPorNome(nome) : null;
-      this.atlas.focar(pos, centroGalactico ? RAIO_DO_CENTRO_GALACTICO_PC : raioEstelar, pos, {
-        rampa: this.rampaDaEscada(),
-        ...(centroGalactico ? { polo: GAL.NGP, pisoRaio: raioEstelar } : {}),
-        ...(piloto ? { pisoRaio: raioDaEstrelaPc(piloto) } : {}),
-      });
+      // UMA ANFITRIÃ DE EXOPLANETAS (12/11): o quadro é o do SISTEMA —
+      // as órbitas inteiras e a zona habitável, centrado no corpo da
+      // estrela (o ponto do catálogo), com o piso no raio físico dela
+      const sistema = centroGalactico ? null : sistemaDaEstrela(nome);
+      const fisica = sistema ? estrelaVisitavelPorNome(sistema.estrela) : null;
+      if (sistema && fisica) {
+        pos = this.posDaAnfitria(sistema.estrela) ?? pos;
+        const pose = poseDoSistema(sistema, pos, raioDaEstrelaPc(fisica));
+        this.atlas.focar(pose.alvo, pose.raio, pose.eixoDe, {
+          rampa: this.rampaDaEscada(),
+          polo: pose.polo,
+          pisoRaio: pose.pisoRaio,
+        });
+      } else {
+        this.atlas.focar(pos, centroGalactico ? RAIO_DO_CENTRO_GALACTICO_PC : raioEstelar, pos, {
+          rampa: this.rampaDaEscada(),
+          ...(centroGalactico ? { polo: GAL.NGP, pisoRaio: raioEstelar } : {}),
+          ...(piloto ? { pisoRaio: raioDaEstrelaPc(piloto) } : {}),
+        });
+      }
       this.enquadrarAgora();
       // estrela em foco: nenhum CORPO em foco — o ΔEV do selo cala
       this.focoCorpoId = null;
       this.focoEstrela = true;
+      this.focoSonda = null;
       this.estrelaFocada = { nome, pos: pos.clone() };
       this.ver = 'orbita';
       this.events.onFoco(nome);
@@ -638,6 +840,7 @@ export class Escada {
     this.enquadrarAgora();
     this.focoCorpoId = null;
     this.focoEstrela = false;
+    this.focoSonda = null;
     this.noCeu = false;
     this.ver = 'orbita';
     this.events.onFoco(null);
@@ -700,8 +903,10 @@ export class Escada {
           ? this.ver === 'corpo'
             ? 'corpo'
             : 'orbita'
-          : this.focoEstrela
-            ? 'estrela'
+          : this.pequeno
+            ? this.pequeno.tipo
+            : this.focoEstrela
+              ? 'estrela'
             : this.noCeu
               ? 'ceu'
               : 'sistema';
@@ -712,6 +917,7 @@ export class Escada {
       // dos corpos CONSTRUÍDOS, nunca redigitada: a Terra (F2a), os
       // planetas rochosos (F3) e os gigantes (F4)
       podeAproximar:
+        (degrau === 'estrela' && this.focoNoCentro && this.ver !== 'corpo') ||
         (degrau === 'estrela' && this.ver === 'orbita' && this.pilotoEmFoco() !== null) ||
         (degrau === 'orbita' &&
         (this.focoCorpoId === 'earth' ||
@@ -721,6 +927,35 @@ export class Escada {
           ) ||
           this.gigantes.some((g) => g.corpo.planeta && g.corpo.id === this.focoCorpoId))),
     };
+  }
+
+  /** o alvo do rig é o centro galáctico (a galáxia ou o buraco) */
+  private get focoNoCentro(): boolean {
+    return this.focoEstrela && this.atlas.alvo.distanceToSquared(GAL.GC_POS) < 1e-18;
+  }
+
+  /**
+   * O DEGRAU "CORPO" DE SAGITTARIUS A✱: o buraco negro em escala real, a
+   * esfera de `RAIO_DO_DEGRAU_DO_BURACO_PC`. A rampa da escada atravessa
+   * as 9 ordens de grandeza entre a galáxia (kpc) e o buraco (UA) como
+   * atravessa as do Sol; a precisão aguenta porque a posição da câmera é
+   * double na CPU e a lente se calcula RELATIVA ao buraco
+   * (`lenteDoBuracoNegro.ts`).
+   */
+  aproximarDoBuraco() {
+    if (this.phase !== 'atlas') return;
+    this.atlas.focar(GAL.GC_POS.clone(), RAIO_DO_DEGRAU_DO_BURACO_PC, EIXO_DO_BURACO, {
+      rampa: this.rampaDaEscada(),
+      polo: GAL.NGP,
+      pisoRaio: PISO_DO_BURACO_PC,
+    });
+    this.enquadrarAgora();
+    this.focoCorpoId = null;
+    this.focoEstrela = true;
+    this.focoSonda = null;
+    this.ver = 'corpo';
+    this.emitirEscada();
+    this.teletransportou();
   }
 
   /** o `ver` vivo, para o `urlComMomento` espelhar `?ver=corpo`. */
@@ -790,6 +1025,12 @@ export class Escada {
    */
   focarNoCorpo(id: string, ver: VerDaEscada = 'orbita') {
     if (this.phase !== 'atlas') return;
+    // UMA SONDA entra pela porta dos corpos (a busca e o `?foco=` a
+    // tratam como alvo do sistema), mas o enquadramento é o dela
+    if (sondaPorId(id) || cometaPorId(id) || exoplanetaPorId(id)) {
+      this.visitarSonda(id);
+      return;
+    }
     if (id === 'sun') {
       if (ver === 'corpo') this.aproximarDoSol();
       else this.focarNoSistema();
@@ -856,6 +1097,7 @@ export class Escada {
     // o selo lê o ΔEV DESTE corpo enquanto ele estiver em foco (D2)
     this.focoCorpoId = id;
     this.focoEstrela = false;
+    this.focoSonda = null;
     this.ver = 'orbita';
     this.events.onFoco(nomeDoCorpo(CORPOS_DO_SISTEMA[i].id));
     this.emitirEscada();
@@ -918,6 +1160,10 @@ export class Escada {
    */
   aproximarDoCorpo() {
     if (this.phase !== 'atlas') return;
+    if (this.focoNoCentro) {
+      this.aproximarDoBuraco();
+      return;
+    }
     if (this.focoEstrela) {
       this.aproximarDaEstrela();
       return;
@@ -960,11 +1206,15 @@ export class Escada {
       rampa: this.rampaDaEscada(),
       // o eixo do PLANETA no alto da tela, não o da eclíptica (Onda 7)
       polo: this.poloDoCorpo(id),
+      // corpo com anel chega pela face que o Sol ilumina (12/11/2026); o
+      // anel mora no equador, então o polo dele é o do corpo
+      poloDoAnel: id in ANEIS_CITADOS ? this.poloDoCorpo(id) : null,
       ...this.soloDe(id),
     });
     this.enquadrarAgora();
     this.focoCorpoId = id;
     this.focoEstrela = false;
+    this.focoSonda = null;
     this.ver = 'corpo';
     // O NOME SAI DA TABELA ÚNICA (item 92): esta linha lia só os DEZ
     // corpos da camada, então descer ao globo de um anão ou de um
@@ -1047,6 +1297,7 @@ export class Escada {
     this.enquadrarAgora();
     this.focoCorpoId = 'sun';
     this.focoEstrela = false;
+    this.focoSonda = null;
     this.ver = 'corpo';
     this.events.onFoco(nomeDoCorpo('sun'));
     this.emitirEscada();
@@ -1067,6 +1318,7 @@ export class Escada {
     if (!entrada) return;
     this.focoCorpoId = id;
     this.focoEstrela = false;
+    this.focoSonda = null;
     this.ver = 'corpo';
     this.events.onFoco(nomeDoCorpo(entrada.id));
     this.emitirEscada();
@@ -1133,6 +1385,12 @@ export class Escada {
     const jd = this.maquinaDoTempo.jdVivo;
     const { degrau } = this.escada;
     if (degrau === 'estrela') return null;
+    // A SONDA ANDA COM O RELÓGIO: a mesma pose da chegada, no instante
+    // vivo — fora da tabela (antes do lançamento) não há o que recompor
+    if (degrau === 'sonda' || degrau === 'cometa' || degrau === 'exoplaneta') {
+      const pose = this.pequeno ? (this.objetoPequeno(this.pequeno.id)?.pose(jd) ?? null) : null;
+      return pose ? { alvo: pose.alvo, raio: pose.raio, eixoDe: pose.eixoDe, pai: null, polo: pose.polo } : null;
+    }
     if (degrau === 'lua') {
       if (!this.maquinaDoTempo.efemeride) return null;
       // A LUA EM FOCO, e não a Lua: o mesmo literal da Onda 7 do ramo
@@ -1319,6 +1577,15 @@ export class Escada {
       this.focarNoCorpo(this.focoCorpoId!, 'orbita');
       return true;
     }
+    // de um exoplaneta, sobe para o sistema dele (a anfitriã em foco)
+    if (degrau === 'exoplaneta' && this.pequeno) {
+      const achado = exoplanetaPorId(this.pequeno.id);
+      const pos = achado ? this.posDaAnfitria(achado.sistema.estrela) : null;
+      if (achado && pos) {
+        this.irAte(pos.clone(), 0, achado.sistema.estrela);
+        return true;
+      }
+    }
     // do corpo de uma estrela, sobe para o foco da estrela
     if (degrau === 'estrela' && this.ver === 'corpo' && this.estrelaFocada) {
       this.irAte(this.estrelaFocada.pos.clone(), 0, this.estrelaFocada.nome);
@@ -1457,7 +1724,41 @@ export class Escada {
       }
       return { id: a.id, nome: a.nome, nomeEn: a.nomeEn, classe: a.classe, rUA };
     });
-    return [...dez, ...luas, ...anoes];
+    // AS SONDAS (pilar 4): a distância ao Sol no instante vivo; antes
+    // do lançamento, sem número
+    const sondas = SONDAS.map((sonda) => {
+      const e = estadoDaSonda(sonda.id, jd);
+      return {
+        id: sonda.id,
+        nome: sonda.nome,
+        classe: 'sonda',
+        rUA: e ? Math.hypot(e[0], e[1], e[2]) : Number.NaN,
+        apelidos: sonda.apelidos,
+      };
+    });
+    // OS COMETAS (pilar 4): a distância ao Sol no instante vivo
+    const cometas = COMETAS.map((c) => {
+      const e = estadoDoCometa(c.id, jd);
+      return {
+        id: c.id,
+        nome: c.nome,
+        classe: c.classe,
+        rUA: e ? Math.hypot(e[0], e[1], e[2]) : Number.NaN,
+        apelidos: [c.designacao, ...c.apelidos],
+      };
+    });
+    // OS EXOPLANETAS (12/11): a nota da lista é a distância do sistema
+    const exoplanetas = SISTEMAS_PLANETARIOS.flatMap((sis) => {
+      const d = this.meta?.named.find((n) => n.n === sis.estrela)?.d;
+      return sis.planetas.map((pl) => ({
+        id: pl.id,
+        nome: pl.nome,
+        classe: 'exoplaneta',
+        rUA: d === undefined ? Number.NaN : d * UA_POR_PC,
+        apelidos: pl.apelidos,
+      }));
+    });
+    return [...dez, ...luas, ...anoes, ...sondas, ...cometas, ...exoplanetas];
   }
 
   /**
@@ -1478,6 +1779,7 @@ export class Escada {
     if (!entrada) return;
     this.focoCorpoId = id;
     this.focoEstrela = false;
+    this.focoSonda = null;
     this.ver = 'orbita';
     this.events.onFoco(nomeDoCorpo(entrada.id));
     this.emitirEscada();
@@ -1578,6 +1880,7 @@ export class Escada {
     this.enquadrarAgora();
     this.focoCorpoId = p.corpoId;
     this.focoEstrela = false;
+    this.focoSonda = null;
     this.noCeu = p.degrau === 'ceu';
     this.ver = p.corpoId ? 'corpo' : 'orbita';
     this.events.onFoco(p.corpoId ? nomeDoCorpo(p.corpoId) : null);
