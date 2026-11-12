@@ -31,6 +31,7 @@ import {
   DIVIDAS_ABERTAS,
   ESPELHO_ESCALA_COMPLEXO,
   ESPELHO_ESCALA_NUVEM_CO,
+  ENTREGA_DO_BURACO_PC,
   ESPELHO_RS_SGR_A_PC,
   MASSA_SGR_A_MSOL,
   RAIO_ARTISTICO_DO_SOL_PC,
@@ -51,6 +52,8 @@ import {
   type EscalaDeclarada,
 } from './escala';
 import { SOBRETAXA_DO_HALO } from './luzDaCasa';
+import { RS_SGR_A_PC } from '../lib/buracoNegro';
+import { AU_PARA_PC } from '../lib/atlas/frameGalactico';
 import { FRACAO_DA_ASA } from './estrela';
 
 const ler = (caminhoDoRepo: string) =>
@@ -320,9 +323,8 @@ describe('3b. A SEGUNDA COLUNA: a mesma regra, para brilho', () => {
 
   it('A COLUNA DE TAMANHO NÃO SENTIU NADA — duas máquinas, não um if a mais', () => {
     // é o contrato desta onda: acrescentar a coluna não pode mexer no que o
-    // selo já diz. Se esta linha mudar, a F1 vazou. (Vazia desde o item
-    // 13, 12/11/2026: o Sgr A✱ do Atlas tem o tamanho real.)
-    expect(acusacaoDaEscala()).toEqual([]);
+    // selo já diz. Se esta linha mudar, a F1 vazou.
+    expect(acusacaoDaEscala()).toEqual(['Sagittarius A✱ está 125.884× maior']);
   });
 
   it('a acusação de brilho fala em magnitudes quando o número é grande demais', () => {
@@ -338,9 +340,7 @@ describe('3b. A SEGUNDA COLUNA: a mesma regra, para brilho', () => {
     // quem deve.
     const linhas = acusacaoDoBrilho();
     expect(linhas.some((l) => l.startsWith('Sol emite'))).toBe(false);
-    // e desde o item 13 o buraco do Atlas não emite nada: o disco autorado
-    // é só do filme, que não tem selo
-    expect(linhas).toEqual([]);
+    expect(linhas).toEqual(['Sagittarius A✱ emite brilho de autor']);
   });
 });
 
@@ -357,17 +357,15 @@ describe('4. os números, pinados', () => {
     expect(Math.round(RAIO_ARTISTICO_DO_SOL_PC / RAIO_SOL_PC)).toBe(487_441);
   });
 
-  it('o Sgr A✱ do FILME está 125.884× maior, e o real SAI DA MASSA', () => {
-    const bh = CADASTRO_DE_ESCALA.find((e) => e.id === 'sgr-a-filme')!;
+  it('Sgr A✱ de longe está 125.884× maior, e o real SAI DA MASSA', () => {
+    const bh = CADASTRO_DE_ESCALA.find((e) => e.id === 'sgr-a')!;
     expect(raioDeSchwarzschildPc(MASSA_SGR_A_MSOL)).toBeCloseTo(3.971895e-7, 13);
     expect(Math.round(bh.fator!)).toBe(125_884);
-    expect(bh.soNoFilme).toBe(true);
   });
 
-  it('o Sgr A✱ do Atlas está no tamanho certo (item 13 pago) e o selo não acusa o do filme', () => {
-    const bh = CADASTRO_DE_ESCALA.find((e) => e.id === 'sgr-a')!;
-    expect(bh.fator).toBe(1);
-    expect(culpadosDaEscala().some((e) => e.id.startsWith('sgr-a'))).toBe(false);
+  it('de perto, o Gargantua tem o RS real: a entrega fica a 100 RS (8,5 UA)', () => {
+    expect(ENTREGA_DO_BURACO_PC / RS_SGR_A_PC).toBeCloseTo(100, 12);
+    expect(ENTREGA_DO_BURACO_PC / AU_PARA_PC).toBeCloseTo(8.5, 1);
   });
 
   it('o clarão das estrelas declara a LEI, não um fator de autor (M2)', () => {
@@ -403,13 +401,16 @@ describe('5. a copy que o visitante lê', () => {
     expect(fatorEmTexto(Infinity)).toBe('raio de autor');
   });
 
-  it('a acusação nomeia o culpado e o fator — e não sobrou nenhum depois do item 13', () => {
+  it('a acusação nomeia o culpado e o fator — e sobrou UM depois da F3', () => {
     const linhas = acusacaoDaEscala();
-    expect(linhas).toEqual([]);
-    // com o raio que a casa desenhava até 2026-08-13 o Sol volta, com o
-    // nome e o fator escritos
+    expect(linhas).toEqual(['Sagittarius A✱ está 125.884× maior']);
+    // com o raio que a casa desenhava até 2026-08-13 eram DOIS, e o Sol
+    // vinha primeiro (a ordem é do pior fator para o melhor)
     const antes = acusacaoDaEscala(RAIO_ARTISTICO_DO_SOL_PC);
-    expect(antes).toEqual(['Sol está 487.441× maior']);
+    expect(antes).toEqual([
+      'Sol está 487.441× maior',
+      'Sagittarius A✱ está 125.884× maior',
+    ]);
   });
 });
 
@@ -418,13 +419,13 @@ describe('6. F1/F3 — a acusação com o raio VIVO do Sol', () => {
   it('com o raio FÍSICO o Sol sai da acusação — o selo não acusa quem pagou', () => {
     const linhas = acusacaoDaEscala(RAIO_SOL_PC);
     expect(linhas.some((l) => l.startsWith('Sol '))).toBe(false);
-    // e Sgr A✱ pagou a dele no item 13 (12/11/2026)
-    expect(linhas).toEqual([]);
+    // e Sgr A✱ continua devendo: pagar uma dívida não perdoa a outra
+    expect(linhas).toEqual(['Sagittarius A✱ está 125.884× maior']);
   });
 
   it('sem argumento, fala pelo padrão da casa — que desde a F3 é o raio REAL', () => {
     expect(acusacaoDaEscala()).toEqual(acusacaoDaEscala(RAIO_DO_SOL_NA_CENA));
-    expect(acusacaoDaEscala()).toEqual([]);
+    expect(acusacaoDaEscala()).toEqual(['Sagittarius A✱ está 125.884× maior']);
     // e a acusação ANTIGA continua reproduzível: passando o raio que a
     // casa desenhava até 2026-08-13, o Sol volta à lista. É a prova de
     // que a fase pagou uma dívida em vez de apagar o cobrador.
