@@ -939,8 +939,8 @@ export class Escada {
    * esfera de `RAIO_DO_DEGRAU_DO_BURACO_PC`. A rampa da escada atravessa
    * as 9 ordens de grandeza entre a galáxia (kpc) e o buraco (UA) como
    * atravessa as do Sol; a precisão aguenta porque a posição da câmera é
-   * double na CPU e a lente se calcula RELATIVA ao buraco
-   * (`lenteDoBuracoNegro.ts`).
+   * double na CPU e o Gargantua se calcula RELATIVO ao buraco
+   * (`world/blackHole.ts`).
    */
   aproximarDoBuraco() {
     if (this.phase !== 'atlas') return;
