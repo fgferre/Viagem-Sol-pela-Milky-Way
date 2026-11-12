@@ -367,7 +367,7 @@ export const PT = {
   // SEM promessa de filme (item 129/F5 continua valendo): o clique aqui
   // faz o MESMO que a entrada "lugar" da busca já faz — enquadra o
   // centro galáctico no Atlas, não entra no filme.
-  'busca.destino.sagittarius-a': 'Até o centro da galáxia',
+  'busca.destino.sagittarius-a': 'A galáxia inteira, em volta do centro',
 
   // ---- o convite dos gestos (`components/Spotlight.tsx`) ------------
   'convite.olhar': 'arraste para olhar em volta',

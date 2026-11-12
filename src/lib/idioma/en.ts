@@ -345,7 +345,7 @@ export const EN: Record<keyof typeof PT, string> = {
   // NO film promise (item 129/F5 still holds): the click here does the
   // SAME thing the "place" search entry already does — frames the
   // galactic centre in the Atlas, does not start the film.
-  'busca.destino.sagittarius-a': 'To the galactic centre',
+  'busca.destino.sagittarius-a': 'The whole galaxy, around its centre',
 
   // ---- the gesture walkthrough -------------------------------------
   'convite.olhar': 'drag to look around',
