@@ -241,6 +241,12 @@ export const PT = {
   'ajustes.particulas.todas': 'Todas',
   'ajustes.particulas.metade': 'Metade',
   'ajustes.particulas.quarto': '¼',
+  'ajustes.galaxiaControle': 'Galáxia',
+  'ajustes.galaxiaNota':
+    'Como a galáxia vista de fora é desenhada. WebGPU: dezenas de milhões de partículas. WebGL: as mesmas partículas, em menor número (a reserva de quem não tem WebGPU). Clássica: a de antes, com camadas pintadas. Em Preset o app tenta nessa ordem e marca a que está desenhando.',
+  'ajustes.galaxia.webgpu': 'WebGPU',
+  'ajustes.galaxia.particulas': 'WebGL',
+  'ajustes.galaxia.classica': 'Clássica',
   // ROTULO CURTO (polimento 06/09): com o "{degrau}" (ex.: "· 140%")
   // sempre junto, "Tamanho do texto" só não cabia por ele.
   'ajustes.texto': 'Texto · {degrau}',
@@ -677,7 +683,7 @@ export const PT = {
   'selo.tier.medido': 'medido',
   'selo.tier.medidoOQue': 'catálogo e efeméride',
   'selo.tier.derivado': 'derivado',
-  'selo.tier.derivadoOQue': 'cor e temperatura por modelo',
+  'selo.tier.derivadoOQue': 'cor e temperatura por modelo; a galáxia, partículas sorteadas de um modelo',
   'selo.tier.artistico': 'artístico',
   'selo.tier.artisticoOQue': 'o disco do Sol, o clarão e a cruz de luz das estrelas',
   'selo.cartografiaProcedural': 'cartografia: procedural (os mapas não chegaram)',
@@ -719,6 +725,8 @@ export const PT = {
   'selo.desvio.relevoCom': 'relevo da Terra realçado {fator}×',
   'selo.desvio.particulas': 'partículas da galáxia escolhidas à mão',
   'selo.desvio.particulasCom': 'partículas da galáxia escolhidas à mão: {nivel}',
+  'selo.desvio.galaxia': 'galáxia escolhida à mão',
+  'selo.desvio.galaxiaCom': 'galáxia escolhida à mão: {caminho}',
   'selo.desvio.poeira': 'poeira perto de casa escolhida à mão',
   'selo.desvio.poeiraCom': 'poeira perto de casa escolhida à mão: {variante}',
   'selo.desvio.poeiraTeste': 'teste (volume sintético)',

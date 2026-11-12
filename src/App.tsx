@@ -15,7 +15,7 @@ import type { NamedStar } from './three/config';
 import { cartografiaMedida } from './three/cartography/galacticAssets';
 import type { EstadoDaPoeira } from './three/selo';
 import { HUD_POR_FASE, arrastoFazAlgo } from './three/fases';
-import { TIER_DE_PRODUTO } from './three/core/engine';
+import { PRESETS, TIER_DE_PRODUTO } from './three/core/engine';
 import { LabelCanvas } from './components/LabelCanvas';
 import { sondarGl } from './lib/glProbe';
 import { t } from './lib/idioma';
@@ -278,6 +278,9 @@ export default function App() {
     relevo: 'real',
     particulas: null,
     poeira: null,
+    // a cadeia do preset até o Director publicar quem de fato desenha
+    galaxia: null,
+    galaxiaViva: PRESETS[TIER_DE_PRODUTO].galaxia,
   });
   const [paused, setPaused] = useState(false);
   const [rate, setRate] = useState(1);
@@ -956,6 +959,7 @@ export default function App() {
     trocarTerra,
     trocarRelevo,
     trocarParticulas,
+    trocarGalaxia,
     trocarPoeira,
     trocarTom,
     trocarLente,
@@ -1511,6 +1515,7 @@ export default function App() {
         onTerra={trocarTerra}
         onRelevo={trocarRelevo}
         onParticulas={trocarParticulas}
+        onGalaxia={trocarGalaxia}
         onPoeira={trocarPoeira}
         tom={tom}
         onTom={trocarTom}

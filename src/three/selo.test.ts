@@ -79,6 +79,7 @@ const LIMPA: EstadoDaVista = {
   // o relevo medido (item 232): o realçado é desvio declarado
   realceDoRelevo: 1,
   particulas: null,
+  galaxia: null,
   poeira: null,
   // `real` na FIXTURE de propósito: é o estado DEPOIS do clique "voltar
   // ao real". O default vivo do Atlas é `assistida` — e tem os próprios

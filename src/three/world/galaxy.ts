@@ -29,6 +29,7 @@ import {
   tauDasNuvens,
 } from './geradorDaGalaxia';
 import { porCurva } from '../core/engine';
+import type { CaminhoDaGalaxia } from '../core/engine';
 import { CamadaWebgpu } from './galaxiaWebgpu/camadaWebgpu';
 import type { GalaxyBuffers } from './geradorDaGalaxia';
 
@@ -85,7 +86,6 @@ export class Galaxy {
   private dwarfMesh!: THREE.Mesh;
   private static scratch = new THREE.Vector3();
   private static dbg = new URLSearchParams(window.location.search);
-  private static readonly MODO = Galaxy.dbg.get('galaxia');
   // AS TRÊS DA GALÁXIA. A URL só as SEMEIA no boot (ler `has()` por quadro
   // seria lixo evitável); daí em diante quem manda é `setLayerHidden`, e
   // elas são VIVAS — nenhuma é lida no bake. `bakeDiscLayers` roda
@@ -117,14 +117,19 @@ export class Galaxy {
    * da câmera ao centro) em todo fragmento: debaixo da câmera, de 3 kpc,
    * isso as deixava ~2,6× mais claras que o μ local daria.
    */
-  private soParticulas = Galaxy.MODO === 'particulas' || Galaxy.MODO === 'webgpu';
+  private readonly soParticulas: boolean;
   /**
-   * ?galaxia=webgpu — o modo só-partículas com a vista de FORA desenhada
-   * pelo motor WebGPU (camadaWebgpu.ts: 16 M de partículas sorteadas em vez
-   * de 4 M com filhas). De dentro do disco, e em navegador sem WebGPU,
-   * segue o caminho WebGL acima. `null` até o motor ficar pronto.
+   * O motor WebGPU — o modo só-partículas com a vista de FORA desenhada
+   * por ele (camadaWebgpu.ts: 16 M de partículas sorteadas em vez de 4 M
+   * com filhas). De dentro do disco, e em navegador sem WebGPU, segue o
+   * caminho WebGL acima. `null` até o motor ficar pronto (e de novo se
+   * ele cair: a luz volta ao WebGL no mesmo quadro).
    */
   private camadaWebgpu: CamadaWebgpu | null = null;
+  /** a camada foi pedida e ainda não chegou (nem desistiu) */
+  private webgpuEmVoo = false;
+  /** quem acompanha a troca do caminho que desenha (Director → painel e selo) */
+  aoMudarCaminho: (() => void) | null = null;
   private descartada = false;
   private static readonly GANHO_DAS_LAMINAS = 6.99;
   /**
@@ -172,7 +177,7 @@ export class Galaxy {
    * (estrelas jovens resolvidas, nós H II, aglomerados, halo) sai sempre
    * inteiro.
    */
-  private static readonly TETO_LOD = tune('lodmax', 5) * 1e6;
+  private readonly tetoLod: number;
   private lod: {
     inicio: Int32Array;
     total: Int32Array;
@@ -227,8 +232,13 @@ export class Galaxy {
   constructor(
     buffers: GalaxyBuffers,
     dustMap: THREE.Texture,
-    structureMap: THREE.Texture
+    structureMap: THREE.Texture,
+    /** o desenho que a carga montou (`montarCarga`): só-partículas ou o
+     *  clássico das lâminas, e o teto de instâncias do tier (?lodmax=) */
+    desenho: { soParticulas: boolean; tetoLodMilhoes: number } = { soParticulas: false, tetoLodMilhoes: 5 }
   ) {
+    this.soParticulas = desenho.soParticulas;
+    this.tetoLod = tune('lodmax', desenho.tetoLodMilhoes) * 1e6;
     this.ownsDustMap = !dustMap;
     this.dustMap = dustMap ?? Galaxy.emptyDustMap();
     this.structureMap = structureMap;
@@ -841,7 +851,7 @@ export class Galaxy {
     // ganha ou perde a SUA última instância com peso que nasce em zero,
     // em degraus de uma célula, e nenhum uniforme salta.
     const rho0 = Galaxy.RHO_LOD;
-    const teto = Galaxy.TETO_LOD;
+    const teto = this.tetoLod;
     const params = (t: number): [number, number] =>
       t >= 1 ? [rho0, Math.min(t - 1, 1)] : [rho0 * Math.max(t, 1e-3), 0];
     let rho = rho0;
@@ -1019,14 +1029,19 @@ export class Galaxy {
       u.uFade.value = this.soParticulas
         ? (brightFade + Galaxy.GANHO_DAS_LAMINAS * externalFade) / this.fracaoDeParticulas
         : brightFade / this.fracaoDeParticulas;
+      if (this.camadaWebgpu?.falhou) this.soltarWebgpu();
       if (this.camadaWebgpu && camera && screenW) {
         // A CESSÃO: fora do disco (externalFade = 1) a luz das partículas é
         // toda da camada WebGPU e o WebGL não desenha; na borda do disco as
         // duas se cruzam; dentro, só o WebGL. A camada não tem a rampa de
         // perto (< 1,5 kpc) do GALAXY_VERT — por isso só entra quando a
         // câmera já está a ~1,7 kpc do plano.
+        // O motor desenha TODOS os seus sorteios, qualquer que seja a fração
+        // de partículas do WebGL: o ganho dele não leva o ÷ fração (em
+        // `alta`, metade, a galáxia saía com o dobro da luz).
         const cessao = THREE.MathUtils.smoothstep(externalFade, 0.8, 1);
-        this.camadaWebgpu.update(camera, screenW, screenH, tanHalfFov, u.uFade.value as number, cessao);
+        const ganho = (u.uFade.value as number) * this.fracaoDeParticulas;
+        this.camadaWebgpu.update(camera, screenW, screenH, tanHalfFov, ganho, cessao);
         u.uFade.value = (u.uFade.value as number) * (1 - cessao);
       }
       if (this.soParticulas) {
@@ -1098,21 +1113,53 @@ export class Galaxy {
   }
 
   /**
-   * ?galaxia=webgpu: liga a camada. `buffers` é o sorteio que este objeto
-   * já desenha; `sortear(s)` entrega os sorteios extras do mesmo modelo.
-   * Sem o interruptor, ou sem WebGPU, não faz nada.
+   * Liga a camada WebGPU. `buffers` é o sorteio que este objeto já
+   * desenha; `sortear(s)` entrega os sorteios extras do mesmo modelo. Sem
+   * WebGPU (ou com a ponte quebrada) a camada não chega e o WebGL segue.
    */
   ligarWebgpu(buffers: GalaxyBuffers, sorteios: number, sortear: (s: number) => Promise<GalaxyBuffers>) {
-    if (Galaxy.MODO !== 'webgpu') return;
+    if (!this.soParticulas) return;
+    this.webgpuEmVoo = true;
     void CamadaWebgpu.criar(buffers, sorteios, sortear).then((camada) => {
-      if (!camada) return;
-      if (this.descartada) {
-        camada.dispose();
-        return;
+      this.webgpuEmVoo = false;
+      if (camada && this.descartada) camada.dispose();
+      else if (camada) {
+        this.camadaWebgpu = camada;
+        this.group.add(camada.mesh);
       }
-      this.camadaWebgpu = camada;
-      this.group.add(camada.mesh);
+      this.anunciarCaminho();
     });
+  }
+
+  /** a camada caiu (dispositivo perdido, erro da GPU): a luz volta ao WebGL */
+  private soltarWebgpu() {
+    const camada = this.camadaWebgpu;
+    if (!camada) return;
+    this.camadaWebgpu = null;
+    this.group.remove(camada.mesh);
+    camada.dispose();
+    this.anunciarCaminho();
+  }
+
+  /**
+   * QUEM ESTÁ DESENHANDO a galáxia de fora agora — depois das quedas da
+   * cadeia. Enquanto a camada WebGPU não chega, quem desenha é o WebGL.
+   */
+  get caminho(): CaminhoDaGalaxia {
+    if (!this.soParticulas) return 'classica';
+    return this.camadaWebgpu ? 'webgpu' : 'particulas';
+  }
+
+  /** a imagem ainda vai mudar sozinha: a camada a caminho ou sorteios por chegar */
+  get desenhoEmVoo(): boolean {
+    return this.webgpuEmVoo || (this.camadaWebgpu?.pendentes ?? 0) > 0;
+  }
+
+  anunciarCaminho() {
+    if (this.descartada) return;
+    console.info(`[galáxia] desenhando: ${this.caminho}`);
+    if (import.meta.env.DEV) Object.assign(window, { __caminhoDaGalaxia: this.caminho });
+    this.aoMudarCaminho?.();
   }
 
   dispose() {

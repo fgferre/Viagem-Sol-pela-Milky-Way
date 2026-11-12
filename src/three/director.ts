@@ -11,6 +11,7 @@ import {
   fatorDoRelevo,
   lerPortaGas,
   lerPortaNebulosa,
+  lerPortaGalaxia,
   lerPortaParticulas,
   lerPortaPoeira,
   lerPortaRelevo,
@@ -31,6 +32,7 @@ import type {
   MedicaoDoQuadro,
   ModoDaLente,
   NivelDaNebulosa,
+  CaminhoDaGalaxia,
   ParticulasDaGalaxia,
   QualityLevel,
   RelevoDaTerra,
@@ -813,7 +815,9 @@ export class Director {
   private politicaDeQualidade: 'manual' | 'auto' = 'manual';
   /** o tier PEDIDO e ainda a caminho (`null` = nenhuma troca em voo) —
    *  é ele que faz a captura esperar */
-  private trocaPedida: QualityLevel | null = null;
+  private trocaPedida: string | null = null;
+  /** o pedido que o mundo na tela atende: tier e galáxia escolhida (`chaveDoMundo`) */
+  private chaveDoMundoNaTela: string | null = null;
   /**
    * O NÚMERO DE SEQUÊNCIA DO PEDIDO, e quem CANCELA o mundo em forno
    * quando o visitante muda de ideia no meio. Cada passagem por
@@ -1136,6 +1140,12 @@ export class Director {
   private particulasForcadas: ParticulasDaGalaxia | null = lerPortaParticulas(
     this.debug.get('particulas')
   );
+  /**
+   * A GALÁXIA ESCOLHIDA À MÃO (12/11/2026) — `null` = a cadeia do preset
+   * (WebGPU → partículas no WebGL → clássica). Troca o MUNDO (o sorteio
+   * muda), então vai pela mesma via viva da troca de tier.
+   */
+  private galaxiaForcada: CaminhoDaGalaxia | null = lerPortaGalaxia(this.debug.get('galaxia'));
   /**
    * A POEIRA PERTO DE CASA ESCOLHIDA À MÃO (pedido do dono, 27/09) —
    * `null` = a do preset ('hoje', por ora). Mesmo contrato de
@@ -2089,12 +2099,14 @@ export class Director {
     this.catalogos = cartOn ? galactic : null;
     this.cartMode = cartOn ? cartMode : 'off';
     this.tierDoMundo = this.engine.quality;
+    this.chaveDoMundoNaTela = this.chaveDoMundo(this.tierDoMundo);
     // AS VIZINHAS sorteiam no trabalhador DELAS, em paralelo com a Via
     // Láctea: ~0,2 s contra os segundos da carga, então ninguém espera
     const vizinhasSorteadas = sortearVizinhas(1);
     const carga = await montarCarga({
       catalogos: this.catalogos,
       tier: this.tierDoMundo,
+      galaxia: this.galaxiaForcada,
       aoAvancar: (etapa) => this.rotular(etapa),
     });
     if (this.disposed) {
@@ -2314,7 +2326,7 @@ export class Director {
     // reconciliam — sem esta linha o app ficaria com "performance" no
     // seletor e a população de cinema na placa, e nenhum clique
     // seguinte consertaria (o tier pedido já é o vivo).
-    if (this.engine.quality !== this.tierDoMundo) {
+    if (this.chaveDoMundo(this.engine.quality) !== this.chaveDoMundoNaTela) {
       void this.reassarMundo(this.engine.quality);
     }
   }
@@ -2458,6 +2470,10 @@ export class Director {
       // Sem este termo o gate fotografaria o mundo VELHO com o `?q=`
       // novo no selo, e mediria a corrida em vez da imagem.
       this.trocaPedida !== null ||
+      // A GALÁXIA AINDA CHEGANDO (12/11/2026): a camada WebGPU e os
+      // sorteios extras entram segundos depois de o app abrir — capturar
+      // antes fotografaria a reserva WebGL dizendo ser a galáxia padrão
+      (this.galaxy?.desenhoEmVoo ?? false) ||
       // O REALCE DO FOCO (item 83 · L1): as linhas de órbita atravessam
       // do neutro para a hierarquia em ~0,45 s, e uma vista de `?foco=`
       // fotografada no meio da travessia devolveria md5 diferente a cada
@@ -3162,6 +3178,8 @@ export class Director {
       relevo: this.relevoDaTerra,
       particulas: this.particulasForcadas,
       poeira: this.poeiraForcada,
+      galaxia: this.galaxiaForcada,
+      galaxiaViva: this.galaxy?.caminho ?? this.galaxiaForcada ?? this.engine.preset.galaxia,
     });
     // a variante do gás (um dos sete controles acima) decide o modo
     // efetivo da poeira (`Nebula.poeiraModoEfetivo`) — toda troca de
@@ -3372,6 +3390,23 @@ export class Director {
   }
 
   /**
+   * A GALÁXIA ESCOLHIDA À MÃO, AO VIVO (12/11/2026). O sorteio muda com o
+   * caminho, então o mundo é reassado pela mesma via da troca de tier —
+   * o velho desenha até o novo estar pronto, nada recarrega.
+   */
+  forcarGalaxia(caminho: CaminhoDaGalaxia | null) {
+    this.galaxiaForcada = caminho;
+    this.perturbar();
+    void this.reassarMundo(this.engine.quality);
+    this.publicarQualidade();
+  }
+
+  /** o pedido que um mundo atende — o tier e a galáxia escolhida */
+  private chaveDoMundo(q: QualityLevel) {
+    return `${q}|${this.galaxiaForcada ?? 'preset'}`;
+  }
+
+  /**
    * A FRAÇÃO DE PARTÍCULAS DA GALÁXIA, TROCADA AO VIVO (item 149) —
    * `drawRange` na `Galaxy`, sem recarregar. `null` devolve à fração do
    * preset.
@@ -3406,6 +3441,14 @@ export class Director {
    * desligado no momento em que este mundo nasce.
    */
   private vestirGalaxia(g: Galaxy) {
+    // QUEM DESENHA pode mudar depois do parto (a camada WebGPU chega, ou
+    // cai): a imagem muda e o painel diz o caminho novo
+    g.aoMudarCaminho = () => {
+      if (g !== this.galaxy) return;
+      this.perturbar();
+      this.publicarQualidade();
+    };
+    g.anunciarCaminho();
     for (const f of this.hide) g.setLayerHidden(f, true);
     g.setCartography(this.debug.has('discoff') ? 'off' : this.cartMode);
     // a fração de partículas (item 149) é a mesma lei de `aplicarParticulas`
@@ -3478,7 +3521,8 @@ export class Director {
     if (this.disposed || this.phase === 'loading' || this.tierDoMundo === null) return;
     // O MESMO PEDIDO DUAS VEZES não abre um segundo forno — e não pode
     // tomar geração nova, senão o forno em curso se cancelaria sozinho.
-    if (this.trocaPedida === q) return;
+    const chave = this.chaveDoMundo(q);
+    if (this.trocaPedida === chave) return;
     // DAQUI PARA BAIXO É PEDIDO NOVO, e todo pedido novo invalida o
     // anterior: quem estiver no forno perde a vez neste instante.
     const geracao = ++this.geracaoDaTroca;
@@ -3486,14 +3530,15 @@ export class Director {
     // há mundo a assar, mas há um mundo em forno que precisa saber que
     // ninguém o espera mais. A geração acima já o invalidou; aqui só se
     // apaga o pedido em voo, para a captura parar de esperar por ele.
-    if (q === this.tierDoMundo) {
+    if (chave === this.chaveDoMundoNaTela) {
       this.trocaPedida = null;
       return;
     }
-    this.trocaPedida = q;
+    this.trocaPedida = chave;
     const carga = await montarCarga({
       catalogos: this.catalogos,
       tier: q,
+      galaxia: this.galaxiaForcada,
       // o loader não aparece: a troca é viva, e o rótulo de etapa é do
       // carregamento. O visitante vê o mundo velho até o mundo novo
       // estar pronto — que é a promessa inteira da letra C.
@@ -3558,6 +3603,7 @@ export class Director {
     // tier de agora na primeira carga: textura de corpo é alocação
     // PREGUIÇOSA, do que se visitou, não peso residente do mundo.
     this.tierDoMundo = q;
+    this.chaveDoMundoNaTela = chave;
     this.trocaPedida = null;
     // ---- fim do swap ------------------------------------------------
     // TEARDOWN DO MUNDO VELHO, passo a passo blindado: um dispose que
@@ -3762,6 +3808,7 @@ export class Director {
       // o relevo que a TELA desenha: o realçado só existe na `profundidade`
       realceDoRelevo: this.realceDoRelevo('earth'),
       particulas: this.particulasForcadas,
+      galaxia: this.galaxiaForcada,
       // a bancada `?poeira=teste` vence a variante enquanto vale (ver
       // `aplicarPoeira`), e o selo a nomeia — `forcarPoeira` a desarma
       poeira: this.poeiraTeste ? 'teste' : this.poeiraForcada,

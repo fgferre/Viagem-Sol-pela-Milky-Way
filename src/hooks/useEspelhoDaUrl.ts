@@ -13,6 +13,7 @@ import type {
   GasVolumetrico,
   NivelDaNebulosa,
   ParticulasDaGalaxia,
+  CaminhoDaGalaxia,
   RelevoDaTerra,
   TipoDePoeira,
   ModoDaLente,
@@ -354,6 +355,15 @@ export function useEspelhoDaUrl(dep: {
   };
 
   /**
+   * A GALÁXIA DE FORA, AO VIVO (12/11/2026) — no molde das partículas; o
+   * Director reassa o mundo por trás, sem recarregar.
+   */
+  const trocarGalaxia = (caminho: CaminhoDaGalaxia | null) => {
+    directorRef.current?.forcarGalaxia(caminho);
+    window.history.replaceState(null, '', comParam('galaxia', caminho));
+  };
+
+  /**
    * A POEIRA PERTO DE CASA, AO VIVO (pedido do dono, 27/09) — o sexto
    * controle da gaveta Avançado, no mesmo molde exato dos cinco de cima.
    */
@@ -492,6 +502,8 @@ export function useEspelhoDaUrl(dep: {
         d.definirRelevo('real');
       } else if (c.chave === 'particulas') {
         d.forcarParticulas(null);
+      } else if (c.chave === 'galaxia') {
+        d.forcarGalaxia(null);
       } else if (c.chave === 'poeira') {
         // desarma TAMBÉM `poeiraTeste` (dentro de `forcarPoeira`): sem
         // isto um `?poeira=teste` de bancada continuaria no ar depois
@@ -596,6 +608,7 @@ export function useEspelhoDaUrl(dep: {
     trocarTerra,
     trocarRelevo,
     trocarParticulas,
+    trocarGalaxia,
     trocarPoeira,
     trocarTom,
     trocarLente,

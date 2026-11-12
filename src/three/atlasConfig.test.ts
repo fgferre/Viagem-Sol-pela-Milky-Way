@@ -232,11 +232,12 @@ describe('a troca de tier ao vivo (Ajustes C)', () => {
 
     // 1. o mesmo pedido duas vezes NÃO toma geração nova (o forno em
     //    curso se cancelaria a si mesmo e nada pousaria nunca)
-    const mesmoPedido = corpo.indexOf('if (this.trocaPedida === q) return;');
+    // (desde 12/11/2026 o pedido é a chave tier + galáxia escolhida)
+    const mesmoPedido = corpo.indexOf('if (this.trocaPedida === chave) return;');
     // 2. a geração nasce ANTES da guarda do tier vivo
     const geracao = corpo.indexOf('const geracao = ++this.geracaoDaTroca;');
     // 3. e a guarda do tier vivo CANCELA em vez de só voltar
-    const voltaAoVivo = corpo.indexOf('if (q === this.tierDoMundo) {');
+    const voltaAoVivo = corpo.indexOf('if (chave === this.chaveDoMundoNaTela) {');
     expect(mesmoPedido).toBeGreaterThan(0);
     expect(geracao).toBeGreaterThan(mesmoPedido);
     expect(voltaAoVivo).toBeGreaterThan(geracao);
@@ -385,7 +386,9 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
       | 'terra'
       | 'relevo'
       | 'particulas'
-      | 'poeira';
+      | 'poeira'
+      | 'galaxia'
+      | 'galaxiaViva';
     const estado = (m: Omit<Estado, Gaveta> & Partial<Pick<Estado, Gaveta>>) =>
       rotuloDaQualidade({
         amostras: null,
@@ -396,6 +399,8 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
         relevo: 'real',
         particulas: null,
         poeira: null,
+        galaxia: null,
+        galaxiaViva: 'webgpu',
         ...m,
       });
     // manual, medida boa: nada a sugerir — o painel não inventa alarme
@@ -442,6 +447,8 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
     expect(estado({ escolha: 'cinema', tier: 'cinema', medicao: null, particulas: 'metade' }))
       .toContain('Cinema (Personalizado)');
     expect(estado({ escolha: 'cinema', tier: 'cinema', medicao: null, poeira: 'forte' }))
+      .toContain('Cinema (Personalizado)');
+    expect(estado({ escolha: 'cinema', tier: 'cinema', medicao: null, galaxia: 'classica' }))
       .toContain('Cinema (Personalizado)');
   });
 
