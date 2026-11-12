@@ -84,9 +84,12 @@ e o voo baixo sobre relevo medido.
   a penumbra física verdadeira (Saturno mais escuro que a Terra) — quando
   um relatório de terceiro e uma decisão do dono discordam, vence a
   decisão, e a discordância fica escrita nos dois lugares (`luz.ts`).
-- Sagittarius A* segue 125.884× maior que o real — segundo mentiroso de
-  escala, dívida aberta (item 13 do PENDENCIAS). Generalização de
-  comportamento estelar tem de aparecer no selo também.
+- Sagittarius A✱ no Atlas tem o tamanho real desde 12/11/2026 (lente
+  gravitacional exata de Schwarzschild, sem rotação, sem disco: ele quase
+  não brilha). Só o filme galáctico mantém o disco inflado 125.884×, por
+  ser composição aprovada — segundo mentiroso de escala, agora confinado
+  ao filme e fora do selo do Atlas. Generalização de comportamento
+  estelar tem de aparecer no selo também.
 ## Atlas e câmera
 - O código do atlas-orbital é **especificação do problema, não
   fornecedor da solução**: dados e oráculos (efemérides, IAU, fixtures,
