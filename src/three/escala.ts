@@ -189,13 +189,14 @@ export function raioDeSchwarzschildPc(massaMsol: number): number {
 /** Espelho de `world/blackHole.ts:43` (`RS_PC`). */
 export const ESPELHO_RS_SGR_A_PC = 0.05;
 /**
- * A ENTREGA DO GARGANTUA (12/11/2026): a menos de 100 raios de Schwarzschild
- * REAIS do centro (8,5 UA) o disco é desenhado no tamanho verdadeiro do
+ * A ENTREGA DO GARGANTUA (12/11/2026; desde 13/11 na vista de perto): a
+ * menos de 24 raios de Schwarzschild REAIS do centro (2,0 UA) — a distância
+ * da vista de perto do Atlas — o disco é desenhado no tamanho verdadeiro do
  * buraco, em qualquer modo; entre 1,4 pc e ali o RS desenhado desce do
- * inflado ao real (`world/blackHole.ts`, `entregaDoBuraco`), e de 1,4 pc
- * para fora é o inflado.
+ * inflado ao real sem o buraco encolher na tela (`world/blackHole.ts`,
+ * `entregaDoBuraco`), e de 1,4 pc para fora é o inflado.
  */
-export const RAIOS_DA_ENTREGA_DO_BURACO = 100;
+export const RAIOS_DA_ENTREGA_DO_BURACO = 24;
 /** a mesma fronteira em pc — de onde o selo diz ESCALA REAL perto do buraco */
 export const ENTREGA_DO_BURACO_PC = RAIOS_DA_ENTREGA_DO_BURACO * RS_SGR_A_PC;
 /** Espelho de `world/observedClouds.ts:20` (`CO_RADIUS_SCALE`). */
@@ -297,7 +298,7 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
     endereco: 'src/three/world/blackHole.ts:43',
     razao:
       'de longe, o disco de acreção é inflado até 125.884× para ler como Gargantua; ' +
-      'a menos de 8,5 UA do buraco ele tem o tamanho real (RS = 0,085 UA, 4,30e6 M☉, ' +
+      'a menos de 2,0 UA do buraco (24 RS, a vista de perto) ele tem o tamanho real (RS = 0,085 UA, 4,30e6 M☉, ' +
       'GRAVITY 2022). A física do shader é adimensional em RS; o brilho do disco é de autor',
   },
   {
@@ -484,7 +485,7 @@ export const DIVIDAS_ABERTAS: Readonly<Record<string, string>> = {
   // inflado; o Gargantua voltou ao Atlas no mesmo dia e a divisão saiu.)
   'sgr-a':
     'SEM FASE — o Gargantua inflado de longe é composição aprovada pelo dono; ' +
-    'de perto (menos de 8,5 UA) o tamanho já é o real',
+    'de perto (menos de 2,0 UA) o tamanho já é o real',
 };
 
 // ------------------------------------------------------------

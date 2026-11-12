@@ -929,9 +929,9 @@ describe('F3 — o Sol saiu da acusação de escala, sem porta nenhuma', () => {
     expect(v.culpados.join(' ')).not.toContain('Sol');
   });
 
-  it('a menos de 100 RS de Sgr A✱ o selo diz ESCALA REAL — ali o Gargantua é 1:1', () => {
-    expect(estadoDoSelo(com({ distanciaPc: 8150, distanciaAoCentroPc: 1e-5 })).escala).toBe('real');
-    // entre 8,5 UA e 5 pc o disco ainda é maior que o real
+  it('a menos de 24 RS de Sgr A✱ o selo diz ESCALA REAL — ali o Gargantua é 1:1', () => {
+    expect(estadoDoSelo(com({ distanciaPc: 8150, distanciaAoCentroPc: 5e-6 })).escala).toBe('real');
+    // entre 2,0 UA e 1,4 pc o disco ainda é maior que o real
     expect(estadoDoSelo(com({ distanciaPc: 8150, distanciaAoCentroPc: 1e-3 })).escala).toBe('fora');
     expect(estadoDoSelo(com({ distanciaPc: 8150, distanciaAoCentroPc: 10 })).escala).toBe('fora');
   });
@@ -941,10 +941,10 @@ describe('F3 — o Sol saiu da acusação de escala, sem porta nenhuma', () => {
       estadoDoSelo(com({ distanciaPc: 8150, distanciaAoCentroPc: d, camadasEscondidas })).desvios.find(
         (c) => c.chave === 'brilho-do-buraco'
       );
-    expect(linha(1e-5)?.rotulo).toContain('brilho é artístico');
-    expect(linha(1e-5)?.volta).toBe('nenhuma');
+    expect(linha(5e-6)?.rotulo).toContain('brilho é artístico');
+    expect(linha(5e-6)?.volta).toBe('nenhuma');
     expect(linha(1e-3)).toBeUndefined();
-    expect(linha(1e-5, ['nobh'])).toBeUndefined();
+    expect(linha(5e-6, ['nobh'])).toBeUndefined();
   });
 
   it('`?solreal=1` virou porta DESCONHECIDA: quem a digitar hoje é avisado', () => {

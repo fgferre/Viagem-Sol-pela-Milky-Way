@@ -1134,8 +1134,8 @@ export function escalaDaVista(
   distanciaPc: number,
   distanciaAoCentroPc: number = Infinity
 ): 'real' | 'fora' {
-  // O SEGUNDO DOMÍNIO 1:1 (12/11/2026): a menos de 100 RS reais de Sgr A✱
-  // (8,5 UA) o disco é desenhado no tamanho verdadeiro do buraco, e as
+  // O SEGUNDO DOMÍNIO 1:1 (12/11/2026): a menos de 24 RS reais de Sgr A✱
+  // (2,0 UA, a vista de perto) o disco é desenhado no tamanho verdadeiro do buraco, e as
   // partículas da galáxia são instrumento declarado — a mesma situação de
   // casa. O brilho do disco é de autor e fica no cadastro (`escala.ts`).
   return distanciaPc < LIMIAR_SISTEMA_SOLAR_PC || distanciaAoCentroPc < ENTREGA_DO_BURACO_PC

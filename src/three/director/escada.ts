@@ -171,13 +171,15 @@ export interface EstadoDaEscada {
 const RAIO_DO_CENTRO_GALACTICO_PC = 6000;
 
 /**
- * O DEGRAU DE PERTO de Sagittarius A✱ (12/11/2026): a esfera enquadrada
- * tem 10 raios de Schwarzschild REAIS (0,85 UA), o que põe a câmera a
- * ~25 RS sob a lente de 58° — a sombra com ~12° de diâmetro e o anel de
- * Einstein com ~32°. O piso do zoom é 2 × 3 RS = 6 RS, fora da órbita
+ * O DEGRAU DE PERTO de Sagittarius A✱ (12/11/2026; aproximado em 13/11):
+ * a esfera enquadrada tem 7,4 raios de Schwarzschild REAIS (0,63 UA), o
+ * que põe a câmera a 23,96 RS (medido a 1280×800 sob a lente de 58°) —
+ * dentro dos 24 RS onde o buraco já é desenhado em escala real
+ * (`RAIOS_DA_ENTREGA_DO_BURACO`, `escala.ts`). Em retrato o enquadramento
+ * recua (a 390×844 a câmera fica a ~36 RS). O piso do zoom é 2 × 3 RS = 6 RS, fora da órbita
  * circular estável mais interna (3 RS) e longe da esfera de fótons.
  */
-export const RAIO_DO_DEGRAU_DO_BURACO_PC = 10 * RS_SGR_A_PC;
+export const RAIO_DO_DEGRAU_DO_BURACO_PC = 7.4 * RS_SGR_A_PC;
 const PISO_DO_BURACO_PC = 3 * RS_SGR_A_PC;
 /**
  * De onde a câmera olha o buraco: do lado do Sol, 5° ABAIXO do plano

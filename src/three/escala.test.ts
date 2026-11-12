@@ -363,9 +363,9 @@ describe('4. os números, pinados', () => {
     expect(Math.round(bh.fator!)).toBe(125_884);
   });
 
-  it('de perto, o Gargantua tem o RS real: a entrega fica a 100 RS (8,5 UA)', () => {
-    expect(ENTREGA_DO_BURACO_PC / RS_SGR_A_PC).toBeCloseTo(100, 12);
-    expect(ENTREGA_DO_BURACO_PC / AU_PARA_PC).toBeCloseTo(8.5, 1);
+  it('de perto, o Gargantua tem o RS real: a entrega fica a 24 RS (2,0 UA)', () => {
+    expect(ENTREGA_DO_BURACO_PC / RS_SGR_A_PC).toBeCloseTo(24, 12);
+    expect(ENTREGA_DO_BURACO_PC / AU_PARA_PC).toBeCloseTo(2.0, 1);
   });
 
   it('o clarão das estrelas declara a LEI, não um fator de autor (M2)', () => {
