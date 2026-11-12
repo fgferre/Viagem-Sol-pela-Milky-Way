@@ -49,6 +49,9 @@ const LISTA: readonly {
   // A PRIMEIRA SONDA (pilar 4, 12/11/2026): a mais longe, no quadro de
   // chegada dela — o Sol e os planetas do outro lado (sem `raios`)
   { id: 'voyager-1', categoria: 'sistema', consulta: 'voyager-1' },
+  // O PRIMEIRO COMETA (pilar 4, 12/11/2026): Halley, no quadro de chegada
+  // dele — o Sol de um lado, o núcleo do outro (sem `raios`)
+  { id: 'halley', categoria: 'sistema', consulta: 'halley' },
   { id: 'sirius', categoria: 'estrelas', consulta: 'Sirius' },
   { id: 'betelgeuse', categoria: 'estrelas', consulta: 'Betelgeuse' },
   { id: 'rigil-kentaurus', categoria: 'estrelas', consulta: 'Rigil Kentaurus' },

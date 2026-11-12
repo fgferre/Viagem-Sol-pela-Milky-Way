@@ -311,6 +311,9 @@ export const PRIORIDADE_DO_ROTULO = {
   /** uma SONDA (pilar 4, 12/11/2026): marcador de instrumento, abaixo
    *  das luas e acima dos asteroides — ela é assunto, mas não é corpo */
   sonda: 20,
+  /** um COMETA (pilar 4, 12/11/2026): ao lado das sondas — o nome só
+   *  aparece perto do Sol ou em foco (`world/cometas.ts`) */
+  cometa: 19,
   estrelaPropria: 10,
   estrelaBayer: 5,
   outros: 1,

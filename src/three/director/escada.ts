@@ -49,7 +49,9 @@ import type { CorpoBuscavel, LugarBuscavel } from '../../lib/buscaEstrelas';
 import { nomeDoLugar } from '../../lib/buscaEstrelas';
 import { poseDoLugar } from '../world/lugaresDoCeu';
 import { poseDaSonda } from '../world/sondas';
+import { poseDoCometa } from '../world/cometas';
 import { SONDAS, estadoDaSonda, sondaPorId } from '../../lib/sondas';
+import { COMETAS, cometaPorId, estadoDoCometa } from '../../lib/cometas';
 import type { MaquinaDoTempo } from './maquinaDoTempo';
 import type { Rotulos } from './rotulos';
 import type { AtlasRig } from '../cinematic/atlasRig';
@@ -132,7 +134,7 @@ export function soloDoCorpo(
  * corpo resolvido dela é Onda 7), mas o botão "sistema" e o Esc valem.
  */
 export interface EstadoDaEscada {
-  degrau: 'sistema' | 'ceu' | 'orbita' | 'corpo' | 'lua' | 'estrela' | 'sonda';
+  degrau: 'sistema' | 'ceu' | 'orbita' | 'corpo' | 'lua' | 'estrela' | 'sonda' | 'cometa';
   /** existe degrau abaixo alcançável pelo botão "aproximar"? Só quando
    *  o corpo em foco tem MESH resolvido (Terra nesta fase) — aproximar
    *  de um ponto fotométrico enquadraria um clarão sem corpo. */
@@ -198,11 +200,23 @@ export class Escada {
   private ver: VerDaEscada = 'orbita';
   /** o foco vivo é uma ESTRELA (fora da escada de corpos)? */
   private focoEstrela = false;
-  /** a SONDA em foco (pilar 4, 12/11/2026) — id de `lib/sondas.ts`; só
-   *  a escada escreve, e toda outra escrita do foco a apaga */
-  focoSonda: string | null = null;
   /** QUAL estrela, quando `focoEstrela` — nome e posição do último foco */
   private estrelaFocada: { nome: string | null; pos: THREE.Vector3 } | null = null;
+  /** o OBJETO PEQUENO em foco — uma sonda ou um cometa (pilar 4,
+   *  12/11/2026): os dois moram num campo só, então toda escrita do foco
+   *  que zera `focoSonda` zera também o cometa */
+  private pequeno: { tipo: 'sonda' | 'cometa'; id: string } | null = null;
+  /** a SONDA em foco — id de `lib/sondas.ts`; `null` também apaga um cometa */
+  get focoSonda(): string | null {
+    return this.pequeno?.tipo === 'sonda' ? this.pequeno.id : null;
+  }
+  set focoSonda(id: string | null) {
+    this.pequeno = id ? { tipo: 'sonda', id } : null;
+  }
+  /** o COMETA em foco — id de `lib/cometas.ts` */
+  get focoCometa(): string | null {
+    return this.pequeno?.tipo === 'cometa' ? this.pequeno.id : null;
+  }
   /** o corpo em FOCO no Atlas (id do retrato) — só a escada escreve;
    *  o director o lê para o selo (os passos de `stopsDoGloboEmFoco` são dele). */
   focoCorpoId: string | null = null;
@@ -541,9 +555,9 @@ export class Escada {
    * o quadro é o do sistema, e a ficha diz por quê.
    */
   visitarSonda(id: string) {
-    const sonda = sondaPorId(id);
-    if (!sonda || this.phase !== 'atlas') return;
-    const pose = poseDaSonda(id, this.maquinaDoTempo.jdVivo);
+    const objeto = this.objetoPequeno(id);
+    if (!objeto || this.phase !== 'atlas') return;
+    const pose = objeto.pose(this.maquinaDoTempo.jdVivo);
     if (pose) {
       this.atlas.focar(pose.alvo, pose.raio, pose.eixoDe, {
         rampa: this.rampaDaEscada(),
@@ -555,31 +569,47 @@ export class Escada {
       // a vista da casa, pela porta dela — e o foco volta a ser a sonda
       this.focarNoSistema();
     }
-    this.marcarSonda(sonda.nome, id);
+    this.marcarSonda(objeto.nome, objeto.tipo, id);
   }
 
-  /** escolhe uma sonda SEM mover a câmera — o clique simples no rótulo */
-  selecionarSonda(id: string) {
+  /**
+   * UMA SONDA OU UM COMETA — os dois são "um objeto pequeno numa
+   * trajetória real" e chegam pelo mesmo quadro (o segmento Sol→objeto
+   * de `poseDoSegmento`); o cometa abre mais o quadro para as caudas.
+   */
+  private objetoPequeno(id: string) {
     const sonda = sondaPorId(id);
-    const pose = sonda ? poseDaSonda(id, this.maquinaDoTempo.jdVivo) : null;
-    if (!sonda || !pose) return;
+    if (sonda) return { tipo: 'sonda' as const, nome: sonda.nome, pose: (jd: number) => poseDaSonda(id, jd) };
+    const cometa = cometaPorId(id);
+    if (cometa) {
+      const raio = cometa.nucleo.km ? cometa.nucleo.km / 2 : null;
+      return { tipo: 'cometa' as const, nome: cometa.nome, pose: (jd: number) => poseDoCometa(id, jd, raio) };
+    }
+    return null;
+  }
+
+  /** escolhe uma sonda ou um cometa SEM mover a câmera — o clique simples no rótulo */
+  selecionarSonda(id: string) {
+    const objeto = this.objetoPequeno(id);
+    const pose = objeto ? objeto.pose(this.maquinaDoTempo.jdVivo) : null;
+    if (!objeto || !pose) return;
     this.atlas.selecionar(pose.alvo, pose.raio, pose.eixoDe, {
       rampa: this.rampaDaEscada(),
       polo: pose.polo,
       pisoRaio: pose.pisoRaio,
     });
     this.enquadrarAgora();
-    this.marcarSonda(sonda.nome, id);
+    this.marcarSonda(objeto.nome, objeto.tipo, id);
   }
 
-  /** o trio do foco, escrito para uma sonda */
-  private marcarSonda(nome: string, id: string) {
+  /** o trio do foco, escrito para uma sonda ou um cometa */
+  private marcarSonda(nome: string, tipo: 'sonda' | 'cometa', id: string) {
     this.focoCorpoId = null;
     this.focoEstrela = false;
     this.noCeu = false;
     this.ver = 'orbita';
     this.pinoDeBoot = null;
-    this.focoSonda = id;
+    this.pequeno = { tipo, id };
     this.events.onFoco(nome);
     this.emitirEscada();
     this.teletransportou();
@@ -823,8 +853,8 @@ export class Escada {
           ? this.ver === 'corpo'
             ? 'corpo'
             : 'orbita'
-          : this.focoSonda
-            ? 'sonda'
+          : this.pequeno
+            ? this.pequeno.tipo
             : this.focoEstrela
               ? 'estrela'
             : this.noCeu
@@ -947,7 +977,7 @@ export class Escada {
     if (this.phase !== 'atlas') return;
     // UMA SONDA entra pela porta dos corpos (a busca e o `?foco=` a
     // tratam como alvo do sistema), mas o enquadramento é o dela
-    if (sondaPorId(id)) {
+    if (sondaPorId(id) || cometaPorId(id)) {
       this.visitarSonda(id);
       return;
     }
@@ -1307,8 +1337,8 @@ export class Escada {
     if (degrau === 'estrela') return null;
     // A SONDA ANDA COM O RELÓGIO: a mesma pose da chegada, no instante
     // vivo — fora da tabela (antes do lançamento) não há o que recompor
-    if (degrau === 'sonda') {
-      const pose = this.focoSonda ? poseDaSonda(this.focoSonda, jd) : null;
+    if (degrau === 'sonda' || degrau === 'cometa') {
+      const pose = this.pequeno ? (this.objetoPequeno(this.pequeno.id)?.pose(jd) ?? null) : null;
       return pose ? { alvo: pose.alvo, raio: pose.raio, eixoDe: pose.eixoDe, pai: null, polo: pose.polo } : null;
     }
     if (degrau === 'lua') {
@@ -1647,7 +1677,18 @@ export class Escada {
         apelidos: sonda.apelidos,
       };
     });
-    return [...dez, ...luas, ...anoes, ...sondas];
+    // OS COMETAS (pilar 4): a distância ao Sol no instante vivo
+    const cometas = COMETAS.map((c) => {
+      const e = estadoDoCometa(c.id, jd);
+      return {
+        id: c.id,
+        nome: c.nome,
+        classe: c.classe,
+        rUA: e ? Math.hypot(e[0], e[1], e[2]) : Number.NaN,
+        apelidos: [c.designacao, ...c.apelidos],
+      };
+    });
+    return [...dez, ...luas, ...anoes, ...sondas, ...cometas];
   }
 
   /**

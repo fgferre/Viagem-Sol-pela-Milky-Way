@@ -419,6 +419,26 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
       'casa no M7, com o resto emissivo (divergência do L1 declarada no M2)',
   },
   {
+    // pilar 4 (12/11/2026): nasce com a linha do cadastro de ESCALA
+    // (`caudas-dos-cometas`) e esta do censo da LUZ
+    id: 'caudas-dos-cometas',
+    nome: 'a coma e as caudas dos cometas (Points aditivos)',
+    arquivos: ['src/three/world/caudasDosCometas.ts'],
+    consomeL1: false,
+    leiVelhaApagada: false,
+    fatorDeBrilho: null,
+    destino: 'fora-da-lei',
+    migracao: null,
+    emiteGlPointSize: true,
+    razao:
+      'não é fonte estelar: cada sprite é luz do SOL espalhada por poeira, ou ' +
+      'fluorescência de íons e de C2, com o 1/r² do Sol no lugar da partícula e a ' +
+      'produção da lei de atividade; o tamanho é geométrico (o borrão cresce com a ' +
+      'distância ao núcleo), com teto de 48 px DECLARADO no shader. O ganho absoluto ' +
+      'é artístico e ainda não foi medido na unidade da casa: fatorDeBrilho null é a ' +
+      'dívida escrita, o mesmo molde das plumas',
+  },
+  {
     // item 134/S4: a peça nasceu com a linha do cadastro de ESCALA
     // (`plumas-de-encelado`) e sem a do censo da LUZ — é esta.
     id: 'plumas-de-encelado',

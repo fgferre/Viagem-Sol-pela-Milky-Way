@@ -66,6 +66,8 @@ const DESTINOS = [
   // A PRIMEIRA SONDA (pilar 4, 12/11/2026): a chegada dela, o Sol de um
   // lado e a sonda do outro
   { id: 'voyager-1', foco: 'voyager-1' },
+  // O PRIMEIRO COMETA (pilar 4, 12/11/2026): Halley no quadro de chegada
+  { id: 'halley', foco: 'halley' },
 ];
 
 function urlDoDestino({ foco, ver, d, consulta }) {

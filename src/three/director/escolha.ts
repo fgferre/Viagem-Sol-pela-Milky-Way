@@ -31,6 +31,7 @@ import { raioDeEnquadramentoEstelar } from '../cinematic/atlasRig';
 import type { LugarBuscavel } from '../../lib/buscaEstrelas';
 import { CHAVE_DE_LUGAR, LUGARES_DA_BUSCA } from '../world/lugaresDoCeu';
 import { CHAVE_DE_SONDA } from '../world/sondas';
+import { CHAVE_DE_COMETA } from '../world/cometas';
 
 /** o lugar do céu cujo rótulo tem esta chave, ou `undefined` */
 const lugarDaChave = (chave: string): LugarBuscavel | undefined =>
@@ -264,8 +265,14 @@ export class Escolha {
     }
     // UMA SONDA (pilar 4): escolhe sem mover a câmera; o duplo clique
     // cai em `focarNoCorpo`, que a reconhece e a enquadra
-    if (best.key.startsWith(CHAVE_DE_SONDA)) {
-      const id = best.key.slice(CHAVE_DE_SONDA.length);
+    // (e UM COMETA, pela mesma porta: os dois são objetos pequenos)
+    const chaveDoPequeno = best.key.startsWith(CHAVE_DE_SONDA)
+      ? CHAVE_DE_SONDA
+      : best.key.startsWith(CHAVE_DE_COMETA)
+        ? CHAVE_DE_COMETA
+        : null;
+    if (chaveDoPequeno) {
+      const id = best.key.slice(chaveDoPequeno.length);
       this.escolhaDoClique = { id, pos: ORIGEM.clone(), nome: best.name };
       this.escada.selecionarSonda(id);
       return;

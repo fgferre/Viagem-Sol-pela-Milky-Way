@@ -48,9 +48,10 @@ import { CabecalhoDoPainel } from './CabecalhoDoPainel';
 import { Icone } from './Icone';
 import { Sanfona } from './Sanfona';
 import type { CorpoNoJson, CorposDoAtlas, FonteDaFicha, IdDeSecao } from '../lib/atlas/ficha';
-import { montarFicha, montarFichaDeEstrela, montarFichaDeLugar, montarFichaDeSonda } from '../lib/atlas/ficha';
+import { montarFicha, montarFichaDeCometa, montarFichaDeEstrela, montarFichaDeLugar, montarFichaDeSonda } from '../lib/atlas/ficha';
 import { estrelaVisitavelPorNome } from '../lib/atlas/estrelasVisitaveis';
 import type { Sonda } from '../lib/sondas';
+import type { Cometa } from '../lib/cometas';
 import type { LugarDoCeu } from '../lib/lugaresDoFilme';
 import type { NamedStar } from '../three/config';
 import type { ManifestDeTexturas } from '../three/world/corpos/texturas';
@@ -110,6 +111,7 @@ export function FichaDoObjeto({
   estrela,
   lugar = null,
   sonda = null,
+  cometa = null,
   jd,
   camaraUa,
   fonte,
@@ -144,6 +146,9 @@ export function FichaDoObjeto({
   /** a SONDA em foco (pilar 4, 12/11) — `montarFichaDeSonda`, viva no
    *  instante mostrado; `null` fora dela */
   sonda?: Sonda | null;
+  /** o COMETA em foco (pilar 4, 12/11) — `montarFichaDeCometa`, viva no
+   *  instante mostrado; `null` fora dele */
+  cometa?: Cometa | null;
   /** o instante MOSTRADO pela máquina do tempo */
   jd: number | null;
   /** onde a CÂMERA está, em eclíptica heliocêntrica UA — `null` fora do
@@ -294,6 +299,8 @@ export function FichaDoObjeto({
           })
         : sonda
           ? montarFichaDeSonda(sonda, jd)
+          : cometa
+          ? montarFichaDeCometa(cometa, jd, fonte)
           : lugar
           ? montarFichaDeLugar(lugar)
           : estrelaEmFoco
@@ -304,7 +311,7 @@ export function FichaDoObjeto({
     // memo devolveria a ficha da língua anterior (item 130). O lint não
     // vê a dependência porque ela chega pelo dicionário, não pelo nome.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [corpoId, estrelaEmFoco, estrela, lugar, sonda, jd, fonte, corpos, texturas, camaraUa, realceDoRelevo, idioma]
+    [corpoId, estrelaEmFoco, estrela, lugar, sonda, cometa, jd, fonte, corpos, texturas, camaraUa, realceDoRelevo, idioma]
   );
 
   /**

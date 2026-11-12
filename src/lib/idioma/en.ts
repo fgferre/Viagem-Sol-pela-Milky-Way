@@ -340,6 +340,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.destino.saturn': 'The rings, up close',
   'busca.destino.pluto': 'The edge of the system',
   'busca.destino.voyager-1': 'The farthest human-made object',
+  'busca.destino.halley': 'The most famous comet',
   'busca.destino.sirius': 'The brightest star in the sky',
   'busca.destino.betelgeuse': 'A supergiant in Orion',
   'busca.destino.rigil-kentaurus': 'The nearest star system',
@@ -410,6 +411,9 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.secao.lugar': 'the place',
   'ficha.secao.sonda': 'now',
   'ficha.secao.missao': 'the mission',
+  'ficha.secao.cometa': 'now',
+  'ficha.secao.orbitaDoCometa': 'the orbit',
+  'ficha.secao.oCometa': 'the comet',
   // The reference follows an em dash, as in mockups m3/m13 ("Distance —
   // Sun"): no preposition, no article, so one label fits Sun, Earth and
   // Saturn in both languages. The old "to the {pai}" (Lote 5) was right
@@ -500,6 +504,32 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.sonda.depoisDaJanela': 'the app’s table runs until 2040',
   'ficha.sonda.naCena': 'what you see here',
   'ficha.sonda.naCena.valor': 'an instrument-sized marker, not the spacecraft — it is a few metres across',
+  'ficha.cometa.doSol': 'distance from the Sun',
+  'ficha.cometa.daTerra': 'distance from Earth',
+  'ficha.cometa.velocidade': 'speed relative to the Sun',
+  'ficha.cometa.atividade': 'activity',
+  'ficha.cometa.ativo': 'active: the ice sublimates, and the coma and tails are lit',
+  'ficha.cometa.inativo': 'inactive: too far from the Sun for water ice to sublimate',
+  'ficha.cometa.naCena': 'what you see here',
+  'ficha.cometa.naCena.valor':
+    'the position is measured (JPL elements); the coma and tails are physics computed here, particle by particle — dust pushed by sunlight, ions carried by the solar wind, gas breaking apart —, with boosted brightness; from afar, the nucleus is a marker',
+  'ficha.cometa.ultimo': 'last perihelion',
+  'ficha.cometa.proximo': 'next perihelion',
+  'ficha.cometa.perielio': 'perihelion distance',
+  'ficha.cometa.periodo': 'period',
+  'ficha.cometa.semVolta': 'never returns: the orbit is a hyperbola (e = {e})',
+  'ficha.cometa.excentricidade': 'eccentricity',
+  'ficha.cometa.limite': 'how far it holds',
+  'ficha.cometa.limite.valor':
+    'osculating conic of {data}: far from that date, Jupiter and the nucleus’s own jets change the orbit — measured against Horizons on 12 Nov 2026, the error is 0.001 to 0.01 AU',
+  'ficha.cometa.designacao': 'designation',
+  'ficha.cometa.nucleo': 'nucleus',
+  'ficha.cometa.descoberta': 'discovery',
+  'ficha.cometa.brilho': 'brightness (M1, K1)',
+  'ficha.cometa.fama': 'why it is famous',
+  'ficha.fonte.elementos': 'computed from JPL Horizons elements',
+  'ficha.fonte.modeloDeAtividade': 'water sublimation, Marsden et al. (1973)',
+  'ficha.fonte.modeloDasCaudas': 'Finson & Probstein (1968); Haser (1957); the app’s brightness gain',
   'ficha.fonte.horizons': 'JPL Horizons, retrieved on {data}',
   'ficha.fonte.daTrajetoria': 'computed from the Horizons trajectory',
   'ficha.fonte.reguaDeEscala': 'the app’s scale rule',
@@ -687,6 +717,11 @@ export const EN: Record<keyof typeof PT, string> = {
   'camada.nosondas': 'Spacecraft trajectories',
   'camada.nosondas.nota':
     'Turns off the path of the chosen spacecraft: travelled so far, solid; the rest until 2040, faint.',
+  'camada.nocometas': 'Comet orbits',
+  'camada.nocometas.nota': 'Turns off the orbit of the chosen comet.',
+  'camada.nocaudas': 'Comet tails',
+  'camada.nocaudas.nota':
+    'Turns off the particle comae and tails of comets near the Sun — the heaviest effect in the solar system.',
   'qualidade.cinema': 'Cinema',
   'qualidade.alta': 'High',
   'qualidade.performance': 'Performance',
@@ -712,6 +747,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'classe.vista da galáxia': 'view of the galaxy',
   'classe.galáxia anã': 'dwarf galaxy',
   'classe.sonda': 'spacecraft',
+  'classe.cometa': 'comet',
+  'classe.cometa interestelar': 'interstellar comet',
 
   // ---- the time machine --------------------------------------------
   'tempo.mes.0': 'January',

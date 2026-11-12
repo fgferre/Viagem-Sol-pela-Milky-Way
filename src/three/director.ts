@@ -74,6 +74,8 @@ import { GiganteResolvido } from './world/corpos/gigante';
 import { Planetas, UA_POR_PC } from './world/planetas/planetas';
 import { Orbitas, type QuadroEmPx } from './world/orbitas';
 import { TrajetoriasDasSondas } from './world/sondas';
+import { OrbitasDosCometas } from './world/cometas';
+import { CaudasDosCometas } from './world/caudasDosCometas';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
 import { exposicaoDoQuadro, stopsDaVisita } from '../lib/atlas/luzDaVisita';
 import { lerPortaLuz } from './selo';
@@ -656,6 +658,10 @@ export class Director {
   private orbitas: Orbitas | null = null;
   /** a linha da sonda em foco (pilar 4) — a camada `nosondas` */
   private sondas: TrajetoriasDasSondas | null = null;
+  /** os cometas (pilar 4): a linha do que está em foco (`nocometas`) e
+   *  a coma e as caudas de partículas dos acesos (`nocaudas`) */
+  private orbitasDosCometas: OrbitasDosCometas | null = null;
+  private caudas: CaudasDosCometas | null = null;
   /** as três medidas do quadro que a camada das órbitas lê, num objeto só e
    *  REUSADO — o tick não aloca (ver `QuadroEmPx`, em `world/orbitas.ts`) */
   private readonly quadroDasOrbitas: QuadroEmPx = {
@@ -2175,6 +2181,10 @@ export class Director {
     this.engine.scene.add(this.orbitas.group);
     this.sondas = new TrajetoriasDasSondas();
     this.engine.scene.add(this.sondas.group);
+    this.orbitasDosCometas = new OrbitasDosCometas();
+    this.engine.scene.add(this.orbitasDosCometas.group);
+    this.caudas = new CaudasDosCometas();
+    this.engine.scene.add(this.caudas.group);
     // O PALCO LOCAL (Onda 6, F0): o grupo dos corpos resolvidos entra
     // irmão dos dois acima. Desde a F2a ele tem o primeiro morador: a
     // Terra — construtor barato, sem geometria e sem um byte de textura
@@ -4116,7 +4126,11 @@ export class Director {
       this.quadrosTentandoFonte = 0;
     }
     this.saltoDeCamera = false;
-    const superficie = this.palco.superficieMaisProxima(cam.position);
+    let superficie = this.palco.superficieMaisProxima(cam.position);
+    // O NÚCLEO DO COMETA EM FOCO também é superfície (pilar 4): quilômetros
+    // de corpo que o near do Sol cortaria de perto
+    const nucleo = this.caudas?.superficieDoFoco(cam.position, this.escada.focoCometa) ?? null;
+    if (nucleo && !(superficie.dSuperficiePc <= nucleo.dSuperficiePc)) superficie = nucleo;
     this.engine.updateClip(Math.min(dHome, dGC), superficie.dSuperficiePc, superficie.raioPc);
 
     // A Via Láctea não é um plano: os fades de AMBIENTE respondem à
@@ -4342,6 +4356,22 @@ export class Director {
       this.sondas.foco = this.phase === 'atlas' ? this.escada.focoSonda : null;
       this.sondas.update(this.maquinaDoTempo.jdVivo);
     }
+    // OS COMETAS (pilar 4): a órbita do que está em foco e as caudas dos
+    // acesos — as caudas só no Atlas, onde a máquina do tempo as move
+    if (this.orbitasDosCometas && this.caudas) {
+      this.orbitasDosCometas.ligado = !this.hide.has('nocometas');
+      this.orbitasDosCometas.foco = this.phase === 'atlas' ? this.escada.focoCometa : null;
+      this.orbitasDosCometas.update(this.maquinaDoTempo.jdVivo);
+      this.caudas.update({
+        jd: this.maquinaDoTempo.jdVivo,
+        camera: this.engine.camera,
+        alturaPx: hPx,
+        tier: this.engine.quality,
+        ligado: !this.hide.has('nocaudas'),
+        noAtlas: this.phase === 'atlas',
+        foco: this.escada.focoCometa,
+      });
+    }
     this.dust.update(cam.position, hPx, time);
     // Sgr A*: só de perto (a extinção real esconde o centro de longe);
     // as capturas de medição ficam a 24/33 kpc — fade 0, passe desligado.
@@ -4486,6 +4516,7 @@ export class Director {
       // 73): o dono do foco é a escada, e o rótulo só precisa do id
       foco: this.escada.focoCorpoId,
       focoSonda: this.escada.focoSonda,
+      focoCometa: this.escada.focoCometa,
       jd: this.maquinaDoTempo.jdVivo,
       // a camada "Nomes na tela" (item 82, N2) — lida aqui com as
       // outras dezoito, e entregue pronta ao produtor
@@ -4703,6 +4734,10 @@ export class Director {
     step('planetas', () => this.planetas?.dispose());
     step('orbitas', () => this.orbitas?.dispose());
     step('sondas', () => this.sondas?.dispose());
+    step('cometas', () => {
+      this.orbitasDosCometas?.dispose();
+      this.caudas?.dispose();
+    });
     // a beta dos rótulos 3D (item 109) nasce de import tardio e pode nem
     // existir; sem este passo, até 31 Texts do troika (geometria +
     // material derivado + textura SDF cada) sobreviviam ao dispose — a

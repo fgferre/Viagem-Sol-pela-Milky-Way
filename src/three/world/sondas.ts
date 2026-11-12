@@ -36,7 +36,7 @@ const COR_DA_SONDA: readonly [number, number, number] = [0.55, 0.86, 0.92];
 export const COR_DO_MARCADOR_DA_SONDA = 'rgba(150, 222, 236, 0.9)';
 
 /** UA (eclíptica) → cena (equatorial, pc) — a conta de `escada.paraPc` */
-function naCena(x: number, y: number, z: number, out: THREE.Vector3): THREE.Vector3 {
+export function naCena(x: number, y: number, z: number, out: THREE.Vector3): THREE.Vector3 {
   const eq = eclipticaParaEquatorial([x, y, z]);
   return out.set(eq[0] * AU_PARA_PC, eq[1] * AU_PARA_PC, eq[2] * AU_PARA_PC);
 }
@@ -77,21 +77,34 @@ const PISO_DA_SONDA_PC = kmParaPc(1_000);
  */
 export function poseDaSonda(id: string, jd: number): PoseDaSonda | null {
   const sonda = posicaoDaSondaNaCena(id, jd);
-  if (!sonda) return null;
+  return sonda ? poseDoSegmento(sonda, FRACAO_DO_RAIO, CENTRO_NO_SEGMENTO, PISO_DA_SONDA_PC) : null;
+}
+
+/**
+ * O QUADRO DO SEGMENTO Sol→objeto, de lado e 25° acima da eclíptica,
+ * com o Sol à esquerda — a chegada das sondas e dos cometas (que só
+ * escolhem quanto do segmento cabe e onde fica o centro).
+ */
+export function poseDoSegmento(
+  objeto: THREE.Vector3,
+  fracaoDoRaio: number,
+  centroNoSegmento: number,
+  pisoRaio: number
+): PoseDaSonda {
   const polo = POLO_ECLIPTICO.clone();
-  const radial = sonda.clone().normalize();
-  // radial × polo: com esta ordem a direita da tela aponta para a sonda
+  const radial = objeto.clone().normalize();
+  // radial × polo: com esta ordem a direita da tela aponta para o objeto
   const deLado = new THREE.Vector3().crossVectors(radial, polo);
   if (deLado.lengthSq() < 1e-12) deLado.set(1, 0, 0);
   deLado.normalize();
   const g = (ELEVACAO_DA_CHEGADA * Math.PI) / 180;
   const dir = deLado.multiplyScalar(Math.cos(g)).addScaledVector(polo, Math.sin(g)).normalize();
   return {
-    alvo: sonda.clone().multiplyScalar(CENTRO_NO_SEGMENTO),
-    raio: sonda.length() * FRACAO_DO_RAIO,
+    alvo: objeto.clone().multiplyScalar(centroNoSegmento),
+    raio: objeto.length() * fracaoDoRaio,
     eixoDe: eixoQuePousaEm(dir, polo),
     polo,
-    pisoRaio: PISO_DA_SONDA_PC,
+    pisoRaio,
   };
 }
 
