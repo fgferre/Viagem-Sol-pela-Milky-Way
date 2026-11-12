@@ -55,6 +55,10 @@ const LISTA: readonly {
   { id: 'sirius', categoria: 'estrelas', consulta: 'Sirius' },
   { id: 'betelgeuse', categoria: 'estrelas', consulta: 'Betelgeuse' },
   { id: 'rigil-kentaurus', categoria: 'estrelas', consulta: 'Rigil Kentaurus' },
+  // O PRIMEIRO SISTEMA PLANETÁRIO (12/11/2026): os sete de TRAPPIST-1,
+  // no quadro de chegada do sistema — a anfitriã que o catálogo não
+  // nomeia entra na lista pela `comAnfitrias`, como no app
+  { id: 'trappist-1', categoria: 'estrelas', consulta: 'TRAPPIST-1' },
   // OS LUGARES DO CÉU (céu profundo, 12/11/2026): a galáxia de fora
   // abre a aba (o cartão grande); depois o endereço do Sol, os lugares
   // perto de casa e, por último, os dois que ficam do outro lado do centro.

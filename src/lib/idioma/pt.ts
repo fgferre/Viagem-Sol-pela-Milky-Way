@@ -366,6 +366,7 @@ export const PT = {
   'busca.destino.sirius': 'A estrela mais brilhante do céu',
   'busca.destino.betelgeuse': 'Uma supergigante em Órion',
   'busca.destino.rigil-kentaurus': 'O sistema estelar mais próximo',
+  'busca.destino.trappist-1': 'Sete planetas do tamanho da Terra',
   // SEM promessa de filme (item 129/F5 continua valendo): o clique aqui
   // faz o MESMO que a entrada "lugar" da busca já faz — enquadra o
   // centro galáctico no Atlas, não entra no filme.

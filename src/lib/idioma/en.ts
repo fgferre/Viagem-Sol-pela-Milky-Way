@@ -344,6 +344,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.destino.sirius': 'The brightest star in the sky',
   'busca.destino.betelgeuse': 'A supergiant in Orion',
   'busca.destino.rigil-kentaurus': 'The nearest star system',
+  'busca.destino.trappist-1': 'Seven Earth-sized planets',
   // NO film promise (item 129/F5 still holds): the click here does the
   // SAME thing the "place" search entry already does — frames the
   // galactic centre in the Atlas, does not start the film.

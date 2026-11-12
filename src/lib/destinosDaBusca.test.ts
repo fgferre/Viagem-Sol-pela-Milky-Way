@@ -15,11 +15,14 @@ import { construirIndice } from './buscaEstrelas';
 import type { CorpoBuscavel, LugarBuscavel } from './buscaEstrelas';
 import { destinosDaBusca } from './destinosDaBusca';
 import { LUGARES_DO_FILME } from './lugaresDoFilme';
+import { comAnfitrias } from './exoplanetas';
 
 const meta = JSON.parse(
   readFileSync(new URL('../../public/data/stars_meta.json', import.meta.url), 'utf8')
 ) as { named: NamedStar[] };
-const nomeadas = meta.named;
+// as nomeadas COMO O APP AS TEM: o catálogo mais as anfitriãs de
+// exoplanetas que ele não nomeia (`director.ts`, no boot)
+const nomeadas = comAnfitrias(meta.named);
 
 const corpos: readonly CorpoBuscavel[] = [
   { id: 'earth', nome: 'Terra', nomeEn: 'Earth', classe: 'planeta', rUA: 1 },
@@ -68,7 +71,7 @@ describe('destinosDaBusca', () => {
     expect(
       nomesDeEstrela,
       'alguma estrela da lista fechada não resolveu para o nome certo'
-    ).toEqual(['Sirius', 'Betelgeuse', 'Rigil Kentaurus']);
+    ).toEqual(['Sirius', 'Betelgeuse', 'Rigil Kentaurus', 'TRAPPIST-1']);
 
     const idsDeLugar = galaxia.map((d) => (d.entrada.tipo === 'lugar' ? d.entrada.lugar.id : null));
     expect(idsDeLugar, 'algum lugar do céu não resolveu').toEqual([
@@ -81,9 +84,9 @@ describe('destinosDaBusca', () => {
     ]);
   });
 
-  it('as categorias contam 8/3/6', () => {
+  it('as categorias contam 8/4/6', () => {
     expect(sistema.length).toBe(8);
-    expect(estrelas.length).toBe(3);
+    expect(estrelas.length).toBe(4);
     expect(galaxia.length).toBe(6);
   });
 
