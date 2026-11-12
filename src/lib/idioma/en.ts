@@ -652,7 +652,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.tier.medido': 'measured',
   'selo.tier.medidoOQue': 'catalog and ephemeris',
   'selo.tier.derivado': 'derived',
-  'selo.tier.derivadoOQue': 'color and temperature from a model',
+  'selo.tier.derivadoOQue': 'color and temperature from a model; the galaxy, particles drawn from a model',
   'selo.tier.artistico': 'artistic',
   'selo.tier.artisticoOQue': "the Sun's disk, the glare and the diffraction spikes",
   'selo.cartografiaProcedural': 'cartography: procedural (the maps did not arrive)',

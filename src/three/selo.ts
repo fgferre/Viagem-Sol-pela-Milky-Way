@@ -88,6 +88,10 @@ export const PROCEDENCIA: Record<Procedencia, { rotulo: string; oQue: string }> 
     get rotulo() { return t('selo.tier.medido'); },
     get oQue() { return t('selo.tier.medidoOQue'); },
   },
+  // A GALÁXIA ENTROU AQUI em 12/11/2026, quando a de partículas virou
+  // padrão: cada ponto é sorteado de um modelo guiado pela literatura —
+  // nada pintado. A clássica (lâminas) só existe escolhida à mão, e aí o
+  // registro declara a escolha (`galaxia`).
   derivado: {
     get rotulo() { return t('selo.tier.derivado'); },
     get oQue() { return t('selo.tier.derivadoOQue'); },

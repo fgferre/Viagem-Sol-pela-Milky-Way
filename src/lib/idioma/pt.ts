@@ -683,7 +683,7 @@ export const PT = {
   'selo.tier.medido': 'medido',
   'selo.tier.medidoOQue': 'catálogo e efeméride',
   'selo.tier.derivado': 'derivado',
-  'selo.tier.derivadoOQue': 'cor e temperatura por modelo',
+  'selo.tier.derivadoOQue': 'cor e temperatura por modelo; a galáxia, partículas sorteadas de um modelo',
   'selo.tier.artistico': 'artístico',
   'selo.tier.artisticoOQue': 'o disco do Sol, o clarão e a cruz de luz das estrelas',
   'selo.cartografiaProcedural': 'cartografia: procedural (os mapas não chegaram)',

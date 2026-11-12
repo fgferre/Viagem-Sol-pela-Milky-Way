@@ -34,7 +34,9 @@ palavra dele. Os pilares, em ordem; cada um fecha com imagem lado a lado:
 1. **A galáxia viva.** De fora, só partículas, com cada tipo desenhado
    como o que é; a meia distância pede dezenas de milhões de partículas,
    e isso é WebGPU só para a galáxia, com o WebGL de reserva
-   (`PLAN-GALAXIA.md`, ramo `galaxia-particulas`).
+   (`PLAN-GALAXIA.md`). Desde 12/11/2026 é o padrão no filme, no Atlas
+   e no voo livre, com a mesma cadeia em toda parte (WebGPU → partículas
+   no WebGL → clássica); a clássica fica como opção em Ajustes.
 2. **Toda estrela é um lugar.** Hoje só o Sol tem corpo. Qualquer estrela
    do catálogo se visita como corpo, pelo mesmo shader do Sol regido por
    temperatura, raio e tipo (anã vermelha, gigante, supergigante, anã
