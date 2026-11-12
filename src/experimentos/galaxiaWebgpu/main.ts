@@ -7,7 +7,7 @@
 // modelo; acima dos ~4 M do gerador, as partículas extras são FILHAS de
 // cada mãe (ensaio 5) ou, com ?sorteios=N, sorteios independentes do mesmo
 // modelo. Parâmetros: ?vista= ?pos= ?look= ?fov= ?w= ?h= ?k= (filhas por
-// mãe) ?modo=deposito|quadrados ?sorteios= ?expo=.
+// mãe) ?modo=deposito|quadrados ?borrifo=1 ?fatia= ?sorteios= ?expo=.
 // ============================================================
 import * as THREE from 'three';
 import { loadGalacticAssets } from '../../three/cartography/galacticAssets';
@@ -48,6 +48,11 @@ interface Pedido {
   h?: number;
   k?: number;
   modo?: Modo;
+  /** 1 = cada partícula deposita num só pixel sorteado (só no depósito) */
+  borrifo?: number;
+  /** a luz (extinção) de cada mãe é renovada a cada `fatia` quadros, uma
+   *  fatia das mães por quadro; 1 = todas em todo quadro */
+  fatia?: number;
 }
 
 const q = new URLSearchParams(window.location.search);
@@ -64,6 +69,8 @@ const estado = {
   h: Number(q.get('h')) || 800,
   k: Number(q.get('k')) || 1,
   modo: (q.get('modo') === 'quadrados' ? 'quadrados' : 'deposito') as Modo,
+  borrifo: Number(q.get('borrifo')) || 0,
+  fatia: Number(q.get('fatia')) || 1,
   expo: Number(q.get('expo')) || 1.436, // exposição 1,02 do app na régua do neutro
 };
 const SORTEIOS = Math.max(1, Number(q.get('sorteios')) || 1);
@@ -253,6 +260,7 @@ async function iniciar() {
   const uF = new Float32Array(dadosU);
   const uI = new Uint32Array(dadosU);
 
+  let nQuadro = 0;
   /** codifica e envia um quadro; com `medir`, resolve o relógio no fim */
   const quadro = (medir = false) => {
     const pos = estado.pos ?? VISTAS[estado.vista] ?? VISTAS.media;
@@ -275,6 +283,9 @@ async function iniciar() {
     uF.set([largura, altura, estado.expo, (40 * altura) / 1080], 36);
     uI[40] = total;
     uI[41] = estado.k;
+    uI[42] = estado.borrifo;
+    const porFatia = Math.ceil(total / estado.fatia);
+    uI[43] = (nQuadro++ % estado.fatia) * porFatia;
     gpu.queue.writeBuffer(bufU, 0, dadosU);
 
     const grupos = Math.ceil(total / 256);
@@ -282,7 +293,7 @@ async function iniciar() {
     let p = enc.beginComputePass(marca(0));
     p.setPipeline(pLuz);
     p.setBindGroup(0, gLuz);
-    p.dispatchWorkgroups(grupos);
+    p.dispatchWorkgroups(Math.ceil(porFatia / 256));
     p.end();
     const alvoDaTela = {
       colorAttachments: [
@@ -335,7 +346,7 @@ async function iniciar() {
    *  entre quadros seguidos sem vsync (envio → GPU terminou) */
   const medir = async (pedido: Pedido, quadros = 12) => {
     aplicar(pedido);
-    for (let i = 0; i < 3; i++) quadro();
+    for (let i = 0; i < Math.max(3, estado.fatia); i++) quadro();
     await gpu.queue.onSubmittedWorkDone();
     const passos: number[][] = [[], [], []];
     const parede: number[] = [];
@@ -352,7 +363,7 @@ async function iniciar() {
     }
     const [luz, desenho, tomMs] = passos.map((v) => (v.length ? mediana(v) : NaN));
     return {
-      vista: estado.vista, modo: estado.modo, w: largura, h: altura,
+      vista: estado.vista, modo: estado.modo, borrifo: estado.borrifo, fatia: estado.fatia, w: largura, h: altura,
       milhoes: (total * estado.k) / 1e6,
       luz, desenho, tom: tomMs, gpu: luz + desenho + tomMs,
       parede: mediana(parede),
@@ -363,7 +374,7 @@ async function iniciar() {
   /** desenha e devolve o PNG do quadro (data URL) */
   const foto = async (pedido: Pedido) => {
     aplicar(pedido);
-    quadro();
+    for (let i = 0; i < estado.fatia; i++) quadro();
     const url = tela.toDataURL('image/png');
     await gpu.queue.onSubmittedWorkDone();
     return url;
@@ -432,8 +443,8 @@ async function iniciar() {
       void mostrar();
     });
   }
-  Object.assign(window, { __gw: { info, medir, foto, grao } });
   await mostrar();
+  Object.assign(window, { __gw: { info, medir, foto, grao } });
 }
 
 iniciar().catch((e: unknown) => {

@@ -31,7 +31,7 @@ struct U {
   ez: vec3f, espLod: f32,
   gc: vec3f, escala: f32,
   dims: vec2f, expo: f32, tetoPx: f32,
-  n: u32, k: u32, pad0: u32, pad1: u32,
+  n: u32, k: u32, borrifo: u32, base: u32,
 }
 struct P { pos: vec3f, r: f32, g: f32, b: f32, size: f32, alpha: f32 }
 
@@ -81,7 +81,8 @@ fn empeno(raio: f32, theta: f32) -> f32 {
 
 @compute @workgroup_size(256)
 fn main(@builtin(global_invocation_id) id: vec3u) {
-  let i = id.x;
+  // u.base: a fatia das mães que este quadro renova (?fatia=)
+  let i = id.x + u.base;
   if (i >= u.n) { return; }
   let p = maes[i];
   // a mãe fora do quadro (com folga para as filhas) não paga a extinção
@@ -201,10 +202,18 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
       let ay = sy - fy0;
       let x0 = i32(fx0);
       let y0 = i32(fy0);
-      deposita(x0, y0, f * ((1.0 - ax) * (1.0 - ay)), sem);
-      deposita(x0 + 1, y0, f * (ax * (1.0 - ay)), sem + 1u);
-      deposita(x0, y0 + 1, f * ((1.0 - ax) * ay), sem + 2u);
-      deposita(x0 + 1, y0 + 1, f * (ax * ay), sem + 3u);
+      if (u.borrifo == 1u) {
+        // BORRIFO: a luz inteira num só dos 4 pixels, sorteado com o peso
+        // bilinear — a mesma tenda na média, com 1/4 das somas atômicas
+        let dx = select(0, 1, u01(sem + 5u) < ax);
+        let dy = select(0, 1, u01(sem + 6u) < ay);
+        deposita(x0 + dx, y0 + dy, f, sem);
+      } else {
+        deposita(x0, y0, f * ((1.0 - ax) * (1.0 - ay)), sem);
+        deposita(x0 + 1, y0, f * (ax * (1.0 - ay)), sem + 1u);
+        deposita(x0, y0 + 1, f * ((1.0 - ax) * ay), sem + 2u);
+        deposita(x0 + 1, y0 + 1, f * (ax * ay), sem + 3u);
+      }
     }
   }
 }

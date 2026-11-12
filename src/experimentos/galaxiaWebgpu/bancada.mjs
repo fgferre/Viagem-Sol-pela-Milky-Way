@@ -4,8 +4,8 @@
 // Uso (da raiz):
 //   node src/experimentos/galaxiaWebgpu/bancada.mjs tempos  <saida.json>
 //   node src/experimentos/galaxiaWebgpu/bancada.mjs grao    <saida.json> <webgl.png> x,y,lado x,y,lado
-//   node src/experimentos/galaxiaWebgpu/bancada.mjs foto    <pasta> <vista> <k> [modo] [w] [h]
-// ?sorteios=N na variável SORTEIOS. Fotos nunca sobrescrevem: ganham -v2, -v3…
+//   node src/experimentos/galaxiaWebgpu/bancada.mjs foto    <pasta> <vista|todas> <k> [deposito|borrifo|quadrados] [w] [h]
+// Variáveis: SORTEIOS (?sorteios=N), JEITOS (lista), KS (filhas por mãe) e FATIA (?fatia=). Fotos nunca sobrescrevem: ganham -v2, -v3…
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir, loadavg } from 'node:os';
 import { resolve } from 'node:path';
@@ -59,6 +59,13 @@ try {
   const info = await avaliar('window.__gw.info');
   console.log('página pronta:', JSON.stringify(info));
   const carga = () => loadavg()[0].toFixed(1);
+  // os três jeitos medidos: depósito (tenda bilinear), borrifo (um pixel
+  // sorteado por partícula) e quadrados instanciados
+  const JEITOS = {
+    deposito: { modo: 'deposito', borrifo: 0 },
+    borrifo: { modo: 'deposito', borrifo: 1 },
+    quadrados: { modo: 'quadrados', borrifo: 0 },
+  };
   const livre = (caminho) => {
     let c = caminho;
     for (let v = 2; existsSync(c); v++) c = caminho.replace(/\.png$/, `-v${v}.png`);
@@ -71,18 +78,25 @@ try {
     return { destino, url };
   };
 
+  const LISTA = (process.env.JEITOS ?? 'deposito,borrifo,quadrados').split(',');
+  const TAMANHOS = (process.env.TAMANHOS ?? '1280x800,2560x1600').split(',').map((t) => t.split('x').map(Number));
+  const VISTAS = (process.env.VISTAS ?? 'media,de-cima').split(',');
+  const FATIA = Number(process.env.FATIA ?? 1);
+  const KS = (process.env.KS ?? '1,2,4,8,16').split(',').map(Number);
+
   if (tarefa === 'tempos') {
     const linhas = [];
-    for (const [w, h] of [[1280, 800], [2560, 1600]]) {
-      for (const vista of ['media', 'de-cima']) {
-        for (const modo of ['deposito', 'quadrados']) {
-          for (const k of [1, 2, 4, 8, 16]) {
-            const m = await avaliar(`window.__gw.medir(${JSON.stringify({ vista, modo, k, w, h })}, 10)`);
+    for (const [w, h] of TAMANHOS) {
+      for (const vista of VISTAS) {
+        for (const jeito of LISTA) {
+          for (const k of KS) {
+            const m = await avaliar(`window.__gw.medir(${JSON.stringify({ vista, ...JEITOS[jeito], k, w, h, fatia: FATIA })}, 20)`);
             m.carga = carga();
+            m.jeito = jeito;
             linhas.push(m);
-            console.log(`${w}x${h} ${vista} ${modo} ${m.milhoes.toFixed(1)}M: GPU ${m.gpu.toFixed(1)} ms ` +
-              `(luz ${m.luz.toFixed(1)} desenho ${m.desenho.toFixed(1)} tom ${m.tom.toFixed(1)}) ` +
-              `quadro ${m.parede.toFixed(1)} ms · carga ${m.carga}${m.erros.length ? ' ERRO ' + m.erros[0] : ''}`);
+            console.log(`${w}x${h} ${vista} ${jeito} ${m.milhoes.toFixed(1)}M: quadro ${m.parede.toFixed(1)} ms ` +
+              `(relógio da GPU: luz ${m.luz.toFixed(1)} desenho ${m.desenho.toFixed(1)}) ` +
+              `· carga ${m.carga}${m.erros.length ? ' ERRO ' + m.erros[0] : ''}`);
           }
         }
       }
@@ -98,25 +112,28 @@ try {
       linhas.push({ o: 'webgl', grao: g });
       console.log('webgl', g.map((v) => v.toFixed(3)).join(' / '));
     }
-    for (const modo of ['deposito', 'quadrados']) {
-      for (const k of [1, 2, 4, 8, 16]) {
-        const url = await avaliar(`window.__gw.foto(${JSON.stringify({ vista: 'media', modo, k, w: 1280, h: 800 })})`);
+    for (const jeito of LISTA) {
+      for (const k of KS) {
+        const url = await avaliar(`window.__gw.foto(${JSON.stringify({ vista: 'media', ...JEITOS[jeito], k, w: 1280, h: 800 })})`);
         const g = await medirGrao(url);
-        linhas.push({ o: modo, k, grao: g });
-        console.log(modo, `${(info.particulas * k / 1e6).toFixed(1)}M`, g.map((v) => v.toFixed(3)).join(' / '));
+        linhas.push({ o: jeito, k, grao: g });
+        console.log(jeito, `${(info.particulas * k / 1e6).toFixed(1)}M`, g.map((v) => v.toFixed(3)).join(' / '));
       }
     }
     writeFileSync(saida, JSON.stringify({ info, trechos, linhas }, null, 1));
   } else if (tarefa === 'foto') {
     const [pasta, vista, k, modo = 'deposito', w = '1280', h = '800'] = args;
     const milhoes = Math.round((info.particulas * Number(k)) / 1e6);
-    const sufixo = (modo === 'quadrados' ? '-quadrados' : '') + (SORTEIOS !== '1' ? `-sorteios${SORTEIOS}` : '') +
+    const sufixo = (modo === 'deposito' ? '' : `-${modo}`) + (SORTEIOS !== '1' ? `-sorteios${SORTEIOS}` : '') +
       (w !== '1280' ? `-${w}` : '');
-    const { destino } = await gravarFoto(
-      { vista, k: Number(k), modo, w: Number(w), h: Number(h) },
-      resolve(pasta, `webgpu-${vista}-${milhoes}M${sufixo}.png`)
-    );
-    console.log('gravada', destino);
+    const vistas = vista === 'todas' ? ['de-cima', 'inclinada', 'media', 'saindo', 'de-lado'] : [vista];
+    for (const v of vistas) {
+      const { destino } = await gravarFoto(
+        { vista: v, k: Number(k), ...JEITOS[modo], w: Number(w), h: Number(h), fatia: FATIA },
+        resolve(pasta, `webgpu-${v}-${milhoes}M${sufixo}.png`)
+      );
+      console.log('gravada', destino);
+    }
   } else {
     throw new Error('tarefa: tempos | grao | foto');
   }
