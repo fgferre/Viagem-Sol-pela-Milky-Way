@@ -5,7 +5,8 @@
 // ============================================================
 import { GALACTIC_MODEL, GLSL_CARTOGRAPHY } from '../cartography/galacticModel';
 import { glslNumber } from '../glslNumber';
-import { GLSL_LEI_DE_TELA_NA_REGUA } from '../estrela';
+import { GLSL_LEI_DE_TELA_NA_REGUA, PISO_DE_TELA_AO_QUADRADO } from '../estrela';
+import { ALTURA_DE_CALIBRACAO_DO_SIGMA_PX } from '../luzDaCasa';
 import { GLSL_STAR_COLOR } from './common';
 import { GLSL_UNRESOLVED } from '../world/wrappedStars';
 
@@ -81,6 +82,23 @@ uniform vec3 uEX;
 uniform vec3 uEY;
 uniform vec3 uEZ;
 uniform vec3 uGC;
+#ifdef GALAXIA_PARTICULAS
+// ?galaxia=particulas — 0 = a lei de tela de sempre (bit a bit), 1 = o
+// núcleo de densidade (ver o bloco em main). É o discFade: some junto com
+// a vista externa, e de dentro do disco a camada é a de hoje.
+uniform float uNucleo;
+// largura do núcleo em pc no centro galáctico visto de frente:
+// C × o espaçamento médio 1/√Σ₀ das partículas DESENHADAS (galaxy.ts)
+uniform float uNucleoPc;
+// erf de Abramowitz–Stegun 7.1.26 (erro absoluto ≤ 1,5e-7)
+float erfAprox(float x) {
+  float a = abs(x);
+  float t = 1.0 / (1.0 + 0.3275911 * a);
+  float y = 1.0 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t
+    - 0.284496736) * t + 0.254829592) * t * exp(-a * a);
+  return sign(x) * y;
+}
+#endif
 
 varying vec3 vColor;
 varying float vAlpha;
@@ -108,6 +126,46 @@ void main() {
   // calibração a conta é a de sempre, bit a bit.
   float escritoPx, fluxoDaTela;
   leiDeTelaNaRegua(px, uScreenH, escritoPx, fluxoDaTela);
+#ifdef GALAXIA_PARTICULAS
+  // O corte do que não pinta (fim do main) julga o PICO; o núcleo espalha
+  // o mesmo fluxo e baixa o pico. O corte segue julgando o pico que o
+  // ponto de sempre teria, senão a luz espalhada some por ser larga.
+  float corteDoNucleo = 1.0;
+  if (uNucleo > 0.0) {
+    // NÚCLEO DE DENSIDADE. Longe, cada partícula é muitas estrelas: ela
+    // vira um núcleo gaussiano cuja largura em tela é o ESPAÇAMENTO local
+    // entre partículas projetado na tela, para os vizinhos se sobreporem
+    // num campo contínuo. Espaçamento: a densidade de SORTEIO do disco é
+    // Σ ∝ e^(−R/a), a = 3·Rd (o viés radial do gerador), então o
+    // espaçamento cresce com e^(R/2a); inclinado, a coluna da linha de
+    // visada empilha 1/μ vezes mais partículas por área de tela e o
+    // espaçamento encolhe com √μ (piso 0,1: de raspão a coluna deixa de
+    // ser fina e quem decide é a espessura).
+    vec3 qn = position - uGC;
+    float rN = length(vec2(dot(qn, uEX), dot(qn, uEY)));
+    float muN = abs(dot(position - uCamPos, uEZ)) / max(dist, 1.0);
+    float nucleoPx = uNucleoPc *
+      exp(rN * ${glslNumber(1 / (2 * 3 * GALACTIC_MODEL.stellarScaleLengthPc))}) *
+      sqrt(max(muN, 0.1)) * uScreenH / (2.0 * uTanHalfFov * max(dist, 1.0));
+    // teto de preenchimento: 40 px na régua de 1080 linhas
+    float tetoPx = 40.0 * max(uScreenH, 1.0) / ${glslNumber(ALTURA_DE_CALIBRACAO_DO_SIGMA_PX)};
+    float largura = clamp(max(px, nucleoPx), 1.0, tetoPx);
+    // UMA LEI DE FLUXO: o depósito é o brilho de superfície constante,
+    // px²/0,49 em px do buffer — a continuação do ramo sub-pixel da lei
+    // (onde ela já é exata), sem o platô nem o teto que tiram fluxo de
+    // quem passa de 3 px. Acima do teto de preenchimento o brilho de
+    // superfície fica e o que sobra da nuvem cai fora do rastro.
+    float pxDep = min(px, tetoPx);
+    float depNovo = pxDep * pxDep / ${glslNumber(PISO_DE_TELA_AO_QUADRADO)};
+    // perto (< ~1 kpc) as partículas voltam a ser pontos resolvidos
+    float k = uNucleo * smoothstep(300.0, 1500.0, dist);
+    float depVelho = escritoPx * escritoPx * fluxoDaTela;
+    float largura2 = mix(escritoPx, largura, k);
+    corteDoNucleo = (largura2 * largura2) / (escritoPx * escritoPx);
+    fluxoDaTela = mix(depVelho, depNovo, k) / (largura2 * largura2);
+    escritoPx = largura2;
+  }
+#endif
 
   // PROJEÇÃO ANTES DA EXTINÇÃO — o recorte que faltava.
   // As 16 amostras VTF abaixo custam 1,22 ms por milhão de pontos (medido
@@ -206,7 +264,30 @@ void main() {
     float sigmaD = 58.0 + fx * fx * 120.0;
     float zTil = dot(sp, uEZ) -
       galWarpHeight(rS, atan(sxy.y, sxy.x + 1e-7));
+#ifdef GALAXIA_PARTICULAS
+    // A CAMADA INTEIRA, NÃO UM PONTO DELA. De cima o trecho tem ~2 kpc de
+    // altura em ${NSAMP} amostras: ~120 pc entre elas contra σ = 58 pc da
+    // poeira, e a amostra pontual da gaussiana ora acerta o pico (τ ~3×),
+    // ora cai entre as amostras (τ 0). A média de e^(−τ̂) com esse sorteio
+    // é muito maior que e^(−τ) (convexidade): a partícula ATRÁS da fenda
+    // passava inteira metade das vezes, e a fenda ficava rasa. Aqui cada
+    // amostra leva a massa EXATA da gaussiana no seu intervalo de z
+    // (diferença de erf; warp e σ do meio do intervalo), e a coluna de quem
+    // está atrás é a coluna inteira. Intervalo raso em z (de raspão) volta
+    // à amostra pontual, que ali já é exata. Entra pela mesma rampa do
+    // núcleo (uNucleo = 0 dentro do disco e de raspão: a conta de sempre).
+    float zMeio = (s1 - s0) * dzSeg * ${(0.5 / NSAMP).toFixed(7)};
     float g = exp(-zTil * zTil / (2.0 * sigmaD * sigmaD));
+    if (uNucleo > 0.0 && abs(zMeio) > 0.05 * sigmaD) {
+      float ua = (zTil - zMeio) / (1.4142136 * sigmaD);
+      float ub = (zTil + zMeio) / (1.4142136 * sigmaD);
+      float gCamada =
+        0.5 * (erfAprox(ub) - erfAprox(ua)) / (2.0 * zMeio) * (2.5066283 * sigmaD);
+      g = mix(g, gCamada, uNucleo);
+    }
+#else
+    float g = exp(-zTil * zTil / (2.0 * sigmaD * sigmaD));
+#endif
     float tp = texture2D(uTauMap, sxy / (2.0 * GAL_DISK_RADIUS) + 0.5).r;
     // PISO DIFUSO da poeira. A âncora do NORTE (A_V = 1,5 mag/kpc ⇒
     // τ⊥ = 0,2455 no Sol) é a coluna TOTAL; o mapa já carrega a parte
@@ -250,7 +331,11 @@ void main() {
   // Sob o tom neutro, que não tem o pé do ACES (R1b, 09/10), o limiar
   // segue valendo: sem ele, no máximo 1 nível em 0,21% dos pixels em
   // t=150 (0,12% no ACES) e em menos de 0,002% em t=140/168.
+#ifdef GALAXIA_PARTICULAS
+  if (max(vColor.r, max(vColor.g, vColor.b)) * vAlpha * corteDoNucleo < 1e-4)
+#else
   if (max(vColor.r, max(vColor.g, vColor.b)) * vAlpha < 1e-4)
+#endif
     gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 }
 `;

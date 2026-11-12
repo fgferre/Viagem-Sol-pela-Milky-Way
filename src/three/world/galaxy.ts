@@ -18,6 +18,7 @@ import {
   TAU_COMPACTO_FRAG,
 } from '../shaders/galaxyShaders';
 import { GAL, EX, EY, EZ } from './baseGalactica';
+import { GALACTIC_MODEL } from '../cartography/galacticModel';
 import { SGR_DWARF_POS, tune } from './geradorDaGalaxia';
 import { porCurva } from '../core/engine';
 import type { GalaxyBuffers } from './geradorDaGalaxia';
@@ -90,12 +91,32 @@ export class Galaxy {
    * (`discFade`), então dentro do disco nada muda. O ganho é a razão de
    * fluxo lâminas÷partículas medida em linear (o grupo da galáxia rendido
    * num alvo float, sem curva nem bloom, uma camada por vez, as duas com
-   * uFade 1) na vista de cima a ~38 kpc: 7,46 no quadro inteiro e no miolo.
-   * Inclinada a 26 kpc deu 8,46; perto (3 kpc do Sol) 24 — os pontos acima
-   * do platô da lei de tela perdem fluxo e as lâminas não, e isso é do M6.
+   * uFade 1) na vista de cima a ~38 kpc. Com a lei de fluxo única do
+   * núcleo de densidade (GALAXY_VERT) o ganho é 6,99 no quadro inteiro, e
+   * o brilho de superfície das partículas num MESMO pedaço do disco não
+   * depende mais da distância (medido de 3 a 40 kpc). O quadro de perto
+   * ainda sai mais escuro que o das lâminas porque elas usam um μ só (o
+   * da câmera ao centro) em todo fragmento: debaixo da câmera, de 3 kpc,
+   * isso as deixava ~2,6× mais claras que o μ local daria.
    */
   private soParticulas = Galaxy.dbg.get('galaxia') === 'particulas';
-  private static readonly GANHO_DAS_LAMINAS = 7.46;
+  private static readonly GANHO_DAS_LAMINAS = 6.99;
+  /**
+   * Largura do núcleo de densidade em ESPAÇAMENTOS médios entre
+   * partículas (ver GALAXY_VERT). O espaçamento sai da contagem
+   * desenhada: o gerador sorteia o disco com Σ ∝ e^(−R/a), a = 3·Rd,
+   * truncado no raio do disco, então Σ₀ = N / (2π a² Z) com
+   * Z = 1 − (1 + x)e^(−x), x = R_disco/a — e o espaçamento é 1/√Σ₀.
+   */
+  private static readonly NUCLEO_EM_ESPACAMENTOS = 24;
+  private nucleoPc() {
+    const a = 3 * GALACTIC_MODEL.stellarScaleLengthPc;
+    const x = GALACTIC_MODEL.diskRadiusPc / a;
+    const z = 1 - (1 + x) * Math.exp(-x);
+    const n = this.totalParticulas * this.fracaoDeParticulas;
+    const sigma0 = n / (2 * Math.PI * a * a * z);
+    return Galaxy.NUCLEO_EM_ESPACAMENTOS / Math.sqrt(Math.max(sigma0, 1e-12));
+  }
   /**
    * A 1×1 zerada do `uTauMap` (τ⊥ = 0 ⇒ exp(0) = 1): o valor de REPOUSO
    * do uniform — antes do bake e sempre que a extinção por partícula
@@ -156,6 +177,13 @@ export class Galaxy {
       depthWrite: false,
       transparent: true,
     });
+    // o núcleo de densidade só existe no ensaio: sem o interruptor o
+    // fonte do shader é o de sempre, letra por letra
+    if (this.soParticulas) {
+      this.brightMat.defines = { GALAXIA_PARTICULAS: '' };
+      this.brightMat.uniforms.uNucleo = { value: 0 };
+      this.brightMat.uniforms.uNucleoPc = { value: 0 };
+    }
     const brightPts = new THREE.Points(geo, this.brightMat);
     brightPts.frustumCulled = false;
     brightPts.renderOrder = 2;
@@ -616,6 +644,11 @@ export class Galaxy {
       u.uFade.value = this.soParticulas
         ? (brightFade + Galaxy.GANHO_DAS_LAMINAS * discFade) / this.fracaoDeParticulas
         : brightFade / this.fracaoDeParticulas;
+      if (this.soParticulas) {
+        // o núcleo entra pela MESMA rampa que acende a luz das lâminas
+        u.uNucleo.value = discFade;
+        u.uNucleoPc.value = this.nucleoPc();
+      }
     }
     // As lâminas contínuas só entram na vista externa. De dentro
     // seriam planos infinitos; a faixa local vem das partículas 3D.
