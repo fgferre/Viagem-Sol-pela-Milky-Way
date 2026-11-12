@@ -1428,7 +1428,9 @@ export default function App() {
           onFechar={() => fecharGaveta('busca')}
           indice={indice}
           verbo={phase === 'atlas' ? 'enquadrar' : 'visitar'}
-          onEscolher={(entrada) => escolherAlvo(entrada, directorRef.current)}
+          onEscolher={(entrada, raios) =>
+            escolherAlvo(entrada, directorRef.current, raios ? 'corpo' : 'orbita', raios)
+          }
           celular={celular}
         />
       )}

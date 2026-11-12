@@ -20,6 +20,8 @@ export interface Destino {
   id: string;
   categoria: CategoriaDeDestino;
   entrada: EntradaDaBusca;
+  /** distância de chegada em raios do corpo — só os do sistema */
+  raios?: number;
 }
 
 /**
@@ -33,13 +35,17 @@ const LISTA: readonly {
   id: string;
   categoria: CategoriaDeDestino;
   consulta: string;
+  /** a MESMA distância em que a prévia do cartão foi tirada (`d` da tabela
+   *  de `scripts/visual/previas-de-destino.mjs`): o cartão leva aonde a
+   *  imagem dele mostra. Mexeu lá, mexa aqui. */
+  raios?: number;
 }[] = [
-  { id: 'earth', categoria: 'sistema', consulta: 'earth' },
-  { id: 'moon', categoria: 'sistema', consulta: 'moon' },
-  { id: 'mars', categoria: 'sistema', consulta: 'mars' },
-  { id: 'jupiter', categoria: 'sistema', consulta: 'jupiter' },
-  { id: 'saturn', categoria: 'sistema', consulta: 'saturn' },
-  { id: 'pluto', categoria: 'sistema', consulta: 'pluto' },
+  { id: 'earth', categoria: 'sistema', consulta: 'earth', raios: 4 },
+  { id: 'moon', categoria: 'sistema', consulta: 'moon', raios: 4 },
+  { id: 'mars', categoria: 'sistema', consulta: 'mars', raios: 4 },
+  { id: 'jupiter', categoria: 'sistema', consulta: 'jupiter', raios: 10 },
+  { id: 'saturn', categoria: 'sistema', consulta: 'saturn', raios: 12 },
+  { id: 'pluto', categoria: 'sistema', consulta: 'pluto', raios: 5 },
   { id: 'sirius', categoria: 'estrelas', consulta: 'Sirius' },
   { id: 'betelgeuse', categoria: 'estrelas', consulta: 'Betelgeuse' },
   { id: 'rigil-kentaurus', categoria: 'estrelas', consulta: 'Rigil Kentaurus' },
@@ -59,7 +65,7 @@ export function destinosDaBusca(
     if (linha.categoria !== categoria) continue;
     const achado = resolverFoco(linha.consulta, indice);
     if (!achado) continue;
-    destinos.push({ id: linha.id, categoria, entrada: achado.entrada });
+    destinos.push({ id: linha.id, categoria, entrada: achado.entrada, raios: linha.raios });
   }
   return destinos;
 }

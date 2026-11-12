@@ -135,7 +135,10 @@ export function PaletaDeBusca({
    *  prometer outra coisa; um corpo do sistema sempre enquadra, e de
    *  fora do Atlas a escolha o abre nele (item 129) */
   verbo: 'enquadrar' | 'visitar';
-  onEscolher: (entrada: EntradaDaBusca) => void;
+  /** `raios` só vem do cartão de destino de um corpo: o cartão promete a
+   *  vista da prévia ("os anéis, de perto"), e a linha de resultado fica
+   *  no enquadramento de sempre */
+  onEscolher: (entrada: EntradaDaBusca, raios?: number) => void;
   /** alça de arrasto no cabeçalho (`CabecalhoDoPainel`) — só na folha do celular */
   celular?: boolean;
 }) {
@@ -215,8 +218,8 @@ export function PaletaDeBusca({
   // Um tique é o bastante — e serve os três caminhos (mouse, teclado,
   // toque num cartão), porque três caminhos de fechamento seriam três
   // comportamentos.
-  const escolher = (entrada: EntradaDaBusca) => {
-    onEscolher(entrada);
+  const escolher = (entrada: EntradaDaBusca, raios?: number) => {
+    onEscolher(entrada, raios);
     setTimeout(onFechar);
   };
 
@@ -399,7 +402,7 @@ export function PaletaDeBusca({
                   'atlas-destino' + (i === 0 ? ' atlas-destino--principal' : '')
                 }
                 style={{ '--i': i } as CSSProperties}
-                onClick={() => escolher(destino.entrada)}
+                onClick={() => escolher(destino.entrada, destino.raios)}
               >
                 <img
                   className="atlas-destino-imagem"
