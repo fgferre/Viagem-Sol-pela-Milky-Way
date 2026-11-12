@@ -361,6 +361,7 @@ export const PT = {
   'busca.destino.jupiter': 'O gigante e suas quatro luas',
   'busca.destino.saturn': 'Os anéis, de perto',
   'busca.destino.pluto': 'A borda do sistema',
+  'busca.destino.voyager-1': 'O objeto humano mais distante',
   'busca.destino.sirius': 'A estrela mais brilhante do céu',
   'busca.destino.betelgeuse': 'Uma supergigante em Órion',
   'busca.destino.rigil-kentaurus': 'O sistema estelar mais próximo',
@@ -430,6 +431,8 @@ export const PT = {
   'ficha.secao.imagem': 'a imagem',
   'ficha.secao.estrela': 'a estrela',
   'ficha.secao.lugar': 'o lugar',
+  'ficha.secao.sonda': 'agora',
+  'ficha.secao.missao': 'a missão',
   // A REFERÊNCIA vem depois de um travessão, como nas maquetes m3/m13
   // ("Distância — Sol", "Distance — Sun"): sem preposição nem artigo, o
   // mesmo rótulo serve a Sol, Terra e Saturno nas duas línguas. O "ao
@@ -511,6 +514,21 @@ export const PT = {
   'ficha.lugar.nucleo': 'núcleo',
   'ficha.lugar.noCatalogo': 'no catálogo da casa',
   'ficha.lugar.naCena': 'o que se vê aqui',
+  'ficha.sonda.doSol': 'distância do Sol',
+  'ficha.sonda.luz': 'a luz leva, daqui à Terra',
+  'ficha.sonda.velocidade': 'velocidade em relação ao Sol',
+  'ficha.sonda.lancamento': 'lançamento',
+  'ficha.sonda.sobrevoo': 'passagem por {corpo}',
+  'ficha.sonda.heliopausa': 'cruzou a heliopausa',
+  'ficha.sonda.estado': 'situação em {data}',
+  'ficha.sonda.trajetoria': 'a trajetória',
+  'ficha.sonda.foraDaJanela': 'nesta data a sonda ainda não tinha sido lançada',
+  'ficha.sonda.depoisDaJanela': 'a tabela da casa vai até 2040',
+  'ficha.sonda.naCena': 'o que se vê aqui',
+  'ficha.sonda.naCena.valor': 'um marcador do tamanho de um instrumento, não a sonda — ela tem poucos metros',
+  'ficha.fonte.horizons': 'JPL Horizons, consultado em {data}',
+  'ficha.fonte.daTrajetoria': 'conta sobre a trajetória do Horizons',
+  'ficha.fonte.reguaDeEscala': 'regra de escala da casa',
   'ficha.fonte.daEfemeride': 'da efeméride',
   'ficha.fonte.daCamera': 'do ponto de vista da câmera',
   'ficha.fonte.deGmEDoRaio': 'de GM e do raio',
@@ -667,6 +685,9 @@ export const PT = {
     'Desliga os globos 3D dos corpos vistos de perto, diferentes dos pontos fotométricos distantes.',
   'camada.noorbitas.nota':
     'Desliga as linhas de órbita dos corpos do sistema solar ao redor do Sol.',
+  'camada.nosondas': 'Trajetórias das sondas',
+  'camada.nosondas.nota':
+    'Desliga o caminho da sonda escolhida: o já percorrido, cheio, e o que falta até 2040, fraco.',
   'qualidade.cinema': 'Cinema',
   'qualidade.alta': 'Alta',
   'qualidade.performance': 'Performance',
@@ -692,6 +713,7 @@ export const PT = {
   'classe.galáxia espiral barrada': 'galáxia espiral barrada',
   'classe.vista da galáxia': 'vista da galáxia',
   'classe.galáxia anã': 'galáxia anã',
+  'classe.sonda': 'sonda',
 
   // ---- a máquina do tempo (`three/tempoDoAtlas.ts`) -----------------
   'tempo.mes.0': 'janeiro',

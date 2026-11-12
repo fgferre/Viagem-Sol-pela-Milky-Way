@@ -41,6 +41,7 @@ import { PASSOS_DO_CONVITE_DO_ATLAS, PASSOS_DO_CONVITE_DO_ATLAS_TOQUE } from './
 import { Ajustes } from './components/Ajustes';
 import { gravarPreferencia, lerPreferencias } from './lib/preferencias';
 import { LUGARES_DO_FILME } from './lib/lugaresDoFilme';
+import { SONDAS } from './lib/sondas';
 import { useDirector, escolherAlvo, LUGARES_DA_BUSCA } from './hooks/useDirector';
 import { useAtalhos } from './hooks/useAtalhos';
 import { useChromeDoFilme } from './hooks/useChromeDoFilme';
@@ -915,6 +916,12 @@ export default function App() {
     [escada.degrau, foco]
   );
 
+  /** A SONDA EM FOCO (pilar 4, 12/11) — o nome é o mesmo nas duas línguas */
+  const sondaEmFoco = useMemo(
+    () => (escada.degrau === 'sonda' && foco ? (SONDAS.find((s) => s.nome === foco) ?? null) : null),
+    [escada.degrau, foco]
+  );
+
   // A URL COMO ESPELHO (corte 6): o gosto nasce dela e volta para ela
   // pelos handlers do hook — a semântica de sempre, noutro endereço.
   const {
@@ -1011,7 +1018,7 @@ export default function App() {
    * fileira, escrita uma vez: sem alvo em foco não há ficha para abrir, e
    * botão que não faz nada é pior que botão nenhum.
    */
-  const ofereceFicha = Boolean(hud.ficha && foco && (escada.corpoId || escada.degrau === 'estrela'));
+  const ofereceFicha = Boolean(hud.ficha && foco && (escada.corpoId || escada.degrau === 'estrela' || escada.degrau === 'sonda'));
 
   /**
    * U11 (C5, PLANO-MOTION-UI.md §12.5) — a linha de rumo só confirma a
@@ -1432,6 +1439,7 @@ export default function App() {
         estrelaEmFoco={escada.degrau === 'estrela' ? foco : null}
         estrela={estrelaEmFoco}
         lugar={lugarEmFoco}
+        sonda={sondaEmFoco}
         jd={tempo?.jd ?? null}
         camaraUa={camera}
         fonte={directorRef.current?.efemerideViva ?? null}

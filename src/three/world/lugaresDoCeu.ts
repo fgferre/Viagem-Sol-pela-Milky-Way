@@ -96,7 +96,7 @@ const NORTE_CELESTE = new THREE.Vector3(0, 0, 1);
  * toda estrela — e entrega a vista pedida exata. Vale enquanto `dir` e
  * o polo distam menos de 180° − o giro (todas as vistas da tabela).
  */
-function eixoQuePousaEm(dir: THREE.Vector3, polo: THREE.Vector3): THREE.Vector3 {
+export function eixoQuePousaEm(dir: THREE.Vector3, polo: THREE.Vector3): THREE.Vector3 {
   const eixo = new THREE.Vector3().crossVectors(dir, polo);
   if (eixo.lengthSq() < 1e-12) return dir.clone().negate();
   return dir

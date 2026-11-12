@@ -73,6 +73,7 @@ import { RochosoResolvido } from './world/corpos/rochoso';
 import { GiganteResolvido } from './world/corpos/gigante';
 import { Planetas, UA_POR_PC } from './world/planetas/planetas';
 import { Orbitas, type QuadroEmPx } from './world/orbitas';
+import { TrajetoriasDasSondas } from './world/sondas';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
 import { exposicaoDoQuadro, stopsDaVisita } from '../lib/atlas/luzDaVisita';
 import { lerPortaLuz } from './selo';
@@ -648,6 +649,8 @@ export class Director {
    *  escala do doador. Só desenha com efeméride viva (ver `orbitas.ts`,
    *  §6): a curva sai do estado do instante, nunca do retrato. */
   private orbitas: Orbitas | null = null;
+  /** a linha da sonda em foco (pilar 4) — a camada `nosondas` */
+  private sondas: TrajetoriasDasSondas | null = null;
   /** as três medidas do quadro que a camada das órbitas lê, num objeto só e
    *  REUSADO — o tick não aloca (ver `QuadroEmPx`, em `world/orbitas.ts`) */
   private readonly quadroDasOrbitas: QuadroEmPx = {
@@ -2146,6 +2149,8 @@ export class Director {
     // cônica é escrita no tick, quando o motor existir (`orbitas.ts`, §6).
     this.orbitas = new Orbitas();
     this.engine.scene.add(this.orbitas.group);
+    this.sondas = new TrajetoriasDasSondas();
+    this.engine.scene.add(this.sondas.group);
     // O PALCO LOCAL (Onda 6, F0): o grupo dos corpos resolvidos entra
     // irmão dos dois acima. Desde a F2a ele tem o primeiro morador: a
     // Terra — construtor barato, sem geometria e sem um byte de textura
@@ -4293,6 +4298,13 @@ export class Director {
         this.phase
       );
     }
+    // A LINHA DA SONDA EM FOCO (pilar 4): a gaveta e o foco, lidos no
+    // mesmo passo das órbitas; o foco só existe no Atlas
+    if (this.sondas) {
+      this.sondas.ligado = !this.hide.has('nosondas');
+      this.sondas.foco = this.phase === 'atlas' ? this.escada.focoSonda : null;
+      this.sondas.update(this.maquinaDoTempo.jdVivo);
+    }
     this.dust.update(cam.position, hPx, time);
     // Sgr A*: só de perto (a extinção real esconde o centro de longe);
     // as capturas de medição ficam a 24/33 kpc — fade 0, passe desligado
@@ -4429,6 +4441,8 @@ export class Director {
       // o alvo escolhido tem prioridade 100 na disputa dos nomes (item
       // 73): o dono do foco é a escada, e o rótulo só precisa do id
       foco: this.escada.focoCorpoId,
+      focoSonda: this.escada.focoSonda,
+      jd: this.maquinaDoTempo.jdVivo,
       // a camada "Nomes na tela" (item 82, N2) — lida aqui com as
       // outras dezoito, e entregue pronta ao produtor
       nomesEscondidos: this.hide.has('nonomes'),
@@ -4641,6 +4655,7 @@ export class Director {
     // com ela indefinida
     step('planetas', () => this.planetas?.dispose());
     step('orbitas', () => this.orbitas?.dispose());
+    step('sondas', () => this.sondas?.dispose());
     // a beta dos rótulos 3D (item 109) nasce de import tardio e pode nem
     // existir; sem este passo, até 31 Texts do troika (geometria +
     // material derivado + textura SDF cada) sobreviviam ao dispose — a

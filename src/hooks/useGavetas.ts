@@ -394,7 +394,7 @@ export function useGavetas(
    * como era.
    */
   const [alvoAnterior, setAlvoAnterior] = useState<string | null>(null);
-  const alvo = escada.corpoId ?? (escada.degrau === 'estrela' ? foco : null);
+  const alvo = escada.corpoId ?? (escada.degrau === 'estrela' || escada.degrau === 'sonda' ? foco : null);
   if (alvo !== alvoAnterior) {
     setAlvoAnterior(alvo);
     setGaveta((atual) => aoFocar(atual, alvo));

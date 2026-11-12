@@ -660,7 +660,7 @@ export class LabelCanvas {
         // a rampa de 250 ms subindo de 0,05 a 0,35 — e sem este campo o
         // atalho de repintura diria "já está na tela" e congelaria o fade.
         `,${(label.alfaDoTexto ?? 1).toFixed(3)}` +
-        `,${label.corDoAnel ?? ''},${nome},${detalhe}`;
+        `,${label.corDoAnel ?? ''},${label.formaDoIcone ?? ''},${nome},${detalhe}`;
     }
     return assinatura;
   }
@@ -1417,7 +1417,18 @@ export class LabelCanvas {
     ctx.shadowColor = 'rgba(0, 0, 0, 0.96)';
     ctx.shadowBlur = 5;
     ctx.beginPath();
-    ctx.arc(p.ancoraX, p.ancoraY, p.peso.raioDoIcone * k * escala, 0, Math.PI * 2);
+    const raio = p.peso.raioDoIcone * k * escala;
+    if (label.formaDoIcone === 'losango') {
+      // A SONDA (pilar 4): instrumento, não corpo — o losango do mesmo
+      // tamanho do anel diz isso sem precisar de legenda
+      ctx.moveTo(p.ancoraX, p.ancoraY - raio);
+      ctx.lineTo(p.ancoraX + raio, p.ancoraY);
+      ctx.lineTo(p.ancoraX, p.ancoraY + raio);
+      ctx.lineTo(p.ancoraX - raio, p.ancoraY);
+      ctx.closePath();
+    } else {
+      ctx.arc(p.ancoraX, p.ancoraY, raio, 0, Math.PI * 2);
+    }
     ctx.strokeStyle = p.peso.iconeBranco
       ? '#fff'
       : (label.corDoAnel ?? 'rgba(255, 211, 145, 0.72)');

@@ -87,6 +87,8 @@ export interface CorpoBuscavel {
   /** id do PAI, presente só nas luas — é ele que muda a régua da nota
    *  (km, não UA) e que o degrau "lua" mantém em quadro */
   pai?: string;
+  /** outros nomes que a busca reconhece (as sondas: "Voyager", "NH") */
+  apelidos?: readonly string[];
 }
 
 // A NOTA DE DISTÂNCIA (o degrau km/UA da emenda P-E10a) MUDOU DE CASA
@@ -315,6 +317,8 @@ export function construirIndice(
       // o lado que LÊ. "jupiter" é id e nome ao mesmo tempo: `anotar`
       // não repete a mesma entrada na mesma chave.
       anotar(entrada.corpo.id, indice);
+      // os APELIDOS (as sondas: "Voyager", "NH") — mais portas de leitura
+      for (const apelido of entrada.corpo.apelidos ?? []) anotar(apelido, indice);
       return;
     }
     if (entrada.tipo === 'lugar') {

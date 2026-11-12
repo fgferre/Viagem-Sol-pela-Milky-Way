@@ -10,6 +10,7 @@
 // projeção pelo getter `alvos` — a mesma lista única da pendência 30.
 // ============================================================
 import { projetarLugares } from '../world/lugaresDoCeu';
+import { projetarSondas } from '../world/sondas';
 import * as THREE from 'three';
 import {
   PRIORIDADE_DO_ROTULO,
@@ -53,6 +54,11 @@ export interface QuadroDeRotulos {
    * prioridade 100 e não cede a nada (item 73).
    */
   foco: string | null;
+  /** a SONDA em foco (pilar 4) — a escada é a dona; `null` fora dela */
+  focoSonda?: string | null;
+  /** o instante vivo (JD TDB) — as sondas se põem no lugar por ele;
+   *  ausente = nenhuma sonda (os quadros de teste antigos) */
+  jd?: number;
   /**
    * A CAMADA "NOMES NA TELA" ESTÁ DESLIGADA? (item 82, N2 — a flag
    * `nonomes` da tabela única `CAMADAS`.) É o gesto do visitante: as
@@ -877,7 +883,11 @@ export class Rotulos {
         for (const e of estrelas) e.prioridade = prioridadeDeEstrela(e.tier);
         // OS LUGARES DO CÉU (céu profundo, 12/11): só fora do sistema
         // solar, e cada um só enquanto lê como objeto (`projetarLugares`)
-        const lista = [...corpos, ...luas, ...estrelas, ...projetarLugares(cam)];
+        // AS SONDAS (pilar 4, 12/11): marcador e nome na posição viva,
+        // só no Atlas — onde a máquina do tempo as move
+        const sondas =
+          fase === 'atlas' ? projetarSondas(cam, quadro.jd ?? Number.NaN, quadro.focoSonda ?? null, !quadro.iconesEscondidos) : [];
+        const lista = [...corpos, ...luas, ...estrelas, ...projetarLugares(cam), ...sondas];
         // O ALVO ESCOLHIDO NÃO CEDE A NADA. A chave do corpo em foco é a
         // mesma que o hit-test reconhece; o `sol-home` cobre o caso da
         // estrela da casa vista de longe.

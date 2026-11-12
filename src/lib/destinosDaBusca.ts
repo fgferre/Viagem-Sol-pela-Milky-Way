@@ -46,6 +46,9 @@ const LISTA: readonly {
   { id: 'jupiter', categoria: 'sistema', consulta: 'jupiter', raios: 10 },
   { id: 'saturn', categoria: 'sistema', consulta: 'saturn', raios: 12 },
   { id: 'pluto', categoria: 'sistema', consulta: 'pluto', raios: 5 },
+  // A PRIMEIRA SONDA (pilar 4, 12/11/2026): a mais longe, no quadro de
+  // chegada dela — o Sol e os planetas do outro lado (sem `raios`)
+  { id: 'voyager-1', categoria: 'sistema', consulta: 'voyager-1' },
   { id: 'sirius', categoria: 'estrelas', consulta: 'Sirius' },
   { id: 'betelgeuse', categoria: 'estrelas', consulta: 'Betelgeuse' },
   { id: 'rigil-kentaurus', categoria: 'estrelas', consulta: 'Rigil Kentaurus' },
