@@ -107,6 +107,17 @@ export interface LugarDoCeu {
   fatos?: readonly FatoDoLugar[];
 }
 
+/**
+ * FORA DA VIA LÁCTEA? — um nome anunciado (pt ou en) que é de uma galáxia
+ * vizinha. A linha de contexto o põe sob o Grupo Local, nunca sob a Via
+ * Láctea: nem as Nuvens de Magalhães, satélites dela, moram dentro dela.
+ */
+export function foraDaViaLactea(nome: string): boolean {
+  return LUGARES_DO_FILME.some(
+    (l) => 'vizinha' in l.alvo && (l.nome === nome || l.nomeEn === nome)
+  );
+}
+
 const SINTESE = { pt: 'síntese da literatura', en: 'summary of the literature' };
 const CATALOGO_DA_CASA = { pt: 'catálogo da casa (AT-HYG)', en: 'the app’s catalogue (AT-HYG)' };
 const MODELO_DA_CASA = { pt: 'modelo da galáxia da casa', en: 'the app’s galaxy model' };

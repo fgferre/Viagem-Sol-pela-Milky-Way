@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
 import type { NamedStar } from '../three/config';
 import { buscar, chaveDoFoco, construirIndice, resolverFoco } from './buscaEstrelas';
 import type { LugarBuscavel } from './buscaEstrelas';
-import { LUGARES_DO_FILME } from './lugaresDoFilme';
+import { LUGARES_DO_FILME, foraDaViaLactea } from './lugaresDoFilme';
 
 const meta = JSON.parse(
   readFileSync(new URL('../../public/data/stars_meta.json', import.meta.url), 'utf8')
@@ -83,6 +83,13 @@ describe('os lugares do céu', () => {
     const r = buscar('Andrômeda', indice, 8);
     expect(r[0].entrada.tipo === 'lugar' && r[0].entrada.lugar.id).toBe('andromeda');
     expect(r.slice(1).some((x) => x.entrada.tipo === 'estrela')).toBe(true);
+  });
+
+  it('as vizinhas, e só elas, ficam fora da Via Láctea (a linha de contexto)', () => {
+    expect(foraDaViaLactea('Galáxia de Andrômeda')).toBe(true);
+    expect(foraDaViaLactea('Large Magellanic Cloud')).toBe(true);
+    expect(foraDaViaLactea('Galáxia anã de Sagitário')).toBe(false);
+    expect(foraDaViaLactea('Sirius')).toBe(false);
   });
 
   it('a anã de Sagitário está onde a galáxia a desenha', async () => {
