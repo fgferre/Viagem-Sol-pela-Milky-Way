@@ -745,6 +745,7 @@ float orColunaDaNuvem(vec3 a, vec3 b) {
 export const GLSL_ORION_MARCHA = /* glsl */ `
 uniform sampler2D uOrSup;
 uniform highp sampler3D uOrNucleo;
+uniform float uOrNaVista;
 const vec3 OR_N_MIN = ${v3(CAIXA_DO_NUCLEO.min)};
 const vec3 OR_N_MAX = ${v3(CAIXA_DO_NUCLEO.max)};
 const vec3 OR_N_INV = ${inv(CAIXA_DO_NUCLEO)};

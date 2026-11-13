@@ -645,98 +645,190 @@ ${
   float phaseSun = pow(max(dot(rd, toSun), 0.0), 24.0) * 2.2 +
                    pow(max(dot(rd, toSun), 0.0), 4.0) * 0.35;
 
-  for (int i = 0; i < 96; i++) {
-    if (i >= N || T < 0.015) break;
-    // Amostragem quadrática: alta resolução perto da câmera, mas o
-    // último passo realmente alcança 650 pc. A progressão anterior
-    // percorria só ~4 pc e nunca chegava às nuvens da viagem.
-    // (amostra por passo com hash próprio foi testada e granula demais:
-    // uma amostra independente por célula grande = variância alta; o
-    // deslocamento coerente da partição erra pouco e sem estrutura)
-    float f0 = clamp((float(i) + jitter) / float(N), 0.0, 1.0);
-    float f1 = clamp((float(i + 1) + jitter) / float(N), 0.0, 1.0);
-    float t0 = tLo + span * f0 * f0;
-    float t1 = tLo + span * f1 * f1;
-    float t = (t0 + t1) * 0.5;
-    float dt = max(t1 - t0, 0.01);
-    vec3 p = ro + rd * t;
-    float d = ${antigo ? 'nebulaDensity(p, 4, t)' : 'nebulaDensity(p, t)'};
-
-    if (d > 0.003) {
-      // ambiente frio proporcional ao envelope do gás — reusa o valor
-      // que nebulaDensity acabou de calcular para a MESMA amostra
-      float slab = min(gGasEnvelope * 0.9, 1.0);
-
-      // auto-absorção: corações densos são escuros, bordas brilham
-      // (como nas nebulosas escuras reais — Barnard 68, Pilares da Criação)
-      float selfShadow = exp(-d * 1.65);
-      float rim = 1.0 - selfShadow; // concentra a emissão nas bordas
-
-      // Emissão bicolor integrada por alpha volumétrico. A cor se
-      // acumula sem depender do tamanho do passo e os núcleos densos
-      // preservam silhuetas escuras em vez de virar branco uniforme.
-      vec3 sampleColor = palette(p, d, ${antigo ? 'fbm(p * 0.035 + 7.7, 3)' : 'gPaletteM'}) * (0.22 + rim * 1.55);
-      sampleColor *= 0.55 + min(d, 1.8) * 0.72;
-      sampleColor *= exp(-max(d - 0.9, 0.0) * 0.55);
-      sampleColor += GAS_COOL * slab * 0.012;
-
-      // Região HII hero no corredor para Betelgeuse: uma cavidade
-      // ionizada localizada — o fbm dos filamentos só roda dentro
-      // do volume dela (fora, heroVolume < 1e-5 e não compra nada)
-      // mora NO 5º núcleo do corredor: posição e raio vêm de lá, então
-      // ela anda junto quando o corredor se desloca (rodada 34)
-      vec3 hq = (p - vec3(${glslNumber(HERO[0])}, ${glslNumber(HERO[1])}, ${glslNumber(HERO[2])})) / ${glslNumber(HERO[3])};
-      float hq2 = dot(hq, hq);
-      if (hq2 < 9.0) {
-        float heroVolume = exp(-hq2 * 1.25);
-        float heroFilaments = smoothstep(0.58, 0.84, fbm(p * 0.115 + 63.7, 3));
-        float heroHii = heroVolume * heroFilaments * heroFilaments;
-        sampleColor += vec3(1.0, 0.09, 0.30) * heroHii * (0.08 + rim * 0.92);
-        sampleColor += vec3(0.18, 0.48, 0.82) * heroHii * (1.0 - heroFilaments) * 0.16;
+  // A NEBULOSA DE ÓRION (world/nebulosaDeOrion.ts): com a caixa dela no
+  // quadro (\`uOrNaVista\`, conferido por quadro em nebula.ts), o trecho
+  // do raio dentro dela é integrado pelas grades assadas e composto EM
+  // ORDEM — entra no primeiro passo que a alcança; o que fica atrás dela
+  // chega atenuado pela transmissão que ela devolve. Fora do quadro, o
+  // laço é o de antes, texto por texto: com o código dela sempre no laço,
+  // quadros sem Órion à vista (filme, Atlas) saíam com 3–15 pixels um
+  // nível diferentes (o compilador reordena a conta).
+  if (OR_LIGADO && uOrPronta > 0.5 && uOrNaVista > 0.5) {
+    vec2 orIv = orCaixa(orLocal(ro), orDir(rd), OR_V_MIN, OR_V_MAX);
+    bool orPendente = orIv.y > orIv.x;
+    int orPassos = int(clamp(float(uSteps), 24.0, 64.0));
+    for (int i = 0; i < 96; i++) {
+      if (i >= N || T < 0.015) break;
+      // Amostragem quadrática: alta resolução perto da câmera, mas o
+      // último passo realmente alcança 650 pc. A progressão anterior
+      // percorria só ~4 pc e nunca chegava às nuvens da viagem.
+      // (amostra por passo com hash próprio foi testada e granula demais:
+      // uma amostra independente por célula grande = variância alta; o
+      // deslocamento coerente da partição erra pouco e sem estrutura)
+      float f0 = clamp((float(i) + jitter) / float(N), 0.0, 1.0);
+      float f1 = clamp((float(i + 1) + jitter) / float(N), 0.0, 1.0);
+      float t0 = tLo + span * f0 * f0;
+      float t1 = tLo + span * f1 * f1;
+      float t = (t0 + t1) * 0.5;
+      float dt = max(t1 - t0, 0.01);
+      if (orPendente && t1 >= orIv.x) {
+        vec4 orion = orMarcha(ro, rd, jitter, orPassos);
+        acc += T * orion.rgb;
+        T *= orion.a;
+        orPendente = false;
+        if (T < 0.015) break;
       }
+      vec3 p = ro + rd * t;
+      float d = ${antigo ? 'nebulaDensity(p, 4, t)' : 'nebulaDensity(p, t)'};
 
-      // luz do Sol (local)
-      float dSun = length(p - uSunPos);
-      sampleColor += vec3(1.0, 0.66, 0.3) * phaseSun * rim * exp(-dSun * 0.1) * 1.1;
+      if (d > 0.003) {
+        // ambiente frio proporcional ao envelope do gás — reusa o valor
+        // que nebulaDensity acabou de calcular para a MESMA amostra
+        float slab = min(gGasEnvelope * 0.9, 1.0);
 
-      // luz das supergigantes embutidas no gás (falloff suave)
-      for (int L = 0; L < 2; L++) {
-        vec3 lv = uLightPos[L] - p;
-        float ld = length(lv);
-        sampleColor += uLightColor[L] * rim * (3.2 / (1.0 + ld * ld * 0.06));
+        // auto-absorção: corações densos são escuros, bordas brilham
+        // (como nas nebulosas escuras reais — Barnard 68, Pilares da Criação)
+        float selfShadow = exp(-d * 1.65);
+        float rim = 1.0 - selfShadow; // concentra a emissão nas bordas
+
+        // Emissão bicolor integrada por alpha volumétrico. A cor se
+        // acumula sem depender do tamanho do passo e os núcleos densos
+        // preservam silhuetas escuras em vez de virar branco uniforme.
+        vec3 sampleColor = palette(p, d, ${antigo ? 'fbm(p * 0.035 + 7.7, 3)' : 'gPaletteM'}) * (0.22 + rim * 1.55);
+        sampleColor *= 0.55 + min(d, 1.8) * 0.72;
+        sampleColor *= exp(-max(d - 0.9, 0.0) * 0.55);
+        sampleColor += GAS_COOL * slab * 0.012;
+
+        // Região HII hero no corredor para Betelgeuse: uma cavidade
+        // ionizada localizada — o fbm dos filamentos só roda dentro
+        // do volume dela (fora, heroVolume < 1e-5 e não compra nada)
+        // mora NO 5º núcleo do corredor: posição e raio vêm de lá, então
+        // ela anda junto quando o corredor se desloca (rodada 34)
+        vec3 hq = (p - vec3(${glslNumber(HERO[0])}, ${glslNumber(HERO[1])}, ${glslNumber(HERO[2])})) / ${glslNumber(HERO[3])};
+        float hq2 = dot(hq, hq);
+        if (hq2 < 9.0) {
+          float heroVolume = exp(-hq2 * 1.25);
+          float heroFilaments = smoothstep(0.58, 0.84, fbm(p * 0.115 + 63.7, 3));
+          float heroHii = heroVolume * heroFilaments * heroFilaments;
+          sampleColor += vec3(1.0, 0.09, 0.30) * heroHii * (0.08 + rim * 0.92);
+          sampleColor += vec3(0.18, 0.48, 0.82) * heroHii * (1.0 - heroFilaments) * 0.16;
+        }
+
+        // luz do Sol (local)
+        float dSun = length(p - uSunPos);
+        sampleColor += vec3(1.0, 0.66, 0.3) * phaseSun * rim * exp(-dSun * 0.1) * 1.1;
+
+        // luz das supergigantes embutidas no gás (falloff suave)
+        for (int L = 0; L < 2; L++) {
+          vec3 lv = uLightPos[L] - p;
+          float ld = length(lv);
+          sampleColor += uLightColor[L] * rim * (3.2 / (1.0 + ld * ld * 0.06));
+        }
+
+        // Beer–Lambert: cada passo deposita somente sua fração óptica.
+        float alpha = 1.0 - exp(-d * dt * 0.055);
+        acc += T * sampleColor * alpha;
+        T *= 1.0 - alpha;
+      }${
+        antigo
+          ? ''
+          : ` else if (d > 0.0) {
+        // POEIRA MEDIDA DIFUSA (poeiraDifusa, common.ts): abaixo do limiar a
+        // amostra medida deposita a EXTINÇÃO pela mesma lei de Beer–Lambert
+        // de cima, exp(−d·dt·0,055), pesada pela cobertura. Sem emissão: ver
+        // a decisão em poeiraDifusa.
+        float dDifusa = d * poeiraDifusa(p);
+        if (dDifusa > 0.0) T *= exp(-dDifusa * dt * 0.055);
+      }`
       }
+    }
+    if (orPendente && T >= 0.015) {
+      vec4 orion = orMarcha(ro, rd, jitter, orPassos);
+      acc += T * orion.rgb;
+      T *= orion.a;
+    }
+  } else {
+    for (int i = 0; i < 96; i++) {
+      if (i >= N || T < 0.015) break;
+      // Amostragem quadrática: alta resolução perto da câmera, mas o
+      // último passo realmente alcança 650 pc. A progressão anterior
+      // percorria só ~4 pc e nunca chegava às nuvens da viagem.
+      // (amostra por passo com hash próprio foi testada e granula demais:
+      // uma amostra independente por célula grande = variância alta; o
+      // deslocamento coerente da partição erra pouco e sem estrutura)
+      float f0 = clamp((float(i) + jitter) / float(N), 0.0, 1.0);
+      float f1 = clamp((float(i + 1) + jitter) / float(N), 0.0, 1.0);
+      float t0 = tLo + span * f0 * f0;
+      float t1 = tLo + span * f1 * f1;
+      float t = (t0 + t1) * 0.5;
+      float dt = max(t1 - t0, 0.01);
+      vec3 p = ro + rd * t;
+      float d = ${antigo ? 'nebulaDensity(p, 4, t)' : 'nebulaDensity(p, t)'};
 
-      // Beer–Lambert: cada passo deposita somente sua fração óptica.
-      float alpha = 1.0 - exp(-d * dt * 0.055);
-      acc += T * sampleColor * alpha;
-      T *= 1.0 - alpha;
-    }${
-      antigo
-        ? ''
-        : ` else if (d > 0.0) {
-      // POEIRA MEDIDA DIFUSA (poeiraDifusa, common.ts): abaixo do limiar a
-      // amostra medida deposita a EXTINÇÃO pela mesma lei de Beer–Lambert
-      // de cima, exp(−d·dt·0,055), pesada pela cobertura. Sem emissão: ver
-      // a decisão em poeiraDifusa.
-      float dDifusa = d * poeiraDifusa(p);
-      if (dDifusa > 0.0) T *= exp(-dDifusa * dt * 0.055);
-    }`
+      if (d > 0.003) {
+        // ambiente frio proporcional ao envelope do gás — reusa o valor
+        // que nebulaDensity acabou de calcular para a MESMA amostra
+        float slab = min(gGasEnvelope * 0.9, 1.0);
+
+        // auto-absorção: corações densos são escuros, bordas brilham
+        // (como nas nebulosas escuras reais — Barnard 68, Pilares da Criação)
+        float selfShadow = exp(-d * 1.65);
+        float rim = 1.0 - selfShadow; // concentra a emissão nas bordas
+
+        // Emissão bicolor integrada por alpha volumétrico. A cor se
+        // acumula sem depender do tamanho do passo e os núcleos densos
+        // preservam silhuetas escuras em vez de virar branco uniforme.
+        vec3 sampleColor = palette(p, d, ${antigo ? 'fbm(p * 0.035 + 7.7, 3)' : 'gPaletteM'}) * (0.22 + rim * 1.55);
+        sampleColor *= 0.55 + min(d, 1.8) * 0.72;
+        sampleColor *= exp(-max(d - 0.9, 0.0) * 0.55);
+        sampleColor += GAS_COOL * slab * 0.012;
+
+        // Região HII hero no corredor para Betelgeuse: uma cavidade
+        // ionizada localizada — o fbm dos filamentos só roda dentro
+        // do volume dela (fora, heroVolume < 1e-5 e não compra nada)
+        // mora NO 5º núcleo do corredor: posição e raio vêm de lá, então
+        // ela anda junto quando o corredor se desloca (rodada 34)
+        vec3 hq = (p - vec3(${glslNumber(HERO[0])}, ${glslNumber(HERO[1])}, ${glslNumber(HERO[2])})) / ${glslNumber(HERO[3])};
+        float hq2 = dot(hq, hq);
+        if (hq2 < 9.0) {
+          float heroVolume = exp(-hq2 * 1.25);
+          float heroFilaments = smoothstep(0.58, 0.84, fbm(p * 0.115 + 63.7, 3));
+          float heroHii = heroVolume * heroFilaments * heroFilaments;
+          sampleColor += vec3(1.0, 0.09, 0.30) * heroHii * (0.08 + rim * 0.92);
+          sampleColor += vec3(0.18, 0.48, 0.82) * heroHii * (1.0 - heroFilaments) * 0.16;
+        }
+
+        // luz do Sol (local)
+        float dSun = length(p - uSunPos);
+        sampleColor += vec3(1.0, 0.66, 0.3) * phaseSun * rim * exp(-dSun * 0.1) * 1.1;
+
+        // luz das supergigantes embutidas no gás (falloff suave)
+        for (int L = 0; L < 2; L++) {
+          vec3 lv = uLightPos[L] - p;
+          float ld = length(lv);
+          sampleColor += uLightColor[L] * rim * (3.2 / (1.0 + ld * ld * 0.06));
+        }
+
+        // Beer–Lambert: cada passo deposita somente sua fração óptica.
+        float alpha = 1.0 - exp(-d * dt * 0.055);
+        acc += T * sampleColor * alpha;
+        T *= 1.0 - alpha;
+      }${
+        antigo
+          ? ''
+          : ` else if (d > 0.0) {
+        // POEIRA MEDIDA DIFUSA (poeiraDifusa, common.ts): abaixo do limiar a
+        // amostra medida deposita a EXTINÇÃO pela mesma lei de Beer–Lambert
+        // de cima, exp(−d·dt·0,055), pesada pela cobertura. Sem emissão: ver
+        // a decisão em poeiraDifusa.
+        float dDifusa = d * poeiraDifusa(p);
+        if (dDifusa > 0.0) T *= exp(-dDifusa * dt * 0.055);
+      }`
+      }
     }
   }
 
-  // A NEBULOSA DE ÓRION (world/nebulosaDeOrion.ts): o trecho do raio
-  // dentro da caixa dela, integrado pelas grades assadas, entra DEPOIS do
-  // gás da casa — atrás dele —, e o que fica atrás dela (a faixa, abaixo)
-  // chega atenuado pela transmissão que ela devolve. Fora do laço de
-  // propósito: com o código dela dentro do laço, quadros sem Órion à vista
-  // saíam com 3–15 pixels um nível diferentes (o compilador reordena a
-  // conta); assim o laço da casa é o mesmo texto de antes, e esses quadros
-  // são idênticos bit a bit.
-  if (OR_LIGADO && uOrPronta > 0.5 && T >= 0.015) {
-    vec4 orion = orMarcha(ro, rd, jitter, int(clamp(float(uSteps), 24.0, 64.0)));
-    acc += T * orion.rgb;
-    T *= orion.a;
-  }
+
 
 ${
   // DIAGNÓSTICO ?nolocal=1: apaga TUDO que é local (o laço de raymarch e o

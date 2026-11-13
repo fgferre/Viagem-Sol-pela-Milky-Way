@@ -8,6 +8,7 @@
 import * as THREE from 'three';
 import { GLSL_NOISE } from '../shaders/common';
 import {
+  CENTRO_DE_ORION,
   CAIXA_DO_NUCLEO,
   CAIXA_DO_VOLUME,
   GRADE_DA_SUPERFICIE,
@@ -40,6 +41,8 @@ export const UNIFORMES_DE_ORION = {
   uOrNucleo: { value: vazia3D() as THREE.Texture },
   uOrVolume: { value: vazia3D() as THREE.Texture },
   uOrPronta: { value: 0 },
+  /** 1 com a caixa de Órion no quadro (ver `marcarOrionNoQuadro`) */
+  uOrNaVista: { value: 0 },
 };
 UNIFORMES_DE_ORION.uOrSup.value.needsUpdate = true;
 
@@ -107,4 +110,29 @@ export function assarOrionSePreciso(renderer: THREE.WebGLRenderer): boolean {
   u.uOrVolume.value = volume.texture;
   u.uOrPronta.value = 1;
   return true;
+}
+
+const _m = new THREE.Matrix4();
+const _quadro = new THREE.Frustum();
+const _centro = new THREE.Vector3(...CENTRO_DE_ORION);
+/** a esfera que contém a caixa grossa inteira (meia diagonal) */
+const RAIO_DA_CAIXA = 0.5 * Math.hypot(
+  ...CAIXA_DO_VOLUME.max.map((m, e) => m - CAIXA_DO_VOLUME.min[e])
+) + Math.hypot(...CAIXA_DO_VOLUME.max.map((m, e) => (m + CAIXA_DO_VOLUME.min[e]) / 2));
+
+/**
+ * A caixa de Órion está no quadro? Só os quatro lados do tronco (o raymarch
+ * não tem plano de fundo, e a câmera dentro da esfera também conta). Fora
+ * do quadro o raymarch usa o laço de antes, texto por texto. Devolve true
+ * quando a resposta muda (o céu de antes fica velho).
+ */
+export function marcarOrionNoQuadro(camera: THREE.PerspectiveCamera): boolean {
+  _m.copy(camera.matrixWorld).invert().premultiply(camera.projectionMatrix);
+  _quadro.setFromProjectionMatrix(_m);
+  let dentro = true;
+  for (let i = 0; i < 4; i++) if (_quadro.planes[i].distanceToPoint(_centro) < -RAIO_DA_CAIXA) dentro = false;
+  const v = dentro ? 1 : 0;
+  const mudou = v !== UNIFORMES_DE_ORION.uOrNaVista.value;
+  UNIFORMES_DE_ORION.uOrNaVista.value = v;
+  return mudou;
 }

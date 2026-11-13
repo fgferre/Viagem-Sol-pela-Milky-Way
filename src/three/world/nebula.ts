@@ -13,7 +13,7 @@ import {
   PONTA_QUENTE_DA_FAIXA,
 } from '../shaders/nebulaShaders';
 import { makeBlueNoiseTexture } from './blueNoise';
-import { UNIFORMES_DE_ORION, assarOrionSePreciso } from './orionNaCena';
+import { UNIFORMES_DE_ORION, assarOrionSePreciso, marcarOrionNoQuadro } from './orionNaCena';
 import { SEGMENTOS_DA_FOTOSFERA_NO_PIOR_TIER } from './stellarBody';
 import {
   CORTE_D2_DA_SEMENTE,
@@ -1842,6 +1842,8 @@ export class Nebula {
     u.uAspect.value = camera.aspect;
     // depois do tanHalfFov: sunCone lê o uniform para converter texel em ângulo
     u.uSunCos.value = this.sunCone(camera);
+    // a nebulosa de Órion entra no laço só com a caixa dela no quadro
+    if (marcarOrionNoQuadro(camera)) this.sujo = true;
     if (renderer.toneMapping !== this.curvaDaFaixa) {
       this.curvaDaFaixa = renderer.toneMapping;
       const [fria, quente] = porCurva(
