@@ -17,6 +17,7 @@ import { blackbodyLinear } from '../luzDaCasa';
 import { glslNumber } from '../glslNumber';
 import { GLSL_UNRESOLVED, glslResolvedCatalog } from '../world/wrappedStars';
 import type { GasVolumetrico } from '../core/engine';
+import { GLSL_ORION_BASE, GLSL_ORION_MARCHA } from '../world/nebulosaDeOrion';
 
 const cool = WORLD.gasColorCool.map((v) => v.toFixed(3)).join(', ');
 const warm = WORLD.gasColorWarm.map((v) => v.toFixed(3)).join(', ');
@@ -304,6 +305,8 @@ ${GLSL_NOISE}
 ${GLSL_GALAXY}
 ${GLSL_CARTOGRAPHY}
 ${glslDensity(32, antigo, fino, piramide)}
+${GLSL_ORION_BASE}
+${GLSL_ORION_MARCHA}
 
 const vec3 GAS_COOL = vec3(${cool});
 const vec3 GAS_WARM = vec3(${warm});
@@ -642,6 +645,14 @@ ${
   float phaseSun = pow(max(dot(rd, toSun), 0.0), 24.0) * 2.2 +
                    pow(max(dot(rd, toSun), 0.0), 4.0) * 0.35;
 
+  // A NEBULOSA DE ÓRION (world/nebulosaDeOrion.ts): o trecho do raio
+  // dentro dela é integrado por um sub-laço fino e composto EM ORDEM —
+  // entra no primeiro passo que a alcança; o que fica atrás dela chega
+  // atenuado pela transmissão que ela devolve.
+  vec2 orIv = orIntervalo(orLocal(ro), orDir(rd));
+  bool orPendente = orIv.y > orIv.x;
+  int orPassos = int(clamp(float(uSteps) * 1.6, 40.0, 96.0));
+
   for (int i = 0; i < 96; i++) {
     if (i >= N || T < 0.015) break;
     // Amostragem quadrática: alta resolução perto da câmera, mas o
@@ -656,6 +667,13 @@ ${
     float t1 = tLo + span * f1 * f1;
     float t = (t0 + t1) * 0.5;
     float dt = max(t1 - t0, 0.01);
+    if (orPendente && t1 >= orIv.x) {
+      vec4 orion = orMarcha(ro, rd, jitter, orPassos);
+      acc += T * orion.rgb;
+      T *= orion.a;
+      orPendente = false;
+      if (T < 0.015) break;
+    }
     vec3 p = ro + rd * t;
     float d = ${antigo ? 'nebulaDensity(p, 4, t)' : 'nebulaDensity(p, t)'};
 
@@ -719,6 +737,12 @@ ${
       if (dDifusa > 0.0) T *= exp(-dDifusa * dt * 0.055);
     }`
     }
+  }
+
+  if (orPendente && T >= 0.015) {
+    vec4 orion = orMarcha(ro, rd, jitter, orPassos);
+    acc += T * orion.rgb;
+    T *= orion.a;
   }
 
 ${

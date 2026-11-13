@@ -326,17 +326,19 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     nomeEn: 'Orion Nebula',
     pt: ['Nebulosa de Órion', 'Grande Nebulosa de Órion', 'M42', 'Messier 42', 'NGC 1976'],
     en: ['Orion Nebula', 'Great Orion Nebula', 'M42', 'Messier 42', 'NGC 1976'],
-    // a posição da literatura (RA 5h35m17s, Dec −5°23′28″) a 414 pc —
-    // nenhuma nomeada do catálogo é membro do aglomerado da nebulosa
-    alvo: { pc: [44.39, 409.82, -38.89] },
+    // θ¹ Ori C, a estrela que acende o gás, como o catálogo da casa a
+    // desenha (399,8 pc, dentro do intervalo do VLBI): o gás desenhado em
+    // `world/nebulosaDeOrion.ts` nasce em volta DELA, e o teste de lá
+    // cobra que os dois números são o mesmo
+    alvo: { pc: [42.8554, 395.6872, -37.5505] },
     categoria: 'nebulosa',
     classe: 'nebulosa de emissão',
-    raioPc: 4,
+    raioPc: 2.5,
     vista: 'doSol',
     distanciaPc: { valor: 414, fonte: 'Menten et al. 2007 (VLBA)' },
     oQueE: {
-      pt: 'O gás da nebulosa ainda não está desenhado: o que se vê aqui são as estrelas da espada e do cinturão de Órion. A nebulosa de verdade é um berçário de estrelas: uma nuvem de hidrogênio acesa por dentro pelas estrelas jovens do Trapézio. É a região de formação de estrelas de grande massa mais próxima do Sol, visível a olho nu na espada de Órion.',
-      en: 'The nebula’s gas is not drawn yet: what you see here are the stars of Orion’s sword and belt. The real nebula is a stellar nursery: a hydrogen cloud lit from inside by the young stars of the Trapezium. It is the nearest region forming massive stars, visible to the naked eye in Orion’s sword.',
+      pt: 'Um berçário de estrelas: uma bolha de gás aberta na face de uma nuvem escura, acesa por dentro pela estrela mais quente do Trapézio, θ¹ Ori C. A luz dela arranca os elétrons do hidrogênio e do oxigênio, e o gás brilha em vermelho e verde-azulado. É a região de formação de estrelas de grande massa mais próxima do Sol, visível a olho nu na espada de Órion.',
+      en: 'A stellar nursery: a bubble of gas opened on the face of a dark cloud, lit from inside by the hottest star of the Trapezium, θ¹ Ori C. Its light strips the electrons from hydrogen and oxygen, and the gas glows red and blue-green. It is the nearest region forming massive stars, visible to the naked eye in Orion’s sword.',
     },
     fatos: [
       {
@@ -361,11 +363,21 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
         fonte: 'Hillenbrand 1997',
       },
       {
+        campo: 'nucleo',
+        pt: 'θ¹ Ori C, estrela O7V de ≈ 39.000 K, acende o gás; ela fica ≈ 0,2 parsec (0,7 ano-luz) na frente da parede da nuvem',
+        en: 'θ¹ Ori C, an O7V star of ≈ 39,000 K, lights the gas; it sits ≈ 0.2 parsec (0.7 light-year) in front of the cloud wall',
+        procedencia: 'medido',
+        fonte: 'Pabst et al. 2020; Kraus et al. 2009; O’Dell & Henney 2008',
+      },
+      {
         campo: 'naCena',
-        pt: 'o gás da nebulosa ainda não está desenhado; o que se vê são as estrelas da espada e do cinturão de Órion. O lugar e a distância são reais.',
-        en: 'the nebula’s gas is not drawn yet; what you see are the stars of Orion’s sword and belt. The place and the distance are real.',
+        pt: 'medido: a distância, o tamanho, a estrela que acende, a parede 0,2 pc atrás dela, a Barra vista de lado a 2′ a sudeste, o véu de poeira na frente, M43 ao norte com a faixa escura. Inventado: a forma exata da tigela, o traçado da Baía Escura e todo o detalhe fino — fios, nós e dobras são ruído de computador. A tela mostra o brilho em escala logarítmica, como uma foto de longa exposição. O gás está em volta de θ¹ Ori C onde o catálogo a põe (1.304 anos-luz, dentro da faixa medida de 1.266 a 1.350); só ela, das estrelas do Trapézio, está no catálogo.',
+        en: 'measured: the distance, the size, the star that lights it, the wall 0.2 pc behind it, the Bar seen edge-on 2′ to the southeast, the dust veil in front, M43 to the north with its dark lane. Invented: the exact shape of the bowl, the outline of the Dark Bay and all the fine detail — threads, knots and folds are computer noise. The screen shows brightness on a logarithmic scale, like a long-exposure photograph. The gas sits around θ¹ Ori C where the catalogue places it (1,304 light-years, within the measured range of 1,266 to 1,350); of the Trapezium stars, only it is in the catalogue.',
         procedencia: 'artistico',
-        fonte: MODELO_DA_CASA,
+        fonte: {
+          pt: 'O’Dell & Henney 2008; van der Werf et al. 2013; Berné et al. 2022; Simón-Díaz et al. 2011; Kounkel et al. 2017',
+          en: 'O’Dell & Henney 2008; van der Werf et al. 2013; Berné et al. 2022; Simón-Díaz et al. 2011; Kounkel et al. 2017',
+        },
       },
     ],
   },

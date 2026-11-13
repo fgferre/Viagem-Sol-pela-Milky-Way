@@ -10,6 +10,7 @@ import {
   GLSL_STAR_PSF,
   GLSL_COMPRESSAO,
 } from './common';
+import { GLSL_ORION_BASE } from '../world/nebulosaDeOrion';
 import { lerBetaDaEmissao } from '../luzDaCasa';
 import { BRANQUEAMENTO_MEIA_ALTURA, FRACAO_DOS_ESPINHOS, LIMIAR_DO_CLARAO } from '../estrela';
 import { GLSL_PONTO_NA_BORDA, GLSL_PONTO_NA_BORDA_VARYINGS } from './pontoNaBorda';
@@ -80,6 +81,7 @@ ${GLSL_PONTO_NA_BORDA_VARYINGS}
 ${GLSL_NOISE}
 ${GLSL_GALAXY}
 ${GLSL_DENSITY_LOCAL}
+${GLSL_ORION_BASE}
 ${GLSL_STAR_COLOR}
 ${GLSL_STAR_PSF}
 ${GLSL_PONTO_NA_BORDA}
@@ -126,6 +128,15 @@ void main() {
   vec3 col = bvToColor(aCi) * absorb;
   float vis = (absorb.r + absorb.g + absorb.b) / 3.0;
   alpha *= mix(1.0, vis, 0.5);
+  // A NUVEM MOLECULAR DE ÓRION (world/nebulosaDeOrion.ts) tapa de verdade
+  // as estrelas atrás dela: a coluna da câmera à estrela, MENOS a do Sol
+  // à estrela — a magnitude do catálogo já traz o apagamento visto daqui,
+  // então perto de casa nada muda e de trás da nuvem a estrela some
+  float tauOrion = max(orColunaDaNuvem(uCamPos, worldPos) - orColunaDaNuvem(vec3(0.0), worldPos), 0.0);
+  if (tauOrion > 0.01) {
+    alpha *= exp(-tauOrion);
+    col *= exp(-tauOrion * vec3(0.0, 0.25, 0.5));
+  }
   alpha *= uFade; // some ao deixar a vizinhança solar
   alpha *= 1.0 - aFocus; // cede ao corpo da estrela (piloto 12/11)
 
