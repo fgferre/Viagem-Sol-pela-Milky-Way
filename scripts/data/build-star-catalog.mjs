@@ -289,9 +289,12 @@ for (let k = 1; k < athyg.lines.length; k++) {
   const y0 = number(c[A.y0]);
   const z0 = number(c[A.z0]);
   if (x0 === null || y0 === null || z0 === null) { excluded.semDistancia++; continue; }
-  const x = x0 * escala;
-  const y = y0 * escala;
-  const z = z0 * escala;
+  // quatro casas, como a fonte escreve as outras (o app compara posições
+  // de estrela nomeada com números escritos à mão)
+  const naEscala = (v) => (escala === 1 ? v : Number((v * escala).toFixed(4)));
+  const x = naEscala(x0);
+  const y = naEscala(y0);
+  const z = naEscala(z0);
 
   stars.push({ x, y, z, dist, logLum: 0.4 * (4.85 - absMag), ci });
   if (noAglomerado) {

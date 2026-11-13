@@ -208,14 +208,13 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     pt: ['Plêiades', 'Sete Irmãs', 'M45', 'Messier 45', 'Aglomerado das Plêiades'],
     en: ['Pleiades', 'Seven Sisters', 'M45', 'Messier 45', 'Subaru', 'Melotte 22'],
     // a média das nove nomeadas abaixo, como o catálogo as desenha
-    alvo: { pc: [64.28, 97.63, 52.59] },
+    alvo: { pc: [67.68, 102.77, 55.37] },
     membros: ['Alcyone', 'Atlas', 'Electra', 'Maia', 'Merope', 'Taygeta', 'Pleione', 'Celaeno', 'Asterope'],
     categoria: 'aglomerado',
     classe: 'aglomerado aberto',
     // 7 pc põem a câmera a ~45 pc do centro, do lado do Sol: perto o
-    // bastante para as nove encherem o miolo do quadro, longe o bastante
-    // para o erro de profundidade do catálogo (ver `naCena`) não desfazer
-    // a forma que se conhece do céu
+    // bastante para as nove encherem o miolo do quadro com a forma que
+    // se conhece do céu
     raioPc: 7,
     vista: 'doSol',
     distanciaPc: { valor: 136.2, fonte: 'Melis et al. 2014 (VLBI)' },
@@ -254,8 +253,8 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
       },
       {
         campo: 'naCena',
-        pt: 'as distâncias do catálogo para estas estrelas são medidas antigas e espalham o aglomerado ao longo da linha de visada (de 342 a 462 anos-luz); por isso a vista é do lado do Sol, onde a forma é a do céu.',
-        en: 'the catalogue’s distances for these stars are older measurements and spread the cluster along the line of sight (342 to 462 light-years); that is why the view is from the Sun’s side, where the shape is the one in the sky.',
+        pt: 'a medida de distância do Gaia erra nas estrelas muito brilhantes; as daqui cuja medida é ruim recebem a distância do aglomerado, e a profundidade desenhada fica igual à largura que se vê no céu.',
+        en: 'Gaia’s distance measurement goes wrong for very bright stars; those here with a poor measurement take the cluster’s distance, and the depth drawn equals the width seen in the sky.',
         procedencia: 'derivado',
         fonte: CATALOGO_DA_CASA,
       },
@@ -268,7 +267,7 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     pt: ['Híades', 'Melotte 25', 'Caldwell 41', 'Cabeça do Touro'],
     en: ['Hyades', 'Melotte 25', 'Caldwell 41', 'Head of the Bull'],
     // a média das onze nomeadas abaixo, como o catálogo as desenha
-    alvo: { pc: [17.33, 39.96, 14.46] },
+    alvo: { pc: [17.39, 40.1, 14.51] },
     membros: [
       'Ain', 'Chamukuy', 'Prima Hyadum', 'Secunda Hyadum', 'θ¹ Tau', 'δ² Tau',
       'δ³ Tau', 'ρ Tau', 'κ¹ Tau', 'κ² Tau', 'υ Tau',
@@ -313,8 +312,8 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
       },
       {
         campo: 'naCena',
-        pt: 'as distâncias do catálogo para estas estrelas são medidas antigas e espalham um pouco o aglomerado ao longo da linha de visada.',
-        en: 'the catalogue’s distances for these stars are older measurements and spread the cluster a little along the line of sight.',
+        pt: 'cada estrela está na distância medida para ela; só as de medida ruim são puxadas para a distância do aglomerado.',
+        en: 'each star sits at the distance measured for it; only those with a poor measurement are pulled towards the cluster’s distance.',
         procedencia: 'derivado',
         fonte: CATALOGO_DA_CASA,
       },
@@ -327,10 +326,11 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     pt: ['Nebulosa de Órion', 'Grande Nebulosa de Órion', 'M42', 'Messier 42', 'NGC 1976'],
     en: ['Orion Nebula', 'Great Orion Nebula', 'M42', 'Messier 42', 'NGC 1976'],
     // θ¹ Ori C, a estrela que acende o gás, como o catálogo da casa a
-    // desenha (399,8 pc, dentro do intervalo do VLBI): o gás desenhado em
+    // desenha (414 pc, a distância do Trapézio por VLBI — Menten et al.
+    // 2007 —, que o catálogo dá às estrelas dele): o gás desenhado em
     // `world/nebulosaDeOrion.ts` nasce em volta DELA, e o teste de lá
     // cobra que os dois números são o mesmo
-    alvo: { pc: [42.8554, 395.6872, -37.5505] },
+    alvo: { pc: [44.381, 409.7733, -38.8873] },
     categoria: 'nebulosa',
     classe: 'nebulosa de emissão',
     raioPc: 2.5,
