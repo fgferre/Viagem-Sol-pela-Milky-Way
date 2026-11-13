@@ -162,14 +162,15 @@
   pointer-events: none;
 }
 /* O TOPO É MAIS LEVE QUE A LEGENDA (13/11): a cadeia larga da legenda
-   punha cada botão numa mancha escura sobre o Sol e a galáxia bege, e um
-   halo onde os rótulos já liam. Rótulo curto, grande e com ícone pede
-   3:1, não 4,5:1: o teto sobe para cinza 90 (o cinza dos rótulos dá
-   3,3:1 contra ele) e a forma deixa de ser espalhada — é o contorno do
-   próprio traço, 4 px para fora das letras e do ícone (o anel que a
-   régua mede), com 1 px de borda macia. */
+   punha cada botão numa mancha escura sobre o Sol e a galáxia bege; um
+   contorno justo e duro no lugar dela virou adesivo. O meio-termo é a
+   penumbra macia de antes, mais clara e com metade do alcance: teto
+   cinza 66 (o cinza dos rótulos ainda dá 4,5:1 contra ele, contra 50 da
+   legenda), miolo no próprio traço — 3 px para fora das letras e do
+   ícone, para o anel de 4 px que a régua mede chegar ao teto — e uma
+   cadeia curta que esfuma até uns 13 px, onde a da legenda vai a 20. */
 .controls-bar.veu-sombra * {
-  --teto: rgb(90 90 90);
+  --teto: rgb(66 66 66);
   color: var(--teto) !important;
   text-shadow: none !important;
   border-color: transparent !important;
@@ -177,15 +178,16 @@
   pointer-events: none;
 }
 .controls-bar.veu-sombra .hud-btn {
-  -webkit-text-stroke: 8px var(--teto);
+  -webkit-text-stroke: 6px var(--teto);
   paint-order: stroke fill;
-  filter: drop-shadow(0 0 1px var(--teto));
+  filter: drop-shadow(0 0 1px var(--teto)) drop-shadow(0 0 1px var(--teto)) drop-shadow(0 0 2px var(--teto))
+    drop-shadow(0 0 3px var(--teto)) drop-shadow(0 0 4px var(--teto));
 }
-/* o ícone tem 16 px num viewBox de 24: 13,5 unidades = 9 px, o traço de
-   1 px dele mais 4 de cada lado */
+/* o ícone tem 16 px num viewBox de 24: 10,5 unidades = 7 px, o traço de
+   1 px dele mais 3 de cada lado */
 .controls-bar.veu-sombra .hud-btn svg {
   overflow: visible;
-  stroke-width: 13.5;
+  stroke-width: 10.5;
 }
 /* a cadeia mora em cada LINHA, e não na cópia inteira, para cada uma
    espalhar o próprio teto */

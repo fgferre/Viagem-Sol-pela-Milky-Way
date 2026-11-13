@@ -69,20 +69,26 @@ describe('o véu do topo do filme', () => {
     expect(zVeu).toBe(zBarra - 1);
   });
 
-  // 13/11: o dono achou a mancha pesada — o topo tem teto e forma próprios,
-  // mais leves que os da legenda, e o piso dele é 3:1 (rótulo curto e grande)
-  it('teto próprio: 3:1 ao cinza dos rótulos, mais claro que o da legenda', () => {
+  // 13/11: o dono achou a mancha pesada, depois a fita dura um adesivo — o
+  // meio-termo é penumbra macia, mais clara e com metade do alcance da
+  // legenda, sem baixar o piso de 4,5:1 dos rótulos cinza
+  it('teto próprio: 4,5:1 ao cinza dos rótulos, mais claro que o da legenda', () => {
     const topo = rgb(variavel(corpo(FILME, '.controls-bar.veu-sombra *'), '--teto'));
     const legenda = rgb(variavel(corpo(FILME, '.veu-legivel > .veu-sombra *'), '--teto'));
-    expect(contraste(hex(variavel(BASE, '--texto-2')), topo)).toBeGreaterThanOrEqual(3);
+    expect(contraste(hex(variavel(BASE, '--texto-2')), topo)).toBeGreaterThanOrEqual(4.5);
     expect(topo[0]).toBeGreaterThan(legenda[0]);
   });
 
-  it('forma justa: contorno do traço e 1 px de borda, não a cadeia larga da legenda', () => {
+  it('forma macia e curta: miolo no traço e cadeia de sombras com metade do alcance da legenda', () => {
     const botao = corpo(FILME, '.controls-bar.veu-sombra .hud-btn');
     expect(botao).toMatch(/-webkit-text-stroke:\s*\d+px/);
-    expect(botao.match(/drop-shadow/g)).toHaveLength(1);
+    const raios = (css: string) => [...css.matchAll(/drop-shadow\(0 0 (\d+)px/g)].map((m) => Number(m[1]));
+    const topo = raios(botao);
+    expect(topo.length).toBeGreaterThanOrEqual(3);
     const cadeia = FILME.indexOf('.veu-legivel > .veu-sombra:not(.caption-wrap),');
+    const legenda = raios(FILME.slice(cadeia, FILME.indexOf('}', cadeia)));
+    const soma = (r: number[]) => r.reduce((a, b) => a + b, 0);
+    expect(soma(topo)).toBeLessThanOrEqual(soma(legenda) / 2);
     expect(cadeia).toBeGreaterThan(0);
     expect(FILME.slice(cadeia, FILME.indexOf('{', cadeia))).not.toMatch(/controls-bar/);
   });
