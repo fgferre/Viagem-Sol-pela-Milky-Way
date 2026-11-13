@@ -15,8 +15,11 @@ import {
 import { makeBlueNoiseTexture } from './blueNoise';
 import { SEGMENTOS_DA_FOTOSFERA_NO_PIOR_TIER } from './stellarBody';
 import {
+  CORTE_D2_DA_SEMENTE,
   MEDIA_DA_LANE,
   NIVEIS_DA_PIRAMIDE_NO_SHADER,
+  RAIO_MINIMO_DA_SEMENTE,
+  SEMENTES_DO_BAKE,
   VOXEL_DO_DETALHE_REAL_PC,
 } from '../shaders/common';
 import { diagnosticoDaPoeira } from '../../lib/diagnosticoDaPoeira';
@@ -97,6 +100,45 @@ export function raiosDoNivel(
   const regIni = n.raioPc - banda;
   if (!(regIni > 0)) return [...RAMPAS_DESLIGADAS];
   return [camIni, camFim, regIni, n.raioPc];
+}
+
+/**
+ * AS SEMENTES DE CADA FATIA DO BAKE. O bake assa uma fatia z por vez, e
+ * uma semente só soma a um voxel da fatia se alcança o PLANO dela:
+ * (z − cz)² < CORTE_D2_DA_SEMENTE·max(raio, RAIO_MINIMO_DA_SEMENTE)² —
+ * a mesma conta do shader, só no eixo z. A fatia `f` (plano em
+ * `zMin + (f + 0,5)·voxel`) recebe na linha `f` de `indices` os índices
+ * dessas sementes, na ordem de `entradas`; `contagem[f]` diz quantas. A
+ * soma do voxel sai a mesma de percorrer todas (as de fora somariam zero),
+ * e o laço por voxel cai das ~1000 sementes da caixa para as poucas que
+ * cruzam a fatia — sem isso, assar TODA nuvem da caixa custava até 3,6×
+ * o bake de 256 (medido em 13/11). Folga relativa de 1e-3 no corte: na
+ * dúvida de arredondamento entre o double daqui e o float do shader, a
+ * semente entra (somar um termo que dá zero é só custo).
+ */
+export function listarSementesPorFatia(
+  entradas: Float32Array,
+  n: number,
+  zMin: number,
+  voxel: number,
+  indices: Float32Array,
+  contagem: Int32Array
+) {
+  const fatias = contagem.length;
+  const largura = indices.length / fatias;
+  contagem.fill(0);
+  for (let i = 0; i < n; i++) {
+    const cz = entradas[i * 5 + 2];
+    const r = Math.max(entradas[i * 5 + 3], RAIO_MINIMO_DA_SEMENTE);
+    const alcance = Math.sqrt(CORTE_D2_DA_SEMENTE * (1 + 1e-3)) * r;
+    const primeira = Math.max(0, Math.ceil((cz - alcance - zMin) / voxel - 0.5));
+    const ultima = Math.min(fatias - 1, Math.floor((cz + alcance - zMin) / voxel - 0.5));
+    for (let f = primeira; f <= ultima; f++) {
+      const dz = zMin + (f + 0.5) * voxel - cz;
+      if (dz * dz >= CORTE_D2_DA_SEMENTE * (1 + 1e-3) * r * r) continue;
+      indices[f * largura + contagem[f]++] = i;
+    }
+  }
 }
 
 /** o peso do nível num ponto — o espelho em TS de `poeiraPesoDoNivel`
@@ -360,10 +402,15 @@ export class Nebula {
    * qualquer eixo — a mesma margem que separa tMax da meia-aresta, então
    * o raio nunca sai do cubo entre um bake e o próximo. */
   private static readonly MARGEM_REBAKE = 350;
-  /** ≤256 nuvens-semente mais perto do CENTRO do volume (não da câmera),
-   * numa DataTexture 256×2 — ver `setBakeSeedClouds`. */
-  private static readonly SEMENTES_MAX = 256;
+  /** toda nuvem-semente que alcança o volume (até SEMENTES_DO_BAKE), numa
+   * DataTexture SEMENTES_DO_BAKE×2 — ver `setBakeSeedClouds`. */
+  private static readonly SEMENTES_MAX = SEMENTES_DO_BAKE;
   private sementesTex: THREE.DataTexture;
+  /** os índices das sementes de cada fatia do bake (linha f = fatia f) e
+   *  quantas são — ver `listarSementesPorFatia` */
+  private sementesDaFatiaData = new Float32Array(Nebula.SEMENTES_MAX * Nebula.VOXEIS);
+  private sementesDaFatiaTex: THREE.DataTexture;
+  private sementesNaFatia = new Int32Array(Nebula.VOXEIS);
   private sementesData = new Float32Array(Nebula.SEMENTES_MAX * 2 * 4);
   /** centro do cubo assado, sempre múltiplo de VOXEL_PC; NaN = nenhum
    * bake ainda aconteceu (força o primeiro na próxima render()). */
@@ -371,8 +418,8 @@ export class Nebula {
   /**
    * O director liga isto ao NuvensSemente depois que o pool do catálogo
    * carrega (`nuvensSemente.construir`). A Nebula PEDE pelo CENTRO do
-   * volume, nunca pela câmera direto: quem decide "as ≤256 mais perto de
-   * onde o cubo está" é `nuvensSemente.sementesParaBake`, e a Nebula não
+   * volume, nunca pela câmera direto: quem decide "as que alcançam o
+   * cubo onde ele está" é `nuvensSemente.sementesParaBake`, e a Nebula não
    * precisa importar NuvensSemente para isso (evita o ciclo de módulos —
    * nuvensSemente.ts já importa `type Nebula`).
    */
@@ -568,9 +615,9 @@ export class Nebula {
         depthBuffer: false,
       }
     );
-    // sementes do bake: DataTexture 256×2 (linha 0 = xyz+raio, linha 1 =
-    // .x = amplitude), lida por texelFetch em glslBakeDensity — não um
-    // array de uniform, que não comportaria 256 slots em todo driver.
+    // sementes do bake: DataTexture SEMENTES_DO_BAKE×2 (linha 0 = xyz+raio,
+    // linha 1 = .x = amplitude), lida por texelFetch em glslBakeDensity —
+    // não um array de uniform, que não comportaria tantos slots.
     this.sementesTex = new THREE.DataTexture(
       this.sementesData,
       Nebula.SEMENTES_MAX,
@@ -582,6 +629,17 @@ export class Nebula {
     this.sementesTex.magFilter = THREE.NearestFilter;
     this.sementesTex.generateMipmaps = false;
     this.sementesTex.needsUpdate = true;
+    this.sementesDaFatiaTex = new THREE.DataTexture(
+      this.sementesDaFatiaData,
+      Nebula.SEMENTES_MAX,
+      Nebula.VOXEIS,
+      THREE.RedFormat,
+      THREE.FloatType
+    );
+    this.sementesDaFatiaTex.minFilter = THREE.NearestFilter;
+    this.sementesDaFatiaTex.magFilter = THREE.NearestFilter;
+    this.sementesDaFatiaTex.generateMipmaps = false;
+    this.sementesDaFatiaTex.needsUpdate = true;
     // Poeira medida (E2): 1×1×1 R16F zerada — sampler válido até o
     // primeiro `setPoeiraMedida` (mesmo papel de `fallbackDustMap`, em 3D).
     this.fallbackPoeiraTex = new THREE.Data3DTexture(new Uint16Array([0]), 1, 1, 1);
@@ -608,6 +666,8 @@ export class Nebula {
         uDustMap: { value: this.fallbackDustMap },
         uSeedCloudTex: { value: this.sementesTex },
         uSeedCloudCount: { value: 0 },
+        uSementesDaFatia: { value: this.sementesDaFatiaTex },
+        uSementesNaFatia: { value: 0 },
         uVolMin: { value: new THREE.Vector3() },
         uVolTamanho: { value: new THREE.Vector3(1, 1, 1).multiplyScalar(2 * Nebula.MEIA_ARESTA) },
         // Poeira medida (E2) — ver GLSL_POEIRA_MEDIDA em shaders/common.ts
@@ -1538,13 +1598,12 @@ export class Nebula {
   }
 
   /**
-   * REDESIGN (PLAN.md, 05/09) — as ≤256 nuvens-semente mais perto do
-   * CENTRO do volume assado (não da câmera — o cubo pode estar até 350 pc
-   * à frente dela), sem fade de fronteira: reassar já é o evento
-   * discreto que escondia o popping no caminho antigo (32 slots, seleção
-   * por proximidade da câmera a cada 0,25 s). Escreve na DataTexture
-   * 256×2 que `glslBakeDensity` lê por `texelFetch` — não um array de
-   * uniform, que não caberia. Chamada de dentro de `bake()`, via
+   * REDESIGN (PLAN.md, 05/09) — as nuvens-semente que alcançam o volume
+   * assado (`sementeAlcancaOVolume`, nuvensSemente.ts), sem fade de
+   * fronteira: com todas elas dentro, o mesmo ponto do espaço assa o
+   * mesmo valor em qualquer centro, e reassar não muda o céu. Escreve na
+   * DataTexture SEMENTES_DO_BAKE×2 que `glslBakeDensity` lê por
+   * `texelFetch` — não um array de uniform, que não caberia. Chamada de dentro de `bake()`, via
    * `pedirSementes`, nunca direto pelo director.
    */
   setBakeSeedClouds(entries: Float32Array, count: number) {
@@ -1565,6 +1624,17 @@ export class Nebula {
     }
     this.sementesTex.needsUpdate = true;
     this.volumeMaterial.uniforms.uSeedCloudCount.value = n;
+    // chamada de dentro de `bake()`, com `centro` já fixado: a caixa é a
+    // deste bake
+    listarSementesPorFatia(
+      entries,
+      n,
+      this.centro.z - Nebula.MEIA_ARESTA,
+      Nebula.VOXEL_PC,
+      this.sementesDaFatiaData,
+      this.sementesNaFatia
+    );
+    this.sementesDaFatiaTex.needsUpdate = true;
   }
 
   /**
@@ -1716,8 +1786,10 @@ export class Nebula {
     this.pedirSementes?.(this.centro);
     const prev = renderer.getRenderTarget();
     const uFatia = this.volumeMaterial.uniforms.uFatia;
+    const uNaFatia = this.volumeMaterial.uniforms.uSementesNaFatia;
     for (let fatia = 0; fatia < Nebula.VOXEIS; fatia++) {
       uFatia.value = fatia;
+      uNaFatia.value = this.sementesNaFatia[fatia];
       renderer.setRenderTarget(this.volumeRT, fatia);
       renderer.render(this.volumeScene, this.camera);
     }
@@ -1818,6 +1890,7 @@ export class Nebula {
     this.blurMaterial.dispose();
     this.lutMaterial.dispose();
     this.sementesTex.dispose();
+    this.sementesDaFatiaTex.dispose();
     this.fallbackDustMap.dispose();
     this.fallbackPoeiraTex.dispose();
     this.poeiraTexAtual?.dispose();
