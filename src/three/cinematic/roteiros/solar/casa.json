@@ -646,7 +646,7 @@
       "fundoSilencioso": true,
       "legendas": [
         {
-          "em": 0.1,
+          "em": 0.5,
           "texto": "Ceres, o maior do cinturão",
           "subtexto": "o cinturão é quase vazio: dá para atravessá-lo sem ver mais nada",
           "en": {
