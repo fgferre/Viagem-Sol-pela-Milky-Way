@@ -120,6 +120,8 @@ export const ESTRELA_NA_FRENTE_DA_MIF_PC = 0.2;
  *  e baixa a sudoeste, por onde a cavidade se abre (forma de autor
  *  guiada por Güdel 2008 e O'Dell & Harris 2010) */
 export const SUBIDA_DA_PAREDE = { media: 0.55, nordesteMenosSudoeste: 0.3 };
+/** quanto a face da nuvem desce de 1,8 a 3,5 pc da estrela (autor) */
+const QUEDA_FORA_PC = 0.8;
 /** raio da curva da parede (forma de autor entre os pontos medidos) */
 const RAIO_DA_PAREDE_PC = 1.1;
 /** espessura e-folding da camada ionizada junto à estrela (~0,1 pc no
@@ -178,12 +180,12 @@ export const METRICA_DA_PAREDE: [number, number, number] = (() => {
  * 2020). A face de dentro, acesa, é a Nebulosa Estendida.
  */
 export const BOLHA = {
-  centro: [-0.45, -1.0, -0.5] as Trio,
+  centro: [-0.45, -1.0, -0.3] as Trio,
   semiEixos: [2.1, 2.4, 1.8] as Trio,
   /** a pele acesa de dentro (raio normalizado e meia-largura) */
-  pele: 0.73,
+  pele: 0.67,
   meiaLarguraDaPele: 0.05,
-  cascaDe: 0.76,
+  cascaDe: 0.7,
 };
 /** o véu: profundidade óptica V por pc na tampa (~0,5 pc de espessura
  *  sobre a estrela, τ ≈ 0,8 com o grumo médio — autor; a Baía Escura,
@@ -231,7 +233,7 @@ export const RAIO_DE_ORION_PC = 7.5;
 export const GAMA_DO_BRILHO = 0.4;
 const GANHO_DA_CAMADA = 0.035;
 const GANHO_DA_FRENTE_FINA = 0.02;
-const GANHO_DO_DIFUSO = 0.012;
+const GANHO_DO_DIFUSO = 0.03;
 const GANHO_DA_ESTENDIDA = 0.3;
 const GANHO_DE_M43 = 0.15;
 const GANHO_DO_ESPALHADO = 0.01;
@@ -264,7 +266,9 @@ export function alturaDaFrente(x: number, y: number): number {
   const r = Math.hypot(x, y);
   const c = (x * NE[0] + y * NE[1]) / Math.max(r, 1e-4);
   const subida = SUBIDA_DA_PAREDE.media + 0.5 * SUBIDA_DA_PAREDE.nordesteMenosSudoeste * c;
-  let z = -ESTRELA_NA_FRENTE_DA_MIF_PC + subida * (1 - g);
+  // fora da bolha a face da nuvem desce de novo: a borda da tigela é
+  // um anel em volta da parte acesa, não um planalto até a borda da nuvem
+  let z = -ESTRELA_NA_FRENTE_DA_MIF_PC + subida * (1 - g) - QUEDA_FORA_PC * smooth(1.8, 3.5, r);
   const v = x * NE[0] + y * NE[1];
   const u = x * SE[0] + y * SE[1] - BARRA.distanciaPc - BARRA.curvatura * v * v;
   const w = BARRA.meiaLarguraDaSubidaPc;
@@ -403,7 +407,8 @@ float orAlturaLisa(vec2 xy) {
   float g = exp(-dot(xy, Mxy) * ${n(1 / (RAIO_DA_PAREDE_PC * RAIO_DA_PAREDE_PC))});
   float c = dot(xy, NE) / max(length(xy), 1e-4);
   float z = ${n(-ESTRELA_NA_FRENTE_DA_MIF_PC)} +
-    (${n(SUBIDA_DA_PAREDE.media)} + ${n(0.5 * SUBIDA_DA_PAREDE.nordesteMenosSudoeste)} * c) * (1.0 - g);
+    (${n(SUBIDA_DA_PAREDE.media)} + ${n(0.5 * SUBIDA_DA_PAREDE.nordesteMenosSudoeste)} * c) * (1.0 - g) -
+    ${n(QUEDA_FORA_PC)} * smoothstep(1.8, 3.5, length(xy));
   float v = dot(xy, NE);
   float u = dot(xy, SE) - ${n(BARRA.distanciaPc)} - ${n(BARRA.curvatura)} * v * v;
   float s = smoothstep(${n(-BARRA.meiaLarguraDaSubidaPc)}, ${n(BARRA.meiaLarguraDaSubidaPc)}, u) *
@@ -421,7 +426,7 @@ ${ASAS.map((a, i) => `  z += orAsa(r, ${i === 0 ? 'th < 0.0 ? th + 360.0 : th' :
 float orMassa(vec3 q) {
   float ruido = fbm(q * 0.35 + 2.3, 2);
   vec2 e = vec2(q.x * ${n(1 / NUVEM.lestePc)}, q.y * ${n(1 / NUVEM.nortePc)});
-  float rr = length(e) * (0.75 + 0.65 * ruido);
+  float rr = length(e) * (0.7 + 0.65 * ruido + 0.35 * (fbm(q * 1.2 + 9.0, 2) - 0.375));
   float lado = 1.0 - smoothstep(0.35, 1.0, rr);
   float fundo = smoothstep(${n(-NUVEM.fundoPc - 0.7)}, ${n(-NUVEM.fundoPc + 0.7)}, q.z + 1.6 * (ruido - 0.375));
   return lado * lado * lado * fundo;
@@ -558,6 +563,11 @@ vec4 orMarcha(vec3 roCena, vec3 rdCena, float jitter, int passos) {
     // o passo: fino perto da frente, da pele da bolha e da estrela
     float dt = min(min(0.4 * abs(hPrev) + 0.012, 0.8 * abs(sPrev - ${n(BOLHA.pele)}) + 0.03), 0.35 * rPrev + 0.02);
     dt = clamp(dt, 0.012, 0.45) * escala;
+    // um raio rasante corre colado à frente ou à pele da bolha e gastaria
+    // todos os passos em passos mínimos sem chegar ao outro lado: o passo
+    // nunca é menor que o que resta dividido pelos passos que restam (a
+    // camada é integrada exata por segmento, então não some por isso)
+    dt = max(dt, (iv.y - t) / float(max(passos - i, 1)));
     if (primeiro) { dt *= 0.25 + jitter; primeiro = false; }
     dt = min(dt, iv.y - t);
     t += dt;
@@ -603,7 +613,7 @@ vec4 orMarcha(vec3 roCena, vec3 rdCena, float jitter, int passos) {
       // só as PAREDES da bolha, onde ela encosta na nuvem; a tampa da
       // frente (o véu) é neutra e fina, e acesa só de leve (autor)
       vec3 gB = (q - OR_BOLHA_C) * OR_BOLHA_INV * OR_BOLHA_INV;
-      float parede = 1.0 - 0.85 * smoothstep(0.35, 0.8, abs(gB.z) / max(length(gB), 1e-4));
+      float parede = 1.0 - 0.6 * smoothstep(0.35, 0.8, abs(gB.z) / max(length(gB), 1e-4));
       float peleB = exp(-xp * xp) * parede;
       if (peleB > 0.01) {
         float fluxoB = pow(1.0 / max(r * r, 0.04), ${n(GAMA_DO_BRILHO)});
