@@ -36,3 +36,24 @@ describe('a ficha compacta também abre numa janela BAIXA da mesa (item B2, 09/0
     expect(FONTE).toMatch(/acoes=\{\s*compactavel \? \(/);
   });
 });
+
+// O CABEÇALHO DA COMPACTA NO CELULAR (12/11, crítica de visitante: o nome
+// saía "Galáxi…" e o botão "De…"). O espaço do nome se mede no próprio
+// cabeçalho (`@container`), em `rem` da raiz viva — que cresce com o `ui`
+// —, e não por uma segunda largura de janela no JavaScript.
+const CELULAR_CSS = readFileSync(new URL('../hud/09-celular.css', import.meta.url), 'utf8');
+
+describe('o cabeçalho da compacta no celular mede o espaço do nome no próprio cabeçalho (12/11)', () => {
+  it('não há mais régua de janela estreita na ficha', () => {
+    expect(FONTE).not.toContain('max-width: 360px');
+    expect(FONTE).not.toContain('data-ficha-largura');
+    expect(CELULAR_CSS).not.toContain('data-ficha-largura');
+  });
+
+  it('as duas réguas de largura são de contêiner e em rem: sem eyebrow abaixo de 13,5rem, sem "?" abaixo de 12rem', () => {
+    expect(CELULAR_CSS).toContain('container: cabecalho-da-ficha / inline-size;');
+    const regras = [...CELULAR_CSS.matchAll(/@container cabecalho-da-ficha \(max-width: ([\d.]+)rem\) \{([\s\S]*?)\n {2}\}/g)];
+    expect(regras.map((r) => [r[1], /hud-cabecalho-eyebrow \{\s*display: none/.test(r[2]), /hud-ajuda \{\s*display: none/.test(r[2])]))
+      .toEqual([['13.5', true, false], ['12', false, true]]);
+  });
+});

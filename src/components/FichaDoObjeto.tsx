@@ -134,7 +134,6 @@ export function FichaDoObjeto({
   celular = false,
   fichaExpandida = false,
   onAlternarFichaExpandida,
-  textoGrande,
 }: {
   aberta: boolean;
   /** o FECHAMENTO LÓGICO (`gaveta === 'ficha'`), para o foco — distinto
@@ -188,8 +187,9 @@ export function FichaDoObjeto({
   fichaExpandida?: boolean;
   /** o toque em "Detalhes"/"Recolher" — `useGavetas().alternarFichaExpandida` */
   onAlternarFichaExpandida?: () => void;
-  /** o texto grande (`ehTextoGrande`/`uiScale.ts`) — só para decidir a
-   *  largura ESTREITA da ficha (abaixo), mesmo numa janela larga. */
+  /** o texto grande (`ehTextoGrande`/`uiScale.ts`) — a ficha não o lê
+   *  mais desde 12/11 (o cabeçalho da compacta mede o próprio espaço por
+   *  `@container`, 09-celular.css); falta tirar a passagem em `App.tsx`. */
   textoGrande: boolean;
 }) {
   // NÃO MODAL PARA O TECLADO (dialogFocus.ts): a ficha é o painel da
@@ -386,39 +386,6 @@ export function FichaDoObjeto({
   }, [celular, aberta, fichaExpandida]);
 
   /**
-   * A LARGURA ESTREITA (PLAN-UI.md §3.3, "≤ 360 px"): lida por
-   * `matchMedia` COM OUVINTE — o mesmo padrão de `useCelular.ts` para os
-   * 760 —, e NÃO por um segundo `@media` em `09-celular.css`. A casa tem
-   * uma regra testada (`uiScale.test.ts`, "TODA quebra de largura do HUD
-   * é LARGURA_DO_CELULAR_PX"): nenhum `@media(max-width)` no CSS do HUD
-   * pode declarar outro número além de 760, e o botão "Detalhes" só-
-   * ícone é um ajuste ESTREITO DEMAIS da FICHA, não uma segunda fronteira
-   * de layout. O atributo abaixo é a MESMA porta que `data-ficha-estado`
-   * já abre para o CSS (seletor de atributo, não `@media`).
-   */
-  const [larguraEstreita, setLarguraEstreita] = useState(
-    () => window.matchMedia?.('(max-width: 360px)').matches ?? false
-  );
-  useEffect(() => {
-    const consulta = window.matchMedia('(max-width: 360px)');
-    const ouvir = () => setLarguraEstreita(consulta.matches);
-    ouvir();
-    consulta.addEventListener('change', ouvir);
-    return () => consulta.removeEventListener('change', ouvir);
-  }, []);
-  /**
-   * …OU TEXTO GRANDE (auditoria celular, 13/09): a 390 px o nome cabia
-   * com "Detalhes" por extenso em `ui = 1`, mas em `ui = 1,4` o botão
-   * (que não cedia — `flex: 0 0 auto` no cabeçalho compacto) sobrava
-   * inteiro e o nome caía para "E..". A largura sozinha não via o
-   * problema porque a JANELA não mudou, só o TEXTO — daí a segunda
-   * porta, `textoGrande` (a MESMA flag de `uiScale.ts`/`ehTextoGrande`,
-   * calculada uma vez em `App.tsx`); `larguraEstreita` continua valendo
-   * sozinha abaixo de 360 px em qualquer `ui`.
-   */
-  const estreita = larguraEstreita || textoGrande;
-
-  /**
    * A JANELA BAIXA (B2, 09/09) — mesmo limiar que a paisagem baixa já usa
    * (`06-responsivo.css`, "`@media (max-height: 480px) and (orientation:
    * landscape)`"): abaixo dela a ficha CHEIA da mesa (coluna à direita,
@@ -426,8 +393,7 @@ export function FichaDoObjeto({
    * orientação aqui: ela só entra em jogo onde `celular` já é falso
    * (largura > 760 px), e uma janela mais larga que alta com esta altura
    * já É paisagem, por definição — repeti-la não mudaria nada.
-   * `matchMedia` COM OUVINTE, o mesmo padrão de `larguraEstreita` acima e
-   * de `useCelular.ts`: o juiz de a11y redimensiona a janela no meio da
+   * `matchMedia` COM OUVINTE, o mesmo padrão de `useCelular.ts`: o juiz de a11y redimensiona a janela no meio da
    * sessão, e uma leitura sem ouvinte ficaria presa no tamanho do boot.
    */
   const [janelaBaixa, setJanelaBaixa] = useState(
@@ -462,11 +428,6 @@ export function FichaDoObjeto({
       // sem regra a mais. Os juízes podem ler o atributo para saber qual
       // dos dois está na tela.
       data-ficha-estado={compactavel ? (fichaExpandida ? 'expandida' : 'compacta') : undefined}
-      // A LARGURA ESTREITA (comentário acima do `useState`/`estreita`) —
-      // só importa junto da compacta; presente sempre que ela vale,
-      // inofensiva fora do celular (o CSS só a lê dentro de
-      // `[data-ficha-estado]`).
-      data-ficha-largura={celular && estreita ? 'estreita' : undefined}
       aria-label={t('ficha.aria', { nome: ficha.nome })}
       {...dialogo}
       onClick={() => {
@@ -522,9 +483,9 @@ export function FichaDoObjeto({
         // precisa mudar. O `ref` é o alvo do foco ao trocar de estado
         // SÓ no celular (o efeito lá em cima: na mesa o clique do mouse
         // já deixa o foco no próprio botão, sem gesto de arrasto que
-        // precise repô-lo); o texto encolhe a só-ícone abaixo de 360 px
-        // (09-celular.css, que só existe no celular — na mesa o botão
-        // sempre mostra o texto), o `aria-label` sobrevive sempre.
+        // precise repô-lo); na compacta do celular o botão é só o
+        // chevron (09-celular.css — na mesa o botão sempre mostra o
+        // texto), e o `aria-label` diz a ação inteira.
         acoes={
           compactavel ? (
             <button
