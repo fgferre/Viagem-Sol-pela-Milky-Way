@@ -257,8 +257,11 @@ uniform float uScreenH;
 void main() {
   vUv = position.xy; // -1..1
   vec4 c = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
-  // extensão de vista que projeta em uMeiaPx: px = extent·P11·(H/2)/(−z)
-  float extent = uMeiaPx * 2.0 * max(-c.z, 1e-6) / (projectionMatrix[1][1] * uScreenH);
+  // extensão de vista que projeta em uMeiaPx: px = extent·P11·(H/2)/(−z).
+  // O piso de −z é só guarda de divisão: era 1e-6 pc (0,2 UA) e, com a
+  // câmera mais perto que isso, o quad saía (1e-6/d)× maior que a lei —
+  // a cruz de Proxima a 40 px de disco (13/11) era o clarão a 7× o teto.
+  float extent = uMeiaPx * 2.0 * max(-c.z, 1e-30) / (projectionMatrix[1][1] * uScreenH);
   c.xy += position.xy * extent;
   gl_Position = projectionMatrix * c;
 }
@@ -432,8 +435,20 @@ export interface CandidataVisitada {
   pos: { x: number; y: number; z: number };
   mBase: number;
   cor: readonly [number, number, number];
-  /** a soltura da repartição dela × a cessão à hero de autor (0..1) */
+  /** a soltura da repartição dela (0..1): veste tamanho e presença, como a do Sol */
   soltura: number;
+  /**
+   * a PRESENÇA (0..1) — a cessão à hero de autor da mesma estrela: só o
+   * ganho, nunca o tamanho. As duas desenham a mesma receita no mesmo
+   * tamanho (`pisoPx`), então a troca entre elas é uma mistura sem salto.
+   */
+  presenca: number;
+  /**
+   * o PISO da meia-extensão em px de CSS (0 = só a lei): o tamanho da hero
+   * que se aproxima (`heroStars.ts`), para o clarão nascer do tamanho dela
+   * em vez de um ponto. Nunca encolhe a lei; a soltura o veste por cima.
+   */
+  pisoPx: number;
 }
 
 /** Teto de sanidade do billboard, em px: além da diagonal de qualquer
@@ -524,6 +539,9 @@ export class ClaraoDeAsas {
   private readonly cor: Float32Array;
   /** a soltura de cada candidato neste quadro (1 = ponto pleno) */
   private readonly soltura: Float64Array;
+  /** a presença (só ganho) e o piso de tamanho de cada candidato (o Sol: 1 e 0) */
+  private readonly presenca: Float64Array;
+  private readonly pisoPx: Float64Array;
   /** o primeiro índice das vagas de visitadas no cadastro */
   private readonly inicioDasVisitadas: number;
   /** quais candidatos entram neste quadro (o Sol + as visitadas) */
@@ -539,6 +557,8 @@ export class ClaraoDeAsas {
     this.mBase = new Float64Array(n);
     this.cor = new Float32Array(n * 3);
     this.soltura = new Float64Array(n).fill(1);
+    this.presenca = new Float64Array(n).fill(1);
+    this.pisoPx = new Float64Array(n);
 
     // candidato 0: o Sol
     this.mBase[0] = M_V_SOL_DO_CAMPO - 5;
@@ -633,10 +653,11 @@ export class ClaraoDeAsas {
    * cartaz, a receita do filme faz o resto: brilho apertado, braço
    * longo. (O piso de presença das nomeadas saiu no resgate das heroes.)
    */
-  private meiaDaLei(pico: number, sigma: number, screenH: number): number {
+  private meiaDaLei(pico: number, sigma: number, screenH: number, pisoPx = 0): number {
     const asa = Math.max(raioVisivelDaAsaPx(pico, sigma), alcanceDoEspinhoPx(pico, sigma));
     const teto = Math.min(OCUPACAO_MAXIMA_DA_TELA * screenH, TETO_DO_BILLBOARD_PX);
-    return Math.min(FATOR_DE_ENCHIMENTO_DO_SOL * asa, teto);
+    const lei = Math.min(FATOR_DE_ENCHIMENTO_DO_SOL * asa, teto);
+    return pisoPx > lei ? Math.min(pisoPx, TETO_DO_BILLBOARD_PX) : lei;
   }
 
   atualizar(q: QuadroDoClarao): void {
@@ -686,12 +707,16 @@ export class ClaraoDeAsas {
       this.cor[i * 3 + 1] = v.cor[1];
       this.cor[i * 3 + 2] = v.cor[2];
       this.soltura[i] = Number.isFinite(v.soltura) && v.soltura >= 0 && v.soltura <= 1 ? v.soltura : 1;
+      this.presenca[i] =
+        Number.isFinite(v.presenca) && v.presenca >= 0 && v.presenca <= 1 ? v.presenca : 1;
+      this.pisoPx[i] = Number.isFinite(v.pisoPx) && v.pisoPx > 0 ? v.pisoPx : 0;
       daVez.push(i);
     }
     for (const i of daVez) {
       const soltura = this.soltura[i];
       // superfície é a dona: com a soltura em zero o clarão nem candidata
-      if (!(soltura > 0)) continue;
+      // (nem quando a hero de autor ainda é a dona inteira da óptica)
+      if (!(soltura > 0) || !(this.presenca[i] > 0)) continue;
       // outro corpo tapa o CENTRO do Sol (a sonda acima): some pela MESMA
       // rampa de saída do orçamento — nenhum gatilho ou tempo novo
       if (i === 0 && this.solOculto) continue;
@@ -709,7 +734,7 @@ export class ClaraoDeAsas {
       // elegível quando a óptica alcança além do que o sprite já desenha
       const nucleo = psfPointSizePx(m, q.expoM0, q.sigmaPx, cssH);
       if (
-        !(2 * this.meiaDaLei(pico, sigma, cssH) * soltura > nucleo)
+        !(2 * this.meiaDaLei(pico, sigma, cssH, this.pisoPx[i]) * soltura > nucleo)
       )
         continue;
       // inserção ordenada (pico DESC, índice ASC no empate), teto K
@@ -739,11 +764,11 @@ export class ClaraoDeAsas {
       const soltura = this.soltura[i];
       const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, cssH);
       const nucleoPx = psfPointSizePx(m, q.expoM0, q.sigmaPx, cssH) * soltura;
-      const entrada = ganhoDeEntradaDoFlare(pico) * soltura;
+      const entrada = ganhoDeEntradaDoFlare(pico) * soltura * this.presenca[i];
       // a soltura veste o TAMANHO por fora do teto de ocupação: o clarão
       // desabrocha DO teto estacionado (o espelho do brief do dono —
       // "chega no máximo rapidamente e estaciona"), nunca além dele
-      const meiaPx = this.meiaDaLei(pico, sigma, cssH) * soltura * pr;
+      const meiaPx = this.meiaDaLei(pico, sigma, cssH, this.pisoPx[i]) * soltura * pr;
       if (!(meiaPx > 0) || !(entrada > 0)) {
         mesh.visible = false;
         continue;

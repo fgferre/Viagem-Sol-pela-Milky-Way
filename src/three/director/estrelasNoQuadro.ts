@@ -39,8 +39,8 @@ import { PontoDeEstrela } from '../world/pontoDeEstrela';
 import { RAIO_SOL_PC } from '../escala';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
 import { bvToColor } from '../shaders/common';
-import { SOL_BV, type CandidataVisitada } from '../world/clarao';
-import type { HeroStars } from '../world/heroStars';
+import { BV_MEDIDO, SOL_BV, type CandidataVisitada } from '../world/clarao';
+import { chegadaDaHero, type Chegada, type HeroStars } from '../world/heroStars';
 import { cessaoDoSol } from './solNoQuadro';
 import type { PoliticaDeLuz } from '../../lib/atlas/luz';
 import {
@@ -308,6 +308,8 @@ interface Piloto {
   eixo: THREE.Vector3;
   /** índice no catálogo (`stars.bin`); −1 = não achado */
   indice: number;
+  /** m − 5·log10(d) do NOME (o sidecar): a conferência do casamento com o catálogo */
+  mBaseDoNome: number;
   principal: Superficie | null;
   /**
    * O PONTO DE QUEM NÃO ESTÁ NO BINÁRIO (as anfitriãs de exoplanetas
@@ -336,13 +338,7 @@ function estadoDe(id: string, raioPc: number, teffK: number, pos: THREE.Vector3)
 }
 
 const _dir = new THREE.Vector3();
-
-/** smoothstep em log: 0 em `a`, 1 em `b` (a > b vale: a rampa de quem se aproxima) */
-function suaveEmLog(a: number, b: number, x: number): number {
-  if (!(x > 0)) return 1;
-  const t = Math.min(1, Math.max(0, Math.log(x / a) / Math.log(b / a)));
-  return t * t * (3 - 2 * t);
-}
+const _chegada: Chegada = { s: 0, escala: 1, fracaoDaAltura: 0 };
 
 export class EstrelasNoQuadro {
   readonly group = new THREE.Group();
@@ -382,6 +378,7 @@ export class EstrelasNoQuadro {
         pos,
         eixo: eixoDeRotacao(dados, pos, new THREE.Vector3()),
         indice: -1,
+        mBaseDoNome: s.d > 0 ? s.m - 5 * Math.log10(s.d) : NaN,
         principal: null,
         pontoProprio: null,
         companheira: null,
@@ -450,13 +447,15 @@ export class EstrelasNoQuadro {
       // a lei do vertex do catálogo: m = −0,15 − 2,5·logLum + 5·log10(d)
       const geo = stars.points.geometry;
       mBase = -0.15 - 2.5 * (geo.getAttribute('aLogLum') as THREE.BufferAttribute).getX(p.indice);
-      cor = bvToColor((geo.getAttribute('aCi') as THREE.BufferAttribute).getX(p.indice));
+      // o B−V MEDIDO onde há (a mesma tabela da hero): uma estrela, uma cor
+      // — Betelgeuse é 1,85 medida e 1,50 no catálogo
+      cor = bvToColor(BV_MEDIDO[d.nomeNoCatalogo] ?? (geo.getAttribute('aCi') as THREE.BufferAttribute).getX(p.indice));
     }
     p.principal = {
       corpo,
       armado: false,
       estado: estadoDe(d.id, corpo.raioPc, d.teffK.v, p.pos),
-      clarao: { vaga, pos: p.pos, mBase, cor, soltura: 1, raioPc: corpo.raioPc },
+      clarao: { vaga, pos: p.pos, mBase, cor, soltura: 1, presenca: 1, pisoPx: 0, raioPc: corpo.raioPc },
     };
     const pb = parametrosDaCompanheira(d);
     if (pb && d.companheira) {
@@ -474,7 +473,16 @@ export class EstrelasNoQuadro {
         corpo: cb,
         armado: false,
         estado: estadoDe(pb.nome, cb.raioPc, pb.teffK, posB),
-        clarao: { vaga: vaga + 1, pos: posB, mBase: ponto.mBase, cor: ponto.cor, soltura: 1, raioPc: cb.raioPc },
+        clarao: {
+          vaga: vaga + 1,
+          pos: posB,
+          mBase: ponto.mBase,
+          cor: ponto.cor,
+          soltura: 1,
+          presenca: 1,
+          pisoPx: 0,
+          raioPc: cb.raioPc,
+        },
         ponto,
         pos: posB,
       };
@@ -486,7 +494,8 @@ export class EstrelasNoQuadro {
    * não o do nome: a posição do nome vem arredondada a 1e-4 pc, e para
    * Sirius isso punha o corpo a ~40 UA do próprio ponto — de perto, os
    * dois apareciam em lugares diferentes. Uma vez, quando o catálogo
-   * chega; escrito no MESMO vetor que `posicaoDe` entrega.
+   * chega; escrito no MESMO vetor que `posicaoDe` entrega. A hero de autor
+   * da mesma estrela vai junto: uma estrela, um lugar.
    */
   private resolverLugares(): boolean {
     if (this.lugaresResolvidos) return true;
@@ -494,35 +503,44 @@ export class EstrelasNoQuadro {
     if (!stars) return false;
     const xyz = stars.points.geometry.getAttribute('position') as THREE.BufferAttribute;
     for (const p of this.pilotos) {
-      p.indice = this.indiceNoCatalogo(p.pos);
+      p.indice = this.indiceNoCatalogo(p);
       if (p.indice < 0) continue;
       p.pos.set(xyz.getX(p.indice), xyz.getY(p.indice), xyz.getZ(p.indice));
       eixoDeRotacao(p.dados, p.pos, p.eixo);
+      this.fios.heroes()?.moverPara(p.dados.nomeNoCatalogo, p.pos);
     }
     this.lugaresResolvidos = true;
     return true;
   }
 
   /**
-   * a estrela do catálogo na posição do nome (a mais próxima, < 0,01 pc).
-   * Era 1e-3 pc; β Pictoris tem o ponto do binário a 1,08e-3 pc do nome
-   * (a quantização angular de ~20″ a 19,6 pc) e HD 189733, sem nome no
-   * catálogo, a 5,4e-3 pc da posição do Gaia. As quatro do piloto casam
-   * a < 1,2e-4 pc, então o ponto delas não muda.
+   * a estrela do catálogo na posição do nome: a mais próxima a menos de
+   * 0,01 pc OU de 1e-3 da distância (o que for maior), com o MESMO brilho
+   * (m − 5·log10 d a 0,5 mag do nome). O raio fixo de 0,01 pc deixava de
+   * fora Betelgeuse (o ponto a 0,0116 pc do nome, a 153 pc) e HD 189733
+   * (0,013 pc): sem casamento a estrela ganhava ponto próprio e o do
+   * catálogo nunca cedia — o ponto branco ao lado do corpo, a ~2.400 UA,
+   * que de perto andava em paralaxe (13/11). O brilho barra o vizinho de
+   * verdade (Sirius B fica a 0,033 pc, 4 mag abaixo).
    */
-  private indiceNoCatalogo(pos: THREE.Vector3): number {
+  private indiceNoCatalogo(p: Piloto): number {
     const stars = this.fios.stars();
     if (!stars) return -1;
-    const xyz = (stars.points.geometry.getAttribute('position') as THREE.BufferAttribute)
-      .array as Float32Array;
+    const geo = stars.points.geometry;
+    const xyz = (geo.getAttribute('position') as THREE.BufferAttribute).array as Float32Array;
+    const logLum = geo.getAttribute('aLogLum') as THREE.BufferAttribute;
+    const pos = p.pos;
+    const raio = Math.max(0.01, 1e-3 * pos.length());
     let melhor = -1;
-    let dMin = 1e-4; // (0,01 pc)²
+    let dMin = raio * raio;
     for (let i = 0; i < xyz.length; i += 3) {
       const dx = xyz[i] - pos.x;
       const dy = xyz[i + 1] - pos.y;
       const dz = xyz[i + 2] - pos.z;
       const d2 = dx * dx + dy * dy + dz * dz;
       if (d2 < dMin) {
+        const mBase = -0.15 - 2.5 * logLum.getX(i / 3);
+        if (Number.isFinite(p.mBaseDoNome) && !(Math.abs(mBase - p.mBaseDoNome) < 0.5)) continue;
         dMin = d2;
         melhor = i / 3;
       }
@@ -553,6 +571,12 @@ export class EstrelasNoQuadro {
     const heroes = this.fios.heroes();
     for (const p of this.pilotos) {
       const emFoco = q.focoNome === p.dados.nomeNoCatalogo;
+      // A CHEGADA DA HERO (`chegadaDaHero`): de 3× o tamanho de autor para
+      // dentro, a hero desce até o teto do clarão — escrita montada ou não
+      // (a de Sirius começa a 0,65 pc, antes do preparo)
+      const tamHero = heroes?.tamanhoDe(p.dados.nomeNoCatalogo) ?? 0;
+      const chegada = chegadaDaHero(q.camPos.distanceTo(p.pos), tamHero, tanHalfFov, _chegada);
+      if (tamHero > 0) heroes?.escreverEscala(p.dados.nomeNoCatalogo, chegada.escala);
       // o motor do Sol é PESADO (sim, bakes, coroa 3D): fora de foco e longe,
       // desmonta — e devolve o ponto, o palco e a memória. Trocar de TIER
       // também: o corpo nasce com o tier do aparelho (como o Sol, que o
@@ -577,29 +601,17 @@ export class EstrelasNoQuadro {
         stars.writeFocus(p.indice, cede);
         p.cedeu = cede;
       }
-      // a hero de autor da MESMA estrela cede ao corpo na mesma medida — e,
-      // antes, ao CLARÃO: a hero é um brilho de tamanho FIXO no espaço
-      // (0,08·10^(−0,3m) pc), que perto enche a tela inteira; a troca para
-      // o clarão (tamanho da lei, teto de 7 % da tela) corre em log da
-      // distância desde a montagem (`RAIO_DE_PREPARO_PC`, onde a hero
-      // ainda é inteira) até onde o `nearFade` dela termina (0,5×), a faixa
-      // mais larga que existe. Sem isto a troca se espremia no `nearFade` e
-      // saltava (Betelgeuse: ×0,23 de luz no quadro num só passo de 20 % na
-      // distância). Ainda é troca de ESTILO (a hero é arte, não fluxo)
-      const dHero = q.camPos.distanceTo(p.pos);
-      const tamHero = heroes?.tamanhoDe(p.dados.nomeNoCatalogo) ?? 0;
-      const aoClarao =
-        tamHero > 0 && 0.5 * tamHero < RAIO_DE_PREPARO_PC
-          ? suaveEmLog(RAIO_DE_PREPARO_PC, 0.5 * tamHero, dHero)
-          : 0;
-      // o ganho desce em LOG (três décadas ao longo da rampa): a hero é um
-      // brilho estourado, e um ganho linear só aparecia quando já era quase
-      // zero (Sirius: inteira a 26 % de ganho, nada no passo seguinte)
-      const ganhoHero = aoClarao >= 1 ? 0 : Math.pow(1e-3, aoClarao);
-      heroes?.escreverCessao(p.dados.nomeNoCatalogo, Math.max(cede, 1 - ganhoHero));
-      // ...e o clarão cede à hero enquanto ela está no quadro
+      // a hero de autor da MESMA estrela cede ao corpo na mesma medida — e
+      // ao CLARÃO na fração da chegada: os dois desenham a mesma receita no
+      // MESMO tamanho (o piso do clarão é o tamanho da hero), então a troca
+      // é uma mistura sem salto; o clarão só ganha a presença que a hero
+      // larga (as duas são a óptica do mesmo ponto; somar dobraria a cruz)
+      heroes?.escreverCessao(p.dados.nomeNoCatalogo, Math.max(cede, chegada.s));
       const hero = heroes?.presenca(p.dados.nomeNoCatalogo, q.camPos) ?? 0;
-      a.clarao.soltura = leiA.solturaDoClarao * (1 - hero);
+      a.clarao.soltura = leiA.solturaDoClarao;
+      a.clarao.presenca = 1 - hero;
+      a.clarao.pisoPx =
+        tamHero > 0 && chegada.s > 0 && heroes?.group.visible ? chegada.fracaoDaAltura * alturaCss : 0;
       if (p.indice >= 0 ? (stars?.points.visible ?? false) : !escondido) this.candidatas.push(a.clarao);
       if (p.pontoProprio) {
         p.pontoProprio.points.visible = !escondido;

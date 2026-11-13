@@ -27,7 +27,7 @@ import {
   glslBracosDeDifracao,
   glslNucleoEHalo,
 } from '../shaders/common';
-import { BV_MEDIDO, SOL_BV } from './clarao';
+import { BV_MEDIDO, OCUPACAO_MAXIMA_DA_TELA, SOL_BV } from './clarao';
 import {
   ESTRELAS_SEGUEM_A_LENTE,
   UNIFORMES_DA_ASSINATURA,
@@ -132,6 +132,59 @@ function heroColor(bv: number): THREE.Color {
 // de PSF. Custa 4 draws, todos invisíveis além de 1.200 pc de casa.
 const HERO_COUNT = 16;
 
+/**
+ * A CHEGADA DA HERO (13/11) — a hero de uma estrela VISITÁVEL a caminho do
+ * clarão da mesma estrela. A arte de longe não muda: além de
+ * `CHEGADA_COMECA_EM_TAMANHOS` vezes o tamanho de autor (S) a hero é a de
+ * sempre, bit a bit. Dali para dentro o tamanho NA TELA para de crescer e
+ * desce, linear em log da distância, até o teto de ocupação do clarão
+ * (`OCUPACAO_MAXIMA_DA_TELA`) ao longo de `FAIXA_DA_CHEGADA`× em distância;
+ * o clarão nasce do MESMO tamanho (piso) e a troca entre os dois corre na
+ * mesma fração `s` — mesma receita, mesmo tamanho, a mistura não salta.
+ * Antes, a hero ia de tela cheia a nada em ~4× de distância, e o clarão da
+ * lei ainda era um ponto: um salto e um trecho morto.
+ *
+ * Os números são os mesmos para todas (nada por estrela): a 3 S a hero
+ * mede 1/3 rad de raio — 271 px numa tela de 900 com a lente padrão — e o
+ * teto, 63 px.
+ */
+export const CHEGADA_COMECA_EM_TAMANHOS = 3;
+export const FAIXA_DA_CHEGADA = 300;
+/** a fração inicial da faixa em que a descida ENTRA devagar (sem quina em d0) */
+const ENTRADA_DA_CHEGADA = 0.3;
+
+export interface Chegada {
+  /** 0 (a arte de longe) → 1 (a hero inteira entregue ao clarão) */
+  s: number;
+  /** o fator sobre o tamanho de autor (1 = a arte de longe) */
+  escala: number;
+  /** a meia-extensão da hero na tela, em frações da altura */
+  fracaoDaAltura: number;
+}
+
+/** a chegada de uma hero de tamanho `tamanhoPc` vista a `dPc` (função pura) */
+export function chegadaDaHero(dPc: number, tamanhoPc: number, tanHalfFov: number, out: Chegada): Chegada {
+  // a tela da hero: px = S·uZoom·P11·(H/2)/d = S·H / (2·d·max(tan, tanRef))
+  const tan = Math.max(tanHalfFov, TAN_DA_LENTE_PADRAO);
+  const d0 = CHEGADA_COMECA_EM_TAMANHOS * tamanhoPc;
+  if (!(tamanhoPc > 0) || !(dPc > 0) || dPc >= d0) {
+    out.s = 0;
+    out.escala = 1;
+  } else {
+    const t = Math.min(1, Math.log(d0 / dPc) / Math.log(FAIXA_DA_CHEGADA));
+    // a rampa ENTRA devagar (quadrática até `ENTRADA_DA_CHEGADA`, linear
+    // depois, C¹): em d0 o tamanho de tela para de crescer sem quina, e a
+    // descida segue no passo constante que a régua de luz pede
+    const a = ENTRADA_DA_CHEGADA;
+    out.s = (t < a ? (t * t) / (2 * a) : t - a / 2) / (1 - a / 2);
+    // congelada no tamanho de tela de d0, descendo em log até o teto
+    const noTeto = (2 * OCUPACAO_MAXIMA_DA_TELA * tan * d0) / tamanhoPc;
+    out.escala = Math.min(1, (dPc / d0) * Math.pow(Math.min(1, noTeto), out.s));
+  }
+  out.fracaoDaAltura = dPc > 0 ? (tamanhoPc * out.escala) / (2 * dPc * tan) : 0;
+  return out;
+}
+
 /** o `smoothstep` do GLSL, na CPU (a presença espelha o fragment) */
 function suave(a: number, b: number, x: number): number {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
@@ -210,11 +263,27 @@ export class HeroStars {
     if (!this.group.visible) return 0;
     const i = this.chosen.findIndex((s) => s.n === nome);
     if (i < 0) return 0;
-    const size = this.sizePc[i];
+    const size = this.mats[i].uniforms.uSize.value as number;
     const dist = (this.group.children[i] as THREE.Mesh).position.distanceTo(camPos);
     const near = suave(size * 0.5, size * 1.4, dist);
     const far = 1 - suave(320, 900, dist);
     return near * far * (this.mats[i].uniforms.uGain.value as number);
+  }
+
+  /**
+   * A CHEGADA escrita (`chegadaDaHero`): o tamanho vira `escala` × o de
+   * autor. Sem estrela visitável por perto ninguém escreve e fica 1.
+   */
+  escreverEscala(nome: string, escala: number) {
+    const i = this.chosen.findIndex((s) => s.n === nome);
+    if (i < 0 || !(escala > 0)) return;
+    this.mats[i].uniforms.uSize.value = this.sizePc[i] * Math.min(1, escala);
+  }
+
+  /** a hero no LUGAR do corpo da mesma estrela (o do ponto do catálogo) */
+  moverPara(nome: string, pos: THREE.Vector3) {
+    const i = this.chosen.findIndex((s) => s.n === nome);
+    if (i >= 0) this.group.children[i].position.copy(pos);
   }
 
   /** o raio do brilho da hero de uma estrela, pc (0 quando não é hero) */
