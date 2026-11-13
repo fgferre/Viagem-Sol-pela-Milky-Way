@@ -56,12 +56,13 @@ const ALFA_DA_ORBITA_S2 = 0.5;
 const ALFA_DA_ORBITA = 0.12;
 /**
  * AS LINHAS SÃO MAPA, vistas de fora do aglomerado: com a câmera DENTRO
- * das órbitas (a vista de perto fica a 2 UA do buraco, e o periastro de
- * S2 é 120 UA) cada órbita vira uma reta riscando o céu inteiro. Elas
- * somem entre 400 e 150 UA do centro; as estrelas ficam.
+ * das órbitas cada uma vira um arco ou uma reta riscando o céu inteiro
+ * (a 2.000 UA do centro, no apoastro de S2, já eram dezenas de riscos; a
+ * vista de perto fica a 2 UA). Elas esmaecem entre 4.000 e 1.500 UA do
+ * centro; as estrelas ficam.
  */
-const ORBITAS_SOMEM_EM_PC = 150 / 206264.806;
-const ORBITAS_PLENAS_EM_PC = 400 / 206264.806;
+const ORBITAS_SOMEM_EM_PC = 1500 / 206264.806;
+const ORBITAS_PLENAS_EM_PC = 4000 / 206264.806;
 /** a borda da regra da sombra, em raios aparentes da sombra */
 const SOMBRA_SOME = 1.05;
 const SOMBRA_VOLTA = 1.35;
