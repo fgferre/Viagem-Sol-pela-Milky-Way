@@ -37,7 +37,12 @@ import { construirIndice } from './lib/buscaEstrelas';
 import {
   Convite,
 } from './components/Spotlight';
-import { PASSOS_DO_CONVITE_DO_ATLAS, PASSOS_DO_CONVITE_DO_ATLAS_TOQUE } from './components/passosDoConvite';
+import {
+  conviteDoAtlasSome,
+  PASSOS_DO_CONVITE_DO_ATLAS,
+  PASSOS_DO_CONVITE_DO_ATLAS_TOQUE,
+  type GestosDoAtlas,
+} from './components/passosDoConvite';
 import { Ajustes } from './components/Ajustes';
 import { gravarPreferencia, lerPreferencias } from './lib/preferencias';
 import { LUGARES_DO_FILME } from './lib/lugaresDoFilme';
@@ -765,19 +770,30 @@ export default function App() {
   // primeiro gesto que ele ensina — girar, escolher um astro, abrir a
   // Busca — ou depois de meio minuto na tela. Some e fica visto: quem
   // já agiu aprendeu, e quem leu e não agiu não precisa dele de novo.
+  // GESTO é o que acontece DEPOIS que o cartão apareceu: o retrato do
+  // instante em que ele surge vale como "antes" (`conviteDoAtlasSome`),
+  // e o tempo conta a partir dali, não a cada mudança.
+  const gestosAgora: GestosDoAtlas = { girou: girouNoAtlas, foco, busca: gaveta === 'busca' };
+  const gestosDoInicio = useRef<{ de: object; antes: GestosDoAtlas } | null>(null);
+  if (convite?.onde !== 'atlas') gestosDoInicio.current = null;
+  else if (gestosDoInicio.current?.de !== convite) {
+    gestosDoInicio.current = { de: convite, antes: gestosAgora };
+  }
+  const conviteSome =
+    gestosDoInicio.current !== null &&
+    conviteDoAtlasSome(gestosDoInicio.current.antes, gestosAgora);
+  const sumirConviteDoAtlas = () => {
+    gravarPreferencia('conviteAtlasVisto', true);
+    setConvite(null);
+  };
   useEffect(() => {
     if (convite?.onde !== 'atlas') return;
-    const sumir = () => {
-      gravarPreferencia('conviteAtlasVisto', true);
-      setConvite(null);
-    };
-    if (girouNoAtlas || foco !== null || gaveta === 'busca') {
-      sumir();
-      return;
-    }
-    const id = window.setTimeout(sumir, CONVITE_DO_ATLAS_MS);
+    const id = window.setTimeout(sumirConviteDoAtlas, CONVITE_DO_ATLAS_MS);
     return () => window.clearTimeout(id);
-  }, [convite?.onde, girouNoAtlas, foco, gaveta]);
+  }, [convite]);
+  useEffect(() => {
+    if (conviteSome) sumirConviteDoAtlas();
+  }, [conviteSome]);
 
   const fecharConvite = () => {
     if (convite) {
@@ -1331,8 +1347,9 @@ export default function App() {
               regime. Os quatro passos do Atlas (`passosDoConvite.ts`)
               passaram a `alvo: null`, que o `Spotlight` já tolera (sem
               furo, só o véu e o cartão soltos). O `girouNoAtlas` continua
-              vivo: ele ainda decide se o convite se oferece (abaixo), só
-              deixou de apagar uma dica que não existe mais. */}
+              vivo: girar DEPOIS que o convite apareceu o fecha
+              (`conviteDoAtlasSome`), só deixou de apagar uma dica que não
+              existe mais. */}
 
           {/* O SELO. Lê o estado da vista do Director a cada render — e o
               render acontece quando o foco muda, que é quando a vista
@@ -1557,7 +1574,7 @@ export default function App() {
           onFechar={fecharConvite}
         />
       )}
-      {convite?.onde === 'atlas' && phase === 'atlas' && !girouNoAtlas && (
+      {convite?.onde === 'atlas' && phase === 'atlas' && (
         <Convite
           passo={convite.passo}
           passos={
