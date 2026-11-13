@@ -167,7 +167,7 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
   },
   {
     id: 'heroes',
-    nome: 'o clarão de asas (orçamento de fontes fortes) — hoje SÓ o Sol',
+    nome: 'o clarão de asas — a luz única de toda estrela forte (o Sol, as nomeadas e as visitadas)',
     arquivos: ['src/three/world/clarao.ts', 'src/three/director/solNoQuadro.ts'],
     consomeL1: true,
     leiVelhaApagada: true,
@@ -177,39 +177,12 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
     emiteGlPointSize: false,
     razao:
       'FECHADO no M2: a asa Moffat da lei, por orçamento de fluxo com ' +
-      'histerese (§5.21), profundidade pela §5.15. A frase do M2 sobre a ' +
-      'morte da identidade "as 16" CAIU no resgate de 16/08 (ordem do dono, ' +
-      'commit 4ca23b7): a camada desenha só o candidato 0 (`n = 1` em ' +
-      '`atualizar`) e as nomeadas voltaram à arte de autor — linha ' +
-      '`heroes-de-autor` aqui embaixo. CAPACIDADE MAIOR QUE O USO, ' +
-      'declarada: 16 slots (ORCAMENTO_DO_CLARAO) e arrays de 1.727 ' +
-      'entradas (Sol + 1.726 nomeadas) para UM candidato. É RESERVA do ' +
-      'M3 e não encolhe — mexer na contagem de objetos da cena é ' +
-      'mudança de pixel, que se prova em A/B no navegador',
-  },
-  {
-    id: 'heroes-de-autor',
-    nome: 'as 16 heroes de autor (billboards da arte de 30/07)',
-    arquivos: ['src/three/world/heroStars.ts'],
-    consomeL1: false,
-    leiVelhaApagada: false,
-    fatorDeBrilho: null,
-    destino: 'migra',
-    migracao: 'M3',
-    // não emite ponto: são QUADS aditivos, achados pela SEGUNDA varredura
-    emiteGlPointSize: false,
-    razao:
-      'VIVA e em cena — o director instancia `HeroStars(meta.named)`. O M2 ' +
-      'apagou a peça e o dono mandou exumá-la do git em 16/08 (4ca23b7); o ' +
-      'cadastro seguiu dizendo que "as 16" tinham morrido, e é essa mentira ' +
-      'que esta linha desfaz. NÃO consome a lei: tamanho, brilho e cor saem ' +
-      'da arte do filme (0,08·10^(−0,3m) em pc, braço 16/2,4, cintilação) — ' +
-      'declarado, não esquecido. A DUPLA-LUZ é o preço aberto: o ponto do ' +
-      'catálogo e o hero desenham a MESMA estrela juntos, sem cessão nenhuma ' +
-      'entre eles (medido em Sirius: ~69% da luz de um disco de 120 px vem ' +
-      'do hero, e nada esmaece o ponto quando ele entra). Quem fecha a ' +
-      'cessão é o M3, com o gate de foto do dono na estética — e o ' +
-      'fatorDeBrilho fica null até a medição na unidade da casa',
+      'histerese (§5.21), profundidade pela §5.15. Desde 13/11 é a LUZ ÚNICA ' +
+      '(aprovada pelo dono por imagem): o Sol, as 1.726 nomeadas e as ' +
+      'visitadas disputam 32 slots (ORCAMENTO_DO_CLARAO) só pelo pico na ' +
+      'câmera, com o tamanho pisado pela arte declarada (`meiaDaArtePx`). As ' +
+      '16 heroes de autor (`heroStars.ts`, resgatadas em 16/08) e o remendo ' +
+      'da chegada a elas morreram com ela',
   },
   // (a entrada `sunstar` saiu do censo no M1: a classe morreu — o Sol de
   // longe é o próprio `sol-ponto`, e a varredura invertida vigia o nome.)
@@ -283,9 +256,8 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
     migracao: 'M6',
     emiteGlPointSize: false,
     razao:
-      'a cessão partículas↔lâminas é dupla-luz sem mecanismo nenhum — e desde ' +
-      'o resgate de 16/08 não é a ÚNICA: catálogo↔heroes-de-autor é a outra, ' +
-      'declarada na linha dela e agendada para o M3',
+      'a cessão partículas↔lâminas é dupla-luz sem mecanismo nenhum (a outra, ' +
+      'catálogo↔heroes-de-autor, morreu com as heroes em 13/11)',
   },
   {
     id: 'glows-do-nucleo',

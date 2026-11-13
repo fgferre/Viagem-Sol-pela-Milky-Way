@@ -150,11 +150,9 @@ export const CAMADAS: readonly Camada[] = [
   // duas coisas que uma estrela põe na tela — o ponto do catálogo e o
   // clarão —, e a terceira é o nome dela.
   { flag: 'nonomes', get nome() { return t('camada.nonomes'); }, get nota() { return t('camada.nonomes.nota'); }, familia: 'Estrelas', viva: true, icone: '⌶' },
-  // M2 da Lei: `nohero` virou `noclarao`. O que a chave desliga são as
-  // DUAS camadas de fonte forte, e voltou a incluir as 16 heroes de
-  // autor com o resgate de 16/08 (`world/heroStars.ts`): o tick esconde
-  // `heroes.group` e o clarão de asas (`world/clarao.ts`, o Sol) pela
-  // mesma `hide.has('noclarao')`.
+  // M2 da Lei: `nohero` virou `noclarao`. O que a chave desliga é a
+  // óptica das fontes fortes — o clarão de asas (`world/clarao.ts`), que
+  // desde a luz única (13/11) desenha o Sol e toda estrela forte.
   { flag: 'noclarao', get nome() { return t('camada.noclarao'); }, get nota() { return t('camada.noclarao.nota'); }, familia: 'Estrelas', viva: true, icone: '✦' },
   // OS EXOPLANETAS (12/11/2026) — `world/exoplanetas.ts`. As órbitas e
   // a zona habitável do sistema por perto são instrumento de leitura,

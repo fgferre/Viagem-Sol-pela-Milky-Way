@@ -10,9 +10,8 @@
 //  2. A ELEGIBILIDADE PELA LEI — quem ganha slot é decidido pelo fluxo
 //     (a asa tem de exceder o que o sprite já desenha), nunca por nome,
 //     e o teste prova que a escolha emerge da física quando a câmera
-//     está em casa. (A identidade "as 16" NÃO morreu: as heroes de
-//     autor voltaram em 16/08 e vivem em `heroStars.ts` — esta camada é
-//     que ficou só com o Sol.)
+//     está em casa — o Sol, as nomeadas e as visitadas pela mesma régua
+//     (a luz única, 13/11; as heroes de autor morreram com ela).
 //  3. A CAMADA DE VERDADE — instancia `ClaraoDeAsas` com o sidecar REAL
 //     do repo (o mesmo molde de lodStellar.test.ts antes do M2):
 //     profundidade pela §5.15, billboards em px pela lei, Sol como
@@ -22,7 +21,6 @@ import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import type { StarsMeta } from '../config';
-import { HeroStars } from './heroStars';
 import {
   BV_MEDIDO,
   ClaraoDeAsas,
@@ -350,17 +348,18 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     const saindo = c.ocupacao().find((o) => o.indice === 0);
     if (saindo) expect(saindo.ganho).toBeLessThan(1);
     for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(true));
-    expect(c.ocupacao()).toHaveLength(0);
+    expect(c.ocupacao().some((o) => o.indice === 0)).toBe(false);
 
     // o Sol reaparece: a sonda registra visível de novo, e o clarão sobe
-    // pela MESMA rampa de entrada
+    // pela MESMA rampa de entrada — depois de a nomeada mais fraca sair
+    // pela dela (com as vagas cheias, o Sol espera a vaga)
     registrar(false);
-    for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(true));
+    for (let i = 0; i < 60; i++) c.atualizar(quadroEmCasa(true));
     expect(c.ocupacao().find((o) => o.indice === 0)?.ganho).toBe(1);
     c.dispose();
   });
 
-  it('a receita montada é BYTE A BYTE a de antes, nos DOIS shaders', () => {
+  it('a receita montada é BYTE A BYTE a de antes', () => {
     // "claramente a regra que desenha sirius é totalmente diferente da
     // que desenha o sol... o desenho de spikes de sirius é muito
     // superioir" (dono, 16/08). Resposta: o mesmo desenho — e desde
@@ -373,11 +372,8 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     // chega à GPU. Os blocos abaixo foram copiados byte a byte do texto
     // de ANTES da unificação: se a montagem mover um espaço, cai aqui.
     const c = new ClaraoDeAsas(META.named);
-    const h = new HeroStars(META.named);
-    const fragDo = (o: THREE.Object3D) =>
-      ((o as THREE.Mesh).material as THREE.ShaderMaterial).fragmentShader;
-    const fragDoSol = fragDo(c.group.children[0]);
-    const fragDasHeroes = fragDo(h.group.children[0]);
+    const fragDoSol = ((c.group.children[0] as THREE.Mesh).material as THREE.ShaderMaterial)
+      .fragmentShader;
 
     expect(fragDoSol).toContain(
       `  float core = exp(-r * r * 90.0) * 3.0;
@@ -386,30 +382,15 @@ describe('3. a camada de verdade, com o sidecar real', () => {
   float ay = exp(-abs(uv.x) * 16.0) * exp(-abs(uv.y) * 2.4);
   float spikes = (ax + ay) * 0.8;`
     );
-    // nas heroes os mesmos números; o `uCore` que multiplicava núcleo e
-    // braços nunca foi escrito (valia 1,0) e saiu em 09/10/2026
-    expect(fragDasHeroes).toContain(
-      `  float core = exp(-r * r * 90.0) * 3.0;
-  float glow = exp(-r * 4.5) * 0.9;
-
-  // spikes de difração
-  float ax = exp(-abs(uv.y) * 16.0) * exp(-abs(uv.x) * 2.4);
-  float ay = exp(-abs(uv.x) * 16.0) * exp(-abs(uv.y) * 2.4);
-  float spikes = (ax + ay) * 0.8;`
-    );
-    for (const frag of [fragDoSol, fragDasHeroes]) {
-      expect(frag).toContain('vec3(1.0, 0.98, 0.95)');
-    }
+    expect(fragDoSol).toContain('vec3(1.0, 0.98, 0.95)');
     c.dispose();
-    h.dispose();
   });
 
-  it('os números da receita NÃO voltam a ser redigitados nos dois fontes', () => {
+  it('os números da receita NÃO voltam a ser redigitados no fonte', () => {
     // A VARREDURA INVERTIDA do endereço único, no idioma de
     // `simbolosProibidos.test.ts`: o que os fontes tinham de conter
     // agora não podem conter. Sem ela, nada impede a cópia de renascer
     // — e a cópia só é notada quando alguém corrige um lado só.
-    const heroes = readFileSync(new URL('./heroStars.ts', import.meta.url), 'utf8');
     const clarao = readFileSync(new URL('./clarao.ts', import.meta.url), 'utf8');
     for (const linha of [
       'exp(-r * r * 90.0) * 3.0',
@@ -419,21 +400,22 @@ describe('3. a camada de verdade, com o sidecar real', () => {
       '(ax + ay) * 0.8',
       'vec3(1.0, 0.98, 0.95)',
     ]) {
-      expect(heroes, linha).not.toContain(linha);
       expect(clarao, linha).not.toContain(linha);
     }
   });
 
-  it('no RESGATE a camada é SÓ do Sol: nomeada nunca ocupa slot', () => {
-    // ordem do dono (16/08): as 16 voltaram à arte do filme
-    // (heroStars.ts); esta camada fica só com o Sol até o M3 unificar de
-    // novo, com o visto dele na estética
+  it('a luz única: as nomeadas disputam os slots com o Sol, só pelo fluxo', () => {
+    // a decisão do dono (13/11): nenhum desenho de autor por classe — o
+    // Sol e as nomeadas pela MESMA régua; Sirius de casa tem clarão
     const c = new ClaraoDeAsas(META.named);
+    const sirius = 1 + META.named.findIndex((s) => s.n === 'Sirius');
     for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(true));
-    expect(c.ocupacao().every((o) => o.indice === 0)).toBe(true);
-    // e com o Sol-ponto oculto, a camada fica VAZIA
+    expect(c.ocupacao().some((o) => o.indice === 0)).toBe(true);
+    expect(c.ocupacao().some((o) => o.indice === sirius)).toBe(true);
+    // com o Sol-ponto oculto só o Sol sai
     for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(false));
-    expect(c.ocupacao()).toHaveLength(0);
+    expect(c.ocupacao().some((o) => o.indice === 0)).toBe(false);
+    expect(c.ocupacao().some((o) => o.indice === sirius)).toBe(true);
     c.dispose();
   });
 
@@ -484,7 +466,7 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     const sigma = sigmaDaPsfPx(SIGMA_PX, 900);
     const esperado = Math.min(
       FATOR_DE_ENCHIMENTO_DO_SOL *
-        Math.max(raioVisivelDaAsaPx(pico, sigma), alcanceDoEspinhoPx(pico, sigma)),
+        Math.max(raioVisivelDaAsaPx(pico, sigma), alcanceDoEspinhoPx(pico, sigma), meiaDaArtePx(m, 900)),
       OCUPACAO_MAXIMA_DA_TELA * 900
     );
     const meshes = c.group.children.filter(
@@ -503,7 +485,7 @@ describe('3. a camada de verdade, com o sidecar real', () => {
 
   it('BV_MEDIDO é o literal de antes da fusão, entrada por entrada', () => {
     // A tabela existia DUAS vezes — aqui e como `HERO_BV` em
-    // heroStars.ts, com diff vazio nas 16. A fusão só é honesta se
+    // heroStars.ts (apagado em 13/11), com diff vazio nas 16. A fusão só é honesta se
     // nenhum número tiver andado no caminho: este é o literal que as
     // duas cópias tinham no commit anterior, colado inteiro.
     expect(BV_MEDIDO).toEqual({

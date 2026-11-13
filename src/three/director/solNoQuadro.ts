@@ -99,8 +99,8 @@ export class SolNoQuadro {
     /** as estrelas visitadas que candidatam ao clarão pela mesma lei
      *  (`EstrelasNoQuadro.candidatasAoClarao`); vazio = só o Sol */
     visitadas: () => readonly CandidataVisitada[];
-    /** a luz que a lente acendeu e de quem (só a luz única a lê) */
-    lente?: () => LuzDaLenteNoQuadro | undefined;
+    /** a luz que a lente acendeu e de quem (o halo do campo cede a ela) */
+    lente: () => LuzDaLenteNoQuadro;
   };
 
   constructor(fios: SolNoQuadro['fios']) {
@@ -261,7 +261,7 @@ export class SolNoQuadro {
         pr: q.prAtual,
         transmitanciaDoSol: this.transmitanciaDoSolVisto,
         visitadas: this.fios.visitadas(),
-        lente: this.fios.lente?.(),
+        lente: this.fios.lente(),
       });
     }
   }

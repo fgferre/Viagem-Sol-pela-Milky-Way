@@ -549,7 +549,7 @@ export class Planetas {
     this.points = new THREE.Points(geo, this.material);
     this.points.frustumCulled = false;
     // slots ocupados hoje: −1…0,5 (sol/*.js), 1 (lâminas), 2 (campo),
-    // 3 (heroes), 4 (poeira), 5 (nuvens CO), 6 (marcador).
+    // 3 (clarão), 4 (poeira), 5 (nuvens CO), 6 (marcador).
     this.points.renderOrder = 7;
   }
 

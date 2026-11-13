@@ -101,8 +101,8 @@ export const PROCEDENCIA: Record<Procedencia, { rotulo: string; oQue: string }> 
    * declarava DOIS — "o disco do Sol e o clarão" — e a cena desenhava
    * TRÊS: faltavam os spikes de difração em cruz das estrelas, vivos em
    * dois shaders independentes (`shaders/starShaders.ts`, no bloco
-   * guardado por `vSat > 0.001`, e `world/heroStars.ts`, onde o `spikes`
-   * entra em `col` e no alfa).
+   * guardado por `vSat > 0.001`, e a receita do filme, hoje em
+   * `world/clarao.ts`, onde o `spikes` entra em `col` e no alfa).
    *
    * E eles são artifício pelo critério mais duro que existe: a cruz não
    * é propriedade nenhuma da estrela. É o padrão que as HASTES do
@@ -966,9 +966,6 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   // ?estrelaslugar=0 desliga o piloto "toda estrela é um lugar" (12/11):
   // as estrelas visitáveis voltam a ser só ponto — a bancada do "antes"
   porta('estrelaslugar', 'corpo das estrelas visitáveis desligado'),
-  // ?luzunica=1 (13/11): a candidata "uma lei de luz para toda estrela" —
-  // heroes de autor fora, o clarão da lei desenha toda estrela forte
-  porta('luzunica', 'luz única das estrelas (candidata): heroes de autor trocadas pelo clarão da lei'),
   // --- camadas: TODAS derivadas da tabela única ---------------------
   // Redigitá-las aqui foi o buraco do item 33: quatro flags só-URL
   // (nosun/nodust/noco/noforge) viviam no registro sem linha em

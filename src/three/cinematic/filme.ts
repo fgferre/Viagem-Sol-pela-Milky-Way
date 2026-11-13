@@ -52,12 +52,6 @@ export interface Filme {
   doseDoSol(t: number): number;
   /** corpos desenhados num centro fixo durante o filme, pelo id da casa */
   pinos: ReadonlyMap<string, THREE.Vector3>;
-  /** as 16 heroes de autor (`world/heroStars.ts`) no céu do filme: a arte dos
-   *  SOBREVOOS do galáctico — clarão de 0,08·10^(−0,3·m) pc, que da vizinhança
-   *  do Sol já dá a Sírio 52 px de raio em qualquer lente. Num filme que não
-   *  sai do sistema solar ela vira um "nascer do Sol" na borda do quadro (F4,
-   *  Io); `false` deixa o céu só com o catálogo, como a física manda */
-  heroes: boolean;
   /** o Sol gira pela DATA do filme (`anguloDoGiro`: a mesma face no mesmo
    *  instante, em toda sessão) em vez do tempo de tela. O galáctico fica no
    *  giro de tela — a abertura que o dono aprovou; a capa também, sempre */
@@ -84,7 +78,6 @@ function montarGalactico(): Filme {
       ['earth', TERRA_PC],
       ['moon', LUA_PC],
     ]),
-    heroes: true,
     giroPeloRelogio: false,
   };
 }
@@ -105,7 +98,6 @@ function montarSolar(): Filme {
     revealT: null,
     doseDoSol: () => 1,
     pinos: m.pinos,
-    heroes: false,
     giroPeloRelogio: true,
     cima: m.cima,
   };

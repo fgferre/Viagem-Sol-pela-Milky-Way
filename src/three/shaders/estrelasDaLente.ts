@@ -9,7 +9,7 @@
 // ela entrar.
 //
 // O QUE TROCA. A cruz de dois braços — a do `STAR_FRAG` (catálogo, cascas e
-// os dez corpos) e a da receita do filme (as 16 heroes e o clarão do Sol) —
+// os dez corpos) e a da receita do filme (o clarão de toda estrela forte) —
 // dá lugar aos FINOS da lente escolhida em Ajustes: os raios das lâminas e o
 // risco anamórfico de `lente/presets.ts`, com a MESMA conta do passe da
 // lente, a MESMA tabela de variação por raio e a MESMA largura mínima. Núcleo
@@ -249,7 +249,7 @@ export function energiaDaCruzDoPonto(frag: string): number {
 }
 
 /**
- * A cruz da receita do filme (heroes e clarão): o alfa é clamp(núcleo + halo +
+ * A cruz da receita do filme (o clarão): o alfa é clamp(núcleo + halo +
  * braços) e o blend é SRC_ALPHA·ONE, então o que a cruz acrescenta é o
  * depósito com ela menos o depósito sem ela (estrela branca, Y = 1).
  */
@@ -380,7 +380,7 @@ export function pontoSegueALente(frag: string): string {
 }
 
 /**
- * A receita do filme (heroes, clarão) com a cruz trocada pela assinatura. O
+ * A receita do filme (o clarão) com a cruz trocada pela assinatura. O
  * depósito vira linear — alfa 1, núcleo e halo pré-multiplicados pelo alfa que
  * tinham sem a cruz —, e a assinatura deposita exatamente o que a cruz
  * acrescentava. `uvPorPx`: expressão GLSL avaliada

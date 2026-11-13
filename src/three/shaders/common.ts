@@ -1061,8 +1061,8 @@ vec3 comprimir3(vec3 x, float b) {
 // A RECEITA DO FILME (30/07) — o perfil de UM clarão, num endereço só.
 //
 // Ela desenhava DUAS vezes, com os mesmos sete números: em
-// `world/heroStars.ts` (as 16 heroes de autor) e em `world/clarao.ts`
-// (o clarão de asas do Sol). "Claramente a regra que desenha sirius é
+// `world/heroStars.ts` (as 16 heroes de autor, apagadas em 13/11) e em
+// `world/clarao.ts` (o clarão de asas, hoje de toda estrela forte). "Claramente a regra que desenha sirius é
 // totalmente diferente da que desenha o sol... o desenho de spikes de
 // sirius é muito superioir" (dono, 16/08) — a resposta foi UM
 // desenhista, e um desenhista com dois corpos é o desenhista voltando a
@@ -1137,9 +1137,9 @@ vec3 bvToColor(float bv) {
  * Face CPU de `bvToColor`. Desde o F0 ela não REDIGITA a fórmula de
  * Ballesteros: chama `temperatureFromBV` (`stellarPhysics.ts`), o mesmo
  * endereço de onde o GLSL acima interpola os coeficientes — era a segunda
- * das três cópias, e morreu. Consumidor: a cor das heroes e do SunStar é
- * decidida na CPU uma vez, na construção — com esta face elas obedecem à
- * MESMA lei do catálogo (Onda 1b).
+ * das três cópias, e morreu. Consumidor: a cor de cada candidata do
+ * clarão é decidida na CPU uma vez, na construção — com esta face ela
+ * obedece à MESMA lei do catálogo (Onda 1b).
  */
 export function bvToColor(bv: number): [number, number, number] {
   return blackbodyLinear(temperatureFromBV(bv));
