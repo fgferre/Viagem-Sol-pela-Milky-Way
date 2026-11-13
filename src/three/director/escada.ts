@@ -1077,8 +1077,13 @@ export class Escada {
     const i = CORPOS_DO_SISTEMA.findIndex((c) => c.id === id);
     if (i < 0 || !this.planetas) return;
     if (ver === 'corpo') {
-      // `?foco=marte&ver=corpo` — o degrau reproduzido por URL
+      // `?foco=marte&ver=corpo` — o degrau reproduzido por URL. O TRIO
+      // INTEIRO, como no ramo dos anões: com `focoEstrela` velho (vindo de
+      // um lugar do céu) `aproximarDoCorpo` descia à estrela ou ao buraco
+      // em vez do planeta, e o cartão deixava a câmera no lugar anterior
       this.focoCorpoId = id;
+      this.focoEstrela = false;
+      this.focoSonda = null;
       this.ver = 'orbita';
       if (this.escada.podeAproximar) {
         this.aproximarDoCorpo();
