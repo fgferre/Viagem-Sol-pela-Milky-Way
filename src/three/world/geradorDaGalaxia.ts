@@ -732,6 +732,22 @@ export function buildGalaxy(
     r < 120 ? Math.pow(Math.max(r, 1) / 120, -0.1)
       : r < 220 ? Math.pow(r / 120, -3.5)
         : Math.pow(220 / 120, -3.5) * Math.pow(r / 220, -10);
+  // ALTURA DE ESCALA AO LONGO DA BARRA (bojo b/p e barra longa: uma
+  // estrutura só). Wegg, Gerhard & Portail 2015 (arXiv 1504.01401, fig. 9,
+  // exponencial das gigantes do ramo vermelho): curta no eixo menor, sobe a
+  // um pico perto do fim do b/p (5,5° em l ≈ 7°, ~640 pc a ~1,8 kpc do
+  // centro pela geometria da barra a 27°) e cai pela barra longa (~2,3° em
+  // l = 12°, ~240 pc a 2,7 kpc; 180 pc a 5,2 kpc de nós, ~3,8 kpc do
+  // centro). No eixo menor, 180 pc (Wegg & Gerhard 2013, arXiv 1308.0593:
+  // exponenciais 0,70 : 0,44 : 0,18 kpc; X a partir de ~400 pc). Era 194 pc
+  // no bojo com lobos 1,8× a 1,75 kpc e σz 180 gaussiano na barra longa: de
+  // lado, a 1,5 kpc do centro a luz caía com ~120 pc, um quinto do medido.
+  const alturaNaBarra = (x: number) => {
+    const d = (Math.abs(x) - 1800) / (Math.abs(x) < 1800 ? 1000 : 650);
+    return 180 + 460 * Math.exp(-d * d);
+  };
+  const zExponencial = (h: number) =>
+    (rndN() < 0.5 ? -h : h) * Math.log(1 / Math.max(rndN(), 1e-9));
   for (let i = 0; i < N_BULGE; i++) {
     let lx: number;
     let ly: number;
@@ -743,17 +759,8 @@ export function buildGalaxy(
         // Bojo boxy/peanut: x:y = 1:0,63 (Wegg & Gerhard 2013), σx 900 pc.
         lx = gauss(rnd) * G * 900;
         ly = gauss(rnd) * G * 900 * 0.63;
-        const peanutX = (Math.abs(lx) - 1750) / 980;
         gauss(rnd); // o z de antes, só para o sorteio principal seguir igual
-        // VERTICAL: sech²(z/2s), cauda e^(−|z|/s) — o perfil quase
-        // exponencial do bojo b/p (Wegg & Gerhard 2013; revisão de
-        // Bland-Hawthorn & Gerhard 2016; z0 0,43 kpc no G2 de Dwek 1995;
-        // tudo de memória). s 200 pc no eixo menor e 1,8× nos lobos
-        // (|x| ≈ 1,75 kpc), o X de raspão. Era gaussiana de σ 199 pc no
-        // centro: de lado, meia-luz 137 pc, abaixo dos 162 do disco a 6–9 kpc.
-        const s = (200 / 1.033) * (1 + 0.8 * Math.exp(-peanutX * peanutX));
-        const u = Math.min(Math.max(rndN(), 1e-6), 1 - 1e-6);
-        lz = s * Math.log(u / (1 - u));
+        lz = zExponencial(alturaNaBarra(lx));
         const v = rndN();
         if (v < FRACAO_NSC) {
           tipoB = 8;
@@ -776,14 +783,16 @@ export function buildGalaxy(
       } else {
         // Barra longa (Wegg 2015): meia-largura 5 kpc com ponta macia,
         // σ 764 pc de través (a barra das lâminas) estreitando nas pontas,
-        // e fina — σz 180 pc.
+        // e a altura de escala da barra (acima): alta onde ela atravessa o
+        // b/p, 180 pc exponencial na parte longa.
         const sign = rnd() < 0.5 ? -1 : 1;
         lx =
           sign * GALACTIC_MODEL.barHalfLengthPc * Math.pow(rnd(), 1.25) +
           gauss(rnd) * G * 250;
         const end = Math.min(1, Math.abs(lx) / GALACTIC_MODEL.barHalfLengthPc);
         ly = gauss(rnd) * G * 764 * (1 - 0.25 * end * end);
-        lz = gauss(rnd) * G * 180;
+        gauss(rnd); // o z de antes, só para o sorteio principal seguir igual
+        lz = zExponencial(alturaNaBarra(lx));
       }
     } else if (rnd() < 0.74) {
       const sign = rnd() < 0.5 ? -1 : 1;
@@ -1031,8 +1040,10 @@ export function buildGalaxy(
 // Cada nuvem é uma partícula (centro no plano, elipse gaussiana, massa de
 // gás). Elas não são desenhadas como luz: `tauDasNuvens` as soma vistas de
 // cima no mapa τ⊥ que a extinção por partícula já lê (GALAXY_VERT). O perfil
-// vertical é o da camada do shader (gaussiana σ 58 pc com flare, no warp):
-// é a distribuição em z das nuvens por construção, então não se guarda z.
+// vertical é o da camada do shader, no warp: gaussiana σ 58 pc com flare para
+// o molecular, fendas e CMZ; sech² de 134 pc com flare para o atômico
+// (POEIRA_ATOMICA, galaxyShaders.ts). É a distribuição em z das nuvens por
+// construção, então não se guarda z.
 //
 // Fontes (de memória da literatura, salvo onde diz o arquivo):
 // · κ: N_H/A_V = 1,87e21 cm⁻² (Bohlin 1978, R_V 3,1) ⇒ τ_V = 0,045 por
@@ -1057,6 +1068,8 @@ export interface NuvensDePoeira {
   dados: Float32Array;
   /** massa por componente (M☉), para medir */
   massas: Record<string, number>;
+  /** [início, fim) das nuvens do gás atômico difuso — a camada espessa */
+  atomicas: [number, number];
 }
 
 /** τ_V por M☉/pc² de gás total no raio R (ver as fontes acima) */
@@ -1198,6 +1211,7 @@ export function gerarNuvensDePoeira(seed = 20260737): NuvensDePoeira {
   }
 
   // ---- 2. gás atômico difuso: nuvens largas e ralas; 30 % nos braços ----
+  const iniAt = lista.length / 6;
   const massaAt = massaDoPerfil(sigmaAt);
   const picoAt = picoDoPerfil(sigmaAt);
   for (let acc = 0; acc < massaAt; ) {
@@ -1223,6 +1237,8 @@ export function gerarNuvensDePoeira(seed = 20260737): NuvensDePoeira {
     por('atomico', x, y, m, phi, 1 + rnd(), s);
     acc += m;
   }
+
+  const fimAt = lista.length / 6;
 
   // ---- 3. fendas da barra e CMZ (no referencial da barra) ----
   const cb = Math.cos(GALACTIC_MODEL.barAngleRad), sb = Math.sin(GALACTIC_MODEL.barAngleRad);
@@ -1268,7 +1284,7 @@ export function gerarNuvensDePoeira(seed = 20260737): NuvensDePoeira {
   }
 
   const dados = new Float32Array(lista);
-  return { n: dados.length / 6, dados, massas };
+  return { n: dados.length / 6, dados, massas, atomicas: [iniAt, fimAt] };
 }
 
 /**
@@ -1276,9 +1292,14 @@ export function gerarNuvensDePoeira(seed = 20260737): NuvensDePoeira {
  * a integral κ·M exata (pesos normalizados por nuvem; a pegada do texel entra
  * na largura, então nuvem menor que o texel não some nem estoura). Mesma
  * convenção do mapa pintado: texel (i, j) em ((i + ½)/N − ½)·2·meia.
+ *
+ * DUAS CAMADAS, dois canais (RG intercalados, N·N·2): R a poeira fina do gás
+ * molecular, das fendas da barra e da CMZ; G a do gás atômico difuso, que
+ * mora numa camada mais espessa (POEIRA_ATOMICA, galaxyShaders.ts).
  */
 export function tauDasNuvens(nuvens: NuvensDePoeira, N: number, meia: number): Float32Array {
-  const tau = new Float32Array(N * N);
+  const tau = new Float32Array(N * N * 2);
+  const [iniAt, fimAt] = nuvens.atomicas;
   const passo = (2 * meia) / N;
   const pe2 = (0.4 * passo) ** 2;
   const d = nuvens.dados;
@@ -1308,6 +1329,7 @@ export function tauDasNuvens(nuvens: NuvensDePoeira, N: number, meia: number): F
     }
     if (soma <= 0) continue;
     const kM = kappaDaPoeira(Math.hypot(cx, cy)) * d[o + 5];
+    const canal = c >= iniAt && c < fimAt ? 1 : 0;
     const k = kM / (passo * passo * soma);
     // NUVEM ESPESSA MENOR QUE O TEXEL (só as da CMZ, Σ ~ 1e3 M☉/pc²: as do
     // disco têm τ no miolo ~2–3 e ficam como estão). Média de τ no texel não
@@ -1319,14 +1341,14 @@ export function tauDasNuvens(nuvens: NuvensDePoeira, N: number, meia: number): F
     let p = 0;
     if (tauC <= 5) {
       for (let j = j0; j <= j1; j++)
-        for (let i = i0; i <= i1; i++) tau[j * N + i] += pesos[p++] * k;
+        for (let i = i0; i <= i1; i++) tau[(j * N + i) * 2 + canal] += pesos[p++] * k;
       continue;
     }
     const cobre = 1 - Math.exp(-tauC);
     for (let j = j0; j <= j1; j++)
       for (let i = i0; i <= i1; i++) {
         const f = Math.min((pesos[p++] * k) / tauC, 1);
-        tau[j * N + i] += -Math.log(Math.max(1 - f * cobre, 1e-30));
+        tau[(j * N + i) * 2 + canal] += -Math.log(Math.max(1 - f * cobre, 1e-30));
       }
   }
   return tau;

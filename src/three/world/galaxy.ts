@@ -662,12 +662,13 @@ export class Galaxy {
     this.brightMat.uniforms.uTauMap.value = this.showGDust && tau ? tau : this.tauVazio;
   }
 
-  /** o τ⊥ das nuvens de poeira (gerarNuvensDePoeira) somado de cima, em meia precisão */
+  /** o τ⊥ das nuvens de poeira (gerarNuvensDePoeira) somado de cima, em meia
+   *  precisão: R a camada fina (molecular), G a espessa (atômico) */
   private static texturaDasNuvens(N: number) {
     const tau = tauDasNuvens(gerarNuvensDePoeira(), N, GAL.DISK_RADIUS);
-    const meia = new Uint16Array(N * N);
-    for (let k = 0; k < N * N; k++) meia[k] = THREE.DataUtils.toHalfFloat(tau[k]);
-    const t = new THREE.DataTexture(meia, N, N, THREE.RedFormat, THREE.HalfFloatType);
+    const meia = new Uint16Array(tau.length);
+    for (let k = 0; k < tau.length; k++) meia[k] = THREE.DataUtils.toHalfFloat(tau[k]);
+    const t = new THREE.DataTexture(meia, N, N, THREE.RGFormat, THREE.HalfFloatType);
     t.minFilter = THREE.LinearFilter;
     t.magFilter = THREE.LinearFilter;
     t.needsUpdate = true;

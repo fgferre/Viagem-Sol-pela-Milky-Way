@@ -117,11 +117,12 @@ export class MotorDaGalaxia {
     this.bufU = gpu.createBuffer({ size: BYTES_DOS_UNIFORMES, usage: USO.uniform | USO.copyDst });
 
     // τ⊥ das nuvens de poeira: a mesma textura do modo só-partículas
+    // (R a camada fina do molecular, G a espessa do atômico)
     const tau = tauDasNuvens(gerarNuvensDePoeira(), N_TAU, GALACTIC_MODEL.diskRadiusPc);
     const meio = new Uint16Array(tau.length);
     for (let i = 0; i < tau.length; i++) meio[i] = THREE.DataUtils.toHalfFloat(tau[i]);
-    const texTau = gpu.createTexture({ size: [N_TAU, N_TAU], format: 'r16float', usage: 0x04 | 0x02 });
-    gpu.queue.writeTexture({ texture: texTau }, meio, { bytesPerRow: N_TAU * 2 }, [N_TAU, N_TAU]);
+    const texTau = gpu.createTexture({ size: [N_TAU, N_TAU], format: 'rg16float', usage: 0x04 | 0x02 });
+    gpu.queue.writeTexture({ texture: texTau }, meio, { bytesPerRow: N_TAU * 4 }, [N_TAU, N_TAU]);
 
     this.pExt = pipelines.ext;
     this.pDep = pipelines.dep;

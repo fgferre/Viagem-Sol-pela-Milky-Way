@@ -24,6 +24,7 @@
 // ============================================================
 import { GALACTIC_MODEL } from '../../cartography/galacticModel';
 import { GLSL_UNRESOLVED } from '../wrappedStars';
+import { POEIRA_ATOMICA } from '../../shaders/galaxyShaders';
 
 const n = (v: number) => (Number.isInteger(v) ? `${v}.0` : `${v}`);
 
@@ -74,6 +75,20 @@ fn erfAprox(x: f32) -> f32 {
     - 0.284496736) * t + 0.254829592) * t * exp(-a * a);
   return sign(x) * y;
 }
+// a camada espessa do gás atômico: a poeiraAtomica do GLSL (galaxyShaders.ts),
+// aqui sempre com a camada inteira
+fn poeiraAtomica(z: f32, zMeio: f32, r: f32) -> f32 {
+  let h = ${n(POEIRA_ATOMICA.h0Pc)} + ${n(POEIRA_ATOMICA.flarePcPorPc)} * max(r - ${n(POEIRA_ATOMICA.inicioPc)}, 0.0);
+  if (abs(zMeio) > 0.05 * h) {
+    let ea = exp(-2.0 * abs(z - zMeio) / h);
+    let eb = exp(-2.0 * abs(z + zMeio) / h);
+    let ta = sign(z - zMeio) * (1.0 - ea) / (1.0 + ea);
+    let tb = sign(z + zMeio) * (1.0 - eb) / (1.0 + eb);
+    return 0.5 * (tb - ta) / (2.0 * zMeio);
+  }
+  let e = exp(-2.0 * abs(z) / h);
+  return 2.0 * e / ((1.0 + e) * (1.0 + e)) / h;
+}
 fn empeno(raio: f32, theta: f32) -> f32 {
   let x = clamp((raio - ${n(GALACTIC_MODEL.warpStartPc)}) /
     ${n(GALACTIC_MODEL.diskRadiusPc - GALACTIC_MODEL.warpStartPc)}, 0.0, 1.0);
@@ -116,8 +131,8 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
         g = 0.5 * (erfAprox(ub) - erfAprox(ua)) / (2.0 * zMeio) * (2.5066283 * sig);
       }
       let tp = textureSampleLevel(tauMap, tauSamp,
-        sxy / ${n(2 * GALACTIC_MODEL.diskRadiusPc)} + 0.5, 0.0).r;
-      tau += tp * g / (2.5066283 * sig);
+        sxy / ${n(2 * GALACTIC_MODEL.diskRadiusPc)} + 0.5, 0.0).rg;
+      tau += tp.x * g / (2.5066283 * sig) + tp.y * poeiraAtomica(zTil, zMeio, rS);
     }
   }
   tau *= (s1 - s0) * D / 16.0;
