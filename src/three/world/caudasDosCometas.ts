@@ -49,7 +49,9 @@
 // DE PERTO (abaixo de 3·10⁵ km do núcleo, só pela distância): a câmera
 // entra nos borrões e eles viravam bolas. Ali a luz junto ao núcleo passa
 // à integral da mesma lei (a coma de perto, `COMA_FRAG`), os borrões que
-// cobririam mais de ~6° saem, e a exposição se adapta (`exposicaoDePerto`).
+// cobririam mais de ~6° saem (os íons junto ao núcleo também viram
+// integral), e a exposição se adapta pela distância e pela atividade de
+// cada cometa (`exposicaoDePerto`, `correcaoPelaAtividade`).
 // ============================================================
 import * as THREE from 'three';
 import type { QualityLevel } from '../core/engine';
@@ -58,6 +60,7 @@ import {
   COMETAS,
   LIMIAR_DE_ATIVIDADE,
   brilhoRelativo,
+  cometaPorId,
   escalaDoBrilho,
   estadoDoCometa,
   producaoRelativa,
@@ -80,6 +83,8 @@ const TAU_DA_POEIRA = 60;
 /** a idade máxima dos íons (dias) e o tempo em que a luz deles cai a 1/e */
 const TAU_DOS_IONS = 8;
 const DESBOTA_DOS_IONS = 3;
+/** a idade do íon mais novo (dias): ~400 km do núcleo em Halley */
+const TAU0_DOS_IONS = 0.01;
 const BETA_MIN = 0.003;
 const BETA_MAX = 0.6;
 /** μ do Sol, UA³/dia² */
@@ -94,6 +99,13 @@ const GANHO = 0.004;
  *  exposição de visita — artística, para o corpo escuro se ler */
 const ALBEDO_DO_NUCLEO = 0.04;
 const EXPOSICAO_DO_NUCLEO = 6;
+/** os passos por pixel da coma de perto, por tier (eram 16 em todos) */
+export const PASSOS_DA_COMA: Readonly<Record<QualityLevel, number>> = {
+  cinema: 24,
+  alta: 16,
+  performance: 8,
+};
+const PASSOS_MAX = PASSOS_DA_COMA.cinema;
 
 const VERT = /* glsl */ `
 #define K ${AMOSTRAS}
@@ -222,7 +234,7 @@ void main() {
     vCor = vec3(1.0, 0.86, 0.68);
   } else if (aTipo < 1.5) {
     // ÍONS (CO+)
-    float tau = uTauIon * position.x * position.x + 0.01;
+    float tau = uTauIon * position.x * position.x + ${TAU0_DOS_IONS};
     float rr = length(uPos);
     float acc = uAcIon / (rr * rr);
     float tAcc = uVsw / acc;
@@ -260,8 +272,8 @@ void main() {
   // A COMA DE PERTO: dentro de uRin do núcleo a luz passa à integral da
   // mesma lei (o material da coma de perto, abaixo) — a soma dos dois
   // pesos é 1 em todo raio; longe (uPerto = 0) o peso é 1 exato
-  // (os íons não entram na integral: ficam inteiros)
-  if (aTipo < 0.5 || aTipo > 1.5) w *= 1.0 - uPerto * (1.0 - smoothstep(0.5 * uRin, uRin, length(d)));
+  // (os íons também: de perto o feixe deles é a integral do mesmo sorteio)
+  w *= 1.0 - uPerto * (1.0 - smoothstep(0.5 * uRin, uRin, length(d)));
 
   vec4 mv = modelViewMatrix * vec4(d, 1.0);
   gl_Position = projectionMatrix * mv;
@@ -322,8 +334,16 @@ void main() {
  * f(m; a) é a densidade das direções normalize(n − a·r̂☉) com n uniforme
  * (o lado do Sol mais cheio — os jatos). A troca de variável s = p·tg φ
  * (p = a menor distância do raio ao núcleo) deixa o 1/r² constante em φ:
- * 16 passos bastam. O raio para no núcleo. Os íons de perto ficam fora
- * (o feixe começa a ~400 km; a luz deles junto ao núcleo é desprezível).
+ * poucos passos bastam (o número segue o nível de qualidade). O raio para
+ * no núcleo.
+ * OS ÍONS DE PERTO: o feixe do sorteio vira uma fonte em linha ao longo de
+ * uDirIon (com o balanço da soltura mais nova). Um íon de idade τ está a
+ * s = ½·a·τ², e a luz por dτ é 2·P·e^(−τ/3)/r☉², então a densidade em
+ * linha é λ(s) = N·2·P·e^(−τ/3)/(r☉²·a·τ) — da soltura mais nova (τ₀ =
+ * 0,01 dia, ~400 km) para dentro ela cai a zero junto ao núcleo, sem
+ * buraco. A seção é σ²/(π(ρ² + σ²)²), com σ = 0,035·s (a meia-luz da
+ * abertura do sorteio) mais 20 km: normalizada, a soma é a mesma. Mesma
+ * troca de variável, agora em torno do ponto do raio mais perto do eixo.
  * A unidade é a mesma dos borrões: um borrão de fluxo F cobre κ·px² com
  * κ = 3π/70, e um pixel vê 1/foco² de ângulo sólido — então o pixel vale
  * uDose·10⁻⁶·κ·∫ j ds (s em UA), e de longe, onde ela some, nada muda.
@@ -346,7 +366,49 @@ uniform float uKd;
 uniform float uKg;
 uniform float uLP;
 uniform float uLD;
+uniform int uPassos;
+uniform vec3 uEixoIon;
+uniform float uKi;
+uniform float uAIonKm;
+uniform float uS0Km;
 varying vec3 vL;
+
+#define PASSOS_MAX ${PASSOS_MAX}
+
+// o feixe de íons ao longo do raio entre ta e tb (km a partir da câmera)
+float feixe(vec3 u, float ta, float tb, float R) {
+  float b = dot(u, uEixoIon);
+  float f = dot(uCamKm, uEixoIon);
+  float sT = sqrt(max(1.0 - b * b, 1e-6));
+  // o ponto do raio mais perto do eixo
+  float tc = clamp((b * f - dot(u, uCamKm)) / (sT * sT), ta, tb);
+  vec3 xc = uCamKm + tc * u;
+  float sc = dot(xc, uEixoIon);
+  float rho2 = max(dot(xc, xc) - sc * sc, 0.0);
+  float sig = 0.035 * max(sc, 0.0) + 20.0;
+  float q = sqrt(rho2 + sig * sig) / sT;
+  float f0 = atan((ta - tc) / q);
+  float f1 = atan((tb - tc) / q);
+  float df = (f1 - f0) / float(uPassos);
+  float soma = 0.0;
+  for (int k = 0; k < PASSOS_MAX; k++) {
+    if (k >= uPassos) break;
+    float fi = f0 + (float(k) + 0.5) * df;
+    float c = cos(fi);
+    vec3 x = uCamKm + (tc + q * tan(fi)) * u;
+    float s = dot(x, uEixoIon);
+    if (s <= 0.0) continue;
+    float r2 = dot(x, x);
+    float p2 = max(r2 - s * s, 0.0);
+    float sg = 0.035 * s + 20.0;
+    float h = p2 + sg * sg;
+    float tau = sqrt(2.0 * max(s, uS0Km) / uAIonKm);
+    float lam = exp(-tau / ${DESBOTA_DOS_IONS.toFixed(1)}) / tau * smoothstep(0.0, uS0Km, s);
+    float rampa = 1.0 - smoothstep(0.5 * R, R, sqrt(r2));
+    soma += lam * sg * sg / (h * h) * rampa / (c * c);
+  }
+  return soma * df * q / 3.14159265;
+}
 
 // a densidade das direções normalize(n − a·r̂) com n uniforme na esfera
 float direcoes(float am, float a) {
@@ -372,12 +434,13 @@ void main() {
   if (s1 <= s0) discard;
   float f0 = atan((s0 - sc) / p);
   float f1 = atan((s1 - sc) / p);
-  float df = (f1 - f0) / 16.0;
+  float df = (f1 - f0) / float(uPassos);
   float cosT = -dot(uRhat, u);
   float hg = 0.84 / pow(1.16 - 0.8 * cosT, 1.5) / 0.6672;
   float sd = 0.0;
   float sg = 0.0;
-  for (int k = 0; k < 16; k++) {
+  for (int k = 0; k < PASSOS_MAX; k++) {
+    if (k >= uPassos) break;
     float f = f0 + (float(k) + 0.5) * df;
     float t = tan(f);
     float r = p / cos(f);
@@ -391,7 +454,8 @@ void main() {
   float base = df * ${AU_KM.toFixed(1)} / p;
   float id = uKd * hg * sd * base;
   float ig = uKg * sg * base;
-  vec3 c = id * vec3(1.0, 0.86, 0.68) + ig * vec3(0.3, 1.0, 0.42);
+  float ii = uKi > 0.0 ? uKi * feixe(u, s0, s1, R) : 0.0;
+  vec3 c = id * vec3(1.0, 0.86, 0.68) + ig * vec3(0.3, 1.0, 0.42) + ii * vec3(0.32, 0.55, 1.0);
   // a mesma guarda dos borrões: NaN nunca, e o alvo HDR em meia precisão
   if (any(isnan(c)) || any(isinf(c))) c = vec3(0.0);
   gl_FragColor = vec4(min(c, vec3(64.0)), 0.0);
@@ -417,9 +481,10 @@ const RAIO_DE_PERTO_MAX_KM = 100_000;
  * 2,5 milhões de km (as vistas de longe não mudam), caindo como uma
  * potência até 10⁵ km e, daí para dentro, ∝ D — a coma de perto fica com
  * o mesmo desenho em toda a descida (o halo lateral a ~3 % do branco em
- * Halley no periélio). Um número só para os oito cometas. Os íons
- * escurecem menos (a exposição deles para em 3·10⁵ km e só cai de novo
- * dentro de 3·10⁴ km, ∝ D³): de dentro da coma a cauda azul ainda sai.
+ * Halley no periélio), corrigida pela atividade de cada cometa
+ * (`correcaoPelaAtividade`). Os íons escurecem menos (a exposição deles
+ * para em 3·10⁵ km e só cai de novo dentro de 3·10⁴ km, ∝ D^1,5): de dentro
+ * da coma a cauda azul ainda sai, presa ao núcleo.
  */
 const D_EXPO_KM = 1e9;
 /** os nós da curva (km, exposição), em log–log; abaixo do primeiro, ∝ D */
@@ -429,6 +494,33 @@ const NOS_DA_EXPOSICAO: readonly (readonly [number, number])[] = [
   [2.5e6, 1],
 ];
 const ESCURO_DOS_IONS_KM = 3e5;
+const PERTO_DOS_IONS_KM = 3e4;
+
+/**
+ * A RÉGUA DE CADA COMETA (12/11/2026): a curva acima foi acertada em
+ * Halley no periélio de 1986; Hale–Bopp, cem vezes mais ativo, estourava a
+ * tela inteira em creme. De perto a exposição se divide pela atividade do
+ * cometa NAQUELA data relativa à de Halley no periélio — a mesma grandeza
+ * que acende os borrões (`brilhoRelativo`: M1, produção e 1/r²) —, pesada
+ * pela mesma curva da distância (em log): a correção é 1 exata a partir
+ * de 2,5 milhões de km e inteira dentro de 10⁵ km. Lei fixa do objeto e
+ * da distância da câmera: não olha a tela, o foco nem o modo.
+ */
+const ATIVIDADE_DE_HALLEY = brilhoRelativo(cometaPorId('halley') as Cometa, 0.5871);
+
+/** a correção da exposição de perto pela atividade (1 de longe) */
+export function correcaoPelaAtividade(dKm: number, atividade: number): number {
+  const peso = Math.min(Math.log(exposicaoDePerto(dKm)) / Math.log(exposicaoDePerto(NOS_DA_EXPOSICAO[0][0])), 1);
+  if (peso <= 0) return 1;
+  return (ATIVIDADE_DE_HALLEY / Math.max(atividade, 1e-12)) ** peso;
+}
+
+/** a exposição dos íons: a dos borrões parada em 3·10⁵ km e, dentro de
+ *  3·10⁴ km, ∝ D^1,5 — o brilho do feixe visto de dentro cresce ∝ D^−0,5
+ *  (λ ∝ s^−½ sobre a largura ∝ s), e assim o desenho fica o mesmo */
+export function exposicaoDosIons(dKm: number): number {
+  return exposicaoDePerto(Math.max(dKm, ESCURO_DOS_IONS_KM)) * Math.min(1, Math.max(dKm, 0) / PERTO_DOS_IONS_KM) ** 1.5;
+}
 
 /** a exposição da luz do cometa a `dKm` do núcleo (1 de longe) */
 export function exposicaoDePerto(dKm: number): number {
@@ -464,7 +556,9 @@ float torrao(vec3 p) {
   p *= vec3(1.0, 1.6, 1.3);
   return 0.5 * sin(3.1 * p.x + 1.3) * sin(2.3 * p.y + 0.7) * sin(2.7 * p.z + 2.1)
     + 0.3 * sin(6.3 * p.x + 4.0) * sin(5.9 * p.y + 1.0) * sin(6.1 * p.z + 0.3)
-    + 0.2 * sin(13.0 * p.x + 2.2) * sin(11.0 * p.y + 3.1) * sin(12.0 * p.z + 1.7);
+    // a oitava fina é baixa: a 0,2 a grade de senos (uma treliça) virava
+    // listras paralelas no terminador de um núcleo grande (Hale–Bopp a 300 km)
+    + 0.06 * sin(13.0 * p.x + 2.2) * sin(11.0 * p.y + 3.1) * sin(12.0 * p.z + 1.7);
 }
 vec3 forma(vec3 p) {
   p = normalize(p);
@@ -490,6 +584,19 @@ void main() {
   gl_FragColor = vec4(vec3(uLuz * l), 1.0);
 }
 `;
+
+/** o eixo do feixe de íons junto ao núcleo: a direção do vento com o
+ *  balanço dos íons mais novos (o mesmo do sorteio, em tr = fase − τ₀) */
+function eixoDosIonsNovos(dir: THREE.Vector3, fase: number, saida: THREE.Vector3) {
+  const tr = fase - TAU0_DOS_IONS;
+  const b1 = 0.006 * Math.sin(tr * 2.1 + 1.3) + 0.004 * Math.sin(tr * 5.3 + 0.4) + 0.002 * Math.sin(tr * 11.7);
+  const b2 = 0.005 * Math.sin(tr * 1.7 + 2.0) + 0.003 * Math.sin(tr * 4.1) + 0.002 * Math.sin(tr * 9.3 + 1.1);
+  const e1 = new THREE.Vector3().crossVectors(dir, Math.abs(dir.z) < 0.9 ? EZ_LOCAL : EX_LOCAL).normalize();
+  const e2 = new THREE.Vector3().crossVectors(dir, e1);
+  saida.copy(dir).addScaledVector(e1, b1).addScaledVector(e2, b2).normalize();
+}
+const EX_LOCAL = new THREE.Vector3(1, 0, 0);
+const EZ_LOCAL = new THREE.Vector3(0, 0, 1);
 
 /** o ruído por índice (o mesmo das plumas): a partícula i tem os mesmos
  *  números em todo tier — subir a qualidade não muda a forma */
@@ -641,6 +748,11 @@ export class CaudasDosCometas {
           uKg: { value: 0 },
           uLP: { value: 1 },
           uLD: { value: 2 },
+          uPassos: { value: PASSOS_DA_COMA.cinema },
+          uEixoIon: { value: new THREE.Vector3(1, 0, 0) },
+          uKi: { value: 0 },
+          uAIonKm: { value: 1 },
+          uS0Km: { value: 1 },
         },
         side: THREE.BackSide,
         blending: THREE.CustomBlending,
@@ -711,6 +823,7 @@ export class CaudasDosCometas {
         .set((VENTO_SOLAR * s[0]) / r - s[3], (VENTO_SOLAR * s[1]) / r - s[4], (VENTO_SOLAR * s[2]) / r - s[5])
         .normalize();
       u.uFase.value = (q.jd - 2_451_545) % 3650;
+      eixoDosIonsNovos(u.uDirIon.value as THREE.Vector3, u.uFase.value as number, (v.coma.material as THREE.ShaderMaterial).uniforms.uEixoIon.value as THREE.Vector3);
       if (v.nucleo) {
         (v.nucleo.material as THREE.ShaderMaterial).uniforms.uSol.value.set(-s[0] / r, -s[1] / r, -s[2] / r);
       }
@@ -722,7 +835,7 @@ export class CaudasDosCometas {
     // a luz total se conserva pelo peso — tier menor, cada um pesa mais
     u.uDose.value = GANHO * escalaDoBrilho(v.cometa.brilho.M1) * (MAXIMO / Math.max(n, 1));
     v.pontos.visible = n > 0;
-    this.escreverComaDePerto(v, s, n);
+    this.escreverComaDePerto(v, s, n, q.tier);
     // a geometria é uma só: o mesmo tier vale para todos os acesos
     this.geometria.setDrawRange(0, n);
     if (v.nucleo) v.nucleo.visible = q.foco === v.cometa.id;
@@ -730,7 +843,7 @@ export class CaudasDosCometas {
 
   /** a coma de perto: o regime pela distância da câmera, e as constantes
    *  da integral pela mesma lei dos borrões (ver `COMA_FRAG`) */
-  private escreverComaDePerto(v: CometaNaCena, s: number[], n: number) {
+  private escreverComaDePerto(v: CometaNaCena, s: number[], n: number, tier: QualityLevel) {
     const u = v.material.uniforms;
     const cam = u.uCam.value as THREE.Vector3;
     const dKm = cam.length() * AU_KM;
@@ -739,17 +852,26 @@ export class CaudasDosCometas {
     // bordas iguais é indefinido, a armadilha do NaN)
     u.uPerto.value = n > 0 ? perto : 0;
     u.uRin.value = Math.max(raioKm, 1) / AU_KM;
-    u.uExpo.value = exposicaoDePerto(dKm);
-    u.uExpoIon.value = exposicaoDePerto(Math.max(dKm, ESCURO_DOS_IONS_KM)) * Math.min(1, dKm / 3e4) ** 3;
+    const rr = Math.hypot(s[0], s[1], s[2]);
+    const correcao = correcaoPelaAtividade(dKm, brilhoRelativo(v.cometa, rr));
+    u.uExpo.value = exposicaoDePerto(dKm) * correcao;
+    u.uExpoIon.value = exposicaoDosIons(dKm) * correcao;
     v.coma.visible = n > 0 && perto > 0;
     if (!v.coma.visible) return;
     const cu = (v.coma.material as THREE.ShaderMaterial).uniforms;
     v.coma.scale.setScalar(Math.max(raioKm, 1) / AU_KM);
     (cu.uCamKm.value as THREE.Vector3).copy(cam).multiplyScalar(AU_KM);
     cu.uRinKm.value = Math.max(raioKm, 1);
-    const rr = Math.hypot(s[0], s[1], s[2]);
+    cu.uPassos.value = PASSOS_DA_COMA[tier];
     (cu.uRhat.value as THREE.Vector3).set(s[0] / rr, s[1] / rr, s[2] / rr);
     const prod = producaoRelativa(rr, v.cometa.brilho.K1);
+    // o feixe de íons: a mesma lei do sorteio (ver `COMA_FRAG`), 2/8 das
+    // partículas, a = 60·μ/r² (UA/dia²)
+    const aUa = (ACELERACAO_DOS_IONS * MU) / (rr * rr);
+    cu.uAIonKm.value = aUa * AU_KM;
+    cu.uS0Km.value = 0.5 * aUa * AU_KM * TAU0_DOS_IONS ** 2;
+    const doseIon = (u.uDose.value as number) * 1e-6 * KAPPA * perto * (u.uExpoIon.value as number);
+    cu.uKi.value = ((doseIon * n * 2) / 8) * ((2 * prod) / (rr * rr * aUa)) * AU_KM;
     // uDose já traz MAXIMO/n: a dose vezes as partículas do tipo não depende do tier
     const dose = (u.uDose.value as number) * 1e-6 * KAPPA * perto * (u.uExpo.value as number);
     const v0 = KM_S_EM_UA_DIA;
