@@ -32,6 +32,7 @@ import {
   StellarBody,
   anguloDoGiro,
   cirurgiaDaCoroaOcultavel,
+  cirurgiaDasFitas,
   cirurgiaDaEstrela,
   cirurgiaDoRelevoDasGigantes,
   cirurgiaDaForma,
@@ -595,6 +596,34 @@ describe('F4 — a coroa testa profundidade contra os globos, na frente do próp
     expect(ordem('./sol/coronaRays.js', 'coronaRays', '-1')).toBe(true);
     expect(ordem('./sol/coronaVolume.js', 'coronaVol', '-1')).toBe(true);
     expect(ordem('./sol/cme.js', 'cmeMesh', '-0.75')).toBe(true);
+  });
+});
+
+describe('as fitas dos laços na régua do doador (o piso de w de 0,01 pegava sempre)', () => {
+  const CLIP_B = '  vec4 clipB = projectionMatrix * modelViewMatrix * vec4(position + aTan, 1.0);';
+  const fita = ['void main(){', '  vec4 clipA = projectionMatrix * modelViewMatrix * vec4(position, 1.0);', CLIP_B,
+    '  float wA = max(clipA.w, 0.01);', '}'].join('\n');
+
+  it('AGULHA: as duas fitas do vendorizado têm a âncora, e o clip das duas pontas vai a 1/escala antes do piso', () => {
+    const js = readFileSync(new URL('./sol/loops.js', import.meta.url), 'utf8');
+    expect(js.split(`'${CLIP_B}',`)).toHaveLength(3);
+    const escala = RAIO_SOL_PC / 2.2;
+    const novo = cirurgiaDasFitas(fita, escala);
+    const k = literalGlsl(1 / escala);
+    expect(Math.fround(Number(k))).toBe(Math.fround(1 / escala));
+    expect(novo.indexOf(`clipA *= fitasNaReguaDoDoador; clipB *= fitasNaReguaDoDoador;`)).toBeGreaterThan(novo.indexOf(CLIP_B));
+    expect(novo.indexOf('fitasNaReguaDoDoador')).toBeLessThan(novo.indexOf('max(clipA.w, 0.01)'));
+    expect(novo).toContain(`float fitasNaReguaDoDoador = ${k};`);
+    expect(() => cirurgiaDasFitas(novo, escala)).toThrow(/cirurgiaDasFitas/);
+    expect(() => cirurgiaDasFitas('void main(){ }', escala)).toThrow(/cirurgiaDasFitas/);
+  });
+
+  it('o construtor opera as duas fitas, depois de criá-las, com a escala da instância', () => {
+    const src = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
+    const laco = 'for (const o of ctx.loopGroup.children) {';
+    expect(src.split(laco)).toHaveLength(2);
+    expect(src.indexOf(laco)).toBeGreaterThan(src.indexOf('createLoops(ctx);'));
+    expect(src).toContain('m.vertexShader = cirurgiaDasFitas(m.vertexShader, this.scale);');
   });
 });
 

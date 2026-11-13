@@ -1284,6 +1284,50 @@ export function cirurgiaDaCoroaOcultavel(vertexShader: string, raioPc: number): 
   );
 }
 
+// ============================================================
+// AS FITAS DOS LAÇOS NA RÉGUA DO DOADOR, por cirurgia de texto.
+//
+// As duas fitas de `sol/loops.js` (emissão e absorção) medem a largura em
+// px com números do doador, onde o raio era 2,2 unidades de MUNDO: o piso
+// `max(clip.w, 0.01)`, a meia-largura `uLoopW` (0,0132) e o `aTan` — os
+// dois últimos em unidades de OBJETO. Aqui o grupo leva a escala do raio em
+// parsec (Sol ~1,03e-8, Proxima ~1,6e-9) e o `w` de um laço vale ~1e-8 a
+// 1e-7: o piso pega SEMPRE. Medido (Sol a 3 raios, 1600×813, P11 1,80):
+// `rawPx` = 0,0132·733/0,01 ≈ 970 → teto de 14 px, e o rumo da fita na tela
+// (`dS`, também dividido pelo piso) cai a ~0 → `nrm` fixo em (0, 1): toda
+// fita expande na VERTICAL da tela, 14 px — os blocos "quadrados" na borda,
+// no Sol e em toda estrela. Na conta certa a mesma fita tem ~1,2 px.
+//
+// O CONSERTO põe o clip das duas pontas na régua do doador, dividindo-o
+// pela escala do grupo logo depois de calculado. Clip é homogêneo: x, y, z
+// e w divididos pelo mesmo número positivo são o MESMO ponto (mesmo pixel,
+// mesma profundidade z/w, mesmo recorte, a mesma interpolação), e o `w`
+// passa a estar na unidade de `uLoopW`, de `aTan` e do piso — o shader do
+// doador inteiro volta a valer como foi escrito, em qualquer estrela.
+// ============================================================
+
+/** a marca da cirurgia — e o detector de aplicação dupla */
+const MARCA_DAS_FITAS = 'fitasNaReguaDoDoador';
+const ANCORA_DAS_FITAS = '  vec4 clipB = projectionMatrix * modelViewMatrix * vec4(position + aTan, 1.0);\n';
+
+/**
+ * Reescreve o vertex de uma fita de `sol/loops.js` para a régua do doador:
+ * `escala` é a do grupo (raio em pc / 2,2). Âncora ausente, repetida ou
+ * cirurgia já aplicada LANÇA (nunca no-op silencioso).
+ */
+export function cirurgiaDasFitas(vertexShader: string, escala: number): string {
+  if (vertexShader.includes(MARCA_DAS_FITAS)) {
+    throw new Error('cirurgiaDasFitas: a régua do doador já foi aplicada neste material');
+  }
+  return trocarUma(
+    vertexShader,
+    ANCORA_DAS_FITAS,
+    `${ANCORA_DAS_FITAS}  float ${MARCA_DAS_FITAS} = ${literalGlsl(1 / escala)};\n` +
+      `  clipA *= ${MARCA_DAS_FITAS}; clipB *= ${MARCA_DAS_FITAS};\n`,
+    'cirurgiaDasFitas'
+  );
+}
+
 /**
  * Liga a oclusão num plano da coroa: a cirurgia da profundidade e o
  * `depthTest`. O resto do material fica como veio — aditivo, transparente
@@ -1809,6 +1853,11 @@ export class StellarBody {
     createSpicules(ctx);
     ctx.prom = createProminences(ctx);
     createLoops(ctx);
+    // as duas fitas dos laços na régua do doador (ver `cirurgiaDasFitas`)
+    for (const o of ctx.loopGroup.children) {
+      const m = o.material as THREE.ShaderMaterial;
+      m.vertexShader = cirurgiaDasFitas(m.vertexShader, this.scale);
+    }
     createFlares(ctx);
     // a primeira erupção também na frequência da estrela (no Sol, pulado)
     if (this.taxaDeErupcoes !== 1) ctx.surfFlareCooldown /= Math.max(this.taxaDeErupcoes, 1e-3);
