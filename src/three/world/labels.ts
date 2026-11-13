@@ -308,9 +308,10 @@ export const PRIORIDADE_DO_ROTULO = {
    *  abaixo de qualquer corpo da casa. Fora do mapa do Eyes, que não tem
    *  céu profundo. */
   lugar: 12,
-  /** uma SONDA (pilar 4, 12/11/2026): marcador de instrumento, abaixo
-   *  das luas e acima dos asteroides — ela é assunto, mas não é corpo */
-  sonda: 20,
+  /** uma SONDA (pilar 4, 12/11/2026): marcador de instrumento, o degrau
+   *  mais baixo dos nomeados — o dono não quer sonda disputando com
+   *  corpo, lugar ou estrela (crítica de 12/11); em foco ela vale o foco */
+  sonda: 4,
   /** um COMETA (pilar 4, 12/11/2026): ao lado das sondas — o nome só
    *  aparece perto do Sol ou em foco (`world/cometas.ts`) */
   cometa: 19,
@@ -831,12 +832,27 @@ function escondidaPorDisco(
   return false;
 }
 
+/** o nome do centro galáctico — o rótulo `sgr-a` e o foco dele na escada */
+export const NOME_DE_SGR_A = 'Sagittarius A✱';
+
+/**
+ * A VIZINHANÇA DO CENTRO (pc de Sgr A✱): dentro dela o nome do buraco
+ * esmaece em `[SGR_A_ESMAECE_EM, SGR_A_SOME_EM]` e os nomes da escala da
+ * galáxia (`lugaresDoCeu.ts`) entram na mesma faixa, ao contrário — é a
+ * mesma lei da vizinhança do Sol, aplicada ao outro lugar denso do disco.
+ */
+export const SGR_A_ESMAECE_EM = 800;
+export const SGR_A_SOME_EM = 1200;
+
 export function projectLabels(
   camera: THREE.PerspectiveCamera,
   named: NamedStar[],
   maxLabels = 7,
   prevKeys?: Set<string>,
-  oclusores?: readonly OclusorDeRotulo[]
+  oclusores?: readonly OclusorDeRotulo[],
+  /** Sgr A✱ é o FOCO escolhido: o nome dele não some por distância —
+   *  só cede quando o buraco enche a tela, como todo alvo seguido */
+  centroEmFoco = false
 ): StarLabel[] {
   const camPos = camera.position;
   const out: StarLabel[] = [];
@@ -858,17 +874,17 @@ export function projectLabels(
   // o coração da galáxia tem nome quando estamos perto dele. O teto
   // caiu de 2,6 kpc para 1,2 (revisão: na fuga do centro a etiqueta
   // ficava flutuando sobre névoa, apontando um objeto já invisível).
-  if (dGC > 6 && dGC < 1200) {
+  if (dGC > 6 && (centroEmFoco || dGC < SGR_A_SOME_EM)) {
     const p = projectPoint(camera, GAL.GC_POS);
     if (p) {
       out.push({
-        name: 'Sagittarius A✱',
+        name: NOME_DE_SGR_A,
         spect: 'SMBH',
         distPc: dGC,
         x: p.x,
         y: p.y,
         opacity:
-          (1 - THREE.MathUtils.smoothstep(dGC, 800, 1200)) *
+          (centroEmFoco ? 1 : 1 - THREE.MathUtils.smoothstep(dGC, SGR_A_ESMAECE_EM, SGR_A_SOME_EM)) *
           THREE.MathUtils.smoothstep(dGC, 6, 16) *
           0.95,
         key: 'sgr-a',
