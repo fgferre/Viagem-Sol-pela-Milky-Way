@@ -65,6 +65,7 @@ import {
 } from '../cinematic/atlasRig';
 import { EX, EZ, GAL } from '../world/baseGalactica';
 import { RS_SGR_A_PC } from '../../lib/buracoNegro';
+import { ENTREGA_DO_BURACO_PC } from '../escala';
 import {
   CORPOS_DO_SISTEMA,
   LUAS_DO_SISTEMA,
@@ -200,12 +201,22 @@ const RAIO_DO_CENTRO_GALACTICO_PC = 6000;
  * a esfera enquadrada tem 7,4 raios de Schwarzschild REAIS (0,63 UA), o
  * que põe a câmera a 23,96 RS (medido a 1280×800 sob a lente de 58°) —
  * dentro dos 24 RS onde o buraco já é desenhado em escala real
- * (`RAIOS_DA_ENTREGA_DO_BURACO`, `escala.ts`). Em retrato o enquadramento
- * recua (a 390×844 a câmera fica a ~36 RS). O piso do zoom é 2 × 3 RS = 6 RS, fora da órbita
+ * (`RAIOS_DA_ENTREGA_DO_BURACO`, `escala.ts`). O piso do zoom é 2 × 3 RS = 6 RS, fora da órbita
  * circular estável mais interna (3 RS) e longe da esfera de fótons.
  */
 export const RAIO_DO_DEGRAU_DO_BURACO_PC = 7.4 * RS_SGR_A_PC;
 const PISO_DO_BURACO_PC = 3 * RS_SGR_A_PC;
+/**
+ * O NÚCLEO DA VISTA DE PERTO (13/11/2026; ver `distanciaComNucleo`): em
+ * retrato a esfera de 7,4 RS só cabia na largura a ~36 RS (390×844), fora
+ * da escala real. A câmera não passa de um milésimo dentro da entrega
+ * (23,976 RS — o arredondamento da posição a 8 kpc não a joga para fora;
+ * a 1280×800 ela pousa antes, a 23,96, e nada muda), e o disco pode sair
+ * pelos lados; o que nunca sai do retângulo útil — nem por baixo da folha
+ * — é a esfera de 3 RS: a sombra (raio aparente ~2,5 RS) e o anel claro
+ * que a contorna.
+ */
+const NUCLEO_DO_BURACO = { raio: 3 * RS_SGR_A_PC, teto: 0.999 * ENTREGA_DO_BURACO_PC };
 /**
  * De onde a câmera olha o buraco: do lado do Sol, 5° ABAIXO do plano
  * galáctico — o disco e o bojo do outro lado passam logo acima da sombra,
@@ -975,6 +986,7 @@ export class Escada {
       rampa: this.rampaDaEscada(),
       polo: GAL.NGP,
       pisoRaio: PISO_DO_BURACO_PC,
+      nucleo: NUCLEO_DO_BURACO,
     });
     this.enquadrarAgora();
     this.focoCorpoId = null;
