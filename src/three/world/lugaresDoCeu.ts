@@ -66,8 +66,15 @@ function posicaoDe(lugar: LugarDoCeu): THREE.Vector3 | null {
 
 /**
  * OS LUGARES DO CÉU que a busca alcança — as palavras vêm da tabela, a
- * GEOMETRIA vem daqui. Toda posição é medida do Sol, que está na
- * origem: o comprimento do vetor É a distância que a paleta mostra.
+ * GEOMETRIA vem daqui. Toda posição é medida do Sol, que está na origem.
+ *
+ * A DISTÂNCIA QUE A PALETA MOSTRA NÃO É o comprimento do vetor (crítica
+ * de 12/11): é a da literatura (`distanciaPc`), a MESMA que a ficha
+ * escreve. O vetor é onde a cena desenha o lugar — a média das membros
+ * no catálogo da casa, a anã onde a galáxia a põe —, e a paleta dizia
+ * 418 anos-luz das Plêiades enquanto a ficha, um clique depois, dizia
+ * 444. Uma VISTA cuja distância é do Sol ao centro ("Nosso lugar", a
+ * galáxia de cima) não leva número: o destino não fica a essa distância.
  */
 export const LUGARES_DA_BUSCA: readonly LugarBuscavel[] = LUGARES_DO_FILME.flatMap((lugar) => {
   const p = posicaoDe(lugar);
@@ -79,7 +86,7 @@ export const LUGARES_DA_BUSCA: readonly LugarBuscavel[] = LUGARES_DO_FILME.flatM
       ...(lugar.nomeEn ? { nomeEn: lugar.nomeEn } : {}),
       ...(lugar.raioPc ? { raioPc: lugar.raioPc } : {}),
       ...(lugar.classe ? { classe: lugar.classe } : {}),
-      d: p.length(),
+      ...(lugar.distanciaPc && !lugar.distanciaPc.doSolAoCentro ? { d: lugar.distanciaPc.valor } : {}),
       x: p.x,
       y: p.y,
       z: p.z,

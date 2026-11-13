@@ -118,8 +118,9 @@ export interface LugarBuscavel {
   raioPc?: number;
   /** a palavra da classe ('aglomerado aberto'); ausente = sem selo */
   classe?: string;
-  /** distância ao Sol em PARSECS, como `NamedStar.d` — a nota da paleta */
-  d: number;
+  /** distância ao Sol em PARSECS, como `NamedStar.d` — a nota da paleta;
+   *  ausente = sem nota (uma vista, que não fica a distância nenhuma) */
+  d?: number;
   x: number;
   y: number;
   z: number;

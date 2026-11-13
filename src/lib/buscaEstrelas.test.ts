@@ -124,6 +124,7 @@ describe('texto', () => {
     expect(nomes('γ² Vel')).toEqual(['γ² Vel']);
     expect(nomes('gam vel')).toEqual(['γ² Vel']); // abreviação HYG
     expect(nomes('gama vel')).toEqual(['γ² Vel']); // como um brasileiro digita
+    expect(nomes('gamma vel')).toEqual(['γ² Vel']); // o exemplo da dica em inglês
     expect(nomes('alfa mus')).toEqual(['α Mus']);
     expect(nomes('tau cet')).toEqual(['τ Cet']);
     // e o GENITIVO latino, que é como a designação se escreve por fora

@@ -377,7 +377,7 @@ export const PT = {
   // SEM promessa de filme (item 129/F5 continua valendo): o clique aqui
   // faz o MESMO que a entrada "lugar" da busca já faz — enquadra o
   // centro galáctico no Atlas, não entra no filme.
-  'busca.destino.sagittarius-a': 'A galáxia inteira, em volta do centro',
+  'busca.destino.sagittarius-a': 'O buraco negro no centro da galáxia',
   // os lugares do céu profundo (12/11/2026) — `lugaresDoFilme.ts`
   'busca.destino.via-lactea': 'A galáxia inteira, vista de fora',
   'busca.destino.nosso-lugar': 'Onde o Sol fica no disco',
@@ -551,7 +551,7 @@ export const PT = {
   'ficha.sonda.naCena.valor': 'um marcador do tamanho de um instrumento, não a sonda — ela tem poucos metros',
   'ficha.fonte.horizons': 'JPL Horizons, consultado em {data}',
   'ficha.fonte.arquivoDeExoplanetas': 'NASA Exoplanet Archive, consultado em {data}',
-  'ficha.exo.zonaPresa': 'temperatura fora da faixa válida ({a}–{b} K): presa na borda',
+  'ficha.exo.zonaPresa': 'a fórmula só vale para estrelas de {a} a {b} K; para esta estrela, a zona desenhada é uma extrapolação',
   'ficha.exo.metodo.transito': 'trânsito',
   'ficha.exo.metodo.velocidadeRadial': 'velocidade radial',
   'ficha.exo.metodo.imagem': 'imagem direta',

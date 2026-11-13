@@ -355,7 +355,7 @@ export const EN: Record<keyof typeof PT, string> = {
   // NO film promise (item 129/F5 still holds): the click here does the
   // SAME thing the "place" search entry already does — frames the
   // galactic centre in the Atlas, does not start the film.
-  'busca.destino.sagittarius-a': 'The whole galaxy, around its centre',
+  'busca.destino.sagittarius-a': 'The black hole at the centre of the galaxy',
   'busca.destino.via-lactea': 'The whole galaxy, from outside',
   'busca.destino.nosso-lugar': 'Where the Sun sits in the disc',
   'busca.destino.pleiades': 'The Seven Sisters, up close',
@@ -546,7 +546,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.fonte.modeloDasCaudas': 'Finson & Probstein (1968); Haser (1957); the app’s brightness gain',
   'ficha.fonte.horizons': 'JPL Horizons, retrieved on {data}',
   'ficha.fonte.arquivoDeExoplanetas': 'NASA Exoplanet Archive, retrieved on {data}',
-  'ficha.exo.zonaPresa': 'temperature outside the valid range ({a}–{b} K): clamped to the edge',
+  'ficha.exo.zonaPresa': 'the formula only holds for stars from {a} to {b} K; for this star, the zone drawn is an extrapolation',
   'ficha.exo.metodo.transito': 'transit',
   'ficha.exo.metodo.velocidadeRadial': 'radial velocity',
   'ficha.exo.metodo.imagem': 'direct imaging',
