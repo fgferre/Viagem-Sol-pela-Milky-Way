@@ -40,7 +40,9 @@ import { RAIO_SOL_PC } from '../escala';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
 import { bvToColor } from '../shaders/common';
 import { BV_MEDIDO, SOL_BV, type CandidataVisitada } from '../world/clarao';
-import { chegadaDaHero, type Chegada, type HeroStars } from '../world/heroStars';
+import { chegadaDaHero, partilhaDoCorpo, type Chegada, type HeroStars } from '../world/heroStars';
+import { UA_DO_FIM_DA_LENTE } from '../lente/passeDaLente';
+import { UA_POR_PC } from '../../lib/unidades';
 import { cessaoDoSol } from './solNoQuadro';
 import type { PoliticaDeLuz } from '../../lib/atlas/luz';
 import {
@@ -300,6 +302,19 @@ interface Superficie {
 
 /** m − 5·log10(d) do Sol no ponto-zero do campo (o candidato 0 do clarão) */
 const M_BASE_DO_SOL = M_V_SOL_DO_CAMPO - 5;
+
+/**
+ * A FRAÇÃO DA LENTE (0..1) de uma estrela de `mBase` vista a `dPc`: a lei
+ * da lente (`amplitudeDaLente`, o `fadeLonge`) na distância do Sol de MESMA
+ * irradiância — a mesma troca de distância de `fonteDaLente`. 1 até
+ * `UA_DO_FIM_DA_LENTE`, (fim/d)² além. A chegada da hero a lê para encolher
+ * enquanto a lente acende (`chegadaDaHero`).
+ */
+export function fracaoDaLente(dPc: number, mBase: number): number {
+  const dUA = dPc * UA_POR_PC * Math.pow(10, 0.2 * (mBase - M_BASE_DO_SOL));
+  if (!(dUA > 0)) return 0;
+  return dUA <= UA_DO_FIM_DA_LENTE ? 1 : (UA_DO_FIM_DA_LENTE / dUA) ** 2;
+}
 
 /**
  * A FONTE DA LENTE quando não é o Sol: onde está, o raio, o fator que leva
@@ -595,10 +610,11 @@ export class EstrelasNoQuadro {
     for (const p of this.pilotos) {
       const emFoco = q.focoNome === p.dados.nomeNoCatalogo;
       // A CHEGADA DA HERO (`chegadaDaHero`): de 3× o tamanho de autor para
-      // dentro, a hero desce até o teto do clarão — escrita montada ou não
-      // (a de Sirius começa a 0,65 pc, antes do preparo)
+      // dentro, a hero desce até a luz que a lente e o clarão vão mostrar —
+      // escrita montada ou não (a de Sirius começa a 0,65 pc, antes do preparo)
       const tamHero = heroes?.tamanhoDe(p.dados.nomeNoCatalogo) ?? 0;
-      const chegada = chegadaDaHero(q.camPos.distanceTo(p.pos), tamHero, tanHalfFov, _chegada);
+      const dCam = q.camPos.distanceTo(p.pos);
+      const chegada = chegadaDaHero(dCam, tamHero, tanHalfFov, fracaoDaLente(dCam, p.mBaseDoNome), _chegada);
       if (tamHero > 0) heroes?.escreverEscala(p.dados.nomeNoCatalogo, chegada.escala);
       // o motor do Sol é PESADO (sim, bakes, coroa 3D): fora de foco e longe,
       // desmonta — e devolve o ponto, o palco e a memória. Trocar de TIER
@@ -624,15 +640,17 @@ export class EstrelasNoQuadro {
         stars.writeFocus(p.indice, cede);
         p.cedeu = cede;
       }
-      // a hero de autor da MESMA estrela cede ao corpo na mesma medida — e
-      // ao CLARÃO na fração da chegada: os dois desenham a mesma receita no
-      // MESMO tamanho (o piso do clarão é o tamanho da hero), então a troca
-      // é uma mistura sem salto; o clarão só ganha a presença que a hero
-      // larga (as duas são a óptica do mesmo ponto; somar dobraria a cruz)
-      heroes?.escreverCessao(p.dados.nomeNoCatalogo, Math.max(cede, chegada.s));
+      // a hero de autor da MESMA estrela passa ao CLARÃO enquanto o disco
+      // cresce (`partilhaDoCorpo`): a luz que ela larga é a que o disco
+      // ganha. As duas são a óptica do mesmo ponto (somar dobraria a cruz)
+      // e cada uma pesa cor e alfa pelo próprio ganho — a luz vai com o
+      // QUADRADO do ganho, então elas partilham ganho² (hero² + clarão² = 1),
+      // não ganho: a soma linear afundava a luz pela metade no meio da troca
+      const w = a.corpo.group.visible ? partilhaDoCorpo(leiA.discoPx, alturaCss) : 0;
+      heroes?.escreverCessao(p.dados.nomeNoCatalogo, 1 - Math.sqrt(1 - w));
       const hero = heroes?.presenca(p.dados.nomeNoCatalogo, q.camPos) ?? 0;
       a.clarao.soltura = leiA.solturaDoClarao;
-      a.clarao.presenca = 1 - hero;
+      a.clarao.presenca = Math.sqrt(Math.max(0, 1 - hero * hero));
       a.clarao.pisoPx =
         tamHero > 0 && chegada.s > 0 && heroes?.group.visible ? chegada.fracaoDaAltura * alturaCss : 0;
       if (p.indice >= 0 ? (stars?.points.visible ?? false) : !escondido) this.candidatas.push(a.clarao);
