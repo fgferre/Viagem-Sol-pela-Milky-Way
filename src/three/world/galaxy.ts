@@ -1071,6 +1071,12 @@ export class Galaxy {
     for (const mesh of this.discMeshes) {
       mesh.visible = discVisible;
     }
+    // Só partículas: sem as lâminas na frente, o "você está aqui" aparecia
+    // de DENTRO do disco como um anel solto no meio do quadro (filme,
+    // t=138–147). Ele é uma marca da vista de fora — entra com ela.
+    if (this.soParticulas) {
+      markerFade *= THREE.MathUtils.smoothstep(externalFade, 0.6, 0.95);
+    }
     this.markerMesh.visible = markerFade > 0.001;
     // o brilho contínuo do bojo só aparece de longe — perto ele
     // cobriria a tela inteira de branco
