@@ -646,12 +646,12 @@ ${
                    pow(max(dot(rd, toSun), 0.0), 4.0) * 0.35;
 
   // A NEBULOSA DE ÓRION (world/nebulosaDeOrion.ts): o trecho do raio
-  // dentro dela é integrado por um sub-laço fino e composto EM ORDEM —
-  // entra no primeiro passo que a alcança; o que fica atrás dela chega
-  // atenuado pela transmissão que ela devolve.
-  vec2 orIv = orIntervalo(orLocal(ro), orDir(rd));
-  bool orPendente = orIv.y > orIv.x;
-  int orPassos = int(clamp(float(uSteps) * 1.6, 40.0, 96.0));
+  // dentro da caixa dela é integrado pelas grades assadas e composto EM
+  // ORDEM — entra no primeiro passo que a alcança; o que fica atrás dela
+  // chega atenuado pela transmissão que ela devolve.
+  vec2 orIv = orCaixa(orLocal(ro), orDir(rd), OR_V_MIN, OR_V_MAX);
+  bool orPendente = OR_LIGADO && uOrPronta > 0.5 && orIv.y > orIv.x;
+  int orPassos = int(clamp(float(uSteps), 24.0, 64.0));
 
   for (int i = 0; i < 96; i++) {
     if (i >= N || T < 0.015) break;

@@ -6,6 +6,12 @@ import {
   ARCMIN_PC,
   BARRA,
   BOLHA,
+  BORDA_DA_TIGELA,
+  CAIXA_DO_NUCLEO,
+  CAIXA_DO_VOLUME,
+  CAMADA_IONIZADA,
+  GAMA_DO_BRILHO,
+  GRADE_DA_SUPERFICIE,
   CENTRO_DE_ORION,
   ESTRELA_NA_FRENTE_DA_MIF_PC,
   M43,
@@ -17,6 +23,7 @@ import {
   espessuraDaCamada,
   paraLocal,
   raioNaBolha,
+  orionAssadoFrag,
   razaoOIII,
 } from './nebulosaDeOrion';
 
@@ -90,8 +97,9 @@ describe('a nebulosa de Órion', () => {
     expect(espessuraDaCamada(2)).toBeGreaterThan(2 * espessuraDaCamada(0.2));
   });
 
-  it('a lei fixa do brilho na tela: 100× de fluxo viram 100^0,4 ≈ 6,3×', () => {
-    expect(brilhoNaTela(brilhoDaFrente(0.2, 1)) / brilhoNaTela(brilhoDaFrente(2, 1))).toBeCloseTo(100 ** 0.4, 9);
+  it('a lei fixa do brilho na tela: 100× de fluxo viram 100^0,3 ≈ 4×', () => {
+    expect(GAMA_DO_BRILHO).toBe(0.3);
+    expect(brilhoNaTela(brilhoDaFrente(0.2, 1)) / brilhoNaTela(brilhoDaFrente(2, 1))).toBeCloseTo(100 ** 0.3, 9);
   });
 
   it('a pele ionizada brilha com Q/(4πd²)·cos: D⁻² e cosseno, com piso no fundo da tigela', () => {
@@ -118,5 +126,42 @@ describe('a nebulosa de Órion', () => {
     expect(M43.x / ARCMIN_PC).toBeCloseTo(3.82, 1);
     expect(M43.y / ARCMIN_PC).toBeCloseTo(5.43, 1);
     expect(M43.raio).toBeCloseTo(2.25 * ARCMIN_PC, 12);
+  });
+
+  it('a tigela sobe até a borda (~2,3 pc), mais alta a nordeste, e a nuvem desce por fora dela', () => {
+    const [cx, cy] = BORDA_DA_TIGELA.centro;
+    const R = BORDA_DA_TIGELA.raioPc;
+    // ao longo de NE–SW a tigela é 1,5× mais longa (a métrica da parede)
+    const a = 1.5 * Math.SQRT1_2;
+    // na borda, de frente para a estrela: mais alta que o fundo da tigela
+    const ne = alturaDaFrente(cx + R * a, cy + R * a);
+    const sw = alturaDaFrente(cx - R * a, cy - R * a);
+    expect(ne).toBeGreaterThan(alturaDaFrente(0, 0) + 0.6);
+    expect(ne).toBeGreaterThan(sw + 0.3);
+    // por fora da borda, de costas para a estrela, ela desce de novo
+    expect(alturaDaFrente(cx + 1.9 * R * a, cy + 1.9 * R * a)).toBeLessThan(ne - 0.8);
+  });
+
+  it('as grades assadas cobrem o que desenham e resolvem a camada e a Barra', () => {
+    const dentro = (c: typeof CAIXA_DO_NUCLEO, p: number[]) => p.every((v, e) => v > c.min[e] && v < c.max[e]);
+    // o núcleo fino guarda a bolha inteira (no plano do céu), a Barra e M43
+    const [bx, by] = BOLHA.centro;
+    const [sx, sy] = BOLHA.semiEixos;
+    for (const p of [[bx - sx, by, 0], [bx + sx, by, 0], [bx, by - sy, 0], [bx, by + sy, 0], [M43.x, M43.y, M43.z]])
+      expect(dentro(CAIXA_DO_NUCLEO, p)).toBe(true);
+    // e o volume grosso contém o núcleo
+    for (let e = 0; e < 3; e++) {
+      expect(CAIXA_DO_VOLUME.min[e]).toBeLessThan(CAIXA_DO_NUCLEO.min[e]);
+      expect(CAIXA_DO_VOLUME.max[e]).toBeGreaterThan(CAIXA_DO_NUCLEO.max[e]);
+    }
+    // a superfície é mais fina que a camada ionizada (0,05 pc), e o núcleo
+    // mais fino que a escarpa da Barra (0,25 pc)
+    const texel = (CAIXA_DO_NUCLEO.max[0] - CAIXA_DO_NUCLEO.min[0]) / GRADE_DA_SUPERFICIE[0];
+    expect(texel).toBeLessThan(CAMADA_IONIZADA.pertoPc / 2);
+    for (let e = 0; e < 3; e++)
+      expect((CAIXA_DO_NUCLEO.max[e] - CAIXA_DO_NUCLEO.min[e]) / CAIXA_DO_NUCLEO.dims[e]).toBeLessThan(BARRA.alturaPc / 4);
+    // o assado de cada fatia anda pela mesma caixa que a marcha lê
+    const frag = orionAssadoFrag(CAIXA_DO_NUCLEO, '');
+    expect(frag).toContain(CAIXA_DO_NUCLEO.dims.map((d) => d.toFixed(7)).join(', '));
   });
 });

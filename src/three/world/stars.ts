@@ -8,6 +8,7 @@ import { UNIFORMES_DA_ASSINATURA, seguirALente } from '../shaders/estrelasDaLent
 import type { StarArrays } from '../config';
 import { FOCUS_OFF, clearFocus, needsAttributeWrite } from './lodStellar';
 import { EXPO_M0, SIGMA_PX } from '../luzDaCasa';
+import { UNIFORMES_DE_ORION } from './orionNaCena';
 
 /**
  * Teto de faixas pendentes por atributo antes de cair para UPLOAD CHEIO
@@ -124,6 +125,8 @@ export class StarField {
         // 0 = esta passada desenha quem tem nuvem na frente (item 37)
         uLado: { value: 0 },
         ...UNIFORMES_DA_ASSINATURA,
+        // a nuvem de Órion apaga as estrelas de trás (orionNaCena.ts)
+        ...UNIFORMES_DE_ORION,
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,
@@ -140,8 +143,8 @@ export class StarField {
     // O que ela tem de próprio é o material, por causa de `uLado`; os
     // outros uniforms viajam pelos dois em `update`/`setFade`/`setCavity`.
     this.materialNaFrente = this.material.clone();
-    // o clone copiou os uniformes da assinatura; ela é um objeto só (estrelasDaLente.ts)
-    Object.assign(this.materialNaFrente.uniforms, UNIFORMES_DA_ASSINATURA);
+    // o clone copiou os uniformes da assinatura e os de Órion; cada um é um objeto só
+    Object.assign(this.materialNaFrente.uniforms, UNIFORMES_DA_ASSINATURA, UNIFORMES_DE_ORION);
     seguirALente(this.materialNaFrente, STAR_FRAG, STAR_FRAG_DA_LENTE);
     this.materialNaFrente.uniforms.uLado.value = 1;
     this.pontosNaFrente = new THREE.Points(geo, this.materialNaFrente);
