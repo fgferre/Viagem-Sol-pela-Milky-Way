@@ -2,8 +2,8 @@
 // AS ESTRELAS S NA CENA (13/11/2026) — as estrelas que giram em volta de
 // Sagittarius A✱, nas posições que as órbitas medidas dão para o `jd` do
 // Director (`lib/estrelasS.ts`), como pontos pela lei da casa (a MESMA
-// PSF `starPSF`/`STAR_FRAG` do campo e de `pontoDeEstrela.ts`, magnitude
-// pela física de cada uma), e as órbitas como linhas tênues, numa camada
+// PSF `starPSF`/`STAR_FRAG` do campo e de `pontoDeEstrela.ts`, com o
+// clarão e a exposição descritos abaixo), e as órbitas como linhas tênues, numa camada
 // que o visitante liga e desliga (`noorbitass`).
 //
 // POR QUE DEPOIS DO PASSE DO BURACO. O passe (`blackHole.ts`) dobra a
@@ -25,6 +25,19 @@
 // toda escala: de longe (a mais de ~0,6 pc) o aglomerado inteiro cabe na
 // sombra e nada aparece; de perto, as estrelas saem da borda dela.
 //
+// A LUZ DE CADA UMA é a das estrelas fortes da casa: o ponto (`STAR_FRAG`)
+// e, em volta, o clarão da receita do filme (núcleo, halo e braços na cor
+// da estrela, `glslNucleoEHalo`/`glslBracosDeDifracao`) no tamanho da luz
+// única (`meiaDaLei` de `clarao.ts`: asa ou arte, com o teto de ocupação).
+// Na magnitude física (−15 a −19 dentro do aglomerado) o ponto saía um
+// disco chapado cortado na borda do sprite, e todas no mesmo teto. Por
+// isso a EXPOSIÇÃO DO AGLOMERADO (ARTÍSTICA, declarada, a mesma ideia do
+// brilho assistido da visita): UM deslocamento fixo de magnitude, o que
+// põe S2 a `DISTANCIA_DA_EXPOSICAO_PC` como Sirius de casa
+// (`MAGNITUDE_DO_TETO_DA_ARTE`). Cada estrela fica mais ou menos brilhante
+// que isso pela luminosidade e pela distância dela, e chegar perto continua
+// acendendo — nada lê o quadro, e as razões de brilho são as físicas.
+//
 // PRECISÃO: o grupo mora em Sgr A✱ e a geometria é o deslocamento até ele
 // (milésimos de pc em float32); a translação câmera↔centro entra pela
 // `modelViewMatrix`, calculada em float64 na CPU — a câmera a 8 kpc do
@@ -33,12 +46,20 @@
 import * as THREE from 'three';
 import { B_CRITICO } from '../../lib/buracoNegro';
 import { ESTRELAS_S, jdDoAno, posicaoDaEstrelaS } from '../../lib/estrelasS';
-import { blackbodyLinear } from '../luzDaCasa';
-import { GLSL_STAR_PSF } from '../shaders/common';
+import { alcanceDoEspinhoPx, ganhoDeEntradaDoFlare, raioVisivelDaAsaPx } from '../estrela';
+import { blackbodyLinear, picoDaPsf, sigmaDaPsfPx } from '../luzDaCasa';
+import {
+  GLSL_BRANCO_DO_NUCLEO,
+  GLSL_COMPRESSAO,
+  GLSL_STAR_PSF,
+  glslBracosDeDifracao,
+  glslNucleoEHalo,
+} from '../shaders/common';
 import { BETA_DA_EMISSAO, STAR_FRAG } from '../shaders/starShaders';
 import { GLSL_PONTO_NA_BORDA, GLSL_PONTO_NA_BORDA_VARYINGS } from '../shaders/pontoNaBorda';
 import { GAL } from './baseGalactica';
 import { entregaDoBuraco } from './blackHole';
+import { MAGNITUDE_DO_TETO_DA_ARTE, OCUPACAO_MAXIMA_DA_TELA, meiaDaArtePx } from './clarao';
 import { magnitudeAbsolutaDe } from './pontoDeEstrela';
 import { PRIORIDADE_DO_ROTULO, projectForced } from './labels';
 import type { StarLabel } from './labels';
@@ -104,6 +125,86 @@ void main() {
   prenderPontoNoClip(uScreenH);
 }
 `;
+
+// O CLARÃO de cada uma: a receita do filme num sprite de 2·meia px, por
+// cima do ponto inteiro como nas heroes (`heroStars.ts` — a máscara do
+// clarão da luz única deixava um anel escuro entre o ponto e o núcleo), e a
+// mesma saída do clarão da casa (`clarao.ts`: cor × alfa da receita,
+// aditivo, comprimida pelo β da emissão)
+const VERT_CLARAO = /* glsl */ `
+attribute vec3 aCor;
+attribute float aMeia;
+attribute float aGanho;
+uniform float uScreenH;
+varying vec3 vCor;
+varying float vGanho;
+${GLSL_PONTO_NA_BORDA_VARYINGS}
+${GLSL_PONTO_NA_BORDA}
+${GLSL_SOMBRA}
+void main() {
+  vec4 pv = modelViewMatrix * vec4(position, 1.0);
+  float vis = foraDaSombraEntre(pv.xyz, (modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz);
+  vCor = aCor;
+  vGanho = aGanho * vis;
+  gl_Position = projectionMatrix * pv;
+  gl_PointSize = vGanho > 0.0 ? 2.0 * aMeia : 0.0;
+  prenderPontoNoClip(uScreenH);
+}
+`;
+
+const FRAG_CLARAO = /* glsl */ `
+precision highp float;
+uniform float uBeta;
+varying vec3 vCor;
+varying float vGanho;
+${GLSL_PONTO_NA_BORDA_VARYINGS}
+${GLSL_COMPRESSAO}
+void main() {
+  vec2 uv = (gl_FragCoord.xy - vCentroPx) / max(vMeiaPx, 1e-6);
+  float r = length(uv);
+  if (r > 1.0) discard;
+  ${glslNucleoEHalo()}
+  ${glslBracosDeDifracao()}
+  vec3 col = (${GLSL_BRANCO_DO_NUCLEO} * core + vCor * (glow + spikes)) * vGanho;
+  float a = clamp(core + glow + spikes, 0.0, 1.0) * vGanho;
+  gl_FragColor = vec4(comprimir3(col, uBeta), a);
+}
+`;
+
+/** a distância (pc) em que S2 sai como Sirius de casa — a vista de 0,05 pc */
+export const DISTANCIA_DA_EXPOSICAO_PC = 0.05;
+
+/**
+ * A magnitude EXPOSTA de uma estrela S (ver o cabeçalho): a física dela
+ * menos a de S2 a `DISTANCIA_DA_EXPOSICAO_PC`, mais a de Sirius de casa.
+ */
+export function magnitudeExposta(mAbs: number, distPc: number, mAbsS2: number): number {
+  return (
+    mAbs -
+    mAbsS2 +
+    5 * Math.log10(Math.max(distPc, 1e-15) / DISTANCIA_DA_EXPOSICAO_PC) +
+    MAGNITUDE_DO_TETO_DA_ARTE
+  );
+}
+
+/**
+ * O clarão de um ponto de magnitude `m`, nos números da luz única da casa
+ * (`ClaraoDeAsas.meiaDaLei` e o laço de `atualizar`, em `clarao.ts`), em px
+ * de CSS: meia-extensão (asa ou arte, até o teto de ocupação) e o ganho
+ * de entrada.
+ */
+export function claraoDoPonto(
+  m: number,
+  expoM0: number,
+  sigmaPx: number,
+  cssH: number
+): { meiaPx: number; ganho: number } {
+  const sigma = sigmaDaPsfPx(sigmaPx, cssH);
+  const pico = picoDaPsf(m, expoM0, sigmaPx, cssH);
+  const asa = Math.max(raioVisivelDaAsaPx(pico, sigma), alcanceDoEspinhoPx(pico, sigma));
+  const meiaPx = Math.min(Math.max(asa, meiaDaArtePx(m, cssH)), OCUPACAO_MAXIMA_DA_TELA * cssH);
+  return { meiaPx, ganho: ganhoDeEntradaDoFlare(pico) };
+}
 
 // a regra da sombra POR FRAGMENTO: um trecho de órbita quase de perfil
 // atravessa a sombra entre dois vértices fora dela, e o teste por vértice
@@ -186,6 +287,8 @@ export class EstrelasS {
   private readonly grupo = new THREE.Group();
   private readonly pontos: THREE.Points;
   private readonly matPontos: THREE.ShaderMaterial;
+  private readonly claroes: THREE.Points;
+  private readonly matClaroes: THREE.ShaderMaterial;
   private readonly orbitas: THREE.LineLoop[] = [];
   private readonly mAbs: Float32Array;
   private readonly direcao = direcaoDoCentro();
@@ -205,6 +308,8 @@ export class EstrelasS {
     geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
     geo.setAttribute('aM', new THREE.BufferAttribute(new Float32Array(n).fill(99), 1));
     geo.setAttribute('aCor', new THREE.BufferAttribute(cores, 3));
+    geo.setAttribute('aMeia', new THREE.BufferAttribute(new Float32Array(n), 1));
+    geo.setAttribute('aGanho', new THREE.BufferAttribute(new Float32Array(n), 1));
     this.matPontos = new THREE.ShaderMaterial({
       vertexShader: VERT_PONTOS,
       fragmentShader: STAR_FRAG,
@@ -225,6 +330,22 @@ export class EstrelasS {
     this.pontos = new THREE.Points(geo, this.matPontos);
     this.pontos.frustumCulled = false;
     this.pontos.renderOrder = 2;
+    this.matClaroes = new THREE.ShaderMaterial({
+      vertexShader: VERT_CLARAO,
+      fragmentShader: FRAG_CLARAO,
+      uniforms: {
+        uScreenH: this.matPontos.uniforms.uScreenH,
+        uSenSombra: this.matPontos.uniforms.uSenSombra,
+        uBeta: { value: BETA_DA_EMISSAO },
+      },
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      depthTest: false,
+      transparent: true,
+    });
+    this.claroes = new THREE.Points(geo, this.matClaroes);
+    this.claroes.frustumCulled = false;
+    this.claroes.renderOrder = 3;
 
     const dir = this.direcao;
     for (const s of ESTRELAS_S) {
@@ -255,6 +376,7 @@ export class EstrelasS {
       this.grupo.add(linha);
     }
     this.grupo.add(this.pontos);
+    this.grupo.add(this.claroes);
     this.grupo.visible = false;
   }
 
@@ -270,17 +392,29 @@ export class EstrelasS {
     if (!this.vivo) return;
     this.senSombra = senoDaSombra(dGC, q.rsPc, q.buracoDesenhado);
     const pos = this.pontos.geometry.getAttribute('position') as THREE.BufferAttribute;
-    const aM = this.pontos.geometry.getAttribute('aM') as THREE.BufferAttribute;
+    const geo = this.pontos.geometry;
+    const aM = geo.getAttribute('aM') as THREE.BufferAttribute;
+    const aMeia = geo.getAttribute('aMeia') as THREE.BufferAttribute;
+    const aGanho = geo.getAttribute('aGanho') as THREE.BufferAttribute;
+    // o clarão decide na régua de referência (px de CSS) e escreve no buffer (× pr)
+    const pr = q.pr2 > 0 ? Math.sqrt(q.pr2) : 1;
+    const cssH = q.hPx / pr;
     ESTRELAS_S.forEach((s, i) => {
       const [x, y, z] = posicaoDaEstrelaS(q.jd, s, this.direcao);
       this.offsets[i].set(x, y, z);
       pos.setXYZ(i, x, y, z);
       // a distância em float64, nunca da posição de mundo no shader
       const d = _w.copy(GAL.GC_POS).add(this.offsets[i]).distanceTo(q.camPos);
-      aM.setX(i, this.mAbs[i] + 5 * Math.log10(Math.max(d, 1e-15)) - 5);
+      const m = magnitudeExposta(this.mAbs[i], d, this.mAbs[0]);
+      aM.setX(i, m);
+      const c = claraoDoPonto(m, q.expoM0, q.sigmaPx, cssH);
+      aMeia.setX(i, c.meiaPx * pr);
+      aGanho.setX(i, c.ganho);
     });
     pos.needsUpdate = true;
     aM.needsUpdate = true;
+    aMeia.needsUpdate = true;
+    aGanho.needsUpdate = true;
     const u = this.matPontos.uniforms;
     u.uScreenH.value = q.hPx;
     u.uExpoM0.value = q.expoM0;
@@ -298,6 +432,7 @@ export class EstrelasS {
   dispose() {
     this.pontos.geometry.dispose();
     this.matPontos.dispose();
+    this.matClaroes.dispose();
     for (const l of this.orbitas) {
       l.geometry.dispose();
       (l.material as THREE.Material).dispose();
