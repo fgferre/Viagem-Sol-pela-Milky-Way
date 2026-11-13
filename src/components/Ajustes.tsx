@@ -66,6 +66,8 @@ import {
   nivelDaNebulosaEmTexto,
   particulasDaGalaxiaEmTexto,
   galaxiaEmTexto,
+  nomeDoControleDoLaboratorio,
+  valorDoLaboratorioEmTexto,
   poeiraEmTexto,
   rotuloDaEscalaDeResolucao,
   rotuloDaQualidade,
@@ -87,6 +89,13 @@ import type {
 } from '../three/core/engine';
 import { FORCA_DA_LENTE, MODOS_DA_LENTE } from '../three/core/engine';
 import { AMOSTRAS_POR_TIER } from '../three/core/post';
+import {
+  CONTROLES_DO_LABORATORIO,
+  laboratorioMexido,
+  motivoDoBloqueio,
+  padraoDoControle,
+} from '../three/world/laboratorioDaGalaxia';
+import type { IdDoLaboratorio } from '../three/world/laboratorioDaGalaxia';
 
 /**
  * As quatro curvas. O NOME é marca (ACES, AgX) e não se traduz; a NOTA
@@ -281,6 +290,8 @@ export function Ajustes({
   onRelevo,
   onParticulas,
   onGalaxia,
+  onLaboratorio,
+  onZerarLaboratorio,
   onPoeira,
   tom,
   onTom,
@@ -323,6 +334,10 @@ export function Ajustes({
   onParticulas: (nivel: ParticulasDaGalaxia | null) => void;
   /** a galáxia de fora escolhida à mão (12/11/2026); `null` = a cadeia do preset */
   onGalaxia: (caminho: CaminhoDaGalaxia | null) => void;
+  /** um controle do laboratório da galáxia (13/11/2026); `null` = padrão */
+  onLaboratorio: (id: IdDoLaboratorio, valor: number | null) => void;
+  /** "Voltar ao padrão": todos os controles do laboratório de uma vez */
+  onZerarLaboratorio: () => void;
   /** a poeira perto de casa escolhida à mão (pedido do dono, 27/09); `null` = do preset */
   onPoeira: (variante: TipoDePoeira | null) => void;
   tom: ToneMapMode;
@@ -363,6 +378,9 @@ export function Ajustes({
   // "AVANÇADO" RECOLHÍVEL (Lote 7) — fechado por padrão, sem persistir;
   // mesma anatomia do título de seção da ficha (`FichaDoObjeto.tsx`).
   const [avancadoAberto, setAvancadoAberto] = useState(false);
+  // O LABORATÓRIO DA GALÁXIA, recolhido dentro do Avançado (13/11/2026):
+  // quem abre o painel pela primeira vez não dá com onze fileiras de botões
+  const [laboratorioAberto, setLaboratorioAberto] = useState(false);
   // A FALHA DO CLIPBOARD (§9) — `null` é "sem falha"; enquanto houver uma
   // URL aqui, o campo somente-leitura fica visível logo abaixo dos botões.
   const [urlSemCopia, setUrlSemCopia] = useState<string | null>(null);
@@ -817,6 +835,85 @@ export function Ajustes({
           onEscolher={onGalaxia}
         />
       </LinhaDeAjuste>
+
+      {/* O LABORATÓRIO DA GALÁXIA (13/11/2026) — os botões do protótipo
+          WebGPU e os do WebGL, colado na Galáxia porque é dela que ele
+          depende: o que não vale no caminho que DESENHA fica à vista e
+          desligado, com o motivo dito uma vez por grupo. Mesma anatomia do
+          Avançado (título recolhível, fechado por padrão). */}
+      <h3 className="ajustes-titulo-secao">
+        <button
+          type="button"
+          aria-expanded={laboratorioAberto}
+          aria-controls="ajustes-laboratorio"
+          onClick={() => setLaboratorioAberto((v) => !v)}
+        >
+          <span>{t('ajustes.lab.titulo')}</span>
+          <span className="atlas-ficha-seta" aria-hidden="true">
+            <Icone nome="chevronDireita" tamanho={16} />
+          </span>
+        </button>
+      </h3>
+      <Sanfona id="ajustes-laboratorio" aberta={laboratorioAberto}>
+        {(['webgpu', 'webgl'] as const).map((motor) => {
+          const controles = CONTROLES_DO_LABORATORIO.filter((c) => c.motor === motor);
+          const motivo = motivoDoBloqueio(controles[0].id, qualidade.galaxiaViva);
+          return (
+            <div className="ajustes-lab-grupo" key={motor}>
+              <p className="ajustes-lab-grupo-titulo">{t(`ajustes.lab.grupo.${motor}`)}</p>
+              {motivo && <p className="ajustes-lab-motivo">{t(`ajustes.lab.bloqueio.${motivo}`)}</p>}
+              {controles.map((c) => {
+                const valor = qualidade.laboratorio[c.id];
+                const padrao = padraoDoControle(c.id, qualidade.tier);
+                const nome = nomeDoControleDoLaboratorio(c.id);
+                return (
+                  <LinhaDeAjuste
+                    key={c.id}
+                    id={`lab-${c.id}`}
+                    rotulo={nome}
+                    dica={t(`ajustes.lab.${c.id}Nota` as ChaveDeTexto)}
+                    dicaPresa={dicaPresa}
+                    onAlternarDica={alternarDica}
+                  >
+                    {c.aplica === 'reassar' && qualidade.galaxiaReassando && (
+                      <span className="ajustes-lab-aplicando" role="status">
+                        {t('ajustes.lab.aplicando')}
+                      </span>
+                    )}
+                    <Segmentado
+                      aria={nome}
+                      valor={valor}
+                      desabilitado={motivo !== null}
+                      opcoes={[
+                        {
+                          valor: null,
+                          nome: t('ajustes.preset'),
+                        },
+                        ...c.valores.map((v) => ({
+                          valor: v as number | null,
+                          nome: valorDoLaboratorioEmTexto(c.id, v),
+                          efetivo: valor === null && v === padrao,
+                        })),
+                      ]}
+                      onEscolher={(v) => onLaboratorio(c.id, v)}
+                    />
+                  </LinhaDeAjuste>
+                );
+              })}
+            </div>
+          );
+        })}
+        <div className="ajustes-acoes">
+          <button
+            type="button"
+            className="ajustes-copiar"
+            disabled={!laboratorioMexido(qualidade.laboratorio)}
+            onClick={onZerarLaboratorio}
+          >
+            <span>{t('ajustes.lab.voltar')}</span>
+          </button>
+        </div>
+      </Sanfona>
 
       {/* ESCALA DE RESOLUÇÃO não ganha `.efetivo`: o teto do preset é
           `min(dpr do monitor, pixelRatio do preset)` — depende do

@@ -10,6 +10,7 @@
 // projeção pelo getter `alvos` — a mesma lista única da pendência 30.
 // ============================================================
 import { abrirVagaNoGrupo, lugarNoAlvo, projetarCompanheiras, projetarLugares } from '../world/lugaresDoCeu';
+import { projetarS2 } from '../world/estrelasS';
 import { projetarSondas } from '../world/sondas';
 import { projetarCometas } from '../world/cometas';
 import { projetarExoplanetas } from '../world/exoplanetas';
@@ -1090,8 +1091,11 @@ export class Rotulos {
         // O LUGAR EM FOCO (13/11): as companheiras ganham nome e o grupo, a vez
         const lugarEmFoco = fase === 'atlas' ? lugarNoAlvo(quadro.alvoDoAtlas) : undefined;
         const companheiras = lugarEmFoco ? projetarCompanheiras(cam, lugarEmFoco.id) : [];
+        // A ESTRELA S2 (13/11): o nome na estrela viva, só no Atlas
+        const estrelaS2 = fase === 'atlas' ? projetarS2(cam, quadro.jd ?? Number.NaN) : [];
         const lista = [
           ...corpos, ...luas, ...estrelas, ...projetarLugares(cam), ...companheiras, ...sondas, ...cometas, ...exoplanetas,
+          ...estrelaS2,
         ];
         if (lugarEmFoco) abrirVagaNoGrupo(lugarEmFoco.id, lista);
         // O ALVO ESCOLHIDO NÃO CEDE A NADA. A chave do corpo em foco é a

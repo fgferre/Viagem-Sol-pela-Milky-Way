@@ -32,7 +32,9 @@
 // é lido pelo HUD e pelo Director, e é isso que o mantém testável.
 // ============================================================
 import { IDS_FOTOMETRIA } from './world/planetas/fotometria';
-import { idiomaAtual, t } from '../lib/idioma';
+import { decimalDoIdioma, idiomaAtual, t } from '../lib/idioma';
+import { laboratorioMexido } from './world/laboratorioDaGalaxia';
+import type { IdDoLaboratorio } from './world/laboratorioDaGalaxia';
 import type { ChaveDeTexto } from '../lib/idioma';
 // só o TIPO: a união dos quatro estados do seletor mora no engine (é
 // ele quem lê a porta `?q=`), e o `import type` é apagado na compilação
@@ -136,6 +138,9 @@ export const CAMADAS: readonly Camada[] = [
   // vista de perto, não poeira do sistema solar: a família é a galáxia.
   { flag: 'nodust', get nome() { return t('camada.nodust'); }, get nota() { return t('camada.nodust.nota'); }, familia: 'Galáxia', viva: true },
   { flag: 'nobh', get nome() { return t('camada.nobh'); }, get nota() { return t('camada.nobh.nota'); }, familia: 'Galáxia', viva: true, icone: '✱' },
+  // as órbitas das estrelas S em volta de Sgr A✱ (13/11/2026) — as estrelas
+  // ficam; só as linhas obedecem à flag
+  { flag: 'noorbitass', get nome() { return t('camada.noorbitass'); }, get nota() { return t('camada.noorbitass.nota'); }, familia: 'Galáxia', viva: true, icone: '◜' },
   { flag: 'nocat', get nome() { return t('camada.nocat'); }, get nota() { return t('camada.nocat.nota'); }, familia: 'Estrelas', viva: true, icone: '⁂' },
   // OS NOMES NA TELA (item 82, N2) — a chave `Labels` que o NASA Eyes
   // tem e nós não tínhamos. As órbitas ganharam `noorbitas` no item 77 e
@@ -288,6 +293,23 @@ export function particulasDaGalaxiaEmTexto(nivel: ParticulasDaGalaxia): string {
   return t(`ajustes.particulas.${nivel}` as ChaveDeTexto);
 }
 
+/** O NOME DE UM CONTROLE DO LABORATÓRIO DA GALÁXIA, como o visitante lê (13/11/2026) */
+export function nomeDoControleDoLaboratorio(id: IdDoLaboratorio): string {
+  return t(`ajustes.lab.${id}` as ChaveDeTexto);
+}
+
+/**
+ * O VALOR DE UM CONTROLE DO LABORATÓRIO, como o botão o escreve; `extenso`
+ * é a frase do selo (o teto em "2 milhões", que no botão é só "2" para a
+ * fileira caber numa linha — a unidade está no "?")
+ */
+export function valorDoLaboratorioEmTexto(id: IdDoLaboratorio, v: number, extenso = false): string {
+  if (id === 'borrifo' || id === 'filtro') return t(`ajustes.lab.${id}.${v}` as ChaveDeTexto);
+  if (id === 'lod' && v === 0) return t('ajustes.lab.todas');
+  const numero = decimalDoIdioma(String(v));
+  return id === 'lodmax' && extenso ? t('ajustes.lab.milhoes', { n: numero }) : numero;
+}
+
 /** COMO A GALÁXIA DE FORA É DESENHADA, como o visitante lê (12/11/2026) */
 export function galaxiaEmTexto(caminho: CaminhoDaGalaxia): string {
   return t(`ajustes.galaxia.${caminho}` as ChaveDeTexto);
@@ -352,7 +374,8 @@ export const foraDoPreset = (e: EstadoDaQualidade): boolean =>
   e.terra !== null ||
   e.particulas !== null ||
   e.poeira !== null ||
-  e.galaxia !== null;
+  e.galaxia !== null ||
+  laboratorioMexido(e.laboratorio);
 
 export function rotuloDaQualidade(e: EstadoDaQualidade): string {
   // PERSONALIZADO (item 145, +145b, +149): mexeu num controle da gaveta

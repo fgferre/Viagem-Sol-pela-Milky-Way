@@ -27,6 +27,7 @@ import type { AtorDoPalco, PostoNoPalco } from './palco';
 import type { CaminhoDaGalaxia, QualityLevel } from '../core/engine';
 import { PRESETS } from '../core/engine';
 import { CamadaWebgpu, webgpuFalhouNestaPagina } from '../world/galaxiaWebgpu/camadaWebgpu';
+import { ORCAMENTO_DA_GALAXIA } from '../world/laboratorioDaGalaxia';
 
 /**
  * O POSTO de um corpo no palco — os quatro traços que o distinguem no
@@ -187,33 +188,16 @@ export function descartarCarga(carga: CargaDoMundo) {
  * caminho, com o mundo velho ainda desenhando, e a única diferença
  * entre os dois é o número que entra aqui.
  */
-/**
- * O ORÇAMENTO DA GALÁXIA DE PARTÍCULAS POR TIER (12/11/2026, a nova virou
- * padrão): `sorteios` do motor WebGPU (~4 M partículas cada) e o teto de
- * instâncias do caminho WebGL, em milhões. A régua: a nova não pode custar
- * mais que a clássica no mesmo tier de longe nem no filme (medido neste
- * Mac, 1280×800 e 390×844, PLAN-GALAXIA.md). Com 4 sorteios a meia
- * distância passava da clássica em cinema; com 2, não. O filme em t=148
- * ainda está na cessão (a camada WebGPU só entra fora do disco) e quem
- * desenha ali é o WebGL: com 5 M ele custava o dobro da clássica, com 2 M
- * (cinema) e 1 M (alta, cuja clássica desenha metade) fica abaixo. O
- * telefone vai ao WebGL com 0,5 M. `?sorteios=` e `?lodmax=` varrem.
- */
-export const ORCAMENTO_DA_GALAXIA: Record<QualityLevel, { sorteios: number; tetoLodMilhoes: number }> = {
-  cinema: { sorteios: 2, tetoLodMilhoes: 2 },
-  alta: { sorteios: 2, tetoLodMilhoes: 1 },
-  performance: { sorteios: 1, tetoLodMilhoes: 0.5 },
-};
-
 export async function montarCarga(opts: {
   catalogos: GalacticAssets | null;
   tier: QualityLevel;
   /** a galáxia escolhida à mão (`?galaxia=`, Ajustes); `null` = a do preset */
   galaxia: CaminhoDaGalaxia | null;
+  /** os sorteios do motor WebGPU escolhidos à mão (laboratório, `?sorteios=`); `null` = os do tier */
+  sorteios: number | null;
   aoAvancar: (etapa: EtapaDaCadeia) => void;
 }): Promise<CargaDoMundo> {
   const { catalogos, tier, aoAvancar } = opts;
-  const query = new URLSearchParams(window.location.search);
   // A CADEIA (12/11/2026): WebGPU → partículas no WebGL → clássica. O
   // primeiro degrau é o pedido; um WebGPU que já falhou nesta página não
   // é tentado de novo (a camada cai sozinha para o WebGL, `Galaxy`).
@@ -221,7 +205,7 @@ export async function montarCarga(opts: {
   const caminho: CaminhoDaGalaxia =
     pedidoDoCaminho === 'webgpu' && webgpuFalhouNestaPagina() ? 'particulas' : pedidoDoCaminho;
   const orcamento = ORCAMENTO_DA_GALAXIA[tier];
-  const sorteios = caminho === 'webgpu' ? Number(query.get('sorteios')) || orcamento.sorteios : 1;
+  const sorteios = caminho === 'webgpu' ? (opts.sorteios ?? orcamento.sorteios) : 1;
   const pedido = {
     seed: SEMENTE_DA_GALAXIA,
     catalogos,

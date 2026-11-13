@@ -33,6 +33,12 @@ import { CAMADAS } from '../three/atlasConfig';
 import { FILME_PADRAO } from '../three/cinematic/filme';
 import { estadoDoSelo } from '../three/selo';
 import { ESCALA_PADRAO, aplicarEscalaDaUi, lerEscalaDaUi } from '../lib/uiScale';
+import {
+  CONTROLES_DO_LABORATORIO,
+  LABORATORIO_PADRAO,
+  escreverLaboratorio,
+} from '../three/world/laboratorioDaGalaxia';
+import type { IdDoLaboratorio } from '../three/world/laboratorioDaGalaxia';
 
 /** a exposição de referência da casa — o 1,02 da vista interna */
 export const EXPOSICAO_PADRAO = 1.02;
@@ -364,6 +370,26 @@ export function useEspelhoDaUrl(dep: {
   };
 
   /**
+   * O LABORATÓRIO DA GALÁXIA, AO VIVO (13/11/2026) — um controle por vez
+   * (`null` volta ao padrão), no molde das partículas: a verdade mora no
+   * Director (o painel a lê no `EstadoDaQualidade`), e a URL espelha a
+   * ESCOLHA — a porta do controle só existe fora do padrão. "Voltar ao
+   * padrão" zera todos e apaga todas as portas de uma vez.
+   */
+  const trocarLaboratorio = (id: IdDoLaboratorio, valor: number | null) => {
+    directorRef.current?.forcarLaboratorio(id, valor);
+    window.history.replaceState(null, '', comParam(id, valor === null ? null : String(valor)));
+  };
+
+  const zerarLaboratorio = () => {
+    directorRef.current?.zerarLaboratorio();
+    const q = new URLSearchParams(window.location.search);
+    escreverLaboratorio(q, LABORATORIO_PADRAO);
+    const s = q.toString();
+    window.history.replaceState(null, '', `${window.location.pathname}${s ? `?${s}` : ''}`);
+  };
+
+  /**
    * A POEIRA PERTO DE CASA, AO VIVO (pedido do dono, 27/09) — o sexto
    * controle da gaveta Avançado, no mesmo molde exato dos cinco de cima.
    */
@@ -504,6 +530,8 @@ export function useEspelhoDaUrl(dep: {
         d.forcarParticulas(null);
       } else if (c.chave === 'galaxia') {
         d.forcarGalaxia(null);
+      } else if (CONTROLES_DO_LABORATORIO.some((l) => l.id === c.chave)) {
+        d.forcarLaboratorio(c.chave as IdDoLaboratorio, null);
       } else if (c.chave === 'poeira') {
         // desarma TAMBÉM `poeiraTeste` (dentro de `forcarPoeira`): sem
         // isto um `?poeira=teste` de bancada continuaria no ar depois
@@ -609,6 +637,8 @@ export function useEspelhoDaUrl(dep: {
     trocarRelevo,
     trocarParticulas,
     trocarGalaxia,
+    trocarLaboratorio,
+    zerarLaboratorio,
     trocarPoeira,
     trocarTom,
     trocarLente,

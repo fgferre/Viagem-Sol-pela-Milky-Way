@@ -79,9 +79,11 @@ type Trio = [number, number, number];
 
 /** θ¹ Ori (HD 37022, O6pe) como o catálogo da casa o desenha — a
  *  entrada nomeada `θ¹ Ori` de `public/data/stars_meta.json`; o teste
- *  cobra que as duas batem. A 399,8 pc, dentro do intervalo medido por
- *  VLBI (388 ± 5 pc, Kounkel et al. 2017; 414 ± 7 pc, Menten et al. 2007). */
-export const CENTRO_DE_ORION: Trio = [42.8554, 395.6872, -37.5505];
+ *  cobra que as duas batem. A 414 pc: a paralaxe do Gaia erra nas quatro
+ *  do Trapézio (336 a 438 pc entre elas), então o catálogo lhes dá a
+ *  distância do grupo medida por VLBI (414 ± 7 pc, Menten et al. 2007;
+ *  388 ± 5 pc em Kounkel et al. 2017). */
+export const CENTRO_DE_ORION: Trio = [44.381, 409.7733, -38.8873];
 
 const norma = (v: Trio) => Math.hypot(v[0], v[1], v[2]);
 const DIST_PC = norma(CENTRO_DE_ORION);

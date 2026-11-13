@@ -592,7 +592,7 @@ export class Escada {
     this.atlas.focar(pose.alvo, pose.raio, pose.eixoDe, {
       rampa: this.rampaDaEscada(),
       polo: pose.polo,
-      pisoRaio: raioDeEnquadramentoEstelar(pose.alvo.length()),
+      pisoRaio: pose.pisoRaio ?? raioDeEnquadramentoEstelar(pose.alvo.length()),
     });
     this.enquadrarAgora();
     this.focoCorpoId = null;

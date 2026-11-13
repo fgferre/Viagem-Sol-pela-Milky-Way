@@ -53,6 +53,7 @@ import { LIMIAR_SISTEMA_SOLAR_PC } from './escala';
 import { TOM_PADRAO, TONE_MAPPINGS } from './core/engine';
 import { definirIdioma, iniciarIdioma, t } from '../lib/idioma';
 import type { ToneMapMode } from './core/engine';
+import { LABORATORIO_PADRAO } from './world/laboratorioDaGalaxia';
 
 /** o estado de uma vista limpa: nada tocado, nada na URL */
 const LIMPA: EstadoDaVista = {
@@ -80,6 +81,7 @@ const LIMPA: EstadoDaVista = {
   realceDoRelevo: 1,
   particulas: null,
   galaxia: null,
+  laboratorio: LABORATORIO_PADRAO,
   poeira: null,
   // `real` na FIXTURE de propósito: é o estado DEPOIS do clique "voltar
   // ao real". O default vivo do Atlas é `assistida` — e tem os próprios
