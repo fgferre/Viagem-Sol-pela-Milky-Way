@@ -416,6 +416,12 @@ if (starMetadata.quantization.maxLogLumError > 0.001) {
   if (!sirius || sirius.hd !== 48915 || sirius.hip !== 32349) {
     throw new Error('Sirius sem HD 48915 / HIP 32349 — identidade do sidecar quebrada.');
   }
+  // revisão do catálogo (13/11/2026): Taygeta saía a 105 pc, na frente das
+  // Plêiades a 134,8; se ela voltar para lá, a regra dos aglomerados caiu
+  const taygeta = starMetadata.named.find((s) => s.n === 'Taygeta');
+  if (!taygeta || taygeta.ag !== 'pleiades' || Math.abs(taygeta.d - 134.84) > 2) {
+    throw new Error(`Taygeta a ${taygeta?.d} pc sem a distância das Plêiades — aglomerados.json não entrou.`);
+  }
 }
 
 // Onda 2 (+ item 74, 2026-08-22): atlas/corpos — o editorial dos 45, agora

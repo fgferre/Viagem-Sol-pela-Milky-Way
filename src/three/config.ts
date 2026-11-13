@@ -138,6 +138,10 @@ export type NamedStar = {
   /** sigla IAU de três letras da constelação ("CMa"); o genitivo mora em
    *  `lib/atlas/constelacoes.ts`, que é nomenclatura e não medida */
   c?: string;
+  /** id do aglomerado cuja distância a estrela recebeu porque a própria
+   *  paralaxe é imprecisa (revisão do catálogo, 13/11/2026); ausente =
+   *  a distância é a medida da estrela (`scripts/data/aglomerados.json`) */
+  ag?: string;
 };
 export type StarsMeta = {
   count: number;
