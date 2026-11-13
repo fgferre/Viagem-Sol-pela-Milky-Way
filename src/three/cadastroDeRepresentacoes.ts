@@ -123,6 +123,21 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
       'é o `starPSF` do campo com a magnitude da física delas (R², radiância visível)',
   },
   {
+    id: 'estrelas-s',
+    nome: 'as estrelas S em volta de Sgr A✱ (S2 e 17 vizinhas), pontos por cima do passe do buraco',
+    arquivos: ['src/three/world/estrelasS.ts'],
+    consomeL1: false,
+    leiVelhaApagada: false,
+    fatorDeBrilho: 1,
+    destino: 'migra',
+    migracao: 'M3',
+    emiteGlPointSize: true,
+    razao:
+      '13/11: o `starPSF` do campo com a magnitude da física de cada uma (Teff e raio ' +
+      'medidos ou derivados de S9 pela mK, `lib/estrelasS.ts`) e a distância em ' +
+      'float64; a única regra a mais é a sombra desenhada, que esconde o ponto que cobre',
+  },
+  {
     id: 'planetas',
     nome: 'os 9 planetas-ponto',
     arquivos: ['src/three/world/planetas/planetas.ts'],

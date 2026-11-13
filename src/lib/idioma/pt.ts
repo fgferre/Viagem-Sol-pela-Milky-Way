@@ -537,6 +537,12 @@ export const PT = {
   'ficha.lugar.anelEht': 'o que o EHT viu',
   'ficha.lugar.estrelaS2': 'a estrela S2',
   'ficha.lugar.luz': 'a luz que vemos saiu de lá',
+  'ficha.lugar.periodo': 'uma volta',
+  'ficha.lugar.periastro': 'mais perto do buraco',
+  'ficha.lugar.velocidade': 'velocidade',
+  'ficha.lugar.desvioParaOVermelho': 'desvio para o vermelho',
+  'ficha.lugar.precessao': 'precessão',
+  'ficha.lugar.estrela': 'a estrela',
   'ficha.sonda.doSol': 'distância do Sol',
   'ficha.sonda.luz': 'a luz leva, daqui à Terra',
   'ficha.sonda.velocidade': 'velocidade em relação ao Sol',
@@ -768,6 +774,7 @@ export const PT = {
   'camada.nowrap': 'Campo envolvente',
   'camada.nodust': 'Poeira próxima',
   'camada.nobh': 'Buraco negro (Sgr A✱)',
+  'camada.noorbitass': 'Órbitas das estrelas S',
   'camada.nocat': 'Catálogo HYG',
   'camada.nonomes': 'Nomes na tela',
   'camada.noclarao': 'Clarão das estrelas',
@@ -802,6 +809,8 @@ export const PT = {
     'Desliga a poeira interestelar com paralaxe perto da câmera, visível ao atravessar o disco da galáxia.',
   'camada.nobh.nota':
     'Desliga o buraco negro Sagitário A*, visível só de perto, no centro da galáxia.',
+  'camada.noorbitass.nota':
+    'Desliga as linhas das órbitas medidas das estrelas que giram em volta de Sgr A✱, visíveis perto do centro da galáxia.',
   'camada.nocat.nota':
     'Desliga os pontos do catálogo real de estrelas (HYG), visíveis perto do sistema solar.',
   'camada.nonomes.nota':

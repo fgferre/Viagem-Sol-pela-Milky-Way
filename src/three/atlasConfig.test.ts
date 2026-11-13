@@ -565,14 +565,15 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
     expect(naGaveta.map((c) => c.flag).sort()).toEqual(
       CAMADAS.map((c) => c.flag).sort()
     );
-    expect(naGaveta).toHaveLength(24);
+    expect(naGaveta).toHaveLength(25);
     expect(CAMADAS_POR_FAMILIA.map((g) => g.familia)).toEqual(FAMILIAS_DE_CAMADAS);
     // a TERCEIRA das estrelas é `nonomes` (item 82); no sistema solar,
     // `noorbitas` (item 77) e `noicones` (item 89 — o ícone separado do
     // texto) levam a família a SEIS, `nosondas` (pilar 4) a SETE, e as
     // duas dos cometas (`nocometas`, `nocaudas`) a NOVE; nas estrelas,
-    // `noexoplanetas` (12/11) é a QUARTA
-    expect(CAMADAS_POR_FAMILIA.map((g) => g.camadas.length)).toEqual([11, 4, 9]);
+    // `noexoplanetas` (12/11) é a QUARTA; na galáxia, as órbitas das
+    // estrelas S (`noorbitass`, 13/11) são a DÉCIMA SEGUNDA
+    expect(CAMADAS_POR_FAMILIA.map((g) => g.camadas.length)).toEqual([12, 4, 9]);
   });
 
   it('a família diz o que a flag desliga — as escalas da casa, não a ordem da linha', () => {
@@ -581,7 +582,7 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
     // interestelar vista de perto (`world/dust.ts`)
     for (const galactica of [
       'nogal', 'nodisc', 'nogdust', 'noglow', 'nocart', 'noco',
-      'noforge', 'nonebula', 'nowrap', 'nodust', 'nobh',
+      'noforge', 'nonebula', 'nowrap', 'nodust', 'nobh', 'noorbitass',
     ]) {
       expect(de(galactica), galactica).toBe('Galáxia');
     }
@@ -618,6 +619,8 @@ describe('a gaveta de camadas — a ÚNICA porta (item 61)', () => {
     const comIcone = CAMADAS.filter((c) => c.icone);
     expect(comIcone.map((c) => c.flag)).toEqual([
       'nobh',
+      // 13/11: o arco ◜ das órbitas das estrelas S
+      'noorbitass',
       'nocat',
       // item 82: o ⌶ dos nomes na tela
       'nonomes',

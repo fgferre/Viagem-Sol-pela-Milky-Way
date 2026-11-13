@@ -136,6 +136,9 @@ export const CAMADAS: readonly Camada[] = [
   // vista de perto, não poeira do sistema solar: a família é a galáxia.
   { flag: 'nodust', get nome() { return t('camada.nodust'); }, get nota() { return t('camada.nodust.nota'); }, familia: 'Galáxia', viva: true },
   { flag: 'nobh', get nome() { return t('camada.nobh'); }, get nota() { return t('camada.nobh.nota'); }, familia: 'Galáxia', viva: true, icone: '✱' },
+  // as órbitas das estrelas S em volta de Sgr A✱ (13/11/2026) — as estrelas
+  // ficam; só as linhas obedecem à flag
+  { flag: 'noorbitass', get nome() { return t('camada.noorbitass'); }, get nota() { return t('camada.noorbitass.nota'); }, familia: 'Galáxia', viva: true, icone: '◜' },
   { flag: 'nocat', get nome() { return t('camada.nocat'); }, get nota() { return t('camada.nocat.nota'); }, familia: 'Estrelas', viva: true, icone: '⁂' },
   // OS NOMES NA TELA (item 82, N2) — a chave `Labels` que o NASA Eyes
   // tem e nós não tínhamos. As órbitas ganharam `noorbitas` no item 77 e

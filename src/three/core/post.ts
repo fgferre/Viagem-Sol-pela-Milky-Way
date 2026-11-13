@@ -835,6 +835,29 @@ export const AMOSTRAS_POR_TIER: Record<QualityLevel, number> = {
  * em falso — ninguém lê a profundidade resolvida e o blit dela custava
  * ~4 ms em 1200×900 Retina.
  */
+/** uma cena desenhada POR CIMA do que já está no buffer, sem limpar — as
+ *  estrelas S sobre o buraco (`Post.addSobreOBuraco`) */
+class CenaSobreOBuraco extends Pass {
+  private cena: THREE.Scene;
+  private camera: THREE.Camera;
+
+  constructor(cena: THREE.Scene, camera: THREE.Camera) {
+    super();
+    this.cena = cena;
+    this.camera = camera;
+    this.needsSwap = false;
+    this.enabled = false;
+  }
+
+  render(renderer: THREE.WebGLRenderer, _escrita: THREE.WebGLRenderTarget, leitura: THREE.WebGLRenderTarget) {
+    const limpar = renderer.autoClear;
+    renderer.autoClear = false;
+    renderer.setRenderTarget(this.renderToScreen ? null : leitura);
+    renderer.render(this.cena, this.camera);
+    renderer.autoClear = limpar;
+  }
+}
+
 class CenaResolvidaUmaVez extends Pass {
   /** o alvo multiamostrado — `samples` decide o pixel, ver `aplicarAmostras` */
   readonly alvo: THREE.WebGLRenderTarget;
@@ -1197,6 +1220,19 @@ export class Post {
     this.composer.insertPass(pass, 1);
     const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
     pass.setSize(size.x, size.y);
+  }
+
+  /**
+   * AS ESTRELAS S (13/11/2026) entram logo DEPOIS do passe do buraco: na
+   * posição verdadeira, sem a lente do buraco inflado (ver
+   * `world/estrelasS.ts`), e ainda ANTES do bloom — florescem como
+   * qualquer estrela. O passe nasce desligado; quem o liga a cada quadro
+   * é o Director, só perto do centro.
+   */
+  addSobreOBuraco(cena: THREE.Scene, camera: THREE.Camera, buraco: Pass): Pass {
+    const pass = new CenaSobreOBuraco(cena, camera);
+    this.composer.insertPass(pass, this.composer.passes.indexOf(buraco) + 1);
+    return pass;
   }
 
   /**

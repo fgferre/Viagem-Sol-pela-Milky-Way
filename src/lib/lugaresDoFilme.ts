@@ -24,6 +24,7 @@
 // para quem quiser conferir.
 // ============================================================
 import type { Procedencia } from '../three/selo';
+import { RS_SGR_A_PC } from './buracoNegro';
 
 export type CategoriaDeLugar = 'aglomerado' | 'nebulosa' | 'galaxia';
 
@@ -59,7 +60,13 @@ export interface FatoDoLugar {
     | 'sombra'
     | 'anelEht'
     | 'estrelaS2'
-    | 'luz';
+    | 'luz'
+    | 'periodo'
+    | 'periastro'
+    | 'velocidade'
+    | 'desvioParaOVermelho'
+    | 'precessao'
+    | 'estrela';
   pt: string;
   en: string;
   procedencia: Procedencia;
@@ -96,6 +103,9 @@ export interface LugarDoCeu {
   /** o raio da esfera ENQUADRADA, em pc — ausente = a lei antiga do
    *  centro galáctico (`escada.irAte`), que fica como estava */
   raioPc?: number;
+  /** o piso do zoom, em pc — ausente = o de estrela à distância do lugar
+   *  (`raioDeEnquadramentoEstelar`), que é maior que um lugar de UA */
+  pisoPc?: number;
   vista?: VistaDoLugar;
   /** uma VISTA, não um objeto (a galáxia de cima, o endereço do Sol):
    *  não ganha nome na cena — quem marca o lugar é o rótulo do Sol */
@@ -198,6 +208,81 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
           pt: 'relatividade geral (Schwarzschild 1916)',
           en: 'general relativity (Schwarzschild 1916)',
         },
+      },
+    ],
+  },
+  {
+    // A ÓRBITA DE S2 (13/11/2026): o lugar é a órbita inteira em volta do
+    // buraco, vista do lado do Sol com o norte celeste no alto — o céu dos
+    // artigos. A estrela anda com o relógio (`lib/estrelasS.ts`); o nome
+    // dela na cena é o da estrela viva (`world/estrelasS.ts`), por isso a
+    // linha não tem rótulo de lugar.
+    id: 's2',
+    nome: 'S2',
+    pt: ['S2', 'S0-2', 'Estrela S2', 'Estrelas S'],
+    en: ['S2', 'S0-2', 'Star S2', 'S stars', 'S-stars'],
+    alvo: { cena: 'centroGalactico' },
+    classe: 'estrela',
+    // o apoastro de S2 é 1.944 UA (0,0094 pc): a esfera de 0,0105 pc o contém
+    raioPc: 0.0105,
+    // o piso do degrau de perto do buraco (3 RS, `escada.ts`)
+    pisoPc: 3 * RS_SGR_A_PC,
+    vista: 'doSol',
+    semRotulo: true,
+    distanciaPc: { valor: 8150, fonte: 'Reid et al. 2019 (VLBI)' },
+    oQueE: {
+      pt: 'Uma estrela azul e quente, dez vezes mais pesada que o Sol, que dá uma volta em torno do buraco negro do centro da galáxia a cada 16 anos. A órbita dela, medida no infravermelho desde 1992, é a prova de que ali há 4 milhões de massas solares num ponto — e, no periastro de 2018, mostrou dois efeitos da relatividade geral.',
+      en: 'A hot blue star, ten times heavier than the Sun, that circles the black hole at the centre of the galaxy every 16 years. Its orbit, measured in the infrared since 1992, is the proof that 4 million solar masses sit in a single point — and at its 2018 closest approach it showed two effects of general relativity.',
+    },
+    fatos: [
+      {
+        campo: 'periodo',
+        pt: 'uma volta a cada 16,05 anos',
+        en: 'one orbit every 16.05 years',
+        procedencia: 'medido',
+        fonte: 'GRAVITY Collaboration 2020 (A&A 636, L5)',
+      },
+      {
+        campo: 'periastro',
+        pt: '120 UA do buraco (≈ 1.400 raios de Schwarzschild), em 19 de maio de 2018; o próximo em 2034',
+        en: '120 AU from the hole (≈ 1,400 Schwarzschild radii), on 19 May 2018; the next in 2034',
+        procedencia: 'medido',
+        fonte: 'GRAVITY Collaboration 2018 (A&A 615, L15)',
+      },
+      {
+        campo: 'velocidade',
+        pt: '≈ 7.650 km/s no periastro — 2,55 % da velocidade da luz',
+        en: '≈ 7,650 km/s at closest approach — 2.55 % of the speed of light',
+        procedencia: 'medido',
+        fonte: 'GRAVITY Collaboration 2018 (A&A 615, L15)',
+      },
+      {
+        campo: 'desvioParaOVermelho',
+        pt: 'no periastro a luz chega ≈ 200 km/s mais avermelhada que pela lei de Newton (desvio gravitacional + Doppler transverso); medido f = 0,90 ± 0,09 ± 0,15, onde 1 é a relatividade geral e 0 é Newton',
+        en: 'at closest approach its light arrives ≈ 200 km/s redder than Newton predicts (gravitational redshift + transverse Doppler); measured f = 0.90 ± 0.09 ± 0.15, where 1 is general relativity and 0 is Newton',
+        procedencia: 'medido',
+        fonte: 'GRAVITY Collaboration 2018 (A&A 615, L15)',
+      },
+      {
+        campo: 'precessao',
+        pt: 'a elipse gira ≈ 12′ a cada volta (precessão de Schwarzschild; a relatividade geral prevê 12,1′); medido f = 1,10 ± 0,19, onde 1 é a relatividade geral',
+        en: 'the ellipse turns ≈ 12′ each orbit (Schwarzschild precession; general relativity predicts 12.1′); measured f = 1.10 ± 0.19, where 1 is general relativity',
+        procedencia: 'medido',
+        fonte: 'GRAVITY Collaboration 2020 (A&A 636, L5)',
+      },
+      {
+        campo: 'estrela',
+        pt: 'anã do tipo B: ≈ 28.500 K na superfície, ≈ 5,5 raios do Sol, ≈ 13,6 massas solares, ≈ 6,6 milhões de anos',
+        en: 'a B-type dwarf: ≈ 28,500 K at the surface, ≈ 5.5 solar radii, ≈ 13.6 solar masses, ≈ 6.6 million years old',
+        procedencia: 'derivado',
+        fonte: 'Habibi et al. 2017 (ApJ 847, 120)',
+      },
+      {
+        campo: 'naCena',
+        pt: 'S2 e 17 vizinhas (Gillessen et al. 2017) estão onde as órbitas medidas as põem na data do relógio, e a órbita de Kepler não inclui a precessão. Cada estrela é um ponto de luz: nenhum disco de estrela S foi resolvido. Perto do centro o buraco é desenhado maior que o real, e a sombra inflada esconde as estrelas S que ela cobre na tela.',
+        en: 'S2 and 17 neighbours (Gillessen et al. 2017) sit where the measured orbits put them on the clock’s date, and the Kepler orbit leaves out the precession. Each star is a point of light: no S star’s disc has ever been resolved. Near the centre the hole is drawn larger than real, and the inflated shadow hides the S stars it covers on screen.',
+        procedencia: 'derivado',
+        fonte: { pt: 'leis de Kepler com os elementos medidos', en: 'Kepler’s laws with the measured elements' },
       },
     ],
   },

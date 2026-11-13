@@ -167,6 +167,7 @@ import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import { filmeDe, type Filme } from './cinematic/filme';
 import { BlackHolePass, entregaDoBuraco } from './world/blackHole';
+import { EstrelasS } from './world/estrelasS';
 import { loadStarData } from './config';
 import type { NamedStar, StarsMeta } from './config';
 import type { CorpoBuscavel, LugarBuscavel } from '../lib/buscaEstrelas';
@@ -916,6 +917,9 @@ export class Director {
   private sun: StellarBody;
   private dust: Dust;
   private blackHole: BlackHolePass | null = null;
+  /** as estrelas S em volta de Sgr A✱, por cima do passe do buraco */
+  private estrelasS: EstrelasS | null = null;
+  private passeDasEstrelasS: { enabled: boolean } | null = null;
   private bgColor = new THREE.Color(0x000106);
   /** o filme em cartaz — o que o `play()` toca e o caminho do filme lê
    *  (planos, carga, calendário, dose do Sol, pinos); sem `?filme=`, o
@@ -2207,6 +2211,8 @@ export class Director {
     this.blackHole = new BlackHolePass();
     this.blackHole.setQuality(this.engine.quality);
     this.post.addBlackHole(this.blackHole);
+    this.estrelasS = new EstrelasS();
+    this.passeDasEstrelasS = this.post.addSobreOBuraco(this.estrelasS.cena, this.engine.camera, this.blackHole);
     this.engine.scene.add(this.stars.points);
     // a SEGUNDA passada do campo (item 37) — a de quem está na frente de
     // todas as nuvens da visada, desenhada depois do quad multiplicativo.
@@ -4506,6 +4512,22 @@ export class Director {
       const semBuraco = this.hide.has('nobh');
       const e = entregaDoBuraco(dGC);
       this.blackHole.updateFrame(cam.position, cam, time, semBuraco ? 0 : e.fade, e.rsPc);
+      // AS ESTRELAS S (13/11): a mesma distância decide; a sombra desenhada
+      // esconde as que ela cobre (`world/estrelasS.ts`)
+      if (this.estrelasS && this.passeDasEstrelasS) {
+        this.estrelasS.atualizar({
+          camPos: cam.position,
+          jd: this.maquinaDoTempo.jdVivo,
+          rsPc: e.rsPc,
+          buracoDesenhado: !semBuraco && e.fade > 0.001,
+          hPx,
+          pr2: pr2Atual,
+          expoM0: this.stars?.expoM0 ?? EXPO_M0,
+          sigmaPx: this.stars?.sigmaPx ?? SIGMA_PX,
+          orbitas: !this.hide.has('noorbitass'),
+        });
+        this.passeDasEstrelasS.enabled = this.estrelasS.ativo;
+      }
     }
     // AUTO-EXPOSIÇÃO: a vista externa é outro assunto fotográfico. A
     // rodada 18 venceu com 1,40 (sem knee); a rodada 20, com o knee
@@ -4866,6 +4888,7 @@ export class Director {
     // mostrador órfão da sessão anterior na tela.
     step('contadorFps', () => this.contadorFps?.descartar());
     step('blackHole', () => this.blackHole?.dispose());
+    step('estrelasS', () => this.estrelasS?.dispose());
     // recursos do mundo ANTES do renderer: material descartado depois
     // de renderer.dispose() não chama deleteProgram
     step('stars', () => this.stars?.dispose());

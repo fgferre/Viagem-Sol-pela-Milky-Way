@@ -75,6 +75,10 @@ describe('os lugares do céu', () => {
       ['SMC', 'pequena-nuvem-de-magalhaes'],
       ['M31', 'andromeda'],
       ['Andromeda Galaxy', 'andromeda'],
+      ['S2', 's2'],
+      ['S0-2', 's2'],
+      ['Estrela S2', 's2'],
+      ['S-stars', 's2'],
     ];
     for (const [consulta, id] of casos) expect(idDe(consulta), consulta).toBe(id);
   });

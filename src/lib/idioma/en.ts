@@ -506,6 +506,12 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.lugar.anelEht': 'what the EHT saw',
   'ficha.lugar.estrelaS2': 'the star S2',
   'ficha.lugar.luz': 'the light we see left it',
+  'ficha.lugar.periodo': 'one orbit',
+  'ficha.lugar.periastro': 'closest to the hole',
+  'ficha.lugar.velocidade': 'speed',
+  'ficha.lugar.desvioParaOVermelho': 'redshift',
+  'ficha.lugar.precessao': 'precession',
+  'ficha.lugar.estrela': 'the star',
   'ficha.sonda.doSol': 'distance from the Sun',
   'ficha.sonda.luz': 'light takes, from here to Earth',
   'ficha.sonda.velocidade': 'speed relative to the Sun',
@@ -737,6 +743,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'camada.nowrap': 'Surrounding field',
   'camada.nodust': 'Nearby dust',
   'camada.nobh': 'Black hole (Sgr A✱)',
+  'camada.noorbitass': 'S-star orbits',
   'camada.nocat': 'HYG catalog',
   'camada.nonomes': 'Names on screen',
   'camada.noclarao': 'Star glare',
@@ -771,6 +778,8 @@ export const EN: Record<keyof typeof PT, string> = {
     "Turns off the interstellar dust with parallax near the camera, visible while crossing the galaxy's disc.",
   'camada.nobh.nota':
     "Turns off the Sagittarius A* black hole, visible only up close, at the galaxy's center.",
+  'camada.noorbitass.nota':
+    "Turns off the lines of the measured orbits of the stars circling Sgr A✱, visible near the galaxy's centre.",
   'camada.nocat.nota':
     'Turns off the real star catalogue points (HYG), visible near the solar system.',
   'camada.nonomes.nota':
