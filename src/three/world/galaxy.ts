@@ -560,6 +560,7 @@ export class Galaxy {
       this.tauNuvens = Galaxy.texturaDasNuvens(this.nuvensEmMeia ?? tauDasNuvensEmMeia());
       this.nuvensEmMeia = null;
       this.ligarTauMap();
+      this.subirPontos(renderer);
       return true;
     }
     const bakeScene = new THREE.Scene();
@@ -672,6 +673,32 @@ export class Galaxy {
     // uniform enxerga é o bind, e ele tem um dono só.
     this.ligarTauMap();
     return true;
+  }
+
+  /**
+   * SOBE O BUFFER DAS PARTÍCULAS JÁ, num alvo de 1×1 fora da tela
+   * (13/11/2026). O `onUpload` dele solta a cópia JS — 122,7 MiB em
+   * cinema —, mas só no primeiro quadro em que o WebGL desenha os pontos; e
+   * de FORA do disco quem desenha é a camada WebGPU, então numa vista de
+   * fora (`de-cima`) a cópia ficava no heap a visita inteira (medido: heap
+   * de 462 MB contra 141 quando a câmera nascia dentro). Ela fica na placa,
+   * pronta para a volta ao disco ou para a queda do WebGPU.
+   */
+  private subirPontos(renderer: THREE.WebGLRenderer) {
+    const pts = this.brightPts;
+    const indice = this.group.children.indexOf(pts);
+    const cena = new THREE.Scene();
+    cena.add(pts);
+    const alvo = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: false });
+    const prev = renderer.getRenderTarget();
+    renderer.setRenderTarget(alvo);
+    renderer.render(cena, new THREE.PerspectiveCamera());
+    renderer.setRenderTarget(prev);
+    alvo.dispose();
+    // de volta ao grupo, no MESMO lugar entre os irmãos
+    this.group.add(pts);
+    this.group.children.splice(this.group.children.indexOf(pts), 1);
+    this.group.children.splice(indice, 0, pts);
   }
 
   /** o bind do τ⊥ num lugar só: a cópia compacta assada ou a 1×1 de repouso. */

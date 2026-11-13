@@ -1,5 +1,6 @@
 // Serve: chão — a galáxia de partículas devolve à placa o que criou quando o mundo é refeito, e a captura só espera a camada WebGPU onde ela desenha
 import { describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 
 async function galaxiaDeTeste() {
@@ -41,5 +42,18 @@ describe('a captura espera a camada WebGPU só onde ela desenha (13/11/2026)', (
     expect(galaxia.desenhoEmVoo).toBe(true);
     galaxia.dispose();
     vi.unstubAllGlobals();
+  });
+});
+
+describe('a cópia JS das partículas sai do heap mesmo de fora do disco (13/11/2026)', () => {
+  it('o modo só-partículas sobe o buffer na carga, sem esperar o WebGL desenhar', () => {
+    // De fora quem desenha é a camada WebGPU; sem a subida na carga o
+    // `onUpload` nunca rodava e os 122,7 MiB do cinema ficavam no heap
+    // (medido: 462 MB contra 141). Precisa de GPU: o contrato é o texto.
+    const fonte = readFileSync(new URL('./galaxy.ts', import.meta.url), 'utf8');
+    const bake = fonte.slice(fonte.indexOf('  async bakeDiscLayers('));
+    const ramo = bake.slice(bake.indexOf('if (this.soParticulas) {'), bake.indexOf('const bakeScene'));
+    expect(ramo).toMatch(/this\.subirPontos\(renderer\)/);
+    expect(fonte).toMatch(/brightBuffer\.onUpload\(/);
   });
 });
