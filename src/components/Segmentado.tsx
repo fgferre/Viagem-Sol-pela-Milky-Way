@@ -31,6 +31,7 @@ export function Segmentado<T>({
   opcoes,
   onEscolher,
   classeExtra,
+  desabilitado = false,
 }: {
   aria: string;
   valor: T;
@@ -41,6 +42,10 @@ export function Segmentado<T>({
    *  `09-celular.css`, e o par de colunas iguais do relevo da Terra
    *  (`08-ajustes.css`); os outros segmentados da casa não levam classe. */
   classeExtra?: string;
+  /** a fileira inteira fora de uso (o laboratório da galáxia, quando o
+   *  caminho que desenha não é o dela): visível, sem clique — o motivo é
+   *  dito por quem a hospeda */
+  desabilitado?: boolean;
 }) {
   const moldura = useFileteDoSegmentado();
   return (
@@ -59,6 +64,7 @@ export function Segmentado<T>({
             (valor === o.valor ? 'on' : '') + (o.efetivo ? ' efetivo' : '')
           }
           aria-pressed={valor === o.valor}
+          disabled={desabilitado}
           onClick={() => onEscolher(o.valor)}
         >
           {/* `<span>` (C2 do plano de motion): a pressão da casa afunda o

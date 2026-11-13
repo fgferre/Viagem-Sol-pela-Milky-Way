@@ -32,7 +32,9 @@
 // é lido pelo HUD e pelo Director, e é isso que o mantém testável.
 // ============================================================
 import { IDS_FOTOMETRIA } from './world/planetas/fotometria';
-import { idiomaAtual, t } from '../lib/idioma';
+import { decimalDoIdioma, idiomaAtual, t } from '../lib/idioma';
+import { laboratorioMexido } from './world/laboratorioDaGalaxia';
+import type { IdDoLaboratorio } from './world/laboratorioDaGalaxia';
 import type { ChaveDeTexto } from '../lib/idioma';
 // só o TIPO: a união dos quatro estados do seletor mora no engine (é
 // ele quem lê a porta `?q=`), e o `import type` é apagado na compilação
@@ -291,6 +293,23 @@ export function particulasDaGalaxiaEmTexto(nivel: ParticulasDaGalaxia): string {
   return t(`ajustes.particulas.${nivel}` as ChaveDeTexto);
 }
 
+/** O NOME DE UM CONTROLE DO LABORATÓRIO DA GALÁXIA, como o visitante lê (13/11/2026) */
+export function nomeDoControleDoLaboratorio(id: IdDoLaboratorio): string {
+  return t(`ajustes.lab.${id}` as ChaveDeTexto);
+}
+
+/**
+ * O VALOR DE UM CONTROLE DO LABORATÓRIO, como o botão o escreve; `extenso`
+ * é a frase do selo (o teto em "2 milhões", que no botão é só "2" para a
+ * fileira caber numa linha — a unidade está no "?")
+ */
+export function valorDoLaboratorioEmTexto(id: IdDoLaboratorio, v: number, extenso = false): string {
+  if (id === 'borrifo' || id === 'filtro') return t(`ajustes.lab.${id}.${v}` as ChaveDeTexto);
+  if (id === 'lod' && v === 0) return t('ajustes.lab.todas');
+  const numero = decimalDoIdioma(String(v));
+  return id === 'lodmax' && extenso ? t('ajustes.lab.milhoes', { n: numero }) : numero;
+}
+
 /** COMO A GALÁXIA DE FORA É DESENHADA, como o visitante lê (12/11/2026) */
 export function galaxiaEmTexto(caminho: CaminhoDaGalaxia): string {
   return t(`ajustes.galaxia.${caminho}` as ChaveDeTexto);
@@ -355,7 +374,8 @@ export const foraDoPreset = (e: EstadoDaQualidade): boolean =>
   e.terra !== null ||
   e.particulas !== null ||
   e.poeira !== null ||
-  e.galaxia !== null;
+  e.galaxia !== null ||
+  laboratorioMexido(e.laboratorio);
 
 export function rotuloDaQualidade(e: EstadoDaQualidade): string {
   // PERSONALIZADO (item 145, +145b, +149): mexeu num controle da gaveta

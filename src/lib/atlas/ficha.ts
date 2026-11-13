@@ -47,7 +47,7 @@ import {
   UA_POR_PC,
 } from '../unidades';
 import { NOMES_DOS_CORPOS, classeEmTexto, nomeDoCorpo } from '../../three/atlasConfig';
-import { decimalDoIdioma, idiomaAtual, t } from '../idioma';
+import { decimalDoIdioma, idiomaAtual, t, type ChaveDeTexto } from '../idioma';
 import type { Procedencia } from '../../three/selo';
 import { numeroDoIdioma } from '../../three/tempoDoAtlas';
 import { AU_KM } from './elementosOrbitais';
@@ -1060,6 +1060,23 @@ function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
   };
 }
 
+/** Os ids de `scripts/data/aglomerados.json` e o nome que a ficha mostra. */
+const NOME_DO_AGLOMERADO: Record<string, ChaveDeTexto> = {
+  pleiades: 'ficha.aglomerado.pleiades',
+  hyades: 'ficha.aglomerado.hyades',
+  praesepe: 'ficha.aglomerado.praesepe',
+  m7: 'ficha.aglomerado.m7',
+  alfaPersei: 'ficha.aglomerado.alfaPersei',
+  hPersei: 'ficha.aglomerado.hPersei',
+  chiPersei: 'ficha.aglomerado.chiPersei',
+  trapezio: 'ficha.aglomerado.trapezio',
+};
+
+function nomeDoAglomerado(id: string): string {
+  const chave = NOME_DO_AGLOMERADO[id];
+  return chave ? t(chave) : id;
+}
+
 /**
  * A FICHA DE UMA ESTRELA (item 74; o cabeçalho na parte A, o conteúdo aqui).
  *
@@ -1105,12 +1122,21 @@ export function montarFichaDeEstrela(
       // A designação de Bayer é a MESMA estrela dita de outro jeito, e para
       // quem só conhece "Sirius" ela é a ponte com qualquer carta do céu.
       linha(t('ficha.campo.designacao'), designacao, 'medido', t('ficha.fonte.bayerIau')),
-      linha(
-        t('ficha.campo.distancia'),
-        notaDeDistancia(estrela.d * UA_POR_PC, numeroDoIdioma),
-        'medido',
-        t('ficha.fonte.paralaxe')
-      ),
+      // a estrela de paralaxe imprecisa que é membro de aglomerado recebe a
+      // distância DELE (scripts/data/aglomerados.json) — e a ficha diz isso
+      estrela.ag
+        ? linha(
+            t('ficha.campo.distancia'),
+            notaDeDistancia(estrela.d * UA_POR_PC, numeroDoIdioma),
+            'derivado',
+            t('ficha.fonte.distanciaDoAglomerado', { aglomerado: nomeDoAglomerado(estrela.ag) })
+          )
+        : linha(
+            t('ficha.campo.distancia'),
+            notaDeDistancia(estrela.d * UA_POR_PC, numeroDoIdioma),
+            'medido',
+            t('ficha.fonte.paralaxe')
+          ),
       linha(t('ficha.campo.magnitude'), comCasas(estrela.m, 2), 'medido', CATALOGO),
       piloto ? null : linha(t('ficha.campo.tipoEspectral'), estrela.s || null, 'medido', CATALOGO),
       linha(

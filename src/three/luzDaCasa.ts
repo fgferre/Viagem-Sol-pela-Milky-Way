@@ -273,6 +273,34 @@ function cieYBarra(lambdaNm: number): number {
 }
 
 /**
+ * A COR DE UMA LINHA DE EMISSÃO (uma cor só, um comprimento de onda), em
+ * RGB linear sRGB, por unidade de ENERGIA na linha: x̄ȳz̄ do CIE 1931 no
+ * MESMO ajuste de Wyman–Sloan–Shirley (2013) de `cieYBarra`, e a matriz
+ * XYZ → sRGB (D65). Toda linha pura cai fora do gamute (um canal
+ * negativo); a volta é pela luminância guardada — mistura com o cinza de
+ * mesmo Y até o canal mais baixo tocar zero. A luminância é a física
+ * (Hα a 656 nm vale ~1/5 do [O III] a 501 nm para o olho, por energia).
+ */
+export function corDaLinhaDeEmissao(lambdaNm: number): [number, number, number] {
+  const lobo = (mu: number, sigmaEsq: number, sigmaDir: number): number => {
+    const t = (lambdaNm - mu) / (lambdaNm < mu ? sigmaEsq : sigmaDir);
+    return Math.exp(-0.5 * t * t);
+  };
+  const X = 1.056 * lobo(599.8, 37.9, 31.0) + 0.362 * lobo(442.0, 16.0, 26.7) - 0.065 * lobo(501.1, 20.4, 26.2);
+  const Y = cieYBarra(lambdaNm);
+  const Z = 1.217 * lobo(437.0, 11.8, 36.0) + 0.681 * lobo(459.0, 26.0, 13.8);
+  const rgb: [number, number, number] = [
+    3.2406 * X - 1.5372 * Y - 0.4986 * Z,
+    -0.9689 * X + 1.8758 * Y + 0.0415 * Z,
+    0.0557 * X - 0.204 * Y + 1.057 * Z,
+  ];
+  const menor = Math.min(...rgb);
+  if (menor >= 0) return rgb;
+  const s = Y / (Y - menor);
+  return rgb.map((c) => Math.max(0, Y + s * (c - Y))) as [number, number, number];
+}
+
+/**
  * ∫ B_λ(T)·ȳ(λ) dλ em 380–780 nm, soma de Riemann com passo de 1 nm — passo
  * FIXO de propósito: o valor é determinístico bit a bit, como toda régua.
  * Unidade arbitrária (a normalização pelo Sol é quem dá a unidade da casa).
