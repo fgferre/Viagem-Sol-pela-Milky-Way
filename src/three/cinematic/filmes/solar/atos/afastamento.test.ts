@@ -90,10 +90,9 @@ const meiaDiagonal = (fov: number) =>
 describe('a saída de Saturno e a troca de JD2 para JD_E', () => {
   const troca = filme.trocas.find((x) => x.de === 'fora' && x.para === 'escuro')!;
 
-  it('cai inteira dentro da saída de Saturno', () => {
-    const { inicio, fim } = plano('saturnoSaida');
-    expect(troca.t).toBeGreaterThan(inicio);
-    expect(troca.t + troca.duracao).toBeLessThan(fim);
+  it('começa na saída de Saturno e acaba dentro da chegada a Urano', () => {
+    expect(troca.t).toBeGreaterThan(plano('saturnoSaida').inicio);
+    expect(troca.t + troca.duracao).toBeLessThan(plano('uranoChegada').fim);
   });
 
   it('Saturno e as luas com pino ficam a mais de meio quadro + 10° da visada (borda do disco) a cada 1/30 s da rampa', () => {

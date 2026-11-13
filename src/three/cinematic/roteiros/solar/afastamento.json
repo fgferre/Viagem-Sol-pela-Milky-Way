@@ -5,24 +5,18 @@
       "qa": {"saidaDeSaturno": 0.3},
       "preload": {"corpos": ["uranus", "neptune", "triton"]},
       "camera": {
-        "duracao": 7.5,
+        "duracao": 5.5,
         "movimento": {
           "tipo": "aproximacao",
           "centro": "Saturno",
           "de": "postal2",
           "para": "saidaDeSaturno",
           "ritmoDaDirecao": "quadratic",
-          "progresso": {
-            "tipo": "soma",
-            "curvas": [
-              {"tipo": "rampa", "de": 0, "para": 0.3},
-              {"tipo": "rampa", "de": 0, "para": 0.7, "ritmo": "launch"}
-            ]
-          }
+          "progresso": {"tipo": "rampa", "de": 0, "para": 1, "ritmo": "glide"}
         },
         "mira": {"tipo": "pan-direcao", "de": "Saturno", "para": "Urano", "ate": 0.5},
         "lente": [50, 50],
-        "ritmo": "glide"
+        "ritmo": "launch"
       },
       "assuntos": ["uranus"],
       "fundoSilencioso": true,
@@ -31,7 +25,7 @@
     {
       "nome": "uranoChegada",
       "camera": {
-        "duracao": 3.1,
+        "duracao": 1,
         "movimento": {
           "tipo": "raspao",
           "centro": "Urano",
@@ -44,11 +38,18 @@
           "alongamento": 0.6,
           "chao": 0.12,
           "expoentes": [2.2, 2.0],
-          "intervalo": [0, 0.33]
+          "intervalo": [0, 0.33],
+          "progresso": {
+            "tipo": "soma",
+            "curvas": [
+              {"tipo": "rampa", "de": 0, "para": 0.68, "ritmo": "glide"},
+              {"tipo": "rampa", "de": 0, "para": 0.32, "ritmo": "quadratic"}
+            ]
+          }
         },
         "mira": {"tipo": "fixo", "ponto": "Urano"},
         "lente": [50, 50],
-        "ritmo": "quadratic"
+        "ritmo": "linear"
       },
       "assuntos": ["uranus"],
       "fundoSilencioso": true

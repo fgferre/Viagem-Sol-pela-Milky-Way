@@ -101,7 +101,7 @@ const plano = (nome: string) => {
 describe('o filme solar monta', () => {
   it('dura o prólogo no Sol, o ato I de Mercúrio a Ceres, Júpiter, Saturno, o ato IV de Urano ao retrato de família e o epílogo de volta à Terra (390–400 s), em seis atos', () => {
     expect(duracao).toBeGreaterThanOrEqual(390);
-    expect(duracao).toBeLessThanOrEqual(400); // 395,25 s: o retrato acaba em 379,25 s e o epílogo dura 16 s
+    expect(duracao).toBeLessThanOrEqual(400); // 391,15 s: o retrato acaba em 375,15 s e o epílogo dura 16 s
     expect(filme.planosPorAto).toHaveLength(6);
     expect(filme.planosPorAto[1]).toBe(16);
   });
