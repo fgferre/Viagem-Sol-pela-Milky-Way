@@ -34,8 +34,14 @@ import {
   SOL_BV,
   criarSlots,
   fatiaDoCampo,
+  haloDaLuz,
+  HALO_NO_TETO,
+  MARGEM_DO_VEU,
   meiaDaArtePx,
   passoDoOrcamento,
+  presencaNaFronteira,
+  veuDaLente,
+  veuDaLenteNaTela,
 } from './clarao';
 import type { CandidatoAoClarao } from './clarao';
 import {
@@ -242,6 +248,35 @@ describe('2. a elegibilidade pela lei — a identidade "as 16" emerge, não se d
     expect(fatiaDoCampo(1)).toBe(0);
     expect(fatiaDoCampo(NaN)).toBe(1);
     for (let l = 0; l < 1; l += 0.1) expect(fatiaDoCampo(l + 0.1)).toBeLessThan(fatiaDoCampo(l));
+  });
+
+  it('a luz única: o halo cresce devagar com a luz e o véu da lente só vale com a fonte à vista', () => {
+    // o céu de casa inteiro (m ≥ −1,5) tem o mesmo halo; acima dele o halo
+    // cresce com a luz, nunca passa de 1 e nunca desce
+    expect(haloDaLuz(-1.5)).toBeCloseTo(HALO_NO_TETO, 12);
+    expect(haloDaLuz(2)).toBeCloseTo(HALO_NO_TETO, 12);
+    for (let m = -1.5; m > -30; m -= 0.5) {
+      expect(haloDaLuz(m - 0.5)).toBeGreaterThanOrEqual(haloDaLuz(m));
+      expect(haloDaLuz(m - 0.5)).toBeLessThanOrEqual(1);
+    }
+    expect(haloDaLuz(-16)).toBeGreaterThan(haloDaLuz(-11)); // Sirius A sobre B, de perto
+    expect(haloDaLuz(NaN)).toBe(0);
+    // o véu: a luz da lente × quanto a fonte está no quadro; sem `naTela`, nenhum
+    expect(veuDaLente({ fracao: 0.8, candidata: null, naTela: 1 })).toBeCloseTo(0.8, 12);
+    expect(veuDaLente({ fracao: 0.8, candidata: null })).toBe(0);
+    expect(veuDaLente(undefined)).toBe(0);
+    // no quadro 1, atrás da câmera 0, e fora da borda cai suave até a margem
+    expect(veuDaLenteNaTela(0, 0, true, 16 / 9)).toBe(1);
+    expect(veuDaLenteNaTela(0, 0, false, 16 / 9)).toBe(0);
+    expect(veuDaLenteNaTela(0, 1 + 2 * MARGEM_DO_VEU, true, 16 / 9)).toBe(0);
+    const meio = veuDaLenteNaTela(0, 1 + MARGEM_DO_VEU, true, 16 / 9);
+    expect(meio).toBeGreaterThan(0);
+    expect(meio).toBeLessThan(1);
+    // a fronteira das vagas: presença 0 no corte, 1 num fator 2 acima, contínua
+    expect(presencaNaFronteira(5, 0)).toBe(1); // sem ninguém de fora, sem fronteira
+    expect(presencaNaFronteira(2, 2)).toBe(0);
+    expect(presencaNaFronteira(4, 2)).toBe(1);
+    expect(presencaNaFronteira(2.0001, 2)).toBeLessThan(1e-3);
   });
 });
 

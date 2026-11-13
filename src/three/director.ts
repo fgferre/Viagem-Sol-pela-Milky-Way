@@ -57,7 +57,7 @@ import type { OclusorDeRotulo, StarLabel } from './world/labels';
 // O CLARÃO DE ASAS (M2): a camada única da óptica das fontes fortes,
 // por orçamento de fluxo — no lugar das 16 heroes de autor. Quem o
 // alimenta por quadro é o módulo do Sol (director/solNoQuadro.ts).
-import { ClaraoDeAsas, lerPortaLuzUnica, type LuzDaLenteNoQuadro } from './world/clarao';
+import { ClaraoDeAsas, lerPortaLuzUnica, veuDaLenteNaTela, type LuzDaLenteNoQuadro } from './world/clarao';
 import { SondaDaLente } from './lente/sondaDaLente';
 import { amplitudeDaLente, G_DA_LENTE, multiplicadorDaForca } from './lente/passeDaLente';
 import { HeroStars } from './world/heroStars';
@@ -1102,7 +1102,9 @@ export class Director {
   private readonly luzUnica = lerPortaLuzUnica(this.debug.get('luzunica'));
   /** a luz que a lente acendeu no quadro anterior e a fonte dela — a luz
    *  única cede a ela o halo do campo da MESMA estrela (world/clarao.ts) */
-  private readonly luzDaLente: LuzDaLenteNoQuadro = { fracao: 0, candidata: null };
+  private readonly luzDaLente: LuzDaLenteNoQuadro = { fracao: 0, candidata: null, naTela: 0 };
+  /** rascunho da projeção da fonte da lente (o véu da luz única) */
+  private readonly ndcDaFonte = new THREE.Vector3();
   /** a força da lente de Ajustes, em % (o passe a guarda; aqui só para a luz única) */
   private forcaDaLente = 100;
   /**
@@ -4678,6 +4680,14 @@ export class Director {
                 multiplicadorDaForca(this.forcaDaLente)
             );
       this.luzDaLente.candidata = fonte ? fonte.candidata : null;
+      // o véu só vale com a fonte à vista: a posição dela no quadro
+      const n = this.ndcDaFonte;
+      if (fonte) n.copy(fonte.pos);
+      else n.set(0, 0, 0);
+      n.applyMatrix4(cam.matrixWorldInverse);
+      const naFrente = n.z < 0;
+      n.applyMatrix4(cam.projectionMatrix);
+      this.luzDaLente.naTela = veuDaLenteNaTela(n.x, n.y, naFrente, cam.aspect);
     }
     // A PIRÂMIDE DA POEIRA (E3c): a fonte que o pedido quer agora, o
     // aquecimento dos materiais dela (desde o clique, antes da troca) e,

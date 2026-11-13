@@ -565,8 +565,9 @@ export const CURVATURA_DA_ARTE = 0.053;
  * filme que vestia as heroes. O halo e a lente de cinema desenham a MESMA
  * luz em volta da fonte forte: onde a lente acende, o halo cede a ela — e a
  * medida é a da própria lente NESTE quadro (`luzDaLente`: a amplitude que o
- * passe recebeu sobre G, × a força de Ajustes; 0 com a lente desligada ou
- * quando a fonte dela é outra estrela), nunca uma magnitude adivinhada.
+ * passe recebeu sobre G, × a força de Ajustes; 0 com a lente desligada), nunca
+ * uma magnitude adivinhada. As outras estrelas cedem ao VÉU dela (`veuDaLente`:
+ * a mesma luz, pesada por quanto a fonte está no quadro).
  * Sem lente, então, o halo fica inteiro até o corpo (a soltura) tomar a luz;
  * com qualquer receita ele sai enquanto ela entra, e halo + lente é a mesma
  * função crescente da luz da estrela.
@@ -595,6 +596,94 @@ export interface LuzDaLenteNoQuadro {
   fracao: number;
   /** a candidata ao clarão que é a fonte da lente; null = o Sol */
   candidata: CandidataVisitada | null;
+  /**
+   * quanto a fonte da lente está NO QUADRO (0..1): 1 dentro, 0 atrás da
+   * câmera ou além da margem da borda — a mesma margem com que a própria
+   * lente some (`veuDaLenteNaTela`). É o que faz o VÉU valer só quando a
+   * fonte forte está à vista; ausente = 0 (sem véu sobre as outras).
+   */
+  naTela?: number;
+}
+
+/**
+ * O HALO CRESCE COM A LUZ, DEVAGAR — o regime do meio (m entre ≈ −1,5 e o
+ * Sol de perto). O tamanho para no teto do dono em m = −1,5, então acima
+ * dali só o halo do campo ainda pode ordenar as estrelas pela luz: uma estrela
+ * 10 mag mais brilhante que Sirius de casa tem de ler mais forte que ela.
+ * O ganho do halo é uma potência BAIXA do fluxo, presa em 1:
+ *
+ *   halo(m) = min(1, HALO_NO_TETO · 10^(0,4 · EXPOENTE_DO_HALO · max(0, −1,5 − m)))
+ *
+ * e vale HALO_NO_TETO para tudo de m = −1,5 para baixo (o céu de casa
+ * inteiro: Sirius de casa é a mais brilhante dele). A física pediria o fluxo
+ * inteiro (expoente 1): o Sol a 200 UA, 330 mil vezes Sirius de casa, teria
+ * um halo que engole o sistema solar — o dono já disse não a isso ("essa
+ * estrela spiked desse tamanho (sol) ocupa todo sistema solar na visão
+ * afastada"). O meio-termo é ARTE DECLARADA, com duas âncoras escolhidas nas
+ * pranchas de 13/11 (v3), e o halo é muito sensível ao ganho (o passe do
+ * campo tem limiar: 0,55 já tirava metade do brilho macio, 0,8 era o halo
+ * pleno de antes): Sirius de casa com 0,65 (entre o desenho de autor e a lei
+ * de antes) e o Sol a 200 UA com ~0,85 (as órbitas legíveis através dele).
+ * O halo pleno só chega em m ≈ −24 — o Sol a poucas UA, onde a lente já é
+ * inteira e o halo da fonte cede a ela de qualquer jeito.
+ */
+export const HALO_NO_TETO = 0.65;
+export const EXPOENTE_DO_HALO = 0.021;
+
+export function haloDaLuz(m: number): number {
+  if (!Number.isFinite(m)) return 0;
+  const acima = Math.max(0, MAGNITUDE_DO_TETO_DA_ARTE - m);
+  return Math.min(1, HALO_NO_TETO * Math.pow(10, 0.4 * EXPOENTE_DO_HALO * acima));
+}
+
+/**
+ * A FRONTEIRA DAS VAGAS NÃO CORTA (luz única). Com mais estrelas fortes que
+ * vagas, quem entra só entra deslocando o membro mais fraco, e com a folga da
+ * troca (RAZAO_DE_TROCA) — a entrada era um estalo: o entrante nascia com a
+ * presença que já tinha (0,35 medido em Alnitak, 13/11) e o deslocado sumia
+ * na rampa. A presença passa a cair a zero NA fronteira: `corte` é o pico do
+ * primeiro elegível que ficou de fora × a folga da troca, e a presença sobe
+ * de 0 (no corte) a 1 num fator 2 de pico acima dele (0,75 mag). Quem entra
+ * por deslocar nasce em 0 e quem é deslocado já chegou a 0 antes de perder a
+ * vaga. Só as do fim da fila sentem (m ≳ 1 no céu de casa); a régua é o pico,
+ * o mesmo critério do ranking — nenhuma conta por nome. Pura.
+ */
+export function presencaNaFronteira(pico: number, corte: number): number {
+  if (!(corte > 0)) return 1;
+  if (!(pico > corte)) return 0;
+  return Math.min(1, Math.log2(pico / corte));
+}
+
+/**
+ * O VÉU DA LENTE — a luz que a lente acende é o véu da câmera INTEIRA, não só
+ * da fonte: o espalhamento de uma fonte forte à vista levanta o fundo do
+ * quadro e afoga o halo macio de toda estrela mais fraca (o "veiling glare"
+ * das objetivas); o núcleo e os braços, nítidos, continuam. Por isso o halo
+ * de TODA estrela cede à luz da lente, pela mesma lei da fonte (`fatiaDoCampo`),
+ * com a luz pesada por quanto a fonte está no quadro (`naTela`) — fonte fora
+ * da tela não vela nada. Não é exposição: nenhum núcleo nem tamanho muda, e
+ * a conta não lê o quadro, só a lente que já está acesa nele.
+ */
+export function veuDaLente(lente: LuzDaLenteNoQuadro | undefined): number {
+  if (!lente) return 0;
+  const f = Number.isFinite(lente.fracao) ? Math.min(1, Math.max(0, lente.fracao)) : 0;
+  const t = Number.isFinite(lente.naTela) ? Math.min(1, Math.max(0, lente.naTela as number)) : 0;
+  return f * t;
+}
+
+/**
+ * O QUANTO A FONTE DA LENTE ESTÁ NO QUADRO (0..1), pela posição dela em NDC:
+ * 0 atrás da câmera; dentro do quadro 1; fora dele cai suave até zero a
+ * MARGEM_DO_VEU (em alturas de quadro) da borda — a margem da lente
+ * (`presets.ts`, `borda.margem`), para o véu sair junto com ela. Pura.
+ */
+export const MARGEM_DO_VEU = 0.15;
+
+export function veuDaLenteNaTela(ndcX: number, ndcY: number, naFrente: boolean, aspecto: number): number {
+  if (!naFrente || !Number.isFinite(ndcX) || !Number.isFinite(ndcY)) return 0;
+  const db = Math.min(aspecto / 2 - (Math.abs(ndcX) * aspecto) / 2, 0.5 - Math.abs(ndcY) / 2);
+  const t = Math.min(1, Math.max(0, (db + MARGEM_DO_VEU) / MARGEM_DO_VEU));
+  return t * t * (3 - 2 * t);
 }
 
 /** `?luzunica=1` liga a candidata; qualquer outro valor é a casa de hoje */
@@ -924,7 +1013,14 @@ export class ClaraoDeAsas {
       }
     }
 
+    // A FRONTEIRA DO ORÇAMENTO NÃO CORTA (luz única, `presencaNaFronteira`):
+    // o corte é o pico do primeiro elegível que ficou DE FORA × a folga da
+    // troca; sem ninguém de fora, não há fronteira (0)
+    const corte =
+      this.luzUnica && el.length > this.slots.length ? RAZAO_DE_TROCA * el[this.slots.length].pico : 0;
+
     passoDoOrcamento(this.slots, el, q.dtS);
+    const veu = this.luzUnica ? veuDaLente(q.lente) : 0;
 
     for (let k = 0; k < this.slots.length; k++) {
       const s = this.slots[k];
@@ -944,7 +1040,11 @@ export class ClaraoDeAsas {
       const soltura = this.soltura[i];
       const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, cssH);
       const nucleoPx = psfPointSizePx(m, q.expoM0, q.sigmaPx, cssH) * soltura;
-      const entrada = ganhoDeEntradaDoFlare(pico) * soltura * this.presenca[i];
+      const entrada =
+        ganhoDeEntradaDoFlare(pico) *
+        (corte > 0 ? presencaNaFronteira(pico, corte) : 1) *
+        soltura *
+        this.presenca[i];
       // a soltura veste o TAMANHO por fora do teto de ocupação: o clarão
       // desabrocha DO teto estacionado (o espelho do brief do dono —
       // "chega no máximo rapidamente e estaciona"), nunca além dele
@@ -972,9 +1072,12 @@ export class ClaraoDeAsas {
       u.uScreenH.value = q.screenH;
       // a fatia do campo (luz única): o mesmo desenho, no passe do campo
       // ...cedida à lente na medida da luz que ela acendeu nesta estrela
+      // (a fonte cede à luz inteira da lente; as outras, ao véu dela — a
+      // mesma luz pesada por quanto a fonte está no quadro) e cresce devagar
+      // com a luz da estrela (`haloDaLuz`)
       const lente = q.lente;
-      const daLente = lente && this.indiceDaFonte(lente.candidata) === i ? lente.fracao : 0;
-      const fatia = gemeo ? fatiaDoCampo(daLente) : 0;
+      const daLente = lente && this.indiceDaFonte(lente.candidata) === i ? lente.fracao : veu;
+      const fatia = gemeo ? fatiaDoCampo(daLente) * haloDaLuz(m) : 0;
       if (gemeo && fatia > 0) {
         gemeo.visible = true;
         gemeo.position.copy(mesh.position);
