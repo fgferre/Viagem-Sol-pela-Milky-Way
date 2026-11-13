@@ -603,7 +603,8 @@ export function cirurgiaDaEstrela(
         f,
         '  color *= (1.0-limbU) + limbU*mu;',
         `  float zGig = celulasGigantesNaTela(sp/${literalGlsl(o.gigantes.tamanhoEmRaios)} + 17.0, t*0.05);\n` +
-          `  color *= razaoDePlanck(${xDePlanckGlsl(teff)}, max(0.5, 1.0 + ${literalGlsl(d)}*(zGig > 0.0 ? zGig : ${literalGlsl(DESCIDA_DAS_GIGANTES)}*zGig)));\n` +
+          `  float rGig = max(0.5, 1.0 + ${literalGlsl(d)}*(zGig > 0.0 ? zGig : ${literalGlsl(DESCIDA_DAS_GIGANTES)}*zGig));\n` +
+          `  color *= razaoDePlanck(${xDePlanckGlsl(teff)}, rGig) * exp(-${TIO_DAS_GIGANTES_GLSL} * max(0.0, 1.0 - rGig));\n` +
           '  color *= (1.0-limbU) + limbU*mu;',
         quem
       );
@@ -705,7 +706,23 @@ vec3 razaoDePlanck(vec3 x0, float r) {
  * intensidade das simulações tem a cauda do lado claro (Chiavassa et al.
  * 2010) — o lado frio do campo leva esta fração de δ. ARTÍSTICO, declarado.
  */
-export const DESCIDA_DAS_GIGANTES = 0.9;
+export const DESCIDA_DAS_GIGANTES = 0.75;
+
+/**
+ * O TiO NAS DESCIDAS (12/11: as regiões escuras da Betelgeuse liam
+ * marrons — laranja escurecido, verde/vermelho 0,58 na tela). Abaixo de
+ * ~3.800 K as bandas do TiO, quase todas no verde e no amarelo, crescem
+ * depressa com o frio: de M0 a M6 o V − R sobe ~1 magnitude (Johnson 1966;
+ * Lee 1970), e é isso que faz a gigante fria mais vermelha que o corpo
+ * negro dela. Aqui, só no lado FRIO do campo (r = T/Teff < 1), os canais
+ * G e B levam exp(−k·(1 − r)); com k = 8, 13 % de déficit (~470 K abaixo
+ * dos 3.600 K) tiram ~1 magnitude do verde — o vermelho-escuro das
+ * descidas. Forma e k ARTÍSTICOS, declarados (ancorados nas cores das M).
+ * Com o TiO a fração fria de δ desceu de 0,9 para 0,75: o lado escuro
+ * guarda o brilho de antes e muda a cor.
+ */
+const TIO_DAS_GIGANTES = 8;
+const TIO_DAS_GIGANTES_GLSL = `vec3(0.0, ${literalGlsl(TIO_DAS_GIGANTES)}, ${literalGlsl(TIO_DAS_GIGANTES)})`;
 
 export function deltaTDasGigantes(contraste: number): number {
   return (GANHO_DAS_GIGANTES_NA_TELA * Math.max(0, contraste)) / 4;
@@ -785,6 +802,38 @@ float celulasGigantes(vec3 p, float t) {
 const PASSO_DA_CASCATA = 0.65;
 const INGREMIDADE_DA_CASCATA = 2.0;
 const OITAVAS_FINAS = 5;
+
+/**
+ * A REDE DE DESCIDAS (12/11: de perto a Betelgeuse lia como nuvem fervendo,
+ * detalhe fino 1,07 contra 1,70 do Sol no mesmo enquadramento). As
+ * simulações 3D de supergigantes vermelhas (Chiavassa et al. 2010, 2011;
+ * Freytag et al. 2002) mostram, por cima das células gigantes, células
+ * menores de borda clara e firme separadas por descidas ESTREITAS e
+ * escuras, em rede — contorno filamentar, não névoa. Em cada uma das
+ * primeiras `OITAVAS_DA_REDE` oitavas da cascata: um VALE em V ao longo da
+ * curva de nível zero do campo (a borda das células claras),
+ * exp(−|c|/`VALE_DAS_DESCIDAS`), e uma CRISTA clara mais fraca logo para
+ * dentro, na curva `NIVEL_DA_CRISTA`. Os dois termos vão a média zero (o
+ * Monte Carlo do campo, 2·10⁵ amostras: `MEDIA_DO_VALE`, `MEDIA_DA_CRISTA`)
+ * — a rede REDESENHA o brilho, não escurece o disco. Um V tem a aresta fina
+ * por construção, sem serrilhar: o vale de cada oitava some antes de ficar
+ * mais fino que o pixel (célula abaixo de ~10–15 px).
+ *
+ * Só DE PERTO: a rede aparece quando uma faixa de `LARGURA_DAS_DESCIDAS`
+ * (em unidades do campo, ~0,0024 R na escala de 0,6 R) cobre ~1 a 2,5 px —
+ * a 1,5 raio do centro ela está inteira no meio do disco; a 3 raios, em
+ * nenhum lugar (o retrato de antes, ponto a ponto na estrutura). Pesos,
+ * níveis e larguras ARTÍSTICOS, declarados.
+ */
+const LARGURA_DAS_DESCIDAS = 0.004;
+const PESO_DAS_DESCIDAS = 1.1;
+const VALE_DAS_DESCIDAS = 0.1;
+const MEDIA_DO_VALE = 0.1276;
+const NIVEL_DA_CRISTA = 0.5;
+const MEDIA_DA_CRISTA = 0.0657;
+const BRILHO_DA_CRISTA = 0.4;
+const PASSO_DA_REDE = 0.75;
+const OITAVAS_DA_REDE = 4;
 const GLSL_CELULAS_GIGANTES_NA_TELA = /* glsl */ `
 float celulasGigantesNaTela(vec3 p, float t) {
   float px = length(fwidth(p));
@@ -797,6 +846,9 @@ float celulasGigantesNaTela(vec3 p, float t) {
   float v = 1.7 * 1.7;
   float w = 0.6 / 0.81 * ${literalGlsl(PASSO_DA_CASCATA)};
   float var = 1.0;
+  // a rede de descidas: só quando a faixa dela cobre o pixel
+  float rede = 0.0;
+  float aRede = smoothstep(0.7, 2.6, ${literalGlsl(LARGURA_DAS_DESCIDAS)} / px);
   for (int k = 0; k < ${OITAVAS_FINAS}; k++) {
     float fade = 1.0 - smoothstep(0.25, 0.5, px * s);
     if (fade <= 0.0) break;
@@ -807,12 +859,18 @@ float celulasGigantesNaTela(vec3 p, float t) {
     float ing = min(${literalGlsl(INGREMIDADE_DA_CASCATA)}, 0.12 / (px * s));
     z += fade * w * local * tanh(ing * c) / tanh(ing);
     var += fade * fade * w * w;
+    if (k < ${OITAVAS_DA_REDE} && aRede > 0.0) {
+      float vale = exp(-abs(c) / ${literalGlsl(VALE_DAS_DESCIDAS)}) - ${literalGlsl(MEDIA_DO_VALE)};
+      float crista = exp(-abs(c - ${literalGlsl(NIVEL_DA_CRISTA)}) / ${literalGlsl(VALE_DAS_DESCIDAS)}) - ${literalGlsl(MEDIA_DA_CRISTA)};
+      rede += aRede * (1.0 - smoothstep(0.06, 0.12, px * s)) * (${literalGlsl(BRILHO_DA_CRISTA)} * crista - vale);
+      aRede *= ${literalGlsl(PASSO_DA_REDE)};
+    }
     s *= 2.3;
     v *= 1.7;
     w *= ${literalGlsl(PASSO_DA_CASCATA)};
   }
   // o rms do campo é o dos dados: a cascata REPARTE o contraste, não soma
-  return z * inversesqrt(var);
+  return z * inversesqrt(var) + ${literalGlsl(PESO_DAS_DESCIDAS)} * local * rede;
 }
 `;
 
@@ -1325,6 +1383,43 @@ export function cirurgiaDasFitas(vertexShader: string, escala: number): string {
     `${ANCORA_DAS_FITAS}  float ${MARCA_DAS_FITAS} = ${literalGlsl(1 / escala)};\n` +
       `  clipA *= ${MARCA_DAS_FITAS}; clipB *= ${MARCA_DAS_FITAS};\n`,
     'cirurgiaDasFitas'
+  );
+}
+
+// ============================================================
+// AS PARTÍCULAS DA EJEÇÃO NA RÉGUA DO DOADOR, por cirurgia de texto.
+//
+// O mesmo piso das fitas, no rastro das partículas de `sol/cme.js`: o rumo
+// e o comprimento do risco na tela saem de `c1.xy/max(abs(c1.w), 1e-4)`, e
+// aqui o `w` vale ~1e-8 a 1e-7 pc. Medido (Sol a 3 raios, 4 s de ejeção,
+// 2.033 partículas vivas, w mediano 6,7e-8): estiramento mediano 5,5e-4
+// contra 0,90 na conta certa (~1.600× menor), e 415 delas com o rumo preso
+// em (1, 0) — a ejeção saía em pontos redondos, no Sol e em toda estrela.
+// O CONSERTO é o das fitas: o clip das duas pontas (a partícula e a
+// partícula adiantada) vai à régua do doador antes do piso. Homogêneo: o
+// mesmo pixel e a mesma profundidade; só o piso volta a valer como foi
+// escrito.
+// ============================================================
+
+/** a marca da cirurgia — e o detector de aplicação dupla */
+const MARCA_DAS_PARTICULAS = 'particulasNaReguaDoDoador';
+const ANCORA_DAS_PARTICULAS = '  vec4 c1 = projectionMatrix * mv2;\n';
+
+/**
+ * Reescreve o vertex das partículas de `sol/cme.js` para a régua do
+ * doador: `escala` é a do grupo (raio em pc / 2,2). Âncora ausente,
+ * repetida ou cirurgia já aplicada LANÇA (nunca no-op silencioso).
+ */
+export function cirurgiaDasParticulas(vertexShader: string, escala: number): string {
+  if (vertexShader.includes(MARCA_DAS_PARTICULAS)) {
+    throw new Error('cirurgiaDasParticulas: a régua do doador já foi aplicada neste material');
+  }
+  return trocarUma(
+    vertexShader,
+    ANCORA_DAS_PARTICULAS,
+    `${ANCORA_DAS_PARTICULAS}  float ${MARCA_DAS_PARTICULAS} = ${literalGlsl(1 / escala)};\n` +
+      `  gl_Position *= ${MARCA_DAS_PARTICULAS}; c1 *= ${MARCA_DAS_PARTICULAS};\n`,
+    'cirurgiaDasParticulas'
   );
 }
 
@@ -1850,6 +1945,10 @@ export class StellarBody {
     for (const m of ctx.cmePts?.meshes ?? []) {
       if (m?.material?.uniforms?.uZScale) m.material.uniforms.uZScale.value = 1 / this.scale;
     }
+    // e o rastro delas na régua do doador (ver `cirurgiaDasParticulas`):
+    // um material só, partilhado pelas duas malhas
+    const particulas = ctx.cmePts?.ptsMat as THREE.ShaderMaterial | undefined;
+    if (particulas) particulas.vertexShader = cirurgiaDasParticulas(particulas.vertexShader, this.scale);
     createSpicules(ctx);
     ctx.prom = createProminences(ctx);
     createLoops(ctx);

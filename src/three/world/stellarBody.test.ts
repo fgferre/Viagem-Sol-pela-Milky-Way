@@ -33,6 +33,7 @@ import {
   anguloDoGiro,
   cirurgiaDaCoroaOcultavel,
   cirurgiaDasFitas,
+  cirurgiaDasParticulas,
   cirurgiaDaEstrela,
   cirurgiaDoRelevoDasGigantes,
   cirurgiaDaForma,
@@ -627,6 +628,32 @@ describe('as fitas dos laços na régua do doador (o piso de w de 0,01 pegava se
   });
 });
 
+describe('o rastro das partículas da ejeção na régua do doador (o piso de w de 1e-4 pegava sempre)', () => {
+  const C1 = '  vec4 c1 = projectionMatrix * mv2;';
+  const PISO = '  vec2 sd = c1.xy/max(abs(c1.w), 1e-4) - gl_Position.xy/max(abs(gl_Position.w), 1e-4);';
+
+  it('AGULHA: o vendorizado tem a âncora uma vez, e as duas pontas vão a 1/escala antes do piso', () => {
+    const js = readFileSync(new URL('./sol/cme.js', import.meta.url), 'utf8');
+    expect(js.split(`'${C1}',`)).toHaveLength(2);
+    const vert = ['void main(){', '  gl_Position = projectionMatrix * mv;', C1, PISO, '}'].join('\n');
+    const escala = RAIO_SOL_PC / 2.2;
+    const novo = cirurgiaDasParticulas(vert, escala);
+    const k = literalGlsl(1 / escala);
+    expect(novo).toContain(`float particulasNaReguaDoDoador = ${k};`);
+    const conta = novo.indexOf('gl_Position *= particulasNaReguaDoDoador; c1 *= particulasNaReguaDoDoador;');
+    expect(conta).toBeGreaterThan(novo.indexOf(C1));
+    expect(conta).toBeLessThan(novo.indexOf(PISO));
+    expect(() => cirurgiaDasParticulas(novo, escala)).toThrow(/cirurgiaDasParticulas/);
+    expect(() => cirurgiaDasParticulas('void main(){ }', escala)).toThrow(/cirurgiaDasParticulas/);
+  });
+
+  it('o construtor opera o material das partículas uma vez, com a escala da instância', () => {
+    const src = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
+    expect(src.split('cirurgiaDasParticulas(particulas.vertexShader, this.scale)')).toHaveLength(2);
+    expect(src.indexOf('const particulas = ctx.cmePts?.ptsMat')).toBeGreaterThan(src.indexOf('createCME(ctx);'));
+  });
+});
+
 describe('um motor, qualquer estrela — os parâmetros novos são neutros no Sol', () => {
   const sunJs = readFileSync(new URL('./sol/sun.js', import.meta.url), 'utf8');
   const tier = { fbm: 5, seg: 128, simW: 768, simH: 384, simStep: 1 / 26, prom: 7, chromo: 2048, granFreq: 34, lic7: true, loops: 16, larc: 9, lseg: 44, cstep: 36, cmestep: 24, cmen: 2048 };
@@ -680,6 +707,9 @@ describe('um motor, qualquer estrela — os parâmetros novos são neutros no So
     expect(q).toContain('color.b *= 1.0 - edge*0.50*0.000000;');
     expect(q.split('celulasGigantesNaTela(sp/0.600000').length - 1).toBe(1);
     expect(q).toContain('razaoDePlanck(');
+    // o TiO só no lado frio, e a rede de descidas só no fragment das gigantes
+    expect(q).toContain('* exp(-vec3(0.0, 8.000000, 8.000000) * max(0.0, 1.0 - rGig));');
+    expect(q).toContain('float rede = 0.0;');
     // a borda do contínuo só com peso; sem dínamo e com contraste, a granulação viva
     const c = cirurgiaDaEstrela(sunJs, { continuo: 1, teffK: 9845, semDinamo: true, contraste: 0.27 });
     expect(c).toContain('pow((mu + 0.6666667)/1.6666667, 0.25)');
