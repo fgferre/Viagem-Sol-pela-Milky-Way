@@ -418,6 +418,8 @@ export interface QuadroDoClarao {
    * ou vazia: só o Sol, bit a bit o de antes.
    */
   visitadas?: readonly CandidataVisitada[];
+  /** a luz que a lente acendeu (quadro anterior) — só a luz única a lê */
+  lente?: LuzDaLenteNoQuadro;
 }
 
 /** Quantas vagas de visitada o cadastro reserva (duas por estrela: a
@@ -537,47 +539,62 @@ export const ORCAMENTO_DA_LUZ_UNICA = 32;
  * A asa física (`raioVisivelDaAsaPx`) dá a uma estrela de m ≈ −1,5 cerca de
  * 5 px de meia-extensão; o desenho aprovado do dono dava a Sirius, de casa,
  * ~67 px. Para o céu de casa não empobrecer, o tamanho tem um PISO que é
- * função só da magnitude aparente (e da altura da tela):
+ * função só da magnitude aparente (e da altura da tela), com Δ = m − (−1,5):
  *
- *   meia_arte(m) = teto · 10^(−EXPOENTE_DA_ARTE · (m − MAGNITUDE_DO_TETO_DA_ARTE))
+ *   log10(meia_arte / teto) = −INCLINACAO·Δ − CURVATURA·max(0, Δ)²
  *
- * com `teto` = OCUPACAO_MAXIMA_DA_TELA da altura. O expoente 0,4 faz a
- * meia-extensão andar com o FLUXO (uma magnitude = ×2,5 no tamanho), e o
- * teto é alcançado em m = −1,5 (Sirius de casa já nasce no teto). Os dois
- * números são de gosto, escolhidos pela prancha contra as heroes; nada
- * aqui é por estrela. Como a arte só PISA por baixo da asa e o teto é o
- * mesmo, todo regime em que a lei já estava no teto (o Sol a 1 UA, o Sol
- * colado no disco e toda a entrega dele) fica idêntico.
+ * com `teto` = OCUPACAO_MAXIMA_DA_TELA da altura (Sirius de casa nasce no
+ * teto). A curva é de GOSTO, escolhida na prancha contra as heroes (13/11),
+ * por duas âncoras: uma estrela de m ≈ 0 (α Centauri, Vega) com 0,4 do teto
+ * (~25 px de meia num quadro de 900) e uma de m = 2 com 0,05 (~3 px: ponto).
+ * Perto do teto ela anda devagar (≈ fluxo^0,47) — as de primeira grandeza
+ * guardam um brilho legível e ordenado pela luz; mais fracas ela cai cada vez
+ * mais depressa, e o céu não vira um campo de bolhas. (A reta anterior,
+ * fluxo^1, encolhia α Centauri a ~16 px.) Nada aqui é por estrela. Como a
+ * arte só PISA por baixo da asa e o teto é o mesmo, todo regime em que a lei
+ * já estava no teto (o Sol a 1 UA, o Sol colado no disco e toda a entrega
+ * dele) fica idêntico.
  */
 export const MAGNITUDE_DO_TETO_DA_ARTE = -1.5;
-export const EXPOENTE_DA_ARTE = 0.4;
+export const INCLINACAO_DA_ARTE = 0.186;
+export const CURVATURA_DA_ARTE = 0.053;
 
 /**
- * A FATIA DO CAMPO (0..1) — ARTE DECLARADA, a outra metade do "brilho de
- * autor virou lei". O halo largo e macio das heroes não era delas: era o
- * passe do campo (`ClaraoDoCampo`, `core/post.ts`), que veste com o kernel do
- * filme tudo o que mora na camada do campo — catálogo e heroes. Na luz única
- * o clarão de toda estrela entra nesse passe pela fatia abaixo, função só da
- * magnitude aparente: inteira enquanto a fonte é estrela do céu
- * (m ≥ `M_DO_CAMPO_PLENO`), saindo devagar (smoothstep) até
- * `M_FORA_DO_CAMPO`, abaixo da qual a fonte é a lente de cinema e o disco.
- * A janela é a da LENTE de cinema acendendo — a lente também é função da
- * magnitude (a irradiância da fonte, `fonteDaLente`), então o halo sai
- * enquanto a lente entra, para toda estrela. Medido nas chegadas de Sirius
- * e Vega com a Hollywood: a janela de −6 a −12 tirava o halo cedo demais
- * (vale ×2,8), a de −10 a −12,5 deixava Vega num poço de ×5 e a de −13 a
- * −17, num de ×3,4 — a lente das duas sobe entre m −16 e −18. SEM lente
- * nada substitui o halo, e o vale fica (declarado). O Sol a menos de ~45 UA
- * nunca tem fatia: a 1 UA, colado
- * no disco e em toda a entrega dele fica idêntico; de mais longe ganha o
- * halo do campo, como qualquer estrela.
+ * A FATIA DO CAMPO (0..1) — quanto do halo largo e macio esta estrela ganha
+ * no passe do campo (`ClaraoDoCampo`, `core/post.ts`), o mesmo kernel do
+ * filme que vestia as heroes. O halo e a lente de cinema desenham a MESMA
+ * luz em volta da fonte forte: onde a lente acende, o halo cede a ela — e a
+ * medida é a da própria lente NESTE quadro (`luzDaLente`: a amplitude que o
+ * passe recebeu sobre G, × a força de Ajustes; 0 com a lente desligada ou
+ * quando a fonte dela é outra estrela), nunca uma magnitude adivinhada.
+ * Sem lente, então, o halo fica inteiro até o corpo (a soltura) tomar a luz;
+ * com qualquer receita ele sai enquanto ela entra, e halo + lente é a mesma
+ * função crescente da luz da estrela.
+ *
+ *   fatia = 1 − luzDaLente^EXPOENTE_DA_CESSAO
+ *
+ * O EXPOENTE é medido, não gosto: a lente põe boa parte da luz dela longe da
+ * fonte (fantasmas, anel, sujeira), e perto dela o que a lente acende chega
+ * DEPOIS da amplitude. Com cessão linear (1) o raio de 150 px em volta de
+ * Sirius perdia luz por seis passos (×0,99 cada) e a lente subia de uma vez
+ * (×1,23 num passo de 20 % na distância); com 2, o maior passo da chegada
+ * foi ×1,08 e o vale ×1,04; com 3 voltava um degrau de ×0,97. Com a lente
+ * plena (1) a fatia é 0 exato: o Sol a menos de 50 UA, com lente, fica como
+ * estava.
  */
-export const M_DO_CAMPO_PLENO = -16;
-export const M_FORA_DO_CAMPO = -18.5;
+export const EXPOENTE_DA_CESSAO = 2;
 
-export function fatiaDoCampo(m: number): number {
-  const t = Math.min(1, Math.max(0, (m - M_FORA_DO_CAMPO) / (M_DO_CAMPO_PLENO - M_FORA_DO_CAMPO)));
-  return t * t * (3 - 2 * t);
+export function fatiaDoCampo(luzDaLente: number): number {
+  const l = Number.isFinite(luzDaLente) ? Math.min(1, Math.max(0, luzDaLente)) : 0;
+  return 1 - Math.pow(l, EXPOENTE_DA_CESSAO);
+}
+
+/** a luz que a lente acendeu num quadro e de quem (`candidata` null = o Sol) */
+export interface LuzDaLenteNoQuadro {
+  /** a amplitude da lente sobre G, × a força de Ajustes, em 0..1 (0 = desligada) */
+  fracao: number;
+  /** a candidata ao clarão que é a fonte da lente; null = o Sol */
+  candidata: CandidataVisitada | null;
 }
 
 /** `?luzunica=1` liga a candidata; qualquer outro valor é a casa de hoje */
@@ -587,10 +604,11 @@ export function lerPortaLuzUnica(bruto: string | null): boolean {
 
 /** o piso de arte da meia-extensão (px, na régua de `screenH`) — pura */
 export function meiaDaArtePx(m: number, screenH: number): number {
+  const dm = m - MAGNITUDE_DO_TETO_DA_ARTE;
   return (
     OCUPACAO_MAXIMA_DA_TELA *
     screenH *
-    Math.pow(10, -EXPOENTE_DA_ARTE * (m - MAGNITUDE_DO_TETO_DA_ARTE))
+    Math.pow(10, -INCLINACAO_DA_ARTE * dm - CURVATURA_DA_ARTE * Math.max(0, dm) ** 2)
   );
 }
 
@@ -642,7 +660,10 @@ export class ClaraoDeAsas {
 
   constructor(
     named: readonly NamedStar[],
-    opcoes: { luzUnica?: boolean; camadaDoCampo?: number } = {}
+    opcoes: {
+      luzUnica?: boolean;
+      camadaDoCampo?: number;
+    } = {}
   ) {
     this.luzUnica = opcoes.luzUnica === true;
     const nSlots = this.luzUnica ? ORCAMENTO_DA_LUZ_UNICA : ORCAMENTO_DO_CLARAO;
@@ -818,6 +839,14 @@ export class ClaraoDeAsas {
     if (el.length > teto) el.length = teto;
   }
 
+  /** o índice no cadastro de uma visitada (a mesma regra do laço de `atualizar`); null = o Sol */
+  private indiceDaFonte(v: CandidataVisitada | null): number {
+    if (!v) return 0;
+    if (this.luzUnica && v.nomeada !== undefined && v.nomeada >= 0 && v.nomeada < this.nNomeadas)
+      return 1 + v.nomeada;
+    return v.vaga >= 0 && v.vaga < VAGAS_DE_VISITADAS ? this.inicioDasVisitadas + v.vaga : -1;
+  }
+
   atualizar(q: QuadroDoClarao): void {
     const el = this.elegiveis;
     el.length = 0;
@@ -942,7 +971,10 @@ export class ClaraoDeAsas {
       u.uNucleoPx.value = 0.5 * nucleoPx * pr;
       u.uScreenH.value = q.screenH;
       // a fatia do campo (luz única): o mesmo desenho, no passe do campo
-      const fatia = gemeo ? fatiaDoCampo(m) : 0;
+      // ...cedida à lente na medida da luz que ela acendeu nesta estrela
+      const lente = q.lente;
+      const daLente = lente && this.indiceDaFonte(lente.candidata) === i ? lente.fracao : 0;
+      const fatia = gemeo ? fatiaDoCampo(daLente) : 0;
       if (gemeo && fatia > 0) {
         gemeo.visible = true;
         gemeo.position.copy(mesh.position);

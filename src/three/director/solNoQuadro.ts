@@ -22,7 +22,7 @@ import {
 } from '../world/corpos/corpos';
 import { repartir } from '../estrela';
 import type { JanelaDoQuadro, Reparticao } from '../estrela';
-import { ClaraoDeAsas, type CandidataVisitada } from '../world/clarao';
+import { ClaraoDeAsas, type CandidataVisitada, type LuzDaLenteNoQuadro } from '../world/clarao';
 import type { StellarBody } from '../world/stellarBody';
 import type { Planetas } from '../world/planetas/planetas';
 import type { StarField } from '../world/stars';
@@ -99,6 +99,8 @@ export class SolNoQuadro {
     /** as estrelas visitadas que candidatam ao clarão pela mesma lei
      *  (`EstrelasNoQuadro.candidatasAoClarao`); vazio = só o Sol */
     visitadas: () => readonly CandidataVisitada[];
+    /** a luz que a lente acendeu e de quem (só a luz única a lê) */
+    lente?: () => LuzDaLenteNoQuadro | undefined;
   };
 
   constructor(fios: SolNoQuadro['fios']) {
@@ -259,6 +261,7 @@ export class SolNoQuadro {
         pr: q.prAtual,
         transmitanciaDoSol: this.transmitanciaDoSolVisto,
         visitadas: this.fios.visitadas(),
+        lente: this.fios.lente?.(),
       });
     }
   }

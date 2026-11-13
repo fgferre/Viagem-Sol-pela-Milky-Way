@@ -57,8 +57,9 @@ import type { OclusorDeRotulo, StarLabel } from './world/labels';
 // O CLARÃO DE ASAS (M2): a camada única da óptica das fontes fortes,
 // por orçamento de fluxo — no lugar das 16 heroes de autor. Quem o
 // alimenta por quadro é o módulo do Sol (director/solNoQuadro.ts).
-import { ClaraoDeAsas, lerPortaLuzUnica } from './world/clarao';
+import { ClaraoDeAsas, lerPortaLuzUnica, type LuzDaLenteNoQuadro } from './world/clarao';
 import { SondaDaLente } from './lente/sondaDaLente';
+import { amplitudeDaLente, G_DA_LENTE, multiplicadorDaForca } from './lente/passeDaLente';
 import { HeroStars } from './world/heroStars';
 import { Galaxy, GAL, dentroDoDisco } from './world/galaxy';
 import { GalaxiasVizinhas, sortearVizinhas } from './world/vizinhas';
@@ -1099,6 +1100,11 @@ export class Director {
   /** a LUZ ÚNICA candidata (`?luzunica=1`, world/clarao.ts): sem heroes de
    *  autor nem o remendo da chegada — o clarão da lei para toda estrela */
   private readonly luzUnica = lerPortaLuzUnica(this.debug.get('luzunica'));
+  /** a luz que a lente acendeu no quadro anterior e a fonte dela — a luz
+   *  única cede a ela o halo do campo da MESMA estrela (world/clarao.ts) */
+  private readonly luzDaLente: LuzDaLenteNoQuadro = { fracao: 0, candidata: null };
+  /** a força da lente de Ajustes, em % (o passe a guarda; aqui só para a luz única) */
+  private forcaDaLente = 100;
   /**
    * O NÍVEL DA NEBULOSA ESCOLHIDO À MÃO (item 145) — `null` = o do
    * preset. O override mora AQUI e não na `Nebula` porque é o Director
@@ -1216,6 +1222,7 @@ export class Director {
     escondido: (flag) => this.hide.has(flag),
     janelaDoQuadro: lerPortaSolQuadro(this.debug.get('solquadro')),
     visitadas: () => this.estrelasNoQuadro?.candidatasAoClarao() ?? [],
+    lente: () => (this.luzUnica ? this.luzDaLente : undefined),
   });
   /** a escada do Atlas — corte 9 da Parte 1 (director/escada.ts): o
    *  clique, a busca, os degraus, o religador do relógio e o trio do
@@ -3227,6 +3234,7 @@ export class Director {
 
   /** a força da lente de cinema (Ajustes · Lente), em %: mora no passe, daqui só sai o pedido */
   definirForcaDaLente(forca: number) {
+    this.forcaDaLente = forca;
     this.post.definirForcaDaLente(forca);
   }
 
@@ -4646,16 +4654,31 @@ export class Director {
       dtS: dt,
       fonte,
     });
+    const dUADaFonte = fonte
+      ? cam.position.distanceTo(fonte.pos) * UA_POR_PC * fonte.fatorDeDistancia
+      : cam.position.length() * UA_POR_PC;
     this.post.atualizarLente(
-      fonte
-        ? cam.position.distanceTo(fonte.pos) * UA_POR_PC * fonte.fatorDeDistancia
-        : cam.position.length() * UA_POR_PC,
+      dUADaFonte,
       this.politicaDeLuz,
       this.luzDoRoteiro,
       this.visibilidadeDoSol,
       fonte ? fonte.tinta : this.solNoQuadro.transmitanciaDoSolVisto,
       fonte
     );
+    // a luz única lê a MESMA amplitude que o passe acabou de receber (a lei
+    // dele, `amplitudeDaLente`, × a força), 0 com a lente desligada
+    if (this.luzUnica) {
+      this.luzDaLente.fracao =
+        this.post.lente === 'nenhuma'
+          ? 0
+          : Math.min(
+              1,
+              (amplitudeDaLente(dUADaFonte, this.politicaDeLuz, this.luzDoRoteiro, this.visibilidadeDoSol) /
+                G_DA_LENTE) *
+                multiplicadorDaForca(this.forcaDaLente)
+            );
+      this.luzDaLente.candidata = fonte ? fonte.candidata : null;
+    }
     // A PIRÂMIDE DA POEIRA (E3c): a fonte que o pedido quer agora, o
     // aquecimento dos materiais dela (desde o clique, antes da troca) e,
     // com a câmera DESTE quadro, o lote da residência na GPU — antes do

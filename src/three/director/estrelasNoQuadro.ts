@@ -327,6 +327,8 @@ export interface FonteDaLente {
   raioPc: number;
   fatorDeDistancia: number;
   tinta: [number, number, number];
+  /** a candidata ao clarão que é a fonte (a luz única cede o halo dela à lente) */
+  candidata: CandidataVisitada | null;
 }
 
 const LUM = [0.2126, 0.7152, 0.0722] as const;
@@ -407,6 +409,7 @@ export class EstrelasNoQuadro {
     raioPc: 0,
     fatorDeDistancia: 1,
     tinta: [1, 1, 1],
+    candidata: null,
   };
 
   constructor(named: readonly NamedStar[], fios: EstrelasNoQuadro['fios']) {
@@ -762,6 +765,7 @@ export class EstrelasNoQuadro {
     f.raioPc = melhor.raioPc;
     f.fatorDeDistancia = Math.pow(10, 0.2 * (melhor.mBase - M_BASE_DO_SOL));
     tintaRelativaAoSol(melhor.cor, f.tinta);
+    f.candidata = melhor;
     return f;
   }
 
