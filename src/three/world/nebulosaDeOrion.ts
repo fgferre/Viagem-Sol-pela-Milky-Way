@@ -13,17 +13,44 @@
 // que está atrás) e devolve a transmissão — a nuvem molecular de trás
 // apaga a faixa e o gás que ficam atrás dela.
 //
-// A GEOMETRIA (referencial local, pc, origem em θ¹ Ori C como o
+// A ANATOMIA (referencial local, pc, origem em θ¹ Ori C como o
 // catálogo da casa a desenha; x = leste, y = norte no céu, z = rumo ao
-// Sol). Medido, com a fonte aberta em cada número:
+// Sol). Três volumes, todos com espessura — nada é pele infinitamente
+// fina:
+//  1. A NUVEM MOLECULAR (OMC-1 / Órion A): um corpo escuro muito maior
+//     que a parte acesa, mais comprido de norte a sul, com borda roída e
+//     fundo irregular; a face dela que a estrela enxerga é a frente de
+//     ionização (MIF), uma parede côncava — mais alta a nordeste, onde a
+//     Baía Escura e M43 fecham o brilho, baixa a sudoeste, por onde a
+//     cavidade se abre — com a escarpa da Barra a sudeste.
+//  2. A CAMADA IONIZADA sobre a MIF, com o brilho Q/(4πd²)·cos da
+//     estrela; perto dela a camada tem ~0,1 pc, e engrossa para longe
+//     (extrapolado: o gás que evapora da parede se espalha ao sair).
+//     Na borda de baixo, a frente de ionização propriamente dita, fina e
+//     vermelha ([N II], [S II], [O I]); embaixo dela, a poeira da região
+//     de fotodissociação, e a nuvem.
+//  3. A BOLHA DO VÉU: a casca de ~4 pc soprada pelo vento de θ¹ Ori C
+//     (Pabst et al. 2019), deslocada para sudoeste, onde o plasma quente
+//     escapa (Güdel et al. 2008). A face de dentro, acesa pelo Trapézio,
+//     é a Nebulosa de Órion Estendida — vista de frente, as bordas da
+//     casca viram as "asas"; a tampa da frente é o véu de poeira neutra,
+//     onde fica a Baía Escura. Dentro dela, o gás difuso, com a bolha de
+//     alta ionização ([O III]) em volta da estrela (O'Dell & Abel 2025).
+//
+// Medido, com a fonte aberta em cada número:
 //  • θ¹ Ori C está ~0,2 pc NA FRENTE da frente de ionização principal
 //    (MIF), e a camada que emite tem ~0,1 pc — O'Dell & Henney 2008,
 //    arXiv:0810.4375.
 //  • a cavidade ionizada tem ~0,7 pc de fundo e o véu neutro fica a
-//    ~0,4 pc da estrela (van der Werf et al. 2013, arXiv:1211.0470); o
-//    véu inteiro, 1–3 pc (Abel et al. 2004, astro-ph/0404399) — a laje
-//    do véu vai de 0,4 a 1,3 pc, a camada mais ionizada de O'Dell et al.
-//    2020 (arXiv:1906.07779) a 1,3 pc.
+//    ~0,4 pc da estrela (van der Werf et al. 2013, arXiv:1211.0470); a
+//    camada mais ionizada do véu a 1,3 pc (O'Dell et al. 2020,
+//    arXiv:1906.07779).
+//  • a bolha do vento: ~4 pc de diâmetro, casca de 2.600 M☉ (Pabst et
+//    al. 2019, arXiv:1901.04221); o plasma de milhões de K enche a
+//    extensão SUDOESTE da nebulosa (Güdel et al. 2008, arXiv:0712.0476);
+//    a casca externa cobre a região de Huygens e a Nebulosa Estendida, e
+//    perto da estrela há uma bolha central de alta ionização, aberta
+//    para nós (O'Dell & Abel 2025, arXiv:2507.02147).
 //  • a Barra é uma escarpa da nuvem vista quase de lado, ~2′ a SE de
 //    θ¹ Ori C (Berné et al. 2022, arXiv:2201.05112; Pellegrini et al.
 //    2009, arXiv:0811.1176).
@@ -35,11 +62,13 @@
 //    Dec −5°17′57″, separada por uma faixa escura, acesa por NU Ori
 //    (B0.5V), que não produz [O III] (Simón-Díaz et al. 2011,
 //    arXiv:1103.3628; Pabst et al. 2020, arXiv:2005.03917).
-//  • o tamanho total, 65′ no céu (a ficha do lugar).
-// INVENTADO e declarado no selo: a forma exata da tigela fora desses
-// pontos, o comprimento da Barra, o traçado da Baía Escura e todo o
-// detalhe fino (filamentos, nós) — ruído procedural, estatisticamente
-// plausível, sem medida por trás.
+// INVENTADO e declarado na ficha: a forma exata da parede e da bolha
+// fora desses pontos, o comprimento da Barra, o traçado da Baía Escura,
+// o engrossar da camada com a distância e todo o detalhe fino (fios
+// que escorrem para longe do Trapézio, dobras da parede) — ruído
+// procedural, estatisticamente plausível, sem medida por trás. E o
+// GANHO: o brilho que chega à tela cai como a RAIZ do fluxo da estrela
+// (lei fixa do objeto, a mesma de qualquer câmera — ver `GAMA_DO_BRILHO`).
 // ============================================================
 import { corDaLinhaDeEmissao } from '../luzDaCasa';
 import { glslNumber } from '../glslNumber';
@@ -81,19 +110,27 @@ export function noCeu(lesteArcmin: number, norteArcmin: number): [number, number
   return [lesteArcmin * ARCMIN_PC, norteArcmin * ARCMIN_PC];
 }
 
+
 // ---- Os números do modelo -------------------------------------------------
 
 /** a estrela fica 0,2 pc na frente da MIF (O'Dell & Henney 2008) */
 export const ESTRELA_NA_FRENTE_DA_MIF_PC = 0.2;
-/** quanto a tigela sobe até a borda (a cavidade tem ~0,7 pc de fundo
- *  até o véu, van der Werf 2013: −0,2 → +0,35 sob o véu em +0,4) */
-const SUBIDA_DA_TIGELA_PC = 0.55;
-/** raio da curva da tigela (forma de autor entre os pontos medidos) */
-const RAIO_DA_TIGELA_PC = 1.1;
-/** espessura e-folding da pele ionizada (~0,1 pc no total, Pogge 1992
- *  via O'Dell & Henney 2008) */
-export const PELE_IONIZADA_PC = 0.05;
-/** a Barra: 2′ a SE da estrela (Berné 2022), escarpa de 0,35 pc */
+/** quanto a parede sobe até a borda: em média 0,55 pc (a cavidade tem
+ *  ~0,7 pc de fundo até o véu, van der Werf 2013), mais alta a nordeste
+ *  e baixa a sudoeste, por onde a cavidade se abre (forma de autor
+ *  guiada por Güdel 2008 e O'Dell & Harris 2010) */
+export const SUBIDA_DA_PAREDE = { media: 0.55, nordesteMenosSudoeste: 0.3 };
+/** raio da curva da parede (forma de autor entre os pontos medidos) */
+const RAIO_DA_PAREDE_PC = 1.1;
+/** espessura e-folding da camada ionizada junto à estrela (~0,1 pc no
+ *  total, O'Dell & Henney 2008); engrossa 80% por pc além de 0,25 pc
+ *  (extrapolado: o fluxo de fotoevaporação se espalha ao sair) */
+export const CAMADA_IONIZADA = { pertoPc: 0.05, crescePorPc: 0.8 };
+/** a frente de ionização propriamente dita: a borda de baixa
+ *  ionização, ~0,015 pc (autor, guiado pelas camadas da Barra de
+ *  Pellegrini 2009) */
+const FRENTE_FINA_PC = 0.015;
+/** a Barra: 2′ a SE da estrela (Berné 2022), escarpa de 0,25 pc */
 export const BARRA = {
   distanciaPc: 2 * ARCMIN_PC,
   alturaPc: 0.25,
@@ -102,20 +139,63 @@ export const BARRA = {
   meiaLarguraDaSubidaPc: 0.03,
   meioComprimentoPc: 0.38,
   pontaPc: 0.28,
-  /** atrás da escarpa a crista volta à tigela (forma de autor) */
+  /** atrás da escarpa a crista volta à parede (forma de autor) */
   descidaPc: [0.05, 0.3] as [number, number],
 };
-/** a métrica da tigela [m00, m01, m11]: 1,5× mais longa ao longo de
+/**
+ * AS ASAS: duas cristas da parede que sobem para o Sol em arco em volta
+ * da estrela — a oeste (de norte, varrendo para sudoeste) e a leste (de
+ * leste, varrendo para sul) —, e que, como a Barra, encaram a estrela e
+ * acendem de lado. É o mecanismo físico da Barra repetido mais longe; o
+ * traçado (ângulos em graus a partir do leste, rumo ao norte; raios e
+ * alturas em pc) é de autor, guiado pela forma das fotos de M42.
+ */
+export const ASAS = [
+  { de: 100, ate: 245, raioDe: 0.6, raioAte: 1.7, alturaPc: 0.35 },
+  { de: 15, ate: -100, raioDe: 0.75, raioAte: 1.9, alturaPc: 0.3 },
+] as const;
+const asa = (r: number, angulo: number, a: (typeof ASAS)[number]) => {
+  const k = Math.min(1, Math.max(0, (angulo - a.de) / (a.ate - a.de)));
+  const ponta = smooth(0, 0.2, k) * (1 - smooth(0.75, 1, k));
+  const u = r - (a.raioDe + (a.raioAte - a.raioDe) * k);
+  return a.alturaPc * smooth(-0.06, 0.06, u) * (1 - smooth(0.1, 0.5, u)) * ponta;
+};
+/** a métrica da parede [m00, m01, m11]: 1,5× mais longa ao longo de
  *  NE–SW (autor, guiado pelo leque de SW de Güdel 2008) */
-export const METRICA_DA_TIGELA: [number, number, number] = (() => {
+export const METRICA_DA_PAREDE: [number, number, number] = (() => {
   const a = 1 / (1.5 * 1.5); // ao longo de NE–SW
   const b = 1; // ao longo de NW–SE
   // eixo NE = (1, 1)/√2: M = a·nnᵀ + b·mmᵀ, m = (1, −1)/√2
   return [(a + b) / 2, (a - b) / 2, (a + b) / 2];
 })();
-/** o véu: laje neutra de 0,4 a 1,3 pc na frente da estrela */
-export const VEU = { de: 0.4, ate: 1.0, tau: 0.8 };
-const RAIO_DO_VEU_PC = 3.6;
+/**
+ * A BOLHA DO VÉU (Pabst et al. 2019: ~4 pc de diâmetro), um elipsoide
+ * deslocado para sudoeste (Güdel 2008). O centro e os semi-eixos são de
+ * autor, escolhidos para a tampa da frente cair sobre a estrela onde o
+ * véu é medido: a casca neutra começa em `cascaDe` (raio normalizado) —
+ * ~0,55 pc na frente de θ¹ Ori C (o véu a ~0,4 pc, van der Werf 2013) —
+ * e termina em 1, ~1,1 pc na frente dela (a camada de 1,3 pc de O'Dell
+ * 2020). A face de dentro, acesa, é a Nebulosa Estendida.
+ */
+export const BOLHA = {
+  centro: [-0.45, -1.0, -0.5] as Trio,
+  semiEixos: [2.1, 2.4, 1.8] as Trio,
+  /** a pele acesa de dentro (raio normalizado e meia-largura) */
+  pele: 0.73,
+  meiaLarguraDaPele: 0.05,
+  cascaDe: 0.76,
+};
+/** o véu: profundidade óptica V por pc na tampa (~0,5 pc de espessura
+ *  sobre a estrela, τ ≈ 0,8 com o grumo médio — autor; a Baía Escura,
+ *  7× mais) */
+const KAPPA_DO_VEU = 1.6;
+/** a nuvem molecular: V por pc no miolo (opaca em ~0,3 pc) e o reforço
+ *  da camada comprimida logo atrás da frente (autor) */
+const KAPPA_DA_NUVEM = 12;
+/** a extensão da nuvem (semi-eixos L–O e N–S no céu, e o fundo): muito
+ *  maior que a parte acesa, mais comprida de norte a sul como Órion A
+ *  (autor) */
+const NUVEM = { lestePc: 4.2, nortePc: 6.5, fundoPc: 2.4 };
 /** M43: centro do céu (RA 5h35m31,8s, Dec −5°17′57″) menos a estrela
  *  (RA 5h35m16,46s, Dec −5°23′22,8″), raio 2,25′ */
 export const M43 = (() => {
@@ -126,38 +206,40 @@ export const M43 = (() => {
   return { x, y, z: -0.05, raio: 2.25 * ARCMIN_PC };
 })();
 /** a Baía Escura e a faixa que a liga à faixa escura de M43: um traçado
- *  de autor (logo a leste do Trapézio → nordeste → descendo pelo oeste de
- *  M43), em pc locais, com o raio da faixa em cada vértice */
+ *  de autor (logo a leste do Trapézio → nordeste → passando ao sul e a
+ *  oeste de M43, por baixo dela), em pc locais, com o raio da faixa em cada vértice */
 export const BAIA_ESCURA: readonly [number, number, number][] = [
-  [0.07, 0.02, 0.05],
-  [0.3, 0.12, 0.17],
-  [0.62, 0.18, 0.24],
-  [0.36, 0.42, 0.1],
-  [0.3, 0.9, 0.08],
+  [0.06, 0.03, 0.04],
+  [0.25, 0.1, 0.14],
+  [0.48, 0.22, 0.17],
+  [0.35, 0.36, 0.07],
+  [0.05, 0.42, 0.06],
 ];
-/** o que a casa chama de "o objeto": a esfera que o raio testa */
-export const RAIO_DE_ORION_PC = 5.5;
-/** a nuvem molecular atrás da MIF: opaca dentro deste raio no céu */
-const RAIO_DA_NUVEM_PC = 4.6;
-const FUNDO_DA_NUVEM_PC = 2.5;
-/** o envelope da nebulosa visível (65′ no céu ≈ 3,8 pc de raio),
- *  alongado para SW, onde o gás quente se espalha (Güdel et al. 2008,
- *  arXiv:0712.0476) */
-const RAIO_DO_ENVELOPE_PC = 3.4;
-const ALONGAMENTO_SW = 1.6;
-/** e encurtado para NE, onde a Baía Escura e a faixa de M43 fecham o
- *  brilho (O'Dell & Harris 2010) — proporção de autor */
-const ENCURTAMENTO_NE = 0.6;
+/** o que a casa chama de "o objeto": a esfera que o raio testa — maior
+ *  que a nuvem, para a borda dela ser a do gás e nunca a da esfera */
+export const RAIO_DE_ORION_PC = 7.5;
 
-/** OS GANHOS DE TELA — a única parte de autor da luz: as LEIS (D⁻²,
- *  cosseno, linhas, espalhamento) são físicas, a exposição é escolha,
- *  como o tempo de exposição de uma foto longa */
-const GANHO_DA_FRENTE = 0.25;
-/** a exposição logarítmica (ver o fim de `orMarcha`): tela =
- *  ganho·ln(1 + L/joelho) */
-export const EXPOSICAO_LOG = { ganho: 0.1, joelho: 0.01 };
-const GANHO_DE_M43 = 3.0;
-const GANHO_DO_ESPALHADO = 0.03;
+/**
+ * O GANHO DE TELA — a única parte de autor da luz. As LEIS (D⁻²,
+ * cosseno, linhas, espalhamento) são físicas; o que a tela recebe é o
+ * fluxo da estrela elevado a `GAMA_DO_BRILHO`, uma lei FIXA do objeto
+ * (não depende de câmera, foco nem do que está na tela): o miolo a
+ * 0,2 pc recebe 100× o fluxo da asa a 2 pc, e a tela mostra ~6×. Sem
+ * ela as asas somem no preto ou o miolo estoura em branco. Declarado na
+ * ficha.
+ */
+export const GAMA_DO_BRILHO = 0.4;
+const GANHO_DA_CAMADA = 0.035;
+const GANHO_DA_FRENTE_FINA = 0.02;
+const GANHO_DO_DIFUSO = 0.012;
+const GANHO_DA_ESTENDIDA = 0.3;
+const GANHO_DE_M43 = 0.15;
+const GANHO_DO_ESPALHADO = 0.01;
+
+/** DEPURAÇÃO (`?orion=0`): o objeto inteiro desligado, para medir o que
+ *  ele custa contra a mesma vista sem ele. Ausente, ligado. */
+const ORION_LIGADA =
+  typeof window === 'undefined' || new URLSearchParams(window.location.search).get('orion') !== '0';
 
 // ---- As leis, em TS (espelho testado do GLSL) ----------------------------
 
@@ -165,54 +247,56 @@ const smooth = (a: number, b: number, x: number) => {
   const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
 };
-const dSmooth = (a: number, b: number, x: number) => {
-  const t = (x - a) / (b - a);
-  return t <= 0 || t >= 1 ? 0 : (6 * t * (1 - t)) / (b - a);
-};
 const SE: [number, number] = [Math.SQRT1_2, -Math.SQRT1_2];
 const NE: [number, number] = [Math.SQRT1_2, Math.SQRT1_2];
 
 /**
  * A ALTURA DA FRENTE DE IONIZAÇÃO (MIF) sobre o plano da estrela, em pc,
- * e o gradiente — uma tigela côncava aberta para o Sol (o "blister"),
- * mais a escarpa da Barra a SE. Abaixo dela, a nuvem molecular.
+ * sem o detalhe fino — uma parede côncava aberta para o Sol (o
+ * "blister"), mais alta a nordeste e baixa a sudoeste, mais a escarpa da
+ * Barra a SE. Abaixo dela, a nuvem molecular. O shader acende pela
+ * normal desta MESMA conta (diferença finita).
  */
-export function alturaDaFrente(x: number, y: number): { z: number; gx: number; gy: number } {
-  // a tigela é mais comprida no eixo NE–SW (o leque de SW): métrica
-  // elíptica e2 = xᵀMx, ∇e2 = 2Mx
-  const [m00, m01, m11] = METRICA_DA_TIGELA;
+export function alturaDaFrente(x: number, y: number): number {
+  const [m00, m01, m11] = METRICA_DA_PAREDE;
   const e2 = m00 * x * x + 2 * m01 * x * y + m11 * y * y;
-  const g = Math.exp(-e2 / (RAIO_DA_TIGELA_PC * RAIO_DA_TIGELA_PC));
-  let z = -ESTRELA_NA_FRENTE_DA_MIF_PC + SUBIDA_DA_TIGELA_PC * (1 - g);
-  const k = (SUBIDA_DA_TIGELA_PC * g * 2) / (RAIO_DA_TIGELA_PC * RAIO_DA_TIGELA_PC);
-  let gx = k * (m00 * x + m01 * y);
-  let gy = k * (m01 * x + m11 * y);
+  const g = Math.exp(-e2 / (RAIO_DA_PAREDE_PC * RAIO_DA_PAREDE_PC));
+  const r = Math.hypot(x, y);
+  const c = (x * NE[0] + y * NE[1]) / Math.max(r, 1e-4);
+  const subida = SUBIDA_DA_PAREDE.media + 0.5 * SUBIDA_DA_PAREDE.nordesteMenosSudoeste * c;
+  let z = -ESTRELA_NA_FRENTE_DA_MIF_PC + subida * (1 - g);
   const v = x * NE[0] + y * NE[1];
   const u = x * SE[0] + y * SE[1] - BARRA.distanciaPc - BARRA.curvatura * v * v;
-  // ∂u/∂(x, y) = SE − 2κv·NE
-  const ux = SE[0] - 2 * BARRA.curvatura * v * NE[0];
-  const uy = SE[1] - 2 * BARRA.curvatura * v * NE[1];
   const w = BARRA.meiaLarguraDaSubidaPc;
   // a escarpa sobe de uma vez e desce devagar atrás dela (uma crista,
   // não um planalto sem fim)
-  const queda = 1 - smooth(BARRA.descidaPc[0], BARRA.descidaPc[1], u);
-  const s = smooth(-w, w, u) * queda;
-  const ds = dSmooth(-w, w, u) * queda - smooth(-w, w, u) * dSmooth(BARRA.descidaPc[0], BARRA.descidaPc[1], u);
+  const s = smooth(-w, w, u) * (1 - smooth(BARRA.descidaPc[0], BARRA.descidaPc[1], u));
   const L = 1 - smooth(BARRA.meioComprimentoPc - BARRA.pontaPc, BARRA.meioComprimentoPc, Math.abs(v));
-  const dL = -dSmooth(BARRA.meioComprimentoPc - BARRA.pontaPc, BARRA.meioComprimentoPc, Math.abs(v)) * Math.sign(v);
   z += BARRA.alturaPc * s * L;
-  gx += BARRA.alturaPc * (ds * L * ux + s * dL * NE[0]);
-  gy += BARRA.alturaPc * (ds * L * uy + s * dL * NE[1]);
-  return { z, gx, gy };
+  const graus = (Math.atan2(y, x) * 180) / Math.PI;
+  z += asa(r, graus < 0 ? graus + 360 : graus, ASAS[0]) + asa(r, graus, ASAS[1]);
+  return z;
+}
+
+/** o raio normalizado da bolha do véu num ponto local (sem o ruído da
+ *  borda): < `BOLHA.pele` dentro, ~1 na borda de fora */
+export function raioNaBolha(p: Trio): number {
+  const { centro, semiEixos } = BOLHA;
+  return Math.hypot(...([0, 1, 2].map((i) => (p[i] - centro[i]) / semiEixos[i]) as Trio));
+}
+
+/** a espessura e-folding da camada ionizada a uma distância d da estrela */
+export function espessuraDaCamada(dPc: number): number {
+  return CAMADA_IONIZADA.pertoPc * (1 + CAMADA_IONIZADA.crescePorPc * Math.max(dPc - 0.25, 0));
 }
 
 /**
- * O BRILHO DA PELE IONIZADA num ponto da frente: o equilíbrio de
+ * O BRILHO DA CAMADA IONIZADA num ponto da frente: o equilíbrio de
  * fotoionização põe na frente uma medida de emissão proporcional aos
  * fótons ionizantes que chegam — Q/(4πd²) vezes o cosseno da incidência.
- * Numa tigela cuja frente se inclina para longe da estrela isso dá o D⁻²
- * perto e o ~D⁻³ longe que O'Dell & Harris (2010) medem. Unidade: 1 na
- * frente perpendicular a 1 pc. `d` tem piso no fundo da tigela (0,2 pc).
+ * Numa parede que se inclina para longe da estrela isso dá o D⁻² perto e
+ * o ~D⁻³ longe que O'Dell & Harris (2010) medem. Unidade: 1 na frente
+ * perpendicular a 1 pc. `d` tem piso no fundo da parede (0,2 pc).
  */
 /** a frente de costas para a estrela ainda recebe a luz difusa do gás
  *  (a recombinação devolve fótons ionizantes em toda direção) — autor */
@@ -221,6 +305,11 @@ export const PISO_DA_INCIDENCIA = 0.08;
 export function brilhoDaFrente(dPc: number, cosIncidencia: number): number {
   const d = Math.max(dPc, ESTRELA_NA_FRENTE_DA_MIF_PC);
   return Math.max(cosIncidencia, PISO_DA_INCIDENCIA) / (d * d);
+}
+
+/** o que a tela recebe de um fluxo: a lei fixa `GAMA_DO_BRILHO` */
+export function brilhoNaTela(fluxo: number): number {
+  return fluxo ** GAMA_DO_BRILHO;
 }
 
 /**
@@ -242,10 +331,12 @@ export const CORES_DAS_LINHAS = {
   nii: corDaLinhaDeEmissao(658.4),
   hbeta: corDaLinhaDeEmissao(486.1),
   oiii: corDaLinhaDeEmissao(500.7),
+  sii: corDaLinhaDeEmissao(671.6),
+  oi: corDaLinhaDeEmissao(630.0),
 };
 
-/** a cor da pele a uma distância d da estrela (soma das linhas, por Hβ);
- *  [N II]/Hα sobe para fora, onde a ionização é mais baixa */
+/** a cor da camada a uma distância d da estrela (soma das linhas, por
+ *  Hβ); [N II]/Hα sobe para fora, onde a ionização é mais baixa */
 export function corDaFrente(dPc: number, comOIII = true): Trio {
   const o3 = comOIII ? razaoOIII(dPc) : 0;
   const n2 = HALFA_POR_HBETA * (0.15 + 0.3 * (1 - 1 / (1 + (dPc / 0.5) ** 2)));
@@ -254,6 +345,12 @@ export function corDaFrente(dPc: number, comOIII = true): Trio {
     (i) => HALFA_POR_HBETA * c.halfa[i] + n2 * c.nii[i] + c.hbeta[i] + o3 * c.oiii[i]
   ) as Trio;
 }
+
+/** a borda de baixa ionização (a frente fina): [N II], [S II] e [O I]
+ *  — proporções de autor, só a cor (o brilho vem do fluxo) */
+const COR_DA_FRENTE_FINA: Trio = [0, 1, 2].map(
+  (i) => CORES_DAS_LINHAS.nii[i] + 0.6 * CORES_DAS_LINHAS.sii[i] + 0.3 * CORES_DAS_LINHAS.oi[i] + 0.5 * CORES_DAS_LINHAS.halfa[i]
+) as Trio;
 
 // ---- O shader -------------------------------------------------------------
 
@@ -270,6 +367,7 @@ const COR_ESPALHADA: Trio = [0.55, 0.78, 1.0];
  * (GLSL_NOISE) antes dele.
  */
 export const GLSL_ORION_BASE = /* glsl */ `
+const bool OR_LIGADO = ${ORION_LIGADA ? 'true' : 'false'};
 const vec3 OR_C = ${v3(CENTRO_DE_ORION)};
 const vec3 OR_E = ${v3(REFERENCIAL_DE_ORION.leste)};
 const vec3 OR_N = ${v3(REFERENCIAL_DE_ORION.norte)};
@@ -289,50 +387,54 @@ vec2 orIntervalo(vec3 o, vec3 d) {
   return vec2(max(-b - h, 0.0), -b + h);
 }
 
-// a frente: (z, dz/dx, dz/dy) — espelho de alturaDaFrente
-float orS(float a, float b, float x) { return smoothstep(a, b, x); }
-float orDS(float a, float b, float x) {
-  float t = (x - a) / (b - a);
-  return (t <= 0.0 || t >= 1.0) ? 0.0 : 6.0 * t * (1.0 - t) / (b - a);
+// uma asa: crista em arco (espelho de \`asa\`)
+float orAsa(float r, float th, float th0, float th1, float R0, float R1, float A) {
+  float k = clamp((th - th0) / (th1 - th0), 0.0, 1.0);
+  float ponta = smoothstep(0.0, 0.2, k) * (1.0 - smoothstep(0.75, 1.0, k));
+  float u = r - mix(R0, R1, k);
+  return A * smoothstep(-0.06, 0.06, u) * (1.0 - smoothstep(0.1, 0.5, u)) * ponta;
 }
-vec3 orFrente(vec2 xy) {
+// a frente sem detalhe — espelho de alturaDaFrente
+float orAlturaLisa(vec2 xy) {
   const vec2 SE = vec2(0.70710678, -0.70710678);
   const vec2 NE = vec2(0.70710678, 0.70710678);
-  vec2 Mxy = vec2(${n(METRICA_DA_TIGELA[0])} * xy.x + ${n(METRICA_DA_TIGELA[1])} * xy.y,
-                  ${n(METRICA_DA_TIGELA[1])} * xy.x + ${n(METRICA_DA_TIGELA[2])} * xy.y);
-  float g = exp(-dot(xy, Mxy) * ${n(1 / (RAIO_DA_TIGELA_PC * RAIO_DA_TIGELA_PC))});
-  float z = ${n(-ESTRELA_NA_FRENTE_DA_MIF_PC)} + ${n(SUBIDA_DA_TIGELA_PC)} * (1.0 - g);
-  vec2 grad = Mxy * (${n((2 * SUBIDA_DA_TIGELA_PC) / (RAIO_DA_TIGELA_PC * RAIO_DA_TIGELA_PC))} * g);
+  vec2 Mxy = vec2(${n(METRICA_DA_PAREDE[0])} * xy.x + ${n(METRICA_DA_PAREDE[1])} * xy.y,
+                  ${n(METRICA_DA_PAREDE[1])} * xy.x + ${n(METRICA_DA_PAREDE[2])} * xy.y);
+  float g = exp(-dot(xy, Mxy) * ${n(1 / (RAIO_DA_PAREDE_PC * RAIO_DA_PAREDE_PC))});
+  float c = dot(xy, NE) / max(length(xy), 1e-4);
+  float z = ${n(-ESTRELA_NA_FRENTE_DA_MIF_PC)} +
+    (${n(SUBIDA_DA_PAREDE.media)} + ${n(0.5 * SUBIDA_DA_PAREDE.nordesteMenosSudoeste)} * c) * (1.0 - g);
   float v = dot(xy, NE);
   float u = dot(xy, SE) - ${n(BARRA.distanciaPc)} - ${n(BARRA.curvatura)} * v * v;
-  vec2 du = SE - ${n(2 * BARRA.curvatura)} * v * NE;
-  float s0 = orS(${n(-BARRA.meiaLarguraDaSubidaPc)}, ${n(BARRA.meiaLarguraDaSubidaPc)}, u);
-  float queda = 1.0 - orS(${n(BARRA.descidaPc[0])}, ${n(BARRA.descidaPc[1])}, u);
-  float s = s0 * queda;
-  float ds = orDS(${n(-BARRA.meiaLarguraDaSubidaPc)}, ${n(BARRA.meiaLarguraDaSubidaPc)}, u) * queda -
-    s0 * orDS(${n(BARRA.descidaPc[0])}, ${n(BARRA.descidaPc[1])}, u);
-  float a0 = ${n(BARRA.meioComprimentoPc - BARRA.pontaPc)};
-  float a1 = ${n(BARRA.meioComprimentoPc)};
-  float L = 1.0 - orS(a0, a1, abs(v));
-  float dL = -orDS(a0, a1, abs(v)) * sign(v);
-  z += ${n(BARRA.alturaPc)} * s * L;
-  grad += ${n(BARRA.alturaPc)} * (ds * L * du + s * dL * NE);
-  return vec3(z, grad);
+  float s = smoothstep(${n(-BARRA.meiaLarguraDaSubidaPc)}, ${n(BARRA.meiaLarguraDaSubidaPc)}, u) *
+    (1.0 - smoothstep(${n(BARRA.descidaPc[0])}, ${n(BARRA.descidaPc[1])}, u));
+  float L = 1.0 - smoothstep(${n(BARRA.meioComprimentoPc - BARRA.pontaPc)}, ${n(BARRA.meioComprimentoPc)}, abs(v));
+  float r = length(xy);
+  float th = degrees(atan(xy.y, xy.x));
+${ASAS.map((a, i) => `  z += orAsa(r, ${i === 0 ? 'th < 0.0 ? th + 360.0 : th' : 'th'}, ${n(a.de)}, ${n(a.ate)}, ${n(a.raioDe)}, ${n(a.raioAte)}, ${n(a.alturaPc)});`).join('\n')}
+  return z + ${n(BARRA.alturaPc)} * s * L;
 }
 
-// a nuvem molecular atrás da frente: densidade 0..1 (sem detalhe — a
-// mesma conta na extinção das estrelas e no raymarch)
+// o corpo da nuvem molecular: 0..1, muito maior que a parte acesa, mais
+// comprido de norte a sul, borda roída e fundo irregular (inventados) —
+// a mesma conta na extinção das estrelas e no raymarch
+float orMassa(vec3 q) {
+  float ruido = fbm(q * 0.35 + 2.3, 2);
+  vec2 e = vec2(q.x * ${n(1 / NUVEM.lestePc)}, q.y * ${n(1 / NUVEM.nortePc)});
+  float rr = length(e) * (0.75 + 0.65 * ruido);
+  float lado = 1.0 - smoothstep(0.35, 1.0, rr);
+  float fundo = smoothstep(${n(-NUVEM.fundoPc - 0.7)}, ${n(-NUVEM.fundoPc + 0.7)}, q.z + 1.6 * (ruido - 0.375));
+  return lado * lado * lado * fundo;
+}
+// a densidade da nuvem atrás da frente (h < 0): a camada comprimida logo
+// atrás da frente é mais densa (autor)
 float orNuvem(vec3 q, float h) {
-  // a borda não é um círculo: o raio respira com um ruído largo
-  // (inventado) e a coluna afina para fora em vez de cortar
-  float r = length(q.xy) * (0.8 + 0.4 * fbm(q * 0.45 + 2.3, 2));
-  float lado = 1.0 - smoothstep(${n(RAIO_DA_NUVEM_PC * 0.45)}, ${n(RAIO_DA_NUVEM_PC)}, r);
-  float fundo = smoothstep(${n(-FUNDO_DA_NUVEM_PC)}, ${n(-FUNDO_DA_NUVEM_PC + 0.6)}, q.z);
-  return smoothstep(0.0, -0.03, h) * lado * lado * lado * fundo;
+  return smoothstep(0.0, -0.05, h) * orMassa(q) * (1.0 + 4.0 * exp(h * 4.0));
 }
 
 // a profundidade óptica (V) pela nuvem molecular no segmento a→b (cena)
 float orColunaDaNuvem(vec3 a, vec3 b) {
+  if (!OR_LIGADO) return 0.0;
   vec3 o = orLocal(a);
   vec3 dv = orDir(b - a);
   float len = length(dv);
@@ -345,26 +447,28 @@ float orColunaDaNuvem(vec3 a, vec3 b) {
   float tau = 0.0;
   for (int i = 0; i < 8; i++) {
     vec3 q = o + d * (iv.x + (float(i) + 0.5) * dt);
-    vec3 f = orFrente(q.xy);
-    tau += orNuvem(q, q.z - f.x) * dt;
+    tau += orNuvem(q, q.z - orAlturaLisa(q.xy)) * dt;
   }
-  return tau * 40.0;
+  return tau * ${n(KAPPA_DA_NUVEM)};
 }
 `;
 
 /**
  * O SUB-LAÇO DO RAYMARCH. Devolve (rgb emitido, transmissão) no trecho
- * do raio dentro da esfera. A pele ionizada é integrada EXATA por
- * segmento (perfil exponencial em h, h linear no passo) — não há banda
- * nem que o passo pule a camada de 0,1 pc; o passo é adaptativo, fino
- * perto da frente e largo na cavidade.
+ * do raio dentro da esfera. A camada ionizada e a frente fina são
+ * integradas EXATAS por segmento (perfil exponencial em h, h linear no
+ * passo) — não há banda nem que o passo pule a camada; o passo é
+ * adaptativo, fino perto da frente, da pele da bolha e da estrela.
  */
 export const GLSL_ORION_MARCHA = /* glsl */ `
 const vec3 OR_COR_HALFA = ${v3(CORES_DAS_LINHAS.halfa)};
 const vec3 OR_COR_NII = ${v3(CORES_DAS_LINHAS.nii)};
 const vec3 OR_COR_HBETA = ${v3(CORES_DAS_LINHAS.hbeta)};
 const vec3 OR_COR_OIII = ${v3(CORES_DAS_LINHAS.oiii)};
+const vec3 OR_COR_FINA = ${v3(COR_DA_FRENTE_FINA)};
 const vec3 OR_COR_ESPALHADA = ${v3(COR_ESPALHADA)};
+const vec3 OR_BOLHA_C = ${v3(BOLHA.centro)};
+const vec3 OR_BOLHA_INV = ${v3(BOLHA.semiEixos.map((v) => 1 / v))};
 
 vec3 orCorDaFrente(float d, float o3peso) {
   float x = d * ${n(1 / 0.5)};
@@ -374,45 +478,70 @@ vec3 orCorDaFrente(float d, float o3peso) {
   return ${n(HALFA_POR_HBETA)} * OR_COR_HALFA + n2 * OR_COR_NII + OR_COR_HBETA + o3 * OR_COR_OIII;
 }
 
-// ∫ g(h) ao longo de um passo com h linear de h0 a h1, g = e^(−h/H) acima
-// da frente (a pele ionizada) e e^(h/Hi) abaixo dela (o gás ionizado
-// acaba de uma vez dentro da nuvem). G é a primitiva, G(0) = 0.
-float orG(float h) {
-  return h >= 0.0
-    ? ${n(PELE_IONIZADA_PC)} * (1.0 - exp(-h * ${n(1 / PELE_IONIZADA_PC)}))
-    : 0.01 * (exp(h * 100.0) - 1.0);
-}
-float orPele(float h0, float h1, float dt) {
-  if (abs(h1 - h0) < 1e-4) {
-    float hm = 0.5 * (h0 + h1);
-    return dt * (hm >= 0.0 ? exp(-hm * ${n(1 / PELE_IONIZADA_PC)}) : exp(hm * 100.0));
-  }
-  return dt * (orG(h1) - orG(h0)) / (h1 - h0);
+// as dobras da parede (inventadas): a grande (~0,7 pc) entra na normal —
+// as dobras que encaram a estrela acendem, as de costas apagam; a fina
+// (~0,2 pc) só na altura
+float orDobra(vec2 xy) { return 0.13 * (fbm(vec3(xy * 1.4, 3.7), 2) - 0.375); }
+// a frente: (z, dz/dx, dz/dy), normal por diferença finita da MESMA conta
+vec3 orFrente(vec2 xy) {
+  const float e = 0.015;
+  float z0 = orAlturaLisa(xy) + orDobra(xy);
+  float zx = orAlturaLisa(xy + vec2(e, 0.0)) + orDobra(xy + vec2(e, 0.0));
+  float zy = orAlturaLisa(xy + vec2(0.0, e)) + orDobra(xy + vec2(0.0, e));
+  float fina = 0.035 * (fbm(vec3(xy * 4.6, 8.1), 2) - 0.375);
+  return vec3(z0 + fina, (zx - z0) / e, (zy - z0) / e);
 }
 
-// o traçado da Baía Escura: 0..1
+// ∫ g(h)/H ao longo de um passo com h linear de h0 a h1, g = e^(−h/H)
+// acima da frente (a camada) e e^(h/0,01) abaixo dela (o gás ionizado
+// acaba de uma vez dentro da nuvem); a coluna perpendicular vale 1
+float orG(float h, float H) {
+  return h >= 0.0 ? H * (1.0 - exp(-h / H)) : 0.01 * (exp(h * 100.0) - 1.0);
+}
+float orPele(float h0, float h1, float dt, float H) {
+  if (abs(h1 - h0) < 1e-4) {
+    float hm = 0.5 * (h0 + h1);
+    return dt * (hm >= 0.0 ? exp(-hm / H) : exp(hm * 100.0)) / H;
+  }
+  return dt * (orG(h1, H) - orG(h0, H)) / ((h1 - h0) * H);
+}
+
+// O DETALHE FINO (inventado, declarado): fios que ESCORREM para longe do
+// Trapézio — ruído em coordenadas de direção (alta frequência de lado) e
+// de log da distância (baixa frequência ao longo), torcido por um ruído
+// largo para os fios curvarem; crista afiada. Média ~1.
+float orFios(vec3 q, float r) {
+  vec3 u = q / max(r, 1e-3);
+  vec3 torce = vec3(fbm(q * 1.6 + 1.7, 2), fbm(q * 1.6 + 8.3, 2), fbm(q * 1.6 + 4.1, 2)) - 0.375;
+  vec3 P = (u + torce * 1.0) * 8.0 + vec3(0.0, 0.0, log(r + 0.03) * 5.0);
+  float a = 1.0 - abs(2.0 * fbm(P, 3) / 0.875 - 1.0);
+  float b = 1.0 - abs(2.0 * fbm(P * 2.7 + q * 2.0 + 5.0, 2) / 0.75 - 1.0);
+  // e um grão sem rumo, para os fios não virarem um sol de raios
+  float c = fbm(q * 3.3 + 17.0, 2);
+  return (0.25 + 1.4 * a * a * a + 0.6 * b * b * b * b) * (0.45 + 1.45 * c);
+}
+
+// o traçado da Baía Escura: 0..1, borda roída por ruído (inventado)
 float orBaia(vec2 xy) {
-  float m = 0.0;
-  // a borda da faixa ondula (inventado)
-  xy += (vec2(fbm(vec3(xy * 6.0, 1.0), 2), fbm(vec3(xy * 6.0, 7.0), 2)) - 0.375) * 0.12;
+  float m = 1e9;
 ${BAIA_ESCURA.slice(0, -1)
   .map((a, i) => {
     const b = BAIA_ESCURA[i + 1];
     return `  { vec2 A = vec2(${n(a[0])}, ${n(a[1])}); vec2 B = vec2(${n(b[0])}, ${n(b[1])});
     vec2 ab = B - A; float k = clamp(dot(xy - A, ab) / dot(ab, ab), 0.0, 1.0);
-    float rr = mix(${n(a[2])}, ${n(b[2])}, k);
-    m = max(m, 1.0 - smoothstep(0.0, rr * 1.3, length(xy - A - ab * k))); }`;
+    m = min(m, length(xy - A - ab * k) / mix(${n(a[2])}, ${n(b[2])}, k)); }`;
   })
   .join('\n')}
   return m;
 }
 
 vec4 orMarcha(vec3 roCena, vec3 rdCena, float jitter, int passos) {
+  vec3 acc = vec3(0.0);
+  float T = 1.0;
+  if (!OR_LIGADO) return vec4(acc, T);
   vec3 o = orLocal(roCena);
   vec3 d = orDir(rdCena);
   vec2 iv = orIntervalo(o, d);
-  vec3 acc = vec3(0.0);
-  float T = 1.0;
   if (iv.y <= iv.x) return vec4(acc, T);
   // fora de 3 kpc o objeto é menor que um pixel do alvo de meia resolução
   if (dot(o, o) > 9.0e6) return vec4(acc, T);
@@ -421,93 +550,105 @@ vec4 orMarcha(vec3 roCena, vec3 rdCena, float jitter, int passos) {
   vec3 q = o + d * t;
   vec3 f = orFrente(q.xy);
   float hPrev = (q.z - f.x) * inversesqrt(1.0 + dot(f.yz, f.yz));
+  float sPrev = length((q - OR_BOLHA_C) * OR_BOLHA_INV);
+  float rPrev = length(q);
   bool primeiro = true;
   for (int i = 0; i < 128; i++) {
     if (i >= passos || t >= iv.y || T < 0.01) break;
-    float dt = clamp(0.4 * abs(hPrev) + 0.012, 0.012, 0.35) * escala;
+    // o passo: fino perto da frente, da pele da bolha e da estrela
+    float dt = min(min(0.4 * abs(hPrev) + 0.012, 0.8 * abs(sPrev - ${n(BOLHA.pele)}) + 0.03), 0.35 * rPrev + 0.02);
+    dt = clamp(dt, 0.012, 0.45) * escala;
     if (primeiro) { dt *= 0.25 + jitter; primeiro = false; }
     dt = min(dt, iv.y - t);
-    float tm = t + dt * 0.5;
     t += dt;
     q = o + d * t;
-    vec3 qm = o + d * tm;
     f = orFrente(q.xy);
-    // o detalhe fino: a frente ondula em ~0,2 e ~0,05 pc (inventado)
-    float ond = (fbm(q * 6.0 + 3.1, 2) - 0.375) * 0.11 + (fbm(q * 23.0 + 9.7, 2) - 0.375) * 0.02;
-    float hNow = (q.z - f.x + ond) * inversesqrt(1.0 + dot(f.yz, f.yz));
-    float dist = max(length(qm), ${n(ESTRELA_NA_FRENTE_DA_MIF_PC)});
-    // envelope: a nebulosa visível acaba em ~65′, alongada para SW
-    vec2 sw = vec2(qm.x + qm.y, qm.y - qm.x) * 0.70710678;
-    vec2 el = vec2(sw.x * (sw.x < 0.0 ? ${n(1 / ALONGAMENTO_SW)} : ${n(1 / ENCURTAMENTO_NE)}), sw.y);
-    // a borda não é um círculo: lóbulos por direção (inventados)
-    vec2 dirEl = el / max(length(el), 1e-4);
-    float lobo = fbm(vec3(dirEl * 1.6, 0.5) + 23.0, 3);
-    float rel = length(el) * ${n(1 / RAIO_DO_ENVELOPE_PC)} / (0.45 + 1.3 * lobo);
-    float envelope = exp(-rel * rel * rel) * (1.0 - smoothstep(3.6, 5.2, length(qm)));
+    float hNow = (q.z - f.x) * inversesqrt(1.0 + dot(f.yz, f.yz));
+    float r = length(q);
+    // a bolha do véu, com a borda roída por um ruído largo (inventado)
+    float lobo = fbm(q * 0.55 + 23.0, 3);
+    float s = length((q - OR_BOLHA_C) * OR_BOLHA_INV) *
+      (0.8 + 0.4 * lobo + 0.3 * (fbm(q * 1.3 + 7.0, 3) - 0.44) + 0.12 * (fbm(q * 4.0 + 3.0, 2) - 0.375));
+    // fora da bolha a parede ainda recebe um pouco da luz (o que vaza
+    // pelos rasgos da casca), e some com a distância: o brilho acaba
+    // aos poucos, nunca numa borda
+    float dentro = mix(0.05 * exp(-r * 0.6), 1.0,
+      1.0 - smoothstep(${n(BOLHA.pele - 0.12)}, ${n(BOLHA.cascaDe + 0.1)}, s));
+    float fios = orFios(q, r);
 
-    // 1) a pele ionizada sobre a frente: Q/(4πd²)·cos(incidência)
+    // 1) a camada ionizada sobre a frente: Q/(4πd²)·cos, e a frente fina
     vec3 nrm = normalize(vec3(-f.y, -f.z, 1.0));
-    vec3 sup = vec3(qm.xy, f.x);
-    float cosInc = dot(nrm, -sup) / max(length(sup), 1e-3);
-    // O DETALHE (inventado, declarado): frentes em ARCO em volta da
-    // estrela — as dobras da frente que encaram a estrela acendem e as de
-    // costas apagam, e vistas de frente viram os arcos e as "asas". Ruído
-    // em coordenadas polares em torno de θ¹ Ori C (cos/sen do ângulo, sem
-    // costura), crista afiada, mais um véu de fios finos.
-    float rr = length(qm.xy);
-    vec2 dirXY = qm.xy / max(rr, 1e-4);
-    vec3 polar = vec3(dirXY * 1.7, log(rr + 0.08) * 3.2 + qm.z * 1.5);
-    polar += (vec3(fbm(qm * 1.1 + 4.0, 2), fbm(qm * 1.1 + 9.0, 2), fbm(qm * 1.1 + 13.0, 2)) - 0.375) * 2.4;
-    float arco = 1.0 - abs(2.0 * fbm(polar + 31.0, 3) / 0.875 - 1.0);
-    arco *= arco * arco;
-    float fios = 0.04 + 2.4 * arco * (0.35 + fbm(qm * 7.0 + 17.0, 2));
-    float pele = orPele(hPrev, hNow, dt) * ${n(1 / PELE_IONIZADA_PC)};
-    float fluxo = max(cosInc, ${n(PISO_DA_INCIDENCIA)}) / (dist * dist);
-    acc += T * orCorDaFrente(dist, 1.0) * (pele * fluxo * fios * envelope * ${n(GANHO_DA_FRENTE)});
+    vec3 sup = vec3(q.xy, f.x);
+    float dSup = max(length(sup), ${n(ESTRELA_NA_FRENTE_DA_MIF_PC)});
+    float cosInc = dot(nrm, -sup) / dSup;
+    float fluxo = pow(max(cosInc, ${n(PISO_DA_INCIDENCIA)}) / (dSup * dSup), ${n(GAMA_DO_BRILHO)});
+    float H = ${n(CAMADA_IONIZADA.pertoPc)} * (1.0 + ${n(CAMADA_IONIZADA.crescePorPc)} * max(dSup - 0.25, 0.0));
+    float camada = orPele(hPrev, hNow, dt, H);
+    float fina = orPele(hPrev, hNow, dt, ${n(FRENTE_FINA_PC)});
+    acc += T * fluxo * dentro * (
+      orCorDaFrente(dSup, 0.5) * (camada * fios * ${n(GANHO_DA_CAMADA)}) +
+      OR_COR_FINA * (fina * (0.5 + 0.5 * fios) * ${n(GANHO_DA_FRENTE_FINA)}));
 
-    // 2) M43: a esfera ionizada de NU Ori, só Hα/[N II]
-    vec3 c43 = qm - vec3(${n(M43.x)}, ${n(M43.y)}, ${n(M43.z)});
+    float tauVeu = 0.0;
+    if (hNow > 0.0) {
+      // 2) o gás difuso da cavidade, com a bolha de alta ionização em
+      //    volta da estrela (O'Dell & Abel 2025)
+      float fluxoV = pow(1.0 / (r * r + 0.03), ${n(GAMA_DO_BRILHO)});
+      // a zona quente fica em cima da camada: o difuso é mais [O III]
+      // que a parede, e a cor se separa em profundidade
+      acc += T * (orCorDaFrente(r, 1.6) - 0.5 * ${n(HALFA_POR_HBETA)} * OR_COR_HALFA) * (fluxoV * dentro * (0.4 + 0.6 * fios) * dt * ${n(GANHO_DO_DIFUSO)});
+      // 3) a face de dentro da bolha, acesa: a Nebulosa Estendida —
+      //    vista de frente, as bordas dela viram as asas
+      float xp = (s - ${n(BOLHA.pele)}) * ${n(1 / BOLHA.meiaLarguraDaPele)};
+      // só as PAREDES da bolha, onde ela encosta na nuvem; a tampa da
+      // frente (o véu) é neutra e fina, e acesa só de leve (autor)
+      vec3 gB = (q - OR_BOLHA_C) * OR_BOLHA_INV * OR_BOLHA_INV;
+      float parede = 1.0 - 0.85 * smoothstep(0.35, 0.8, abs(gB.z) / max(length(gB), 1e-4));
+      float peleB = exp(-xp * xp) * parede;
+      if (peleB > 0.01) {
+        float fluxoB = pow(1.0 / max(r * r, 0.04), ${n(GAMA_DO_BRILHO)});
+        acc += T * orCorDaFrente(r, 1.0) * (fluxoB * peleB * fios * dt * ${n(GANHO_DA_ESTENDIDA)});
+      }
+      // 4) o véu: a tampa da casca, poeira neutra que absorve e espalha a
+      //    luz da estrela (para a frente, Henyey–Greenstein g = 0,6);
+      //    concentrada na tampa da frente, rala nos lados
+      float casca = smoothstep(${n(BOLHA.cascaDe - 0.02)}, ${n(BOLHA.cascaDe + 0.06)}, s) * (1.0 - smoothstep(0.93, 1.03, s));
+      if (casca > 0.0) {
+        float tampa = smoothstep(-0.1, 0.5, (q.z - OR_BOLHA_C.z) * OR_BOLHA_INV.z / max(s, 0.1));
+        float grumo = 0.1 + 1.1 * smoothstep(0.2, 0.62, fbm(q * 1.6 + 5.0, 3));
+        float baia = 1.0 - smoothstep(0.45, 1.3, orBaia(q.xy) + 1.4 * (fbm(q * 4.0 + 2.0, 3) - 0.44));
+        // faixas largas de poeira na tampa: elas recortam o brilho de
+        // fora em asas (traçado inventado)
+        float faixa = smoothstep(0.5, 0.85, 1.0 - abs(2.0 * fbm(q * 0.75 + 11.0, 3) / 0.875 - 1.0)) *
+          smoothstep(0.4, 1.1, length(q.xy));
+        float longeDeM43 = smoothstep(0.8, 1.3, length(q.xy - vec2(${n(M43.x)}, ${n(M43.y)})) * ${n(1 / M43.raio)});
+        float rho = casca * longeDeM43 * (tampa * (grumo + 2.5 * faixa) + 1.1 * baia);
+        tauVeu = rho * dt * ${n(KAPPA_DO_VEU)};
+        float cosEsp = dot(q / max(r, 1e-3), d);
+        float hg = 0.64 / pow(1.36 - 1.2 * cosEsp, 1.5);
+        acc += T * OR_COR_ESPALHADA * ((1.0 - exp(-tauVeu)) * hg * pow(1.0 / max(r * r, 0.04), ${n(GAMA_DO_BRILHO)}) * ${n(GANHO_DO_ESPALHADO)});
+      }
+    }
+
+    // 5) M43: a bolha ionizada de NU Ori, só Hα/[N II], também na face da
+    //    nuvem (meia esfera acima da frente), com fios próprios
+    vec3 c43 = q - vec3(${n(M43.x)}, ${n(M43.y)}, ${n(M43.z)});
     float r43 = dot(c43, c43) * ${n(1 / (M43.raio * M43.raio))};
-    if (r43 < 1.0) {
-      float m43 = (1.0 - r43) * (0.5 + fbm(qm * 9.0 + 41.0, 2));
+    if (r43 < 1.0 && hNow > -0.02) {
+      // a luz de NU Ori cai com a distância a ela (a mesma lei fixa) e o
+      // gás tem fios e grumos próprios (inventados)
+      float m43 = (1.0 - smoothstep(0.35, 1.0, r43)) * pow(1.0 / (dot(c43, c43) + 0.004), ${n(GAMA_DO_BRILHO)}) *
+        (0.1 + 0.9 * smoothstep(0.3, 0.7, fbm(q * 5.0 + 41.0, 3))) * fios;
       acc += T * orCorDaFrente(1.2, 0.0) * (m43 * dt * ${n(GANHO_DE_M43)});
     }
 
-    // 3) o véu: poeira neutra na frente, que absorve e espalha a luz da
-    //    estrela (para a frente, Henyey–Greenstein g = 0,6)
-    // o véu é a casca da bolha soprada pelo vento da estrela (Pabst 2020):
-    // uma cúpula baixa que encontra a tigela na borda da nebulosa
-    float rv = min(length(qm.xy) * ${n(1 / RAIO_DO_VEU_PC)}, 1.0);
-    float zv = ${n(VEU.de)} * sqrt(1.0 - rv * rv) + ${n(0.35)} * rv;
-    float laje = smoothstep(zv - 0.06, zv + 0.06, qm.z) *
-      (1.0 - smoothstep(zv + ${n(VEU.ate - VEU.de - 0.15)}, zv + ${n(VEU.ate - VEU.de + 0.15)}, qm.z));
-    float tauVeu = 0.0;
-    if (laje > 0.0) {
-      float grumo = 0.08 + 1.9 * smoothstep(0.22, 0.6, fbm(qm * 1.3 + 5.0, 3));
-      float baia = orBaia(qm.xy) * (0.6 + 0.8 * fbm(qm * 8.0 + 2.0, 2));
-      float rho = laje * envelope * (grumo + 4.0 * baia);
-      tauVeu = rho * dt * ${n(VEU.tau / (VEU.ate - VEU.de))};
-      float cosEsp = dot(normalize(qm), -d);
-      float hg = 0.64 / pow(1.36 - 1.2 * cosEsp, 1.5);
-      // espalhamento simples que satura: a poeira grossa não brilha mais
-      // que a fina, só tapa mais
-      // a luz da estrela já chega gasta pela poeira do véu entre ela e o
-      // ponto (a coluna local, na direção da estrela): a poeira grossa só
-      // acende na face de baixo e some por cima — a Baía Escura é escura
-      float tauEntrada = rho * ${n(VEU.tau / (VEU.ate - VEU.de))} * max(qm.z - zv + 0.06, 0.0) * dist / max(qm.z, 0.05);
-      acc += T * OR_COR_ESPALHADA * ((1.0 - exp(-tauVeu)) * exp(-tauEntrada) * hg / (dist * dist) * ${n(GANHO_DO_ESPALHADO)});
-    }
-    // 4) a nuvem molecular: opaca
-    float tauNuvem = orNuvem(q, hNow) * dt * 40.0;
-    float tau = tauVeu + tauNuvem;
-    T *= exp(-tau);
+    // 6) a nuvem molecular: opaca, com a borda de fora rala e roída
+    float tauNuvem = hNow < 0.0 ? orNuvem(q, hNow) * dt * ${n(KAPPA_DA_NUVEM)} : 0.0;
+    T *= exp(-(tauVeu + tauNuvem));
     hPrev = hNow;
+    sPrev = s;
+    rPrev = r;
   }
-  // A EXPOSIÇÃO DE FOTO LONGA: a lei D⁻² dá ~600× entre o miolo e a borda
-  // de 65′; a tela mostra em LOG, como um empilhamento HDR das fotos
-  // profundas (declarado no selo) — cada década de brilho vale o mesmo
-  float lum = dot(acc, vec3(0.2126, 0.7152, 0.0722));
-  if (lum > 1e-7) acc *= ${n(EXPOSICAO_LOG.ganho)} * log(1.0 + lum * ${n(1 / EXPOSICAO_LOG.joelho)}) / lum;
   return vec4(acc, T);
 }
 `;

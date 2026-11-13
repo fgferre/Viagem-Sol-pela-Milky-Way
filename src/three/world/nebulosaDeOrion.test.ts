@@ -5,14 +5,18 @@ import { lugarDaTabela } from './lugaresDoCeu';
 import {
   ARCMIN_PC,
   BARRA,
+  BOLHA,
   CENTRO_DE_ORION,
   ESTRELA_NA_FRENTE_DA_MIF_PC,
   M43,
   REFERENCIAL_DE_ORION,
   alturaDaFrente,
   brilhoDaFrente,
+  brilhoNaTela,
   corDaFrente,
+  espessuraDaCamada,
   paraLocal,
+  raioNaBolha,
   razaoOIII,
 } from './nebulosaDeOrion';
 
@@ -37,30 +41,57 @@ describe('a nebulosa de Órion', () => {
     expect(paraLocal([0, 0, 0])[2]).toBeCloseTo(Math.hypot(...CENTRO_DE_ORION), 9);
   });
 
-  it('a frente fica 0,2 pc atrás da estrela e sobe para o Sol (tigela aberta para nós)', () => {
-    const fundo = alturaDaFrente(0, 0);
-    expect(fundo.z).toBeCloseTo(-ESTRELA_NA_FRENTE_DA_MIF_PC, 9);
-    expect(Math.hypot(fundo.gx, fundo.gy)).toBeLessThan(1e-9);
-    // a noroeste, longe da Barra, a parede sobe devagar
-    expect(alturaDaFrente(-0.7, 0.7).z).toBeGreaterThan(fundo.z);
+  it('a frente fica 0,2 pc atrás da estrela, sobe para o Sol e se abre para sudoeste', () => {
+    const h = 1e-5;
+    expect(alturaDaFrente(0, 0)).toBeCloseTo(-ESTRELA_NA_FRENTE_DA_MIF_PC, 9);
+    expect(Math.abs(alturaDaFrente(h, 0) - alturaDaFrente(-h, 0)) / (2 * h)).toBeLessThan(1e-3);
+    // a 1 pc, a parede a nordeste é mais alta que a de sudoeste: a
+    // cavidade se abre por onde o gás quente escapa (Güdel 2008)
+    const a = Math.SQRT1_2;
+    expect(alturaDaFrente(a, a)).toBeGreaterThan(alturaDaFrente(-a, -a) + 0.08);
+    expect(alturaDaFrente(-a, -a)).toBeGreaterThan(alturaDaFrente(0, 0));
   });
 
   it('a Barra é uma escarpa a 2′ a sudeste: sobe quase de lado ali e em nenhum outro rumo', () => {
-    const se = (u: number) => alturaDaFrente(u * Math.SQRT1_2, -u * Math.SQRT1_2).z;
-    const nw = (u: number) => alturaDaFrente(-u * Math.SQRT1_2, u * Math.SQRT1_2).z;
+    const se = (u: number) => alturaDaFrente(u * Math.SQRT1_2, -u * Math.SQRT1_2);
+    const nw = (u: number) => alturaDaFrente(-u * Math.SQRT1_2, u * Math.SQRT1_2);
     const d = BARRA.distanciaPc;
     expect(d).toBeCloseTo(2 * ARCMIN_PC, 12);
     expect(se(d + 0.03) - se(d - 0.03)).toBeGreaterThan(0.15);
     expect(nw(d + 0.03) - nw(d - 0.03)).toBeLessThan(0.02);
   });
 
-  it('o gradiente da frente é a derivada da altura (o shader acende pela normal)', () => {
-    const h = 1e-5;
-    for (const [x, y] of [[0.3, -0.1], [0.16, -0.17], [-0.8, 0.4], [1.2, 1.5], [0.4, -0.45]]) {
-      const f = alturaDaFrente(x, y);
-      expect(f.gx).toBeCloseTo((alturaDaFrente(x + h, y).z - alturaDaFrente(x - h, y).z) / (2 * h), 4);
-      expect(f.gy).toBeCloseTo((alturaDaFrente(x, y + h).z - alturaDaFrente(x, y - h).z) / (2 * h), 4);
-    }
+  it('a bolha do véu tem ~4 pc e a tampa dela cai sobre a estrela onde o véu é medido', () => {
+    // Pabst et al. 2019: ~4 pc de diâmetro
+    const [a, b] = BOLHA.semiEixos;
+    expect(a + b).toBeGreaterThan(3.8);
+    expect(a + b).toBeLessThan(5);
+    // deslocada para sudoeste (Güdel 2008)
+    expect(BOLHA.centro[0]).toBeLessThan(0);
+    expect(BOLHA.centro[1]).toBeLessThan(0);
+    // na linha da estrela, a casca neutra vai de ~0,4–0,6 pc a ~1,1–1,3 pc
+    // na frente dela (van der Werf 2013; O'Dell et al. 2020)
+    const zEm = (alvo: number) => {
+      let lo = 0, hi = 3;
+      for (let i = 0; i < 60; i++) {
+        const m = (lo + hi) / 2;
+        if (raioNaBolha([0, 0, m]) < alvo) lo = m; else hi = m;
+      }
+      return lo;
+    };
+    expect(zEm(BOLHA.cascaDe)).toBeGreaterThan(0.4);
+    expect(zEm(BOLHA.cascaDe)).toBeLessThan(0.65);
+    expect(zEm(1)).toBeGreaterThan(1.0);
+    expect(zEm(1)).toBeLessThan(1.35);
+  });
+
+  it('a camada ionizada tem ~0,1 pc junto à estrela e engrossa para longe', () => {
+    expect(2 * espessuraDaCamada(0.2)).toBeCloseTo(0.1, 9);
+    expect(espessuraDaCamada(2)).toBeGreaterThan(2 * espessuraDaCamada(0.2));
+  });
+
+  it('a lei fixa do brilho na tela: 100× de fluxo viram 100^0,4 ≈ 6,3×', () => {
+    expect(brilhoNaTela(brilhoDaFrente(0.2, 1)) / brilhoNaTela(brilhoDaFrente(2, 1))).toBeCloseTo(100 ** 0.4, 9);
   });
 
   it('a pele ionizada brilha com Q/(4πd²)·cos: D⁻² e cosseno, com piso no fundo da tigela', () => {
