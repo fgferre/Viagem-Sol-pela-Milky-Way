@@ -79,7 +79,12 @@ import { RAIO_LUA_PC } from '../world/corpos/lua';
 import type { RochosoResolvido } from '../world/corpos/rochoso';
 import { fatorDoRaioMaximo, posicaoDoRochosoUA, raiosDoRochosoPc } from '../world/corpos/rochoso';
 import type { GiganteResolvido } from '../world/corpos/gigante';
-import { ANEIS_CITADOS, posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
+import {
+  ANEIS_CITADOS,
+  posicaoDoGiganteUA,
+  raioDoAssuntoPc,
+  raiosDoGigantePc,
+} from '../world/corpos/gigante';
 import { RETRATO_2026 } from '../world/planetas/retrato2026';
 import type { IdRetrato } from '../world/planetas/retrato2026';
 import { escalaDaUi, larguraDeCss } from '../../lib/uiScale';
@@ -90,7 +95,7 @@ import { raioDaEstrelaPc } from '../world/corpoDeEstrela';
 // (`cinematic/enquadramento.ts`): exportá-lo DAQUI fazia o único ciclo de
 // import de valor do `src/` — a escada precisa da `Escolha`, e a escolha
 // precisava do ponto
-import { ORIGEM } from '../cinematic/enquadramento';
+import { MARGEM_DE_ENQUADRAMENTO, ORIGEM } from '../cinematic/enquadramento';
 
 /** rascunho do polo do corpo — o rig COPIA, ninguém guarda a referência */
 const POLO_DO_CORPO = new THREE.Vector3();
@@ -129,6 +134,26 @@ export function soloDoCorpo(
   if (id === 'sun') return { pisoRaio: solRaioPc };
   if (!BODY_AXES[id]) return { pisoRaio: null };
   return { pisoRaio: raiosDoRochosoPc(id).a * fatorDoRaioMaximo(id), kDoPiso: K_PISO_DO_CORPO };
+}
+
+/**
+ * QUANTO DA MEIA-TELA APERTADA O ANEL OCUPA na chegada de perto (12/11/2026).
+ * Com a ficha aberta no desktop isso dá planeta + anéis em ~55% da largura
+ * livre; no celular, ~70% da largura.
+ */
+export const ANEL_NO_QUADRO = 0.7;
+
+/**
+ * A ESFERA DO QUADRO DE PERTO de um corpo de raio `raioPc`. O corpo cujo anel
+ * é disco (`raioDoAssuntoPc`) é enquadrado PELO ANEL — de perto o retrato é
+ * planeta + anéis, e a esfera do planeta sozinho deixava os anéis vazando a
+ * tela —, e a régua do `?d=` continua sendo o raio do planeta. Os outros,
+ * bit a bit como antes.
+ */
+export function quadroDePerto(id: string, raioPc: number): { raio: number; regua: number | null } {
+  const assunto = raioDoAssuntoPc(id);
+  if (assunto === null || !(assunto > raioPc * 1.01)) return { raio: raioPc, regua: null };
+  return { raio: assunto / (MARGEM_DE_ENQUADRAMENTO * ANEL_NO_QUADRO), regua: raioPc };
 }
 
 /**
@@ -1209,7 +1234,10 @@ export class Escada {
         : ehGigante
           ? raiosDoGigantePc(id).a
           : raiosDoRochosoPc(id).a;
-    this.atlas.focar(centro, raioPc, centro, {
+    // de perto, o retrato: planeta + anéis quando o anel é disco
+    const quadro = quadroDePerto(id, raioPc);
+    this.atlas.focar(centro, quadro.raio, centro, {
+      regua: quadro.regua,
       rampa: this.rampaDaEscada(),
       // o eixo do PLANETA no alto da tela, não o da eclíptica (Onda 7)
       polo: this.poloDoCorpo(id),
@@ -1472,7 +1500,8 @@ export class Escada {
       if (!centro || raio === null) return null;
       return {
         alvo: centro,
-        raio,
+        // a MESMA esfera de `aproximarDoCorpo` (o anel que é disco entra)
+        raio: quadroDePerto(id, raio).raio,
         eixoDe: centro,
         pai: null,
         polo: this.poloDoCorpo(id)?.clone() ?? null,

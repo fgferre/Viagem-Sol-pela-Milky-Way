@@ -38,6 +38,7 @@ import {
   MU_SUN_AU3_PER_DAY2,
 } from '../../lib/atlas/elementosOrbitais';
 import { BODY_AXES } from '../../lib/atlas/iauOrientation';
+import { raiosDoGigantePc } from './corpos/gigante';
 // a conta da cessão é UMA na casa: o juiz da linha cobra a MESMA função
 // que o rótulo usa, e não uma cópia dela (F7 · A5)
 import { RAIO_NDC_DE_CESSAO, cessaoPorTamanhoAparente } from './labels';
@@ -1315,6 +1316,42 @@ describe('O FOCO MANDA NA CENA (item 83 · L1)', () => {
     quadro();
     expect(alfas(orbitas)).toEqual(neutro);
     orbitas.dispose();
+  });
+
+  it('DE PERTO DE SATURNO (12/11): a outra escala sai, as luas dele recuam e tudo volta de longe', () => {
+    // MEDIDO no cartão "Saturno: os anéis, de perto": as linhas das luas
+    // a 86% e as órbitas dos outros planetas cruzando o quadro
+    const p = motor.posicaoHeliocentrica('saturn', EPOCA_JD_TDB);
+    const eq = eclipticaParaEquatorial([p.x, p.y, p.z]);
+    const centro = new THREE.Vector3(eq[0], eq[1], eq[2]).multiplyScalar(AU_PARA_PC);
+    const R = raiosDoGigantePc('saturn').a;
+    const corpos = new Float32Array(IDS_FOTOMETRIA.length * 3).fill(Number.NaN);
+    corpos.set([centro.x, centro.y, centro.z], IDS_FOTOMETRIA.indexOf('saturn') * 3);
+    const medir = (dEmRaios: number, foco: string | null) => {
+      const orbitas = new Orbitas();
+      orbitas.ligado = true;
+      orbitas.foco = foco;
+      const cam = new THREE.PerspectiveCamera(ATLAS_FOV_GRAUS, 1.6, 1e-12, 1e6);
+      cam.position.copy(centro).add(new THREE.Vector3(0, 0.45, 1).multiplyScalar(R * dEmRaios));
+      cam.lookAt(centro);
+      cam.updateMatrixWorld(true);
+      orbitas.escreverInstante(EPOCA_JD_TDB, motor);
+      orbitas.update(cam, quadroDe(900), TAN_ATLAS, 0, corpos, null, 'atlas');
+      const fora = alfas(orbitas);
+      orbitas.dispose();
+      return fora;
+    };
+    const perto = medir(8, 'saturn');
+    const pertoSemFoco = medir(8, null);
+    expect(pertoSemFoco.neptune, 'Netuno devia riscar o quadro sem foco').toBeGreaterThan(0);
+    expect(perto.neptune ?? 0).toBe(0);
+    // a lua recua ao piso, mas fica legível
+    expect(perto.titan).toBeGreaterThan(0);
+    // de longe (vista do sistema) a lei do foco é a de sempre
+    const longe = medir(60, 'saturn');
+    const longeSemFoco = medir(60, null);
+    expect(longe.neptune / longeSemFoco.neptune).toBeCloseTo(0.35, 6);
+    expect(longe.titan).toBeGreaterThan(perto.titan);
   });
 
   it('A FAMÍLIA, cobrada sobre os TRINTA — e não só sobre as que acendem', () => {

@@ -424,7 +424,8 @@ import { FOTOMETRIA, IDS_FOTOMETRIA } from './planetas/fotometria';
 // que apaga o NOME quando o corpo enche a tela apaga a LINHA dele. No
 // Eyes as duas peças penduram no MESMO `VisibleInterval` da MESMA
 // entidade e morrem juntas; aqui elas penduram na mesma função.
-import { cessaoPorTamanhoAparente, raioAparenteNdc } from './labels';
+import { cessaoPorTamanhoAparente, proximidadeDoAssunto, raioAparenteNdc } from './labels';
+import { raioDoAssuntoPc } from './corpos/gigante';
 import { raiosDoRochosoPc } from './corpos/rochoso';
 import { BODY_AXES } from '../../lib/atlas/iauOrientation';
 
@@ -824,15 +825,13 @@ const REALCE_ASSENTADO = 1e-3;
 const COR_NEUTRA: readonly [number, number, number] = [0.62, 0.70, 0.85];
 
 /**
- * O RECUO DAS LUAS PERTO DO PAI (12/11/2026), em raio aparente do globo do
- * pai em NDC (meia-altura = 1). Até 0,08 a linha fica inteira — Saturno na
- * vista do sistema mede ~0,03 —; de 0,35 para cima ela fica no piso: na
- * chegada de perto o globo mede ~0,5. O piso de 0,2 deixa a órbita LEGÍVEL
- * sem riscar os anéis (o mesmo raciocínio do `RECUO_FORA_DO_FOCO`: recuar
- * não é apagar).
+ * O RECUO DAS LUAS PERTO DO PAI (12/11/2026): a linha vai ao piso quando o
+ * pai é o retrato do quadro (`proximidadeDoAssunto`, com o anel que é
+ * disco). A primeira versão media só o globo, na meia-altura, e esperava
+ * ~0,5 na chegada de perto — o cartão de Saturno chegava com 0,15, e as
+ * linhas ficavam a 86%. O piso de 0,2 deixa a órbita LEGÍVEL sem riscar os
+ * anéis (o mesmo raciocínio do `RECUO_FORA_DO_FOCO`: recuar não é apagar).
  */
-const NDC_DO_PAI_COMECA = 0.08;
-const NDC_DO_PAI_PERTO = 0.35;
 const PISO_PERTO_DO_PAI = 0.2;
 
 /** Abaixo disto o alfa não vale um passo de 8 bits — a linha sai da cena. */
@@ -1664,6 +1663,10 @@ export class Orbitas {
     const raio = RAIO_DA_CESSAO_PX * quadro.pixelRatio;
     const borda = BORDA_DA_CESSAO_PX * quadro.pixelRatio;
     const podeCeder = quadro.larguraPx > 0 && quadro.alturaPx > 0 && borda > raio;
+    // A OUTRA ESCALA RECUA (12/11/2026): com o corpo em foco no retrato, as
+    // linhas que não são da família dele — as órbitas dos planetas, as luas
+    // dos outros — saem do quadro, e voltam quando a câmera se afasta
+    const foraDoAssunto = 1 - this.proximidadeDoFoco(posicoes, luas, camera, tanHalfFov);
     for (const linha of this.linhas) {
       const alvo = linha.nucleo.value;
       alvo.set(0, 0, 0, 0);
@@ -1673,7 +1676,11 @@ export class Orbitas {
       // `PISO_PERTO_DO_PAI` quando o globo do pai enche o quadro, e volta
       // a 1 antes de a vista ser a do sistema. A gaveta continua mandando:
       // camada desligada não desenha nada.
-      const recuo = linha.corpo.centro === 'sun' ? 1 : this.recuoPertoDoPai(linha.corpo.centro, posicoes, camera, tanHalfFov);
+      const daFamilia =
+        this.foco !== null && (linha.corpo.id === this.foco || linha.corpo.centro === this.foco);
+      const recuo =
+        (linha.corpo.centro === 'sun' ? 1 : this.recuoPertoDoPai(linha.corpo.centro, posicoes, camera, tanHalfFov)) *
+        (daFamilia ? 1 : foraDoAssunto);
       linha.cessao = recuo;
       // ONDE ESTÁ O CORPO DESTA LINHA — duas fontes, cada uma com o seu
       // índice, e nenhuma conta refeita aqui: os dez do retrato vêm de
@@ -1738,14 +1745,36 @@ export class Orbitas {
     camera: THREE.PerspectiveCamera,
     tanHalfFov: number
   ): number {
-    const i = IDS_FOTOMETRIA.indexOf(pai as (typeof IDS_FOTOMETRIA)[number]);
-    const raio = this.raioDe(pai);
-    if (!posicoes || i < 0 || raio === null || i * 3 + 2 >= posicoes.length) return 1;
-    this.pontoDoPai.set(posicoes[i * 3]!, posicoes[i * 3 + 1]!, posicoes[i * 3 + 2]!);
-    if (!Number.isFinite(this.pontoDoPai.x)) return 1;
+    return 1 - (1 - PISO_PERTO_DO_PAI) * this.proximidadeDe(pai, posicoes, null, camera, tanHalfFov);
+  }
+
+  /** a proximidade do corpo em foco (ver `proximidadeDoAssunto`); 0 sem foco */
+  private proximidadeDoFoco(
+    posicoes: Float32Array | null,
+    luas: Float32Array | null,
+    camera: THREE.PerspectiveCamera,
+    tanHalfFov: number
+  ): number {
+    return this.foco === null ? 0 : this.proximidadeDe(this.foco, posicoes, luas, camera, tanHalfFov);
+  }
+
+  /** `proximidadeDoAssunto` de um corpo ou lua pela posição viva; 0 sem posição */
+  private proximidadeDe(
+    id: string,
+    posicoes: Float32Array | null,
+    luas: Float32Array | null,
+    camera: THREE.PerspectiveCamera,
+    tanHalfFov: number
+  ): number {
+    const raio = raioDoAssuntoPc(id);
+    const iCorpo = IDS_FOTOMETRIA.indexOf(id as (typeof IDS_FOTOMETRIA)[number]);
+    const fonte = iCorpo >= 0 ? posicoes : luas;
+    const i = iCorpo >= 0 ? iCorpo : LUAS_DO_SISTEMA.findIndex((l) => l.id === id);
+    if (!fonte || i < 0 || raio === null || i * 3 + 2 >= fonte.length) return 0;
+    this.pontoDoPai.set(fonte[i * 3]!, fonte[i * 3 + 1]!, fonte[i * 3 + 2]!);
+    if (!Number.isFinite(this.pontoDoPai.x)) return 0;
     const ndc = raioAparenteNdc(raio, this.pontoDoPai.distanceTo(camera.position), tanHalfFov);
-    const perto = THREE.MathUtils.smoothstep(ndc, NDC_DO_PAI_COMECA, NDC_DO_PAI_PERTO);
-    return 1 - (1 - PISO_PERTO_DO_PAI) * perto;
+    return proximidadeDoAssunto(ndc, camera.aspect);
   }
 
   private raioDe(id: string): number | null {

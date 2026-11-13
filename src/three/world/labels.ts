@@ -496,6 +496,46 @@ export function cessaoPorTamanhoAparente(raioNdc: number): number {
 }
 
 /**
+ * A PROXIMIDADE DO ASSUNTO (12/11/2026) — 0 de longe, 1 quando o corpo
+ * (com o anel, se o anel é disco: `raioDoAssuntoPc`) é o retrato do
+ * quadro. A régua é o raio aparente sobre a MEIA-DIMENSÃO MENOR da tela
+ * (no retrato, a largura), para o celular e o desktop cederem no mesmo
+ * enquadramento. Na vista do sistema de Saturno, com Titã em quadro, o
+ * anel mede ~0,07; na chegada de perto, 0,5 a 0,7.
+ *
+ * É ela que faz o que é de outra escala recuar de perto — as linhas das
+ * luas, as órbitas e os nomes dos outros planetas, os nomes de estrela em
+ * volta — e voltar quando a câmera se afasta. Só mede: as camadas
+ * desligadas continuam desligadas.
+ */
+export const ASSUNTO_COMECA = 0.12;
+export const ASSUNTO_PERTO = 0.35;
+
+export function proximidadeDoAssunto(raioNdc: number, aspect: number): number {
+  const relativo = raioNdc / Math.min(1, aspect > 0 ? aspect : 1);
+  if (!Number.isFinite(relativo)) return relativo > 0 ? 1 : 0;
+  return THREE.MathUtils.smoothstep(relativo, ASSUNTO_COMECA, ASSUNTO_PERTO);
+}
+
+/**
+ * QUANTO UM PONTO DA TELA ESTÁ SOBRE O ASSUNTO: 1 até `dentro` raios
+ * aparentes do centro dele, 0 a partir de `fora`. `dx`/`dy` na unidade dos
+ * rótulos (fração da largura e da altura); `raioNdc` na meia-altura.
+ */
+export function sobreOAssunto(
+  dx: number,
+  dy: number,
+  aspect: number,
+  raioNdc: number,
+  dentro: number,
+  fora: number
+): number {
+  if (!(raioNdc > 0)) return 0;
+  const sep = Math.hypot(2 * dx * aspect, 2 * dy) / raioNdc;
+  return 1 - THREE.MathUtils.smoothstep(sep, dentro, fora);
+}
+
+/**
  * A CAMADA DE DENTRO dos dois fades (item 125, F2 · A8/A9) — os alfas
  * do `.icon` e do `.text` dentro do `<div>` do rótulo.
  *

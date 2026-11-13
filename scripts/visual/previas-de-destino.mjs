@@ -43,7 +43,7 @@ const DESTINOS = [
   // d=10: o disco ainda tem tamanho de planeta e a órbita de Io cabe na
   // largura; em d=14 Júpiter virava uma bolinha de gude (visto na 1ª rodada).
   { id: 'jupiter', foco: 'jupiter', ver: 'corpo', d: 10 },
-  { id: 'saturn', foco: 'saturn', ver: 'corpo', d: 12 },
+  { id: 'saturn', foco: 'saturn', ver: 'corpo' },
   { id: 'pluto', foco: 'pluto', ver: 'corpo', d: 5 },
   { id: 'sirius', foco: 'sirius' },
   { id: 'betelgeuse', foco: 'betelgeuse' },
