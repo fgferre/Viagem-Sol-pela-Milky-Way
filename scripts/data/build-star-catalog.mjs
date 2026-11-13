@@ -30,6 +30,12 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  acharMembro,
+  distanciaDoMembro,
+  distanciaEDoAglomerado,
+  indexarMembros,
+} from './lib/aglomerados.mjs';
 
 const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 const outputDirectory = path.join(rootDirectory, 'public', 'data');
@@ -201,6 +207,22 @@ process.stdout.write(`HYG v4.4: ${photometry.size} estrelas com V.\n`);
 const athyg = await fetchSource('athyg');
 const A = athyg.index;
 
+// ---------------------------------------------------------------
+// 2a. Aglomerados (revisão de 13/11/2026): o membro de paralaxe ruim
+// vai para a distância publicada do aglomerado — regra e motivo em
+// lib/aglomerados.mjs, membros e fontes em aglomerados.json.
+// ---------------------------------------------------------------
+const tabelaDeAglomerados = JSON.parse(
+  await readFile(path.join(rootDirectory, 'scripts', 'data', 'aglomerados.json'), 'utf8')
+);
+const membros = indexarMembros(tabelaDeAglomerados.aglomerados);
+const porAglomerado = Object.fromEntries(
+  tabelaDeAglomerados.aglomerados.map((a) => [
+    a.id,
+    { distanciaPc: a.distanciaPc, fonte: a.fonte, achados: 0, aglomerado: 0, mistura: 0, fora: 0 },
+  ])
+);
+
 const excluded = {
   sol: 0,
   semDistancia: 0,
@@ -217,10 +239,16 @@ for (let k = 1; k < athyg.lines.length; k++) {
   const line = athyg.lines[k];
   if (!line) continue;
   const c = splitCsv(line);
-  const dist = number(c[A.dist]);
-  if (dist === null || dist <= 0) { excluded.semDistancia++; continue; }
-  if (dist < 1e-3) { excluded.sol++; continue; }
-  if (dist > MAX_DIST_PC) { excluded.alemDoHorizonte++; continue; }
+  const distDoCatalogo = number(c[A.dist]);
+  if (distDoCatalogo === null || distDoCatalogo <= 0) { excluded.semDistancia++; continue; }
+  if (distDoCatalogo < 1e-3) { excluded.sol++; continue; }
+  if (distDoCatalogo > MAX_DIST_PC) { excluded.alemDoHorizonte++; continue; }
+  // a distância corrigida entra ANTES da magnitude absoluta: o runtime
+  // recalcula o brilho aparente da posição, e com a luminosidade da
+  // distância velha a Taygeta movida de 105 para 134 pc apagaria no céu
+  const membro = acharMembro(membros, { gaia: c[A.gaia], hip: (c[A.hip] ?? '').trim() });
+  const noAglomerado = membro ? distanciaDoMembro(membro, distDoCatalogo) : null;
+  const dist = noAglomerado ? noAglomerado.distanciaPc : distDoCatalogo;
 
   const hygId = c[A.hyg];
   const ref = hygId ? photometry.get(hygId) : undefined;
@@ -255,12 +283,22 @@ for (let k = 1; k < athyg.lines.length; k++) {
     continue;
   }
 
-  const x = number(c[A.x0]);
-  const y = number(c[A.y0]);
-  const z = number(c[A.z0]);
-  if (x === null || y === null || z === null) { excluded.semDistancia++; continue; }
+  // a direção é a do catálogo; só o raio muda
+  const escala = dist / distDoCatalogo;
+  const x0 = number(c[A.x0]);
+  const y0 = number(c[A.y0]);
+  const z0 = number(c[A.z0]);
+  if (x0 === null || y0 === null || z0 === null) { excluded.semDistancia++; continue; }
+  const x = x0 * escala;
+  const y = y0 * escala;
+  const z = z0 * escala;
 
   stars.push({ x, y, z, dist, logLum: 0.4 * (4.85 - absMag), ci });
+  if (noAglomerado) {
+    const conta = porAglomerado[membro.aglomerado.id];
+    conta.achados++;
+    conta[noAglomerado.regra]++;
+  }
 
   // ---- nomes: só o que uma pessoa reconhece. Flamsteed ("31 Cyg")
   // fica de fora — são 1,7 k etiquetas de valor baixo e o HUD mostra
@@ -305,6 +343,8 @@ for (let k = 1; k < athyg.lines.length; k++) {
     const glifo = bayer ? bayerGlifo(bayer) : '';
     if (glifo) entry.b = glifo;
     if (con) entry.c = con;
+    // a ficha diz "distância do aglomerado", não "paralaxe Gaia DR3"
+    if (noAglomerado && distanciaEDoAglomerado(noAglomerado)) entry.ag = membro.aglomerado.id;
     named.push(entry);
   }
 }
@@ -368,6 +408,9 @@ const meta = {
   ranges: { logd: [LOGD_MIN, LOGD_MAX], lum: [LUM_MIN, LUM_MAX], ci: [CI_MIN, CI_MAX] },
   photometry: { fromHyg, fromTycho },
   excluded,
+  /** membros achados por aglomerado e a regra que cada um seguiu */
+  aglomerados: porAglomerado,
+  fontesDosAglomerados: tabelaDeAglomerados.fontes,
   quantization: {
     maxPositionErrorPc: Number(maxPosError.toFixed(4)),
     maxLogLumError: Number(maxLumError.toFixed(6)),
@@ -388,5 +431,8 @@ process.stdout.write(
     `${namedUnique.length} nomeadas; fotometria HYG ${fromHyg} / Tycho ${fromTycho}; ` +
     `horizonte ${meta.horizonPc} pc; erro de posição ≤ ${meta.quantization.maxPositionErrorPc} pc, ` +
     `de luminosidade ≤ ${meta.quantization.maxLogLumError} dex.\n` +
-    `Excluídas: ${JSON.stringify(excluded)}\n`
+    `Excluídas: ${JSON.stringify(excluded)}\n` +
+    `Aglomerados: ${Object.entries(porAglomerado)
+      .map(([id, a]) => `${id} ${a.achados} (aglomerado ${a.aglomerado}, mistura ${a.mistura}, fora ${a.fora})`)
+      .join('; ')}\n`
 );
