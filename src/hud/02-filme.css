@@ -143,8 +143,7 @@
    no mesmo pixel), e algumas delas pintam cor e sombra com seletores mais
    fortes que estes */
 .veu-legivel > .veu-sombra,
-.veu-legivel > .veu-sombra *,
-.controls-bar.veu-sombra * {
+.veu-legivel > .veu-sombra * {
   --teto: rgb(50 50 50);
   color: var(--teto) !important;
   text-shadow: none !important;
@@ -160,21 +159,39 @@
 .controls-bar.veu-sombra {
   z-index: 44;
   mix-blend-mode: darken;
-}
-.controls-bar.veu-sombra,
-.controls-bar.veu-sombra * {
   pointer-events: none;
 }
+/* O TOPO É MAIS LEVE QUE A LEGENDA (13/11): a cadeia larga da legenda
+   punha cada botão numa mancha escura sobre o Sol e a galáxia bege, e um
+   halo onde os rótulos já liam. Rótulo curto, grande e com ícone pede
+   3:1, não 4,5:1: o teto sobe para cinza 90 (o cinza dos rótulos dá
+   3,3:1 contra ele) e a forma deixa de ser espalhada — é o contorno do
+   próprio traço, 4 px para fora das letras e do ícone (o anel que a
+   régua mede), com 1 px de borda macia. */
 .controls-bar.veu-sombra * {
+  --teto: rgb(90 90 90);
+  color: var(--teto) !important;
+  text-shadow: none !important;
   border-color: transparent !important;
   background: none !important;
+  pointer-events: none;
 }
-/* a cadeia mora em cada LINHA (e em cada botão do topo), e não na cópia
-   inteira, para cada uma espalhar o próprio teto */
+.controls-bar.veu-sombra .hud-btn {
+  -webkit-text-stroke: 8px var(--teto);
+  paint-order: stroke fill;
+  filter: drop-shadow(0 0 1px var(--teto));
+}
+/* o ícone tem 16 px num viewBox de 24: 13,5 unidades = 9 px, o traço de
+   1 px dele mais 4 de cada lado */
+.controls-bar.veu-sombra .hud-btn svg {
+  overflow: visible;
+  stroke-width: 13.5;
+}
+/* a cadeia mora em cada LINHA, e não na cópia inteira, para cada uma
+   espalhar o próprio teto */
 .veu-legivel > .veu-sombra:not(.caption-wrap),
 .veu-sombra .caption-title,
-.veu-sombra .caption-sub,
-.controls-bar.veu-sombra .hud-btn {
+.veu-sombra .caption-sub {
   filter: drop-shadow(0 0 1px var(--teto)) drop-shadow(0 0 1px var(--teto)) drop-shadow(0 0 2px var(--teto))
     drop-shadow(0 0 2px var(--teto)) drop-shadow(0 0 3px var(--teto)) drop-shadow(0 0 5px var(--teto))
     drop-shadow(0 0 8px var(--teto));
