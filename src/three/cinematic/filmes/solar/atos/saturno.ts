@@ -39,7 +39,13 @@ export const RAIO_DOS_ANEIS = 2.326;
 export const RAIO_DO_CRUZAMENTO = 1.99;
 const CHEGADA_A_SATURNO = emSaturno(14, az(0), -14 * Math.sin(rad(2)));
 const SOBRE_O_ANEL_A = emSaturno(2.25, az(60), -0.04);
-const RASANTE = emSaturno(2.1, az(68), -0.025);
+const RASANTE = emSaturno(2.17, az(65), -0.012);
+/** o voo DENTRO do anel A, pela face acesa: a ~270 e ~240 km do plano a
+ *  câmera está na faixa em que a lajota do anel desenha os grãos de gelo
+ *  (até 1 600 km do plano, com fade linear: aqui ~85 % da dose), e anda
+ *  ~2 500 km — devagar, para os grãos passarem como pedras, não como chuvisco */
+const ENTRADA_NO_ANEL = emSaturno(2.13, az(67.5), -0.0045);
+const SAIDA_DO_ANEL = emSaturno(2.11, az(68.6), -0.004);
 const CRUZAMENTO = emSaturno(RAIO_DO_CRUZAMENTO, az(76), 0);
 const ALEM_DO_CRUZAMENTO = emSaturno(2.02, az(84), 0.04);
 const SUBIDA = emSaturno(2.8, az(100), 0.6);
@@ -104,6 +110,7 @@ const JOELHO_DE_HIPERION = girar(SOL_EM_HIPERION, versor(
 /** os pontos nomeados do ato III, em pc */
 export const PONTOS_SATURNO: Readonly<Record<string, THREE.Vector3>> = {
   chegadaASaturno: CHEGADA_A_SATURNO, sobreOAnelA: SOBRE_O_ANEL_A, rasante: RASANTE,
+  entradaNoAnel: ENTRADA_NO_ANEL, saidaDoAnel: SAIDA_DO_ANEL,
   cruzamento: CRUZAMENTO, alemDoCruzamento: ALEM_DO_CRUZAMENTO, subida: SUBIDA,
   joelhoDeEncelado: JOELHO_DE_ENCELADO, depoisDeEncelado: DEPOIS_DE_ENCELADO,
   saidaDeEncelado: SAIDA_DE_ENCELADO, joelhoDeTita: JOELHO_DE_TITA, saidaDeTita: SAIDA_DE_TITA,
