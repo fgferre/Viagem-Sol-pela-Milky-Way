@@ -595,80 +595,60 @@
     touch-action: none;
   }
 
-  /* O CABEÇALHO DA COMPACTA VIRA UMA LINHA SÓ ("PLANETA · Netuno
-     [Detalhes ˄] [✕]", §3.5) SEM TOCAR `CabecalhoDoPainel.tsx` (fora do
-     escopo deste lote): `display: contents` nos dois nós que hoje
-     EMPACOTAM eyebrow+ações numa linha e o nome noutra apaga só a
-     CAIXA deles (não os filhos), promovendo eyebrow, "?",
-     "Detalhes"/"Recolher", "✕" e o nome a IRMÃOS diretos de
-     `.hud-cabecalho`, que passa a ser a grade flexível única. Dali em
-     diante é `order` puro. Nenhum nó muda de componente — só o BOX TREE
-     (a promessa de `display: contents`) —, então o `role="status"` do
-     nome (`FichaDoObjeto.tsx`) continua no MESMO elemento e o
-     `aria-live` continua valendo: só o ancestral perdeu a caixa. */
+  /* O CABEÇALHO DA COMPACTA (refeito 12/11, crítica de visitante: a
+     linha única "GALÁXIA ESPIRAL · Galáxi… De…" cortava o nome e o botão).
+     MEDIDO a 390/360/320 px, pt e en, `ui` 1 e 1,4: o eyebrow sozinho
+     comia 117–259 px de 249–332, e o nome ficava com 39–58 px — nenhum
+     encolhimento cabia. A régua agora é uma GRADE: à esquerda o eyebrow
+     numa linha pequena e o nome embaixo (até duas linhas); à direita
+     "?", "Detalhes" (só o chevron, com o `aria-label` por extenso) e "✕",
+     cada um ocupando as duas linhas. A altura FIXA da compacta não muda
+     (a câmera a lê): eyebrow + duas linhas de nome cabem nos 44 px dos
+     botões com a sobra do filete duplicado que saiu (abaixo).
+     `display: contents` na linha que empacota eyebrow+ações apaga só a
+     CAIXA dela — o `role="status"` do nome (`FichaDoObjeto.tsx`) continua
+     no MESMO elemento. A dica do "?" mora num portal no `body`, fora
+     desta grade. */
   .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-linha {
     display: contents;
   }
-  /* `.hud-cabecalho-corpo` DEIXA DE SER `display: contents` só aqui
-     (auditoria celular, 13/09, segunda passada) — o `nowrap` que o resto
-     desta regra pede (comentário abaixo) não pode ir no `.hud-cabecalho`
-     de fora: `.hud-alca` (a alça de arrasto, próxima regra) só ganha a
-     PRÓPRIA linha porque `flex-wrap: wrap` + `flex-basis: 100%` empurram
-     tudo o mais para a linha seguinte — tirar o `wrap` de lá tira TAMBÉM
-     essa quebra, e a alça passa a disputar espaço com eyebrow/nome/…/✕
-     na MESMA linha (medido: o botão fechar saía da tela, a mais de
-     500 px de largura numa janela de 375 px). `.hud-cabecalho-corpo` é
-     quem sobra sozinho na SEGUNDA linha (depois da alça) — virar uma
-     grade flexível própria (`flex: 1 1 100%`, ocupa a linha toda) deixa
-     ela nowrap SEM mexer na alça: os filhos de `.hud-cabecalho-linha`
-     (ainda `display: contents`) e o nome (irmão dela aqui dentro)
-     continuam flattened, com o MESMO `order` de sempre. */
-  .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-corpo {
-    display: flex;
-    flex: 1 1 100%;
-    flex-wrap: nowrap;
-    align-items: center;
-    column-gap: 0.4rem;
-    min-width: 0;
-  }
+  /* O CONTÊINER das regras de largura logo abaixo (`@container`): a
+     pergunta é "quanto espaço o NOME tem", e quem sabe é o cabeçalho, não
+     a janela. */
   .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho {
+    container: cabecalho-da-ficha / inline-size;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    column-gap: 0.4rem;
     padding-bottom: 0.4rem;
     margin-bottom: 0.5rem;
     border-bottom: 1px solid var(--borda);
   }
   .atlas-ficha[data-ficha-estado='compacta'] .hud-alca {
-    order: 0;
     flex: 0 0 100%;
   }
-  .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-eyebrow {
-    order: 1;
-    flex: 0 0 auto;
+  /* UM FILETE SÓ: o `.hud-cabecalho-corpo` traz o dele de `01-base.css`
+     (respiro de 0,7rem + borda) e o cabeçalho acima traz outro — eram
+     duas linhas a 7 px uma da outra, e os 12 px que elas gastavam
+     empurravam os botões da escada 5 px para fora da compacta. */
+  .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-corpo {
+    flex: 1 1 100%;
+    min-width: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-columns: auto;
+    align-items: center;
+    column-gap: 0.4rem;
+    padding-bottom: 0;
+    border-bottom: 0;
   }
-  /* "PLANETA · Netuno" (§3.5) — o "·" É CSS, não texto novo do
-     dicionário (item 3: a chave já era só a classe, "Planeta"). */
-  .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-eyebrow::after {
-    content: '\00a0\00b7\00a0';
+  .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-eyebrow {
+    grid-area: 1 / 1;
+    align-self: end;
   }
   .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-titulo--nome {
-    order: 2;
-    /* `flex-basis: 0` (não `auto`) — COM `auto` o navegador decide se a
-       linha quebra pelo tamanho de CONTEÚDO do nome, antes de encolher
-       nada; medido a 320 px/`ui`1,4: "Detalhes"/"✕" caíam para uma
-       TERCEIRA linha do cabeçalho mesmo com `min-width: 0` no nome, e a
-       ficha estourava os 8,5rem. Com base zero o nome nasce "sem
-       tamanho" e só CRESCE com o que sobra — nunca força quebra.
-       MIN-WIDTH 6CH (auditoria celular, 13/09; era 0) — o nome tem
-       PRIORIDADE sobre o rótulo do botão: quem cede primeiro é
-       "Detalhes" (`.atlas-ficha-detalhes`, abaixo, virou encolhível), e
-       o próprio rótulo dele já some antes disso (o `estreita` de
-       `FichaDoObjeto.tsx` também liga com `ui ≥ 1,2`, não só ≤360 px) —
-       o piso aqui é rede de segurança, não a primeira linha de defesa. */
-    flex: 1 1 0%;
-    min-width: 6ch;
+    grid-area: 2 / 1;
+    align-self: start;
     margin: 0;
     /* Inter 500, não a serifada da mesa/expandida (§3.5: "eyebrow + nome
        em Inter 500" é a régua só da COMPACTA). */
@@ -676,52 +656,71 @@
     font-weight: 500;
     font-size: 0.9375rem;
     letter-spacing: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    line-height: 1.15;
+    /* O NOME QUEBRA, não corta: entre palavras, e dentro de uma só
+       quando ela sozinha não cabe na largura ("Churyumov–" a 320 px com
+       texto grande) — palavra partida se lê, palavra com "…" não. */
+    white-space: normal;
+    overflow-wrap: break-word;
+    text-overflow: clip;
   }
-  /* O ITEM PROMOVIDO É O BOTÃO, não a caixa: `.hud-ajuda-caixa` já é
-     `display: contents` de fábrica (08-ajustes.css, "sem caixa
-     própria") — ela não gera box nenhuma, então `order`/`flex` nela não
-     tem ONDE pegar, e é o `.hud-ajuda` (o botão de dentro) que sobe a
-     ser item flex de `.hud-cabecalho` (dois `contents` empilhados: a
-     linha, a caixa). */
-  .atlas-ficha[data-ficha-estado='compacta'] .hud-ajuda {
-    order: 3;
-    flex: 0 0 auto;
+  .atlas-ficha[data-ficha-estado='compacta'] .atlas-ficha-nome,
+  .atlas-ficha[data-ficha-estado='compacta'] .atlas-ficha-nome > span {
+    white-space: normal;
+    text-overflow: clip;
   }
-  /* O RÓTULO DO BOTÃO CEDE PRIMEIRO (auditoria celular, 13/09; era
-     `flex: 0 0 auto`, que nunca cedia — com "Detalhes" por extenso e
-     `ui` grande, sobrava inteiro e o nome, sem piso, virava "E.."). O
-     `min-width: 2,75rem` do alvo de 44 px (06-responsivo.css) não muda:
-     só o que ele ENCOLHE ATÉ é maior, e é isso que garante o alvo de
-     toque mesmo sem o texto. */
-  .atlas-ficha[data-ficha-estado='compacta'] .atlas-ficha-detalhes {
-    order: 4;
-    flex: 0 1 auto;
-    overflow: hidden;
+  /* OS TRÊS BOTÕES, à direita, cada um nas duas linhas — colocados em
+     ordem pelo próprio documento ("?", "Detalhes", "✕"); quando o "?"
+     sai (régua estreita abaixo) os outros dois fecham a fila sozinhos.
+     `.hud-ajuda-caixa` é `display: contents` de fábrica (08-ajustes.css),
+     então o item da grade é o botão de dentro. */
+  .atlas-ficha[data-ficha-estado='compacta']
+    :is(.hud-ajuda, .atlas-ficha-detalhes, .hud-cabecalho-fechar) {
+    grid-row: 1 / span 2;
   }
-  /* O TEXTO DE DENTRO ("Detalhes"/"Recolher") é quem realmente cede — o
-     ícone (`<Icone>`, irmão dele) não tem `min-width`/`flex-shrink`
-     declarados aqui, então continua no tamanho de sempre. */
+  /* "DETALHES" É SÓ O CHEVRON na compacta do celular: o rótulo por
+     extenso cortava em "De…" (medido 58 px de botão a 390 px), e o
+     `aria-label` já diz a ação inteira. Os dois alvos ficam em 44×44 px
+     cravados — um alvo de toque não precisa crescer com o texto (em
+     `ui` 1,4 `2.75rem` dá 62 px), só o nome precisa da largura. */
   .atlas-ficha[data-ficha-estado='compacta'] .atlas-ficha-detalhes-texto {
-    flex: 0 1 auto;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    display: none;
   }
-  .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-fechar {
-    order: 5;
-    flex: 0 0 auto;
+  .atlas-ficha[data-ficha-estado='compacta'] :is(.atlas-ficha-detalhes, .hud-cabecalho-fechar) {
+    width: 44px;
+    min-width: 44px;
+    padding: 0;
+  }
+
+  /* TEXTO GRANDE NUMA FOLHA ESTREITA — a régua em `rem`, de propósito:
+     numa consulta de contêiner o `rem` é a raiz VIVA, que cresce com o
+     `ui`, então "13,5rem" quer dizer "cabe pouco texto", seja por janela
+     estreita, seja por letra grande. Medido (largura do cabeçalho em rem
+     da raiz): `ui` 1 — 20,8 / 18,9 / 16,4 a 390/360/320 px; `ui` 1,4 —
+     14,2 / 12,9 / 11,1. Abaixo de 13,5rem o nome precisa de três linhas
+     e o eyebrow sai da COMPACTA (a expandida continua com ele); abaixo
+     de 12rem sai também o "?" (idem), senão uma palavra só não cabe. */
+  @container cabecalho-da-ficha (max-width: 13.5rem) {
+    .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-eyebrow {
+      display: none;
+    }
+    .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-titulo--nome {
+      grid-area: 1 / 1 / span 2;
+      align-self: center;
+    }
+  }
+  @container cabecalho-da-ficha (max-width: 12rem) {
+    .atlas-ficha[data-ficha-estado='compacta'] .hud-ajuda {
+      display: none;
+    }
   }
 
   /* "DETALHES"/"RECOLHER" (texto + chevron, alvo de 44×44 sempre) MUDOU
      DE CASA (B2, 09/09): a ficha da MESA numa janela baixa ganhou o
      mesmo botão, e este `@media` não a alcança — a regra mora agora em
-     `06-responsivo.css`, num `@media` que reúne as duas condições. A
-     régua ESTREITA abaixo (≤360 px) continua aqui: ela só existe no
-     celular (largura), então não precisa da mesma mudança. */
+     `06-responsivo.css`, num `@media` que reúne as duas condições. O
+     só-chevron do celular continua aqui, no cabeçalho da compacta
+     (acima): ele só existe no telefone. */
 
   /* OS CARTÕES DE DESTINO (Lote 6) — no celular a grade vira LISTA,
      linha por linha, miniatura à esquerda: dedo é alvo vertical, não
@@ -889,65 +888,6 @@
   .ajustes-seg--lente::after {
     display: none;
   }
-}
-
-/* ≤360 px (§3.3, "Larguras estreitas"): o NOME tem prioridade — o botão
-   "Detalhes" perde o texto e vira só o chevron, num alvo que continua
-   44×44 (o `min-width`/`min-height` de cima não mudam), com o
-   `aria-label` descrevendo a ação por inteiro.
-   NÃO NASCE COMO UMA REGRA DE JANELA NESTE ARQUIVO, de propósito:
-   `uiScale.test.ts` cobra que TODA quebra de largura do HUD seja
-   `LARGURA_DO_CELULAR_PX` (760) — uma segunda fronteira aqui quebraria
-   essa regra (e o próprio texto deste comentário, se citasse a sintaxe
-   da regra de janela por extenso, também quebraria a varredura — ela
-   lê comentário como CSS). O ajuste abaixo é ESTREITO DEMAIS da FICHA,
-   não uma segunda fronteira de layout. O seletor é o
-   `[data-ficha-largura]` que `FichaDoObjeto.tsx` escreve por
-   `matchMedia` COM OUVINTE em JavaScript (o mesmo padrão de
-   `useCelular.ts` para os 760) — a mesma pergunta ao navegador, só que
-   feita de um lugar que este teste não varre.
-   O CABEÇALHO ENCOLHE O RESPIRO (não o alvo de toque: os 44×44 de
-   "?"/"Detalhes"/"✕" não mudam) — medido a 320 px com `ui = 1,4`:
-   "PLANETA · Netuno [?][˄][✕]" não cabia numa linha só mesmo com o
-   nome no mínimo (`flex-basis: 0`), porque os TRÊS alvos de toque mais
-   o eyebrow já somam mais que a largura da folha; o `column-gap` e o
-   separador (abaixo) são o que sobra para cortar. */
-.atlas-ficha[data-ficha-estado='compacta'][data-ficha-largura='estreita'] .hud-cabecalho {
-  column-gap: 0.15rem;
-}
-.atlas-ficha[data-ficha-estado='compacta'][data-ficha-largura='estreita']
-  .hud-cabecalho-eyebrow::after {
-  content: '\00b7';
-}
-/* O NOME encolhe mais aqui (era 6ch, a régua de sempre): com o rótulo
-   "Detalhes" já sem texto (a regra logo abaixo) e o cabeçalho em
-   `flex-wrap: nowrap` (acima, dentro do `@media`), o nome ainda tinha
-   folga para ceder mais antes de a linha quebrar — medido a 320 px com
-   `ui = 1,4` (auditoria celular, 13/09). Especificidade maior que a
-   regra de 6ch (mais um atributo, `[data-ficha-largura='estreita']`)
-   vence sem depender de ordem. */
-.atlas-ficha[data-ficha-estado='compacta'][data-ficha-largura='estreita']
-  .hud-cabecalho-titulo--nome {
-  min-width: 4ch;
-}
-/* OS DOIS BOTÕES-ÍCONE DO CABEÇALHO (Detalhes, ✕) NÃO CRESCEM COM O
-   TEXTO (auditoria celular, 13/09): `2.75rem` chega a 62 px em `ui =
-   1,4` (a raiz também escala com `--ui`, `index.css`) — um alvo de
-   toque não precisa acompanhar o texto, só o NOME precisa da largura
-   que sobra. Fixo em px, à parte da escala da UI, só aqui. */
-.atlas-ficha[data-ficha-estado='compacta'][data-ficha-largura='estreita']
-  .atlas-ficha-detalhes,
-.atlas-ficha[data-ficha-estado='compacta'][data-ficha-largura='estreita']
-  .hud-fechar {
-  width: 44px;
-  min-width: 44px;
-  height: 44px;
-}
-.atlas-ficha[data-ficha-largura='estreita'] .atlas-ficha-detalhes-texto {
-  display: none;
-}
-.atlas-ficha[data-ficha-largura='estreita'] .atlas-ficha-detalhes {
-  padding: 0;
 }
 
 /* MOVIMENTO REDUZIDO, A COMPACTA/EXPANDIDA (Lote 5, §7): quem declara a

@@ -369,10 +369,9 @@
   }
 
   /* texto + chevron, alvo de 44×44 sempre (`min-height`/`min-width`); o
-     padding lateral só entra quando o texto está visível (a régua
-     estreita do celular, ≤360px em 09-celular.css, tira as duas
-     coisas — ela só existe em largura de celular, não precisa entrar
-     aqui). */
+     padding lateral só entra quando o texto está visível (a compacta
+     do celular, 09-celular.css, tira as duas coisas — ela só existe em
+     largura de celular, não precisa entrar aqui). */
   .atlas-ficha-detalhes {
     display: inline-flex;
     align-items: center;
