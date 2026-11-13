@@ -1188,6 +1188,7 @@ export class Galaxy {
     this.tauNuvens?.dispose();
     this.tauNuvensRGBA?.dispose();
     this.tauVazio.dispose();
+    this.lod?.textura.dispose();
     if (this.ownsDustMap) this.dustMap.dispose();
     this.group.traverse((o) => {
       if (o instanceof THREE.Mesh || o instanceof THREE.Points) o.geometry.dispose();
