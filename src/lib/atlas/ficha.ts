@@ -64,7 +64,13 @@ import type { PosicaoEcliptica } from './kepler';
 import { REGISTRO_ORBITAL } from './registroOrbital';
 import { designacaoDeBayer } from './constelacoes';
 import { temperatureFromBV } from './stellarPhysics';
-import { estrelaVisitavelPorNome, type EstrelaVisitavel, type Numero } from './estrelasVisitaveis';
+import {
+  PISO_DO_CONTRASTE_NA_TELA,
+  TEFF_DO_SOL_K,
+  estrelaVisitavelPorNome,
+  type EstrelaVisitavel,
+  type Numero,
+} from './estrelasVisitaveis';
 import type { NamedStar } from '../../three/config';
 import type { LugarDoCeu } from '../lugaresDoFilme';
 import type { Sonda } from '../sondas';
@@ -1032,6 +1038,24 @@ function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
         t('ficha.estrela.desenhoInventado', { lei: e.superficie.granuloEmRaios.fonte }),
         'artistico'
       ),
+      // as concessões que a física da estrela liga (nenhuma no Sol, nenhuma
+      // por nome): mais radiante que o Sol, véu; granulação abaixo do piso,
+      // extrapolada; células gigantes, realçadas e com envelope desenhado
+      e.teffK.v > TEFF_DO_SOL_K ? linha(t('ficha.campo.veu'), t('ficha.estrela.veu'), 'artistico') : null,
+      e.superficie.contrasteGranulos.v < PISO_DO_CONTRASTE_NA_TELA
+        ? linha(
+            t('ficha.campo.granulacao'),
+            t('ficha.estrela.granulacaoExtrapolada', {
+              real: numeroDoIdioma(e.superficie.contrasteGranulos.v * 100),
+              piso: numeroDoIdioma(PISO_DO_CONTRASTE_NA_TELA * 100),
+            }),
+            'artistico',
+            e.superficie.contrasteGranulos.fonte
+          )
+        : null,
+      e.superficie.celulasGigantesEmRaios
+        ? linha(t('ficha.campo.celulasGigantes'), t('ficha.estrela.celulasRealcadas'), 'artistico')
+        : null,
     ].filter((l): l is LinhaDaFicha => l !== null),
   };
 }

@@ -360,6 +360,12 @@ export interface StellarParams {
    * (`criarABordaDifusa`) — a MOLsphere de Betelgeuse a ~1,3 R.
    */
   readonly bordaDifusaRaios?: number;
+  /**
+   * O VÉU de uma fotosfera mais radiante que o Sol (omitido ou 0 = nenhum):
+   * a fração da radiância que a exposição da visita não põe no disco
+   * (1 − ganho), espalhada em volta dele (`criarABordaDifusa`).
+   */
+  readonly veu?: number;
 }
 
 /**
@@ -498,13 +504,19 @@ function trocarUma(texto: string, ancora: string, novo: string, quem: string): s
  *  · `contraste` (≠ 1): a textura quieta (o achatamento tonal e as fibrilas);
  *  · `bordaU` (≠ 0,30): o coeficiente da lei linear de borda;
  *  · `semDinamo`: sem campo não há fibrilas, plage, filamentos nem o fio
- *    cromosférico do limbo — a estrela sem dínamo de tipo solar;
+ *    cromosférico do limbo — a estrela sem dínamo de tipo solar; no lugar
+ *    das fibrilas, a convecção que sobra (`GLSL_GRANULACAO_VIVA`);
  *  · `gravidade`: a cor × brilho da Teff local (`aGravidade`, por vértice);
  *  · `avermelhamento` (≠ 1): o avermelhamento do limbo da receita H-alfa
  *    (g × 0,7 e b × 0,5 na borda) é parte do FILTRO fotográfico do Sol, e
  *    esmaece com ele (`pesoDoFiltro`): a estrela quente fica azul até a borda;
- *  · `gigantes`: as células gigantes (`GLSL_CELULAS_GIGANTES`), em log por
- *    cima da cor, antes da borda: exp(K·z − K²/2), média 1.
+ *  · `gigantes`: as células gigantes (`GLSL_CELULAS_GIGANTES`) como um campo
+ *    de TEMPERATURA, T = Teff·(1 + δ·z), levado à cor e ao brilho de cada
+ *    canal pela lei de Planck (`razaoDePlanck`), antes da borda;
+ *  · `continuo` (peso > 0): a borda do CONTÍNUO — a atmosfera cinza de
+ *    Eddington, T(μ)⁴ ∝ μ + ⅔, pela lei de Planck por canal — no lugar da
+ *    lei linear, com o peso que o filtro H-alfa do Sol deixa (1 − w): zero
+ *    no Sol e nas mais frias, inteira nas quentes.
  */
 export function cirurgiaDaEstrela(
   fragment: string,
@@ -515,10 +527,15 @@ export function cirurgiaDaEstrela(
     gravidade?: boolean;
     avermelhamento?: number;
     gigantes?: { tamanhoEmRaios: number; contraste: number };
+    /** a Teff média (K): a régua de Planck das gigantes e do contínuo */
+    teffK?: number;
+    /** o peso da borda do contínuo (1 − `pesoDoFiltro`) */
+    continuo?: number;
   }
 ): string {
   const quem = 'cirurgiaDaEstrela';
   let f = fragment;
+  let granulacao = '';
   if (o.contraste !== undefined && o.contraste !== 1) {
     const k = literalGlsl(Math.max(0, o.contraste));
     f = trocarUma(
@@ -545,7 +562,17 @@ export function cirurgiaDaEstrela(
     f = trocarUma(f, '  float limbU = 0.30;', `  float limbU = ${literalGlsl(o.bordaU)};`, quem);
   }
   if (o.semDinamo) {
-    f = trocarUma(f, '  float fibC = st.a*2.0 - 1.0;', '  float fibC = 0.0;', quem);
+    // sem campo, a textura que sobra é a da CONVECÇÃO: a granulação viva
+    // (`GLSL_GRANULACAO_VIVA`) no lugar das fibrilas, na frequência da
+    // estrela (`uGranFreq`) e no contraste dela
+    const ag = GRANULACAO_VIVA * Math.max(0, o.contraste ?? 1);
+    f = trocarUma(
+      f,
+      '  float fibC = st.a*2.0 - 1.0;',
+      ag > 0 ? `  float fibC = 0.0;\n  heat += ${literalGlsl(ag)} * granulacaoViva(sp * uGranFreq, t);` : '  float fibC = 0.0;',
+      quem
+    );
+    if (ag > 0) granulacao = GLSL_GRANULACAO_VIVA;
     f = trocarUma(f, '  if (close > 0.003){', '  if (false){', quem);
     f = trocarUma(f, '  float plage = st.b * (', '  float plage = 0.0 * st.b * (', quem);
     f = trocarUma(f, '  float fil = st.g * ', '  float fil = 0.0 * st.g * ', quem);
@@ -563,31 +590,126 @@ export function cirurgiaDaEstrela(
     const w = literalGlsl(Math.max(0, o.avermelhamento));
     f = trocarUma(f, '  color.g *= 1.0 - edge*0.30;', `  color.g *= 1.0 - edge*0.30*${w};`, quem);
     f = trocarUma(f, '  color.b *= 1.0 - edge*0.50;', `  color.b *= 1.0 - edge*0.50*${w};`, quem);
+    f = trocarUma(f, '  color *= 1.0 - edge*0.15;', `  color *= 1.0 - edge*0.15*${w};`, quem);
   }
+  const teff = o.teffK ?? TEFF_SOL_K;
+  const planck = (o.gigantes || (o.continuo ?? 0) > 0) ? GLSL_RAZAO_DE_PLANCK : '';
   if (o.gigantes) {
-    const K = GANHO_DAS_GIGANTES_NA_TELA * Math.max(0, o.gigantes.contraste);
+    const d = deltaTDasGigantes(o.gigantes.contraste);
     f =
       GLSL_CELULAS_GIGANTES +
       trocarUma(
         f,
         '  color *= (1.0-limbU) + limbU*mu;',
-        `  color *= exp(${literalGlsl(K)}*celulasGigantes(sp/${literalGlsl(o.gigantes.tamanhoEmRaios)} + 17.0, t*0.05) - ${literalGlsl(0.5 * K * K)});\n` +
+        `  float zGig = celulasGigantes(sp/${literalGlsl(o.gigantes.tamanhoEmRaios)} + 17.0, t*0.05);\n` +
+          `  color *= razaoDePlanck(${xDePlanckGlsl(teff)}, max(0.5, 1.0 + ${literalGlsl(d)}*(zGig > 0.0 ? zGig : ${literalGlsl(DESCIDA_DAS_GIGANTES)}*zGig)));\n` +
           '  color *= (1.0-limbU) + limbU*mu;',
         quem
       );
   }
-  return f;
+  if ((o.continuo ?? 0) > 0) {
+    // a temperatura no centro do disco (μ = 1) é a régua: o centro sai como
+    // antes e a borda esfria pela lei, em cada canal
+    const t1 = teff * Math.pow(1.25, 0.25);
+    f = trocarUma(
+      f,
+      '  color *= (1.0-limbU) + limbU*mu;',
+      `  color *= mix(vec3((1.0-limbU) + limbU*mu), razaoDePlanck(${xDePlanckGlsl(t1)}, pow((mu + 0.6666667)/1.6666667, 0.25)), ${literalGlsl(Math.min(1, o.continuo!))});`,
+      quem
+    );
+  }
+  return planck + granulacao + f;
 }
 
 /**
- * O GANHO DE TELA das células gigantes sobre o contraste rms dos dados —
- * ARTÍSTICO, calibrado na tela contra as imagens do VLT/SPHERE (Montargès et
- * al. 2021, Nature 594, 365): manchas claras a ~1,3–1,5× a média e regiões
- * escuras até ~0,6×, medidas em luz linear sobre o perfil radial do disco
- * (12/11, Betelgeuse a 3 raios: com 1,7 os percentis 5–95 saíram 0,66–1,49
- * e o 99 a 1,73; 1,5 encolhe o log do contraste em 12 %).
+ * A GRANULAÇÃO VIVA de uma estrela sem dínamo — a convecção da fotosfera em
+ * luz branca, que no Sol fica por baixo da textura H-alfa e sem campo é o
+ * que sobra: células claras de subida e faixas escuras de descida (F2 − F1
+ * de um Voronoi esférico, centros que derivam devagar). Média ~0, desvio
+ * ~1. O ganho em `heat` por contraste relativo ao Sol (`GRANULACAO_VIVA`)
+ * põe o rms do Sol (0,15) em ~15 % de brilho no meio do disco.
  */
-export const GANHO_DAS_GIGANTES_NA_TELA = 1.5;
+const GRANULACAO_VIVA = 0.09;
+const GLSL_GRANULACAO_VIVA = /* glsl */ `
+vec3 hashDoGranulo(vec3 p) {
+  p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+  p += dot(p, p.yxz + 33.33);
+  return fract((p.xxy + p.yxx) * p.zyx);
+}
+float granulacaoViva(vec3 p, float t) {
+  // domínio torcido: grânulo é célula de fluido, não poliedro
+  p += 0.32 * sin(p.yzx * 0.9 + t * 0.05) + 0.12 * sin(p.zxy * 2.7 + 4.1);
+  vec3 c = floor(p);
+  vec3 f = p - c;
+  float d1 = 9.0;
+  float d2 = 9.0;
+  for (int i = -1; i <= 1; i++)
+  for (int j = -1; j <= 1; j++)
+  for (int l = -1; l <= 1; l++) {
+    vec3 o = vec3(float(i), float(j), float(l));
+    vec3 h = hashDoGranulo(c + o);
+    vec3 q = o + 0.5 + 0.4 * sin(6.2831853 * h + t * 0.3 * (0.5 + h)) - f;
+    float dq = dot(q, q);
+    d2 = min(max(d1, dq), d2);
+    d1 = min(d1, dq);
+  }
+  // centro claro (a subida) caindo até a faixa escura (a descida)
+  float g = smoothstep(0.0, 0.5, sqrt(d2) - sqrt(d1)) * (1.15 - 0.7 * sqrt(d1));
+  return (g - 0.5) / 0.3;
+}
+`;
+
+/** os comprimentos de onda efetivos dos canais R, G, B (µm) e c₂ = hc/k (µm·K) */
+const LAMBDA_DOS_CANAIS_UM = [0.61, 0.55, 0.465] as const;
+const C2_UM_K = 14388;
+
+/** x = c₂/(λT) por canal, como `vec3` GLSL — a régua de `razaoDePlanck` */
+export function xDePlanckGlsl(T: number): string {
+  return `vec3(${LAMBDA_DOS_CANAIS_UM.map((l) => literalGlsl(C2_UM_K / (l * T))).join(', ')})`;
+}
+
+/**
+ * B(r·T₀)/B(T₀) por canal, com x₀ = c₂/(λT₀): o brilho e a cor de um ponto
+ * a r vezes a temperatura da régua. r > 0 por contrato (quem chama limita);
+ * x limitado a 60 (exp cabe no float32).
+ */
+const GLSL_RAZAO_DE_PLANCK = /* glsl */ `
+vec3 razaoDePlanck(vec3 x0, float r) {
+  vec3 a = min(x0, vec3(60.0));
+  vec3 x = min(a / r, vec3(60.0));
+  return (exp(a) - 1.0) / (exp(x) - 1.0);
+}
+`;
+
+/**
+ * δ = σ_T/T das células gigantes pelo contraste rms dos dados. O contraste
+ * das simulações (Chiavassa et al. 2010) é de intensidade BOLOMÉTRICA, e
+ * I ∝ T⁴ dá σ_T/T = contraste/4 (Betelgeuse: 0,0625, ~225 K); a lei de
+ * Planck no visível faz o resto — no lado de Wien uma célula 20 % mais
+ * quente é ~3× mais clara (o que o VLT/SPHERE vê). × o ganho de tela.
+ */
+/**
+ * As descidas esfriam MENOS do que as subidas esquentam: a distribuição de
+ * intensidade das simulações tem a cauda do lado claro (Chiavassa et al.
+ * 2010) — o lado frio do campo leva esta fração de δ. ARTÍSTICO, declarado.
+ */
+export const DESCIDA_DAS_GIGANTES = 0.9;
+
+export function deltaTDasGigantes(contraste: number): number {
+  return (GANHO_DAS_GIGANTES_NA_TELA * Math.max(0, contraste)) / 4;
+}
+
+/**
+ * O GANHO DE TELA das células gigantes sobre o δ = σ_T/T físico
+ * (`deltaTDasGigantes`) — ARTÍSTICO, declarado. A conta bolométrica (¼ do
+ * contraste) dá ~225 K; as simulações no VISÍVEL têm contraste maior que o
+ * bolométrico (a opacidade do TiO, Chiavassa et al. 2011, A&A 535, A22), e
+ * as imagens do VLT/SPHERE mostram manchas várias vezes mais claras que as
+ * regiões escuras. Com 2,6 (12/11, Betelgeuse a 3 raios), as subidas mais
+ * quentes chegam a ~5.000 K e saem branco-amareladas; as descidas, a ~3.000 K,
+ * vermelho-escuras.
+ */
+export const GANHO_DAS_GIGANTES_NA_TELA = 2.6;
 
 /**
  * AS CÉLULAS GIGANTES de uma supergigante (o que o VLT/SPHERE mostrou no
@@ -595,11 +717,17 @@ export const GANHO_DAS_GIGANTES_NA_TELA = 1.5;
  * Chiavassa et al. 2010, A&A 515, A12): POUCAS manchas claras, grandes e
  * moles, com regiões escuras largas entre elas. Uma gaussiana por célula
  * (σ = 0,45 célula), somada nas 27 vizinhas — liso em todo lugar, sem a
- * aresta de F2 − F1 da rede de supergranulação (que desenha as BORDAS das
- * células: a morfologia oposta). Amplitude BIMODAL COM SINAL (artístico):
- * ~45 % das células acendem (+1), o resto afunda (−0,6). Normalizado a média
- * 0 e desvio 1 (Monte Carlo na esfera, 4·10⁵ amostras, na escala de 0,6 R).
- * Vindo do motor simples do piloto, sem mudança de número.
+ * aresta de F2 − F1 da rede de supergranulação. Amplitude BIMODAL COM SINAL
+ * (artístico): ~45 % das células acendem (+1), o resto afunda (−0,6). Vindo
+ * do motor simples do piloto (`celulaGigante`, sem mudança de número).
+ *
+ * DE PERTO (12/11) as simulações mostram mais que as manchas moles do VLT
+ * (que é a mesma coisa borrada pela resolução): as células grandes se
+ * quebram em células menores, com descidas escuras entre elas (Chiavassa et
+ * al. 2010; Freytag et al. 2002). Uma SEGUNDA OITAVA do mesmo campo, 2,3×
+ * menor e 1,7× mais rápida, somada com peso 0,6 contra 0,8 — ARTÍSTICO,
+ * declarado. A soma é normalizada a média 0 e desvio 1 (Monte Carlo na
+ * esfera, 2·10⁵ amostras, na escala de 0,6 R: média −0,22, desvio 0,81).
  */
 const GLSL_CELULAS_GIGANTES = /* glsl */ `
 vec3 hashDaGigante(vec3 p) {
@@ -607,7 +735,7 @@ vec3 hashDaGigante(vec3 p) {
   p += dot(p, p.yxz + 33.33);
   return fract((p.xxy + p.yxx) * p.zyx);
 }
-float celulasGigantes(vec3 p, float t) {
+float celulaGigante(vec3 p, float t) {
   p = p + 0.1 * sin(p.yzx * 1.7 + t * 0.1);
   vec3 c = floor(p);
   vec3 f = p - c;
@@ -623,7 +751,35 @@ float celulasGigantes(vec3 p, float t) {
   }
   return (G - 0.0092) / 0.3142;
 }
+float celulasGigantes(vec3 p, float t) {
+  return (0.8 * celulaGigante(p, t) + 0.6 * celulaGigante(p * 2.3 + 5.0, t * 1.7) + 0.22) / 0.81;
+}
 `;
+
+/**
+ * O RELEVO DAS CÉLULAS GIGANTES no vertex de `sol/sun.js`: a superfície sobe
+ * onde a célula é quente e desce nas faixas — a borda irregular, encaroçada,
+ * das imagens e das simulações de uma supergigante (Montargès et al. 2021;
+ * Chiavassa et al. 2010). O MESMO campo da cor (`celulasGigantes`, mesma
+ * escala, semente e tempo; só a oitava grande — a pequena facetaria a malha),
+ * somado ao deslocamento ao longo da normal que o
+ * fbm e os modos p já usam: `amplitude` raios por desvio — ARTÍSTICO,
+ * declarado. Compõe com `cirurgiaDaForma` (a âncora é comum às duas).
+ */
+export function cirurgiaDoRelevoDasGigantes(vertex: string, tamanhoEmRaios: number, amplitude: number): string {
+  return (
+    GLSL_CELULAS_GIGANTES +
+    trocarUma(
+      vertex,
+      'n * uDispScale + pmSum',
+      `n * uDispScale + ${literalGlsl(amplitude)} * celulaGigante(normalize(position)/${literalGlsl(tamanhoEmRaios)} + 17.0, uTime*0.05) * length(position) + pmSum`,
+      'cirurgiaDoRelevoDasGigantes'
+    )
+  );
+}
+
+/** a amplitude do relevo das células gigantes, em raios por desvio */
+export const RELEVO_DAS_GIGANTES = 0.008;
 
 /**
  * A FORMA DE UMA ROTADORA RÁPIDA no vertex de `sol/sun.js`: o termo zonal
@@ -1094,6 +1250,21 @@ export function coroaOcultavel(material: THREE.ShaderMaterial, raioPc: number): 
  * (`director/doseDoSol.ts`) e se declara no selo; aqui só entra o que é
  * da ESTRELA.
  */
+/** o alcance das plumas da atmosfera estendida, × o excesso medido
+ *  (`bordaDifusaRaios` − 1) — ARTÍSTICO, declarado: o raio medido é o meio */
+const PLUMA_MIN = 0.55;
+const PLUMA_MAX = 2.2;
+/** o brilho da atmosfera estendida em b = 1, sobre a luz da borda do disco
+ *  (era 0,85 × ½ no motor simples) — ARTÍSTICO, declarado: a MOLsphere e a
+ *  poeira espalham a luz da estrela, e a câmera as vê como névoa luminosa */
+const BRILHO_DA_ATMOSFERA = 1.5;
+/** O VÉU (`criarABordaDifusa`) — ARTÍSTICO, declarado: o alcance da asa (em
+ *  raios), a escala do halo rente (raio) e os pesos das duas partes */
+const RAIO_DO_VEU = 3.2;
+const VEU_RENTE = 0.1;
+const VEU_PESO_RENTE = 0.7;
+const VEU_PESO_ASA = 0.35;
+
 export const SOL_PARAMS: StellarParams = {
   nome: 'Sol',
   // O RAIO FÍSICO DA FOTOSFERA (F3), pela fonte única do cadastro — não
@@ -1499,7 +1670,9 @@ export class StellarBody {
     this.operarOPesoDasCamadas(ctx);
     // a atmosfera estendida: só quem a tem (o Sol nem a constrói). Depois
     // das cirurgias das camadas — ela não usa mundo nem cor embutida
-    if ((params.bordaDifusaRaios ?? 1) > 1 && this.filtroSolarLigado) this.criarABordaDifusa(ctx);
+    if (((params.bordaDifusaRaios ?? 1) > 1 || (params.veu ?? 0) > 0) && this.filtroSolarLigado) {
+      this.criarABordaDifusa(ctx);
+    }
 
     this.prime(renderer);
   }
@@ -1565,32 +1738,47 @@ export class StellarBody {
   }
 
   /**
-   * A BORDA DIFUSA (`bordaDifusaRaios` > 1): a atmosfera molecular estendida
-   * de uma supergigante, uma casca aditiva até aquele raio, desenhada pelas
-   * faces de TRÁS — atrás do disco a profundidade da fotosfera a apaga, fora
-   * dele sobra o anel; vale com a câmera dentro dela. O perfil emenda com
-   * METADE da luz da borda do disco em b = 1 e apaga até o raio medido; a cor
-   * é a da fotosfera no limbo (a rampa no calor do meio, com o avermelhamento
-   * inteiro da receita, sem o fio cromosférico). A emissão passa pelos MESMOS
-   * fios da fotosfera (o brilho da estrela, o filtro, o ar, a compressão e o
-   * peso da lei), partilhando os uniforms dela. Porte da casca do motor
-   * simples do piloto, sem mudança de número.
+   * A CASCA EM VOLTA DO DISCO, uma casca aditiva desenhada pelas faces de
+   * TRÁS — atrás do disco a profundidade da fotosfera a apaga, fora dele
+   * sobra o anel; vale com a câmera dentro dela. Duas coisas, cada uma só
+   * para quem a física dá (o Sol não constrói a casca):
+   *  · A ATMOSFERA ESTENDIDA (`bordaDifusaRaios` > 1, a MOLsphere de uma
+   *    supergigante): emenda com METADE da luz da borda do disco em b = 1 e
+   *    apaga até o raio medido, na cor da fotosfera no limbo (a rampa no
+   *    calor do meio, com o avermelhamento da receita). Com ESTRUTURA: as
+   *    plumas assimétricas que o VLT e o ALMA mostram (Kervella et al. 2009,
+   *    2018) — um ruído de baixa ordem na direção do objeto muda o alcance
+   *    (de `PLUMA_MIN` a `PLUMA_MAX` × o excesso medido) e o brilho;
+   *  · O VÉU (`veu` > 0): a luz que a exposição da visita não põe no disco
+   *    de uma fotosfera mais radiante que o Sol vira o espalhamento em volta
+   *    dele — a asa da PSF de uma câmera diante de uma fonte ofuscante: um
+   *    halo rente à borda (escala `VEU_RENTE` raio) mais uma asa em b⁻³ até
+   *    `RAIO_DO_VEU`, na cor da borda do disco, ∝ `veu`.
+   * A emissão passa pelos MESMOS fios da fotosfera (o brilho da estrela, o
+   * filtro, o ar, a compressão e o peso da lei), partilhando os uniforms.
    */
   private criarABordaDifusa(ctx: any) {
     const p = this.params;
     const su = ctx.sunUniforms;
     const fator = literalGlsl(radianciaDeTela(RADIANCIA_DA_FOTOSFERA, RAIO_DO_SOL_NA_CENA));
+    const rEnv = Math.max(1, p.bordaDifusaRaios ?? 1);
+    const veu = Math.max(0, p.veu ?? 0);
+    const rCasca = Math.max(1 + (rEnv - 1) * PLUMA_MAX, veu > 0 ? RAIO_DO_VEU : 1);
+    const u = p.bordaU ?? 0.3;
     const mat = new THREE.ShaderMaterial({
       vertexShader: /* glsl */ `
         varying vec3 vPosV;
         varying vec3 vCentroV;
+        varying vec3 vDirObj;
         void main() {
           vec4 mv = modelViewMatrix * vec4(position, 1.0);
           vPosV = mv.xyz;
           vCentroV = (modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+          vDirObj = normalize(position);
           gl_Position = projectionMatrix * mv;
         }`,
       fragmentShader:
+        ctx.NOISE_GLSL +
         GLSL_COMPRESSAO +
         /* glsl */ `
         uniform vec3 uCorFria;
@@ -1601,17 +1789,38 @@ export class StellarBody {
         uniform float uBrilhoDaEstrela;
         uniform float uWorldFade;
         uniform float uRaio;
+        uniform float uTime;
         varying vec3 vPosV;
         varying vec3 vCentroV;
+        varying vec3 vDirObj;
         void main() {
           vec3 d = normalize(vPosV);
-          float b = length(vCentroV - dot(vCentroV, d) * d) / uRaio;
-          float fora = 1.0 - smoothstep(1.0, ${literalGlsl(p.bordaDifusaRaios!)}, b);
-          float perfil = fora * fora * step(1.0, b);
+          // dentro do disco a profundidade da fotosfera apaga a casca: o perfil
+          // começa na borda (b ≥ 1), sem fresta entre a malha e a conta
+          float b = max(length(vCentroV - dot(vCentroV, d) * d) / uRaio, 1.0);
           vec3 c = mix(uCorFria, uCorQuente, ${literalGlsl(CALOR_DO_MEIO_DO_DISCO)});
           c *= mix(0.16, 1.42, smoothstep(0.04, 1.08, 0.5));
-          c *= ${literalGlsl(1 - (p.bordaU ?? 0.3))} * vec3(1.0, 0.70, 0.50) * 0.85 * 0.5 * perfil;
-          c *= uPaleta;
+          vec3 luz = vec3(0.0);
+          ${
+            rEnv > 1
+              ? `
+          float pl = clamp(0.5 + 0.5*fbmLight(vDirObj*1.6 + vec3(3.1, 7.7, uTime*0.004)), 0.0, 1.0);
+          pl = pl*pl*(3.0 - 2.0*pl);
+          float alcance = 1.0 + ${literalGlsl(rEnv - 1)}*mix(${literalGlsl(PLUMA_MIN)}, ${literalGlsl(PLUMA_MAX)}, pl);
+          float fe = 1.0 - smoothstep(1.0, alcance, b);
+          float fino = 0.75 + 0.5*fbmLight(vDirObj*7.0 + vec3(0.0, 0.0, uTime*0.01));
+          luz += ${literalGlsl(1 - u)} * vec3(1.0, 0.70, 0.50) * ${literalGlsl(BRILHO_DA_ATMOSFERA)} * fe * fe * mix(0.6, 1.6, pl) * fino;`
+              : ''
+          }
+          ${
+            veu > 0
+              ? `
+          float rente = exp(-(b - 1.0) / ${literalGlsl(VEU_RENTE)});
+          float asa = pow(b, -3.0) * (1.0 - smoothstep(${literalGlsl(0.6 * RAIO_DO_VEU)}, ${literalGlsl(RAIO_DO_VEU)}, b));
+          luz += ${literalGlsl(veu * (1 - u))} * (${literalGlsl(VEU_PESO_RENTE)}*rente + ${literalGlsl(VEU_PESO_ASA)}*asa);`
+              : ''
+          }
+          c *= luz * uPaleta;
           gl_FragColor = vec4(comprimir3(c * pow(${fator}, uFiltroSolar) * uTransmitancia * uBrilhoDaEstrela, ${literalGlsl(BETA_DA_EMISSAO)}) * uWorldFade, 1.0);
         }`,
       uniforms: {
@@ -1622,6 +1831,7 @@ export class StellarBody {
         uTransmitancia: su.uTransmitancia,
         uBrilhoDaEstrela: su.uBrilhoDaEstrela ?? { value: 1 },
         uWorldFade: su.uWorldFade,
+        uTime: su.uTime,
         uRaio: { value: p.radiusPc },
       },
       side: THREE.BackSide,
@@ -1629,7 +1839,7 @@ export class StellarBody {
       depthWrite: false,
       transparent: true,
     });
-    const casca = new THREE.Mesh(new THREE.SphereGeometry(DONOR_RADIUS * p.bordaDifusaRaios!, 96, 48), mat);
+    const casca = new THREE.Mesh(new THREE.SphereGeometry(DONOR_RADIUS * rCasca, 96, 48), mat);
     casca.frustumCulled = false;
     casca.renderOrder = 1;
     this.group.add(casca);
@@ -1650,6 +1860,8 @@ export class StellarBody {
       gravidade: Boolean(a),
       avermelhamento: pesoDoFiltro(p.teffK),
       gigantes: p.celulasGigantes,
+      teffK: p.teffK,
+      continuo: 1 - pesoDoFiltro(p.teffK),
     };
     if (
       (o.contraste === undefined || o.contraste === 1) &&
@@ -1691,6 +1903,9 @@ export class StellarBody {
         for (let k2 = 0; k2 < 3; k2++) fator[i * 3 + k2] = (c[k2] / cm[k2]) * b;
       }
       geo.setAttribute('aGravidade', new THREE.BufferAttribute(fator, 3));
+    }
+    if (o.gigantes) {
+      mat.vertexShader = cirurgiaDoRelevoDasGigantes(mat.vertexShader, o.gigantes.tamanhoEmRaios, RELEVO_DAS_GIGANTES);
     }
     mat.needsUpdate = true;
   }

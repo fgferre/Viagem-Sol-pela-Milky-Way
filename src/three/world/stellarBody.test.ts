@@ -33,6 +33,7 @@ import {
   anguloDoGiro,
   cirurgiaDaCoroaOcultavel,
   cirurgiaDaEstrela,
+  cirurgiaDoRelevoDasGigantes,
   cirurgiaDaForma,
   cirurgiaDaFotosfera,
   cirurgiaDaMatiz,
@@ -172,9 +173,9 @@ describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
     expect(SOL_PARAMS.teffK).toBe(5772);
     expect(SOL_PARAMS.dinamo).toBe(true);
     const src = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
-    // o estado da lei, o avermelhamento do limbo e a média da gravidade
-    // (`operarAFotosfera`)
-    expect(src.match(/p\.teffK/g)).toHaveLength(3);
+    // o estado da lei, o avermelhamento do limbo, a régua de Planck e a
+    // borda do contínuo, e a média da gravidade (`operarAFotosfera`)
+    expect(src.match(/p\.teffK/g)).toHaveLength(5);
     // sem envelope convectivo não há dínamo: o construtor (`semDinamo`) e
     // o tier da estrela (`tierDaEstrela`) leem o campo
     expect(src).toContain('this.semDinamo = !params.dinamo;');
@@ -645,6 +646,13 @@ describe('um motor, qualquer estrela — os parâmetros novos são neutros no So
     const q = cirurgiaDaEstrela(sunJs, { avermelhamento: 0, gigantes: { tamanhoEmRaios: 0.6, contraste: 0.25 } });
     expect(q).toContain('color.b *= 1.0 - edge*0.50*0.000000;');
     expect(q.split('celulasGigantes(sp/0.600000').length - 1).toBe(1);
+    expect(q).toContain('razaoDePlanck(');
+    // a borda do contínuo só com peso; sem dínamo e com contraste, a granulação viva
+    const c = cirurgiaDaEstrela(sunJs, { continuo: 1, teffK: 9845, semDinamo: true, contraste: 0.27 });
+    expect(c).toContain('pow((mu + 0.6666667)/1.6666667, 0.25)');
+    expect(c).toContain('granulacaoViva(sp * uGranFreq, t)');
+    expect(cirurgiaDaEstrela(sunJs, { semDinamo: true, contraste: 0 })).not.toContain('granulacaoViva');
+    expect(() => cirurgiaDoRelevoDasGigantes(cirurgiaDaForma(sunJs, -0.078, 1.04), 0.6, 0.008)).not.toThrow();
   });
 
   it('a matiz escreve na saída GLSL3 quando ela existe (as partículas da CME)', () => {

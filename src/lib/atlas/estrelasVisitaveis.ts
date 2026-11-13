@@ -100,7 +100,9 @@ export interface EstrelaVisitavel {
   readonly companheira?: Companheira;
 }
 
-const TEFF_SOL_K = 5772;
+/** a Teff do Sol (K): a régua das concessões que só a física liga */
+export const TEFF_DO_SOL_K = 5772;
+const TEFF_SOL_K = TEFF_DO_SOL_K;
 
 /**
  * O TAMANHO DO GRÂNULO, em raios da estrela. Os grânulos medem de 3 a 10
@@ -519,11 +521,23 @@ export function granuloNaTelaEmRaios(granuloEmRaios: number): number {
 export const CONTRASTE_REAL_DO_SOL = 0.15;
 
 /**
+ * O PISO DO CONTRASTE NA TELA — a concessão gêmea da do tamanho do grânulo,
+ * ARTÍSTICA, declarada: nenhuma superfície com zona convectiva sai mais lisa
+ * que a da anã M (0,04, Beeck et al. 2013). As estrelas A têm zonas finas de
+ * ionização do H e do He que as simulações 3D e o "flicker" do Kepler dão
+ * como granulação de baixo contraste (~1–2 %, Tremblay et al. 2013; Kallinger
+ * & Matthews 2010) — invisível no disco; o piso a EXTRAPOLA para a tela.
+ * Não vale para a anã branca (a companheira: contraste 0).
+ */
+export const PISO_DO_CONTRASTE_NA_TELA = 0.04;
+
+/**
  * Sob as CÉLULAS GIGANTES, os grânulos pequenos são TÊNUES: o contraste
  * medido nas simulações (0,25 em Betelgeuse) é o das gigantes, que dominam a
- * imagem; os grânulos por cima levam 15 % dele — ARTÍSTICO, declarado.
+ * imagem; os grânulos por cima levam 20 % dele — ARTÍSTICO, declarado
+ * (a segunda escala, visível de perto sem cobrir as células).
  */
-export const FRACAO_DOS_GRANULOS_SOB_AS_GIGANTES = 0.15;
+export const FRACAO_DOS_GRANULOS_SOB_AS_GIGANTES = 0.2;
 
 const GRAU = Math.PI / 180;
 const JD_J2000 = 2451545;

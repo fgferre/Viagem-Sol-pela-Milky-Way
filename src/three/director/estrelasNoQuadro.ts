@@ -48,6 +48,7 @@ import {
   ESTRELAS_VISITAVEIS,
   FRACAO_DOS_GRANULOS_SOB_AS_GIGANTES,
   GRANULO_SOL_EM_RAIOS,
+  PISO_DO_CONTRASTE_NA_TELA,
   atividadeDe,
   granuloNaTelaEmRaios,
   posicaoDaCompanheira,
@@ -90,20 +91,25 @@ export function eixoDeRotacao(e: EstrelaVisitavel, pos: THREE.Vector3, out: THRE
  * os planetas já têm (`lib/atlas/luzDaVisita.ts`), aplicada à fotosfera.
  *
  * Ele vale para quem o FILTRO fotográfico do Sol vale (`pesoDoFiltro`:
- * inteiro até 5.772 K) e esmaece junto com o filtro: a estrela quente
- * (≥ 8.000 K) aparece na radiância visível VERDADEIRA relativa ao Sol —
- * Sirius ~6,9×, Vega ~6,5× (12/11, a tarefa das estrelas quentes). Com ¼
- * elas ficavam a 1,6×, com o canal azul no ombro da curva de tom: o disco
- * saía lilás e chapado, mais pobre que o Sol ("gesso"). Na radiância de
- * verdade o núcleo branqueia no ombro, o azul sobra na borda escurecida e
- * o disco passa do limiar do bloom. O Sol e as mais frias: o ¼ de sempre.
+ * inteiro até 5.772 K) e passa, junto com o filtro, a ⅖ na estrela quente
+ * (≥ 8.000 K): Sirius ~2,2×, Vega ~2,1× o Sol. História: com ¼ (1,6×) o
+ * disco quente saía cinza; na radiância verdadeira (6,9×, a escolha de
+ * 12/11 de manhã) o disco inteiro ficava no ombro da curva de tom — um
+ * círculo lilás chapado, sem borda nem gravidade legíveis. Com ⅖ o centro
+ * branqueia no ombro e a borda escurecida (Eddington, Planck por canal) e o
+ * escurecimento gravitacional de Vega caem na parte da curva que se lê. A
+ * luz que a exposição NÃO põe no disco vira o VÉU em volta dele
+ * (`veu` = 1 − ganho, `StellarParams.veu`): o ofuscamento fica, fora do
+ * disco, como numa câmera.
  */
 export const EXPOENTE_DO_BRILHO_ASSISTIDO = 0.25;
+/** o expoente da estrela quente (sem o filtro do Sol) — ARTÍSTICO, ver acima */
+export const EXPOENTE_DAS_QUENTES = 0.4;
 
 /**
  * O ganho que leva a radiância verdadeira de uma fotosfera ao nível da
- * visita: 1 no modo REAL; no ASSISTIDO, rad^(e − 1), com e = ¼ esmaecendo
- * a 1 junto com o filtro do Sol (ver acima). Propriedade do CORPO (a Teff
+ * visita: 1 no modo REAL; no ASSISTIDO, rad^(e − 1), com e = ¼ passando a
+ * ⅖ junto com o filtro do Sol (ver acima). Propriedade do CORPO (a Teff
  * dele), não do foco da câmera. Quem o aplica é a rampa do filtro
  * (`ganho^(1 − g)`): com o disco pequeno (g = 1) a emissão é a verdadeira
  * e a troca com o ponto conserva a luz.
@@ -111,7 +117,7 @@ export const EXPOENTE_DO_BRILHO_ASSISTIDO = 0.25;
 export function ganhoDaVisita(teffK: number, politica: PoliticaDeLuz): number {
   if (politica === 'real') return 1;
   const w = pesoDoFiltro(teffK);
-  const e = w * EXPOENTE_DO_BRILHO_ASSISTIDO + (1 - w);
+  const e = w * EXPOENTE_DO_BRILHO_ASSISTIDO + (1 - w) * EXPOENTE_DAS_QUENTES;
   return Math.pow(radianciaVisivelDeCorpoNegro(teffK), e - 1);
 }
 
@@ -132,7 +138,11 @@ const RAIO_DE_DESMONTE_PC = 2 * RAIO_DE_PREPARO_PC;
  *  · contraste da textura quieta relativo ao do Sol (`contrasteGranulos`
  *    sobre o rms real do Sol, 0,15); com células gigantes, o contraste dos
  *    dados é o DELAS, e os grânulos levam só a fração declarada;
+ *  · o PISO do contraste na tela (`PISO_DO_CONTRASTE_NA_TELA`, a anã M):
+ *    a granulação das estrelas A, real mas invisível, extrapolada;
  *  · células gigantes e borda difusa quando os dados as têm (Betelgeuse);
+ *  · o VÉU, a luz que a exposição da visita não põe no disco (1 − ganho,
+ *    > 0 só para quem é mais radiante que o Sol);
  *  · borda pelo u linear de Claret (`bordaU`);
  *  · atividade pelo número de Rossby (`atividadeDe`, Wright 2011): ela move
  *    manchas, ciclo, a frequência das erupções e a contagem de laços;
@@ -158,7 +168,11 @@ function sementeDe(e: EstrelaVisitavel): number {
 export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): StellarParams {
   const s = e.superficie;
   const gig = s.celulasGigantesEmRaios;
-  const contrasteDosGranulos = s.contrasteGranulos.v * (gig ? FRACAO_DOS_GRANULOS_SOB_AS_GIGANTES : 1);
+  const contrasteDosGranulos = Math.max(
+    s.contrasteGranulos.v * (gig ? FRACAO_DOS_GRANULOS_SOB_AS_GIGANTES : 1),
+    PISO_DO_CONTRASTE_NA_TELA
+  );
+  const veu = veuDe(e.teffK.v);
   return {
     ...SOL_PARAMS,
     nome: e.id,
@@ -177,6 +191,7 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
     foraDaOrigem: true,
     ...(gig ? { celulasGigantes: { tamanhoEmRaios: gig.v, contraste: s.contrasteGranulos.v } } : {}),
     ...(s.bordaDifusaRaios.v > 1 ? { bordaDifusaRaios: s.bordaDifusaRaios.v } : {}),
+    ...(veu > 0 ? { veu } : {}),
     ...(e.achatamento ? { achatamento: e.achatamento } : {}),
     ...(e.achatamento && eixo ? { eixoNaCena: [eixo.x, eixo.y, eixo.z] as const } : {}),
   };
@@ -206,7 +221,15 @@ export function parametrosDaCompanheira(e: EstrelaVisitavel): StellarParams | nu
     contrasteRelativoAoSol: 0,
     bordaU: 0.3,
     foraDaOrigem: true,
+    // o véu pela MESMA lei da principal (a anã branca é a mais radiante)
+    ...(veuDe(c.teffK.v) > 0 ? { veu: veuDe(c.teffK.v) } : {}),
   };
+}
+
+/** O VÉU de uma fotosfera: a fração da radiância que a exposição da visita
+ *  não põe no disco (1 − ganho; 0 no Sol e nas mais frias). */
+export function veuDe(teffK: number): number {
+  return Math.max(0, 1 - ganhoDaVisita(teffK, 'assistida'));
 }
 
 /** O que o motor do Sol precisa para nascer (o director empresta). */
