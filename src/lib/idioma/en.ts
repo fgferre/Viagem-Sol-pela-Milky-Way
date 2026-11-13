@@ -526,7 +526,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.cometa.inativo': 'inactive: too far from the Sun for water ice to sublimate',
   'ficha.cometa.naCena': 'what you see here',
   'ficha.cometa.naCena.valor':
-    'the position is measured (JPL elements); the coma and tails are physics computed here, particle by particle — dust pushed by sunlight, ions carried by the solar wind, gas breaking apart —, with boosted brightness; from afar, the nucleus is a marker',
+    'the position is measured (JPL elements); the coma and tails are physics computed here, particle by particle — dust pushed by sunlight, ions carried by the solar wind, gas breaking apart —, with boosted brightness; up close, the light adapts to distance (like an eye), the coma near the nucleus is the same law summed along the line of sight, and the nucleus relief is illustrative (size and albedo are measured); from afar, the nucleus is a marker',
   'ficha.cometa.ultimo': 'last perihelion',
   'ficha.cometa.proximo': 'next perihelion',
   'ficha.cometa.perielio': 'perihelion distance',

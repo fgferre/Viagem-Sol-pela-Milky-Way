@@ -45,6 +45,11 @@
 // vizinhas) e a luz se divide pela área, então o brilho de superfície
 // não depende da câmera; abaixo de 3 px o fluxo se conserva. Teto de
 // 48 px, a lei da casa (POINTS acima de 64 trava o Mac).
+//
+// DE PERTO (abaixo de 3·10⁵ km do núcleo, só pela distância): a câmera
+// entra nos borrões e eles viravam bolas. Ali a luz junto ao núcleo passa
+// à integral da mesma lei (a coma de perto, `COMA_FRAG`), os borrões que
+// cobririam mais de ~6° saem, e a exposição se adapta (`exposicaoDePerto`).
 // ============================================================
 import * as THREE from 'three';
 import type { QualityLevel } from '../core/engine';
@@ -55,6 +60,7 @@ import {
   brilhoRelativo,
   escalaDoBrilho,
   estadoDoCometa,
+  producaoRelativa,
   type Cometa,
 } from '../../lib/cometas';
 import { naCena } from './sondas';
@@ -109,6 +115,10 @@ uniform float uFoco;
 uniform float uAuPc;
 uniform float uDose;
 uniform float uFase;
+uniform float uPerto;
+uniform float uRin;
+uniform float uExpo;
+uniform float uExpoIon;
 
 varying vec3 vCor;
 varying float vI;
@@ -227,7 +237,10 @@ void main() {
     vec3 dir = normalize(uDirIon + e1 * (b1 + abre * cos(ang)) + e2 * (b2 + abre * sin(ang)));
     d = dir * s;
     w = producao(rr) * exp(-tau / ${DESBOTA_DOS_IONS.toFixed(1)}) * 2.0 * position.x * uTauIon * 2.0 / (rr * rr);
-    h = 0.03 * s + 1.5e-5;
+    // de perto o piso de 2250 km vira 5 % da distância da câmera ao
+    // núcleo: de dentro da coma o feixe é visto de lado a poucos milhares
+    // de km, e o piso fixo o fazia em bolas azuis
+    h = 0.03 * s + mix(1.5e-5, 0.05 * length(uCam), uPerto);
     vCor = vec3(0.32, 0.55, 1.0);
   } else {
     // A COMA DE GÁS (C2, Haser)
@@ -243,6 +256,12 @@ void main() {
     h = 0.35 * length(d) + 1e-6;
     vCor = vec3(0.3, 1.0, 0.42);
   }
+
+  // A COMA DE PERTO: dentro de uRin do núcleo a luz passa à integral da
+  // mesma lei (o material da coma de perto, abaixo) — a soma dos dois
+  // pesos é 1 em todo raio; longe (uPerto = 0) o peso é 1 exato
+  // (os íons não entram na integral: ficam inteiros)
+  if (aTipo < 0.5 || aTipo > 1.5) w *= 1.0 - uPerto * (1.0 - smoothstep(0.5 * uRin, uRin, length(d)));
 
   vec4 mv = modelViewMatrix * vec4(d, 1.0);
   gl_Position = projectionMatrix * mv;
@@ -260,8 +279,14 @@ void main() {
   // o brilho de superfície deixa de ser o físico)
   // e junto ao núcleo (câmera a menos de ~10⁵ km dele) o teto desce a 4 px
   float teto = mix(4.0, 24.0, smoothstep(6.7e-5, 6.7e-4, length(uCam)));
+  teto = mix(teto, 48.0, uPerto);
   float corte = min(1.0, teto / px);
   i *= corte * corte;
+  // de perto, o borrão muito maior que o teto sai de vez (é a câmera
+  // dentro dele: a luz que ele carregava é da coma de perto ou é a
+  // névoa junto da câmera, que de dentro não se vê como bola)
+  i *= 1.0 - uPerto * smoothstep(0.1 * uFoco, 0.25 * uFoco, px);
+  i *= aTipo > 0.5 && aTipo < 1.5 ? uExpoIon : uExpo;
   // a guarda do NaN (a armadilha da casa: um pixel NaN + bloom = tela
   // branca) e da meia-precisão do alvo HDR: nunca acima de 8 por borrão
   bool ruim = isnan(i) || isinf(i) || any(isnan(d)) || any(isinf(d));
@@ -282,11 +307,176 @@ void main() {
 }
 `;
 
+/**
+ * A COMA DE PERTO (12/11/2026, o conserto do zoom): com a câmera dentro
+ * da coma, cada partícula — um borrão do tamanho do espaço entre
+ * vizinhas — cobre meia tela, e a amostragem é rala demais para um
+ * contínuo (o primeiro grão sai a 0,02 dia do núcleo: dentro de ~1000 km
+ * não havia nada). Aqui a MESMA lei das partículas vira a sua integral
+ * ao longo da linha de visada, por pixel: perto do núcleo os grãos e as
+ * moléculas saem em linha reta (a pressão da luz desloca menos de ~10 %
+ * em 3·10⁴ km), então a densidade é a do sorteio do shader acima —
+ *   poeira: N·3·P·hg·√r☉/(v₀·r☉²) · f(m; 0,6)/r²  (β cancela: luz ∝ √β,
+ *           velocidade ∝ √β);
+ *   gás C₂: N·0,3·P/(v·r☉²) · f(m; 0,3) · (e^(−r/L_D) − e^(−r/L_P))/r²;
+ * f(m; a) é a densidade das direções normalize(n − a·r̂☉) com n uniforme
+ * (o lado do Sol mais cheio — os jatos). A troca de variável s = p·tg φ
+ * (p = a menor distância do raio ao núcleo) deixa o 1/r² constante em φ:
+ * 16 passos bastam. O raio para no núcleo. Os íons de perto ficam fora
+ * (o feixe começa a ~400 km; a luz deles junto ao núcleo é desprezível).
+ * A unidade é a mesma dos borrões: um borrão de fluxo F cobre κ·px² com
+ * κ = 3π/70, e um pixel vê 1/foco² de ângulo sólido — então o pixel vale
+ * uDose·10⁻⁶·κ·∫ j ds (s em UA), e de longe, onde ela some, nada muda.
+ */
+const COMA_VERT = /* glsl */ `
+uniform float uRinKm;
+varying vec3 vL;
+void main() {
+  vL = position * uRinKm;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+const COMA_FRAG = /* glsl */ `
+precision highp float;
+uniform vec3 uCamKm;
+uniform float uRinKm;
+uniform float uNucKm;
+uniform vec3 uRhat;
+uniform float uKd;
+uniform float uKg;
+uniform float uLP;
+uniform float uLD;
+varying vec3 vL;
+
+// a densidade das direções normalize(n − a·r̂) com n uniforme na esfera
+float direcoes(float am, float a) {
+  float q = sqrt(am * am + 1.0 - a * a);
+  float rho = q - am;
+  return rho * rho / (12.5663706 * q);
+}
+
+void main() {
+  vec3 u = normalize(vL - uCamKm);
+  float sc = -dot(uCamKm, u);
+  vec3 pc = uCamKm + sc * u;
+  float p = max(length(pc), 1e-3);
+  float R = uRinKm;
+  if (p >= R) discard;
+  float meia = sqrt(R * R - p * p);
+  float s0 = max(sc - meia, 0.0);
+  float s1 = sc + meia;
+  if (p < uNucKm) {
+    float sn = sc - sqrt(uNucKm * uNucKm - p * p);
+    s1 = min(s1, sn);
+  }
+  if (s1 <= s0) discard;
+  float f0 = atan((s0 - sc) / p);
+  float f1 = atan((s1 - sc) / p);
+  float df = (f1 - f0) / 16.0;
+  float cosT = -dot(uRhat, u);
+  float hg = 0.84 / pow(1.16 - 0.8 * cosT, 1.5) / 0.6672;
+  float sd = 0.0;
+  float sg = 0.0;
+  for (int k = 0; k < 16; k++) {
+    float f = f0 + (float(k) + 0.5) * df;
+    float t = tan(f);
+    float r = p / cos(f);
+    vec3 m = (pc + p * t * u) / r;
+    float am = dot(m, uRhat);
+    float rampa = 1.0 - smoothstep(0.5 * R, R, r);
+    sd += direcoes(0.6 * am, 0.6) * rampa;
+    sg += direcoes(0.3 * am, 0.3) * rampa * (exp(-r / uLD) - exp(-r / uLP));
+  }
+  // 1/p em UA (p em km)
+  float base = df * ${AU_KM.toFixed(1)} / p;
+  float id = uKd * hg * sd * base;
+  float ig = uKg * sg * base;
+  vec3 c = id * vec3(1.0, 0.86, 0.68) + ig * vec3(0.3, 1.0, 0.42);
+  // a mesma guarda dos borrões: NaN nunca, e o alvo HDR em meia precisão
+  if (any(isnan(c)) || any(isinf(c))) c = vec3(0.0);
+  gl_FragColor = vec4(min(c, vec3(64.0)), 0.0);
+}
+`;
+
+/** κ: o fluxo de um borrão de lado L é i·κ·L² (o perfil (1 − smoothstep)²) */
+const KAPPA = (3 * Math.PI) / 70;
+/** a coma de perto acende abaixo de 3·10⁵ km do núcleo e está inteira a 1,5·10⁵ */
+const PERTO_KM: readonly [number, number] = [150_000, 300_000];
+/** o raio da coma de perto: 3× a distância da câmera, até 3·10⁴ km — onde
+ *  a saída em linha reta ainda vale (a pressão da luz vira a poeira mais
+ *  longe) */
+const RAIO_DE_PERTO = 3;
+const RAIO_DE_PERTO_MAX_KM = 100_000;
+/**
+ * A EXPOSIÇÃO DE PERTO — ARTÍSTICA. O ganho de longe (`GANHO`) deixa a
+ * cabeça do cometa centenas de vezes acima do branco: de longe ela é um
+ * ponto branco e está certo, mas o brilho de superfície se conserva, e
+ * de dentro a coma 1/r² brilha ∝ 1/D a D km do núcleo — a tela inteira
+ * estoura, e o estouro é que desenhava cada borrão como bola. Como um olho
+ * que se adapta, a luz do cometa é exposta pela distância: 1 a partir de
+ * 2,5 milhões de km (as vistas de longe não mudam), caindo como uma
+ * potência até 10⁵ km e, daí para dentro, ∝ D — a coma de perto fica com
+ * o mesmo desenho em toda a descida (o halo lateral a ~3 % do branco em
+ * Halley no periélio). Um número só para os oito cometas. Os íons
+ * escurecem menos (a exposição deles para em 3·10⁵ km e só cai de novo
+ * dentro de 3·10⁴ km, ∝ D³): de dentro da coma a cauda azul ainda sai.
+ */
+const D_EXPO_KM = 1e9;
+/** os nós da curva (km, exposição), em log–log; abaixo do primeiro, ∝ D */
+const NOS_DA_EXPOSICAO: readonly (readonly [number, number])[] = [
+  [1e5, 1e5 / D_EXPO_KM],
+  [1e6, 1e-2],
+  [2.5e6, 1],
+];
+const ESCURO_DOS_IONS_KM = 3e5;
+
+/** a exposição da luz do cometa a `dKm` do núcleo (1 de longe) */
+export function exposicaoDePerto(dKm: number): number {
+  const d0 = NOS_DA_EXPOSICAO[0][0];
+  if (dKm <= d0) return Math.max(dKm, 0) / D_EXPO_KM;
+  for (let k = 1; k < NOS_DA_EXPOSICAO.length; k++) {
+    const [da, ea] = NOS_DA_EXPOSICAO[k - 1];
+    const [db, eb] = NOS_DA_EXPOSICAO[k];
+    if (dKm < db) return ea * Math.exp((Math.log(eb / ea) * Math.log(dKm / da)) / Math.log(db / da));
+  }
+  return 1;
+}
+
+/**
+ * O REGIME DE PERTO a `dKm` do núcleo: quanto da luz junto ao núcleo é
+ * integral (0 longe, 1 perto) e o raio dela. Só a distância decide.
+ */
+export function regimeDePerto(dKm: number): { perto: number; raioKm: number } {
+  const [a, b] = PERTO_KM;
+  const x = Math.min(Math.max((dKm - a) / (b - a), 0), 1);
+  const perto = 1 - x * x * (3 - 2 * x);
+  return { perto, raioKm: Math.min(RAIO_DE_PERTO * dKm, RAIO_DE_PERTO_MAX_KM) };
+}
+
+/** O NÚCLEO: um torrão, não uma bola — o raio cai até 40 % abaixo do
+ *  da esfera por ondas largas (nunca acima dela: a superfície do near
+ *  plane é a esfera do tamanho medido), e a normal sai das faces, por
+ *  pixel. A forma é ilustrativa (nenhum dos oito tem modelo de forma
+ *  aqui); o tamanho e o albedo são os medidos. */
 const NUCLEO_VERT = /* glsl */ `
 varying vec3 vN;
+float torrao(vec3 p) {
+  p *= vec3(1.0, 1.6, 1.3);
+  return 0.5 * sin(3.1 * p.x + 1.3) * sin(2.3 * p.y + 0.7) * sin(2.7 * p.z + 2.1)
+    + 0.3 * sin(6.3 * p.x + 4.0) * sin(5.9 * p.y + 1.0) * sin(6.1 * p.z + 0.3)
+    + 0.2 * sin(13.0 * p.x + 2.2) * sin(11.0 * p.y + 3.1) * sin(12.0 * p.z + 1.7);
+}
+vec3 forma(vec3 p) {
+  p = normalize(p);
+  return p * (0.8 + 0.2 * torrao(p));
+}
 void main() {
-  vN = normal;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  vec3 q = forma(position);
+  vec3 t1 = normalize(cross(position, abs(position.z) < 0.9 ? vec3(0.0, 0.0, 1.0) : vec3(1.0, 0.0, 0.0)));
+  vec3 t2 = cross(position, t1);
+  vec3 n = cross(forma(position + 0.01 * t1) - q, forma(position + 0.01 * t2) - q);
+  vN = dot(n, position) < 0.0 ? -n : n;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(q, 1.0);
 }
 `;
 const NUCLEO_FRAG = /* glsl */ `
@@ -295,7 +485,8 @@ uniform vec3 uSol;
 uniform float uLuz;
 varying vec3 vN;
 void main() {
-  float l = max(dot(normalize(vN), uSol), 0.0);
+  float k = length(vN);
+  float l = k > 0.0 ? max(dot(vN / k, uSol), 0.0) : 0.0;
   gl_FragColor = vec4(vec3(uLuz * l), 1.0);
 }
 `;
@@ -335,6 +526,8 @@ interface CometaNaCena {
   pontos: THREE.Points;
   material: THREE.ShaderMaterial;
   nucleo: THREE.Mesh | null;
+  /** a coma de perto (a integral), só com a câmera a menos de ~3·10⁵ km */
+  coma: THREE.Mesh;
   jdEscrito: number;
 }
 
@@ -367,6 +560,7 @@ export class CaudasDosCometas {
   readonly group = new THREE.Group();
   private readonly geometria = geometriaCompartilhada();
   private readonly esfera = new THREE.SphereGeometry(1, 48, 24);
+  private readonly esferaFina = new THREE.SphereGeometry(1, 128, 64);
   private readonly vivos = new Map<string, CometaNaCena>();
   /** quantas partículas o último quadro desenhou (a régua do custo) */
   particulasDesenhadas = 0;
@@ -395,6 +589,10 @@ export class CaudasDosCometas {
         uAuPc: { value: AU_PC },
         uDose: { value: 0 },
         uFase: { value: 0 },
+        uPerto: { value: 0 },
+        uRin: { value: 1 },
+        uExpo: { value: 1 },
+        uExpoIon: { value: 1 },
       },
       blending: THREE.CustomBlending,
       blendSrc: THREE.OneFactor,
@@ -413,7 +611,7 @@ export class CaudasDosCometas {
     if (c.nucleo.km) {
       const raio = c.nucleo.km / 2 / AU_KM;
       nucleo = new THREE.Mesh(
-        this.esfera,
+        this.esferaFina,
         new THREE.ShaderMaterial({
           vertexShader: NUCLEO_VERT,
           fragmentShader: NUCLEO_FRAG,
@@ -427,8 +625,38 @@ export class CaudasDosCometas {
       nucleo.visible = false;
       grupo.add(nucleo);
     }
+    const coma = new THREE.Mesh(
+      this.esfera,
+      new THREE.ShaderMaterial({
+        vertexShader: COMA_VERT,
+        fragmentShader: COMA_FRAG,
+        uniforms: {
+          uCamKm: { value: new THREE.Vector3() },
+          uRinKm: { value: 1 },
+          // o raio mínimo do torrão (ver NUCLEO_VERT); o resto do corpo
+          // esconde a coma pelo teste de profundidade
+          uNucKm: { value: c.nucleo.km ? (0.6 * c.nucleo.km) / 2 : 0 },
+          uRhat: { value: new THREE.Vector3(1, 0, 0) },
+          uKd: { value: 0 },
+          uKg: { value: 0 },
+          uLP: { value: 1 },
+          uLD: { value: 2 },
+        },
+        side: THREE.BackSide,
+        blending: THREE.CustomBlending,
+        blendSrc: THREE.OneFactor,
+        blendDst: THREE.OneFactor,
+        blendEquation: THREE.AddEquation,
+        depthWrite: false,
+        depthTest: true,
+        transparent: true,
+      })
+    );
+    coma.renderOrder = 7;
+    coma.visible = false;
+    grupo.add(coma);
     this.group.add(grupo);
-    const novo = { cometa: c, grupo, pontos, material, nucleo, jdEscrito: Number.NaN };
+    const novo = { cometa: c, grupo, pontos, material, nucleo, coma, jdEscrito: Number.NaN };
     this.vivos.set(c.id, novo);
     return novo;
   }
@@ -494,9 +722,42 @@ export class CaudasDosCometas {
     // a luz total se conserva pelo peso — tier menor, cada um pesa mais
     u.uDose.value = GANHO * escalaDoBrilho(v.cometa.brilho.M1) * (MAXIMO / Math.max(n, 1));
     v.pontos.visible = n > 0;
+    this.escreverComaDePerto(v, s, n);
     // a geometria é uma só: o mesmo tier vale para todos os acesos
     this.geometria.setDrawRange(0, n);
     if (v.nucleo) v.nucleo.visible = q.foco === v.cometa.id;
+  }
+
+  /** a coma de perto: o regime pela distância da câmera, e as constantes
+   *  da integral pela mesma lei dos borrões (ver `COMA_FRAG`) */
+  private escreverComaDePerto(v: CometaNaCena, s: number[], n: number) {
+    const u = v.material.uniforms;
+    const cam = u.uCam.value as THREE.Vector3;
+    const dKm = cam.length() * AU_KM;
+    const { perto, raioKm } = regimeDePerto(dKm);
+    // longe: peso 1 exato nos borrões (e o raio nunca 0 — smoothstep de
+    // bordas iguais é indefinido, a armadilha do NaN)
+    u.uPerto.value = n > 0 ? perto : 0;
+    u.uRin.value = Math.max(raioKm, 1) / AU_KM;
+    u.uExpo.value = exposicaoDePerto(dKm);
+    u.uExpoIon.value = exposicaoDePerto(Math.max(dKm, ESCURO_DOS_IONS_KM)) * Math.min(1, dKm / 3e4) ** 3;
+    v.coma.visible = n > 0 && perto > 0;
+    if (!v.coma.visible) return;
+    const cu = (v.coma.material as THREE.ShaderMaterial).uniforms;
+    v.coma.scale.setScalar(Math.max(raioKm, 1) / AU_KM);
+    (cu.uCamKm.value as THREE.Vector3).copy(cam).multiplyScalar(AU_KM);
+    cu.uRinKm.value = Math.max(raioKm, 1);
+    const rr = Math.hypot(s[0], s[1], s[2]);
+    (cu.uRhat.value as THREE.Vector3).set(s[0] / rr, s[1] / rr, s[2] / rr);
+    const prod = producaoRelativa(rr, v.cometa.brilho.K1);
+    // uDose já traz MAXIMO/n: a dose vezes as partículas do tipo não depende do tier
+    const dose = (u.uDose.value as number) * 1e-6 * KAPPA * perto * (u.uExpo.value as number);
+    const v0 = KM_S_EM_UA_DIA;
+    cu.uKd.value = ((dose * n * 5) / 8) * ((3 * prod * Math.sqrt(rr)) / (v0 * rr * rr));
+    const vg = (0.85 * KM_S_EM_UA_DIA) / Math.sqrt(rr);
+    cu.uKg.value = (dose * n) / 8 * ((0.3 * prod) / (vg * rr * rr));
+    cu.uLP.value = 2.2e4 * rr * rr;
+    cu.uLD.value = 6.6e4 * rr * rr;
   }
 
   /**
@@ -517,9 +778,11 @@ export class CaudasDosCometas {
   dispose() {
     this.geometria.dispose();
     this.esfera.dispose();
+    this.esferaFina.dispose();
     for (const v of this.vivos.values()) {
       v.material.dispose();
       (v.nucleo?.material as THREE.Material | undefined)?.dispose();
+      (v.coma.material as THREE.Material).dispose();
     }
     this.vivos.clear();
   }

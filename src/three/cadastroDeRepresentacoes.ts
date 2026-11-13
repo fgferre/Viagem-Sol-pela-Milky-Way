@@ -453,7 +453,9 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
       'produção da lei de atividade; o tamanho é geométrico (o borrão cresce com a ' +
       'distância ao núcleo), com teto de 48 px DECLARADO no shader. O ganho absoluto ' +
       'é artístico e ainda não foi medido na unidade da casa: fatorDeBrilho null é a ' +
-      'dívida escrita, o mesmo molde das plumas',
+      'dívida escrita, o mesmo molde das plumas. De perto (abaixo de 2,5 milhões de ' +
+      'km do núcleo) a exposição cai com a distância (ARTÍSTICO, declarado no shader) ' +
+      'e a coma junto ao núcleo vira a integral da mesma lei por pixel',
   },
   {
     // item 134/S4: a peça nasceu com a linha do cadastro de ESCALA

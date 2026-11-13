@@ -403,14 +403,17 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
     classe: 'instrumento',
     fator: null,
     fatorDeBrilho: null,
-    endereco: 'src/three/world/caudasDosCometas.ts:86',
+    endereco: 'src/three/world/caudasDosCometas.ts:92',
     razao:
       'a FORMA tem tamanho real (a cauda tem de 10⁶ a 10⁸ km, calculada grão a grão) ' +
       'e só soma luz por cima, sem escrever profundidade; cada partícula é um borrão ' +
       'de instrumento que representa uma multidão, e o GANHO absoluto do brilho é ' +
       'artístico (um número só para os oito cometas) — a queda com a distância ao ' +
       'Sol e a lei de atividade são físicas. De longe, o núcleo é um marcador de ' +
-      'instrumento (o anel dos rótulos); de perto, um corpo de diâmetro medido',
+      'instrumento (o anel dos rótulos); de perto, um corpo de diâmetro medido com relevo ' +
+      'ilustrativo. De perto (abaixo de 2,5 milhões de km) a luz do cometa é exposta pela ' +
+      'distância — ARTÍSTICO, um olho que se adapta — e a coma junto ao núcleo é a ' +
+      'integral da mesma lei ao longo da visada',
   },
   {
     id: 'plumas-de-encelado',
