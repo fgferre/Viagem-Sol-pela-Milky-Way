@@ -4627,6 +4627,7 @@ export class Director {
       focoCometa: this.escada.focoCometa,
       focoExoplaneta: this.escada.focoExoplaneta,
       sistemaAtivo: this.exoplanetas?.ativo ?? null,
+      alvoDoAtlas: this.atlas.alvo,
       jd: this.maquinaDoTempo.jdVivo,
       // a camada "Nomes na tela" (item 82, N2) — lida aqui com as
       // outras dezoito, e entregue pronta ao produtor

@@ -321,6 +321,40 @@ export function enquadrar(pedido: PedidoDeEnquadramento): Enquadramento {
 }
 
 /**
+ * O NÚCLEO DE UM ENQUADRAMENTO (13/11/2026) — para o alvo cuja vista tem
+ * de valer a uma distância certa, não só caber na tela. Nasceu para Sgr
+ * A✱: a vista de perto só é escala real a menos de 24 RS
+ * (`ENTREGA_DO_BURACO_PC`), e num retrato a esfera inteira (o disco e o
+ * arco da lente) só cabe na largura a ~36 RS. A regra:
+ *
+ *  · a esfera do alvo manda enquanto ela cabe ATÉ `teto` — a câmera não
+ *    passa dele, e o que sobra da esfera (o disco, largo e fino) pode
+ *    sair pelos lados;
+ *  · a esfera do `raio` do núcleo (a sombra e o anel claro em volta) cabe
+ *    SEMPRE no retângulo útil — ela vence o teto, numa tela curta demais.
+ *
+ * Depende só da tela e da folha (o retângulo útil), nunca do modo. É
+ * conta sobre a distância LINEAR de `enquadrar` (a lei é linear no raio,
+ * então o núcleo sai da mesma razão distância/raio); sem núcleo, ou com a
+ * esfera cabendo antes do teto, devolve `distancia` intocada, bit a bit.
+ */
+export interface NucleoDoEnquadramento {
+  /** a esfera que nunca sai do retângulo útil, na unidade da cena */
+  raio: number;
+  /** a distância que a câmera não passa enquanto o núcleo couber */
+  teto: number;
+}
+
+export function distanciaComNucleo(
+  distancia: number,
+  raio: number,
+  nucleo: NucleoDoEnquadramento | null
+): number {
+  if (!nucleo || !(raio > 0) || !(distancia > nucleo.teto)) return distancia;
+  return Math.max((distancia / raio) * nucleo.raio, nucleo.teto);
+}
+
+/**
  * A DIREÇÃO em que a câmera se põe, vista do alvo: a DIREÇÃO ILUMINADA
  * — o eixo Sol→alvo NEGADO, ou seja alvo→Sol — girada de
  * `PHASE_OFFSET_GRAUS` na direção do polo. Pura.
