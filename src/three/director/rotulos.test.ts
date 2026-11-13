@@ -20,6 +20,7 @@ import type { NamedStar } from '../config';
 import { CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA } from '../atlasConfig';
 import { definirIdioma } from '../../lib/idioma';
 import type { Planetas } from '../world/planetas/planetas';
+import { raiosDoGigantePc } from '../world/corpos/gigante';
 import {
   ALFA_DO_TEXTO_APONTADO,
   ALFA_DO_TEXTO_SECUNDARIO,
@@ -1332,5 +1333,71 @@ describe('os nomes na escala da galáxia (crítica de 12/11)', () => {
     const longe = anaNoCentro(3000)!;
     // a câmera olha o centro da anã: o nome está no meio da tela
     expect([longe.x, longe.y].map((v) => Math.round(v * 100) / 100)).toEqual([0.5, 0.5]);
+  });
+});
+
+describe('o retrato de perto (12/11): nada escrito sobre Saturno, a outra escala recua', () => {
+  // MEDIDO no cartão "Saturno: os anéis, de perto": Pã, Jano e Pandora
+  // escritos sobre os anéis, "NETUNO" no meio do quadro e nomes de
+  // estrela em volta do planeta. Saturno na origem, a câmera a `d` raios.
+  const R = raiosDoGigantePc('saturn').a;
+  function quadro(dEmRaios: number, foco: string | null) {
+    const rotulos = new Rotulos({
+      onLabels: () => {},
+      onDest: () => {},
+      onSol: () => {},
+      onLente: () => {},
+      onCamera: () => {},
+      beatDaViagem: () => ({}) as JourneyMeta,
+      raioFisicoDe: () => null,
+    });
+    const cam = new THREE.PerspectiveCamera(58, 1.6, R * 1e-3, 1e4);
+    cam.position.set(0, R * dEmRaios * 0.45, R * dEmRaios);
+    cam.lookAt(0, 0, 0);
+    cam.updateMatrixWorld();
+    const posicoes = new Float32Array(CORPOS_DO_SISTEMA.length * 3).fill(Number.NaN);
+    const por = (id: string, x: number, y: number, z: number) => {
+      const i = CORPOS_DO_SISTEMA.findIndex((c) => c.id === id);
+      posicoes.set([x, y, z], i * 3);
+    };
+    por('saturn', 0, 0, 0);
+    // Netuno no fundo, dentro do quadro
+    por('neptune', -2e-5, 0, -1e-4);
+    const planetas = { points: { visible: true }, posicoes } as unknown as Planetas;
+    rotulos.escreverPosicaoDeLua('pan', new THREE.Vector3(2 * R, 0, 0));
+    rotulos.escreverPosicaoDeLua('titan', new THREE.Vector3(20 * R, 0, 0));
+    // uma estrela exatamente atrás do planeta
+    const atras = new THREE.Vector3().copy(cam.position).multiplyScalar(-10 / cam.position.length());
+    const fundo: NamedStar = { n: 'Fundo', x: atras.x, y: atras.y, z: atras.z, m: 1, s: 'A0V', d: 10, t: 0 };
+    // um segundo de quadros: as rampas de entrada (250 ms) assentam
+    for (let i = 0; i < 60; i++) {
+      rotulos.tique(1 / 60);
+      rotulos.projetar(cam, {
+        fase: 'atlas', named: [fundo], dHome: 5, planetas, foco,
+        nomesEscondidos: false, iconesEscondidos: false, texto3d: false,
+      });
+    }
+    const op = (k: string) => rotulos.alvos.find((l) => l.key === k)?.opacity ?? 0;
+    return { pa: op('corpo:pan'), netuno: op('corpo:neptune'), tita: op('corpo:titan'), fundo: op('Fundo') };
+  }
+
+  it('de perto: a lua sobre o anel, o outro planeta e a estrela atrás cedem', () => {
+    const perto = quadro(8, 'saturn');
+    expect(perto.pa).toBeLessThan(0.05);
+    expect(perto.netuno).toBeLessThan(0.05);
+    expect(perto.fundo).toBeLessThan(0.05);
+    // sem foco a lua sobre o anel ainda cede; a outra escala fica
+    const semFoco = quadro(8, null);
+    expect(semFoco.pa).toBeLessThan(0.05);
+    expect(semFoco.netuno).toBeGreaterThan(0.5);
+    expect(semFoco.fundo).toBeGreaterThan(0.5);
+  });
+
+  it('na vista do sistema de Saturno nada muda: o foco não morde', () => {
+    const longe = quadro(60, 'saturn');
+    const semFoco = quadro(60, null);
+    expect(longe).toEqual(semFoco);
+    expect(longe.tita).toBeGreaterThan(0.5);
+    expect(longe.netuno).toBeGreaterThan(0.5);
   });
 });

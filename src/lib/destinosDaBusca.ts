@@ -20,7 +20,8 @@ export interface Destino {
   id: string;
   categoria: CategoriaDeDestino;
   entrada: EntradaDaBusca;
-  /** distância de chegada em raios do corpo — só os do sistema */
+  /** distância de chegada em raios do corpo — só os do sistema; `0` é o
+   *  degrau do corpo no quadro dele, sem distância pinada */
   raios?: number;
 }
 
@@ -44,7 +45,10 @@ const LISTA: readonly {
   { id: 'moon', categoria: 'sistema', consulta: 'moon', raios: 4 },
   { id: 'mars', categoria: 'sistema', consulta: 'mars', raios: 4 },
   { id: 'jupiter', categoria: 'sistema', consulta: 'jupiter', raios: 10 },
-  { id: 'saturn', categoria: 'sistema', consulta: 'saturn', raios: 12 },
+  // SATURNO EM `raios: 0` (12/11/2026): o degrau do corpo no quadro dele,
+  // o dos anéis (`quadroDePerto`), que se mede na tela de cada um — a 12
+  // raios fixos o planeta ficava pequeno no desktop com a ficha aberta
+  { id: 'saturn', categoria: 'sistema', consulta: 'saturn', raios: 0 },
   { id: 'pluto', categoria: 'sistema', consulta: 'pluto', raios: 5 },
   // A PRIMEIRA SONDA (pilar 4, 12/11/2026): a mais longe, no quadro de
   // chegada dela — o Sol e os planetas do outro lado (sem `raios`)

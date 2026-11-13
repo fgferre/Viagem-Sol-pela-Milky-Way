@@ -259,6 +259,13 @@ export class AtlasRig {
   /** raio da esfera enquadrada, em pc */
   private raio = 0;
   /**
+   * A RÉGUA DO `?d=` quando ela não é a esfera enquadrada (12/11/2026): de
+   * perto de Saturno o quadro é o do anel, mas `?d=12` continua sendo 12
+   * raios do PLANETA — link copiado e cartão não mudam de sentido.
+   * `null` = a própria esfera.
+   */
+  private regua: number | null = null;
+  /**
    * O QUE O DEDO DO VISITANTE ACUMULOU — uma ROTAÇÃO, guardada no frame
    * da pose de repouso (ver `GiroDoVisitante`). A identidade é o
    * repouso, e é dela que sai a condição de nascimento do item 102.
@@ -448,6 +455,8 @@ export class AtlasRig {
        * Ausente = a chegada de sempre, bit a bit.
        */
       poloDoAnel?: THREE.Vector3 | null;
+      /** a régua do `?d=`, em pc, quando não é `raio` (ver `regua`) */
+      regua?: number | null;
     } = {}
   ) {
     const pai = opcoes.pai ?? null;
@@ -523,6 +532,7 @@ export class AtlasRig {
     }
     this.alvo.copy(alvo);
     this.raio = raio;
+    this.regua = opcoes.regua && opcoes.regua > 0 ? opcoes.regua : null;
     this.eixoDe.copy(eixoDe);
     if (pai) {
       this.paiGuardado.copy(pai);
@@ -642,6 +652,7 @@ export class AtlasRig {
     const polo = opcoes.polo ?? POLO_ECLIPTICO;
     this.alvo.copy(alvo);
     this.raio = raio;
+    this.regua = null;
     this.eixoDe.copy(eixoDe);
     this.pai = null;
     this.polo.copy(polo);
@@ -745,6 +756,7 @@ export class AtlasRig {
     const polo = opcoes.polo ?? POLO_ECLIPTICO;
     this.alvo.copy(alvo);
     this.raio = raio;
+    this.regua = null;
     this.eixoDe.copy(eixoDe);
     this.pai = null;
     this.polo.copy(polo);
@@ -967,7 +979,8 @@ export class AtlasRig {
    * há régua (raio zero, o instante antes do primeiro enquadramento).
    */
   get distanciaEmRaios(): number | null {
-    return this.raio > 0 ? this.distancia / this.raio : null;
+    const regua = this.raioDoAlvo;
+    return regua > 0 ? this.distancia / regua : null;
   }
 
   /** o alvo tem PAI (o degrau "lua")? — o religador do relógio pergunta */
@@ -975,9 +988,9 @@ export class AtlasRig {
     return this.pai !== null;
   }
 
-  /** o raio de enquadramento do alvo vivo, em pc — a régua do `?d=`. */
+  /** a régua do `?d=` do alvo vivo, em pc — o raio enquadrado, salvo `regua` */
   get raioDoAlvo(): number {
-    return this.raio;
+    return this.regua ?? this.raio;
   }
 
   /**

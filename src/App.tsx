@@ -1496,7 +1496,8 @@ export default function App() {
           indice={indice}
           verbo={phase === 'atlas' ? 'enquadrar' : 'visitar'}
           onEscolher={(entrada, raios) =>
-            escolherAlvo(entrada, directorRef.current, raios ? 'corpo' : 'orbita', raios)
+            // `raios: 0` é o degrau do corpo SEM pino (`destinosDaBusca.ts`)
+            escolherAlvo(entrada, directorRef.current, raios !== undefined ? 'corpo' : 'orbita', raios)
           }
           celular={celular}
         />

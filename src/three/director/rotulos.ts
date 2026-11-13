@@ -26,8 +26,12 @@ import {
   projectCorpos,
   projectLabels,
   projectForced,
+  proximidadeDoAssunto,
+  raioAparenteNdc,
+  sobreOAssunto,
 } from '../world/labels';
 import type { CorpoRotulavel, OclusorDeRotulo, StarLabel } from '../world/labels';
+import { raioDoAssuntoPc } from '../world/corpos/gigante';
 import { GAL } from '../world/galaxy';
 import { numeroDoIdioma } from '../tempoDoAtlas';
 import { t } from '../../lib/idioma';
@@ -121,6 +125,23 @@ export const TETO_DE_CANDIDATAS_ESTELARES = 24;
  */
 export const LUA_ACENDE_EM = 0.012;
 export const LUA_ACESA_EM = 0.035;
+
+/**
+ * NADA ESCRITO SOBRE O RETRATO (12/11/2026), em raios aparentes do assunto
+ * (o planeta, ou o anel que é disco): a lua cujo marcador cai até
+ * `LUA_DENTRO_DO_ASSUNTO` some — Jano e Epimeteu correm rente à borda do
+ * anel, e o nome deles, à direita do marcador, riscava o anel —, e acende
+ * de novo até `LUA_FORA_DO_ASSUNTO` (Mimas, a 1,3, fica inteira). Os nomes de
+ * ESTRELA cedem mais longe: somem até `ESTRELA_DENTRO_DO_ASSUNTO` e voltam
+ * inteiros em `ESTRELA_FORA_DO_ASSUNTO`. As duas leis pesam pela
+ * proximidade (`proximidadeDoAssunto`): na vista do sistema não mordem.
+ */
+export const LUA_DENTRO_DO_ASSUNTO = 1.1;
+export const LUA_FORA_DO_ASSUNTO = 1.3;
+export const ESTRELA_DENTRO_DO_ASSUNTO = 1.5;
+export const ESTRELA_FORA_DO_ASSUNTO = 3;
+
+const _assunto = new THREE.Vector3();
 
 /** linear [0..1] → canal sRGB 0..255 (a curva exata, não gama 2,2) */
 function srgb255(u: number): number {
@@ -420,6 +441,103 @@ export class Rotulos {
       if (!pai) continue;
       const sep = Math.hypot(lua.x - pai.x, lua.y - pai.y);
       lua.opacity *= THREE.MathUtils.smoothstep(sep, LUA_ACENDE_EM, LUA_ACESA_EM);
+    }
+  }
+
+  /**
+   * O ASSUNTO NA TELA — onde o corpo `id` cai no quadro (unidade dos
+   * rótulos), o raio aparente dele com o anel que é disco (meia-altura = 1)
+   * e a proximidade. `null` sem posição viva ou atrás da câmera.
+   */
+  private assuntoNaTela(
+    id: string,
+    planetas: Planetas | null,
+    cam: THREE.PerspectiveCamera
+  ): { x: number; y: number; raioNdc: number; perto: number } | null {
+    const raio = raioDoAssuntoPc(id);
+    const pos = this.posicaoDoCorpo(
+      `${CHAVE_DE_CORPO}${id}`,
+      planetas?.posicoes ?? null,
+      CORPOS_DO_SISTEMA
+    );
+    if (!pos || raio === null) return null;
+    _assunto.set(pos[0], pos[1], pos[2]);
+    const dist = _assunto.distanceTo(cam.position);
+    _assunto.project(cam);
+    if (_assunto.z > 1 || _assunto.z < -1) return null;
+    const raioNdc = raioAparenteNdc(raio, dist, Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2));
+    return {
+      x: (_assunto.x + 1) / 2,
+      y: (1 - _assunto.y) / 2,
+      raioNdc,
+      perto: proximidadeDoAssunto(raioNdc, cam.aspect),
+    };
+  }
+
+  /**
+   * O RETRATO NÃO DIVIDE O QUADRO (12/11/2026). Quando um corpo é o
+   * assunto da tela (`proximidadeDoAssunto`):
+   *  · a lua cujo marcador cai sobre o disco do PAI (planeta ou anel que é
+   *    disco) cede — vale com ou sem foco, como a linha dela;
+   *  · com FOCO, o que é de outra escala recua: os nomes dos outros
+   *    planetas e das luas deles (ficam o foco, as luas dele, o pai de uma
+   *    lua em foco e o Sol), e os nomes de estrela em volta do assunto.
+   * Tudo volta quando a câmera se afasta. Só mexe na opacidade: a camada
+   * desligada continua fora, e o clique segue o que está escrito.
+   */
+  private cederAoAssunto(
+    foco: string | null,
+    planetas: Planetas | null,
+    cam: THREE.PerspectiveCamera,
+    corpos: readonly StarLabel[],
+    luas: readonly StarLabel[],
+    estrelas: readonly StarLabel[] = []
+  ) {
+    const assuntos = new Map<string, ReturnType<Rotulos['assuntoNaTela']>>();
+    const assuntoDe = (id: string) => {
+      if (!assuntos.has(id)) assuntos.set(id, this.assuntoNaTela(id, planetas, cam));
+      return assuntos.get(id) ?? null;
+    };
+    for (const lua of luas) {
+      const id = lua.key.slice(CHAVE_DE_CORPO.length);
+      const pai = PAI_DA_LUA.get(id);
+      if (!pai || id === foco) continue;
+      const a = assuntoDe(pai);
+      if (!a || a.perto <= 0) continue;
+      lua.opacity *=
+        1 -
+        a.perto *
+          sobreOAssunto(
+            lua.x - a.x,
+            lua.y - a.y,
+            cam.aspect,
+            a.raioNdc,
+            LUA_DENTRO_DO_ASSUNTO,
+            LUA_FORA_DO_ASSUNTO
+          );
+    }
+    if (!foco) return;
+    const a = assuntoDe(foco);
+    if (!a || a.perto <= 0) return;
+    const paiDoFoco = PAI_DA_LUA.get(foco);
+    for (const c of [...corpos, ...luas]) {
+      const id = c.key.slice(CHAVE_DE_CORPO.length);
+      if (id === foco || id === 'sun' || id === paiDoFoco || PAI_DA_LUA.get(id) === foco) continue;
+      c.opacity *= 1 - a.perto;
+    }
+    for (const e of estrelas) {
+      if (e.key === 'sol-home' || e.key === 'sgr-a') continue;
+      e.opacity *=
+        1 -
+        a.perto *
+          sobreOAssunto(
+            e.x - a.x,
+            e.y - a.y,
+            cam.aspect,
+            a.raioNdc,
+            ESTRELA_DENTRO_DO_ASSUNTO,
+            ESTRELA_FORA_DO_ASSUNTO
+          );
     }
   }
 
@@ -781,6 +899,7 @@ export class Rotulos {
           cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo, this.oclusoresDeRotulo, this.raioPorChave, isentoDeOclusao
         );
         this.esmaecerLuasColadasNoPai(corpos, luas);
+        this.cederAoAssunto(quadro.foco, planetas, cam, corpos, luas);
         icones = [...corpos, ...luas];
         for (const c of icones) {
           const id = c.key.slice(6);
@@ -927,6 +1046,8 @@ export class Rotulos {
             e.canalPrimario = true;
           } else e.prioridade = prioridadeDeEstrela(e.tier);
         }
+        // de perto, o retrato: nada sobre o disco, a outra escala recua
+        this.cederAoAssunto(quadro.foco, planetas, cam, corpos, luas, estrelas);
         // OS LUGARES DO CÉU (céu profundo, 12/11): só fora do sistema
         // solar, e cada um só enquanto lê como objeto (`projetarLugares`)
         // AS SONDAS (pilar 4, 12/11): marcador e nome na posição viva,

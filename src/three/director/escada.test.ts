@@ -39,7 +39,7 @@ import { raiosDoRochosoPc } from '../world/corpos/rochoso';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
 import { EPOCA_JD_TDB } from '../world/planetas/retrato2026';
 import { RAIO_EQ_TERRA_PC, posicaoDaTerraUA } from '../world/corpos/terra';
-import { posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
+import { ANEL_SATURNO, posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
 import { AtlasRig, K_MIN_RAIOS, K_PISO_DO_CORPO } from '../cinematic/atlasRig';
 import { IDS_ESCULPIDOS, criaGeometriaEsculpida } from '../world/corpos/esculpido';
 import { LUGARES_DA_BUSCA } from '../world/lugaresDoCeu';
@@ -49,7 +49,7 @@ import { LUGARES_DA_BUSCA } from '../world/lugaresDoCeu';
 // `window` mínimo resolve, como em `world/labels.test.ts` — trocar o
 // ambiente de TODOS os testes por jsdom para ler um número seria caro.
 (globalThis as { window?: unknown }).window = { innerWidth: 1200, location: { search: '' } };
-const { Escada, soloDoCorpo } = await import('./escada');
+const { Escada, quadroDePerto, soloDoCorpo } = await import('./escada');
 
 /** posição da efeméride/retrato (eclíptica, UA) → frame da cena (pc) */
 function paraPc(p: { x: number; y: number; z: number }): THREE.Vector3 {
@@ -137,7 +137,7 @@ function noQuadro(camera: THREE.PerspectiveCamera, centro: THREE.Vector3, raio: 
 }
 
 /** a escada com o rig REAL e o mundo de mentira em volta */
-function bancada({ comEfemeride = false, comAnoes = false } = {}) {
+function bancada({ comEfemeride = false, comAnoes = false, comSaturno = false } = {}) {
   const atlas = new AtlasRig();
   const camera = new THREE.PerspectiveCamera(35, 4 / 3, 0.1, 1e6);
   // sem efeméride: as posições saem do retrato, e o instante é o da
@@ -190,6 +190,9 @@ function bancada({ comEfemeride = false, comAnoes = false } = {}) {
       // a lista viva dos gigantes CONSTRUÍDOS — é ela que abre o degrau
       gigantes: () => [
         { corpo: { id: 'jupiter', planeta: true } as unknown as GiganteResolvido },
+        ...(comSaturno
+          ? [{ corpo: { id: 'saturn', planeta: true } as unknown as GiganteResolvido }]
+          : []),
       ],
     },
   });
@@ -225,6 +228,38 @@ describe('o degrau `corpo` de um corpo que não é a Terra', () => {
 
     // e o defeito que existiu, dito pelo nome: a câmera NÃO está na Terra
     expect(camera.position.distanceTo(TERRA)).toBeGreaterThan(3 * AU_PARA_PC);
+  });
+
+  it('Saturno de perto é o retrato COM os anéis — e `?d=` segue em raios do planeta (12/11)', () => {
+    // MEDIDO no navegador: o degrau enquadrava a esfera do PLANETA, e os
+    // anéis (2,3 raios) vazavam a tela; o cartão pinava 12 raios fixos, e o
+    // desktop com a ficha aberta mostrava Saturno em ~10% da largura
+    const { escada, atlas, camera, aplicar } = bancada({ comSaturno: true });
+    const SATURNO = paraPc(posicaoDoGiganteUA('saturn', EPOCA_JD_TDB, null)!);
+    const R = raiosDoGigantePc('saturn').a;
+    escada.focarNoCorpo('saturn', 'corpo');
+    aplicar();
+    const d = camera.position.distanceTo(SATURNO);
+    // o anel inteiro cabe na meia-altura da lente, com folga
+    const meiaV = THREE.MathUtils.degToRad(camera.fov) / 2;
+    expect(Math.asin((ANEL_SATURNO.rExt * R) / d)).toBeLessThan(meiaV * 0.8);
+    // a régua do link não mudou de sentido
+    expect(atlas.raioDoAlvo).toBe(R);
+    expect(atlas.distanciaEmRaios).toBeCloseTo(d / R, 6);
+    // e o religador do relógio mantém o MESMO quadro
+    const pose = camera.position.toArray();
+    escada.recomporAlvo();
+    aplicar();
+    expect(camera.position.toArray()).toEqual(pose);
+    // `?d=12` continua sendo 12 raios de Saturno
+    escada.pinarEmRaios(12);
+    aplicar();
+    expect(camera.position.distanceTo(SATURNO) / R).toBeCloseTo(12, 3);
+    // sem anel de disco, o quadro é o de sempre
+    for (const id of ['jupiter', 'uranus', 'neptune', 'earth']) {
+      const r = raiosDoGigantePc(id).a;
+      expect(quadroDePerto(id, r)).toEqual({ raio: r, regua: null });
+    }
   });
 
   it('a Terra não mudou um bit: gesto e religador dão a mesma pose', () => {
