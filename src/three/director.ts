@@ -4620,6 +4620,7 @@ export class Director {
       // o alvo escolhido tem prioridade 100 na disputa dos nomes (item
       // 73): o dono do foco é a escada, e o rótulo só precisa do id
       foco: this.escada.focoCorpoId,
+      focoEstrela: this.escada.nomeDaEstrelaEmFoco,
       focoSonda: this.escada.focoSonda,
       focoCometa: this.escada.focoCometa,
       focoExoplaneta: this.escada.focoExoplaneta,

@@ -19,7 +19,7 @@ import { classeEmTexto } from '../atlasConfig';
 import { GRAU, PHASE_OFFSET_GRAUS } from '../cinematic/enquadramento';
 import { EX, EY, EZ, GAL } from './baseGalactica';
 import { CENTRO_PNM, GNM, M31 } from './geradorDasVizinhas';
-import { PRIORIDADE_DO_ROTULO, projectForced } from './labels';
+import { PRIORIDADE_DO_ROTULO, SGR_A_ESMAECE_EM, SGR_A_SOME_EM, projectForced } from './labels';
 import type { StarLabel } from './labels';
 
 /** o prefixo da chave do rótulo de um lugar — o clique o reconhece */
@@ -186,40 +186,46 @@ const FORA_DO_SISTEMA_PC = 1;
  *  `projectLabels`): só aí os nomes da escala da galáxia aparecem */
 const FORA_DA_VIZINHANCA_PC = 2000;
 
-/** a que fração do raio, acima do centro, o nome do lugar se apoia */
-const ALTURA_DO_NOME = 0.5;
-
-const _topo = new THREE.Vector3();
-const _cima = new THREE.Vector3();
+const _centro = new THREE.Vector3();
 
 /**
  * OS NOMES DOS LUGARES NA CENA. Um lugar tem nome quando LÊ como objeto:
  * nem tão longe que vire um ponto (raio aparente < 0,3°), nem tão perto
  * que a câmera esteja dentro dele (a menos de dois raios — aí quem fala
  * são os nomes das estrelas-membro e o cabeçalho da ficha). O nome fica
- * ACIMA do centro (meio raio), não nele: assim ele não disputa a vaga
- * com a estrela que mora no meio do aglomerado. Uma VISTA (`semRotulo`)
- * não tem nome na cena.
+ * NO CENTRO, como todo nome da casa (crítica de 12/11): até então ele se
+ * apoiava meio raio de ENQUADRAMENTO acima do centro, e como a chegada
+ * enquadra todo lugar pelo mesmo raio, o nome caía sempre no mesmo ponto
+ * da tela, longe do objeto — o raio de enquadramento é bem maior que o
+ * que se vê (o raio de maré das Plêiades, o disco inteiro de Andrômeda).
+ * Uma VISTA (`semRotulo`) não tem nome na cena.
+ *
+ * OS NOMES DA ESCALA DA GALÁXIA só aparecem fora das DUAS vizinhanças:
+ * a do Sol (`FORA_DA_VIZINHANCA_PC`) e a do centro, onde o nome é o de
+ * Sagittarius A✱ — eles entram na mesma faixa em que o dele sai. Dentro
+ * do bojo a anã de Sagitário, dezoito mil parsecs atrás do buraco, não
+ * é objeto que se veja, e o nome dela lia como o nome do buraco.
  */
 export function projetarLugares(camera: THREE.PerspectiveCamera): StarLabel[] {
   const out: StarLabel[] = [];
   const dHome = camera.position.length();
   if (dHome < FORA_DO_SISTEMA_PC) return out;
-  _cima.set(0, 1, 0).applyQuaternion(camera.quaternion);
+  const dGC = camera.position.distanceTo(GAL.GC_POS);
+  const foraDoCentro = THREE.MathUtils.smoothstep(dGC, SGR_A_ESMAECE_EM, SGR_A_SOME_EM);
   for (const lugar of LUGARES_DA_BUSCA) {
     const linha = lugarDaTabela(lugar.id);
     if (!linha?.raioPc || linha.semRotulo) continue;
     if (linha.categoria === 'galaxia' && dHome < FORA_DA_VIZINHANCA_PC) continue;
-    _topo.set(lugar.x, lugar.y, lugar.z);
-    const dist = _topo.distanceTo(camera.position);
+    _centro.set(lugar.x, lugar.y, lugar.z);
+    const dist = _centro.distanceTo(camera.position);
     const raioAparente = Math.atan(linha.raioPc / Math.max(dist, 1e-9)) / GRAU;
     const opacidade =
       THREE.MathUtils.smoothstep(raioAparente, 0.3, 0.6) *
       (1 - THREE.MathUtils.smoothstep(raioAparente, 22, 27)) *
-      0.95;
+      0.95 *
+      (linha.categoria === 'galaxia' ? foraDoCentro : 1);
     if (opacidade < 0.02) continue;
-    _topo.addScaledVector(_cima, linha.raioPc * ALTURA_DO_NOME);
-    const l = projectForced(camera, nomeDoLugar(lugar), '', _topo, `${CHAVE_DE_LUGAR}${lugar.id}`);
+    const l = projectForced(camera, nomeDoLugar(lugar), '', _centro, `${CHAVE_DE_LUGAR}${lugar.id}`);
     if (!l) continue;
     l.distPc = dist;
     l.opacity = opacidade;

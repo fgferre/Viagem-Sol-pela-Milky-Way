@@ -30,10 +30,15 @@ import type { StarLabel } from '../world/labels';
 import type { Rotulos as TipoRotulos, QuadroDeRotulos } from './rotulos';
 
 let Rotulos: typeof TipoRotulos;
+let GAL: typeof import('../world/galaxy').GAL;
+let projetarLugares: typeof import('../world/lugaresDoCeu').projetarLugares;
+let CENTRO_DA_ANA_DE_SAGITARIO: THREE.Vector3;
 
 beforeAll(async () => {
   (globalThis as unknown as { window: unknown }).window = { location: { search: '' } };
   ({ Rotulos } = await import('./rotulos'));
+  ({ GAL } = await import('../world/galaxy'));
+  ({ projetarLugares, CENTRO_DA_ANA_DE_SAGITARIO } = await import('../world/lugaresDoCeu'));
 });
 
 type Publicada = readonly [number, number, number] | null;
@@ -1250,5 +1255,82 @@ describe('o corpo da casa como assunto do beat (viagem solar)', () => {
       ['corpo:atlas', 'Atlas', 'lua'],
       ['Atlas', 'Atlas', 'B8III'],
     ]);
+  });
+});
+
+describe('os nomes na escala da galáxia (crítica de 12/11)', () => {
+  /** 12/11/2026, dentro da janela das cinco sondas */
+  const JD = 2461357;
+
+  function noAtlas(cam: THREE.PerspectiveCamera, extra: Partial<QuadroDeRotulos> = {}) {
+    const rotulos = new Rotulos({
+      onLabels: () => {},
+      onDest: () => {},
+      onSol: () => {},
+      onLente: () => {},
+      onCamera: () => {},
+      beatDaViagem: () => ({}) as JourneyMeta,
+      raioFisicoDe: () => null,
+    });
+    cam.updateMatrixWorld(true);
+    const quadro: QuadroDeRotulos = {
+      fase: 'atlas', named: [], dHome: cam.position.length(), planetas: null, foco: null,
+      nomesEscondidos: false, iconesEscondidos: false, texto3d: false, jd: JD, ...extra,
+    };
+    rotulos.tique(1);
+    rotulos.projetar(cam, quadro);
+    return rotulos.alvos;
+  }
+
+  /** a câmera a `d` pc do Sol, olhando para ele */
+  function olhandoOSol(d: number) {
+    const cam = new THREE.PerspectiveCamera(50, 1.6, 1e-9, 1e7);
+    cam.position.set(0, d * 0.6, d * 0.8);
+    cam.lookAt(0, 0, 0);
+    return cam;
+  }
+
+  it('de onde o sistema solar é um pixel, o nome ali é o do Sol — a sonda colada nele cala', () => {
+    const lista = noAtlas(olhandoOSol(8000));
+    const sol = lista.find((l) => l.key === 'sol-home')!;
+    expect(sol.prioridade).toBe(PRIORIDADE_DO_ROTULO.sol);
+    const sondas = lista.filter((l) => l.key.startsWith('sonda:'));
+    expect(sondas.length).toBe(5);
+    for (const s of sondas) expect(s.opacity).toBe(0);
+  });
+
+  it('no sistema solar, a sonda fora de foco é só o losango; em foco, tem nome', () => {
+    const cam = olhandoOSol(0.004);
+    const quietas = noAtlas(cam).filter((l) => l.key.startsWith('sonda:'));
+    expect(quietas.length).toBeGreaterThan(0);
+    for (const s of quietas) expect([s.icone, s.prioridade]).toEqual([true, PRIORIDADE_DO_ROTULO.sonda]);
+    const emFoco = noAtlas(cam, { focoSonda: 'voyager-1' }).find((l) => l.key === 'sonda:voyager-1');
+    expect([emFoco?.icone, emFoco?.prioridade]).toEqual([undefined, PRIORIDADE_DO_ROTULO.foco]);
+    // sem a camada de ícones, a sonda quieta não deixa nada na tela
+    expect(noAtlas(cam, { iconesEscondidos: true }).some((l) => l.key.startsWith('sonda:') && l.icone)).toBe(false);
+  });
+
+  it('Sagittarius A✱ em foco tem nome a qualquer distância; fora de foco, só na vizinhança dele', () => {
+    const cam = new THREE.PerspectiveCamera(50, 1.6, 1e-9, 1e7);
+    cam.position.copy(GAL.GC_POS).add(new THREE.Vector3(0, 0, 5000));
+    cam.lookAt(GAL.GC_POS);
+    expect(noAtlas(cam).some((l) => l.key === 'sgr-a')).toBe(false);
+    const centro = noAtlas(cam, { focoEstrela: 'Sagittarius A✱' }).find((l) => l.key === 'sgr-a')!;
+    expect(centro.prioridade).toBe(PRIORIDADE_DO_ROTULO.foco);
+    expect(centro.opacity).toBeGreaterThan(0.5);
+  });
+
+  it('o nome do lugar fica NO objeto, e a anã de Sagitário cala dentro do bojo', () => {
+    const anaNoCentro = (dGC: number) => {
+      const cam = new THREE.PerspectiveCamera(50, 1.6, 1e-9, 1e7);
+      cam.position.copy(GAL.GC_POS).add(new THREE.Vector3(0, 0, dGC));
+      cam.lookAt(CENTRO_DA_ANA_DE_SAGITARIO);
+      cam.updateMatrixWorld(true);
+      return projetarLugares(cam).find((l) => l.key === 'lugar:ana-de-sagitario');
+    };
+    expect(anaNoCentro(1e-5)).toBeUndefined();
+    const longe = anaNoCentro(3000)!;
+    // a câmera olha o centro da anã: o nome está no meio da tela
+    expect([longe.x, longe.y].map((v) => Math.round(v * 100) / 100)).toEqual([0.5, 0.5]);
   });
 });

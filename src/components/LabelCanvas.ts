@@ -1194,9 +1194,21 @@ export class LabelCanvas {
     // cabe.
     const recuo = peso.recuoDoTexto * k;
     const larguraCompleta = larguraDoNome + 9 * k + larguraDoDetalhe;
+    // E O DETALHE CEDE AO HUD PELA MESMA LEI (crítica de 12/11): o nome do
+    // alvo em foco fica no meio da tela e o detalhe dele corria por baixo
+    // da ficha aberta — a disputa então tirava o NOME inteiro (Sagittarius
+    // A✱ em inglês, cuja distância é mais comprida). Se só o detalhe é
+    // que alcança uma área reservada, sai só o nome.
+    // (a caixa e a folga são as da disputa: `caixaEm` e os 8 px do texto)
+    const naReserva = (largura: number) => {
+      const left = ladoNatural ? ancoraX - recuo - largura : ancoraX + recuo;
+      const r: Rect = { left: left - 5 * k, right: left + largura + 5 * k, top: ancoraY - 12 * k, bottom: ancoraY + 12 * k };
+      return this.reservadas.some((rect) => intersects(r, rect, 8 * k));
+    };
     const comDetalhe =
       larguraDoDetalhe > 0 &&
-      (ancoraX + recuo + larguraCompleta <= this.width || ancoraX - recuo - larguraCompleta >= 0);
+      (ancoraX + recuo + larguraCompleta <= this.width || ancoraX - recuo - larguraCompleta >= 0) &&
+      !(naReserva(larguraCompleta) && !naReserva(larguraDoNome));
     if (!comDetalhe) this.detalhes[i] = '';
     // SEM DETALHE, SEM VÃO: desde a F5 o detalhe é vazio na maioria dos
     // nomes, e somar o vão de 9 px a uma string vazia daria a cada nome

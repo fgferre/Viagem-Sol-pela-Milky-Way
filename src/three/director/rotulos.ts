@@ -16,6 +16,7 @@ import { projetarExoplanetas } from '../world/exoplanetas';
 import type { SistemaPlanetario } from '../../lib/exoplanetas';
 import * as THREE from 'three';
 import {
+  NOME_DE_SGR_A,
   PRIORIDADE_DO_ROTULO,
   RampasDeRotulo,
   aplicarReguaDeRelevancia,
@@ -57,6 +58,9 @@ export interface QuadroDeRotulos {
    * prioridade 100 e não cede a nada (item 73).
    */
   foco: string | null;
+  /** o NOME da estrela ou do ponto em foco no Atlas (`Sagittarius A✱`,
+   *  uma estrela do catálogo) — o alvo escolhido não cede a nada */
+  focoEstrela?: string | null;
   /** a SONDA em foco (pilar 4) — a escada é a dona; `null` fora dela */
   focoSonda?: string | null;
   /** o COMETA em foco (pilar 4) — o nome dele aparece mesmo longe do Sol */
@@ -420,6 +424,23 @@ export class Rotulos {
   }
 
   /**
+   * A SONDA COLADA NO SOL NÃO TEM NOME NEM MARCA (crítica de 12/11) — a
+   * mesma lei da lua colada no pai, com o Sol no papel do pai. De onde o
+   * sistema solar inteiro cabe num pixel, a Voyager projeta em cima do
+   * Sol e o rótulo dela tomava o lugar do "SOL"; ela só é um objeto à
+   * parte quando se descola dele na tela. Sol atrás da câmera = descolada.
+   */
+  private esmaecerSondasColadasNoSol(cam: THREE.PerspectiveCamera, sondas: StarLabel[]) {
+    if (sondas.length === 0) return;
+    const sol = projectForced(cam, '', '', { x: 0, y: 0, z: 0 }, '');
+    if (!sol) return;
+    for (const s of sondas) {
+      const sep = Math.hypot(s.x - sol.x, s.y - sol.y);
+      s.opacity *= THREE.MathUtils.smoothstep(sep, LUA_ACENDE_EM, LUA_ACESA_EM);
+    }
+  }
+
+  /**
    * A FICHA ABRIU (ou fechou) — o único leitor da câmera se declara.
    * Ver `emitCamera`: sem esta porta, publicar era trabalho feito para
    * ninguém, 4 vezes por segundo, durante todo arrasto no Atlas.
@@ -528,7 +549,7 @@ export class Rotulos {
       return projectForced(cam, nomeDoSolEmCaixaAlta(), 'G2V', { x: 0, y: 0, z: 0 }, 'sol-home');
     }
     if (name === 'SGR') {
-      return projectForced(cam, 'Sagittarius A✱', 'SMBH', GAL.GC_POS, 'sgr-a');
+      return projectForced(cam, NOME_DE_SGR_A, 'SMBH', GAL.GC_POS, 'sgr-a');
     }
     const corpo = CORPO_DO_ROTEIRO.get(name);
     if (corpo) return this.resolveCorpoDirigido(cam, corpo, planetas);
@@ -875,7 +896,8 @@ export class Rotulos {
           named,
           TETO_DE_CANDIDATAS_ESTELARES,
           this.prevLabelKeys,
-          this.oclusoresDeRotulo
+          this.oclusoresDeRotulo,
+          quadro.focoEstrela === NOME_DE_SGR_A
         );
         // a prioridade das ESTRELAS é escrita AQUI e não dentro de
         // `projectLabels`, que é o mesmo caminho do FILME: sem
@@ -892,13 +914,26 @@ export class Rotulos {
         // medida, a foto e as saídas possíveis moram no item 82 do
         // `PENDENCIAS.md`, que é onde o dono decide; repeti-las aqui
         // seria a segunda cópia que envelhece calada.
-        for (const e of estrelas) e.prioridade = prioridadeDeEstrela(e.tier);
+        //
+        // O SOL E O CENTRO NÃO SÃO "UMA ESTRELA DO CÉU" (crítica de 12/11):
+        // de longe eles são os dois marcos da galáxia e valem o degrau do
+        // Sol (o `Star`/`Galaxy` 100 do Eyes). Com o peso de estrela
+        // própria (10) a Voyager — colada no Sol na tela — tomava a vaga
+        // do "SOL" na Via Láctea inteira.
+        // E no canal PRIMÁRIO, como o corpo do Sol (a variante `.sun`).
+        for (const e of estrelas) {
+          if (e.key === 'sol-home' || e.key === 'sgr-a') {
+            e.prioridade = PRIORIDADE_DO_ROTULO.sol;
+            e.canalPrimario = true;
+          } else e.prioridade = prioridadeDeEstrela(e.tier);
+        }
         // OS LUGARES DO CÉU (céu profundo, 12/11): só fora do sistema
         // solar, e cada um só enquanto lê como objeto (`projetarLugares`)
         // AS SONDAS (pilar 4, 12/11): marcador e nome na posição viva,
         // só no Atlas — onde a máquina do tempo as move
         const sondas =
           fase === 'atlas' ? projetarSondas(cam, quadro.jd ?? Number.NaN, quadro.focoSonda ?? null, !quadro.iconesEscondidos) : [];
+        this.esmaecerSondasColadasNoSol(cam, sondas);
         // OS COMETAS (pilar 4, 12/11): perto do Sol ou em foco
         const cometas =
           fase === 'atlas' ? projetarCometas(cam, quadro.jd ?? Number.NaN, quadro.focoCometa ?? null, !quadro.iconesEscondidos) : [];
@@ -919,6 +954,14 @@ export class Rotulos {
         // estrela da casa vista de longe.
         if (quadro.foco) {
           const chaveDoFoco = `${CHAVE_DE_CORPO}${quadro.foco}`;
+          for (const l of lista) {
+            if (l.key === chaveDoFoco) l.prioridade = PRIORIDADE_DO_ROTULO.foco;
+          }
+        }
+        // a ESTRELA (ou o centro) em foco, pelo nome — a chave de uma
+        // estrela do céu É o nome dela; a do centro é `sgr-a`
+        if (quadro.focoEstrela) {
+          const chaveDoFoco = quadro.focoEstrela === NOME_DE_SGR_A ? 'sgr-a' : quadro.focoEstrela;
           for (const l of lista) {
             if (l.key === chaveDoFoco) l.prioridade = PRIORIDADE_DO_ROTULO.foco;
           }

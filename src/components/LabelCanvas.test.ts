@@ -579,6 +579,21 @@ describe('um lugar por nome — ou cabe ali, ou some', () => {
     expect(saturno.caixaDaDisputa!.right).toBeLessThanOrEqual(375);
   });
 
+  it('o detalhe cede à ficha aberta antes do nome — o alvo em foco não some por causa da distância', () => {
+    // Sagittarius A✱ em inglês (12/11): o nome cabia à esquerda da ficha,
+    // o detalhe comprido corria por baixo dela e a disputa tirava tudo
+    const { rotulos, ctx } = bancada(1280, 800);
+    rotulos.reservar([{ left: 825, right: 1222, top: 80, bottom: 714 }]);
+    const centro: StarLabel = {
+      ...rotulo('sgr-a', 'Sagittarius A✱', 412 / 1280, 0.45),
+      detalhe: 'buraco negro supermassivo, a trinta mil anos-luz daqui',
+      dirigido: true,
+    };
+    rotulos.draw([centro]);
+    expect(centro.desenhado).toBe(true);
+    expect(ctx.pintadas.some((p) => p.texto.includes('buraco'))).toBe(false);
+  });
+
   it('o HUD ocupa PRIMEIRO, e não há segundo lugar para furá-lo', () => {
     const { rotulos } = bancada(1200, 900);
     // um painel no meio da tela: até 23/08 o nome procurava outra vaga
