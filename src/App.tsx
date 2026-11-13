@@ -1253,7 +1253,12 @@ export default function App() {
 
         {/* dica do pausar-e-olhar */}
         {inJourney && paused && (
-          <div className="free-hint">{t('dica.pausado')}</div>
+          <div className="free-hint veu-legivel">
+            <span className="veu-sombra" aria-hidden="true">
+              {t('dica.pausado')}
+            </span>
+            <span>{t('dica.pausado')}</span>
+          </div>
         )}
         </div>
       )}
@@ -1263,7 +1268,10 @@ export default function App() {
           `.dest-line`): a distância continua viva a cada render, sem
           remontar nada; só o trecho semântico troca de key. */}
       {hud.rumo && dest && (
-        <div className="dest-line">
+        <div className="dest-line veu-legivel">
+          <span className="veu-sombra" aria-hidden="true">
+            {dest}
+          </span>
           <span key={realceDest} className={realceDest > 0 ? 'realce-texto' : undefined}>
             {dest}
           </span>
@@ -1277,7 +1285,14 @@ export default function App() {
           a distância denuncia o dolly — juntos desfazem a dúvida das
           Três Marias. Só no filme; ocupa a vaga do sol-line, que lá
           nunca desenha */}
-      {hud.lente && lente && <div className="lente-line">{lente}</div>}
+      {hud.lente && lente && (
+        <div className="lente-line veu-legivel">
+          <span className="veu-sombra" aria-hidden="true">
+            {lente}
+          </span>
+          <span>{lente}</span>
+        </div>
+      )}
 
       {/* O SELO NO FILME (F4 da viagem solar, 06/10): o beat de luz
           honesta mexe no brilho por cima da escolha do visitante, e o
