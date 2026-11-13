@@ -557,6 +557,26 @@ export function buscar(
     .slice(0, limite);
 }
 
+/**
+ * O QUE O ENTER ESCOLHE: a linha `ativo` da lista da consulta que está na
+ * caixa AGORA. A lista na tela pode estar atrasada (a paleta a calcula de
+ * um valor adiado, para a digitação não engasgar): quem digitava "terra"
+ * e apertava Enter antes de ela alcançar o texto caía na primeira linha
+ * de "t" — Titã. Lista em dia é reaproveitada; atrasada, a busca roda de
+ * novo ali, uma vez, sobre o texto da caixa.
+ */
+export function alvoDoEnter(
+  consultaAgora: string,
+  consultaDaLista: string,
+  lista: readonly ResultadoBusca[],
+  ativo: number,
+  indice: IndiceEstrelas,
+  limite = 8
+): EntradaDaBusca | null {
+  const atual = consultaAgora === consultaDaLista ? lista : buscar(consultaAgora, indice, limite);
+  return atual[Math.min(ativo, atual.length - 1)]?.entrada ?? null;
+}
+
 // ---- o DEEP-LINK (`?foco=`), os dois lados ------------------------
 //
 // A porta carrega uma CONSULTA, não um id novo: quem resolve é o
