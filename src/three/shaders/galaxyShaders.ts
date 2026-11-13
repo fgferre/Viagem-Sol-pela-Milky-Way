@@ -66,6 +66,35 @@ const WARPSLIT = qnum('warpslit', 0);
 // multiplicativos: em vez de quads escurecendo o que calha de estar
 // atrás, cada partícula é extinta pela fração da coluna de poeira que
 // está DE FATO entre ela e a câmera.
+/**
+ * A POEIRA DO GÁS ATÔMICO mora numa camada mais espessa que a do molecular:
+ * sech²(z/h) com h = 134,4 pc dentro de 4,4 kpc e +14,8 pc/kpc fora (o disco
+ * de poeira do COBE/DIRBE, Drimmel & Spergel 2001, arXiv astro-ph/0101259,
+ * tab. 1: 134 pc → 188 pc no Sol). A gaussiana de σ 58 pc que todo o τ usava
+ * é a dos BRAÇOS desse mesmo modelo (exp(−(z/80 pc)²), σ 57 pc) e fica com o
+ * gás molecular. De cima a coluna não muda (o τ do atômico é ~0,1, regime
+ * linear); de lado a faixa onde τ > 1 se alarga, pela conta, de ±150 para
+ * ±240 pc e atravessa o bojo, onde o molecular quase não existe (na foto o
+ * ganho é pequeno: o τ⊥ do atômico é ~0,1).
+ * Devolve a densidade vertical normalizada (1/pc) no ponto, ou a média dela
+ * no intervalo ±zMeio — a mesma "camada inteira" da gaussiana, por tanh.
+ */
+export const POEIRA_ATOMICA = { h0Pc: 134.4, flarePcPorPc: 0.0148, inicioPc: 4400 };
+const GLSL_POEIRA_ATOMICA = /* glsl */ `
+float poeiraAtomica(float z, float zMeio, float r, float camada) {
+  float h = ${POEIRA_ATOMICA.h0Pc.toFixed(1)} + ${POEIRA_ATOMICA.flarePcPorPc.toFixed(4)} * max(r - ${POEIRA_ATOMICA.inicioPc.toFixed(1)}, 0.0);
+  float e = exp(-2.0 * abs(z) / h);
+  float g = 2.0 * e / ((1.0 + e) * (1.0 + e)) / h;
+  if (camada > 0.0 && abs(zMeio) > 0.05 * h) {
+    float ea = exp(-2.0 * abs(z - zMeio) / h);
+    float eb = exp(-2.0 * abs(z + zMeio) / h);
+    float ta = sign(z - zMeio) * (1.0 - ea) / (1.0 + ea);
+    float tb = sign(z + zMeio) * (1.0 - eb) / (1.0 + eb);
+    g = mix(g, 0.5 * (tb - ta) / (2.0 * zMeio), camada);
+  }
+  return g;
+}`;
+
 export const GALAXY_VERT = /* glsl */ `
 attribute vec3 aColor;
 attribute float aSize;   // diâmetro físico em pc
@@ -118,6 +147,7 @@ float erfAprox(float x) {
     - 0.284496736) * t + 0.254829592) * t * exp(-a * a);
   return sign(x) * y;
 }
+${GLSL_POEIRA_ATOMICA}
 #endif
 
 varying vec3 vColor;
@@ -386,9 +416,12 @@ void main() {
         0.5 * (erfAprox(ub) - erfAprox(ua)) / (2.0 * zMeio) * (2.5066283 * sigmaD);
       g = mix(g, gCamada, uNucleo);
     }
+    // a camada espessa do gás atômico (canal G; ver poeiraAtomica)
+    float gA = poeiraAtomica(zTil, zMeio, rS, uNucleo);
+    vec2 tpRG = texture2D(uTauMap, sxy / (2.0 * GAL_DISK_RADIUS) + 0.5).rg;
+    tau += tpRG.r * g / (2.5066283 * sigmaD) + tpRG.g * gA;
 #else
     float g = exp(-zTil * zTil / (2.0 * sigmaD * sigmaD));
-#endif
     float tp = texture2D(uTauMap, sxy / (2.0 * GAL_DISK_RADIUS) + 0.5).r;
     // PISO DIFUSO da poeira. A âncora do NORTE (A_V = 1,5 mag/kpc ⇒
     // τ⊥ = 0,2455 no Sol) é a coluna TOTAL; o mapa já carrega a parte
@@ -398,11 +431,9 @@ void main() {
     // frequência de raspão — a lâmina do plano sobrevivia inteira e a
     // faixa escura ficava rasa (medido: laneDepth 0,12 sem, 0,37 com o
     // piso cheio — que por sua vez tirou o face-on da banda de ruído).
-#ifndef GALAXIA_PARTICULAS
-    // (só-partículas: o difuso já são nuvens do mapa — gerarNuvensDePoeira)
     tp += 0.6 * exp(-rS / 5200.0);
-#endif
     tau += tp * g / (2.5066283 * sigmaD);
+#endif
   }
   }
   tau *= dTau;
