@@ -42,8 +42,12 @@ import type { Numero } from './atlas/estrelasVisitaveis';
 import { resolverKepler } from './atlas/kepler';
 
 export const EXOPLANETAS_CONSULTADOS_EM = '2026-11-12';
-const ARQUIVO = 'NASA Exoplanet Archive, PSCompPars (12/11/2026)';
-const MR = 'NASA Exoplanet Archive: relação massa–raio (Chen & Kipping 2017, ApJ 834, 17)';
+// AS FONTES SÃO SÓ CITAÇÃO, iguais nas duas línguas (crítica de 12/11:
+// "relação massa–raio" e "12/11/2026", que em inglês lê 11 de dezembro,
+// apareciam assim na ficha inglesa). O método fica neste comentário: MR é
+// o raio tirado da massa pela relação massa–raio de Chen & Kipping.
+const ARQUIVO = `NASA Exoplanet Archive, PSCompPars (${EXOPLANETAS_CONSULTADOS_EM})`;
+const MR = 'NASA Exoplanet Archive; Chen & Kipping 2017, ApJ 834, 17';
 
 export type Metodo = 'transito' | 'velocidadeRadial' | 'imagem';
 export type Bilingue = { readonly pt: string; readonly en: string };
@@ -150,7 +154,7 @@ function p(
   };
 }
 
-const AGOL = 'Agol et al. 2021, PSJ 2, 1 (via NASA Exoplanet Archive)';
+const AGOL = 'Agol et al. 2021, PSJ 2, 1; NASA Exoplanet Archive';
 const t1 = (letra: string, P: number, a: number, e: number, i: number, w: number, R: number, M: number, teq: number, ano: number, tc: number) =>
   p(`trappist-1${letra}`, `TRAPPIST-1 ${letra}`, {
     P, a, e, i, w, R: medido(R, AGOL), M: medido(M, AGOL), teq, metodo: 'transito', ano, tc,
@@ -369,7 +373,8 @@ export const SISTEMAS_PLANETARIOS: readonly SistemaPlanetario[] = [
     id: 'bet-pic',
     estrela: 'β Pic',
     nome: 'Beta Pictoris',
-    nodo: { graus: 31.8, fonte: 'Lagrange et al. 2019 / GRAVITY 2020 (de memória)' },
+    // o nodo foi transcrito de memória — falta conferir nos artigos
+    nodo: { graus: 31.8, fonte: 'Lagrange et al. 2019 / GRAVITY 2020' },
     planetas: [
       p('bet-pic-c', 'Beta Pictoris c', {
         P: 1202, a: 2.7, e: 0.307, i: 88.93, w: -114.9, R: derivado(12.5), M: medido(2765.107), teq: 1250,
@@ -473,7 +478,7 @@ export function exoplanetaPorNome(nome: string): { planeta: Exoplaneta; sistema:
 const HZ_DENTRO = [1.107, 1.332e-4, 1.58e-8, -8.308e-12, -1.931e-15] as const;
 const HZ_FORA = [0.356, 6.171e-5, 1.698e-9, -3.198e-12, -5.575e-16] as const;
 export const HZ_TEFF_VALIDA: readonly [number, number] = [2600, 7200];
-export const FONTE_DA_ZONA_HABITAVEL = 'Kopparapu et al. 2014, ApJL 787, L29 (zona conservadora)';
+export const FONTE_DA_ZONA_HABITAVEL = 'Kopparapu et al. 2014, ApJL 787, L29';
 
 function sEff(c: readonly number[], teffK: number): number {
   const T = Math.min(HZ_TEFF_VALIDA[1], Math.max(HZ_TEFF_VALIDA[0], teffK)) - 5780;

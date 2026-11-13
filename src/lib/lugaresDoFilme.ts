@@ -101,7 +101,12 @@ export interface LugarDoCeu {
    *  não ganha nome na cena — quem marca o lugar é o rótulo do Sol */
   semRotulo?: true;
   /** a distância da LITERATURA ao Sol, em pc (a ficha a escreve em
-   *  anos-luz — parsec não aparece na tela) */
+   *  anos-luz — parsec não aparece na tela). É a ÚNICA distância do
+   *  lugar: a nota da busca lê esta mesma (`LUGARES_DA_BUSCA`).
+   *  `doSolAoCentro` = o destino é uma VISTA e o número não é a distância
+   *  até ele, é a do Sol ao centro: a ficha o rotula assim e a busca não
+   *  o mostra. O próprio centro (Sagittarius A✱) não leva a marca — para
+   *  ele as duas distâncias são a mesma. */
   distanciaPc?: { valor: number; fonte: string; doSolAoCentro?: true };
   oQueE?: { pt: string; en: string };
   fatos?: readonly FatoDoLugar[];
@@ -136,7 +141,7 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     en: ['Sagittarius A*', 'Sgr A*', 'Black hole', 'Galactic center', 'Galactic centre'],
     alvo: { centroGalactico: true },
     classe: 'buraco negro',
-    distanciaPc: { valor: 8150, fonte: 'Reid et al. 2019 (VLBI)', doSolAoCentro: true },
+    distanciaPc: { valor: 8150, fonte: 'Reid et al. 2019 (VLBI)' },
     oQueE: {
       pt: 'O buraco negro supermassivo no centro da Via Láctea: 4 milhões de vezes a massa do Sol num espaço menor que a órbita de Mercúrio. Ele quase não brilha — o gás que cai nele é ralo — e se revela pelo que faz: as estrelas mais próximas giram em volta dele em poucos anos, e a luz que passa perto se curva.',
       en: 'The supermassive black hole at the centre of the Milky Way: 4 million times the Sun’s mass in a space smaller than Mercury’s orbit. It barely shines — the gas falling in is thin — and it shows itself by what it does: the nearest stars circle it in a few years, and light passing close to it bends.',
@@ -231,7 +236,7 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
         pt: '≈ 112 milhões de anos',
         en: '≈ 112 million years',
         procedencia: 'derivado',
-        fonte: 'Dahm 2015 (lithium depletion boundary)',
+        fonte: { pt: 'Dahm 2015 (limite de depleção do lítio)', en: 'Dahm 2015 (lithium depletion boundary)' },
       },
       {
         campo: 'membros',
