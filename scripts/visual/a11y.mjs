@@ -251,23 +251,28 @@ async function julgarDialogo(s, nome, onde) {
     );
   } else {
     // NÃO MODAL: o Tab tem de poder SAIR do cartão — foca o ÚLTIMO
-    // controle direto e cobra que Tab tire o foco de dentro. Shift+Tab
-    // devolve o foco para dentro logo em seguida, porque a prova
-    // seguinte (Esc) precisa dele DENTRO para o listener do diálogo
-    // escutar a tecla.
-    await s.js(`(() => {
+    // controle direto e cobra que Tab tire o foco de dentro. Depois o
+    // foco VOLTA ao último controle pela mesma mão que o pôs lá, porque
+    // a prova seguinte (Esc) precisa dele DENTRO para o listener do
+    // diálogo escutar a tecla. Era um Shift+Tab, e ele só voltava
+    // porque havia um focável DEPOIS do cartão (o convite do Atlas, até
+    // 12/11): quando a ficha é o último focável da página, o Tab sai do
+    // documento e o Shift+Tab do Chrome sem janela na frente pousa no
+    // <body> — o Esc caía fora do diálogo e a prova acusava o produto.
+    const focarUltimo = `(() => {
       const d = document.querySelector('[data-dialogo="${nome}"]');
       const foc = [...d.querySelectorAll('${FOCAVEIS}')]
         .filter((e) => e.getClientRects().length > 0);
       foc[foc.length - 1]?.focus();
-    })()`);
+    })()`;
+    await s.js(focarUltimo);
     await s.teclar('Tab');
     const saiu = !(await s.js(dentroDoDialogo(nome)));
     conferir(
       saiu,
       `${onde} · "${nome}": o foco NÃO fica preso — Tab tira o foco do cartão no último controle`
     );
-    await s.teclar('Tab', { shift: true });
+    await s.js(focarUltimo);
   }
 
   // Esc FECHA e o foco VOLTA ao gatilho
@@ -1235,14 +1240,9 @@ try {
   // O ATLAS: os diálogos do modo novo, pelo mesmo contrato. Com `?foco=` de
   // propósito desde o item 74 — a ficha do objeto é o quarto diálogo e só
   // existe quando há SELEÇÃO, e sem ela o juiz não teria o que abrir.
-  const vivasAtlas = await julgarPagina(sessao, 'atlas=1&foco=terra', 'atlas');
+  await julgarPagina(sessao, 'atlas=1&foco=terra', 'atlas');
   await julgarGavetaDeCamadas(sessao, 'atlas');
   await julgarEscComDicaPresa(sessao, 'atlas');
-  conferir(
-    vivasAtlas.some((r) => r.papel === 'status' && r.v === 'polite' && r.texto),
-    'atlas: há região viva com role="status" e texto'
-      + ` (${vivasAtlas.map((r) => `${r.papel || '—'}:"${r.texto}"`).join(' · ')})`
-  );
 
   // A REGIÃO VIVA É VIVA MESMO: mudar o foco do Atlas muda o que ela
   // anuncia. Sem esta prova, um `aria-live` sobre texto imóvel passaria
@@ -1256,6 +1256,23 @@ try {
     if (b && b.getAttribute('aria-expanded') !== 'true') b.click();
   })()`);
   await dorme(200);
+  // A REGIÃO VIVA DO ATLAS é o nome na ficha, e ela só existe com a
+  // ficha aberta — por isso é lida AQUI, e não na lista que a varredura
+  // de diálogos devolve (lá a última gaveta julgada, Ajustes, já fechou
+  // a ficha). Até 12/11 a prova passava lá pela região do CONVITE, que
+  // ficava na tela desde a entrada; o convite agora some ao primeiro
+  // gesto (abrir a Busca é um deles), e a prova lia uma tela sem ficha.
+  const vivasComFicha = await sessao.js(`[...document.querySelectorAll('[aria-live]')]
+    .map((e) => ({
+      v: e.getAttribute('aria-live'),
+      papel: e.getAttribute('role') || '',
+      texto: (e.textContent || '').trim().slice(0, 40),
+    }))`);
+  conferir(
+    vivasComFicha.some((r) => r.papel === 'status' && r.v === 'polite' && r.texto),
+    'atlas: há região viva com role="status" e texto'
+      + ` (${vivasComFicha.map((r) => `${r.papel || '—'}:"${r.texto}"`).join(' · ')})`
+  );
   const antes = await sessao.js(
     "(document.querySelector('.atlas-ficha-nome')||{}).textContent||''"
   );
@@ -1295,10 +1312,14 @@ try {
     // e o alvo é uma ESTRELA, escolhida da lista viva em vez de sorteada
     // pelo primeiro pixel com tinta: dentro do sistema solar nenhum
     // duplo clique tira a câmera de 0,001 pc, e o que este veredito
-    // mede é justamente sair dele
+    // mede é justamente sair dele. ESTRELA DO CATÁLOGO é o rótulo cuja
+    // chave é o próprio nome (`labels.ts`); filtrar só "não é corpo"
+    // deixou de bastar quando sondas, lugares e cometas (`sonda:`,
+    // `lugar:`, `cometa:`) ganharam rótulo no Atlas — em 12/11 o duplo
+    // clique caía num cometa e a câmera nunca saía de casa
     const daEstrela = JSON.parse(await sessao.js(`JSON.stringify((() => {
       const l = window.__director.rotulos.alvos.find(
-        (r) => r.desenhado === true && !r.key.startsWith('corpo:')
+        (r) => r.desenhado === true && r.key === r.name
       );
       return l ? { x: Math.round(l.x * window.innerWidth),
         y: Math.round(l.y * window.innerHeight), nome: l.name } : null;
@@ -1977,13 +1998,15 @@ try {
   conferir(convitEm !== null, `ajustes · rever convite: abre o spotlight (em ${convitEm} ms)`);
   await sessao.js(`(() => {
     const b = [...document.querySelectorAll('.convite-linha button')]
-      .find((x) => x.textContent.trim() === 'pular');
+      .find((x) => x.textContent.trim() === 'entendi');
     if (b) b.click();
   })()`);
   await dorme(150);
+  // o convite do Atlas é um cartão só, e o botão que o fecha é o
+  // "entendi" (`Convite` com `juntos`, 12/11) — o "pular" é do voo livre
   conferir(
     (await sessao.js("!document.querySelector('.spotlight')")) === true,
-    'ajustes · rever convite: fecha pelo botão "pular"'
+    'ajustes · rever convite: fecha pelo botão "entendi"'
   );
   await sessao.js("window.localStorage.removeItem('viagem-prefs')");
 
