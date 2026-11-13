@@ -69,4 +69,22 @@ describe('a sonda da lente — quanto do disco do Sol está à vista', () => {
     expect(passo).toBeLessThan(1);
     s.dispose();
   });
+
+  it('o Sol que desliza da margem para dentro da tela não apaga à espera da resposta, e a primeira medida anda pela rampa', () => {
+    const s = new SondaDaLente();
+    const cam = camera();
+    // o Sol à esquerda do quadro: ndcX < −1 é a margem de fora, onde o reflexo ainda é desenhado
+    const olhar = (ndcX: number) => {
+      cam.lookAt(-ndcX * Math.tan(THREE.MathUtils.degToRad(25)) * (16 / 9) * 1e-5, 0, 0);
+      cam.updateMatrixWorld(true);
+    };
+    olhar(-1.02);
+    expect(s.atualizar(quadro(cam, 1 / 30))).toBe(1);
+    olhar(-0.99); // entrou, e nenhum toque respondeu ainda
+    expect(s.atualizar(quadro(cam, 1 / 30))).toBe(1);
+    expect(s.atualizar(quadro(cam, 1 / 30))).toBe(1);
+    for (let i = 0; i < TOQUES_DA_LENTE; i++) registrar(s, i, false); // e entrou atrás de um corpo
+    expect(s.atualizar(quadro(cam, 1 / 30))).toBe(stepRampToward(1, 0, 1 / 30, RAMP_DURATION_MS));
+    s.dispose();
+  });
 });
