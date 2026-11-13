@@ -192,7 +192,19 @@ export function poseDoExoplaneta(id: string, jd: number, posDaEstrela: THREE.Vec
 
 const _pos = new THREE.Vector3();
 
-/** OS NOMES E OS MARCADORES DOS PLANETAS do sistema ativo */
+/**
+ * O NOME CURTO DENTRO DO PRÓPRIO SISTEMA (13/11): a letra ("TRAPPIST-1 e"
+ * → "e", "Proxima b" → "b"). Os planetas só têm nome com o sistema deles
+ * ativo, e ali o nome da estrela repetido sete vezes não cabia — só três
+ * dos sete ganhavam vaga. Nome sem letra no fim fica inteiro.
+ */
+export function nomeCurtoDoExoplaneta(nome: string): string {
+  const letra = /\s([a-z])$/.exec(nome);
+  return letra ? letra[1] : nome;
+}
+
+/** OS NOMES E OS MARCADORES DOS PLANETAS do sistema ativo — o planeta em
+ *  foco diz o nome inteiro; os outros, a letra */
 export function projetarExoplanetas(
   camera: THREE.PerspectiveCamera,
   jd: number,
@@ -206,10 +218,12 @@ export function projetarExoplanetas(
   ativo.sistema.planetas.forEach((pl, k) => {
     const r = posicaoDoExoplaneta(pl, bases[k], jd);
     _pos.set(r[0], r[1], r[2]).multiplyScalar(AU_PARA_PC).add(ativo.pos);
-    const l = projectForced(camera, pl.nome, '', _pos, `${CHAVE_DE_EXOPLANETA}${pl.id}`);
+    const nome = pl.id === foco ? pl.nome : nomeCurtoDoExoplaneta(pl.nome);
+    const l = projectForced(camera, nome, '', _pos, `${CHAVE_DE_EXOPLANETA}${pl.id}`);
     if (!l) return;
     l.opacity = pl.contestado ? 0.7 : 0.95;
     l.prioridade = pl.id === foco ? PRIORIDADE_DO_ROTULO.foco : PRIORIDADE_DO_ROTULO.exoplaneta;
+    l.outroLado = true;
     if (comMarcador) {
       l.comAnel = true;
       l.corDoAnel = COR_DO_MARCADOR_DO_EXOPLANETA;

@@ -59,8 +59,9 @@ import type { OclusorDeRotulo, StarLabel } from './world/labels';
 // O CLARÃO DE ASAS (M2): a camada única da óptica das fontes fortes,
 // por orçamento de fluxo — no lugar das 16 heroes de autor. Quem o
 // alimenta por quadro é o módulo do Sol (director/solNoQuadro.ts).
-import { ClaraoDeAsas } from './world/clarao';
+import { ClaraoDeAsas, lerPortaLuzUnica, type LuzDaLenteNoQuadro } from './world/clarao';
 import { SondaDaLente } from './lente/sondaDaLente';
+import { amplitudeDaLente, G_DA_LENTE, multiplicadorDaForca } from './lente/passeDaLente';
 import { HeroStars } from './world/heroStars';
 import { Galaxy, GAL, dentroDoDisco } from './world/galaxy';
 import { GalaxiasVizinhas, sortearVizinhas } from './world/vizinhas';
@@ -1097,6 +1098,14 @@ export class Director {
   private events: DirectorEvents;
   private readonly abortController = new AbortController();
   private readonly debug = new URLSearchParams(window.location.search);
+  /** a LUZ ÚNICA candidata (`?luzunica=1`, world/clarao.ts): sem heroes de
+   *  autor nem o remendo da chegada — o clarão da lei para toda estrela */
+  private readonly luzUnica = lerPortaLuzUnica(this.debug.get('luzunica'));
+  /** a luz que a lente acendeu no quadro anterior e a fonte dela — a luz
+   *  única cede a ela o halo do campo da MESMA estrela (world/clarao.ts) */
+  private readonly luzDaLente: LuzDaLenteNoQuadro = { fracao: 0, candidata: null };
+  /** a força da lente de Ajustes, em % (o passe a guarda; aqui só para a luz única) */
+  private forcaDaLente = 100;
   /**
    * O NÍVEL DA NEBULOSA ESCOLHIDO À MÃO (item 145) — `null` = o do
    * preset. O override mora AQUI e não na `Nebula` porque é o Director
@@ -1219,6 +1228,8 @@ export class Director {
     jdTdb: () => this.maquinaDoTempo.jdVivo,
     escondido: (flag) => this.hide.has(flag),
     janelaDoQuadro: lerPortaSolQuadro(this.debug.get('solquadro')),
+    visitadas: () => this.estrelasNoQuadro?.candidatasAoClarao() ?? [],
+    lente: () => (this.luzUnica ? this.luzDaLente : undefined),
   });
   /** a escada do Atlas — corte 9 da Parte 1 (director/escada.ts): o
    *  clique, a busca, os degraus, o religador do relógio e o trio do
@@ -2030,7 +2041,10 @@ export class Director {
     // migração: o clarão é LENTE — soma óptica por cima do ponto, do
     // raio do sprite para fora, e não pede cessão a ninguém. Quem
     // decide quem o tem é o fluxo, por quadro, com histerese (§5.21).
-    this.clarao = new ClaraoDeAsas(this.meta.named);
+    this.clarao = new ClaraoDeAsas(this.meta.named, {
+      luzUnica: this.luzUnica,
+      camadaDoCampo: CAMADA_DO_CAMPO,
+    });
     this.sondaDaLente = new SondaDaLente();
     // (o `SunStar` morreu no M1 da Lei da Estrela: o Sol de longe é o
     // ponto fotométrico da camada dos dez, em toda distância — a mesma
@@ -2041,16 +2055,22 @@ export class Director {
     // era, byte a byte, e o clarão da lei fica só com o Sol. Palavras
     // dele: "resgata no git a versão certa antes de entrar o atlas".
     this.heroes = new HeroStars(this.meta.named);
-    // TODA ESTRELA É UM LUGAR (piloto de 12/11): as quatro com corpo,
-    // preguiçosas — nada nasce enquanto nenhuma estiver por perto
+    // TODA ESTRELA É UM LUGAR (piloto de 12/11): as visitáveis com corpo,
+    // todas pelo motor do Sol, preguiçosas — nada nasce enquanto nenhuma
+    // estiver por perto
     if (lerPortaEstrelasComLugar(this.debug.get('estrelaslugar'))) {
       this.estrelasNoQuadro = new EstrelasNoQuadro(this.meta.named, {
         stars: () => this.stars,
         palco: () => this.palco,
         escondido: (flag) => this.hide.has(flag),
         janelaDoQuadro: lerPortaSolQuadro(this.debug.get('solquadro')),
-        toneMapping: () => this.engine.renderer.toneMapping,
         politicaDeLuz: () => this.politicaDeLuz,
+        motorDoSol: () => ({
+          renderer: this.engine.renderer,
+          camera: this.engine.camera,
+          quality: this.engine.quality,
+        }),
+        heroes: () => (this.luzUnica ? undefined : this.heroes),
       });
     }
 
@@ -3226,6 +3246,7 @@ export class Director {
 
   /** a força da lente de cinema (Ajustes · Lente), em %: mora no passe, daqui só sai o pedido */
   definirForcaDaLente(forca: number) {
+    this.forcaDaLente = forca;
     this.post.definirForcaDaLente(forca);
   }
 
@@ -4303,7 +4324,7 @@ export class Director {
       // solar não tem; Atlas e voo livre seguem com elas)
       const doFilme = this.phase === 'intro' || this.phase === 'journey' || this.phase === 'end';
       this.heroes.group.visible =
-        !this.hide.has('noclarao') && (!doFilme || this.filme.heroes);
+        !this.luzUnica && !this.hide.has('noclarao') && (!doFilme || this.filme.heroes);
       this.heroes.update(
         time,
         cam.position,
@@ -4627,6 +4648,7 @@ export class Director {
       focoCometa: this.escada.focoCometa,
       focoExoplaneta: this.escada.focoExoplaneta,
       sistemaAtivo: this.exoplanetas?.ativo ?? null,
+      alvoDoAtlas: this.atlas.alvo,
       jd: this.maquinaDoTempo.jdVivo,
       // a camada "Nomes na tela" (item 82, N2) — lida aqui com as
       // outras dezoito, e entregue pronta ao produtor
@@ -4661,6 +4683,11 @@ export class Director {
     this.post.setGalaxy(galaxyFade);
     this.post.setWarp(this.reducedMotion ? 0 : warp);
     this.aplicarLente();
+    // A FONTE DA LENTE: a estrela de maior irradiância na câmera — o Sol,
+    // ou a visitada montada (director/estrelasNoQuadro.ts). A lei é a do
+    // Sol: a distância entra como a do Sol de MESMA irradiância, a cor
+    // relativa à dele. Sem visitada, `null`: a lente de sempre, bit a bit.
+    const fonte = this.estrelasNoQuadro?.fonteDaLente(cam.position) ?? null;
     this.visibilidadeDoSol = this.sondaDaLente.atualizar({
       ligada: this.post.lente !== 'nenhuma',
       camera: cam,
@@ -4668,14 +4695,33 @@ export class Director {
       alturaPx: hPx,
       tanHalfFov,
       dtS: dt,
+      fonte,
     });
+    const dUADaFonte = fonte
+      ? cam.position.distanceTo(fonte.pos) * UA_POR_PC * fonte.fatorDeDistancia
+      : cam.position.length() * UA_POR_PC;
     this.post.atualizarLente(
-      cam.position.length() * UA_POR_PC,
+      dUADaFonte,
       this.politicaDeLuz,
       this.luzDoRoteiro,
       this.visibilidadeDoSol,
-      this.solNoQuadro.transmitanciaDoSolVisto
+      fonte ? fonte.tinta : this.solNoQuadro.transmitanciaDoSolVisto,
+      fonte
     );
+    // a luz única lê a MESMA amplitude que o passe acabou de receber (a lei
+    // dele, `amplitudeDaLente`, × a força), 0 com a lente desligada
+    if (this.luzUnica) {
+      this.luzDaLente.fracao =
+        this.post.lente === 'nenhuma'
+          ? 0
+          : Math.min(
+              1,
+              (amplitudeDaLente(dUADaFonte, this.politicaDeLuz, this.luzDoRoteiro, this.visibilidadeDoSol) /
+                G_DA_LENTE) *
+                multiplicadorDaForca(this.forcaDaLente)
+            );
+      this.luzDaLente.candidata = fonte ? fonte.candidata : null;
+    }
     // A PIRÂMIDE DA POEIRA (E3c): a fonte que o pedido quer agora, o
     // aquecimento dos materiais dela (desde o clique, antes da troca) e,
     // com a câmera DESTE quadro, o lote da residência na GPU — antes do

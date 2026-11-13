@@ -117,8 +117,11 @@ const _pos = new THREE.Vector3();
  *
  * A SONDA É QUIETA (crítica de 12/11: o dono não quer sonda disputando
  * com planeta, Sol ou lugar). O NOME só aparece quando ela é o assunto:
- * em foco, ou com a câmera mais perto dela do que ela está do Sol — aí
- * ela é um objeto à parte no quadro. Fora disso sobra o losango, sem
+ * em foco, ou com a câmera PERTO DELA: mais perto dela do que ela está do
+ * Sol E mais perto dela do que a câmera está do Sol (13/11) — só a
+ * primeira metade deixava a Pioneer 10, a 120 UA, escrever o nome no
+ * retrato de Urano, que está a 19 UA do Sol e do lado dela. Fora disso
+ * sobra o losango, sem
  * texto (com a camada de ícones desligada, nada). Quem a cala quando ela
  * se confunde com o Sol na tela é o produtor (`esmaecerSondasColadasNoSol`).
  */
@@ -133,7 +136,7 @@ export function projetarSondas(
     if (!posicaoDaSondaNaCena(sonda.id, jd, _pos)) continue;
     const emFoco = sonda.id === foco;
     const dist = _pos.distanceTo(camera.position);
-    const comNome = emFoco || dist < _pos.length();
+    const comNome = emFoco || dist < Math.min(_pos.length(), camera.position.length());
     if (!comNome && !comMarcador) continue;
     const l = projectForced(camera, sonda.nome, '', _pos, `${CHAVE_DE_SONDA}${sonda.id}`);
     if (!l) continue;

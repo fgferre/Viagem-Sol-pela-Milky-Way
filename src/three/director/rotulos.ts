@@ -9,7 +9,7 @@
 // visitar continua no director (é gesto de navegação): ele lê a última
 // projeção pelo getter `alvos` — a mesma lista única da pendência 30.
 // ============================================================
-import { projetarLugares } from '../world/lugaresDoCeu';
+import { abrirVagaNoGrupo, lugarNoAlvo, projetarCompanheiras, projetarLugares } from '../world/lugaresDoCeu';
 import { projetarSondas } from '../world/sondas';
 import { projetarCometas } from '../world/cometas';
 import { projetarExoplanetas } from '../world/exoplanetas';
@@ -72,6 +72,9 @@ export interface QuadroDeRotulos {
   /** o EXOPLANETA em foco (12/11) e o sistema ativo, cujos planetas têm nome */
   focoExoplaneta?: string | null;
   sistemaAtivo?: { sistema: SistemaPlanetario; pos: THREE.Vector3 } | null;
+  /** o ALVO do Atlas (13/11) — quando ele é o centro de um lugar do céu,
+   *  esse lugar está em foco e as membros e companheiras dele têm a vez */
+  alvoDoAtlas?: THREE.Vector3 | null;
   /** o instante vivo (JD TDB) — as sondas se põem no lugar por ele;
    *  ausente = nenhuma sonda (os quadros de teste antigos) */
   jd?: number;
@@ -453,7 +456,7 @@ export class Rotulos {
     id: string,
     planetas: Planetas | null,
     cam: THREE.PerspectiveCamera
-  ): { x: number; y: number; raioNdc: number; perto: number } | null {
+  ): { x: number; y: number; raioNdc: number; perto: number; centro: THREE.Vector3; raio: number } | null {
     const raio = raioDoAssuntoPc(id);
     const pos = this.posicaoDoCorpo(
       `${CHAVE_DE_CORPO}${id}`,
@@ -462,6 +465,7 @@ export class Rotulos {
     );
     if (!pos || raio === null) return null;
     _assunto.set(pos[0], pos[1], pos[2]);
+    const centro = _assunto.clone();
     const dist = _assunto.distanceTo(cam.position);
     _assunto.project(cam);
     if (_assunto.z > 1 || _assunto.z < -1) return null;
@@ -471,6 +475,8 @@ export class Rotulos {
       y: (1 - _assunto.y) / 2,
       raioNdc,
       perto: proximidadeDoAssunto(raioNdc, cam.aspect),
+      centro,
+      raio,
     };
   }
 
@@ -478,7 +484,12 @@ export class Rotulos {
    * O RETRATO NÃO DIVIDE O QUADRO (12/11/2026). Quando um corpo é o
    * assunto da tela (`proximidadeDoAssunto`):
    *  · a lua cujo marcador cai sobre o disco do PAI (planeta ou anel que é
-   *    disco) cede — vale com ou sem foco, como a linha dela;
+   *    disco) cede — vale com ou sem foco, como a linha dela. E a lua que
+   *    ESTÁ dentro do assunto — mais perto do pai do que o anel alcança —
+   *    cede de onde quer que se olhe (13/11): o círculo da tela mede o
+   *    anel na profundidade do centro, e a perspectiva e a borda da lente
+   *    jogavam Atlas e Epimeteu para fora dele, com um fantasma do nome
+   *    na borda do anel;
    *  · com FOCO, o que é de outra escala recua: os nomes dos outros
    *    planetas e das luas deles (ficam o foco, as luas dele, o pai de uma
    *    lua em foco e o Sol), e os nomes de estrela em volta do assunto.
@@ -504,17 +515,24 @@ export class Rotulos {
       if (!pai || id === foco) continue;
       const a = assuntoDe(pai);
       if (!a || a.perto <= 0) continue;
-      lua.opacity *=
-        1 -
-        a.perto *
-          sobreOAssunto(
-            lua.x - a.x,
-            lua.y - a.y,
-            cam.aspect,
-            a.raioNdc,
+      const naTela = sobreOAssunto(
+        lua.x - a.x,
+        lua.y - a.y,
+        cam.aspect,
+        a.raioNdc,
+        LUA_DENTRO_DO_ASSUNTO,
+        LUA_FORA_DO_ASSUNTO
+      );
+      const p = this.posicaoDoCorpo(lua.key, null, []);
+      const noEspaco = p
+        ? 1 -
+          THREE.MathUtils.smoothstep(
+            Math.hypot(p[0] - a.centro.x, p[1] - a.centro.y, p[2] - a.centro.z) / a.raio,
             LUA_DENTRO_DO_ASSUNTO,
             LUA_FORA_DO_ASSUNTO
-          );
+          )
+        : 0;
+      lua.opacity *= 1 - a.perto * Math.max(naTela, noEspaco);
     }
     if (!foco) return;
     const a = assuntoDe(foco);
@@ -1069,7 +1087,13 @@ export class Rotulos {
                 !quadro.iconesEscondidos
               )
             : [];
-        const lista = [...corpos, ...luas, ...estrelas, ...projetarLugares(cam), ...sondas, ...cometas, ...exoplanetas];
+        // O LUGAR EM FOCO (13/11): as companheiras ganham nome e o grupo, a vez
+        const lugarEmFoco = fase === 'atlas' ? lugarNoAlvo(quadro.alvoDoAtlas) : undefined;
+        const companheiras = lugarEmFoco ? projetarCompanheiras(cam, lugarEmFoco.id) : [];
+        const lista = [
+          ...corpos, ...luas, ...estrelas, ...projetarLugares(cam), ...companheiras, ...sondas, ...cometas, ...exoplanetas,
+        ];
+        if (lugarEmFoco) abrirVagaNoGrupo(lugarEmFoco.id, lista);
         // O ALVO ESCOLHIDO NÃO CEDE A NADA. A chave do corpo em foco é a
         // mesma que o hit-test reconhece; o `sol-home` cobre o caso da
         // estrela da casa vista de longe.

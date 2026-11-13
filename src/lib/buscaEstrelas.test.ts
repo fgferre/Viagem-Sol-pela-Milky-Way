@@ -49,6 +49,7 @@ import { CORPOS_DO_SISTEMA } from '../three/atlasConfig';
 import { RETRATO_2026 } from '../three/world/planetas/retrato2026';
 import type { IdRetrato } from '../three/world/planetas/retrato2026';
 import { definirIdioma } from './idioma';
+import { SISTEMAS_PLANETARIOS, comAnfitrias } from './exoplanetas';
 
 const meta = JSON.parse(
   readFileSync(new URL('../../public/data/stars_meta.json', import.meta.url), 'utf8')
@@ -650,5 +651,24 @@ describe('as duas grafias do corpo — a busca e o foco', () => {
     expect(chaveDoFoco('Vulcano', comCorpos)).toBeNull();
     definirIdioma('en');
     expect(chaveDoFoco('Vulcan', comCorpos)).toBeNull();
+  });
+});
+
+describe('a estrela antes dos planetas dela (13/11)', () => {
+  const planetas: CorpoBuscavel[] = SISTEMAS_PLANETARIOS.flatMap((s) =>
+    s.planetas.map((pl) => ({ id: pl.id, nome: pl.nome, classe: 'exoplaneta', rUA: Number.NaN }))
+  );
+  const comExo = construirIndice(comAnfitrias(nomeadas), planetas);
+
+  it('"TRAPPIST" lista a estrela e depois os sete, de dentro para fora', () => {
+    const lista = buscar('TRAPPIST', comExo, 8).map((r) => nomeDaEntrada(r.entrada));
+    expect(lista).toEqual([
+      'TRAPPIST-1',
+      ...['b', 'c', 'd', 'e', 'f', 'g', 'h'].map((l) => `TRAPPIST-1 ${l}`),
+    ]);
+  });
+
+  it('o planeta digitado por inteiro continua na frente da estrela', () => {
+    expect(nomeDaEntrada(buscar('trappist-1 e', comExo, 8)[0].entrada)).toBe('TRAPPIST-1 e');
   });
 });

@@ -745,6 +745,13 @@ const alvoHdr = (nome: string) => {
   return a;
 };
 
+/** A fonte do reflexo quando não é o Sol (a estrela visitada de maior
+ *  irradiância): onde ela está na cena e o raio físico, em pc. */
+export interface FonteDoReflexo {
+  readonly pos: THREE.Vector3;
+  readonly raioPc: number;
+}
+
 export class PasseDaLente extends Pass {
   private readonly camera: THREE.Camera;
   private modo: ModoDaLente = 'nenhuma';
@@ -768,6 +775,9 @@ export class PasseDaLente extends Pass {
   private readonly alvoLuz2 = alvoHdr('PasseDaLente.luz2');
   private readonly corDeLimpezaVelha = new THREE.Color();
   private readonly sol = new THREE.Vector3();
+  /** a fonte deste quadro: o Sol (origem, raio do Sol) ou a visitada */
+  private readonly posDaFonte = new THREE.Vector3();
+  private raioDaFonte = RAIO_DO_SOL_NA_CENA;
   private largura = 1;
   private altura = 1;
 
@@ -944,15 +954,25 @@ export class PasseDaLente extends Pass {
   /**
    * A luz deste quadro (o Director, ao lado de `setWarp`). `transmitancia` é a
    * do Sol deste quadro, calculada uma vez para o disco, o ponto e o clarão
-   * (director/solNoQuadro.ts) — aqui só consumida.
+   * (director/solNoQuadro.ts) — aqui só consumida. Com `fonte` (outra
+   * estrela), `dUA` já é a distância do Sol de mesma irradiância e
+   * `transmitancia` a cor dela relativa à do Sol: a lei é a mesma.
    */
   atualizar(
     dUA: number,
     politica: PoliticaDeLuz,
     roteiro: number,
     visibilidade: number,
-    transmitancia: readonly [number, number, number]
+    transmitancia: readonly [number, number, number],
+    fonte: FonteDoReflexo | null = null
   ) {
+    if (fonte) {
+      this.posDaFonte.copy(fonte.pos);
+      this.raioDaFonte = fonte.raioPc;
+    } else {
+      this.posDaFonte.set(0, 0, 0);
+      this.raioDaFonte = RAIO_DO_SOL_NA_CENA;
+    }
     this.amplitude = amplitudeDaLente(dUA, politica, roteiro, visibilidade);
     (this.u.uTransmitancia.value as THREE.Vector3).set(transmitancia[0], transmitancia[1], transmitancia[2]);
     if (this.modo === 'nenhuma') {
@@ -989,7 +1009,7 @@ export class PasseDaLente extends Pass {
   private prepararQuadro(gpu: NaGpu, exposicao: number, curva: THREE.ToneMapping): boolean {
     const cam = this.camera;
     if (!(cam instanceof THREE.PerspectiveCamera)) return false;
-    this.sol.set(0, 0, 0).applyMatrix4(cam.matrixWorldInverse);
+    this.sol.copy(this.posDaFonte).applyMatrix4(cam.matrixWorldInverse);
     const dist = this.sol.length();
     const frente = -this.sol.z;
     if (!(dist > 0) || !(frente > 1e-9 * dist)) return false;
@@ -1007,7 +1027,7 @@ export class PasseDaLente extends Pass {
     // o disco do Sol: o raio angular e, para as formas, o raio no eixo em frações da altura; abaixo
     // de ~1 px ele é ponto (como no look development) e entre 1 e 3 px de raio o disco entra em
     // rampa — um degrau aqui fazia o miolo saltar ~16 % (~3 UA)
-    const alfa = Math.asin(Math.min(0.999, RAIO_DO_SOL_NA_CENA / dist));
+    const alfa = Math.asin(Math.min(0.999, this.raioDaFonte / dist));
     const raio = Math.tan(alfa) / (2 * T);
     const forca = suave(1, 3, raio * this.altura);
     // o Sol como ASSUNTO do quadro: de perto ele tem os próprios efeitos (coroa, raios da coroa)
