@@ -619,7 +619,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.estrela.granulacaoExtrapolada':
     'the real one has ~{real} % contrast, invisible; drawn at the {piso} % floor so the surface does not come out smooth',
   'ficha.estrela.celulasRealcadas':
-    "the cells' temperature becomes color and brightness through Planck's law; the contrast is boosted, and the second scale of cells, the lumpy edge and the envelope plumes are drawn",
+    "the cells' temperature becomes color and brightness through Planck's law; the contrast is boosted, and the smaller scales of cells (which appear up close), the lumpy edge and the envelope plumes are drawn",
   'ficha.estrela.desenhoInventado':
     'granules, cells, spots and flares: the cell size follows the law in the data ({lei}), but the exact pattern is invented',
   'ficha.fonte.daEfemeride': 'from the ephemeris',

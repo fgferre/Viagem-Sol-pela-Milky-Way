@@ -569,7 +569,7 @@ export function cirurgiaDaEstrela(
     f = trocarUma(
       f,
       '  float fibC = st.a*2.0 - 1.0;',
-      ag > 0 ? `  float fibC = 0.0;\n  heat += ${literalGlsl(ag)} * granulacaoViva(sp * uGranFreq, t);` : '  float fibC = 0.0;',
+      ag > 0 ? `  float fibC = 0.0;\n  heat += ${literalGlsl(ag)} * granulacaoViva(sp * uGranFreq, t, mu);` : '  float fibC = 0.0;',
       quem
     );
     if (ag > 0) granulacao = GLSL_GRANULACAO_VIVA;
@@ -598,10 +598,11 @@ export function cirurgiaDaEstrela(
     const d = deltaTDasGigantes(o.gigantes.contraste);
     f =
       GLSL_CELULAS_GIGANTES +
+      GLSL_CELULAS_GIGANTES_NA_TELA +
       trocarUma(
         f,
         '  color *= (1.0-limbU) + limbU*mu;',
-        `  float zGig = celulasGigantes(sp/${literalGlsl(o.gigantes.tamanhoEmRaios)} + 17.0, t*0.05);\n` +
+        `  float zGig = celulasGigantesNaTela(sp/${literalGlsl(o.gigantes.tamanhoEmRaios)} + 17.0, t*0.05);\n` +
           `  color *= razaoDePlanck(${xDePlanckGlsl(teff)}, max(0.5, 1.0 + ${literalGlsl(d)}*(zGig > 0.0 ? zGig : ${literalGlsl(DESCIDA_DAS_GIGANTES)}*zGig)));\n` +
           '  color *= (1.0-limbU) + limbU*mu;',
         quem
@@ -624,10 +625,22 @@ export function cirurgiaDaEstrela(
 /**
  * A GRANULAÇÃO VIVA de uma estrela sem dínamo — a convecção da fotosfera em
  * luz branca, que no Sol fica por baixo da textura H-alfa e sem campo é o
- * que sobra: células claras de subida e faixas escuras de descida (F2 − F1
- * de um Voronoi esférico, centros que derivam devagar). Média ~0, desvio
- * ~1. O ganho em `heat` por contraste relativo ao Sol (`GRANULACAO_VIVA`)
- * põe o rms do Sol (0,15) em ~15 % de brilho no meio do disco.
+ * que sobra: um MOSQUEADO MOLE de subidas claras (uma gaussiana por célula,
+ * σ = 0,4 célula, peso de 0,5 a 1,5, centros que derivam devagar), sem a
+ * aresta de F2 − F1 — a faixa de descida desenhada lia como uma rede de
+ * favo (Vega, 12/11). Nas estrelas que ficaram sem dínamo (as A e a
+ * supergigante) a convecção é rasa ou coberta, e as simulações dão células
+ * de contorno difuso (Tremblay et al. 2013; Kallinger & Matthews 2010).
+ * Normalizada a média 0 e desvio 1 (Monte Carlo na esfera, 2·10⁵ amostras:
+ * média 0,355, desvio 0,31). Duas atenuações, nenhuma de gosto:
+ *  · o ESCORÇO: o contraste cai ∝ μ para a borda, onde a linha de visada
+ *    atravessa camadas mais altas, de flutuação menor (no Sol o contraste
+ *    da granulação cai para o limbo) — ARTÍSTICO na forma, declarado;
+ *  · o PIXEL: célula menor que ~2 px é a média dela (0), não um serrilhado —
+ *    o filtro da própria tela (`fwidth`), que também apaga o adensamento do
+ *    escorço rente à borda.
+ * O ganho em `heat` por contraste relativo ao Sol (`GRANULACAO_VIVA`) põe o
+ * rms do Sol (0,15) em ~15 % de brilho no meio do disco.
  */
 const GRANULACAO_VIVA = 0.09;
 const GLSL_GRANULACAO_VIVA = /* glsl */ `
@@ -636,26 +649,25 @@ vec3 hashDoGranulo(vec3 p) {
   p += dot(p, p.yxz + 33.33);
   return fract((p.xxy + p.yxx) * p.zyx);
 }
-float granulacaoViva(vec3 p, float t) {
+float granulacaoViva(vec3 p, float t, float mu) {
+  // o tamanho do pixel em células, antes da torção (ela é suave)
+  float px = length(fwidth(p));
+  float filtro = 1.0 - smoothstep(0.25, 0.6, px);
+  if (filtro <= 0.0) return 0.0;
   // domínio torcido: grânulo é célula de fluido, não poliedro
   p += 0.32 * sin(p.yzx * 0.9 + t * 0.05) + 0.12 * sin(p.zxy * 2.7 + 4.1);
   vec3 c = floor(p);
   vec3 f = p - c;
-  float d1 = 9.0;
-  float d2 = 9.0;
+  float G = 0.0;
   for (int i = -1; i <= 1; i++)
   for (int j = -1; j <= 1; j++)
   for (int l = -1; l <= 1; l++) {
     vec3 o = vec3(float(i), float(j), float(l));
     vec3 h = hashDoGranulo(c + o);
     vec3 q = o + 0.5 + 0.4 * sin(6.2831853 * h + t * 0.3 * (0.5 + h)) - f;
-    float dq = dot(q, q);
-    d2 = min(max(d1, dq), d2);
-    d1 = min(d1, dq);
+    G += (0.5 + h.x) * exp(-dot(q, q) / 0.16);
   }
-  // centro claro (a subida) caindo até a faixa escura (a descida)
-  float g = smoothstep(0.0, 0.5, sqrt(d2) - sqrt(d1)) * (1.15 - 0.7 * sqrt(d1));
-  return (g - 0.5) / 0.3;
+  return (G - 0.355) / 0.31 * filtro * mu;
 }
 `;
 
@@ -753,6 +765,54 @@ float celulaGigante(vec3 p, float t) {
 }
 float celulasGigantes(vec3 p, float t) {
   return (0.8 * celulaGigante(p, t) + 0.6 * celulaGigante(p * 2.3 + 5.0, t * 1.7) + 0.22) / 0.81;
+}
+`;
+
+/**
+ * AS CÉLULAS GIGANTES NA TELA, com detalhe até onde o pixel deixa (12/11: a
+ * Betelgeuse de perto saía mole — o campo é uma soma de gaussianas, liso em
+ * todo lugar, e nenhuma resolução de retrato o afia). Por cima das duas
+ * oitavas de `celulasGigantes` (o mesmo campo, o mesmo número), A CASCATA:
+ * a estrutura menor dentro das células — a turbulência que as simulações 3D
+ * resolvem até a grade (Chiavassa et al. 2010; Freytag et al. 2002) —, o
+ * mesmo campo 2,3× menor e 1,7× mais rápido a cada oitava, com peso
+ * `PASSO_DA_CASCATA` × o da anterior, até `OITAVAS_FINAS` oitavas. Pelo
+ * PIXEL (`fwidth`): a oitava esmaece quando a célula dela cai abaixo de
+ * ~4 px e nem é calculada abaixo de ~2 px — de longe o disco é o de antes,
+ * de perto ganha detalhe até a borda do pixel, como o LOD do Sol. Peso e
+ * contagem ARTÍSTICOS, declarados. Só no fragment (`fwidth`).
+ */
+const PASSO_DA_CASCATA = 0.65;
+const INGREMIDADE_DA_CASCATA = 2.0;
+const OITAVAS_FINAS = 5;
+const GLSL_CELULAS_GIGANTES_NA_TELA = /* glsl */ `
+float celulasGigantesNaTela(vec3 p, float t) {
+  float px = length(fwidth(p));
+  float z0 = celulasGigantes(p, t);
+  float z = z0;
+  // o detalhe fino mora nas subidas: o contraste de uma célula pequena
+  // acompanha o brilho local (nas descidas frias ele quase some)
+  float local = 0.4 + 0.6 * smoothstep(-1.0, 1.5, z0);
+  float s = 2.3 * 2.3;
+  float v = 1.7 * 1.7;
+  float w = 0.6 / 0.81 * ${literalGlsl(PASSO_DA_CASCATA)};
+  float var = 1.0;
+  for (int k = 0; k < ${OITAVAS_FINAS}; k++) {
+    float fade = 1.0 - smoothstep(0.25, 0.5, px * s);
+    if (fade <= 0.0) break;
+    // a borda da célula fina NÍTIDA: o campo passa por uma sigmoide (as
+    // subidas viram platôs de contorno firme, a curva de nível do campo —
+    // nunca a aresta reta de um Voronoi), tão íngreme quanto o pixel deixa
+    float c = celulaGigante(p * s + 11.0 * float(k + 1), t * v);
+    float ing = min(${literalGlsl(INGREMIDADE_DA_CASCATA)}, 0.12 / (px * s));
+    z += fade * w * local * tanh(ing * c) / tanh(ing);
+    var += fade * fade * w * w;
+    s *= 2.3;
+    v *= 1.7;
+    w *= ${literalGlsl(PASSO_DA_CASCATA)};
+  }
+  // o rms do campo é o dos dados: a cascata REPARTE o contraste, não soma
+  return z * inversesqrt(var);
 }
 `;
 
@@ -1250,20 +1310,43 @@ export function coroaOcultavel(material: THREE.ShaderMaterial, raioPc: number): 
  * (`director/doseDoSol.ts`) e se declara no selo; aqui só entra o que é
  * da ESTRELA.
  */
-/** o alcance das plumas da atmosfera estendida, × o excesso medido
- *  (`bordaDifusaRaios` − 1) — ARTÍSTICO, declarado: o raio medido é o meio */
-const PLUMA_MIN = 0.55;
-const PLUMA_MAX = 2.2;
-/** o brilho da atmosfera estendida em b = 1, sobre a luz da borda do disco
- *  (era 0,85 × ½ no motor simples) — ARTÍSTICO, declarado: a MOLsphere e a
- *  poeira espalham a luz da estrela, e a câmera as vê como névoa luminosa */
-const BRILHO_DA_ATMOSFERA = 1.5;
-/** O VÉU (`criarABordaDifusa`) — ARTÍSTICO, declarado: o alcance da asa (em
- *  raios), a escala do halo rente (raio) e os pesos das duas partes */
-const RAIO_DO_VEU = 3.2;
-const VEU_RENTE = 0.1;
-const VEU_PESO_RENTE = 0.7;
-const VEU_PESO_ASA = 0.35;
+/** a ESCALA DE ALTURA das plumas da atmosfera estendida, × o excesso medido
+ *  (`bordaDifusaRaios` − 1), de uma direção a outra — ARTÍSTICO, declarado:
+ *  o raio medido fica no meio */
+const PLUMA_MIN = 0.3;
+const PLUMA_MAX = 1.6;
+/** até quantas escalas de altura (da pluma mais longa) a casca vai: lá o
+ *  perfil já caiu a e⁻³ e a cauda o leva a zero sem degrau */
+const ALCANCE_DA_ATMOSFERA = 3;
+/** a escala da camada rente (raios), mais densa, por cima das plumas */
+const ESCALA_DA_CAMADA_RENTE = 0.08;
+/** o brilho da atmosfera estendida rente à borda (b = 1), sobre a luz da
+ *  borda do disco — ARTÍSTICO, declarado: a MOLsphere e a poeira espalham a
+ *  luz da estrela, e a câmera as vê como névoa luminosa; metade na pluma
+ *  média, para que a borda do disco continue sendo a borda */
+const BRILHO_DA_ATMOSFERA = 1.2;
+/**
+ * O VÉU (`criarABordaDifusa`) — ARTÍSTICO, declarado. A luz que sobra é a de
+ * uma câmera diante de uma fonte ofuscante (o espalhamento da óptica sobre o
+ * que o sensor REGISTROU): por isso é uma fração da borda do disco já
+ * COMPRIMIDA, como a tela a mostra, e não da radiância — uma fração da
+ * radiância de uma anã branca, comprimida depois, lavava o quadro inteiro.
+ * O perfil abraça o disco: um halo rente (escala `VEU_RENTE` raio) e uma asa
+ * (escala `VEU_ASA` raio) que a cauda leva a zero em `RAIO_DO_VEU`. A força
+ * é `veu` comprimido (`forcaDoVeu`): satura em `VEU_TETO`, e nenhuma estrela,
+ * por mais quente, passa disso.
+ */
+const RAIO_DO_VEU = 2;
+const VEU_RENTE = 0.06;
+const VEU_ASA = 0.3;
+const VEU_PESO_RENTE = 0.6;
+const VEU_PESO_ASA = 0.4;
+const VEU_TETO = 0.5;
+/** a força do véu, `veu` comprimido: VEU_TETO·(1 − e^(−veu/VEU_TETO)) —
+ *  linear no começo (0 no Sol, exato), teto em `VEU_TETO` */
+export function forcaDoVeu(veu: number): number {
+  return veu > 0 ? VEU_TETO * (1 - Math.exp(-veu / VEU_TETO)) : 0;
+}
 
 export const SOL_PARAMS: StellarParams = {
   nome: 'Sol',
@@ -1743,17 +1826,16 @@ export class StellarBody {
    * sobra o anel; vale com a câmera dentro dela. Duas coisas, cada uma só
    * para quem a física dá (o Sol não constrói a casca):
    *  · A ATMOSFERA ESTENDIDA (`bordaDifusaRaios` > 1, a MOLsphere de uma
-   *    supergigante): emenda com METADE da luz da borda do disco em b = 1 e
-   *    apaga até o raio medido, na cor da fotosfera no limbo (a rampa no
-   *    calor do meio, com o avermelhamento da receita). Com ESTRUTURA: as
-   *    plumas assimétricas que o VLT e o ALMA mostram (Kervella et al. 2009,
-   *    2018) — um ruído de baixa ordem na direção do objeto muda o alcance
-   *    (de `PLUMA_MIN` a `PLUMA_MAX` × o excesso medido) e o brilho;
+   *    supergigante): gás luminoso e translúcido, ADITIVO — exponencial na
+   *    altura acima da borda, mais brilhante rente a ela (uma camada densa a
+   *    `ESCALA_DA_CAMADA_RENTE` por cima), e levado a zero por uma cauda suave
+   *    antes do fim da casca (nada de aresta). Poucas plumas assimétricas,
+   *    como o VLT e o ALMA mostram (Kervella et al. 2009, 2018): um ruído de
+   *    ordem baixa na direção muda a escala de altura (de `PLUMA_MIN` a
+   *    `PLUMA_MAX` × o excesso medido) e o brilho; estrias ao longo do raio;
    *  · O VÉU (`veu` > 0): a luz que a exposição da visita não põe no disco
-   *    de uma fotosfera mais radiante que o Sol vira o espalhamento em volta
-   *    dele — a asa da PSF de uma câmera diante de uma fonte ofuscante: um
-   *    halo rente à borda (escala `VEU_RENTE` raio) mais uma asa em b⁻³ até
-   *    `RAIO_DO_VEU`, na cor da borda do disco, ∝ `veu`.
+   *    vira o espalhamento da câmera em volta dele, como fração da borda do
+   *    disco JÁ COMPRIMIDA (ver `RAIO_DO_VEU` e `forcaDoVeu`).
    * A emissão passa pelos MESMOS fios da fotosfera (o brilho da estrela, o
    * filtro, o ar, a compressão e o peso da lei), partilhando os uniforms.
    */
@@ -1763,7 +1845,7 @@ export class StellarBody {
     const fator = literalGlsl(radianciaDeTela(RADIANCIA_DA_FOTOSFERA, RAIO_DO_SOL_NA_CENA));
     const rEnv = Math.max(1, p.bordaDifusaRaios ?? 1);
     const veu = Math.max(0, p.veu ?? 0);
-    const rCasca = Math.max(1 + (rEnv - 1) * PLUMA_MAX, veu > 0 ? RAIO_DO_VEU : 1);
+    const rCasca = Math.max(1 + (rEnv - 1) * PLUMA_MAX * ALCANCE_DA_ATMOSFERA, veu > 0 ? RAIO_DO_VEU : 1);
     const u = p.bordaU ?? 0.3;
     const mat = new THREE.ShaderMaterial({
       vertexShader: /* glsl */ `
@@ -1804,24 +1886,33 @@ export class StellarBody {
           ${
             rEnv > 1
               ? `
-          float pl = clamp(0.5 + 0.5*fbmLight(vDirObj*1.6 + vec3(3.1, 7.7, uTime*0.004)), 0.0, 1.0);
-          pl = pl*pl*(3.0 - 2.0*pl);
-          float alcance = 1.0 + ${literalGlsl(rEnv - 1)}*mix(${literalGlsl(PLUMA_MIN)}, ${literalGlsl(PLUMA_MAX)}, pl);
-          float fe = 1.0 - smoothstep(1.0, alcance, b);
-          float fino = 0.75 + 0.5*fbmLight(vDirObj*7.0 + vec3(0.0, 0.0, uTime*0.01));
-          luz += ${literalGlsl(1 - u)} * vec3(1.0, 0.70, 0.50) * ${literalGlsl(BRILHO_DA_ATMOSFERA)} * fe * fe * mix(0.6, 1.6, pl) * fino;`
+          // poucas plumas assimétricas: um ruído de ordem baixa muda a escala
+          // de altura de uma direção a outra (e o brilho, junto)
+          float pl = smoothstep(0.3, 0.9, 0.5 + 0.6*fbmLight(vDirObj*1.1 + vec3(3.1, 7.7, uTime*0.004)));
+          float hEsc = ${literalGlsl(rEnv - 1)}*mix(${literalGlsl(PLUMA_MIN)}, ${literalGlsl(PLUMA_MAX)}, pl);
+          // gás que rarefaz: exponencial na altura, o mais brilhante rente à
+          // borda, com a camada rente (a MOLsphere, a ~0,1 R da fotosfera) mais
+          // densa por cima; a cauda leva tudo a ZERO antes do fim da casca
+          float fe = exp(-(b - 1.0) / hEsc) * (1.0 + 0.6*exp(-(b - 1.0) / ${literalGlsl(ESCALA_DA_CAMADA_RENTE)}))
+            * (1.0 - smoothstep(0.5, 1.0, (b - 1.0) / ${literalGlsl(rCasca - 1)}));
+          // estrias ao longo do raio (o ruído só da direção): filamento, não caroço
+          float fio = 0.8 + 0.4*fbmLight(vDirObj*5.0 + vec3(0.0, 0.0, uTime*0.01));
+          luz += ${literalGlsl(1 - u)} * vec3(1.0, 0.85, 0.7) * ${literalGlsl(BRILHO_DA_ATMOSFERA)} * fe * mix(0.5, 1.5, pl) * fio;`
               : ''
           }
+          float veu = 0.0;
           ${
             veu > 0
               ? `
-          float rente = exp(-(b - 1.0) / ${literalGlsl(VEU_RENTE)});
-          float asa = pow(b, -3.0) * (1.0 - smoothstep(${literalGlsl(0.6 * RAIO_DO_VEU)}, ${literalGlsl(RAIO_DO_VEU)}, b));
-          luz += ${literalGlsl(veu * (1 - u))} * (${literalGlsl(VEU_PESO_RENTE)}*rente + ${literalGlsl(VEU_PESO_ASA)}*asa);`
+          veu = ${literalGlsl(forcaDoVeu(veu))} * (${literalGlsl(VEU_PESO_RENTE)}*exp(-(b - 1.0) / ${literalGlsl(VEU_RENTE)})
+            + ${literalGlsl(VEU_PESO_ASA)}*exp(-(b - 1.0) / ${literalGlsl(VEU_ASA)}))
+            * (1.0 - smoothstep(${literalGlsl(0.5 * (RAIO_DO_VEU + 1))}, ${literalGlsl(RAIO_DO_VEU)}, b));`
               : ''
           }
-          c *= luz * uPaleta;
-          gl_FragColor = vec4(comprimir3(c * pow(${fator}, uFiltroSolar) * uTransmitancia * uBrilhoDaEstrela, ${literalGlsl(BETA_DA_EMISSAO)}) * uWorldFade, 1.0);
+          vec3 k = c * uPaleta * pow(${fator}, uFiltroSolar) * uTransmitancia * uBrilhoDaEstrela;
+          // o véu sobre a borda do disco como a tela a mostra (comprimida)
+          vec3 borda = comprimir3(k * ${literalGlsl(1 - u)}, ${literalGlsl(BETA_DA_EMISSAO)});
+          gl_FragColor = vec4((comprimir3(k * luz, ${literalGlsl(BETA_DA_EMISSAO)}) + borda * veu) * uWorldFade, 1.0);
         }`,
       uniforms: {
         uCorFria: ctx.corFria,

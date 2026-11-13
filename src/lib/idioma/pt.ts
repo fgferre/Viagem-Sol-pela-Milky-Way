@@ -650,7 +650,7 @@ export const PT = {
   'ficha.estrela.granulacaoExtrapolada':
     'a real tem ~{real} % de contraste, invisível; desenhada no piso de {piso} % para a superfície não sair lisa',
   'ficha.estrela.celulasRealcadas':
-    'a temperatura das células vira cor e brilho pela lei de Planck; o contraste está realçado, e a segunda escala de células, o relevo da borda e as plumas do envelope são desenho',
+    'a temperatura das células vira cor e brilho pela lei de Planck; o contraste está realçado, e as escalas menores de células (que aparecem de perto), o relevo da borda e as plumas do envelope são desenho',
   'ficha.estrela.desenhoInventado':
     'grânulos, células, manchas e erupções: o tamanho da célula segue a lei dos dados ({lei}), mas o desenho exato é inventado',
   'ficha.fonte.daEfemeride': 'da efeméride',

@@ -44,6 +44,7 @@ import {
   rocheDe,
   rotSpeedFromPeriod,
   taxaDeErupcoesPelaAtividade,
+  forcaDoVeu,
   termoZonalDaForma,
   tierDaEstrela,
 } from './stellarBody';
@@ -610,6 +611,9 @@ describe('um motor, qualquer estrela — os parâmetros novos são neutros no So
     // o regime saturado (nivel ~8) não vira tempestade contínua: teto 6×
     expect(taxaDeErupcoesPelaAtividade(8.2)).toBe(6);
     expect(taxaDeErupcoesPelaAtividade(2.06)).toBeCloseTo(4.24, 2);
+    // o véu: zero exato sem excesso, e nenhuma estrela passa do teto
+    expect(forcaDoVeu(0)).toBe(0);
+    expect(forcaDoVeu(0.99)).toBeLessThan(0.5);
   });
 
   it('o peso do filtro do Sol: exatamente 1 no Sol e abaixo dele, 0 nas quentes', () => {
@@ -645,12 +649,12 @@ describe('um motor, qualquer estrela — os parâmetros novos são neutros no So
     expect(cirurgiaDaEstrela(sunJs, { avermelhamento: 1 })).toBe(sunJs);
     const q = cirurgiaDaEstrela(sunJs, { avermelhamento: 0, gigantes: { tamanhoEmRaios: 0.6, contraste: 0.25 } });
     expect(q).toContain('color.b *= 1.0 - edge*0.50*0.000000;');
-    expect(q.split('celulasGigantes(sp/0.600000').length - 1).toBe(1);
+    expect(q.split('celulasGigantesNaTela(sp/0.600000').length - 1).toBe(1);
     expect(q).toContain('razaoDePlanck(');
     // a borda do contínuo só com peso; sem dínamo e com contraste, a granulação viva
     const c = cirurgiaDaEstrela(sunJs, { continuo: 1, teffK: 9845, semDinamo: true, contraste: 0.27 });
     expect(c).toContain('pow((mu + 0.6666667)/1.6666667, 0.25)');
-    expect(c).toContain('granulacaoViva(sp * uGranFreq, t)');
+    expect(c).toContain('granulacaoViva(sp * uGranFreq, t, mu)');
     expect(cirurgiaDaEstrela(sunJs, { semDinamo: true, contraste: 0 })).not.toContain('granulacaoViva');
     expect(() => cirurgiaDoRelevoDasGigantes(cirurgiaDaForma(sunJs, -0.078, 1.04), 0.6, 0.008)).not.toThrow();
   });
