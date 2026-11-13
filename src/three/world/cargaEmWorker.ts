@@ -55,6 +55,12 @@ onmessage = async (e: MessageEvent<PedidoDaCarga>) => {
   // transferência, não cópia: os 122,7 MiB do cinema e os dois mapas de
   // 1 MiB mudam de dono, não de lugar
   postMessage(carga, {
-    transfer: [carga.poeira.buffer, carga.estrutura.buffer, carga.bright.buffer],
+    transfer: [
+      carga.poeira.buffer,
+      carga.estrutura.buffer,
+      carga.bright.buffer,
+      ...(carga.nuvens ? [carga.nuvens.buffer] : []),
+      ...(carga.pacote ? [carga.pacote.dados, carga.pacote.esp.buffer] : []),
+    ],
   });
 };

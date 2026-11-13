@@ -25,6 +25,7 @@
 import * as THREE from 'three';
 import type { GalaxyBuffers } from '../geradorDaGalaxia';
 import { MotorDaGalaxia } from './motor';
+import type { SorteioEmpacotado } from './motor';
 
 /** partículas por sorteio com folga (o gerador dá ~4,02 M na qualidade alta) */
 const CAPACIDADE_POR_SORTEIO = 4_100_000;
@@ -136,21 +137,30 @@ export class CamadaWebgpu {
   }
 
   /**
-   * `null` sem WebGPU (ou com a ponte quebrada). O primeiro sorteio é o
-   * buffer que o app já gerou; `sortear(s)` entrega os seguintes (s = 1,
-   * 2, …), que entram na ordem em que chegam — a camada desenha desde o
-   * primeiro e afina com os outros.
+   * `null` sem WebGPU (ou com a ponte quebrada). O primeiro sorteio é a
+   * carga principal (`principal`, a mesma que o WebGL desenha); `sortear(s)`
+   * entrega os seguintes (s = 1, 2, …), já empacotados, que entram na ordem.
+   *
+   * CHAMADA NO INÍCIO DA CARGA (13/11/2026), e não depois dela: dispositivo,
+   * shaders e a sonda da ponte sobem enquanto os trabalhadores assam, e a
+   * camada fica pronta quase junto com a galáxia WebGL. Antes eram três
+   * esperas em fila depois da carga (motor, sonda, sorteio extra).
    */
   static async criar(
-    buffers: GalaxyBuffers,
+    principal: Promise<GalaxyBuffers & { nuvens?: Uint16Array | null }>,
     sorteios: number,
-    sortear: (s: number) => Promise<GalaxyBuffers>
+    sortear: (s: number) => Promise<SorteioEmpacotado>
   ): Promise<CamadaWebgpu | null> {
     if (falhaDaPagina !== null) return null;
     const tela = new OffscreenCanvas(2, 2);
     let prazo = 0;
     const motor = await Promise.race([
-      MotorDaGalaxia.criar(tela, sorteios * CAPACIDADE_POR_SORTEIO, true),
+      MotorDaGalaxia.criar(
+        tela,
+        sorteios * CAPACIDADE_POR_SORTEIO,
+        true,
+        principal.then((b) => b.nuvens ?? undefined)
+      ),
       new Promise<null>((r) => {
         prazo = window.setTimeout(() => {
           falhar('o dispositivo não chegou no prazo');
@@ -187,6 +197,7 @@ export class CamadaWebgpu {
       camada.falhou = true;
       falhar(`dispositivo perdido: ${info.message}`);
     });
+    const buffers = await principal;
     try {
       motor.acrescentar(buffers.bright, buffers.brightCount);
     } catch (e) {
@@ -204,7 +215,7 @@ export class CamadaWebgpu {
       fila = fila
         .then(() => assado)
         .then((b) => {
-          if (camada.vivo && !camada.falhou) motor.acrescentar(b.bright, b.brightCount);
+          if (camada.vivo && !camada.falhou) motor.acrescentarPacote(b);
         })
         .catch((e: unknown) => console.warn('[galáxia] um sorteio extra falhou — segue com menos.', e))
         .finally(() => camada.pendentes--);
