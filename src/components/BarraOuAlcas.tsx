@@ -14,7 +14,8 @@
 // decisão não tinha nome. A semântica é a mesma, linha a linha: o que
 // mudou de lugar não mudou de conteúdo.
 // ============================================================
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { UIEvent } from 'react';
 import { QUALIDADES, nomeDoCorpo, rotuloDaQualidade } from '../three/atlasConfig';
 import type { EscolhaDeQualidade } from '../three/core/engine';
 import type { EstadoDaEscada, EstadoDaQualidade } from '../three/director';
@@ -319,6 +320,8 @@ export function BarraOuAlcas({
    * LARGURA_DO_CELULAR_PX") que reprovaria um segundo número de largura
    * escrito em CSS.
    */
+  // a cópia muda da barra do filme (o véu do topo, no fim do JSX)
+  const veuDoTopo = useRef<HTMLDivElement>(null);
   const [larguraEstreita, setLarguraEstreita] = useState(
     () => window.matchMedia?.('(max-width: 360px)').matches ?? false
   );
@@ -429,6 +432,13 @@ export function BarraOuAlcas({
    * `<span>` decorativo e nunca remonta.
    */
   const vezesQualidade = useRealce(quality.escolha);
+  // as opções saem UMA vez: o chip e a cópia dele no véu do topo (abaixo)
+  // têm de medir a mesma largura, e um `<select>` mede pela opção mais larga
+  const opcoesDeQualidade = QUALIDADES.map((q) => (
+    <option key={q.id} value={q.id}>
+      {q.simbolo} {q.nome}
+    </option>
+  ));
   const seletorDeQualidade = (
     <span className="chip-qualidade-envelope">
       <select
@@ -438,11 +448,7 @@ export function BarraOuAlcas({
         value={quality.escolha}
         onChange={(e) => changeQuality(e.target.value as EscolhaDeQualidade)}
       >
-        {QUALIDADES.map((q) => (
-          <option key={q.id} value={q.id}>
-            {q.simbolo} {q.nome}
-          </option>
-        ))}
+        {opcoesDeQualidade}
       </select>
       {vezesQualidade > 0 && (
         <span className="realce-anel" aria-hidden="true" key={vezesQualidade} />
@@ -551,6 +557,19 @@ export function BarraOuAlcas({
     </div>
   );
 
+  // A CÓPIA MUDA de um botão para o véu do topo (abaixo): mesmas classes e
+  // mesmo miolo (ícone + rótulo), então mesma caixa, sem ser botão
+  const copiaMuda = (icone: NomeDoIcone, rotulo: string, discreto = false, chave?: string) => (
+    <span key={chave} className={`hud-btn small${discreto ? ' hud-btn--discreto' : ''}`}>
+      <Icone nome={icone} tamanho={16} />
+      <span>{rotulo}</span>
+    </span>
+  );
+  // no celular a barra do filme rola de lado; a cópia acompanha
+  const acompanharRolagem = (e: UIEvent<HTMLDivElement>) => {
+    if (veuDoTopo.current) veuDoTopo.current.scrollLeft = e.currentTarget.scrollLeft;
+  };
+
   return (
     <>
   {marcaEContexto}
@@ -561,7 +580,10 @@ export function BarraOuAlcas({
       rótulos contornam; tirá-la do fluxo daria um pulo na geometria
       do HUD no meio da viagem. */}
   {hud.controles && (
-    <div className={`controls-bar${chromeSumido}`}>
+    <div
+      className={`controls-bar${chromeSumido}`}
+      onScroll={hud.botoesDaViagem ? acompanharRolagem : undefined}
+    >
       {/* NO CELULAR (item 6) o contexto mora NA PRÓPRIA barra, sem marca
           — a linha inteira é a única do topo, 44 px. Nunca mostra "Via
           Láctea" (`comViaLactea={false}`, achado do Lote 4: era ela quem
@@ -757,6 +779,50 @@ export function BarraOuAlcas({
           {!alcas && !regua && botaoDeAjustes}
         </div>
       )}
+    </div>
+  )}
+
+  {/* O VÉU DO TOPO DO FILME (12/11) — o mesmo véu de legibilidade da
+      legenda (`.veu-sombra`, 02-filme.css), só que a cópia muda não pode
+      morar DENTRO da barra: ela é `fixed` com z-index, some por opacidade
+      e no celular leva `mask-image`, e cada um dos três a fecha numa
+      camada própria — o `darken` misturaria com o nada. Então a cópia é
+      uma SEGUNDA barra, irmã e logo DEPOIS da de verdade (quem procura
+      `.controls-bar` no documento acha a real primeiro): as MESMAS classes
+      a põem no mesmo pixel, com a mesma máscara, e o MESMO `chromeSumido`
+      a apaga no mesmo compasso. Ela inteira é o grupo que escurece a
+      cena, logo abaixo da barra. Só no filme: Atlas e voo livre não têm. */}
+  {hud.controles && hud.botoesDaViagem && (
+    <div
+      ref={veuDoTopo}
+      className={`controls-bar veu-sombra${chromeSumido}`}
+      aria-hidden="true"
+      inert
+    >
+      <div className="atlas-barra-grupo">
+        {inJourney && paused && copiaMuda('setaEsquerda', t('barra.entrarNoAtlas'), true)}
+        {copiaMuda('explorar', t('barra.explorar'), true)}
+        <span className="hud-btn small" style={{ order: 1 }}>
+          <span>{t('barra.mais')}</span>
+        </span>
+        {maisMontada && (
+          <div
+            className={
+              'filme-mais' + (maisAbrindo ? ' abrindo' : '') + (maisSaindo ? ' saindo' : '')
+            }
+          >
+            {FILMES_EM_CARTAZ.map((id) => copiaMuda('play', t(filmeDe(id).titulo), false, id))}
+            {hud.gaveta && copiaMuda('camadas', t('atlas.camadasBotao'))}
+            <span className="chip-qualidade-envelope">
+              {/* `key` remonta quando a escolha muda: a cópia não é controlada */}
+              <select key={quality.escolha} className="hud-btn small" defaultValue={quality.escolha}>
+                {opcoesDeQualidade}
+              </select>
+            </span>
+            {copiaMuda('ajustes', t('barra.ajustes'))}
+          </div>
+        )}
+      </div>
     </div>
   )}
 
