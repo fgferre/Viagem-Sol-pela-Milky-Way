@@ -26,7 +26,7 @@
 // ============================================================
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { buscar, nomeDaEntrada } from '../lib/buscaEstrelas';
+import { alvoDoEnter, buscar, nomeDaEntrada } from '../lib/buscaEstrelas';
 import { classeEmTexto } from '../three/atlasConfig';
 import type { EntradaDaBusca, IndiceEstrelas } from '../lib/buscaEstrelas';
 import { destinosDaBusca } from '../lib/destinosDaBusca';
@@ -259,7 +259,9 @@ export function PaletaDeBusca({
       });
     } else if (event.key === 'Enter') {
       event.preventDefault();
-      confirmar(escolhido);
+      // o texto da CAIXA, não o da lista (que pode estar atrasada)
+      const alvo = alvoDoEnter(consulta, consultaLenta, resultados, escolhido, indice, limite);
+      if (alvo) escolher(alvo);
     }
   };
 

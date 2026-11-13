@@ -30,6 +30,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { NamedStar } from '../three/config';
 import {
   SCORE,
+  alvoDoEnter,
   buscar,
   chaveDeLink,
   chaveDoFoco,
@@ -400,6 +401,17 @@ describe('os corpos do sistema entram no MESMO índice', () => {
     const r = buscar('sol', comCorpos, 8);
     expect(r[0].entrada.tipo).toBe('corpo');
     expect(r[0].entrada.tipo === 'corpo' && r[0].entrada.corpo.nome).toBe('Sol');
+  });
+
+  it('o Enter age sobre o texto da caixa, não sobre a lista atrasada', () => {
+    const nome = (e: EntradaDaBusca | null) => (e ? nomeDaEntrada(e) : null);
+    // a lista de "s" ainda na tela, e a caixa já diz "sirius"
+    const deS = buscar('s', comCorpos, 8);
+    expect(nome(deS[0].entrada)).not.toBe('Sirius');
+    expect(nome(alvoDoEnter('sirius', 's', deS, 0, comCorpos, 8))).toBe('Sirius');
+    // lista em dia: a linha que as setas escolheram, sem buscar de novo
+    expect(alvoDoEnter('s', 's', deS, 2, comCorpos, 8)).toBe(deS[2].entrada);
+    expect(alvoDoEnter('xkcdq', 's', deS, 0, comCorpos, 8)).toBeNull();
   });
 
   it('e o catálogo não muda de resposta por eles existirem', () => {
