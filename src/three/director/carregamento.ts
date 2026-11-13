@@ -26,7 +26,7 @@ import { GIGANTES, GiganteResolvido } from '../world/corpos/gigante';
 import type { AtorDoPalco, PostoNoPalco } from './palco';
 import type { CaminhoDaGalaxia, QualityLevel } from '../core/engine';
 import { PRESETS } from '../core/engine';
-import { webgpuFalhouNestaPagina } from '../world/galaxiaWebgpu/camadaWebgpu';
+import { CamadaWebgpu, webgpuFalhouNestaPagina } from '../world/galaxiaWebgpu/camadaWebgpu';
 
 /**
  * O POSTO de um corpo no palco — os quatro traços que o distinguem no
@@ -221,6 +221,7 @@ export async function montarCarga(opts: {
   const caminho: CaminhoDaGalaxia =
     pedidoDoCaminho === 'webgpu' && webgpuFalhouNestaPagina() ? 'particulas' : pedidoDoCaminho;
   const orcamento = ORCAMENTO_DA_GALAXIA[tier];
+  const sorteios = caminho === 'webgpu' ? Number(query.get('sorteios')) || orcamento.sorteios : 1;
   const pedido = {
     seed: SEMENTE_DA_GALAXIA,
     catalogos,
@@ -228,8 +229,27 @@ export async function montarCarga(opts: {
     soParticulas: caminho !== 'classica',
     search: window.location.search,
   };
-  const assar = async (soParticulas: boolean) => {
-    const carga = await assarCargaEmWorker({ ...pedido, soParticulas }, aoAvancar);
+  // A ORDEM DA CARGA (13/11/2026). A carga principal, os sorteios extras
+  // do motor WebGPU (cada um no seu trabalhador, já no formato do motor) e
+  // a camada WebGPU (dispositivo, shaders, sonda da ponte) começam JUNTOS.
+  // Até aqui camada e sorteio vinham em fila depois da carga: ~11 s até a
+  // imagem completa em cinema, contra ~5 da clássica. Medido neste M1: o
+  // extra em paralelo atrasa a principal em ~0,5–1 s (dois trabalhadores
+  // em quatro núcleos rápidos); depois dela, em fila, a vista de fora
+  // passava de 12 s. Os sorteios entram no motor na ordem.
+  const principal = assarCargaEmWorker(
+    { ...pedido, nuvens: pedido.soParticulas },
+    aoAvancar
+  );
+  const extras = Array.from({ length: sorteios - 1 }, (_, i) =>
+    assarCargaEmWorker(
+      { ...pedido, seed: SEMENTE_DA_GALAXIA + (i + 1) * 7919, paraOMotor: true },
+      () => {}
+    ).then((c) => c.pacote!)
+  );
+  const camada = caminho === 'webgpu' ? CamadaWebgpu.criar(principal, sorteios, (s) => extras[s - 1]) : null;
+  const assar = async (soParticulas: boolean, pronta?: Promise<CargaAssada>) => {
+    const carga = await (pronta ?? assarCargaEmWorker({ ...pedido, soParticulas }, aoAvancar));
     const dustMapTexture = texturaDoMapa(carga.poeira);
     const structureMapTexture = texturaDoMapa(carga.estrutura);
     try {
@@ -246,21 +266,14 @@ export async function montarCarga(opts: {
   };
   // o último degrau: se as partículas não montam, a clássica — e só ela
   const montado = pedido.soParticulas
-    ? await assar(true).catch((e: unknown) => {
+    ? await assar(true, principal).catch((e: unknown) => {
         console.warn('[galáxia] as partículas não montaram — segue a clássica.', e);
         return assar(false);
       })
-    : await assar(false);
+    : await assar(false, principal);
   const { carga, galaxy, dustMapTexture, structureMapTexture } = montado;
-  // O MOTOR WEBGPU: mais sorteios do MESMO modelo (outra semente cada um),
-  // em trabalhadores, depois que o app já abriu
-  if (caminho === 'webgpu') {
-    galaxy.ligarWebgpu(
-      carga,
-      Number(query.get('sorteios')) || orcamento.sorteios,
-      (s) => assarCargaEmWorker({ ...pedido, seed: SEMENTE_DA_GALAXIA + s * 7919 }, () => {})
-    );
-  }
+  // O MOTOR WEBGPU: mais sorteios do MESMO modelo (outra semente cada um)
+  if (camada) galaxy.ligarWebgpu(camada);
   return {
     galaxy,
     dustMapTexture,

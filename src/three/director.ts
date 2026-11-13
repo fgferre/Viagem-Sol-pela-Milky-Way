@@ -3445,7 +3445,9 @@ export class Director {
     // cai): a imagem muda e o painel diz o caminho novo
     g.aoMudarCaminho = () => {
       if (g !== this.galaxy) return;
-      this.perturbar();
+      // a troca só muda o quadro onde a camada WebGPU desenha (de fora do
+      // disco); de dentro ela não zera a contagem das capturas (13/11/2026)
+      if (g.desenhaDeFora) this.perturbar();
       this.publicarQualidade();
     };
     g.anunciarCaminho();
