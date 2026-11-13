@@ -43,17 +43,26 @@ export const UNIFORMES_DE_ORION = {
 };
 UNIFORMES_DE_ORION.uOrSup.value.needsUpdate = true;
 
-let assada = false;
+/** o nome da cena do assado (o teste da nebulosa separa estes desenhos) */
+export const CENA_DO_ASSADO_DE_ORION = 'orion-assado';
+/** quantos desenhos o assado faz: a superfície e uma fatia por camada */
+export const DESENHOS_DO_ASSADO_DE_ORION = 1 + CAIXA_DO_NUCLEO.dims[2] + CAIXA_DO_VOLUME.dims[2];
+
+/** as grades vivem no contexto de um renderer: um renderer novo assa de novo */
+let assadaPara: THREE.WebGLRenderer | null = null;
+let alvos: THREE.RenderTarget[] = [];
 
 /**
- * Assa as três grades se ainda não assou — chamada pela nebulosa antes do
- * raymarch. Devolve true no quadro em que assou (o céu de antes fica
- * velho). ~280 desenhos de tela cheia pequena, uma vez na vida do app.
+ * Assa as três grades se ainda não assou para este renderer — chamada pela
+ * nebulosa antes do raymarch. Devolve true no quadro em que assou (o céu
+ * de antes fica velho). ~140 desenhos pequenos, uma vez na vida do app.
  */
 export function assarOrionSePreciso(renderer: THREE.WebGLRenderer): boolean {
-  if (assada || !ORION_LIGADA) return false;
-  assada = true;
+  if (assadaPara === renderer || !ORION_LIGADA) return false;
+  assadaPara = renderer;
+  for (const a of alvos) a.dispose();
   const cena = new THREE.Scene();
+  cena.name = CENA_DO_ASSADO_DE_ORION;
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2));
   quad.frustumCulled = false;
@@ -91,6 +100,7 @@ export function assarOrionSePreciso(renderer: THREE.WebGLRenderer): boolean {
   renderer.setRenderTarget(prev);
   quad.geometry.dispose();
 
+  alvos = [sup, nucleo, volume];
   const u = UNIFORMES_DE_ORION;
   u.uOrSup.value = sup.texture;
   u.uOrNucleo.value = nucleo.texture;

@@ -548,7 +548,9 @@ float orMassa(vec3 q) {
   vec2 w = vec2(fbm(q * 0.16 + vec3(3.1, 0.0, 0.0), 3), fbm(q * 0.16 + vec3(0.0, 7.7, 0.0), 3)) - 0.4375;
   vec2 e = (q.xy + 6.0 * w) * vec2(${n(1 / NUVEM.lestePc)}, ${n(1 / NUVEM.nortePc)});
   float rr = length(e) * (0.75 + 0.6 * fbm(q * 0.45 + vec3(1.1, 0.0, 0.0), 3));
-  float lado = 1.0 - smoothstep(0.45, 1.0, rr);
+  // e some antes da borda da grade grossa, para a caixa nunca aparecer
+  vec2 caixa = abs(q.xy) * vec2(${n(1 / CAIXA_DO_VOLUME.max[0])}, ${n(1 / CAIXA_DO_VOLUME.max[1])});
+  float lado = (1.0 - smoothstep(0.45, 1.0, rr)) * (1.0 - smoothstep(0.75, 0.95, max(caixa.x, caixa.y)));
   if (lado <= 0.0) return 0.0;
   float fundo = ${n(-NUVEM.fundoPc)} * (0.55 + 0.9 * fbm(vec3(q.xy * 0.3 + 5.0, 2.2), 3));
   float embaixo = smoothstep(fundo - 0.9, fundo + 0.9, q.z);

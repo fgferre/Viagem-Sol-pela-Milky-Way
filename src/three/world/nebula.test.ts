@@ -17,6 +17,7 @@ import { CORTE_D2_DA_SEMENTE, MEDIA_DA_LANE } from '../shaders/common';
 import { sementeAlcancaOVolume } from '../director/nuvensSemente';
 import { GAL, helioGalacticoParaCena } from './baseGalactica';
 import type { VolumeDePoeira } from '../cartography/galacticAssets';
+import { CENA_DO_ASSADO_DE_ORION, DESENHOS_DO_ASSADO_DE_ORION } from './orionNaCena';
 import {
   CODIGO_OMITIDO,
   CONCORRENCIA_DE_BUSCA,
@@ -51,12 +52,16 @@ function bancada() {
   camera.position.set(10, 20, 30);
   camera.updateMatrixWorld();
   const nebula = new Nebula(0.5);
+  const chamadas = () => (renderer.render as ReturnType<typeof vi.fn>).mock.calls as [THREE.Object3D | undefined][];
   return {
     renderer,
     camera,
     nebula,
     estado,
-    desenhos: () => (renderer.render as ReturnType<typeof vi.fn>).mock.calls.length,
+    // os desenhos da nebulosa da casa; o assado de Órion (uma vez por
+    // renderer, orionNaCena.ts) é contado à parte
+    desenhos: () => chamadas().filter(([cena]) => cena?.name !== CENA_DO_ASSADO_DE_ORION).length,
+    desenhosDeOrion: () => chamadas().filter(([cena]) => cena?.name === CENA_DO_ASSADO_DE_ORION).length,
   };
 }
 
@@ -67,11 +72,13 @@ describe('o quadro congelado da nebulosa (item 144)', () => {
   // o bake só não roda de novo enquanto a câmera não sair da margem de
   // 350 pc nem `uDustMap` mudar.
   it('a primeira chamada desenha (bake, LUT, raymarch e blur); a segunda, com tudo igual, desenha NADA', () => {
-    const { renderer, camera, nebula, desenhos } = bancada();
+    const { renderer, camera, nebula, desenhos, desenhosDeOrion } = bancada();
     nebula.render(renderer, camera);
     expect(desenhos()).toBe(131);
     nebula.render(renderer, camera);
     nebula.render(renderer, camera);
+    // Órion assa uma vez por renderer, no primeiro quadro, e nunca mais
+    expect(desenhosDeOrion()).toBe(DESENHOS_DO_ASSADO_DE_ORION);
     // A SABOTAGEM: apagar o `return` de `render` — o raymarch volta a
     // rodar a 60 Hz com a câmera parada, e este número sobe.
     expect(desenhos()).toBe(131);

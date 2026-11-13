@@ -645,14 +645,6 @@ ${
   float phaseSun = pow(max(dot(rd, toSun), 0.0), 24.0) * 2.2 +
                    pow(max(dot(rd, toSun), 0.0), 4.0) * 0.35;
 
-  // A NEBULOSA DE ÓRION (world/nebulosaDeOrion.ts): o trecho do raio
-  // dentro da caixa dela é integrado pelas grades assadas e composto EM
-  // ORDEM — entra no primeiro passo que a alcança; o que fica atrás dela
-  // chega atenuado pela transmissão que ela devolve.
-  vec2 orIv = orCaixa(orLocal(ro), orDir(rd), OR_V_MIN, OR_V_MAX);
-  bool orPendente = OR_LIGADO && uOrPronta > 0.5 && orIv.y > orIv.x;
-  int orPassos = int(clamp(float(uSteps), 24.0, 64.0));
-
   for (int i = 0; i < 96; i++) {
     if (i >= N || T < 0.015) break;
     // Amostragem quadrática: alta resolução perto da câmera, mas o
@@ -667,13 +659,6 @@ ${
     float t1 = tLo + span * f1 * f1;
     float t = (t0 + t1) * 0.5;
     float dt = max(t1 - t0, 0.01);
-    if (orPendente && t1 >= orIv.x) {
-      vec4 orion = orMarcha(ro, rd, jitter, orPassos);
-      acc += T * orion.rgb;
-      T *= orion.a;
-      orPendente = false;
-      if (T < 0.015) break;
-    }
     vec3 p = ro + rd * t;
     float d = ${antigo ? 'nebulaDensity(p, 4, t)' : 'nebulaDensity(p, t)'};
 
@@ -739,8 +724,16 @@ ${
     }
   }
 
-  if (orPendente && T >= 0.015) {
-    vec4 orion = orMarcha(ro, rd, jitter, orPassos);
+  // A NEBULOSA DE ÓRION (world/nebulosaDeOrion.ts): o trecho do raio
+  // dentro da caixa dela, integrado pelas grades assadas, entra DEPOIS do
+  // gás da casa — atrás dele —, e o que fica atrás dela (a faixa, abaixo)
+  // chega atenuado pela transmissão que ela devolve. Fora do laço de
+  // propósito: com o código dela dentro do laço, quadros sem Órion à vista
+  // saíam com 3–15 pixels um nível diferentes (o compilador reordena a
+  // conta); assim o laço da casa é o mesmo texto de antes, e esses quadros
+  // são idênticos bit a bit.
+  if (OR_LIGADO && uOrPronta > 0.5 && T >= 0.015) {
+    vec4 orion = orMarcha(ro, rd, jitter, int(clamp(float(uSteps), 24.0, 64.0)));
     acc += T * orion.rgb;
     T *= orion.a;
   }
