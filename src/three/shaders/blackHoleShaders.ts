@@ -59,6 +59,20 @@ vec3 weakBend(vec3 rd, out float b) {
 }
 `;
 
+// Meia-espessura do disco sobre o raio (a fatia em `fatia`). Um disco fino
+// de verdade; pequena o bastante para não mexer em nada visto com mais de
+// ~1° de inclinação, só na visada rasante — onde um plano de espessura zero
+// virava um risco de um pixel, escuro e pontilhado, cortando a sombra.
+export const ESPESSURA_DO_DISCO = 0.008;
+const ESPESSURA_GLSL = ESPESSURA_DO_DISCO.toFixed(4);
+
+/** espelho de `fatia` (GLSL), para o teste: altura y no raio r → 0..1 */
+export function fatiaDoDisco(y: number, r: number, rIn: number, rOut: number): number {
+  if (r >= rOut) return 1;
+  const u = Math.min(Math.abs(y) / (ESPESSURA_DO_DISCO * Math.max(r, rIn)), 1);
+  return 1 - (1 - u) * (1 - u);
+}
+
 export const BH_MARCH_FRAG = /* glsl */ `
 ${COMMON}
 
@@ -123,11 +137,18 @@ vec3 accAt(vec3 p, vec3 v){
   return -1.5*RS*dot(h, h)/(r2*r2*sqrt(r2))*p;
 }
 
-// cruzamento com o plano do disco; true quando a opacidade satura
-bool diskCross(vec3 a, vec3 b, vec3 rayDir, inout vec3 col, inout float trans){
-  if(a.y*b.y > 0.0) return false;
-  float t = abs(a.y)/(abs(a.y) + abs(b.y) + 1e-5);
-  vec3 q = mix(a, b, t);
+// fração da fatia do disco entre o plano médio e a altura y, no raio r
+// (0 no plano, 1 na face): meia-espessura ESPESSURA·r, perfil macio
+float fatia(vec3 p){
+  float r = length(p.xz);
+  if(r >= uDout) return 1.0; // além da borda não há disco
+  float u = min(abs(p.y) / (${ESPESSURA_GLSL} * max(r, uDin)), 1.0);
+  return 1.0 - (1.0 - u)*(1.0 - u);
+}
+
+// o disco no ponto q, com o peso w da espessura atravessada (1 = o disco
+// inteiro); true quando a opacidade satura
+bool diskShade(vec3 q, float w, vec3 rayDir, inout vec3 col, inout float trans){
   float qr = length(q.xz);
   if(qr <= uDin || qr >= uDout) return false;
   float ang = atan(q.z, q.x);
@@ -177,10 +198,45 @@ bool diskCross(vec3 a, vec3 b, vec3 rayDir, inout vec3 col, inout float trans){
 
   vec3 dcol = blackbody(temp*dop*g) * I * (dop*dop*dop) * g * uDiskBright;
   float alpha = mix(uOpFar, uOpNear, 1.0 - smoothstep(4.0, 13.0, qr)) * outerFade;
+  if(w != 1.0) alpha = 1.0 - pow(1.0 - alpha, w);
   col += trans * alpha * dcol;
   trans *= 1.0 - alpha;
   if(trans < 0.02){ trans = 0.0; return true; }
   return false;
+}
+
+// o disco é uma FATIA fina, não um plano: cada trecho do raio leva a parte
+// da espessura que atravessou (somando 1 numa travessia inteira — a de
+// sempre, vista inclinada). De lado, o raio rente à face pega só uma parte
+// dela, e o disco vira faixa macia em vez de risco de um pixel. As partes
+// pequenas esperam em pend (no último ponto, qPend) e são desenhadas
+// juntas — no cruzamento, a cada meio disco ou ao sair da fatia —, para
+// o raio rasante não pagar o disco inteiro a cada passo.
+bool diskCross(vec3 a, vec3 b, vec3 rayDir, inout vec3 col, inout float trans,
+               inout float pend, inout vec3 qPend){
+  // longe do plano, acima da fatia mais grossa, nada a fazer (o caso comum)
+  if(a.y*b.y > 0.0 && min(abs(a.y), abs(b.y)) >= ${ESPESSURA_GLSL} * uDout && pend <= 0.001){
+    pend = 0.0;
+    return false;
+  }
+  float fa = fatia(a), fb = fatia(b);
+  bool cruza = a.y*b.y <= 0.0;
+  float w = cruza ? 0.5*(fa + fb) : 0.5*abs(fa - fb);
+  if(w > 0.0) qPend = fa < fb ? a : b;
+  if(cruza) qPend = mix(a, b, abs(a.y)/(abs(a.y) + abs(b.y) + 1e-5));
+  pend += w;
+  if(cruza){
+    // o cruzamento leva a travessia INTEIRA (o plano de sempre); o resto
+    // dela, do outro lado, já fica pago (pend negativo)
+    w = max(pend, 1.0);
+    pend -= w;
+    return diskShade(qPend, w, rayDir, col, trans);
+  }
+  if(w <= 0.0 && pend < 0.001){ pend = 0.0; return false; } // fora da fatia
+  if(w > 0.0 && pend < 0.5) return false;                   // ainda pouco
+  w = pend;
+  pend = 0.0;
+  return diskShade(qPend, w, rayDir, col, trans);
 }
 
 void main(){
@@ -206,6 +262,8 @@ void main(){
   vec3 col = vec3(0.0);
   vec3 haloCol = vec3(0.0);
   float trans = 1.0;
+  float pend = 0.0;        // espessura do disco à espera (ver diskCross)
+  vec3 qPend = vec3(0.0);
   float minR = 1e5;
   float lastR = length(uRoL);
 
@@ -240,7 +298,7 @@ void main(){
         vec3 k2 = accAt(pm, vm);
         vec3 pn = pos + vm*hdt;
         vel = normalize(vel + k2*hdt);
-        if(diskCross(pos, pn, vel, col, trans)) absorbed = true;
+        if(diskCross(pos, pn, vel, col, trans, pend, qPend)) absorbed = true;
         pos = pn;
         minR = min(minR, length(pos));
       }
@@ -248,7 +306,7 @@ void main(){
     }else{
       vel = normalize(vel + accAt(pos, vel)*dt);
       vec3 npos = pos + vel*dt;
-      if(diskCross(pos, npos, vel, col, trans)){
+      if(diskCross(pos, npos, vel, col, trans, pend, qPend)){
         pos = npos;
         break;
       }
