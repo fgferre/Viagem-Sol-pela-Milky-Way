@@ -56,7 +56,14 @@
 import * as THREE from 'three';
 import { CAMADA_DOS_OCULTADORES } from '../core/post';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_DO_SOL_NA_CENA } from '../escala';
-import { RADIANCIA_DA_FOTOSFERA, radianciaDeTela } from '../luzDaCasa';
+import {
+  RADIANCIA_DA_FOTOSFERA,
+  TEFF_SOL_K,
+  blackbodyLinear,
+  radianciaDeTela,
+  radianciaVisivelDeCorpoNegro,
+} from '../luzDaCasa';
+import type { Achatamento } from '../../lib/atlas/estrelasVisitaveis';
 import type { EstadoDaEstrela, FaseDoCiclo } from '../estrela';
 import { UNIDADES_POR_CICLO, tempoDoCiclo } from '../estrela';
 import { GLSL_COMPRESSAO } from '../shaders/common';
@@ -276,13 +283,15 @@ export interface StellarParams {
    */
   readonly teffK: number;
   /**
-   * RESERVADO: envelope convectivo (granulação). O núcleo do doador não
-   * tem caminho radiativo — `sol/granulation.js` roda incondicionalmente
-   * — e abrir um exigiria editar os 14 vendorizados. Fica declarado
-   * porque é o parâmetro que decide se uma estrela tem grânulos, e a
-   * Onda 7 vai precisar dele para as classes quentes.
+   * O DÍNAMO DE TIPO SOLAR — o portão da atmosfera magnética (12/11). Sem
+   * ele não há manchas, ciclo, laços, proeminências, espículas, erupções,
+   * CME nem coroa quente: essas camadas nem nascem, o retrato da superfície
+   * é o mínimo (`TIER_SEM_DINAMO`) e a cirurgia `cirurgiaDaEstrela` apaga
+   * fibrilas, plage, filamentos e o fio do limbo. Quem não o tem: estrelas
+   * sem envelope convectivo (A, anãs brancas) e as gigantes frias além da
+   * linha de Linsky & Haisch (Betelgeuse) — a lei é `temDinamoSolar`.
    */
-  readonly convective: boolean;
+  readonly dinamo: boolean;
   /*
    * (A DRAMATURGIA POR TORÇÃO DE FASE morreu em 21/08 — item 5. Eram
    * quatro números aqui — as fases do arranque e do pico, mais a janela
@@ -298,6 +307,763 @@ export interface StellarParams {
   readonly knobPrefix: string;
   /** Defaults de fábrica dos knobs que o NÚCLEO lê. */
   readonly knobs: Readonly<Record<string, number>>;
+  /**
+   * O GRÂNULO NA TELA relativo ao do Sol (1 = o Sol; omitido = 1). A
+   * frequência da convecção do tier (`granFreq`, lida pela fotosfera e pela
+   * cromosfera) é DIVIDIDA por ele: grânulo menor, frequência maior. Quem o
+   * calcula é a lei física dos dados (`granuloNaTelaEmRaios`, Hp ∝ T·R/M).
+   */
+  readonly granuloRelativoAoSol?: number;
+  /**
+   * A instância mora FORA DA ORIGEM (uma estrela do catálogo, a 1,3–150 pc).
+   * Liga a cirurgia do REFERENCIAL LOCAL (`cirurgiaDoReferencialLocal`): em
+   * float32 a 1,3 pc um ULP de posição (1,2e-7 pc) é maior que a estrela
+   * inteira, e as camadas vendorizadas sombreiam em espaço de MUNDO
+   * (`modelMatrix`, `viewMatrix`, `cameraPosition`, `normalize(vWPos)` com o
+   * centro na origem). O Sol, na origem, não a recebe: sai bit a bit.
+   */
+  readonly foraDaOrigem?: boolean;
+  /**
+   * O CONTRASTE DA TEXTURA QUIETA relativo ao do Sol (1 = o Sol; omitido =
+   * 1): multiplica o desvio do calor em torno do meio (a disciplina tonal de
+   * `sol/sun.js`) e as fibrilas — manchas, plage, filamentos e erupções
+   * ficam de fora (são atividade, não convecção). A lei é dos dados:
+   * `contrasteGranulos / 0,15` (o rms do Sol).
+   */
+  readonly contrasteRelativoAoSol?: number;
+  /** O u da lei linear de borda (omitido = o 0,30 de `sol/sun.js`). */
+  readonly bordaU?: number;
+  /**
+   * ROTADORA RÁPIDA (omitido = esfera): a forma por um termo zonal ESTÁTICO
+   * de grau 2 no deslocamento do vertex (o P20 dos modos p), com polo e
+   * equador nos raios medidos e a normal da forma; e o escurecimento
+   * gravitacional, a Teff local de von Zeipel (`rocheDe`) na cor e no
+   * brilho de cada ponto. `radiusPc` é o raio EQUATORIAL.
+   */
+  readonly achatamento?: Achatamento;
+  /**
+   * O EIXO DE ROTAÇÃO na base da cena (unitário). Omitido: o +Y do motor
+   * inclinado por `tiltRad` (o Sol). Entra POR MALHA (quaternion), nunca no
+   * `group` — as coroas são billboards no referencial do group.
+   */
+  readonly eixoNaCena?: readonly [number, number, number];
+  /**
+   * AS CÉLULAS GIGANTES de uma supergigante (omitido = nenhuma): poucas
+   * células de convecção do tamanho da ordem do raio, como intensidade em
+   * log por cima da fotosfera (`cirurgiaDaEstrela`). `tamanhoEmRaios` e o
+   * `contraste` rms vêm dos dados (Chiavassa et al. 2010).
+   */
+  readonly celulasGigantes?: { readonly tamanhoEmRaios: number; readonly contraste: number };
+  /**
+   * A ATMOSFERA ESTENDIDA que borra a borda, em raios (omitido ou ≤ 1 = borda
+   * nítida, a camada nem nasce): uma casca aditiva até este raio
+   * (`criarABordaDifusa`) — a MOLsphere de Betelgeuse a ~1,3 R.
+   */
+  readonly bordaDifusaRaios?: number;
+  /**
+   * O VÉU de uma fotosfera mais radiante que o Sol (omitido ou 0 = nenhum):
+   * a fração da radiância que a exposição da visita não põe no disco
+   * (1 − ganho), espalhada em volta dele (`criarABordaDifusa`).
+   */
+  readonly veu?: number;
+}
+
+/**
+ * A FORMA E A TEMPERATURA DE UMA ROTADORA RÁPIDA — modelo de Roche com
+ * rotação rígida (massa central, Rp = 1, GM = 1). A razão Re/Rp medida
+ * fixa Ω² = 2(1 − Rp/Re)/Re²; a superfície r(θ) sai de
+ * 1/r + ½Ω²r²sin²θ = 1 (Newton), e g_eff é o gradiente do potencial.
+ *
+ * A temperatura é von Zeipel, T ∝ g_eff^β, NORMALIZADA nas duas pontas
+ * medidas (polo e equador de Monnier 2012): o β efetivo que faz isso com
+ * esta forma é 0,2307 contra os 0,231 publicados (0,1 %), porque o
+ * modelo do artigo também ajusta a lei de escurecimento de borda.
+ * (Mora aqui desde que o motor do Sol desenha Vega.)
+ */
+export interface Roche {
+  /** raio em unidades do raio EQUATORIAL (1 no equador) */
+  raio: number;
+  teffK: number;
+  /** normal externa em (radial, colatitude) — para a normal da malha */
+  nr: number;
+  nt: number;
+}
+
+export function rocheDe(colatRad: number, a: Achatamento): Roche {
+  const re = a.raioEquatorialRsol.v / a.raioPolarRsol.v;
+  const w2 = (2 * (1 - 1 / re)) / (re * re);
+  const s = Math.sin(colatRad);
+  const c = Math.cos(colatRad);
+  let r = 1;
+  for (let i = 0; i < 30; i++) {
+    const f = 1 / r + 0.5 * w2 * r * r * s * s - 1;
+    const df = -1 / (r * r) + w2 * r * s * s;
+    const passo = f / df;
+    r -= passo;
+    if (Math.abs(passo) < 1e-14) break;
+  }
+  // ∂Φ/∂r e (1/r)∂Φ/∂θ de Φ = −1/r − ½Ω²r²sin²θ: o vetor aponta para FORA
+  const gr = 1 / (r * r) - w2 * r * s * s;
+  const gt = -w2 * r * s * c;
+  const g = Math.hypot(gr, gt);
+  const gEq = 1 / (re * re) - w2 * re;
+  const tp = a.teffPoloK.v;
+  const beta = Math.log(a.teffEquadorK.v / tp) / Math.log(gEq);
+  return { raio: r / re, teffK: tp * Math.pow(g, beta), nr: gr / g, nt: gt / g };
+}
+
+/**
+ * O TERMO ZONAL DE GRAU 2 da forma achatada: r(μ) = R₀·(1 + a·P20(μ)), com
+ * P20 = 1,5μ² − 0,5 e μ = sen(latitude). Polo (P20 = 1) e equador
+ * (P20 = −½) caem exatamente nos raios medidos: a = 2(q − 1)/(2 + q), com
+ * q = Rp/Re. Devolve `a` e o fator que põe o EQUADOR no raio da malha
+ * (`1/(1 − a/2)`), porque `radiusPc` é o raio equatorial.
+ */
+export function termoZonalDaForma(raioPolar: number, raioEquatorial: number): { a: number; norma: number } {
+  const q = raioPolar / raioEquatorial;
+  const a = (2 * (q - 1)) / (2 + q);
+  return { a, norma: 1 / (1 - a / 2) };
+}
+
+/** O tier de uma estrela SEM DÍNAMO: o menor retrato que ainda desenha uma
+ *  fotosfera limpa (a textura quieta dela é quase plana). Custo, não física. */
+const TIER_SEM_DINAMO = { chromo: 256, simW: 192, simH: 96 } as const;
+
+/** Teto do multiplicador de laços pela atividade (o regime saturado de
+ *  Wright 2011 chega a ~8× o Sol no `nivel`) — artístico, declarado. */
+const TETO_DOS_LACOS_PELA_ATIVIDADE = 2;
+/** Teto da frequência relativa das erupções: o regime saturado (nivel² ~68)
+ *  seria uma erupção a cada fração de segundo — artístico, declarado. Acima
+ *  de Proxima (~4,2×), que fica como estava. */
+const TETO_DA_TAXA_DE_ERUPCOES = 6;
+
+interface Tier {
+  fbm: number;
+  seg: number;
+  simW: number;
+  simH: number;
+  simStep: number;
+  prom: number;
+  chromo: number;
+  granFreq: number;
+  lic7: boolean;
+  loops: number;
+  larc: number;
+  lseg: number;
+  cstep: number;
+  cmestep: number;
+  cmen: number;
+}
+
+/**
+ * O TIER DA ESTRELA sobre o do aparelho. No Sol devolve O MESMO objeto
+ * (nenhuma chave nova). Outra estrela: a frequência da convecção dividida
+ * pelo grânulo relativo (`granuloRelativoAoSol`); os laços ambientes pela
+ * atividade (até `TETO_DOS_LACOS_PELA_ATIVIDADE`×); sem dínamo, o retrato
+ * mínimo (`TIER_SEM_DINAMO`).
+ */
+export function tierDaEstrela(tier: Tier, p: StellarParams): Tier {
+  const g = p.granuloRelativoAoSol;
+  const granulo = g !== undefined && g !== 1 && g > 0 && Number.isFinite(g);
+  const lacos =
+    p.dinamo && p.activityLevel !== 1
+      ? Math.min(Math.max(p.activityLevel, 0), TETO_DOS_LACOS_PELA_ATIVIDADE)
+      : 1;
+  if (!granulo && p.dinamo && lacos === 1) return tier;
+  return {
+    ...tier,
+    ...(granulo ? { granFreq: tier.granFreq / g } : {}),
+    ...(!p.dinamo ? TIER_SEM_DINAMO : lacos !== 1 ? { loops: Math.max(1, Math.round(tier.loops * lacos)) } : {}),
+  };
+}
+
+/**
+ * A FREQUÊNCIA DAS ERUPÇÕES relativa ao Sol pela atividade (`activityLevel`
+ * = (L_X/L_bol relativa)^0,3): nivel² = razão^0,6, até
+ * `TETO_DA_TAXA_DE_ERUPCOES`. Proxima (razão ~11) sai ~4× mais frequente que
+ * o Sol — uma COMPRESSÃO ARTÍSTICA declarada (a taxa real de erupções de uma
+ * anã M ativa passa de 10× a do Sol). 1 no Sol.
+ */
+export function taxaDeErupcoesPelaAtividade(nivel: number): number {
+  return Number.isFinite(nivel) && nivel > 0 ? Math.min(nivel * nivel, TETO_DA_TAXA_DE_ERUPCOES) : 0;
+}
+
+/** uma troca de texto com âncora ÚNICA — ausente ou repetida LANÇA */
+function trocarUma(texto: string, ancora: string, novo: string, quem: string): string {
+  const i = texto.indexOf(ancora);
+  if (i < 0 || texto.indexOf(ancora, i + 1) >= 0) {
+    throw new Error(`${quem}: a âncora \`${ancora.trim()}\` sumiu ou se repetiu no vendorizado (sol/sun.js)`);
+  }
+  return texto.slice(0, i) + novo + texto.slice(i + ancora.length);
+}
+
+/**
+ * A FOTOSFERA DE OUTRA ESTRELA, por cirurgia de texto no fragment de
+ * `sol/sun.js` (molde de `cirurgiaDaFotosfera`; cada âncora lança se sumir).
+ * Só entra o que a instância pede — o Sol não passa por aqui:
+ *  · `contraste` (≠ 1): a textura quieta (o achatamento tonal e as fibrilas);
+ *  · `bordaU` (≠ 0,30): o coeficiente da lei linear de borda;
+ *  · `semDinamo`: sem campo não há fibrilas, plage, filamentos nem o fio
+ *    cromosférico do limbo — a estrela sem dínamo de tipo solar; no lugar
+ *    das fibrilas, a convecção que sobra (`GLSL_GRANULACAO_VIVA`);
+ *  · `gravidade`: a cor × brilho da Teff local (`aGravidade`, por vértice);
+ *  · `avermelhamento` (≠ 1): o avermelhamento do limbo da receita H-alfa
+ *    (g × 0,7 e b × 0,5 na borda) é parte do FILTRO fotográfico do Sol, e
+ *    esmaece com ele (`pesoDoFiltro`): a estrela quente fica azul até a borda;
+ *  · `gigantes`: as células gigantes (`GLSL_CELULAS_GIGANTES`) como um campo
+ *    de TEMPERATURA, T = Teff·(1 + δ·z), levado à cor e ao brilho de cada
+ *    canal pela lei de Planck (`razaoDePlanck`), antes da borda;
+ *  · `continuo` (peso > 0): a borda do CONTÍNUO — a atmosfera cinza de
+ *    Eddington, T(μ)⁴ ∝ μ + ⅔, pela lei de Planck por canal — no lugar da
+ *    lei linear, com o peso que o filtro H-alfa do Sol deixa (1 − w): zero
+ *    no Sol e nas mais frias, inteira nas quentes.
+ */
+export function cirurgiaDaEstrela(
+  fragment: string,
+  o: {
+    contraste?: number;
+    bordaU?: number;
+    semDinamo?: boolean;
+    gravidade?: boolean;
+    avermelhamento?: number;
+    gigantes?: { tamanhoEmRaios: number; contraste: number };
+    /** a Teff média (K): a régua de Planck das gigantes e do contínuo */
+    teffK?: number;
+    /** o peso da borda do contínuo (1 − `pesoDoFiltro`) */
+    continuo?: number;
+  }
+): string {
+  const quem = 'cirurgiaDaEstrela';
+  let f = fragment;
+  let granulacao = '';
+  if (o.contraste !== undefined && o.contraste !== 1) {
+    const k = literalGlsl(Math.max(0, o.contraste));
+    f = trocarUma(
+      f,
+      '  heat = 0.50 + (heat - 0.52)*(mix(0.31, 0.26, close) + uMaxK*mix(0.39, 0.20, close));',
+      `  heat = 0.50 + (heat - 0.52)*(mix(0.31, 0.26, close) + uMaxK*mix(0.39, 0.20, close))*${k};`,
+      quem
+    );
+    f = trocarUma(
+      f,
+      '  heat += fibC * mix(0.055, 0.12, close) * (0.65 + 0.70*st.r);',
+      `  heat += fibC * mix(0.055, 0.12, close) * (0.65 + 0.70*st.r) * ${k};`,
+      quem
+    );
+    f = trocarUma(f, '    heat += close * fibF * 0.16;', `    heat += close * fibF * 0.16 * ${k};`, quem);
+    f = trocarUma(
+      f,
+      '      heat += closer * licFibril(sp, fdir, uGranFreq*7.0, 0.08, t*1.6) * 0.20;',
+      `      heat += closer * licFibril(sp, fdir, uGranFreq*7.0, 0.08, t*1.6) * 0.20 * ${k};`,
+      quem
+    );
+  }
+  if (o.bordaU !== undefined && o.bordaU !== 0.3) {
+    f = trocarUma(f, '  float limbU = 0.30;', `  float limbU = ${literalGlsl(o.bordaU)};`, quem);
+  }
+  if (o.semDinamo) {
+    // sem campo, a textura que sobra é a da CONVECÇÃO: a granulação viva
+    // (`GLSL_GRANULACAO_VIVA`) no lugar das fibrilas, na frequência da
+    // estrela (`uGranFreq`) e no contraste dela
+    const ag = GRANULACAO_VIVA * Math.max(0, o.contraste ?? 1);
+    f = trocarUma(
+      f,
+      '  float fibC = st.a*2.0 - 1.0;',
+      ag > 0 ? `  float fibC = 0.0;\n  heat += ${literalGlsl(ag)} * granulacaoViva(sp * uGranFreq, t, mu);` : '  float fibC = 0.0;',
+      quem
+    );
+    if (ag > 0) granulacao = GLSL_GRANULACAO_VIVA;
+    f = trocarUma(f, '  if (close > 0.003){', '  if (false){', quem);
+    f = trocarUma(f, '  float plage = st.b * (', '  float plage = 0.0 * st.b * (', quem);
+    f = trocarUma(f, '  float fil = st.g * ', '  float fil = 0.0 * st.g * ', quem);
+    f = trocarUma(
+      f,
+      '  color += uCorDoLimbo * pow(1.0-mu, 3.5)',
+      '  color += 0.0 * uCorDoLimbo * pow(1.0-mu, 3.5)',
+      quem
+    );
+  }
+  if (o.gravidade) {
+    f = 'varying vec3 vGravidade;\n' + trocarUma(f, '  color *= uPaleta;', '  color *= vGravidade;\n  color *= uPaleta;', quem);
+  }
+  if (o.avermelhamento !== undefined && o.avermelhamento !== 1) {
+    const w = literalGlsl(Math.max(0, o.avermelhamento));
+    f = trocarUma(f, '  color.g *= 1.0 - edge*0.30;', `  color.g *= 1.0 - edge*0.30*${w};`, quem);
+    f = trocarUma(f, '  color.b *= 1.0 - edge*0.50;', `  color.b *= 1.0 - edge*0.50*${w};`, quem);
+    f = trocarUma(f, '  color *= 1.0 - edge*0.15;', `  color *= 1.0 - edge*0.15*${w};`, quem);
+  }
+  const teff = o.teffK ?? TEFF_SOL_K;
+  const planck = (o.gigantes || (o.continuo ?? 0) > 0) ? GLSL_RAZAO_DE_PLANCK : '';
+  if (o.gigantes) {
+    const d = deltaTDasGigantes(o.gigantes.contraste);
+    f =
+      GLSL_CELULAS_GIGANTES +
+      GLSL_CELULAS_GIGANTES_NA_TELA +
+      trocarUma(
+        f,
+        '  color *= (1.0-limbU) + limbU*mu;',
+        `  float zGig = celulasGigantesNaTela(sp/${literalGlsl(o.gigantes.tamanhoEmRaios)} + 17.0, t*0.05);\n` +
+          `  float rGig = max(0.5, 1.0 + ${literalGlsl(d)}*(zGig > 0.0 ? zGig : ${literalGlsl(DESCIDA_DAS_GIGANTES)}*zGig));\n` +
+          `  color *= razaoDePlanck(${xDePlanckGlsl(teff)}, rGig) * exp(-${TIO_DAS_GIGANTES_GLSL} * max(0.0, 1.0 - rGig));\n` +
+          '  color *= (1.0-limbU) + limbU*mu;',
+        quem
+      );
+  }
+  if ((o.continuo ?? 0) > 0) {
+    // a temperatura no centro do disco (μ = 1) é a régua: o centro sai como
+    // antes e a borda esfria pela lei, em cada canal
+    const t1 = teff * Math.pow(1.25, 0.25);
+    f = trocarUma(
+      f,
+      '  color *= (1.0-limbU) + limbU*mu;',
+      `  color *= mix(vec3((1.0-limbU) + limbU*mu), razaoDePlanck(${xDePlanckGlsl(t1)}, pow((mu + 0.6666667)/1.6666667, 0.25)), ${literalGlsl(Math.min(1, o.continuo!))});`,
+      quem
+    );
+  }
+  return planck + granulacao + f;
+}
+
+/**
+ * A GRANULAÇÃO VIVA de uma estrela sem dínamo — a convecção da fotosfera em
+ * luz branca, que no Sol fica por baixo da textura H-alfa e sem campo é o
+ * que sobra: um MOSQUEADO MOLE de subidas claras (uma gaussiana por célula,
+ * σ = 0,4 célula, peso de 0,5 a 1,5, centros que derivam devagar), sem a
+ * aresta de F2 − F1 — a faixa de descida desenhada lia como uma rede de
+ * favo (Vega, 12/11). Nas estrelas que ficaram sem dínamo (as A e a
+ * supergigante) a convecção é rasa ou coberta, e as simulações dão células
+ * de contorno difuso (Tremblay et al. 2013; Kallinger & Matthews 2010).
+ * Normalizada a média 0 e desvio 1 (Monte Carlo na esfera, 2·10⁵ amostras:
+ * média 0,355, desvio 0,31). Duas atenuações, nenhuma de gosto:
+ *  · o ESCORÇO: o contraste cai ∝ μ para a borda, onde a linha de visada
+ *    atravessa camadas mais altas, de flutuação menor (no Sol o contraste
+ *    da granulação cai para o limbo) — ARTÍSTICO na forma, declarado;
+ *  · o PIXEL: célula menor que ~2 px é a média dela (0), não um serrilhado —
+ *    o filtro da própria tela (`fwidth`), que também apaga o adensamento do
+ *    escorço rente à borda.
+ * O ganho em `heat` por contraste relativo ao Sol (`GRANULACAO_VIVA`) põe o
+ * rms do Sol (0,15) em ~15 % de brilho no meio do disco.
+ */
+const GRANULACAO_VIVA = 0.09;
+const GLSL_GRANULACAO_VIVA = /* glsl */ `
+vec3 hashDoGranulo(vec3 p) {
+  p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+  p += dot(p, p.yxz + 33.33);
+  return fract((p.xxy + p.yxx) * p.zyx);
+}
+float granulacaoViva(vec3 p, float t, float mu) {
+  // o tamanho do pixel em células, antes da torção (ela é suave)
+  float px = length(fwidth(p));
+  float filtro = 1.0 - smoothstep(0.25, 0.6, px);
+  if (filtro <= 0.0) return 0.0;
+  // domínio torcido: grânulo é célula de fluido, não poliedro
+  p += 0.32 * sin(p.yzx * 0.9 + t * 0.05) + 0.12 * sin(p.zxy * 2.7 + 4.1);
+  vec3 c = floor(p);
+  vec3 f = p - c;
+  float G = 0.0;
+  for (int i = -1; i <= 1; i++)
+  for (int j = -1; j <= 1; j++)
+  for (int l = -1; l <= 1; l++) {
+    vec3 o = vec3(float(i), float(j), float(l));
+    vec3 h = hashDoGranulo(c + o);
+    vec3 q = o + 0.5 + 0.4 * sin(6.2831853 * h + t * 0.3 * (0.5 + h)) - f;
+    G += (0.5 + h.x) * exp(-dot(q, q) / 0.16);
+  }
+  return (G - 0.355) / 0.31 * filtro * mu;
+}
+`;
+
+/** os comprimentos de onda efetivos dos canais R, G, B (µm) e c₂ = hc/k (µm·K) */
+const LAMBDA_DOS_CANAIS_UM = [0.61, 0.55, 0.465] as const;
+const C2_UM_K = 14388;
+
+/** x = c₂/(λT) por canal, como `vec3` GLSL — a régua de `razaoDePlanck` */
+export function xDePlanckGlsl(T: number): string {
+  return `vec3(${LAMBDA_DOS_CANAIS_UM.map((l) => literalGlsl(C2_UM_K / (l * T))).join(', ')})`;
+}
+
+/**
+ * B(r·T₀)/B(T₀) por canal, com x₀ = c₂/(λT₀): o brilho e a cor de um ponto
+ * a r vezes a temperatura da régua. r > 0 por contrato (quem chama limita);
+ * x limitado a 60 (exp cabe no float32).
+ */
+const GLSL_RAZAO_DE_PLANCK = /* glsl */ `
+vec3 razaoDePlanck(vec3 x0, float r) {
+  vec3 a = min(x0, vec3(60.0));
+  vec3 x = min(a / r, vec3(60.0));
+  return (exp(a) - 1.0) / (exp(x) - 1.0);
+}
+`;
+
+/**
+ * δ = σ_T/T das células gigantes pelo contraste rms dos dados. O contraste
+ * das simulações (Chiavassa et al. 2010) é de intensidade BOLOMÉTRICA, e
+ * I ∝ T⁴ dá σ_T/T = contraste/4 (Betelgeuse: 0,0625, ~225 K); a lei de
+ * Planck no visível faz o resto — no lado de Wien uma célula 20 % mais
+ * quente é ~3× mais clara (o que o VLT/SPHERE vê). × o ganho de tela.
+ */
+/**
+ * As descidas esfriam MENOS do que as subidas esquentam: a distribuição de
+ * intensidade das simulações tem a cauda do lado claro (Chiavassa et al.
+ * 2010) — o lado frio do campo leva esta fração de δ. ARTÍSTICO, declarado.
+ */
+export const DESCIDA_DAS_GIGANTES = 0.75;
+
+/**
+ * O TiO NAS DESCIDAS (12/11: as regiões escuras da Betelgeuse liam
+ * marrons — laranja escurecido, verde/vermelho 0,58 na tela). Abaixo de
+ * ~3.800 K as bandas do TiO, quase todas no verde e no amarelo, crescem
+ * depressa com o frio: de M0 a M6 o V − R sobe ~1 magnitude (Johnson 1966;
+ * Lee 1970), e é isso que faz a gigante fria mais vermelha que o corpo
+ * negro dela. Aqui, só no lado FRIO do campo (r = T/Teff < 1), os canais
+ * G e B levam exp(−k·(1 − r)); com k = 8, 13 % de déficit (~470 K abaixo
+ * dos 3.600 K) tiram ~1 magnitude do verde — o vermelho-escuro das
+ * descidas. Forma e k ARTÍSTICOS, declarados (ancorados nas cores das M).
+ * Com o TiO a fração fria de δ desceu de 0,9 para 0,75: o lado escuro
+ * guarda o brilho de antes e muda a cor.
+ */
+const TIO_DAS_GIGANTES = 8;
+const TIO_DAS_GIGANTES_GLSL = `vec3(0.0, ${literalGlsl(TIO_DAS_GIGANTES)}, ${literalGlsl(TIO_DAS_GIGANTES)})`;
+
+export function deltaTDasGigantes(contraste: number): number {
+  return (GANHO_DAS_GIGANTES_NA_TELA * Math.max(0, contraste)) / 4;
+}
+
+/**
+ * O GANHO DE TELA das células gigantes sobre o δ = σ_T/T físico
+ * (`deltaTDasGigantes`) — ARTÍSTICO, declarado. A conta bolométrica (¼ do
+ * contraste) dá ~225 K; as simulações no VISÍVEL têm contraste maior que o
+ * bolométrico (a opacidade do TiO, Chiavassa et al. 2011, A&A 535, A22), e
+ * as imagens do VLT/SPHERE mostram manchas várias vezes mais claras que as
+ * regiões escuras. Com 2,6 (12/11, Betelgeuse a 3 raios), as subidas mais
+ * quentes chegam a ~5.000 K e saem branco-amareladas; as descidas, a ~3.000 K,
+ * vermelho-escuras.
+ */
+export const GANHO_DAS_GIGANTES_NA_TELA = 2.6;
+
+/**
+ * AS CÉLULAS GIGANTES de uma supergigante (o que o VLT/SPHERE mostrou no
+ * Grande Escurecimento — Montargès et al. 2021 — e as simulações 3D de
+ * Chiavassa et al. 2010, A&A 515, A12): POUCAS manchas claras, grandes e
+ * moles, com regiões escuras largas entre elas. Uma gaussiana por célula
+ * (σ = 0,45 célula), somada nas 27 vizinhas — liso em todo lugar, sem a
+ * aresta de F2 − F1 da rede de supergranulação. Amplitude BIMODAL COM SINAL
+ * (artístico): ~45 % das células acendem (+1), o resto afunda (−0,6). Vindo
+ * do motor simples do piloto (`celulaGigante`, sem mudança de número).
+ *
+ * DE PERTO (12/11) as simulações mostram mais que as manchas moles do VLT
+ * (que é a mesma coisa borrada pela resolução): as células grandes se
+ * quebram em células menores, com descidas escuras entre elas (Chiavassa et
+ * al. 2010; Freytag et al. 2002). Uma SEGUNDA OITAVA do mesmo campo, 2,3×
+ * menor e 1,7× mais rápida, somada com peso 0,6 contra 0,8 — ARTÍSTICO,
+ * declarado. A soma é normalizada a média 0 e desvio 1 (Monte Carlo na
+ * esfera, 2·10⁵ amostras, na escala de 0,6 R: média −0,22, desvio 0,81).
+ */
+const GLSL_CELULAS_GIGANTES = /* glsl */ `
+vec3 hashDaGigante(vec3 p) {
+  p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+  p += dot(p, p.yxz + 33.33);
+  return fract((p.xxy + p.yxx) * p.zyx);
+}
+float celulaGigante(vec3 p, float t) {
+  p = p + 0.1 * sin(p.yzx * 1.7 + t * 0.1);
+  vec3 c = floor(p);
+  vec3 f = p - c;
+  float G = 0.0;
+  for (int i = -1; i <= 1; i++)
+  for (int j = -1; j <= 1; j++)
+  for (int l = -1; l <= 1; l++) {
+    vec3 o = vec3(float(i), float(j), float(l));
+    vec3 h = hashDaGigante(c + o);
+    vec3 q = o + 0.5 + 0.45 * sin(6.2831853 * h + t * (0.5 + h)) - f;
+    float a = mix(-0.6, 1.0, smoothstep(0.43, 0.67, h.x));
+    G += a * exp(-dot(q, q) / (0.45 * 0.45));
+  }
+  return (G - 0.0092) / 0.3142;
+}
+float celulasGigantes(vec3 p, float t) {
+  return (0.8 * celulaGigante(p, t) + 0.6 * celulaGigante(p * 2.3 + 5.0, t * 1.7) + 0.22) / 0.81;
+}
+`;
+
+/**
+ * AS CÉLULAS GIGANTES NA TELA, com detalhe até onde o pixel deixa (12/11: a
+ * Betelgeuse de perto saía mole — o campo é uma soma de gaussianas, liso em
+ * todo lugar, e nenhuma resolução de retrato o afia). Por cima das duas
+ * oitavas de `celulasGigantes` (o mesmo campo, o mesmo número), A CASCATA:
+ * a estrutura menor dentro das células — a turbulência que as simulações 3D
+ * resolvem até a grade (Chiavassa et al. 2010; Freytag et al. 2002) —, o
+ * mesmo campo 2,3× menor e 1,7× mais rápido a cada oitava, com peso
+ * `PASSO_DA_CASCATA` × o da anterior, até `OITAVAS_FINAS` oitavas. Pelo
+ * PIXEL (`fwidth`): a oitava esmaece quando a célula dela cai abaixo de
+ * ~4 px e nem é calculada abaixo de ~2 px — de longe o disco é o de antes,
+ * de perto ganha detalhe até a borda do pixel, como o LOD do Sol. Peso e
+ * contagem ARTÍSTICOS, declarados. Só no fragment (`fwidth`).
+ */
+const PASSO_DA_CASCATA = 0.65;
+const INGREMIDADE_DA_CASCATA = 2.0;
+const OITAVAS_FINAS = 5;
+
+/**
+ * A REDE DE DESCIDAS (12/11: de perto a Betelgeuse lia como nuvem fervendo,
+ * detalhe fino 1,07 contra 1,70 do Sol no mesmo enquadramento). As
+ * simulações 3D de supergigantes vermelhas (Chiavassa et al. 2010, 2011;
+ * Freytag et al. 2002) mostram, por cima das células gigantes, células
+ * menores de borda clara e firme separadas por descidas ESTREITAS e
+ * escuras, em rede — contorno filamentar, não névoa. Em cada uma das
+ * primeiras `OITAVAS_DA_REDE` oitavas da cascata: um VALE em V ao longo da
+ * curva de nível zero do campo (a borda das células claras),
+ * exp(−|c|/`VALE_DAS_DESCIDAS`), e uma CRISTA clara mais fraca logo para
+ * dentro, na curva `NIVEL_DA_CRISTA`. Os dois termos vão a média zero (o
+ * Monte Carlo do campo, 2·10⁵ amostras: `MEDIA_DO_VALE`, `MEDIA_DA_CRISTA`)
+ * — a rede REDESENHA o brilho, não escurece o disco. Um V tem a aresta fina
+ * por construção, sem serrilhar: o vale de cada oitava some antes de ficar
+ * mais fino que o pixel (célula abaixo de ~10–15 px).
+ *
+ * Só DE PERTO: a rede aparece quando uma faixa de `LARGURA_DAS_DESCIDAS`
+ * (em unidades do campo, ~0,0024 R na escala de 0,6 R) cobre ~1 a 2,5 px —
+ * a 1,5 raio do centro ela está inteira no meio do disco; a 3 raios, em
+ * nenhum lugar (o retrato de antes, ponto a ponto na estrutura). Pesos,
+ * níveis e larguras ARTÍSTICOS, declarados.
+ */
+const LARGURA_DAS_DESCIDAS = 0.004;
+const PESO_DAS_DESCIDAS = 1.1;
+const VALE_DAS_DESCIDAS = 0.1;
+const MEDIA_DO_VALE = 0.1276;
+const NIVEL_DA_CRISTA = 0.5;
+const MEDIA_DA_CRISTA = 0.0657;
+const BRILHO_DA_CRISTA = 0.4;
+const PASSO_DA_REDE = 0.75;
+const OITAVAS_DA_REDE = 4;
+const GLSL_CELULAS_GIGANTES_NA_TELA = /* glsl */ `
+float celulasGigantesNaTela(vec3 p, float t) {
+  float px = length(fwidth(p));
+  float z0 = celulasGigantes(p, t);
+  float z = z0;
+  // o detalhe fino mora nas subidas: o contraste de uma célula pequena
+  // acompanha o brilho local (nas descidas frias ele quase some)
+  float local = 0.4 + 0.6 * smoothstep(-1.0, 1.5, z0);
+  float s = 2.3 * 2.3;
+  float v = 1.7 * 1.7;
+  float w = 0.6 / 0.81 * ${literalGlsl(PASSO_DA_CASCATA)};
+  float var = 1.0;
+  // a rede de descidas: só quando a faixa dela cobre o pixel
+  float rede = 0.0;
+  float aRede = smoothstep(0.7, 2.6, ${literalGlsl(LARGURA_DAS_DESCIDAS)} / px);
+  for (int k = 0; k < ${OITAVAS_FINAS}; k++) {
+    float fade = 1.0 - smoothstep(0.25, 0.5, px * s);
+    if (fade <= 0.0) break;
+    // a borda da célula fina NÍTIDA: o campo passa por uma sigmoide (as
+    // subidas viram platôs de contorno firme, a curva de nível do campo —
+    // nunca a aresta reta de um Voronoi), tão íngreme quanto o pixel deixa
+    float c = celulaGigante(p * s + 11.0 * float(k + 1), t * v);
+    float ing = min(${literalGlsl(INGREMIDADE_DA_CASCATA)}, 0.12 / (px * s));
+    z += fade * w * local * tanh(ing * c) / tanh(ing);
+    var += fade * fade * w * w;
+    if (k < ${OITAVAS_DA_REDE} && aRede > 0.0) {
+      float vale = exp(-abs(c) / ${literalGlsl(VALE_DAS_DESCIDAS)}) - ${literalGlsl(MEDIA_DO_VALE)};
+      float crista = exp(-abs(c - ${literalGlsl(NIVEL_DA_CRISTA)}) / ${literalGlsl(VALE_DAS_DESCIDAS)}) - ${literalGlsl(MEDIA_DA_CRISTA)};
+      rede += aRede * (1.0 - smoothstep(0.06, 0.12, px * s)) * (${literalGlsl(BRILHO_DA_CRISTA)} * crista - vale);
+      aRede *= ${literalGlsl(PASSO_DA_REDE)};
+    }
+    s *= 2.3;
+    v *= 1.7;
+    w *= ${literalGlsl(PASSO_DA_CASCATA)};
+  }
+  // o rms do campo é o dos dados: a cascata REPARTE o contraste, não soma
+  return z * inversesqrt(var) + ${literalGlsl(PESO_DAS_DESCIDAS)} * local * rede;
+}
+`;
+
+/**
+ * O RELEVO DAS CÉLULAS GIGANTES no vertex de `sol/sun.js`: a superfície sobe
+ * onde a célula é quente e desce nas faixas — a borda irregular, encaroçada,
+ * das imagens e das simulações de uma supergigante (Montargès et al. 2021;
+ * Chiavassa et al. 2010). O MESMO campo da cor (`celulasGigantes`, mesma
+ * escala, semente e tempo; só a oitava grande — a pequena facetaria a malha),
+ * somado ao deslocamento ao longo da normal que o
+ * fbm e os modos p já usam: `amplitude` raios por desvio — ARTÍSTICO,
+ * declarado. Compõe com `cirurgiaDaForma` (a âncora é comum às duas).
+ */
+export function cirurgiaDoRelevoDasGigantes(vertex: string, tamanhoEmRaios: number, amplitude: number): string {
+  return (
+    GLSL_CELULAS_GIGANTES +
+    trocarUma(
+      vertex,
+      'n * uDispScale + pmSum',
+      `n * uDispScale + ${literalGlsl(amplitude)} * celulaGigante(normalize(position)/${literalGlsl(tamanhoEmRaios)} + 17.0, uTime*0.05) * length(position) + pmSum`,
+      'cirurgiaDoRelevoDasGigantes'
+    )
+  );
+}
+
+/** a amplitude do relevo das células gigantes, em raios por desvio */
+export const RELEVO_DAS_GIGANTES = 0.008;
+
+/**
+ * A FORMA DE UMA ROTADORA RÁPIDA no vertex de `sol/sun.js`: o termo zonal
+ * estático (`termoZonalDaForma`) entra no MESMO deslocamento ao longo da
+ * normal que os modos p usam, e a normal passa a ser a da forma —
+ * n ∝ û − (r'/r)(ŷ − μû), com r'/r = 3aμ/(1 + a·P20). O eixo é o +Y do
+ * objeto (o do giro). Leva junto o fator da gravidade (`aGravidade`).
+ */
+export function cirurgiaDaForma(vertex: string, a: number, norma: number): string {
+  const quem = 'cirurgiaDaForma';
+  const A = literalGlsl(a);
+  const N = literalGlsl(norma);
+  let v = trocarUma(
+    vertex,
+    '  vec3 displaced = position + normal * (n * uDispScale + pmSum * 0.008 * length(position));',
+    [
+      '  vec3 uAch = normalize(position);',
+      '  float muAch = uAch.y;',
+      '  float p20Ach = 1.5*muAch*muAch - 0.5;',
+      `  float fAch = (1.0 + ${A}*p20Ach) * ${N};`,
+      '  vGravidade = aGravidade;',
+      '  vec3 displaced = position + normal * ((fAch - 1.0) * length(position) + n * uDispScale + pmSum * 0.008 * length(position));',
+    ].join('\n'),
+    quem
+  );
+  v = trocarUma(
+    v,
+    '  vNormalW = normalize(mat3(modelMatrix) * normal);',
+    `  vNormalW = normalize(mat3(modelMatrix) * normalize(uAch - (3.0*${A}*muAch/(1.0 + ${A}*p20Ach)) * (vec3(0.0, 1.0, 0.0) - muAch*uAch)));`,
+    quem
+  );
+  return 'attribute vec3 aGravidade;\nvarying vec3 vGravidade;\n' + v;
+}
+
+// ============================================================
+// UM MOTOR, QUALQUER ESTRELA (12/11/2026) — o que a instância de outra
+// estrela pede, e que no Sol vale exatamente "nada":
+//  · COR pela temperatura (`pelaTemperatura`, na CPU): só quando
+//    `teffK` ≠ 5.772 K;
+//  · BRILHO da fotosfera pela radiância visível × exposição da visita
+//    (`uBrilhoDaEstrela`, cirurgia só fora dos 5.772 K);
+//  · GRANULAÇÃO pela frequência relativa (`granuloRelativoAoSol`, 1 no Sol);
+//  · REFERENCIAL LOCAL (`foraDaOrigem`, ausente no Sol).
+// ============================================================
+
+/** Acima desta temperatura o filtro fotográfico do Sol já esmaeceu
+ *  inteiro (ver `pelaTemperatura`) — artístico, declarado. */
+export const TEFF_SEM_FILTRO_K = 8000;
+
+const LUMA_R = 0.2126;
+const LUMA_G = 0.7152;
+const LUMA_B = 0.0722;
+
+function corpoNegroUnitario(T: number): [number, number, number] {
+  const [r, g, b] = blackbodyLinear(T).map((x) => Math.max(x, 1e-4));
+  const y = r * LUMA_R + g * LUMA_G + b * LUMA_B;
+  return [r / y, g / y, b / y];
+}
+
+/**
+ * O PESO DO FILTRO FOTOGRÁFICO DO SOL numa estrela de temperatura T: 1 até
+ * 5.772 K (e abaixo), caindo suave a 0 em `TEFF_SEM_FILTRO_K` — artístico,
+ * declarado (senão as quentes sairiam laranja).
+ */
+export function pesoDoFiltro(T: number): number {
+  const t = Math.min(1, Math.max(0, (T - TEFF_SOL_K) / (TEFF_SEM_FILTRO_K - TEFF_SOL_K)));
+  return 1 - t * t * (3 - 2 * t);
+}
+
+/**
+ * A COR DA ESTRELA: cor(T) = corpoNegro(T) × (C / corpoNegro(5772))^w(T),
+ * com a luminância de C preservada; w = `pesoDoFiltro(T)`. Escreve em `out`
+ * (pode ser o próprio C).
+ */
+export function pelaTemperatura(C: THREE.Vector3, T: number, out: THREE.Vector3): THREE.Vector3 {
+  const Y = Math.max(C.x * LUMA_R + C.y * LUMA_G + C.z * LUMA_B, 1e-6);
+  const sol = corpoNegroUnitario(TEFF_SOL_K);
+  const bb = corpoNegroUnitario(T);
+  const w = pesoDoFiltro(T);
+  const c = [C.x, C.y, C.z].map((v, i) => bb[i] * Math.pow(Math.max(v / (Y * sol[i]), 1e-4), w));
+  const yc = Math.max(c[0] * LUMA_R + c[1] * LUMA_G + c[2] * LUMA_B, 1e-6);
+  return out.set((Y * c[0]) / yc, (Y * c[1]) / yc, (Y * c[2]) / yc);
+}
+
+/** smoothstep(0,15; 1,05; 0,5): onde a rampa da paleta de `sol/sun.js` está
+ *  no calor 0,5, o centro da disciplina tonal (o meio do disco) */
+const CALOR_DO_MEIO_DO_DISCO = ((x: number) => x * x * (3 - 2 * x))((0.5 - 0.15) / 0.9);
+
+/** a matiz de uma cor C por T, como fator por canal (C' = C ⊙ fator) */
+function matizDe(C: THREE.Vector3, T: number, out: THREE.Vector3): THREE.Vector3 {
+  pelaTemperatura(C, T, out);
+  return out.set(
+    C.x > 0 ? out.x / C.x : 1,
+    C.y > 0 ? out.y / C.y : 1,
+    C.z > 0 ? out.z / C.z : 1
+  );
+}
+
+/**
+ * O REFERENCIAL LOCAL, por cirurgia de texto (molde de `cirurgiaDaFotosfera`).
+ * Três macros trocam, no texto de um material vendorizado, as grandezas de
+ * MUNDO pelas da estrela com origem no centro dela, compostas em float64 na
+ * CPU (`escreverReferencialLocal`):
+ *   viewMatrix     → V·T(o)            (vista com a estrela na origem)
+ *   cameraPosition → c − o
+ *   modelMatrix    → (V·T(o))⁻¹ · modelViewMatrix   (só no vertex)
+ * O produto `projectionMatrix * viewMatrix * (modelMatrix * p)` volta a ser
+ * exatamente `projectionMatrix * modelViewMatrix * p` (a mesma profundidade
+ * que os outros objetos), e tudo que o shader faz "em mundo" passa a ser
+ * feito num mundo do tamanho da estrela. Aplicar duas vezes LANÇA.
+ */
+const MARCA_DO_REFERENCIAL = 'uVistaLocal';
+const UNIFORMES_DO_REFERENCIAL = 'uniform mat4 uVistaLocal;\nuniform mat4 uVistaLocalInv;\nuniform vec3 uCameraLocal;\n';
+export function cirurgiaDoReferencialLocal(texto: string, vertex: boolean): string {
+  if (texto.includes(MARCA_DO_REFERENCIAL)) {
+    throw new Error('cirurgiaDoReferencialLocal: o referencial local já foi aplicado neste texto');
+  }
+  return (
+    UNIFORMES_DO_REFERENCIAL +
+    '#define viewMatrix uVistaLocal\n#define cameraPosition uCameraLocal\n' +
+    (vertex ? '#define modelMatrix (uVistaLocalInv * modelViewMatrix)\n' : '') +
+    texto
+  );
+}
+
+/**
+ * A MATIZ DE UMA CAMADA EMISSIVA de cor embutida (espículas, proeminências,
+ * laços, CME): multiplica a cor final pela matiz da temperatura. A âncora é
+ * o `}` que fecha o `main` — o último do texto (conferido: em todas elas o
+ * `main` é a última função).
+ */
+export function cirurgiaDaMatiz(fragment: string): string {
+  const fim = fragment.lastIndexOf('}');
+  if (fim < 0 || fragment.lastIndexOf('void main') < 0 || fragment.includes('uMatizDaCamada')) {
+    throw new Error('cirurgiaDaMatiz: fragment sem `main` ou já com a matiz');
+  }
+  // GLSL3 (as partículas da CME) escreve num `out vec4`, não no gl_FragColor
+  const saida = /\bout\s+(?:(?:highp|mediump|lowp)\s+)?vec4\s+(\w+)\s*;/.exec(fragment)?.[1] ?? 'gl_FragColor';
+  return (
+    'uniform vec3 uMatizDaCamada;\n' +
+    fragment.slice(0, fim) +
+    `  ${saida}.rgb *= uMatizDaCamada;\n` +
+    fragment.slice(fim)
+  );
+}
+
+/**
+ * O PESO DA LEI NUMA CAMADA EMISSIVA (coroa, CME, proeminências, laços):
+ * multiplica a cor final por `uPesoDasCamadas`, o mesmo `wResolvido·wMalha`
+ * que a fotosfera recebe em `uWorldFade`. Sem ele a coroa entrava inteira
+ * no quadro em que o gate do palco arma (4 px), por cima do ponto que
+ * ainda carregava toda a luz — a dupla-luz da troca. Mesma âncora e mesmo
+ * contrato de `cirurgiaDaMatiz` (o `}` final do `main`; GLSL3 pelo `out`).
+ */
+export function cirurgiaDoPeso(fragment: string): string {
+  const fim = fragment.lastIndexOf('}');
+  if (fim < 0 || fragment.lastIndexOf('void main') < 0 || fragment.includes('uPesoDasCamadas')) {
+    throw new Error('cirurgiaDoPeso: fragment sem `main` ou já com o peso');
+  }
+  const saida = /\bout\s+(?:(?:highp|mediump|lowp)\s+)?vec4\s+(\w+)\s*;/.exec(fragment)?.[1] ?? 'gl_FragColor';
+  return (
+    'uniform float uPesoDasCamadas;\n' +
+    fragment.slice(0, fim) +
+    `  ${saida}.rgb *= uPesoDasCamadas;\n` +
+    fragment.slice(fim)
+  );
 }
 
 // ============================================================
@@ -576,6 +1342,87 @@ export function cirurgiaDaCoroaOcultavel(vertexShader: string, raioPc: number): 
   );
 }
 
+// ============================================================
+// AS FITAS DOS LAÇOS NA RÉGUA DO DOADOR, por cirurgia de texto.
+//
+// As duas fitas de `sol/loops.js` (emissão e absorção) medem a largura em
+// px com números do doador, onde o raio era 2,2 unidades de MUNDO: o piso
+// `max(clip.w, 0.01)`, a meia-largura `uLoopW` (0,0132) e o `aTan` — os
+// dois últimos em unidades de OBJETO. Aqui o grupo leva a escala do raio em
+// parsec (Sol ~1,03e-8, Proxima ~1,6e-9) e o `w` de um laço vale ~1e-8 a
+// 1e-7: o piso pega SEMPRE. Medido (Sol a 3 raios, 1600×813, P11 1,80):
+// `rawPx` = 0,0132·733/0,01 ≈ 970 → teto de 14 px, e o rumo da fita na tela
+// (`dS`, também dividido pelo piso) cai a ~0 → `nrm` fixo em (0, 1): toda
+// fita expande na VERTICAL da tela, 14 px — os blocos "quadrados" na borda,
+// no Sol e em toda estrela. Na conta certa a mesma fita tem ~1,2 px.
+//
+// O CONSERTO põe o clip das duas pontas na régua do doador, dividindo-o
+// pela escala do grupo logo depois de calculado. Clip é homogêneo: x, y, z
+// e w divididos pelo mesmo número positivo são o MESMO ponto (mesmo pixel,
+// mesma profundidade z/w, mesmo recorte, a mesma interpolação), e o `w`
+// passa a estar na unidade de `uLoopW`, de `aTan` e do piso — o shader do
+// doador inteiro volta a valer como foi escrito, em qualquer estrela.
+// ============================================================
+
+/** a marca da cirurgia — e o detector de aplicação dupla */
+const MARCA_DAS_FITAS = 'fitasNaReguaDoDoador';
+const ANCORA_DAS_FITAS = '  vec4 clipB = projectionMatrix * modelViewMatrix * vec4(position + aTan, 1.0);\n';
+
+/**
+ * Reescreve o vertex de uma fita de `sol/loops.js` para a régua do doador:
+ * `escala` é a do grupo (raio em pc / 2,2). Âncora ausente, repetida ou
+ * cirurgia já aplicada LANÇA (nunca no-op silencioso).
+ */
+export function cirurgiaDasFitas(vertexShader: string, escala: number): string {
+  if (vertexShader.includes(MARCA_DAS_FITAS)) {
+    throw new Error('cirurgiaDasFitas: a régua do doador já foi aplicada neste material');
+  }
+  return trocarUma(
+    vertexShader,
+    ANCORA_DAS_FITAS,
+    `${ANCORA_DAS_FITAS}  float ${MARCA_DAS_FITAS} = ${literalGlsl(1 / escala)};\n` +
+      `  clipA *= ${MARCA_DAS_FITAS}; clipB *= ${MARCA_DAS_FITAS};\n`,
+    'cirurgiaDasFitas'
+  );
+}
+
+// ============================================================
+// AS PARTÍCULAS DA EJEÇÃO NA RÉGUA DO DOADOR, por cirurgia de texto.
+//
+// O mesmo piso das fitas, no rastro das partículas de `sol/cme.js`: o rumo
+// e o comprimento do risco na tela saem de `c1.xy/max(abs(c1.w), 1e-4)`, e
+// aqui o `w` vale ~1e-8 a 1e-7 pc. Medido (Sol a 3 raios, 4 s de ejeção,
+// 2.033 partículas vivas, w mediano 6,7e-8): estiramento mediano 5,5e-4
+// contra 0,90 na conta certa (~1.600× menor), e 415 delas com o rumo preso
+// em (1, 0) — a ejeção saía em pontos redondos, no Sol e em toda estrela.
+// O CONSERTO é o das fitas: o clip das duas pontas (a partícula e a
+// partícula adiantada) vai à régua do doador antes do piso. Homogêneo: o
+// mesmo pixel e a mesma profundidade; só o piso volta a valer como foi
+// escrito.
+// ============================================================
+
+/** a marca da cirurgia — e o detector de aplicação dupla */
+const MARCA_DAS_PARTICULAS = 'particulasNaReguaDoDoador';
+const ANCORA_DAS_PARTICULAS = '  vec4 c1 = projectionMatrix * mv2;\n';
+
+/**
+ * Reescreve o vertex das partículas de `sol/cme.js` para a régua do
+ * doador: `escala` é a do grupo (raio em pc / 2,2). Âncora ausente,
+ * repetida ou cirurgia já aplicada LANÇA (nunca no-op silencioso).
+ */
+export function cirurgiaDasParticulas(vertexShader: string, escala: number): string {
+  if (vertexShader.includes(MARCA_DAS_PARTICULAS)) {
+    throw new Error('cirurgiaDasParticulas: a régua do doador já foi aplicada neste material');
+  }
+  return trocarUma(
+    vertexShader,
+    ANCORA_DAS_PARTICULAS,
+    `${ANCORA_DAS_PARTICULAS}  float ${MARCA_DAS_PARTICULAS} = ${literalGlsl(1 / escala)};\n` +
+      `  gl_Position *= ${MARCA_DAS_PARTICULAS}; c1 *= ${MARCA_DAS_PARTICULAS};\n`,
+    'cirurgiaDasParticulas'
+  );
+}
+
 /**
  * Liga a oclusão num plano da coroa: a cirurgia da profundidade e o
  * `depthTest`. O resto do material fica como veio — aditivo, transparente
@@ -602,6 +1449,44 @@ export function coroaOcultavel(material: THREE.ShaderMaterial, raioPc: number): 
  * (`director/doseDoSol.ts`) e se declara no selo; aqui só entra o que é
  * da ESTRELA.
  */
+/** a ESCALA DE ALTURA das plumas da atmosfera estendida, × o excesso medido
+ *  (`bordaDifusaRaios` − 1), de uma direção a outra — ARTÍSTICO, declarado:
+ *  o raio medido fica no meio */
+const PLUMA_MIN = 0.3;
+const PLUMA_MAX = 1.6;
+/** até quantas escalas de altura (da pluma mais longa) a casca vai: lá o
+ *  perfil já caiu a e⁻³ e a cauda o leva a zero sem degrau */
+const ALCANCE_DA_ATMOSFERA = 3;
+/** a escala da camada rente (raios), mais densa, por cima das plumas */
+const ESCALA_DA_CAMADA_RENTE = 0.08;
+/** o brilho da atmosfera estendida rente à borda (b = 1), sobre a luz da
+ *  borda do disco — ARTÍSTICO, declarado: a MOLsphere e a poeira espalham a
+ *  luz da estrela, e a câmera as vê como névoa luminosa; metade na pluma
+ *  média, para que a borda do disco continue sendo a borda */
+const BRILHO_DA_ATMOSFERA = 1.2;
+/**
+ * O VÉU (`criarABordaDifusa`) — ARTÍSTICO, declarado. A luz que sobra é a de
+ * uma câmera diante de uma fonte ofuscante (o espalhamento da óptica sobre o
+ * que o sensor REGISTROU): por isso é uma fração da borda do disco já
+ * COMPRIMIDA, como a tela a mostra, e não da radiância — uma fração da
+ * radiância de uma anã branca, comprimida depois, lavava o quadro inteiro.
+ * O perfil abraça o disco: um halo rente (escala `VEU_RENTE` raio) e uma asa
+ * (escala `VEU_ASA` raio) que a cauda leva a zero em `RAIO_DO_VEU`. A força
+ * é `veu` comprimido (`forcaDoVeu`): satura em `VEU_TETO`, e nenhuma estrela,
+ * por mais quente, passa disso.
+ */
+const RAIO_DO_VEU = 2;
+const VEU_RENTE = 0.06;
+const VEU_ASA = 0.3;
+const VEU_PESO_RENTE = 0.6;
+const VEU_PESO_ASA = 0.4;
+const VEU_TETO = 0.5;
+/** a força do véu, `veu` comprimido: VEU_TETO·(1 − e^(−veu/VEU_TETO)) —
+ *  linear no começo (0 no Sol, exato), teto em `VEU_TETO` */
+export function forcaDoVeu(veu: number): number {
+  return veu > 0 ? VEU_TETO * (1 - Math.exp(-veu / VEU_TETO)) : 0;
+}
+
 export const SOL_PARAMS: StellarParams = {
   nome: 'Sol',
   // O RAIO FÍSICO DA FOTOSFERA (F3), pela fonte única do cadastro — não
@@ -615,7 +1500,7 @@ export const SOL_PARAMS: StellarParams = {
   tiltRad: 0.1265,
   activityLevel: 1,
   teffK: 5772,
-  convective: true,
+  dinamo: true,
   seed: 20260803,
   knobPrefix: 'sol',
   knobs: SOL_KNOBS,
@@ -627,6 +1512,8 @@ export const SOL_PARAMS: StellarParams = {
  * outra — regiões ativas e grupos de manchas nascem no mesmo instante e
  * têm de ser independentes.
  */
+const EIXO_Y = new THREE.Vector3(0, 1, 0);
+
 const FAMILIAS_DA_VIDA: Record<string, number> = { regiao: 1, mancha: 2 };
 
 /**
@@ -686,6 +1573,9 @@ export class StellarBody {
    *  `update` o entrega a `uWorldFade`. Nasce 1: sem director escrevendo
    *  (testes de unidade do corpo), o comportamento é o de sempre. */
   private pesoDaLei = 1;
+  /** o mesmo peso, para as camadas emissivas de fora da fotosfera
+   *  (`cirurgiaDoPeso`) — um objeto só, partilhado pelos materiais */
+  private readonly pesoDasCamadas = { value: 1 };
   /** cache do último `uFiltroSolar` escrito — nasce no valor do uniform */
   private filtroSolarAnterior = 1;
   /** a fase do ciclo VIVA (a da data), escrita pelo director por quadro */
@@ -713,6 +1603,32 @@ export class StellarBody {
   /** as geometrias das cenas de quad (`makeFullscreenScene`) — elas não
    *  moram no `group`, então só esta lista as leva ao `dispose()` */
   private readonly geoDosQuads: THREE.PlaneGeometry[] = [];
+  /** a câmera relativa ao centro DESTA estrela (o Sol: a própria posição) */
+  private readonly camRel = new THREE.Vector3();
+  /** outra cor que não a do Sol (`teffK` ≠ 5.772 K): a matiz por quadro */
+  private readonly outraCor: boolean;
+  private readonly matizTmp = new THREE.Vector3();
+  private readonly corTmp = new THREE.Vector3();
+  /** a matiz das camadas emissivas de cor embutida (`cirurgiaDaMatiz`) */
+  private readonly matizDaCamada = { value: new THREE.Vector3(1, 1, 1) };
+  /** o referencial local (`foraDaOrigem`), composto em float64 por quadro */
+  private readonly referencial = {
+    uVistaLocal: { value: new THREE.Matrix4() },
+    uVistaLocalInv: { value: new THREE.Matrix4() },
+    uCameraLocal: { value: new THREE.Vector3() },
+  };
+  /**
+   * SEM DÍNAMO (`dinamo: false`): nada de
+   * manchas, ciclo, laços, proeminências, espículas, erupções, CME nem
+   * coroa quente — essas camadas nem nascem. Sobra a fotosfera.
+   */
+  private readonly semDinamo: boolean;
+  /** a frequência das erupções relativa ao Sol (1 = a do Sol, pulada) */
+  private readonly taxaDeErupcoes: number;
+  /** o eixo na base da cena (`eixoNaCena`) e o giro em torno dele */
+  private readonly qEixo: THREE.Quaternion | null = null;
+  private readonly qGiro = new THREE.Quaternion();
+  private giro = 0;
 
   constructor(
     params: StellarParams,
@@ -730,10 +1646,22 @@ export class StellarBody {
     this.params = params;
     this.faseDoCicloViva = cicloInicial;
     this.rotSpeed = rotSpeedFromPeriod(params.rotPeriodDays);
+    this.outraCor = params.teffK !== TEFF_SOL_K;
+    this.semDinamo = !params.dinamo;
+    this.taxaDeErupcoes =
+      !this.semDinamo && params.activityLevel !== 1 ? taxaDeErupcoesPelaAtividade(params.activityLevel) : 1;
+    if (params.eixoNaCena) {
+      const [ex, ey, ez] = params.eixoNaCena;
+      this.qEixo = new THREE.Quaternion().setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        new THREE.Vector3(ex, ey, ez).normalize()
+      );
+    }
     this.scale = params.radiusPc / DONOR_RADIUS;
     this.group.scale.setScalar(this.scale);
 
-    const tier = TIERS[TIER_FOR[quality]];
+    // o tier DA ESTRELA: no Sol é o objeto de sempre (nenhuma chave nova)
+    const tier = tierDaEstrela(TIERS[TIER_FOR[quality]], params);
     const srand = mulberry32(params.seed);
     // knobs por URL (?solcvol=0 etc.) — a URL é a fonte de verdade,
     // como no resto do app; sem query, os defaults de fábrica valem.
@@ -763,6 +1691,7 @@ export class StellarBody {
       // raio antes do primeiro passo. Ver o bloco acima de SOL_PARAMS.
       SUN_R_GLSL: literalGlsl(params.radiusPc),
       SEG_EPS_GLSL: epsilonDeSegmentoGlsl(params.radiusPc),
+      // o tier DA ESTRELA (`tierDaEstrela`): no Sol, o objeto de sempre
       TP: tier,
       TIER: TIER_FOR[quality],
       FBM_OCTAVES: tier.fbm,
@@ -874,6 +1803,16 @@ export class StellarBody {
     ctx.act = createActivity(ctx);
     ctx.charges = ctx.act.charges;
     ctx.pairStates = ctx.act.pairStates;
+    // SEM DÍNAMO, SEM CARGAS: as regiões e o dipolo polar vão a zero (o
+    // `prime` re-semeia o sim e re-assa com elas zeradas). Sobra o tapete
+    // misto do sim, que a cirurgia abaixo também não deixa virar plage
+    if (this.semDinamo) {
+      ctx.cycleAmpK = 0;
+      ctx.doseDoSol = 0;
+      ctx.act.cyclePolarN.w = 0;
+      ctx.act.cyclePolarS.w = 0;
+      ctx.act.updateActiveRegions(ctx.tempoDoCiclo);
+    }
     createSunUniforms(ctx);
     ctx.chromo = createChromo(ctx);
     createSunMesh(ctx);
@@ -904,9 +1843,24 @@ export class StellarBody {
       const mat = ctx.sunMesh.material as THREE.ShaderMaterial;
       mat.fragmentShader = cirurgiaDaFotosfera(
         mat.fragmentShader,
-        radianciaDeTela(RADIANCIA_DA_FOTOSFERA, params.radiusPc),
+        // o raio da PONTE é o do Sol para toda instância: a unidade da casa
+        // é "a superfície do Sol", e o vão é troca de unidade — com o raio
+        // de outra estrela ele erraria por (R☉/R)² (o mesmo argumento do
+        // piloto). No Sol é o mesmo número de antes.
+        radianciaDeTela(RADIANCIA_DA_FOTOSFERA, RAIO_DO_SOL_NA_CENA),
         BETA_DA_EMISSAO
       );
+      // o BRILHO DE OUTRA ESTRELA (radiância visível × exposição da visita,
+      // escrito por `escreverBrilho`): só fora dos 5.772 K — o Sol nem o tem
+      if (this.outraCor) {
+        mat.fragmentShader =
+          'uniform float uBrilhoDaEstrela;\n' +
+          mat.fragmentShader.replace('* uTransmitancia, ', '* uTransmitancia * uBrilhoDaEstrela, ');
+        if (!mat.fragmentShader.includes('uBrilhoDaEstrela, ')) {
+          throw new Error('StellarBody: a âncora do brilho (`* uTransmitancia, `) sumiu da fotosfera');
+        }
+        ctx.sunUniforms.uBrilhoDaEstrela = { value: 1 };
+      }
       // O FILTRO nasce em 1 — radiância verdadeira, o comportamento da F2
       // crua — e só desce quando o director escreve. O uniform entra no
       // MESMO objeto que o vendorizado entregou ao material (`uniforms:
@@ -921,7 +1875,58 @@ export class StellarBody {
       this.filtroSolarLigado = true;
       mat.needsUpdate = true;
     }
+    // A FOTOSFERA DE OUTRA ESTRELA (contraste, borda, sem dínamo, forma
+    // achatada + gravidade): só o que a instância pede — o Sol não passa
+    this.operarAFotosfera(ctx);
     ctx.sunInvRot = new THREE.Matrix3();
+    // sem dínamo a atmosfera magnética inteira (coroa, CME, espículas,
+    // proeminências, laços, erupções) NEM NASCE
+    if (!this.semDinamo) this.criarAAtmosfera(ctx);
+    // o passo do sim escreve a textura viva também nas espículas
+    // (`granulation.js`): sem elas, um ralo no lugar
+    else ctx.spiculeUniforms = { uSimTex: { value: null } };
+    ctx.sunMesh.rotation.z = params.tiltRad;
+
+    if (params.foraDaOrigem || this.outraCor) this.operarAsCamadas(ctx);
+    if (this.qEixo) this.girarPeloEixo(ctx);
+    this.operarOPesoDasCamadas(ctx);
+    // a atmosfera estendida: só quem a tem (o Sol nem a constrói). Depois
+    // das cirurgias das camadas — ela não usa mundo nem cor embutida
+    if (((params.bordaDifusaRaios ?? 1) > 1 || (params.veu ?? 0) > 0) && this.filtroSolarLigado) {
+      this.criarABordaDifusa(ctx);
+    }
+
+    this.prime(renderer);
+  }
+
+  /**
+   * UM PESO SÓ PARA A ESTRELA INTEIRA (12/11): toda camada aditiva do
+   * grupo que ainda não bebe `uWorldFade` (a fotosfera, as espículas e a
+   * borda difusa já bebem) passa a sair multiplicada pelo peso da lei. O
+   * sprite da coroa externa não é shader: o peso entra na cor dele, em
+   * `update`. Com o peso em 1 (corpo resolvido) a conta é ×1 exato.
+   */
+  private operarOPesoDasCamadas(ctx: any) {
+    const feitos = new Set<THREE.Material>();
+    this.group.traverse((o: any) => {
+      const lista = (Array.isArray(o.material) ? o.material : [o.material]).filter(
+        (m: unknown) => m instanceof THREE.ShaderMaterial
+      ) as THREE.ShaderMaterial[];
+      for (const m of lista) {
+        if (feitos.has(m)) continue;
+        feitos.add(m);
+        if (m === ctx.sunMesh.material || m.blending !== THREE.AdditiveBlending) continue;
+        if (m.fragmentShader.includes('uWorldFade')) continue;
+        m.fragmentShader = cirurgiaDoPeso(m.fragmentShader);
+        m.uniforms.uPesoDasCamadas = this.pesoDasCamadas;
+        m.needsUpdate = true;
+      }
+    });
+  }
+
+  /** a atmosfera magnética, na ordem de criação do main.js original */
+  private criarAAtmosfera(ctx: any) {
+    const params = this.params;
     createCoronaRays(ctx);
     createCoronaVolume(ctx);
     createCME(ctx);
@@ -940,18 +1945,306 @@ export class StellarBody {
     for (const m of ctx.cmePts?.meshes ?? []) {
       if (m?.material?.uniforms?.uZScale) m.material.uniforms.uZScale.value = 1 / this.scale;
     }
+    // e o rastro delas na régua do doador (ver `cirurgiaDasParticulas`):
+    // um material só, partilhado pelas duas malhas
+    const particulas = ctx.cmePts?.ptsMat as THREE.ShaderMaterial | undefined;
+    if (particulas) particulas.vertexShader = cirurgiaDasParticulas(particulas.vertexShader, this.scale);
     createSpicules(ctx);
     ctx.prom = createProminences(ctx);
     createLoops(ctx);
+    // as duas fitas dos laços na régua do doador (ver `cirurgiaDasFitas`)
+    for (const o of ctx.loopGroup.children) {
+      const m = o.material as THREE.ShaderMaterial;
+      m.vertexShader = cirurgiaDasFitas(m.vertexShader, this.scale);
+    }
     createFlares(ctx);
+    // a primeira erupção também na frequência da estrela (no Sol, pulado)
+    if (this.taxaDeErupcoes !== 1) ctx.surfFlareCooldown /= Math.max(this.taxaDeErupcoes, 1e-3);
 
-    // inclinação do eixo (Sol: ~7,25°, como no original)
-    ctx.sunMesh.rotation.z = params.tiltRad;
+    // inclinação do eixo (Sol: ~7,25°, como no original; a fotosfera a
+    // recebe no construtor, porque sem dínamo esta função nem roda)
     ctx.prominenceGroup.rotation.z = params.tiltRad;
     ctx.spiculeMesh.rotation.z = params.tiltRad;
     ctx.loopGroup.rotation.z = params.tiltRad;
+  }
 
-    this.prime(renderer);
+  /**
+   * A CASCA EM VOLTA DO DISCO, uma casca aditiva desenhada pelas faces de
+   * TRÁS — atrás do disco a profundidade da fotosfera a apaga, fora dele
+   * sobra o anel; vale com a câmera dentro dela. Duas coisas, cada uma só
+   * para quem a física dá (o Sol não constrói a casca):
+   *  · A ATMOSFERA ESTENDIDA (`bordaDifusaRaios` > 1, a MOLsphere de uma
+   *    supergigante): gás luminoso e translúcido, ADITIVO — exponencial na
+   *    altura acima da borda, mais brilhante rente a ela (uma camada densa a
+   *    `ESCALA_DA_CAMADA_RENTE` por cima), e levado a zero por uma cauda suave
+   *    antes do fim da casca (nada de aresta). Poucas plumas assimétricas,
+   *    como o VLT e o ALMA mostram (Kervella et al. 2009, 2018): um ruído de
+   *    ordem baixa na direção muda a escala de altura (de `PLUMA_MIN` a
+   *    `PLUMA_MAX` × o excesso medido) e o brilho; estrias ao longo do raio;
+   *  · O VÉU (`veu` > 0): a luz que a exposição da visita não põe no disco
+   *    vira o espalhamento da câmera em volta dele, como fração da borda do
+   *    disco JÁ COMPRIMIDA (ver `RAIO_DO_VEU` e `forcaDoVeu`).
+   * A emissão passa pelos MESMOS fios da fotosfera (o brilho da estrela, o
+   * filtro, o ar, a compressão e o peso da lei), partilhando os uniforms.
+   */
+  private criarABordaDifusa(ctx: any) {
+    const p = this.params;
+    const su = ctx.sunUniforms;
+    const fator = literalGlsl(radianciaDeTela(RADIANCIA_DA_FOTOSFERA, RAIO_DO_SOL_NA_CENA));
+    const rEnv = Math.max(1, p.bordaDifusaRaios ?? 1);
+    const veu = Math.max(0, p.veu ?? 0);
+    const rCasca = Math.max(1 + (rEnv - 1) * PLUMA_MAX * ALCANCE_DA_ATMOSFERA, veu > 0 ? RAIO_DO_VEU : 1);
+    const u = p.bordaU ?? 0.3;
+    const mat = new THREE.ShaderMaterial({
+      vertexShader: /* glsl */ `
+        varying vec3 vPosV;
+        varying vec3 vCentroV;
+        varying vec3 vDirObj;
+        void main() {
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          vPosV = mv.xyz;
+          vCentroV = (modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+          vDirObj = normalize(position);
+          gl_Position = projectionMatrix * mv;
+        }`,
+      fragmentShader:
+        ctx.NOISE_GLSL +
+        GLSL_COMPRESSAO +
+        /* glsl */ `
+        uniform vec3 uCorFria;
+        uniform vec3 uCorQuente;
+        uniform vec3 uPaleta;
+        uniform float uFiltroSolar;
+        uniform vec3 uTransmitancia;
+        uniform float uBrilhoDaEstrela;
+        uniform float uWorldFade;
+        uniform float uRaio;
+        uniform float uTime;
+        varying vec3 vPosV;
+        varying vec3 vCentroV;
+        varying vec3 vDirObj;
+        void main() {
+          vec3 d = normalize(vPosV);
+          // dentro do disco a profundidade da fotosfera apaga a casca: o perfil
+          // começa na borda (b ≥ 1), sem fresta entre a malha e a conta
+          float b = max(length(vCentroV - dot(vCentroV, d) * d) / uRaio, 1.0);
+          vec3 c = mix(uCorFria, uCorQuente, ${literalGlsl(CALOR_DO_MEIO_DO_DISCO)});
+          c *= mix(0.16, 1.42, smoothstep(0.04, 1.08, 0.5));
+          vec3 luz = vec3(0.0);
+          ${
+            rEnv > 1
+              ? `
+          // poucas plumas assimétricas: um ruído de ordem baixa muda a escala
+          // de altura de uma direção a outra (e o brilho, junto)
+          float pl = smoothstep(0.3, 0.9, 0.5 + 0.6*fbmLight(vDirObj*1.1 + vec3(3.1, 7.7, uTime*0.004)));
+          float hEsc = ${literalGlsl(rEnv - 1)}*mix(${literalGlsl(PLUMA_MIN)}, ${literalGlsl(PLUMA_MAX)}, pl);
+          // gás que rarefaz: exponencial na altura, o mais brilhante rente à
+          // borda, com a camada rente (a MOLsphere, a ~0,1 R da fotosfera) mais
+          // densa por cima; a cauda leva tudo a ZERO antes do fim da casca
+          float fe = exp(-(b - 1.0) / hEsc) * (1.0 + 0.6*exp(-(b - 1.0) / ${literalGlsl(ESCALA_DA_CAMADA_RENTE)}))
+            * (1.0 - smoothstep(0.5, 1.0, (b - 1.0) / ${literalGlsl(rCasca - 1)}));
+          // estrias ao longo do raio (o ruído só da direção): filamento, não caroço
+          float fio = 0.8 + 0.4*fbmLight(vDirObj*5.0 + vec3(0.0, 0.0, uTime*0.01));
+          luz += ${literalGlsl(1 - u)} * vec3(1.0, 0.85, 0.7) * ${literalGlsl(BRILHO_DA_ATMOSFERA)} * fe * mix(0.5, 1.5, pl) * fio;`
+              : ''
+          }
+          float veu = 0.0;
+          ${
+            veu > 0
+              ? `
+          veu = ${literalGlsl(forcaDoVeu(veu))} * (${literalGlsl(VEU_PESO_RENTE)}*exp(-(b - 1.0) / ${literalGlsl(VEU_RENTE)})
+            + ${literalGlsl(VEU_PESO_ASA)}*exp(-(b - 1.0) / ${literalGlsl(VEU_ASA)}))
+            * (1.0 - smoothstep(${literalGlsl(0.5 * (RAIO_DO_VEU + 1))}, ${literalGlsl(RAIO_DO_VEU)}, b));`
+              : ''
+          }
+          vec3 k = c * uPaleta * pow(${fator}, uFiltroSolar) * uTransmitancia * uBrilhoDaEstrela;
+          // o véu sobre a borda do disco como a tela a mostra (comprimida)
+          vec3 borda = comprimir3(k * ${literalGlsl(1 - u)}, ${literalGlsl(BETA_DA_EMISSAO)});
+          gl_FragColor = vec4((comprimir3(k * luz, ${literalGlsl(BETA_DA_EMISSAO)}) + borda * veu) * uWorldFade, 1.0);
+        }`,
+      uniforms: {
+        uCorFria: ctx.corFria,
+        uCorQuente: ctx.corQuente,
+        uPaleta: ctx.paleta,
+        uFiltroSolar: su.uFiltroSolar,
+        uTransmitancia: su.uTransmitancia,
+        uBrilhoDaEstrela: su.uBrilhoDaEstrela ?? { value: 1 },
+        uWorldFade: su.uWorldFade,
+        uTime: su.uTime,
+        uRaio: { value: p.radiusPc },
+      },
+      side: THREE.BackSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      transparent: true,
+    });
+    const casca = new THREE.Mesh(new THREE.SphereGeometry(DONOR_RADIUS * rCasca, 96, 48), mat);
+    casca.frustumCulled = false;
+    casca.renderOrder = 1;
+    this.group.add(casca);
+  }
+
+  /**
+   * As cirurgias da fotosfera de OUTRA estrela (`cirurgiaDaEstrela`,
+   * `cirurgiaDaForma`), antes da primeira compilação. Sem nenhum campo
+   * novo nos parâmetros (o Sol) não toca em nada.
+   */
+  private operarAFotosfera(ctx: any) {
+    const p = this.params;
+    const a = p.achatamento;
+    const o = {
+      contraste: p.contrasteRelativoAoSol,
+      bordaU: p.bordaU,
+      semDinamo: this.semDinamo,
+      gravidade: Boolean(a),
+      avermelhamento: pesoDoFiltro(p.teffK),
+      gigantes: p.celulasGigantes,
+      teffK: p.teffK,
+      continuo: 1 - pesoDoFiltro(p.teffK),
+    };
+    if (
+      (o.contraste === undefined || o.contraste === 1) &&
+      (o.bordaU === undefined || o.bordaU === 0.3) &&
+      !o.semDinamo &&
+      !a &&
+      o.avermelhamento === 1 &&
+      !o.gigantes
+    ) {
+      return;
+    }
+    const mat = ctx.sunMesh.material as THREE.ShaderMaterial;
+    mat.fragmentShader = cirurgiaDaEstrela(mat.fragmentShader, o);
+    // o RELEVO da fotosfera (o fbm do vertex, `uDispScale`) é o da mesma
+    // convecção: escala com o contraste dela (A: quase liso)
+    if (o.contraste !== undefined && o.contraste !== 1) {
+      ctx.sunUniforms.uDispScale.value *= Math.max(0, o.contraste);
+    }
+    if (a) {
+      const { a: k, norma } = termoZonalDaForma(a.raioPolarRsol.v, a.raioEquatorialRsol.v);
+      mat.vertexShader = cirurgiaDaForma(mat.vertexShader, k, norma);
+      // a GRAVIDADE por vértice: cor × brilho da Teff local (von Zeipel,
+      // `rocheDe`) relativos à média da estrela (`teffK`, a que a matiz e o
+      // brilho de CPU já usam) — interpolada por fragmento
+      const geo = ctx.sunMesh.geometry as THREE.BufferGeometry;
+      const pos = geo.getAttribute('position') as THREE.BufferAttribute;
+      const fator = new Float32Array(pos.count * 3);
+      const Tm = p.teffK;
+      const cm = corpoNegroUnitario(Tm);
+      const rm = radianciaVisivelDeCorpoNegro(Tm);
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        const y = pos.getY(i);
+        const z = pos.getZ(i);
+        const colat = Math.acos(Math.max(-1, Math.min(1, y / Math.hypot(x, y, z))));
+        const T = rocheDe(colat, a).teffK;
+        const c = corpoNegroUnitario(T);
+        const b = radianciaVisivelDeCorpoNegro(T) / rm;
+        for (let k2 = 0; k2 < 3; k2++) fator[i * 3 + k2] = (c[k2] / cm[k2]) * b;
+      }
+      geo.setAttribute('aGravidade', new THREE.BufferAttribute(fator, 3));
+    }
+    if (o.gigantes) {
+      mat.vertexShader = cirurgiaDoRelevoDasGigantes(mat.vertexShader, o.gigantes.tamanhoEmRaios, RELEVO_DAS_GIGANTES);
+    }
+    mat.needsUpdate = true;
+  }
+
+  /**
+   * O EIXO NA BASE DA CENA, por malha (`eixoNaCena`): o quaternion de cada
+   * corpo girante é eixo × giro. Chamado no nascimento e a cada quadro.
+   */
+  private girarPeloEixo(ctx: any) {
+    this.qGiro.setFromAxisAngle(EIXO_Y, this.giro);
+    const q = ctx.sunMesh.quaternion.copy(this.qEixo!).multiply(this.qGiro);
+    for (const m of [ctx.prominenceGroup, ctx.spiculeMesh, ctx.loopGroup, ...(ctx.cmePts?.meshes ?? [])]) {
+      if (m) m.quaternion.copy(q);
+    }
+  }
+
+  /**
+   * As cirurgias de OUTRA ESTRELA nas camadas do `group` (nunca nas cenas de
+   * quad — sim e bakes não têm mundo nem cor): o referencial local em todo
+   * material de shader (`foraDaOrigem`), e a matiz nas camadas aditivas de cor
+   * embutida (`outraCor`). As raias e o volume da coroa já bebem a cor de
+   * `paletaDaCoroa` e a fotosfera da sua paleta: essas a matiz pega na CPU
+   * (`update`). Absorções (blending de multiplicação) não ganham matiz.
+   */
+  private operarAsCamadas(ctx: any) {
+    const coroa = new Set<THREE.Material>(
+      [ctx.coronaRays?.material, ctx.coronaVol?.material].filter(Boolean)
+    );
+    const feitos = new Set<THREE.ShaderMaterial>();
+    const operar = (m: THREE.ShaderMaterial) => {
+      if (feitos.has(m)) return;
+      feitos.add(m);
+      if (this.params.foraDaOrigem) {
+        m.vertexShader = cirurgiaDoReferencialLocal(m.vertexShader, true);
+        m.fragmentShader = cirurgiaDoReferencialLocal(m.fragmentShader, false);
+        Object.assign(m.uniforms, this.referencial);
+      }
+      if (
+        this.outraCor &&
+        m !== ctx.sunMesh.material &&
+        !coroa.has(m) &&
+        m.blending === THREE.AdditiveBlending
+      ) {
+        m.fragmentShader = cirurgiaDaMatiz(m.fragmentShader);
+        m.uniforms.uMatizDaCamada = this.matizDaCamada;
+      }
+      m.needsUpdate = true;
+    };
+    const escrever = (_r: unknown, _s: unknown, camera: THREE.Camera) => this.escreverReferencialLocal(camera);
+    this.group.traverse((o: any) => {
+      const lista = (Array.isArray(o.material) ? o.material : [o.material]).filter(
+        (m: unknown) => m instanceof THREE.ShaderMaterial
+      );
+      if (!lista.length) return;
+      lista.forEach(operar);
+      if (this.params.foraDaOrigem) {
+        const antes = o.onBeforeRender;
+        o.onBeforeRender = function (this: THREE.Object3D, ...a: any[]) {
+          escrever(a[0], a[1], a[2]);
+          antes.apply(this, a);
+        };
+      }
+    });
+    // o gêmeo da absorção que a curva troca (só um está pendurado na malha)
+    for (const m of [ctx.absMat, ctx.absMatTingido]) if (m) operar(m);
+  }
+
+  /**
+   * O REFERENCIAL LOCAL deste quadro, em float64: a câmera relativa ao
+   * centro da estrela (c − o) e a vista com a estrela na origem. Chamado no
+   * `onBeforeRender` de cada camada, com a câmera QUE VAI DESENHAR — a mesma
+   * conta repetida é idempotente, e não há quadro de atraso.
+   */
+  private escreverReferencialLocal(camera: THREE.Camera) {
+    const c = camera.matrixWorld.elements;
+    const o = this.group.matrixWorld.elements;
+    const dx = c[12] - o[12];
+    const dy = c[13] - o[13];
+    const dz = c[14] - o[14];
+    const v = this.referencial.uVistaLocal.value.copy(camera.matrixWorldInverse).elements;
+    v[12] = -(v[0] * dx + v[4] * dy + v[8] * dz);
+    v[13] = -(v[1] * dx + v[5] * dy + v[9] * dz);
+    v[14] = -(v[2] * dx + v[6] * dy + v[10] * dz);
+    const inv = this.referencial.uVistaLocalInv.value.copy(camera.matrixWorld).elements;
+    inv[12] = dx;
+    inv[13] = dy;
+    inv[14] = dz;
+    this.referencial.uCameraLocal.value.set(dx, dy, dz);
+  }
+
+  /**
+   * O BRILHO DE OUTRA ESTRELA na unidade da casa (a superfície do Sol = 1):
+   * radiância visível(T) × exposição da visita — o mesmo produto do piloto
+   * (`brilhoDe` × `uExposicao`). Entra na radiância ANTES da compressão,
+   * junto com a transmitância. No Sol não existe (no-op).
+   */
+  escreverBrilho(k: number) {
+    const u = this.ctx.sunUniforms.uBrilhoDaEstrela;
+    if (!u || !Number.isFinite(k) || k < 0) return;
+    u.value = k;
   }
 
   // Sim + bake síncronos: põe as regiões NA FASE PEDIDA, evolui o Br na
@@ -1105,8 +2398,8 @@ export class StellarBody {
     // exato. Sem altura (`?solquadro=hoje`), a régua de referência de antes.
     if (alturaPx !== undefined) {
       const k =
-        Math.log(radianciaDeTela(RADIANCIA_DA_FOTOSFERA, this.params.radiusPc, alturaPx)) /
-        Math.log(radianciaDeTela(RADIANCIA_DA_FOTOSFERA, this.params.radiusPc));
+        Math.log(radianciaDeTela(RADIANCIA_DA_FOTOSFERA, RAIO_DO_SOL_NA_CENA, alturaPx)) /
+        Math.log(radianciaDeTela(RADIANCIA_DA_FOTOSFERA, RAIO_DO_SOL_NA_CENA));
       if (k > 0 && Number.isFinite(k)) v *= k;
     }
     if (v === this.filtroSolarAnterior) return;
@@ -1260,9 +2553,12 @@ export class StellarBody {
     // de lá foi calibrado a fov 42° — mesmo enquadramento, mesmo LOD
     const fovCorr =
       Math.tan((camera.fov * Math.PI) / 360) / DONOR_HALF_FOV;
-    ctx.camDist = (camera.position.length() / this.scale) * fovCorr;
+    // relativa ao CENTRO desta estrela (o group mora na raiz da cena ou num
+    // grupo sem transformação); no Sol a posição é zero e x − 0 é x
+    this.camRel.copy(camera.position).sub(this.group.position);
+    ctx.camDist = (this.camRel.length() / this.scale) * fovCorr;
     ctx.sunUniforms.uCamDist.value = ctx.camDist;
-    this.camDirN.copy(camera.position).normalize();
+    this.camDirN.copy(this.camRel).normalize();
     ctx.camDirN = this.camDirN;
 
     // Fade das camadas de LIMBO além do regime do doador: o zoom de lá
@@ -1271,8 +2567,10 @@ export class StellarBody {
     // Fisicamente proeminências/loops somem a distâncias estelares.
     const fk = (ctx.camDist - 35) / 25;
     this.limboFade = fk <= 0 ? 1 : fk >= 1 ? 0 : 1 - fk * fk * (3 - 2 * fk);
-    ctx.prominenceGroup.visible = this.limboFade > 0.01;
-    ctx.loopGroup.visible = this.limboFade > 0.01;
+    if (!this.semDinamo) {
+      ctx.prominenceGroup.visible = this.limboFade > 0.01;
+      ctx.loopGroup.visible = this.limboFade > 0.01;
+    }
 
     // O PESO DA LEI (M1). `uWorldFade` — que a F3 deixou em 1 SEMPRE por
     // ausência de lei — voltou a ter dono: é o peso da representação
@@ -1286,18 +2584,26 @@ export class StellarBody {
     // invariante da troca é cobrado PÓS-curva (§5.1 da Lei) e o joelho
     // não pode andar durante a transição.
     ctx.sunUniforms.uWorldFade.value = this.pesoDaLei;
-    ctx.spiculeUniforms.uWorldFade.value = this.pesoDaLei;
-    ctx.coronaRaysUniforms.uRayBoost.value = this.kn.ray;
-    ctx.coronaRaysUniforms.uHalo.value = this.kn.halo;
+    this.pesoDasCamadas.value = this.pesoDaLei;
+    if (!this.semDinamo) {
+      ctx.spiculeUniforms.uWorldFade.value = this.pesoDaLei;
+      ctx.coronaRaysUniforms.uRayBoost.value = this.kn.ray;
+      ctx.coronaRaysUniforms.uHalo.value = this.kn.halo;
+    }
     // R1b: a calibração de arte pela curva viva do renderer (`SOL_FORA_DO_ACES`)
     const tom = ctx.renderer.toneMapping;
     ctx.paleta.value.copy(porCurva(tom, SOL_NO_ACES.ganho, SOL_FORA_DO_ACES.paleta));
     ctx.corFria.value.copy(porCurva(tom, SOL_NO_ACES.corFria, SOL_FORA_DO_ACES.corFria));
     ctx.corQuente.value.copy(porCurva(tom, SOL_NO_ACES.corQuente, SOL_FORA_DO_ACES.corQuente));
     ctx.corDoLimbo.value.copy(porCurva(tom, SOL_NO_ACES.limbo, SOL_FORA_DO_ACES.limbo));
-    ctx.absMesh.material = porCurva(tom, ctx.absMat, ctx.absMatTingido);
     ctx.paletaDaCoroa.value.copy(porCurva(tom, SOL_NO_ACES.ganho, SOL_FORA_DO_ACES.coroa));
-    ctx.coronaOuter.material.color.copy(porCurva(tom, SOL_NO_ACES.coroaExterna, SOL_FORA_DO_ACES.coroaExterna));
+    if (!this.semDinamo) {
+      ctx.absMesh.material = porCurva(tom, ctx.absMat, ctx.absMatTingido);
+      ctx.coronaOuter.material.color
+        .copy(porCurva(tom, SOL_NO_ACES.coroaExterna, SOL_FORA_DO_ACES.coroaExterna))
+        .multiplyScalar(this.pesoDaLei);
+    }
+    if (this.outraCor) this.matizarPelaTemperatura(ctx);
     if (!this.group.visible) return;
 
     // O RELÓGIO RÁPIDO, aqui e não lá em cima (item 16): corpo fora de
@@ -1373,30 +2679,43 @@ export class StellarBody {
     ctx.sunUniforms.uBakeMix.value = Math.min(1, (ctx.elapsed - ctx.bakeSwapT) / ctx.bakeCycleDt);
 
     // --- rotação + inversa compartilhada (tilt+spin) ---
-    ctx.sunMesh.rotation.y = anguloDoGiro(
-      ctx.sunMesh.rotation.y,
-      this.rotSpeed,
-      delta,
-      this.jdDaCena,
-      this.params.rotPeriodDays
-    );
-    ctx.prominenceGroup.rotation.y = ctx.sunMesh.rotation.y;
-    ctx.spiculeMesh.rotation.y = ctx.sunMesh.rotation.y;
-    ctx.loopGroup.rotation.y = ctx.sunMesh.rotation.y;
+    if (this.qEixo) {
+      // eixo na base da cena (`eixoNaCena`): o mesmo giro, por quaternion
+      this.giro = anguloDoGiro(this.giro, this.rotSpeed, delta, this.jdDaCena, this.params.rotPeriodDays);
+      this.girarPeloEixo(ctx);
+    } else {
+      ctx.sunMesh.rotation.y = anguloDoGiro(
+        ctx.sunMesh.rotation.y,
+        this.rotSpeed,
+        delta,
+        this.jdDaCena,
+        this.params.rotPeriodDays
+      );
+      if (!this.semDinamo) {
+        ctx.prominenceGroup.rotation.y = ctx.sunMesh.rotation.y;
+        ctx.spiculeMesh.rotation.y = ctx.sunMesh.rotation.y;
+        ctx.loopGroup.rotation.y = ctx.sunMesh.rotation.y;
+      }
+    }
     this.sunRotM4.makeRotationFromQuaternion(ctx.sunMesh.quaternion);
     ctx.sunInvRot.setFromMatrix4(this.sunRotM4).transpose();
-    ctx.spiculeUniforms.uTime.value = ctx.elapsed;
+    if (!this.semDinamo) ctx.spiculeUniforms.uTime.value = ctx.elapsed;
 
     // --- ciclo de 11 anos + regiões ativas ---------------------------
     // O relógio LENTO é a data e chega escrito (`escreverCiclo`): não há
     // o que integrar aqui, e é por isso que ele anda para trás de graça.
     // A dramaturgia por torção de fase morreu — o filme atenua OCUPAÇÃO
     // (`escreverDose`), nunca a fase.
-    if (ctx.act.cycleDepth() > 0.001) ctx.act.updateCycleState();
-    else if (ctx.solarMaxK !== 0) ctx.solarMaxK = 0;
+    // (sem dínamo não há ciclo: as cargas ficam no zero do nascimento)
+    if (!this.semDinamo) {
+      if (ctx.act.cycleDepth() > 0.001) ctx.act.updateCycleState();
+      else if (ctx.solarMaxK !== 0) ctx.solarMaxK = 0;
+    }
     ctx.sunUniforms.uMaxK.value = ctx.solarMaxK;
     ctx.act.updateActiveRegions(ctx.tempoDoCiclo);
     if (this.reassar !== null) this.passoDoReassar();
+    // daqui para baixo é a atmosfera magnética — sem dínamo ela não nasceu
+    if (this.semDinamo) return;
 
     // --- flare de superfície (duas fases; sem CME na fase 1) ---
     if (delta > 0) {
@@ -1409,6 +2728,8 @@ export class StellarBody {
         }
         ctx.surfFlareCooldown =
           (12 + ctx.srand() * 14) / (0.5 + 1.1 * ctx.coronaRaysUniforms.uActivity.value);
+        // a frequência DA ESTRELA pela atividade (no Sol, pulado)
+        if (this.taxaDeErupcoes !== 1) ctx.surfFlareCooldown /= Math.max(this.taxaDeErupcoes, 1e-3);
       }
       ctx.surfFlareT += delta;
     }
@@ -1432,7 +2753,7 @@ export class StellarBody {
     ctx.updateLoops(delta);
 
     // --- CME: relógio, casca e partículas (episódico; custo ~zero fora) ---
-    if (ctx.cmePts?.on) {
+    if (ctx.cmePts?.on && !this.qEixo) {
       ctx.cmePts.meshes[0].rotation.y = ctx.sunMesh.rotation.y;
       ctx.cmePts.meshes[1].rotation.y = ctx.sunMesh.rotation.y;
     }
@@ -1546,6 +2867,34 @@ export class StellarBody {
     // e do volume, uma vez por quadro, DEPOIS de todo uniform da coroa
     // deste quadro (tempo, base da câmera, giro, cargas, atividade) ---
     ctx.coronaPorAngulo.desenhar();
+  }
+
+  /**
+   * A COR DE OUTRA ESTRELA, sobre a receita do Sol recém-copiada (por curva):
+   * as pontas da rampa da fotosfera e o fio do limbo levados a T DEPOIS do
+   * ganho `paleta` (C' = pelaT(C⊙P)⊘P, que é como o piloto a aplica);
+   * a coroa (raias, volume e sprite: luz da fotosfera espalhada, Thomson) pela
+   * matiz da própria cor; as camadas H-alfa de cor embutida (espículas,
+   * proeminências, laços, CME) pela matiz do limbo.
+   */
+  private matizarPelaTemperatura(ctx: any) {
+    const T = this.params.teffK;
+    const P = ctx.paleta.value as THREE.Vector3;
+    for (const u of [ctx.corFria, ctx.corQuente, ctx.corDoLimbo]) {
+      const C = u.value as THREE.Vector3;
+      pelaTemperatura(this.corTmp.copy(C).multiply(P), T, this.corTmp);
+      C.set(this.corTmp.x / P.x, this.corTmp.y / P.y, this.corTmp.z / P.z);
+    }
+    const Pc = ctx.paletaDaCoroa.value as THREE.Vector3;
+    Pc.multiply(matizDe(Pc, T, this.matizTmp));
+    if (this.semDinamo) return;
+    const sprite = ctx.coronaOuter.material.color as THREE.Color;
+    matizDe(this.corTmp.set(sprite.r, sprite.g, sprite.b), T, this.matizTmp);
+    sprite.setRGB(sprite.r * this.matizTmp.x, sprite.g * this.matizTmp.y, sprite.b * this.matizTmp.z);
+    // o limbo ANTES da matiz (a receita do Sol, pela curva viva) × o ganho
+    const tom = ctx.renderer.toneMapping;
+    this.corTmp.copy(porCurva(tom, SOL_NO_ACES.limbo, SOL_FORA_DO_ACES.limbo)).multiply(P);
+    matizDe(this.corTmp, T, this.matizDaCamada.value);
   }
 
   dispose() {

@@ -14,7 +14,7 @@ import { definirLenteDasEstrelas } from '../shaders/estrelasDaLente';
 import { BETA_DA_ASA, FRACAO_DA_ASA } from '../estrela';
 import { porCurva, type ModoDaLente, type QualityLevel } from './engine';
 import type { PoliticaDeLuz } from '../../lib/atlas/luz';
-import { PasseDaLente } from '../lente/passeDaLente';
+import { PasseDaLente, type FonteDoReflexo } from '../lente/passeDaLente';
 
 // KNEE pré-ACES (rodada 19): compressão asinh do compósito HDR — o tone
 // map de divulgação da referência (Lupton 2004; Filmic/AgX) comprime
@@ -1314,9 +1314,10 @@ export class Post {
     politica: PoliticaDeLuz,
     roteiro: number,
     visibilidade: number,
-    transmitancia: readonly [number, number, number]
+    transmitancia: readonly [number, number, number],
+    fonte: FonteDoReflexo | null = null
   ) {
-    this.passeDaLente.atualizar(dUA, politica, roteiro, visibilidade, transmitancia);
+    this.passeDaLente.atualizar(dUA, politica, roteiro, visibilidade, transmitancia, fonte);
   }
 
   private galaxyMode = 0;

@@ -8,7 +8,17 @@ import { describe, expect, it } from 'vitest';
 import type { NamedStar } from '../config';
 import { bvToColor } from '../shaders/common';
 import { BV_MEDIDO } from './clarao';
-import { HeroStars, TAN_DA_LENTE_PADRAO } from './heroStars';
+import { OCUPACAO_MAXIMA_DA_TELA } from './clarao';
+import {
+  CHEGADA_COMECA_EM_TAMANHOS,
+  DISCO_QUE_RECEBE_A_HERO,
+  FAIXA_DA_CHEGADA,
+  HERO_DA_LUZ_DA_LENTE,
+  HeroStars,
+  TAN_DA_LENTE_PADRAO,
+  chegadaDaHero,
+  partilhaDoCorpo,
+} from './heroStars';
 
 function estrela(n: string, m: number, x = 1, y = 0, z = 0): NamedStar {
   return { n, m, d: 10, x, y, z, ci: 0.5 } as NamedStar;
@@ -74,5 +84,38 @@ describe('as heroes resgatadas — a arte do filme', () => {
       }
     });
     h.dispose();
+  });
+
+  it('a chegada: a arte intacta além de 3 S, e de lá desce sem subir até a luz da lente e do teto', () => {
+    const S = 0.2;
+    const c = { s: 0, escala: 1, fracaoDaAltura: 0 };
+    const d0 = CHEGADA_COMECA_EM_TAMANHOS * S;
+    expect(chegadaDaHero(d0 * 1.01, S, TAN_DA_LENTE_PADRAO, 1, c).escala).toBe(1);
+    // sem a lente acesa ela pousa na hero que soma a lente saturada; com a
+    // lente inteira, no teto do clarão — e nunca abaixo dele
+    for (const [lente, pouso] of [
+      [0, Math.hypot(OCUPACAO_MAXIMA_DA_TELA, HERO_DA_LUZ_DA_LENTE)],
+      [1, OCUPACAO_MAXIMA_DA_TELA],
+    ]) {
+      let antes = chegadaDaHero(d0, S, TAN_DA_LENTE_PADRAO, lente, c).fracaoDaAltura;
+      for (let d = d0 / 1.2; d > d0 / FAIXA_DA_CHEGADA / 4; d /= 1.2) {
+        const f = chegadaDaHero(d, S, TAN_DA_LENTE_PADRAO, lente, c).fracaoDaAltura;
+        expect(f).toBeLessThanOrEqual(antes + 1e-12);
+        // sem a lente, um passo de 20 % nunca encolhe mais que 8 % (com ela
+        // acesa a luz que a hero larga é a que a lente põe)
+        if (lente === 0) expect(f / antes).toBeGreaterThan(1 / 1.08);
+        expect(f).toBeGreaterThanOrEqual(OCUPACAO_MAXIMA_DA_TELA - 1e-12);
+        antes = f;
+      }
+      expect(c.s).toBe(1);
+      expect(antes).toBeCloseTo(pouso, 12);
+    }
+  });
+
+  it('a partilha com o corpo: nada sem disco, inteira quando o disco recebe a hero', () => {
+    expect(partilhaDoCorpo(0, 900)).toBe(0);
+    expect(partilhaDoCorpo(DISCO_QUE_RECEBE_A_HERO * 900, 900)).toBeCloseTo(1, 12);
+    expect(partilhaDoCorpo(DISCO_QUE_RECEBE_A_HERO * 450, 900)).toBeCloseTo(0.25, 12);
+    expect(partilhaDoCorpo(900, 900)).toBe(1);
   });
 });

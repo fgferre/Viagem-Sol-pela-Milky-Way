@@ -648,6 +648,15 @@ export const PT = {
   'ficha.estrela.separacaoEmUa': '{ua} UA',
   'ficha.estrela.corPelaTemperatura': 'pela temperatura (corpo negro)',
   'ficha.estrela.tamanhoPeloRaio': 'o raio da ficha',
+  'ficha.campo.veu': 'véu de luz',
+  'ficha.campo.granulacao': 'granulação',
+  'ficha.campo.celulasGigantes': 'células gigantes',
+  'ficha.estrela.veu':
+    'mais radiante que o Sol: o disco aparece numa exposição mais baixa e a luz que sobra vira um véu em volta dele, como numa câmera — a força e o alcance do véu são escolha',
+  'ficha.estrela.granulacaoExtrapolada':
+    'a real tem ~{real} % de contraste, invisível; desenhada no piso de {piso} % para a superfície não sair lisa',
+  'ficha.estrela.celulasRealcadas':
+    'a temperatura das células vira cor e brilho pela lei de Planck; o contraste está realçado, e as escalas menores de células (que aparecem de perto), o relevo da borda e as plumas do envelope são desenho',
   'ficha.estrela.desenhoInventado':
     'grânulos, células, manchas e erupções: o tamanho da célula segue a lei dos dados ({lei}), mas o desenho exato é inventado',
   'ficha.fonte.daEfemeride': 'da efeméride',

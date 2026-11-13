@@ -27,7 +27,7 @@ import {
   glslBracosDeDifracao,
   glslNucleoEHalo,
 } from '../shaders/common';
-import { BV_MEDIDO, SOL_BV } from './clarao';
+import { BV_MEDIDO, OCUPACAO_MAXIMA_DA_TELA, SOL_BV } from './clarao';
 import {
   ESTRELAS_SEGUEM_A_LENTE,
   UNIFORMES_DA_ASSINATURA,
@@ -132,6 +132,120 @@ function heroColor(bv: number): THREE.Color {
 // de PSF. Custa 4 draws, todos invisíveis além de 1.200 pc de casa.
 const HERO_COUNT = 16;
 
+/**
+ * A CHEGADA DA HERO (13/11) — a hero de uma estrela VISITÁVEL a caminho do
+ * corpo da mesma estrela, com a LUZ perto dela sem degrau e sem vale. A
+ * arte de longe não muda: além de `CHEGADA_COMECA_EM_TAMANHOS` vezes o
+ * tamanho de autor (S) a hero é a de sempre, bit a bit. Dali para dentro o
+ * tamanho NA TELA para de crescer e desce, em log da distância, ao longo de
+ * `FAIXA_DA_CHEGADA`× — e desce até a luz que VEM DEPOIS, não abaixo dela.
+ *
+ * A régua é a luz num raio de 150 px da estrela (`capturas/estrelas-lugar`,
+ * a mesma para as três provas). Medida em 13/11, na tela de 900 px:
+ *  · a hero põe ali ~1,0 por px² da meia-extensão (de 63 a 110 px; acima
+ *    disso parte dela sai do raio) — luz ∝ tamanho²;
+ *  · a lente de cinema saturada põe o mesmo que uma hero de
+ *    `HERO_DA_LUZ_DA_LENTE` da altura (92 px), e cresce com a fração da
+ *    lente (`lente`, 0..1) na potência `EXPOENTE_DA_LUZ_DA_LENTE`;
+ *  · o clarão da lei, no teto, põe ~1/9 da hero do mesmo tamanho (o núcleo
+ *    dele é mascarado onde o ponto do catálogo desenha; o da hero não).
+ * Por isso a descida mira `√(teto² + lente²)` (111 px): a hero no teto mais
+ * a lente saturada — e, enquanto a lente cresce, a hero encolhe na mesma
+ * luz (o quadrado do tamanho cede o quadrado da lente). O vale de antes era
+ * a hero chegando ao teto ANTES de a lente acender: Sírius caía ~28× e a
+ * lente devolvia ×1,45 por passo.
+ *
+ * Os números são os mesmos para todas (nada por estrela): a 3 S a hero
+ * mede 1/3 rad de raio — 271 px numa tela de 900 com a lente padrão — e o
+ * teto, 63 px.
+ */
+export const CHEGADA_COMECA_EM_TAMANHOS = 3;
+export const FAIXA_DA_CHEGADA = 30;
+/** a fração inicial da faixa em que a descida ENTRA devagar (sem quina em d0) */
+const ENTRADA_DA_CHEGADA = 0.3;
+/** a meia-extensão de hero (fração da altura) com a luz da lente saturada — MEDIDO, ver acima */
+export const HERO_DA_LUZ_DA_LENTE = 0.102;
+/** a luz da lente perto da fonte ∝ fração^1,25 (medido: 0,03 → 0,3 → 1) */
+const EXPOENTE_DA_LUZ_DA_LENTE = 1.25;
+/**
+ * O DISCO QUE RECEBE A HERO (fração da altura): a hero no teto põe ~3,6 mil
+ * a mais que o clarão do mesmo tamanho, e o disco resolvido chega a isso
+ * com ~33 px (900 de altura; Sírius e Vega, ~3,2 por px² do diâmetro). A
+ * hero passa ao clarão na partilha (D/esse disco)² — a luz que ela larga é
+ * a que o disco ganha. Medido; Betelgeuse, de disco mais luminoso, sobe um
+ * pouco em vez de afundar.
+ */
+export const DISCO_QUE_RECEBE_A_HERO = 0.037;
+
+export interface Chegada {
+  /** 0 (a arte de longe) → 1 (a descida completa) */
+  s: number;
+  /** o fator sobre o tamanho de autor (1 = a arte de longe) */
+  escala: number;
+  /** a meia-extensão da hero na tela, em frações da altura */
+  fracaoDaAltura: number;
+}
+
+/**
+ * a chegada de uma hero de tamanho `tamanhoPc` vista a `dPc`, com a lente
+ * de cinema da estrela na fração `lente` (0..1; ver `fracaoDaLente`) — pura
+ */
+export function chegadaDaHero(
+  dPc: number,
+  tamanhoPc: number,
+  tanHalfFov: number,
+  lente: number,
+  out: Chegada
+): Chegada {
+  // a tela da hero: px = S·uZoom·P11·(H/2)/d = S·H / (2·d·max(tan, tanRef))
+  const tan = Math.max(tanHalfFov, TAN_DA_LENTE_PADRAO);
+  const d0 = CHEGADA_COMECA_EM_TAMANHOS * tamanhoPc;
+  if (!(tamanhoPc > 0) || !(dPc > 0) || dPc >= d0) {
+    out.s = 0;
+    out.escala = 1;
+  } else {
+    const t = Math.min(1, Math.log(d0 / dPc) / Math.log(FAIXA_DA_CHEGADA));
+    // a rampa ENTRA devagar (quadrática até `ENTRADA_DA_CHEGADA`, linear
+    // depois, C¹): em d0 o tamanho de tela para de crescer sem quina, e a
+    // descida segue no passo constante que a régua de luz pede
+    const a = ENTRADA_DA_CHEGADA;
+    out.s = (t < a ? (t * t) / (2 * a) : t - a / 2) / (1 - a / 2);
+    // congelada no tamanho de tela de d0 (f0), descendo em log até o pouso
+    // fT: o teto do clarão mais, em quadratura, a luz que a lente AINDA não
+    // pôs — com a lente apagada, a hero que soma a lente saturada; com ela
+    // inteira, o teto. A lente só tira da hero na fração `s` da descida:
+    // acesa cedo (Betelgeuse a satura a 6× de d0), ela soma à hero que
+    // ainda desce, em vez de dobrar a descida — o passo ×0,87 medido
+    const f0 = 1 / (2 * CHEGADA_COMECA_EM_TAMANHOS * tan);
+    const teto = Math.min(OCUPACAO_MAXIMA_DA_TELA, f0);
+    const l = Math.min(1, Math.max(0, Number.isFinite(lente) ? lente : 0));
+    const falta = 1 - out.s * Math.pow(l, EXPOENTE_DA_LUZ_DA_LENTE);
+    const fT = Math.min(f0, Math.sqrt(teto * teto + falta * HERO_DA_LUZ_DA_LENTE ** 2));
+    const f = Math.pow(f0, 1 - out.s) * Math.pow(fT, out.s);
+    out.escala = Math.min(1, (f * 2 * dPc * tan) / tamanhoPc);
+  }
+  out.fracaoDaAltura = dPc > 0 ? (tamanhoPc * out.escala) / (2 * dPc * tan) : 0;
+  return out;
+}
+
+/**
+ * A PARTILHA COM O CORPO (0..1): a parte da LUZ da hero que já passou ao
+ * clarão, pelo disco resolvido de `discoPx` numa tela de `alturaPx`. A hero
+ * e o clarão pesam cor E alfa pelo próprio ganho (aditivo com SRC_ALPHA),
+ * então a luz de cada um vai com o QUADRADO do ganho: a hero fica com
+ * √(1 − w) e o clarão leva √(1 − hero²) (`estrelasNoQuadro.ts`).
+ */
+export function partilhaDoCorpo(discoPx: number, alturaPx: number): number {
+  if (!(discoPx > 0) || !(alturaPx > 0)) return 0;
+  return Math.min(1, (discoPx / (DISCO_QUE_RECEBE_A_HERO * alturaPx)) ** 2);
+}
+
+/** o `smoothstep` do GLSL, na CPU (a presença espelha o fragment) */
+function suave(a: number, b: number, x: number): number {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+}
+
 export class HeroStars {
   readonly group = new THREE.Group();
   private mats: THREE.ShaderMaterial[] = [];
@@ -191,6 +305,57 @@ export class HeroStars {
       this.camDistPc[i] = dist;
       i++;
     }
+  }
+
+  /**
+   * A PRESENÇA da hero de uma estrela (0..1) vista de `camPos`: a mesma
+   * conta do fragment (`nearFade · farFade · uGain`), na CPU. 0 quando a
+   * estrela não é hero ou a camada está escondida. É por ela que o clarão
+   * da estrela visitada cede à hero (`director/estrelasNoQuadro.ts`): as
+   * duas são a óptica do mesmo ponto, e a soma não pode dobrar.
+   */
+  presenca(nome: string, camPos: THREE.Vector3): number {
+    if (!this.group.visible) return 0;
+    const i = this.chosen.findIndex((s) => s.n === nome);
+    if (i < 0) return 0;
+    const size = this.mats[i].uniforms.uSize.value as number;
+    const dist = (this.group.children[i] as THREE.Mesh).position.distanceTo(camPos);
+    const near = suave(size * 0.5, size * 1.4, dist);
+    const far = 1 - suave(320, 900, dist);
+    return near * far * (this.mats[i].uniforms.uGain.value as number);
+  }
+
+  /**
+   * A CHEGADA escrita (`chegadaDaHero`): o tamanho vira `escala` × o de
+   * autor. Sem estrela visitável por perto ninguém escreve e fica 1.
+   */
+  escreverEscala(nome: string, escala: number) {
+    const i = this.chosen.findIndex((s) => s.n === nome);
+    if (i < 0 || !(escala > 0)) return;
+    this.mats[i].uniforms.uSize.value = this.sizePc[i] * Math.min(1, escala);
+  }
+
+  /** a hero no LUGAR do corpo da mesma estrela (o do ponto do catálogo) */
+  moverPara(nome: string, pos: THREE.Vector3) {
+    const i = this.chosen.findIndex((s) => s.n === nome);
+    if (i >= 0) this.group.children[i].position.copy(pos);
+  }
+
+  /** o raio do brilho da hero de uma estrela, pc (0 quando não é hero) */
+  tamanhoDe(nome: string): number {
+    const i = this.chosen.findIndex((s) => s.n === nome);
+    return i < 0 ? 0 : this.sizePc[i];
+  }
+
+  /**
+   * A CESSÃO da hero ao corpo da MESMA estrela: o ganho vira `1 − cede`
+   * (quem escreve é `estrelasNoQuadro.ts`, pela `partilhaDoCorpo`). Sem
+   * estrela montada ninguém escreve e o ganho fica 1, como sempre.
+   */
+  escreverCessao(nome: string, cede: number) {
+    const i = this.chosen.findIndex((s) => s.n === nome);
+    if (i < 0 || !Number.isFinite(cede)) return;
+    this.mats[i].uniforms.uGain.value = 1 - Math.min(1, Math.max(0, cede));
   }
 
   dispose() {

@@ -33,6 +33,8 @@ import {
   RAZAO_DE_TROCA,
   SOL_BV,
   criarSlots,
+  fatiaDoCampo,
+  meiaDaArtePx,
   passoDoOrcamento,
 } from './clarao';
 import type { CandidatoAoClarao } from './clarao';
@@ -224,6 +226,22 @@ describe('2. a elegibilidade pela lei — a identidade "as 16" emerge, não se d
     expect(alcanceDoEspinhoPx(pico, sigma)).toBeLessThan(raioVisivelDaAsaPx(pico, sigma));
     expect(alcanceDoEspinhoPx(pico, sigma)).toBeGreaterThan(0); // mas a cruz EXISTE
     expect(BETA_DO_ESPINHO).toBeCloseTo(1.5 * BETA_DA_ASA, 12);
+  });
+
+  it('a luz única: o piso de arte ordena pela luz e o halo cede à luz que a lente acende', () => {
+    const teto = OCUPACAO_MAXIMA_DA_TELA * 900;
+    // as âncoras de gosto (13/11): Sirius de casa no teto, m ≈ 0 com 0,4
+    // dele, m = 2 já ponto — e sempre menor quanto mais fraca
+    expect(meiaDaArtePx(-1.5, 900)).toBeCloseTo(teto, 9);
+    expect(meiaDaArtePx(0, 900) / teto).toBeCloseTo(0.4, 1);
+    expect(meiaDaArtePx(2, 900) / teto).toBeCloseTo(0.05, 2);
+    for (let m = -1.5; m < 6; m += 0.25)
+      expect(meiaDaArtePx(m + 0.25, 900)).toBeLessThan(meiaDaArtePx(m, 900));
+    // o halo: inteiro sem lente, zero exato com ela plena, descendo entre os dois
+    expect(fatiaDoCampo(0)).toBe(1);
+    expect(fatiaDoCampo(1)).toBe(0);
+    expect(fatiaDoCampo(NaN)).toBe(1);
+    for (let l = 0; l < 1; l += 0.1) expect(fatiaDoCampo(l + 0.1)).toBeLessThan(fatiaDoCampo(l));
   });
 });
 
@@ -590,9 +608,16 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     //     (08/10: `transmitanciaDoSol` entrou por decisão — o ar da Terra
     //     no raio até o Sol multiplica a EMISSÃO, não o tamanho; teto
     //     nenhum passa por ela.)
+    //     (12/11: `visitadas` entrou por decisão — as estrelas montadas
+    //     pelo motor do Sol candidatam pela MESMA lei; cada uma traz só
+    //     posição, magnitude, cor e a soltura dela, que é ≤ 1 e só encolhe
+    //     o quad abaixo do MESMO `meiaDaLei` — teto nenhum entra por ela.)
+    //     (13/11: `lente` entrou por decisão — a luz que a lente de cinema
+    //     acendeu, só lida pela luz única: ela só TIRA do halo do campo
+    //     (`fatiaDoCampo` ≤ 1), nunca toca tamanho, teto nem a camada 0.)
     expect(camposDaInterface(CLARAO, 'QuadroDoClarao')).toEqual([
       'camPos', 'screenH', 'dtS', 'solVisivel', 'solturaDoSol', 'expoM0', 'sigmaPx', 'pr',
-      'transmitanciaDoSol',
+      'transmitanciaDoSol', 'visitadas', 'lente',
     ]);
     //     ...e o módulo do Sol no quadro não recebe MODO nenhum para
     //     repassar: o `fase: Phase` que sobrava no parâmetro (sem leitor,
