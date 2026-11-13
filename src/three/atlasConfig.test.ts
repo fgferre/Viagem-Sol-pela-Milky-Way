@@ -39,6 +39,7 @@ import {
 } from './core/engine';
 import { HUD_POR_FASE } from './fases';
 import { definirIdioma, t } from '../lib/idioma';
+import { LABORATORIO_PADRAO } from './world/laboratorioDaGalaxia';
 
 const DIRECTOR = readFileSync(new URL('./director.ts', import.meta.url), 'utf8');
 const GALAXY = readFileSync(new URL('./world/galaxy.ts', import.meta.url), 'utf8');
@@ -388,7 +389,9 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
       | 'particulas'
       | 'poeira'
       | 'galaxia'
-      | 'galaxiaViva';
+      | 'galaxiaViva'
+      | 'laboratorio'
+      | 'galaxiaReassando';
     const estado = (m: Omit<Estado, Gaveta> & Partial<Pick<Estado, Gaveta>>) =>
       rotuloDaQualidade({
         amostras: null,
@@ -401,6 +404,8 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
         poeira: null,
         galaxia: null,
         galaxiaViva: 'webgpu',
+        laboratorio: LABORATORIO_PADRAO,
+        galaxiaReassando: false,
         ...m,
       });
     // manual, medida boa: nada a sugerir — o painel não inventa alarme

@@ -16,6 +16,7 @@ import { cartografiaMedida } from './three/cartography/galacticAssets';
 import type { EstadoDaPoeira } from './three/selo';
 import { HUD_POR_FASE, arrastoFazAlgo } from './three/fases';
 import { PRESETS, TIER_DE_PRODUTO } from './three/core/engine';
+import { LABORATORIO_PADRAO } from './three/world/laboratorioDaGalaxia';
 import { LabelCanvas } from './components/LabelCanvas';
 import { sondarGl } from './lib/glProbe';
 import { t } from './lib/idioma';
@@ -286,6 +287,8 @@ export default function App() {
     // a cadeia do preset até o Director publicar quem de fato desenha
     galaxia: null,
     galaxiaViva: PRESETS[TIER_DE_PRODUTO].galaxia,
+    laboratorio: LABORATORIO_PADRAO,
+    galaxiaReassando: false,
   });
   const [paused, setPaused] = useState(false);
   const [rate, setRate] = useState(1);
@@ -976,6 +979,8 @@ export default function App() {
     trocarRelevo,
     trocarParticulas,
     trocarGalaxia,
+    trocarLaboratorio,
+    zerarLaboratorio,
     trocarPoeira,
     trocarTom,
     trocarLente,
@@ -1549,6 +1554,8 @@ export default function App() {
         onRelevo={trocarRelevo}
         onParticulas={trocarParticulas}
         onGalaxia={trocarGalaxia}
+        onLaboratorio={trocarLaboratorio}
+        onZerarLaboratorio={zerarLaboratorio}
         onPoeira={trocarPoeira}
         tom={tom}
         onTom={trocarTom}

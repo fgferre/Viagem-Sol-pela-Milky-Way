@@ -241,6 +241,52 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.galaxia.webgpu': 'WebGPU',
   'ajustes.galaxia.particulas': 'WebGL',
   'ajustes.galaxia.classica': 'Classic',
+  'ajustes.lab.titulo': 'Galaxy lab',
+  'ajustes.lab.grupo.webgpu': 'WebGPU engine · the galaxy seen from outside',
+  'ajustes.lab.grupo.webgl': 'WebGL particles · inside the disc and on the way out',
+  'ajustes.lab.bloqueio.classica': 'Off: the Classic galaxy is not made of particles.',
+  'ajustes.lab.bloqueio.semWebgpu': 'Off: WebGL is drawing now. To use these, choose WebGPU under Galaxy.',
+  'ajustes.lab.aplicando': 'applying…',
+  'ajustes.lab.voltar': 'Back to default',
+  'ajustes.lab.todas': 'All',
+  'ajustes.lab.milhoes': '{n} million',
+  'ajustes.lab.filhas': 'Children per particle',
+  'ajustes.lab.filhasNota':
+    'Each particle becomes several fainter neighbours carrying the same total light: the galaxy looks smoother and fuller, and the frame gets heavier.',
+  'ajustes.lab.borrifo': 'Point drawing',
+  'ajustes.lab.borrifo.0': 'Tent',
+  'ajustes.lab.borrifo.1': 'Spray',
+  'ajustes.lab.borrifoNota':
+    'Tent shares each point\'s light among neighbouring pixels: the picture stays calm while the camera moves. Spray drops each point on one random pixel: lighter and sharper when still, but the galaxy "boils" in motion.',
+  'ajustes.lab.filtro': 'Grain filter',
+  'ajustes.lab.filtro.1': 'On',
+  'ajustes.lab.filtro.0': 'Off',
+  'ajustes.lab.filtroNota':
+    'A very light blur before the final colour: it halves the flicker in motion. Off, the galaxy is sharper and grainier.',
+  'ajustes.lab.lod': 'Detail from afar',
+  'ajustes.lab.lodNota':
+    'How many particles per pixel are enough when the galaxy is far away. Fewer is lighter and grainier; "All" always draws every particle. With 2 draws the difference only shows from far away, mostly with "All".',
+  'ajustes.lab.fatia': 'Dust refresh',
+  'ajustes.lab.fatiaNota':
+    'Every how many frames the dust shadow on each particle is recomputed. 1 is the most exact and the heaviest; 8 is light, but in a fast flight the shadow lags a little.',
+  'ajustes.lab.sorteios': 'Galaxy draws',
+  'ajustes.lab.sorteiosNota':
+    'How many times the galaxy is drawn from the model, about 4 million particles each. More draws: more real particles and a finer picture, with more memory and a heavier frame. It takes a few seconds; the old galaxy stays on screen until the new one arrives.',
+  'ajustes.lab.lodrho': 'Point density',
+  'ajustes.lab.lodrhoNota':
+    'How many points per pixel WebGL tries to put on screen. More is smoother and heavier. With each quality\'s point ceiling the ceiling almost always decides: this one only shows with a higher Point ceiling.',
+  'ajustes.lab.lodk': 'Most children',
+  'ajustes.lab.lodkNota':
+    'Up to how many neighbours each particle can become when the camera gets close. 1 turns children off: loose points up close. It only shows with a higher Point ceiling (with each quality\'s own, children go first).',
+  'ajustes.lab.lodmax': 'Point ceiling',
+  'ajustes.lab.lodmaxNota':
+    'The most points per frame, in millions. Above it the children go first and the grain grows. Higher is sharper and heavier.',
+  'ajustes.lab.lodpiso': 'Point softness',
+  'ajustes.lab.lodpisoNota':
+    'How far each point spreads when the point ceiling bites. Higher makes the galaxy smoother and less sandy, and the frame heavier.',
+  'ajustes.lab.lodesp': 'Children reach',
+  'ajustes.lab.lodespNota':
+    'How far from the parent particle the children land. Little: clumps of light; a lot: a smoother veil. It only shows when there are children, that is, with a higher Point ceiling.',
   'ajustes.texto': 'Text size · {degrau}',
   'ajustes.textoNota':
     'Applies to the whole HUD — captions, controls, seal and the star names. It does not touch the scene: inside the Atlas the framing backs off a little so the larger text does not cover the target.',
@@ -705,6 +751,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.desvio.particulasCom': 'galaxy particles set by hand: {nivel}',
   'selo.desvio.galaxia': 'galaxy set by hand',
   'selo.desvio.galaxiaCom': 'galaxy set by hand: {caminho}',
+  'selo.desvio.laboratorio': 'galaxy tuned by hand',
+  'selo.desvio.laboratorioCom': 'galaxy tuned by hand: {controle} {valor}',
   'selo.desvio.poeira': 'dust near home set by hand',
   'selo.desvio.poeiraCom': 'dust near home set by hand: {variante}',
   'selo.desvio.poeiraTeste': 'test (synthetic volume)',

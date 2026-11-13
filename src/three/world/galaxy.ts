@@ -32,6 +32,8 @@ import { porCurva } from '../core/engine';
 import type { CaminhoDaGalaxia } from '../core/engine';
 import { CamadaWebgpu } from './galaxiaWebgpu/camadaWebgpu';
 import type { GalaxyBuffers } from './geradorDaGalaxia';
+import { controleDoLaboratorio, opcoesWebgpu, LABORATORIO_PADRAO } from './laboratorioDaGalaxia';
+import type { Laboratorio } from './laboratorioDaGalaxia';
 
 // A FACHADA da onda da arquitetura (corte 5): a base e o gerador
 // moram ao lado e são reexportados daqui — o director (Parte 1 da
@@ -165,10 +167,11 @@ export class Galaxy {
    * piorava para 0,38 e a meia distância não mudava; 12 é o meio-termo de
    * custo. KMAX = 8: 16 não baixa o grão medido (a tenda alarga o que falta
    * no teto) e custa ~25 % a mais de quadro a meia distância; 4 já deixa
-   * borrões no primeiro plano. ?lodrho= e ?lodk= varrem.
+   * borrões no primeiro plano. O laboratório da galáxia (Ajustes,
+   * `?lodrho=`, `?lodk=`) muda os dois ao vivo (`definirLaboratorio`).
    */
-  private static readonly RHO_LOD = tune('lodrho', 12);
-  private static readonly KMAX_LOD = tune('lodk', 8);
+  private rhoLod = controleDoLaboratorio('lodrho').padrao!;
+  private kmaxLod = controleDoLaboratorio('lodk').padrao!;
   /**
    * TETO DE INSTÂNCIAS POR QUADRO (mães + filhas), em milhões (?lodmax=).
    * O custo do modo é a contagem de instâncias (~5–6 ms por milhão nesta
@@ -181,7 +184,11 @@ export class Galaxy {
    * (estrelas jovens resolvidas, nós H II, aglomerados, halo) sai sempre
    * inteiro.
    */
-  private readonly tetoLod: number;
+  private tetoLod: number;
+  /** o teto do tier, em milhões — o que vale com o laboratório no padrão */
+  private readonly tetoDoTier: number;
+  /** o laboratório (Ajustes): as opções do quadro do motor WebGPU */
+  private opcoesDoMotor = opcoesWebgpu(LABORATORIO_PADRAO);
   private lod: {
     inicio: Int32Array;
     total: Int32Array;
@@ -244,7 +251,8 @@ export class Galaxy {
   ) {
     this.soParticulas = desenho.soParticulas;
     this.nuvensEmMeia = buffers.nuvens ?? null;
-    this.tetoLod = tune('lodmax', desenho.tetoLodMilhoes) * 1e6;
+    this.tetoDoTier = desenho.tetoLodMilhoes;
+    this.tetoLod = desenho.tetoLodMilhoes * 1e6;
     this.ownsDustMap = !dustMap;
     this.dustMap = dustMap ?? Galaxy.emptyDustMap();
     this.structureMap = structureMap;
@@ -287,12 +295,12 @@ export class Galaxy {
       this.brightMat.extensions.multiDraw = Galaxy.dbg.get('lodmd') !== '0';
       this.brightMat.uniforms.uCelulas = { value: this.lod.textura };
       this.brightMat.uniforms.uDesenho = { value: 0 };
-      this.brightMat.uniforms.uRho = { value: Galaxy.RHO_LOD };
-      this.brightMat.uniforms.uRhoPiso = { value: tune('lodpiso', 2) };
+      this.brightMat.uniforms.uRho = { value: this.rhoLod };
+      this.brightMat.uniforms.uRhoPiso = { value: controleDoLaboratorio('lodpiso').padrao! };
       this.brightMat.uniforms.uGanhoPerto = { value: 1 };
-      this.brightMat.uniforms.uKMax = { value: Galaxy.KMAX_LOD };
+      this.brightMat.uniforms.uKMax = { value: this.kmaxLod };
       this.brightMat.uniforms.uFracK = { value: 1 };
-      this.brightMat.uniforms.uEspLod = { value: tune('lodesp', 0.6) };
+      this.brightMat.uniforms.uEspLod = { value: controleDoLaboratorio('lodesp').padrao! };
       // a geometria não desenha nada sozinha: os desenhos por célula saem
       // do gancho abaixo, com o programa e os atributos já ligados
       geo.setDrawRange(0, 0);
@@ -894,7 +902,7 @@ export class Galaxy {
     // acha o maior pedido que cabe. fK e ρ são contínuos: cada célula
     // ganha ou perde a SUA última instância com peso que nasce em zero,
     // em degraus de uma célula, e nenhum uniforme salta.
-    const rho0 = Galaxy.RHO_LOD;
+    const rho0 = this.rhoLod;
     const teto = this.tetoLod;
     const params = (t: number): [number, number] =>
       t >= 1 ? [rho0, Math.min(t - 1, 1)] : [rho0 * Math.max(t, 1e-3), 0];
@@ -930,7 +938,7 @@ export class Galaxy {
     const zc =
       (cam.x - GAL.GC_POS.x) * EZ.x + (cam.y - GAL.GC_POS.y) * EZ.y + (cam.z - GAL.GC_POS.z) * EZ.z;
     const ss = THREE.MathUtils.smoothstep;
-    const kmax = Galaxy.KMAX_LOD;
+    const kmax = this.kmaxLod;
     let pais = 0, instancias = 0, desenhos = 0;
     const D = L.inicio.length;
     for (let d = 0; d < D; d++) {
@@ -1087,7 +1095,7 @@ export class Galaxy {
         // `alta`, metade, a galáxia saía com o dobro da luz).
         const cessao = this.cessao;
         const ganho = (u.uFade.value as number) * this.fracaoDeParticulas;
-        this.camadaWebgpu.update(camera, screenW, screenH, tanHalfFov, ganho, cessao);
+        this.camadaWebgpu.update(camera, screenW, screenH, tanHalfFov, ganho, cessao, this.opcoesDoMotor);
         u.uFade.value = (u.uFade.value as number) * (1 - cessao);
       }
       if (this.soParticulas) {
@@ -1186,6 +1194,27 @@ export class Galaxy {
       }
       this.anunciarCaminho();
     });
+  }
+
+  /**
+   * O LABORATÓRIO DA GALÁXIA, AO VIVO (Ajustes, 13/11/2026): os botões do
+   * motor WebGPU e os do nível de detalhe do WebGL. Só uniformes e números
+   * lidos no quadro seguinte — nada é refeito. Os sorteios não passam por
+   * aqui: mudam o mundo (o Director o reassa). Com tudo no padrão os
+   * valores são os de sempre, letra por letra.
+   */
+  definirLaboratorio(lab: Laboratorio) {
+    this.opcoesDoMotor = opcoesWebgpu(lab);
+    const v = (id: 'lodrho' | 'lodk' | 'lodpiso' | 'lodesp') => lab[id] ?? controleDoLaboratorio(id).padrao!;
+    this.rhoLod = v('lodrho');
+    this.kmaxLod = v('lodk');
+    this.tetoLod = (lab.lodmax ?? this.tetoDoTier) * 1e6;
+    if (this.lod) {
+      const u = this.brightMat.uniforms;
+      u.uKMax.value = this.kmaxLod;
+      u.uRhoPiso.value = v('lodpiso');
+      u.uEspLod.value = v('lodesp');
+    }
   }
 
   /** a camada caiu (dispositivo perdido, erro da GPU): a luz volta ao WebGL */

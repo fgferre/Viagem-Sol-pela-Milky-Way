@@ -2,6 +2,8 @@
 // Director — orquestra engine, mundo e cinemática.
 // API consumida pelo React: eventos de legenda/progresso/fase.
 // ============================================================
+import { lerLaboratorio, LABORATORIO_PADRAO } from './world/laboratorioDaGalaxia';
+import type { IdDoLaboratorio, Laboratorio } from './world/laboratorioDaGalaxia';
 import * as THREE from 'three';
 import {
   Engine,
@@ -1156,6 +1158,15 @@ export class Director {
    */
   private galaxiaForcada: CaminhoDaGalaxia | null = lerPortaGalaxia(this.debug.get('galaxia'));
   /**
+   * O LABORATÓRIO DA GALÁXIA (Ajustes, 13/11/2026) — os botões do protótipo
+   * WebGPU e os do nível de detalhe do WebGL; cada um `null` = padrão. Lido
+   * no CAMPO (as portas da URL, pela lei de cada controle) para valer já na
+   * primeira galáxia. Todos são vivos, menos os sorteios, que reassam.
+   */
+  private laboratorio: Laboratorio = lerLaboratorio(this.debug);
+  /** o reassar dos sorteios espera o visitante parar de clicar (≠ 0: um pedido esperando) */
+  private esperaDosSorteios = 0;
+  /**
    * A POEIRA PERTO DE CASA ESCOLHIDA À MÃO (pedido do dono, 27/09) —
    * `null` = a do preset ('hoje', por ora). Mesmo contrato de
    * `gasForcado`: lida no CAMPO, e é a ÚNICA fonte do `?poeira=` numérico
@@ -2127,6 +2138,7 @@ export class Director {
       catalogos: this.catalogos,
       tier: this.tierDoMundo,
       galaxia: this.galaxiaForcada,
+      sorteios: this.laboratorio.sorteios,
       aoAvancar: (etapa) => this.rotular(etapa),
     });
     if (this.disposed) {
@@ -2490,6 +2502,8 @@ export class Director {
       // Sem este termo o gate fotografaria o mundo VELHO com o `?q=`
       // novo no selo, e mediria a corrida em vez da imagem.
       this.trocaPedida !== null ||
+      // os sorteios do laboratório pedidos e ainda na espera do clique seguinte
+      Boolean(this.esperaDosSorteios) ||
       // A GALÁXIA AINDA CHEGANDO (12/11/2026): a camada WebGPU e os
       // sorteios extras entram segundos depois de o app abrir — capturar
       // antes fotografaria a reserva WebGL dizendo ser a galáxia padrão
@@ -3200,6 +3214,8 @@ export class Director {
       poeira: this.poeiraForcada,
       galaxia: this.galaxiaForcada,
       galaxiaViva: this.galaxy?.caminho ?? this.galaxiaForcada ?? this.engine.preset.galaxia,
+      laboratorio: this.laboratorio,
+      galaxiaReassando: this.trocaPedida !== null || Boolean(this.esperaDosSorteios),
     });
     // a variante do gás (um dos sete controles acima) decide o modo
     // efetivo da poeira (`Nebula.poeiraModoEfetivo`) — toda troca de
@@ -3422,9 +3438,42 @@ export class Director {
     this.publicarQualidade();
   }
 
-  /** o pedido que um mundo atende — o tier e a galáxia escolhida */
+  /**
+   * O LABORATÓRIO DA GALÁXIA, AO VIVO (Ajustes, 13/11/2026). Um controle
+   * por vez (`id`, valor; `null` volta ao padrão) ou todos de uma vez
+   * (`zerar`). Os vivos chegam à galáxia no quadro seguinte, num mundo só
+   * — o filme, o Atlas e o voo livre veem a mesma galáxia. Os sorteios
+   * mudam o mundo: o pedido espera 0,4 s sem clique (três cliques
+   * seguidos assam um mundo, não três) e vai pela via da troca de tier,
+   * nos trabalhadores da carga, com o mundo velho na tela até o novo.
+   */
+  forcarLaboratorio(id: IdDoLaboratorio, valor: number | null) {
+    this.definirLaboratorio({ ...this.laboratorio, [id]: valor });
+  }
+
+  zerarLaboratorio() {
+    this.definirLaboratorio(LABORATORIO_PADRAO);
+  }
+
+  private definirLaboratorio(lab: Laboratorio) {
+    const sorteiosMudaram = lab.sorteios !== this.laboratorio.sorteios;
+    this.laboratorio = lab;
+    this.galaxy?.definirLaboratorio(lab);
+    this.perturbar();
+    if (sorteiosMudaram) {
+      window.clearTimeout(this.esperaDosSorteios);
+      this.esperaDosSorteios = window.setTimeout(() => {
+        this.esperaDosSorteios = 0;
+        void this.reassarMundo(this.engine.quality);
+        this.publicarQualidade();
+      }, 400);
+    }
+    this.publicarQualidade();
+  }
+
+  /** o pedido que um mundo atende — o tier, a galáxia escolhida e os sorteios */
   private chaveDoMundo(q: QualityLevel) {
-    return `${q}|${this.galaxiaForcada ?? 'preset'}`;
+    return `${q}|${this.galaxiaForcada ?? 'preset'}|${this.laboratorio.sorteios ?? 'preset'}`;
   }
 
   /**
@@ -3479,6 +3528,7 @@ export class Director {
     g.setFracaoDeParticulas(
       FRACAO_DE_PARTICULAS[this.particulasForcadas ?? this.engine.preset.particulas]
     );
+    g.definirLaboratorio(this.laboratorio);
   }
 
   /**
@@ -3555,6 +3605,7 @@ export class Director {
     // apaga o pedido em voo, para a captura parar de esperar por ele.
     if (chave === this.chaveDoMundoNaTela) {
       this.trocaPedida = null;
+      this.publicarQualidade();
       return;
     }
     this.trocaPedida = chave;
@@ -3562,6 +3613,7 @@ export class Director {
       catalogos: this.catalogos,
       tier: q,
       galaxia: this.galaxiaForcada,
+      sorteios: this.laboratorio.sorteios,
       // o loader não aparece: a troca é viva, e o rótulo de etapa é do
       // carregamento. O visitante vê o mundo velho até o mundo novo
       // estar pronto — que é a promessa inteira da letra C.
@@ -3643,6 +3695,8 @@ export class Director {
     // medida contra o que acabou de ser descartado
     this.nebula.invalidarLut();
     this.perturbar();
+    // o "aplicando…" do laboratório apaga e o caminho novo aparece no painel
+    this.publicarQualidade();
   }
 
   /**
@@ -3832,6 +3886,7 @@ export class Director {
       realceDoRelevo: this.realceDoRelevo('earth'),
       particulas: this.particulasForcadas,
       galaxia: this.galaxiaForcada,
+      laboratorio: this.laboratorio,
       // a bancada `?poeira=teste` vence a variante enquanto vale (ver
       // `aplicarPoeira`), e o selo a nomeia — `forcarPoeira` a desarma
       poeira: this.poeiraTeste ? 'teste' : this.poeiraForcada,
