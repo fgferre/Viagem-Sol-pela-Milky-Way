@@ -348,6 +348,10 @@ interface Piloto {
   indice: number;
   /** m − 5·log10(d) do NOME (o sidecar): a conferência do casamento com o catálogo */
   mBaseDoNome: number;
+  /** o índice na lista de nomeadas (a identidade dela no clarão da luz única) */
+  nomeada: number;
+  /** o mesmo para a companheira (−1 = sem nomeada própria) */
+  nomeadaDaCompanheira: number;
   principal: Superficie | null;
   /**
    * O PONTO DE QUEM NÃO ESTÁ NO BINÁRIO (as anfitriãs de exoplanetas
@@ -408,8 +412,9 @@ export class EstrelasNoQuadro {
   constructor(named: readonly NamedStar[], fios: EstrelasNoQuadro['fios']) {
     this.fios = fios;
     for (const dados of ESTRELAS_VISITAVEIS) {
-      const s = named.find((n) => n.n === dados.nomeNoCatalogo);
-      if (!s) continue;
+      const nomeada = named.findIndex((n) => n.n === dados.nomeNoCatalogo);
+      if (nomeada < 0) continue;
+      const s = named[nomeada];
       const pos = new THREE.Vector3(s.x, s.y, s.z);
       this.pilotos.push({
         dados,
@@ -417,6 +422,8 @@ export class EstrelasNoQuadro {
         eixo: eixoDeRotacao(dados, pos, new THREE.Vector3()),
         indice: -1,
         mBaseDoNome: s.d > 0 ? s.m - 5 * Math.log10(s.d) : NaN,
+        nomeada,
+        nomeadaDaCompanheira: named.findIndex((n) => n.n === dados.companheira?.nome),
         principal: null,
         pontoProprio: null,
         companheira: null,
@@ -493,7 +500,17 @@ export class EstrelasNoQuadro {
       corpo,
       armado: false,
       estado: estadoDe(d.id, corpo.raioPc, d.teffK.v, p.pos),
-      clarao: { vaga, pos: p.pos, mBase, cor, soltura: 1, presenca: 1, pisoPx: 0, raioPc: corpo.raioPc },
+      clarao: {
+        vaga,
+        pos: p.pos,
+        mBase,
+        cor,
+        soltura: 1,
+        presenca: 1,
+        pisoPx: 0,
+        nomeada: p.nomeada,
+        raioPc: corpo.raioPc,
+      },
     };
     const pb = parametrosDaCompanheira(d);
     if (pb && d.companheira) {
@@ -519,6 +536,7 @@ export class EstrelasNoQuadro {
           soltura: 1,
           presenca: 1,
           pisoPx: 0,
+          nomeada: p.nomeadaDaCompanheira,
           raioPc: cb.raioPc,
         },
         ponto,

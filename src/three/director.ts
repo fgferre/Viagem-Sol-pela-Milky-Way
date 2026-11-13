@@ -57,7 +57,7 @@ import type { OclusorDeRotulo, StarLabel } from './world/labels';
 // O CLARÃO DE ASAS (M2): a camada única da óptica das fontes fortes,
 // por orçamento de fluxo — no lugar das 16 heroes de autor. Quem o
 // alimenta por quadro é o módulo do Sol (director/solNoQuadro.ts).
-import { ClaraoDeAsas } from './world/clarao';
+import { ClaraoDeAsas, lerPortaLuzUnica } from './world/clarao';
 import { SondaDaLente } from './lente/sondaDaLente';
 import { HeroStars } from './world/heroStars';
 import { Galaxy, GAL, dentroDoDisco } from './world/galaxy';
@@ -1096,6 +1096,9 @@ export class Director {
   private events: DirectorEvents;
   private readonly abortController = new AbortController();
   private readonly debug = new URLSearchParams(window.location.search);
+  /** a LUZ ÚNICA candidata (`?luzunica=1`, world/clarao.ts): sem heroes de
+   *  autor nem o remendo da chegada — o clarão da lei para toda estrela */
+  private readonly luzUnica = lerPortaLuzUnica(this.debug.get('luzunica'));
   /**
    * O NÍVEL DA NEBULOSA ESCOLHIDO À MÃO (item 145) — `null` = o do
    * preset. O override mora AQUI e não na `Nebula` porque é o Director
@@ -2024,7 +2027,10 @@ export class Director {
     // migração: o clarão é LENTE — soma óptica por cima do ponto, do
     // raio do sprite para fora, e não pede cessão a ninguém. Quem
     // decide quem o tem é o fluxo, por quadro, com histerese (§5.21).
-    this.clarao = new ClaraoDeAsas(this.meta.named);
+    this.clarao = new ClaraoDeAsas(this.meta.named, {
+      luzUnica: this.luzUnica,
+      camadaDoCampo: CAMADA_DO_CAMPO,
+    });
     this.sondaDaLente = new SondaDaLente();
     // (o `SunStar` morreu no M1 da Lei da Estrela: o Sol de longe é o
     // ponto fotométrico da camada dos dez, em toda distância — a mesma
@@ -2050,7 +2056,7 @@ export class Director {
           camera: this.engine.camera,
           quality: this.engine.quality,
         }),
-        heroes: () => this.heroes,
+        heroes: () => (this.luzUnica ? undefined : this.heroes),
       });
     }
 
@@ -4267,7 +4273,7 @@ export class Director {
       // solar não tem; Atlas e voo livre seguem com elas)
       const doFilme = this.phase === 'intro' || this.phase === 'journey' || this.phase === 'end';
       this.heroes.group.visible =
-        !this.hide.has('noclarao') && (!doFilme || this.filme.heroes);
+        !this.luzUnica && !this.hide.has('noclarao') && (!doFilme || this.filme.heroes);
       this.heroes.update(
         time,
         cam.position,
