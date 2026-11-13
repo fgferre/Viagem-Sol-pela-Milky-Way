@@ -143,7 +143,8 @@
    no mesmo pixel), e algumas delas pintam cor e sombra com seletores mais
    fortes que estes */
 .veu-legivel > .veu-sombra,
-.veu-legivel > .veu-sombra * {
+.veu-legivel > .veu-sombra *,
+.controls-bar.veu-sombra * {
   --teto: rgb(50 50 50);
   color: var(--teto) !important;
   text-shadow: none !important;
@@ -151,11 +152,29 @@
 .veu-legivel > .veu-sombra .caption-title {
   --teto: rgb(96 96 96);
 }
-/* a cadeia mora em cada LINHA, e não na cópia inteira, para cada uma
-   espalhar o próprio teto */
+/* O TOPO DO FILME (12/11): a cópia muda da barra é uma barra irmã
+   (`BarraOuAlcas.tsx`) — a de verdade é camada própria e some por
+   opacidade, então o véu não poderia morar dentro dela. Esta cópia é o
+   grupo que escurece: fica logo abaixo da barra (44 contra 45), e dos
+   botões copiados sobra só o miolo — borda e fundo sairiam como tinta. */
+.controls-bar.veu-sombra {
+  z-index: 44;
+  mix-blend-mode: darken;
+}
+.controls-bar.veu-sombra,
+.controls-bar.veu-sombra * {
+  pointer-events: none;
+}
+.controls-bar.veu-sombra * {
+  border-color: transparent !important;
+  background: none !important;
+}
+/* a cadeia mora em cada LINHA (e em cada botão do topo), e não na cópia
+   inteira, para cada uma espalhar o próprio teto */
 .veu-legivel > .veu-sombra:not(.caption-wrap),
 .veu-sombra .caption-title,
-.veu-sombra .caption-sub {
+.veu-sombra .caption-sub,
+.controls-bar.veu-sombra .hud-btn {
   filter: drop-shadow(0 0 1px var(--teto)) drop-shadow(0 0 1px var(--teto)) drop-shadow(0 0 2px var(--teto))
     drop-shadow(0 0 2px var(--teto)) drop-shadow(0 0 3px var(--teto)) drop-shadow(0 0 5px var(--teto))
     drop-shadow(0 0 8px var(--teto));

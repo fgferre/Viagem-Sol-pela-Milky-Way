@@ -36,7 +36,7 @@ const variavel = (css: string, nome: string) => new RegExp(`${nome}:\\s*([^;]+);
 
 describe('o véu de legibilidade', () => {
   it('o teto das linhas pequenas dá 4,5:1 ao cinza delas, e o do título dá 3:1', () => {
-    const pequenas = rgb(variavel(corpo(FILME, '.veu-legivel > .veu-sombra *'), '--teto'));
+    const pequenas = rgb(variavel(corpo(FILME, '.controls-bar.veu-sombra *'), '--teto'));
     const titulo = rgb(variavel(corpo(FILME, '.veu-legivel > .veu-sombra .caption-title'), '--teto'));
     expect(contraste(hex(variavel(BASE, '--texto-2')), pequenas)).toBeGreaterThanOrEqual(4.5);
     expect(contraste(hex(variavel(BASE, '--texto')), titulo)).toBeGreaterThanOrEqual(3);
@@ -51,5 +51,29 @@ describe('o véu de legibilidade', () => {
     expect(rodape).toMatch(/position:\s*absolute/);
     expect(rodape).not.toMatch(/z-index/);
     expect(corpo(FILME, '.dest-line.veu-legivel')).toMatch(/z-index:\s*auto/);
+  });
+});
+
+describe('o véu do topo do filme', () => {
+  // a barra de cima é camada própria (fixed, z-index, opacidade, máscara no
+  // celular): a cópia muda é uma barra IRMÃ, e quebra calada se perder o
+  // darken, subir acima da barra, ou esmaecer num compasso diferente
+  const BARRA = readFileSync(new URL('../components/BarraOuAlcas.tsx', import.meta.url), 'utf8');
+  const CONTROLES = ler('03-controles.css');
+
+  it('mistura por darken logo abaixo da barra e veste o mesmo teto da legenda', () => {
+    const veu = corpo(FILME, '.controls-bar.veu-sombra');
+    expect(veu).toMatch(/mix-blend-mode:\s*darken/);
+    const zVeu = Number(/z-index:\s*(\d+)/.exec(veu)![1]);
+    const zBarra = Number(/z-index:\s*(\d+)/.exec(corpo(CONTROLES, '.controls-bar'))![1]);
+    expect(zVeu).toBe(zBarra - 1);
+    expect(FILME).toMatch(/\.veu-legivel > \.veu-sombra \*,\s*\.controls-bar\.veu-sombra \*\s*\{\s*--teto/);
+  });
+
+  it('esmaece com a barra: mesmas classes e o mesmo chromeSumido, depois dela no documento', () => {
+    const real = BARRA.indexOf('className={`controls-bar${chromeSumido}`}');
+    const copia = BARRA.indexOf('className={`controls-bar veu-sombra${chromeSumido}`}');
+    expect(real).toBeGreaterThan(0);
+    expect(copia).toBeGreaterThan(real);
   });
 });

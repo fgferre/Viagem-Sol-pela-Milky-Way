@@ -25,8 +25,8 @@ import {
   celulaDaParticula,
   CELULAS_DA_GRADE,
   ladoDaChave,
-  gerarNuvensDePoeira,
-  tauDasNuvens,
+  LADO_DO_TAU_DAS_NUVENS,
+  tauDasNuvensEmMeia,
 } from './geradorDaGalaxia';
 import { porCurva } from '../core/engine';
 import type { CaminhoDaGalaxia } from '../core/engine';
@@ -63,6 +63,8 @@ export class Galaxy {
   /** ?galaxia=particulas: o τ⊥ somado das NUVENS de poeira (R16F, mesma
    *  convenção do τ pintado) — no lugar do 8º bake, que não roda */
   private tauNuvens: THREE.DataTexture | null = null;
+  /** o τ⊥ das nuvens vindo da carga, até virar `tauNuvens` no bake */
+  private nuvensEmMeia: Uint16Array | null;
   /** o mesmo τ das nuvens no canal A, que é onde as forjas o leem (?forgetau=1) */
   private tauNuvensRGBA: THREE.DataTexture | null = null;
   private markerMesh!: THREE.Mesh;
@@ -128,6 +130,8 @@ export class Galaxy {
   private camadaWebgpu: CamadaWebgpu | null = null;
   /** a camada foi pedida e ainda não chegou (nem desistiu) */
   private webgpuEmVoo = false;
+  /** a fração da luz das partículas que cabe à camada WebGPU, do último `update` */
+  private cessao = 0;
   /** quem acompanha a troca do caminho que desenha (Director → painel e selo) */
   aoMudarCaminho: (() => void) | null = null;
   private descartada = false;
@@ -230,7 +234,8 @@ export class Galaxy {
   private ownsDustMap: boolean;
 
   constructor(
-    buffers: GalaxyBuffers,
+    /** `nuvens`: o τ⊥ das nuvens que a carga já assou (só-partículas) */
+    buffers: GalaxyBuffers & { nuvens?: Uint16Array | null },
     dustMap: THREE.Texture,
     structureMap: THREE.Texture,
     /** o desenho que a carga montou (`montarCarga`): só-partículas ou o
@@ -238,6 +243,7 @@ export class Galaxy {
     desenho: { soParticulas: boolean; tetoLodMilhoes: number } = { soParticulas: false, tetoLodMilhoes: 5 }
   ) {
     this.soParticulas = desenho.soParticulas;
+    this.nuvensEmMeia = buffers.nuvens ?? null;
     this.tetoLod = tune('lodmax', desenho.tetoLodMilhoes) * 1e6;
     this.ownsDustMap = !dustMap;
     this.dustMap = dustMap ?? Galaxy.emptyDustMap();
@@ -304,6 +310,9 @@ export class Galaxy {
 
     // --- emissão contínua dos braços em três lâminas 3D ---
     this.createDiscLayers();
+    // só-partículas: as lâminas nunca acendem (`update`) nem são assadas;
+    // apagadas desde já, o aquecimento de shaders não compila a analítica
+    if (this.soParticulas) for (const mesh of this.discMeshes) mesh.visible = false;
 
     // --- brilho contínuo do bojo ---
     this.glowMat = this.makeGlow(
@@ -544,6 +553,16 @@ export class Galaxy {
     renderer: THREE.WebGLRenderer,
     respirar?: () => Promise<boolean>
   ): Promise<boolean> {
+    // SÓ-PARTÍCULAS: as sete lâminas não acendem nunca (`discVisible`), e
+    // assá-las era ~0,4 s de GPU na carga para nada (13/11/2026). Daqui só
+    // sai o τ⊥ das nuvens, que a carga já trouxe pronto.
+    if (this.soParticulas) {
+      this.tauNuvens = Galaxy.texturaDasNuvens(this.nuvensEmMeia ?? tauDasNuvensEmMeia());
+      this.nuvensEmMeia = null;
+      this.ligarTauMap();
+      this.subirPontos(renderer);
+      return true;
+    }
     const bakeScene = new THREE.Scene();
     const bakeCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2));
@@ -576,9 +595,7 @@ export class Galaxy {
       // 8º bake: o mesmo fragmento com uTauExport=1 grava no alpha o τ
       // das PARTÍCULAS (crista suavizada + termo largo) — o mapa que a
       // extinção por partícula usa. Só a lâmina central precisa dele.
-      if (i === 3 && this.soParticulas) {
-        this.tauNuvens = Galaxy.texturaDasNuvens(1024);
-      } else if (i === 3) {
+      if (i === 3) {
         analytic.uniforms.uTauExport.value = 1;
         const tauRt = new THREE.WebGLRenderTarget(1024, 1024, {
           type: THREE.HalfFloatType,
@@ -658,18 +675,42 @@ export class Galaxy {
     return true;
   }
 
+  /**
+   * SOBE O BUFFER DAS PARTÍCULAS JÁ, num alvo de 1×1 fora da tela
+   * (13/11/2026). O `onUpload` dele solta a cópia JS — 122,7 MiB em
+   * cinema —, mas só no primeiro quadro em que o WebGL desenha os pontos; e
+   * de FORA do disco quem desenha é a camada WebGPU, então numa vista de
+   * fora (`de-cima`) a cópia ficava no heap a visita inteira (medido: heap
+   * de 462 MB contra 141 quando a câmera nascia dentro). Ela fica na placa,
+   * pronta para a volta ao disco ou para a queda do WebGPU.
+   */
+  private subirPontos(renderer: THREE.WebGLRenderer) {
+    const pts = this.brightPts;
+    const indice = this.group.children.indexOf(pts);
+    const cena = new THREE.Scene();
+    cena.add(pts);
+    const alvo = new THREE.WebGLRenderTarget(1, 1, { depthBuffer: false });
+    const prev = renderer.getRenderTarget();
+    renderer.setRenderTarget(alvo);
+    renderer.render(cena, new THREE.PerspectiveCamera());
+    renderer.setRenderTarget(prev);
+    alvo.dispose();
+    // de volta ao grupo, no MESMO lugar entre os irmãos
+    this.group.add(pts);
+    this.group.children.splice(this.group.children.indexOf(pts), 1);
+    this.group.children.splice(indice, 0, pts);
+  }
+
   /** o bind do τ⊥ num lugar só: a cópia compacta assada ou a 1×1 de repouso. */
   private ligarTauMap() {
     const tau = this.tauNuvens ?? this.tauParticulasRT?.texture;
     this.brightMat.uniforms.uTauMap.value = this.showGDust && tau ? tau : this.tauVazio;
   }
 
-  /** o τ⊥ das nuvens de poeira (gerarNuvensDePoeira) somado de cima, em meia
-   *  precisão: R a camada fina (molecular), G a espessa (atômico) */
-  private static texturaDasNuvens(N: number) {
-    const tau = tauDasNuvens(gerarNuvensDePoeira(), N, GAL.DISK_RADIUS);
-    const meia = new Uint16Array(tau.length);
-    for (let k = 0; k < tau.length; k++) meia[k] = THREE.DataUtils.toHalfFloat(tau[k]);
+  /** o τ⊥ das nuvens de poeira (`tauDasNuvensEmMeia`) como textura: R a
+   *  camada fina (molecular), G a espessa (atômico) */
+  private static texturaDasNuvens(meia: Uint16Array) {
+    const N = LADO_DO_TAU_DAS_NUVENS;
     const t = new THREE.DataTexture(meia, N, N, THREE.RGFormat, THREE.HalfFloatType);
     t.minFilter = THREE.LinearFilter;
     t.magFilter = THREE.LinearFilter;
@@ -998,6 +1039,8 @@ export class Galaxy {
   ) {
     this.group.visible =
       externalFade > 0.001 || markerFade > 0.001 || localBandFade > 0.001;
+    // a parte da luz que a camada WebGPU desenharia desta câmera (ver A CESSÃO)
+    this.cessao = this.group.visible ? THREE.MathUtils.smoothstep(externalFade, 0.8, 1) : 0;
     if (!this.group.visible) return;
 
     // SOMA, não max. As duas rampas são complementares por construção
@@ -1042,7 +1085,7 @@ export class Galaxy {
         // O motor desenha TODOS os seus sorteios, qualquer que seja a fração
         // de partículas do WebGL: o ganho dele não leva o ÷ fração (em
         // `alta`, metade, a galáxia saía com o dobro da luz).
-        const cessao = THREE.MathUtils.smoothstep(externalFade, 0.8, 1);
+        const cessao = this.cessao;
         const ganho = (u.uFade.value as number) * this.fracaoDeParticulas;
         this.camadaWebgpu.update(camera, screenW, screenH, tanHalfFov, ganho, cessao);
         u.uFade.value = (u.uFade.value as number) * (1 - cessao);
@@ -1124,14 +1167,17 @@ export class Galaxy {
   }
 
   /**
-   * Liga a camada WebGPU. `buffers` é o sorteio que este objeto já
-   * desenha; `sortear(s)` entrega os sorteios extras do mesmo modelo. Sem
-   * WebGPU (ou com a ponte quebrada) a camada não chega e o WebGL segue.
+   * Liga a camada WebGPU pedida pela carga (`CamadaWebgpu.criar`, que já
+   * sobe em paralelo com ela). Sem WebGPU (ou com a ponte quebrada) a
+   * camada não chega e o WebGL segue; numa galáxia clássica ela é solta.
    */
-  ligarWebgpu(buffers: GalaxyBuffers, sorteios: number, sortear: (s: number) => Promise<GalaxyBuffers>) {
-    if (!this.soParticulas) return;
+  ligarWebgpu(pedida: Promise<CamadaWebgpu | null>) {
+    if (!this.soParticulas) {
+      void pedida.then((camada) => camada?.dispose());
+      return;
+    }
     this.webgpuEmVoo = true;
-    void CamadaWebgpu.criar(buffers, sorteios, sortear).then((camada) => {
+    void pedida.then((camada) => {
       this.webgpuEmVoo = false;
       if (camada && this.descartada) camada.dispose();
       else if (camada) {
@@ -1161,9 +1207,20 @@ export class Galaxy {
     return this.camadaWebgpu ? 'webgpu' : 'particulas';
   }
 
-  /** a imagem ainda vai mudar sozinha: a camada a caminho ou sorteios por chegar */
+  /**
+   * A imagem ainda vai mudar sozinha: a camada a caminho ou sorteios por
+   * chegar — e ela desenharia DESTA câmera (13/11/2026). De dentro do disco
+   * (a abertura do Atlas, o filme até a saída) a camada não entra no quadro,
+   * e esperar por ela segurava a captura ~0,5 s por um pixel que não muda;
+   * se a câmera sai antes de ela chegar, a espera volta no mesmo quadro.
+   */
   get desenhoEmVoo(): boolean {
-    return this.webgpuEmVoo || (this.camadaWebgpu?.pendentes ?? 0) > 0;
+    return (this.webgpuEmVoo || (this.camadaWebgpu?.pendentes ?? 0) > 0) && this.desenhaDeFora;
+  }
+
+  /** a camada WebGPU (ou a falta dela) entra no quadro desta câmera */
+  get desenhaDeFora(): boolean {
+    return this.cessao > 0;
   }
 
   anunciarCaminho() {
@@ -1188,6 +1245,7 @@ export class Galaxy {
     this.tauNuvens?.dispose();
     this.tauNuvensRGBA?.dispose();
     this.tauVazio.dispose();
+    this.lod?.textura.dispose();
     if (this.ownsDustMap) this.dustMap.dispose();
     this.group.traverse((o) => {
       if (o instanceof THREE.Mesh || o instanceof THREE.Points) o.geometry.dispose();

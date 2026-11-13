@@ -1353,3 +1353,18 @@ export function tauDasNuvens(nuvens: NuvensDePoeira, N: number, meia: number): F
   }
   return tau;
 }
+
+/** o lado (texels) do mapa τ⊥ das nuvens — o mesmo nos dois motores */
+export const LADO_DO_TAU_DAS_NUVENS = 1024;
+
+/**
+ * O MAPA τ⊥ DAS NUVENS PRONTO PARA A GPU: RG em meia precisão, como os dois
+ * motores (WebGL e WebGPU) o leem. Feito UMA vez, no trabalhador da carga
+ * (13/11/2026): até aqui cada motor o refazia na thread, ~0,4 s cada.
+ */
+export function tauDasNuvensEmMeia(): Uint16Array {
+  const tau = tauDasNuvens(gerarNuvensDePoeira(), LADO_DO_TAU_DAS_NUVENS, GAL.DISK_RADIUS);
+  const meia = new Uint16Array(tau.length);
+  for (let k = 0; k < tau.length; k++) meia[k] = THREE.DataUtils.toHalfFloat(tau[k]);
+  return meia;
+}

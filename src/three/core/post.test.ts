@@ -214,6 +214,22 @@ describe('o MSAA do alvo da cena (item 120, F1 · L6; resolvido uma vez desde o 
     const corpoAmostras = amostras.slice(0, amostras.indexOf('\n  }'));
     expect(corpoAmostras).toMatch(/this\.composer\.renderTarget1\.dispose\(\)/);
   });
+
+  it('a troca de amostras não deixa a régua de texturas do three com 1 a mais (13/11/2026)', () => {
+    // O three soma 1 por framebuffer montado e desconta 1 só pela textura
+    // compartilhada: sem o acerto, cada troca de tier crescia a conta do
+    // juiz de memória sem textura nova na placa. O acerto mora no ouvinte
+    // do destino, e o destino tem de ser disposto ANTES do alvo — com a
+    // ordem invertida o ouvinte já não acha os dois framebuffers.
+    const classe = post.slice(post.indexOf('class CenaResolvidaUmaVez'));
+    const corpo = classe.slice(0, classe.indexOf('\nexport class Post'));
+    expect(corpo).toMatch(/info\.memory\.textures--/);
+    const amostras = post.slice(post.indexOf('aplicarAmostras(tier'));
+    const corpoAmostras = amostras.slice(0, amostras.indexOf('\n  }'));
+    expect(corpoAmostras.indexOf('this.composer.renderTarget1.dispose()')).toBeLessThan(
+      corpoAmostras.indexOf('rt.dispose()')
+    );
+  });
 });
 
 describe('a porta `?nobloom=1` (item 72)', () => {
