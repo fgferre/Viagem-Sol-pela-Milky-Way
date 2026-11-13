@@ -42,6 +42,7 @@ import { RAIO_EQ_TERRA_PC, posicaoDaTerraUA } from '../world/corpos/terra';
 import { posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
 import { AtlasRig, K_MIN_RAIOS, K_PISO_DO_CORPO } from '../cinematic/atlasRig';
 import { IDS_ESCULPIDOS, criaGeometriaEsculpida } from '../world/corpos/esculpido';
+import { LUGARES_DA_BUSCA } from '../world/lugaresDoCeu';
 
 // O runner da casa é `node` (vitest.config.ts) e o enquadramento pergunta
 // a largura da janela (`larguraDeCss`) a cada `apply`. Uma linha de
@@ -329,6 +330,44 @@ describe('o degrau `corpo` de um corpo que não é a Terra', () => {
     aplicar();
     expect(atlas.alvo.distanceTo(TERRA)).toBeGreaterThan(3 * AU_PARA_PC);
     expect(camera.position.toArray()).toEqual(poseDoGesto);
+  });
+
+  it('o cartão de um planeta chega a ele vindo de QUALQUER lugar do céu (12/11)', () => {
+    // MEDIDO no navegador: das Híades (ou da Via Láctea de cima, ou de
+    // Sgr A✱) o cartão "Saturno: os anéis, de perto" deixava a câmera no
+    // lugar anterior, a linha de cima com o nome velho, e a busca seguinte
+    // não movia mais nada — o `focoEstrela` do lugar sobrevivia e o degrau
+    // do corpo descia à estrela ou ao buraco em vez do planeta.
+    const controle = bancada();
+    controle.escada.focarNoCorpo('jupiter', 'corpo');
+    const nomeDeJupiter = controle.focos.at(-1);
+    // a mesma porta de `escolherAlvo` para um lugar
+    const visitar = (e: InstanceType<typeof Escada>, l: (typeof LUGARES_DA_BUSCA)[number]) =>
+      l.raioPc ? e.visitarLugar(l) : e.visitarEstrela({ n: l.nome, x: l.x, y: l.y, z: l.z });
+    const sgrA = LUGARES_DA_BUSCA.find((l) => l.id === 'sagittarius-a')!;
+    const origens = [
+      ...LUGARES_DA_BUSCA.map((l) => (e: InstanceType<typeof Escada>) => visitar(e, l)),
+      // o buraco de perto (o degrau corpo do centro)
+      (e: InstanceType<typeof Escada>) => {
+        visitar(e, sgrA);
+        e.aproximarDoCorpo();
+      },
+    ];
+    for (const ir of origens) {
+      const { escada, camera, aplicar, focos } = bancada();
+      ir(escada);
+      // o cartão: o mesmo par que `escolherAlvo` dispara (ver + raios)
+      escada.focarNoCorpo('jupiter', 'corpo');
+      escada.pinarEmRaios(10);
+      aplicar();
+      expect(escada.escadaViva).toMatchObject({ degrau: 'corpo', corpoId: 'jupiter' });
+      expect(focos.at(-1)).toBe(nomeDeJupiter);
+      expect(camera.position.distanceTo(JUPITER) / RAIO_JUPITER).toBeCloseTo(10, 3);
+      // e a busca seguinte ainda move a câmera
+      escada.focarNoCorpo('earth', 'corpo');
+      aplicar();
+      expect(camera.position.distanceTo(TERRA)).toBeLessThan(10 * RAIO_EQ_TERRA_PC);
+    }
   });
 });
 
