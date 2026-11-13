@@ -50,14 +50,9 @@ const DESTINOS = [
   { id: 'rigil-kentaurus', foco: 'rigil kentaurus' },
   // O PRIMEIRO SISTEMA PLANETÁRIO (12/11/2026): os sete na chegada
   { id: 'trappist-1', foco: 'TRAPPIST-1' },
-  // O CENTRO DA GALÁXIA NÃO SE FOTOGRAFA DE DENTRO: visitar o lugar põe a
-  // câmera no gás do bojo e a captura sai uma névoa bege sem estrela
-  // (1ª rodada, 08/09). A prévia usa o quadro do FILME na chegada — a
-  // galáxia de fora, com o bojo no centro do quadro (t=148; em t=136–142
-  // a câmera ainda está no gás e em t=178 já pousou) —, o que §3.4 do
-  // PLAN-UI.md já previa (`?t=…&shot=2`); `consulta` vale inteira, sem
-  // `atlas=1`.
-  { id: 'sagittarius-a', consulta: 't=148&q=cinema&shot=2' },
+  // O BURACO NEGRO NO CENTRO DA GALÁXIA: a vista de perto do cartão
+  // (disco laranja e sombra escura), como o visitante chega.
+  { id: 'sagittarius-a', foco: 'sagittarius-a', ver: 'corpo' },
   // OS LUGARES DO CÉU (céu profundo, 12/11/2026): a vista de chegada de
   // cada um, pelo mesmo `?foco=` do cartão — o enquadramento é do lugar
   { id: 'via-lactea', foco: 'via-lactea' },
