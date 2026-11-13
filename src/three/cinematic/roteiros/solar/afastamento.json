@@ -5,13 +5,20 @@
       "qa": {"saidaDeSaturno": 0.3},
       "preload": {"corpos": ["uranus", "neptune", "triton"]},
       "camera": {
-        "duracao": 10,
+        "duracao": 7.5,
         "movimento": {
           "tipo": "aproximacao",
           "centro": "Saturno",
           "de": "postal2",
           "para": "saidaDeSaturno",
-          "ritmoDaDirecao": "quadratic"
+          "ritmoDaDirecao": "quadratic",
+          "progresso": {
+            "tipo": "soma",
+            "curvas": [
+              {"tipo": "rampa", "de": 0, "para": 0.3},
+              {"tipo": "rampa", "de": 0, "para": 0.7, "ritmo": "launch"}
+            ]
+          }
         },
         "mira": {"tipo": "pan-direcao", "de": "Saturno", "para": "Urano", "ate": 0.5},
         "lente": [50, 50],
@@ -50,7 +57,7 @@
       "nome": "uranoPassagem",
       "qa": {"urano": 0.3},
       "camera": {
-        "duracao": 6.9,
+        "duracao": 9.4,
         "movimento": {
           "tipo": "raspao",
           "centro": "Urano",
@@ -74,7 +81,7 @@
       "olhar": "assunto",
       "legendas": [
         {
-          "em": 0.12,
+          "em": 0.088,
           "texto": "Urano — gira deitado",
           "subtexto": "a luz do Sol aqui é cerca de 1/390 da nossa",
           "en": {"texto": "Uranus — it spins on its side", "subtexto": "the sunlight here is about 1/390 of ours"},
