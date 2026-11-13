@@ -282,6 +282,8 @@ export class Galaxy {
       this.brightMat.uniforms.uCelulas = { value: this.lod.textura };
       this.brightMat.uniforms.uDesenho = { value: 0 };
       this.brightMat.uniforms.uRho = { value: Galaxy.RHO_LOD };
+      this.brightMat.uniforms.uRhoPiso = { value: tune('lodpiso', 2) };
+      this.brightMat.uniforms.uGanhoPerto = { value: 1 };
       this.brightMat.uniforms.uKMax = { value: Galaxy.KMAX_LOD };
       this.brightMat.uniforms.uFracK = { value: 1 };
       this.brightMat.uniforms.uEspLod = { value: tune('lodesp', 0.6) };
@@ -1048,6 +1050,8 @@ export class Galaxy {
       if (this.soParticulas) {
         // o núcleo entra pela MESMA rampa que acende a luz das lâminas
         u.uNucleo.value = externalFade;
+        // a pegada de perto (lei de tela) leva só a rampa de dentro do disco
+        u.uGanhoPerto.value = brightFade / (brightFade + Galaxy.GANHO_DAS_LAMINAS * externalFade);
         u.uNucleoPc.value = this.nucleoPc();
         if (this.lod) this.lod.fade = externalFade;
       }
