@@ -39,12 +39,17 @@
    fica no pixel de sempre.
 
    `align-items: flex-start` para cada peça manter a própria largura de
-   conteúdo, como tinha quando era `fixed` sem `right`. */
+   conteúdo, como tinha quando era `fixed` sem `right`.
+
+   `absolute` SEM `z-index`, e não `fixed` com 40 (12/11): a `.hud-root`
+   já é `fixed` em tela cheia, então a geometria é a mesma, mas assim a
+   coluna não vira camada própria — e o véu de legibilidade das peças
+   (`.veu-legivel`, abaixo) enxerga a cena. Quem fica acima dos rótulos
+   e das tarjas são as peças, com o 40 de sempre. */
 .filme-rodape {
-  position: fixed;
+  position: absolute;
   left: 6vw;
   bottom: 11vh;
-  z-index: 40;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -98,6 +103,91 @@
     0 0 3px rgba(0, 0, 0, 0.95),
     0 0 8px rgba(0, 0, 0, 0.9),
     0 0 16px rgba(0, 0, 0, 0.8);
+}
+/* O VÉU DE LEGIBILIDADE (12/11). A sombra acima é tinta preta por cima
+   da cena, desenhada A PARTIR das letras — e letra fina dá pouca sombra:
+   sobre a superfície do Sol, o Saturno claro e a galáxia bege em volta do
+   buraco negro o fundo entre as letras continuava quase branco, e o cinza
+   do subtítulo, da dica e da lente ficava abaixo de 2:1. Engrossar a
+   sombra preta mudaria também as cenas escuras, que já liam bem.
+   O véu é uma CÓPIA MUDA do texto (mesmas classes, então mesmo pixel e
+   mesma entrada), engordada por sombras em cadeia — cada `drop-shadow`
+   espalha a anterior — e misturada por `mix-blend-mode: darken`: ela
+   pinta min(cena, teto) canal a canal, um TETO DE BRILHO e não tinta.
+   Todo pixel da cena abaixo do teto sai IDÊNTICO, e o que passa dele cai
+   para o teto. Dois tetos, pela régua WCAG: as linhas pequenas e cinza
+   (subtítulo, dica, lente, rumo) pedem 4,5:1 e ficam com cinza 50; o
+   título, grande e quase branco, pede 3:1 e fica com 96 — sobre a poeira
+   das cenas escuras ele não muda nada. A forma é a das letras, como a
+   sombra que o dono escolheu na E4: nada de caixa nem véu desfocado.
+   Não lê a cena nem custa leitura de GPU.
+   PRECISA ENXERGAR A CENA: do véu até a `.hud-root` nenhum ancestral pode
+   ser camada própria (`fixed`, `z-index`, opacidade, transform) — por
+   isso a coluna do rodapé, a lente e o rumo são `absolute` sem
+   `z-index`, a cópia fica no 39 e o texto de verdade no 40. */
+.veu-legivel {
+  position: relative;
+}
+.veu-legivel > * {
+  position: relative;
+  z-index: 40;
+}
+.veu-legivel > .veu-sombra {
+  position: absolute;
+  inset: 0;
+  z-index: 39;
+  pointer-events: none;
+  mix-blend-mode: darken;
+}
+/* `!important` porque a cópia veste as classes do original (é o que a põe
+   no mesmo pixel), e algumas delas pintam cor e sombra com seletores mais
+   fortes que estes */
+.veu-legivel > .veu-sombra,
+.veu-legivel > .veu-sombra *,
+.controls-bar.veu-sombra * {
+  --teto: rgb(50 50 50);
+  color: var(--teto) !important;
+  text-shadow: none !important;
+}
+.veu-legivel > .veu-sombra .caption-title {
+  --teto: rgb(96 96 96);
+}
+/* O TOPO DO FILME (12/11): a cópia muda da barra é uma barra irmã
+   (`BarraOuAlcas.tsx`) — a de verdade é camada própria e some por
+   opacidade, então o véu não poderia morar dentro dela. Esta cópia é o
+   grupo que escurece: fica logo abaixo da barra (44 contra 45), e dos
+   botões copiados sobra só o miolo — borda e fundo sairiam como tinta. */
+.controls-bar.veu-sombra {
+  z-index: 44;
+  mix-blend-mode: darken;
+}
+.controls-bar.veu-sombra,
+.controls-bar.veu-sombra * {
+  pointer-events: none;
+}
+.controls-bar.veu-sombra * {
+  border-color: transparent !important;
+  background: none !important;
+}
+/* a cadeia mora em cada LINHA (e em cada botão do topo), e não na cópia
+   inteira, para cada uma espalhar o próprio teto */
+.veu-legivel > .veu-sombra:not(.caption-wrap),
+.veu-sombra .caption-title,
+.veu-sombra .caption-sub,
+.controls-bar.veu-sombra .hud-btn {
+  filter: drop-shadow(0 0 1px var(--teto)) drop-shadow(0 0 1px var(--teto)) drop-shadow(0 0 2px var(--teto))
+    drop-shadow(0 0 2px var(--teto)) drop-shadow(0 0 3px var(--teto)) drop-shadow(0 0 5px var(--teto))
+    drop-shadow(0 0 8px var(--teto));
+}
+.veu-sombra .caption-rule {
+  visibility: hidden;
+}
+/* lente e rumo (03-controles.css) são `fixed` no 40: aqui viram
+   `absolute` sem camada, como a coluna da legenda */
+.lente-line.veu-legivel,
+.dest-line.veu-legivel {
+  position: absolute;
+  z-index: auto;
 }
 /* a dica de pausa no tom do subtítulo: cinza, lia mal sobre o Sol e o chão da Lua (só no filme; voo livre e Atlas seguem cinza) */
 .hud-root[data-fase='journey'] .filme-rodape .free-hint {

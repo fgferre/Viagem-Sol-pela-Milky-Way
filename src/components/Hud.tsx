@@ -256,12 +256,24 @@ export function Caption({
 }) {
   // cinema: a legenda entra, respira (~7 s) e SAI — não fica pendurada
   // até a próxima (animações puras em CSS; a key remonta e reinicia)
+  // o véu de legibilidade (02-filme.css) é uma CÓPIA muda da legenda, com as
+  // mesmas classes para cair no mesmo pixel e entrar no mesmo compasso
   if (!caption) return null;
-  return (
-    <div key={showKey} className="caption-wrap show" role="status" aria-live="polite">
+  const corpo = (
+    <>
       <div className="caption-rule" />
       <div className="caption-title">{caption}</div>
       {sub && <div className="caption-sub">{sub}</div>}
+    </>
+  );
+  return (
+    <div key={showKey} className="veu-legivel">
+      <div className="caption-wrap show veu-sombra" aria-hidden="true">
+        {corpo}
+      </div>
+      <div className="caption-wrap show" role="status" aria-live="polite">
+        {corpo}
+      </div>
     </div>
   );
 }

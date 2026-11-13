@@ -16,14 +16,21 @@ import {
   LUAS_DO_SISTEMA,
 } from '../../three/atlasConfig';
 import { PROCEDENCIA } from '../../three/selo';
-import { sistemaDaEstrela } from '../exoplanetas';
+import { SISTEMAS_PLANETARIOS, comAnfitrias, sistemaDaEstrela } from '../exoplanetas';
+import { LUGARES_DO_FILME } from '../lugaresDoFilme';
 import type { MetaEfemerides } from './efemerides';
 import { decodeEfemerides, MotorEfemerides } from './efemerides';
 import type { StarsMeta } from '../../three/config';
 import type { EntradaDeTextura, ManifestDeTexturas } from '../../three/world/corpos/texturas';
 import type { CorpoNoJson, CorposDoAtlas, EditorialDoCorpo, Ficha } from './ficha';
-import { estrelaVisitavelPorNome } from './estrelasVisitaveis';
-import { formatarDuracao, montarFicha, montarFichaDeEstrela } from './ficha';
+import { ESTRELAS_VISITAVEIS, estrelaVisitavelPorNome } from './estrelasVisitaveis';
+import {
+  formatarDuracao,
+  montarFicha,
+  montarFichaDeEstrela,
+  montarFichaDeExoplaneta,
+  montarFichaDeLugar,
+} from './ficha';
 import { temperatureFromBV } from './stellarPhysics';
 import { dateToTDB } from './time';
 import { definirIdioma } from '../idioma';
@@ -1098,6 +1105,45 @@ describe('a ficha nas duas línguas', () => {
         .flatMap((s) => s.linhas.map((l) => l.valor))
         .join('|');
     expect(prosa(comEn)).not.toBe(prosa(piso));
+  });
+
+  // A FONTE QUE NÃO MUDA DE LÍNGUA É CITAÇÃO (crítica de 12/11): autor,
+  // ano, revista, missão, catálogo — o que não se traduz. Uma explicação
+  // entre parênteses ("lithium depletion boundary" na ficha portuguesa
+  // das Plêiades, "relação massa–raio" na inglesa de Proxima b) é TEXTO,
+  // e texto mora nas duas línguas: `{ pt, en }` na tabela do dado ou uma
+  // chave das tabelas de idioma. A prova é de ESTRUTURA, não de prosa:
+  // monta as fichas de lugar, de estrela visitável e de exoplaneta nas
+  // duas línguas e, onde a fonte saiu IGUAL, não admite palavra em caixa
+  // baixa além do "et al." e das partículas de sobrenome ("van der") —
+  // nome próprio, sigla e número passam.
+  it('a fonte que sai igual nas duas línguas é só citação', () => {
+    const NA_CITACAO = new Set(['et', 'al', 'van', 'der']);
+    const catalogo = comAnfitrias(starsMeta.named);
+    const fontes = () =>
+      [
+        ...LUGARES_DO_FILME.map(montarFichaDeLugar),
+        ...ESTRELAS_VISITAVEIS.map(
+          (e) => montarFichaDeEstrela(e.nomeNoCatalogo, catalogo.find((s) => s.n === e.nomeNoCatalogo))!
+        ),
+        ...SISTEMAS_PLANETARIOS.flatMap((s) =>
+          s.planetas.map((p) => montarFichaDeExoplaneta(p, s, estrelaVisitavelPorNome(s.estrela)))
+        ),
+      ].flatMap((f) => todasAsLinhas(f).map((l) => ({ onde: `${f.id ?? f.nome}/${l.rotulo}`, fonte: l.fonte ?? '' })));
+    const pt = fontes();
+    definirIdioma('en');
+    const en = fontes();
+    expect(en.length).toBe(pt.length);
+    expect(pt.length).toBeGreaterThan(100);
+    const textoNaCitacao: string[] = [];
+    for (let i = 0; i < pt.length; i++) {
+      if (pt[i].fonte !== en[i].fonte) continue;
+      const soltas = pt[i].fonte
+        .split(/[^\p{L}]+/u)
+        .filter((p) => p && p === p.toLowerCase() && !NA_CITACAO.has(p));
+      if (soltas.length) textoNaCitacao.push(`${pt[i].onde}: «${pt[i].fonte}»`);
+    }
+    expect(textoNaCitacao).toEqual([]);
   });
 
   // A NOTA DE VALIDADE (item 130) é `registroOrbital` + `notaDeValidade`

@@ -378,7 +378,7 @@ function coresGLSL(): string {
 //
 // `seedMax` só serve mais ao caminho ANTIGO — o array fixo de nuvens-
 // semente por proximidade da câmera (`nuvensSemente.ts`, 32 slots). O
-// bake novo lê as sementes de uma DATA TEXTURE (256×2, `texelFetch`), não
+// bake novo lê as sementes de uma DATA TEXTURE (SEMENTES_DO_BAKE×2, `texelFetch`), não
 // de um array de uniform: ver `glslBakeDensity`.
 //
 // Compartilhado entre o raymarch (`glslDensity`) e o bake
@@ -759,26 +759,48 @@ ${coresGLSL()}
 // paleta, uma vez por voxel do volume 128³ que `Nebula.bake()` assa.
 // Usado só por `NEBULA_BAKE_FRAG` (nebulaShaders.ts).
 //
-// `seedSlots` é o teto do loop de sementes (256 — a textura de dados que
-// `nuvensSemente.sementesParaBake` escreve, não um array de uniform).
-// Sem seleção por raio (não há raio, é um voxel só) nem fade de fronteira
-// (a textura não tem limite de 32; reassar já é o evento discreto que
-// escondia o popping no caminho antigo).
+// `seedSlots` é o teto do loop de sementes (SEMENTES_DO_BAKE — a textura de
+// dados que `nuvensSemente.sementesParaBake` escreve, não um array de
+// uniform). Sem seleção por raio (não há raio, é um voxel só) nem fade de
+// fronteira: o bake recebe TODA nuvem que alcança a caixa, então reassar
+// num centro novo dá o mesmo voxel para o mesmo ponto e não há o que
+// esconder.
 //
 // `piramide` (E3c) só muda o MACIO, e só dentro da cobertura: com a
 // pirâmide ativa o medido sai do bake (o raymarch o lê por passo, pelos
 // níveis — ver `GLSL_MACIO_MEDIDO_POR_PASSO`) e R guarda só a parte
 // inventada, `(1−c)·P·L`, com G = gasDensity. O fino não assa o medido
 // nem hoje: o texto dele não depende da pirâmide. Falso = texto de hoje.
+/**
+ * O TETO DE SEMENTES DO BAKE. Com 256 o bake cortava pela distância ao
+ * centro e, no braço de Scutum-Centaurus (filme galáctico, t=106,2 — 12/11),
+ * deixava de fora 14 nuvens a menos de 650 pc da câmera, uma delas de
+ * 299 pc: o reassar seguinte as acendia de uma vez, e o quadro inteiro
+ * ficava azul num quadro só. Medido em 13/11 sobre o catálogo inteiro
+ * (6603 nuvens): no máximo 946 nuvens alcançam uma caixa de 2 kpc.
+ */
+export const SEMENTES_DO_BAKE = 1024;
+/** o alcance de uma semente no bake: `d2c < CORTE_D2_DA_SEMENTE` com
+ *  `d2c = |p − c|² / max(raio, RAIO_MINIMO_DA_SEMENTE)²` — além disso ela
+ *  não soma nada ao voxel */
+export const CORTE_D2_DA_SEMENTE = 5.5;
+export const RAIO_MINIMO_DA_SEMENTE = 8;
+
 export function glslBakeDensity(seedSlots: number, fino: boolean, piramide = false): string {
   return /* glsl */ `
 ${GLSL_DISK_GAS_ENVELOPE}
 ${GLSL_POEIRA_MEDIDA}
-// Sementes numa DATA TEXTURE, não um array de uniform (256 não cabe no
+// Sementes numa DATA TEXTURE, não um array de uniform (o teto não cabe no
 // teto de uniforms de todo driver): linha 0 = xyz + raio, linha 1 = .x =
 // amplitude. nuvensSemente.sementesParaBake escreve, sem fade.
 uniform sampler2D uSeedCloudTex;
 uniform int uSeedCloudCount;
+// as sementes que cruzam ESTA fatia (linha uFatia; uFatia é do fragment
+// do bake): índices em uSeedCloudTex, na ordem dela — ver
+// listarSementesPorFatia (nebula.ts). uSeedCloudCount segue sendo o
+// total da caixa, só para a guarda do vácuo.
+uniform sampler2D uSementesDaFatia;
+uniform int uSementesNaFatia;
 
 // Devolve as 4 saídas do bake num vec4 só. "macio" (fino=false): R/G
 // saem da ÁLGEBRA DA MISTURA (ver comentário abaixo) — com a poeira
@@ -807,13 +829,14 @@ ${
   float c = uPoeiraModo == 2 ? poeiraCobertura(ph) : 0.0;
   float sementes = 0.0;
   if (!(envelope < 0.004 && uSeedCloudCount == 0)) {
-    for (int i = 0; i < ${seedSlots}; i++) {
-      if (i >= uSeedCloudCount) break;
+    for (int j = 0; j < ${seedSlots}; j++) {
+      if (j >= uSementesNaFatia) break;
+      int i = int(texelFetch(uSementesDaFatia, ivec2(j, int(uFatia)), 0).r);
       vec4 posRaio = texelFetch(uSeedCloudTex, ivec2(i, 0), 0);
       float amp = texelFetch(uSeedCloudTex, ivec2(i, 1), 0).x;
-      vec3 cq = (p - posRaio.xyz) / max(posRaio.w, 8.0);
+      vec3 cq = (p - posRaio.xyz) / max(posRaio.w, ${glslNumber(RAIO_MINIMO_DA_SEMENTE)});
       float d2c = dot(cq, cq);
-      if (d2c < 5.5) {
+      if (d2c < ${glslNumber(CORTE_D2_DA_SEMENTE)}) {
         float g = exp(-d2c * 1.4);
         // fase pela IDENTIDADE da nuvem (posição estável), nunca pelo
         // slot da textura — o rank muda a cada refresh de centro
@@ -876,13 +899,14 @@ ${
     campoProc = envelope * clumps * 0.75;
     // nuvens-semente reais: metaballs com subestrutura FBM — mesma conta
     // do caminho antigo, só que lendo a textura em vez do array.
-    for (int i = 0; i < ${seedSlots}; i++) {
-      if (i >= uSeedCloudCount) break;
+    for (int j = 0; j < ${seedSlots}; j++) {
+      if (j >= uSementesNaFatia) break;
+      int i = int(texelFetch(uSementesDaFatia, ivec2(j, int(uFatia)), 0).r);
       vec4 posRaio = texelFetch(uSeedCloudTex, ivec2(i, 0), 0);
       float amp = texelFetch(uSeedCloudTex, ivec2(i, 1), 0).x;
-      vec3 cq = (p - posRaio.xyz) / max(posRaio.w, 8.0);
+      vec3 cq = (p - posRaio.xyz) / max(posRaio.w, ${glslNumber(RAIO_MINIMO_DA_SEMENTE)});
       float d2c = dot(cq, cq);
-      if (d2c < 5.5) {
+      if (d2c < ${glslNumber(CORTE_D2_DA_SEMENTE)}) {
         float g = exp(-d2c * 1.4);
         // fase pela IDENTIDADE da nuvem (posição estável), nunca pelo
         // slot da textura — o rank muda a cada refresh de centro

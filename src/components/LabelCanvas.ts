@@ -285,6 +285,8 @@ const FAMILIA = '"Segoe UI", Arial, sans-serif';
  * todo assunto que já cabia no lugar natural.
  */
 const DESLOCAMENTOS_DIRIGIDOS = [0, -34, 34, -68, 68, -102, 102] as const;
+/** a linha do próprio nome — o único passo de quem só troca de lado */
+const MESMA_LINHA = [0] as const;
 
 /**
  * OS DOIS NÍVEIS TIPOGRÁFICOS (item 125, F5 · T9/T10) — e o eixo da
@@ -653,7 +655,7 @@ export class LabelCanvas {
         // o modo do desenho entra na assinatura (item 89): a mesma chave
         // no mesmo pixel como ÍCONE e como TEXTO são quadros diferentes
         // — sem este bit, ligar/desligar os nomes não repintaria
-        `,${label.dirigido ? 1 : 0},${label.icone ? 1 : 0},${label.comAnel ? 1 : 0}` +
+        `,${label.dirigido ? 1 : 0}${label.outroLado ? 'L' : ''},${label.icone ? 1 : 0},${label.comAnel ? 1 : 0}` +
         `,${label.textoInvisivel ? 1 : 0},${label.saindo ? 1 : 0}` +
         // A CAMADA DE DENTRO ENTRA NA ASSINATURA (item 125, F2 · A8): o
         // alfa do texto muda sem que o nome saia do pixel — um hover, ou
@@ -1194,9 +1196,21 @@ export class LabelCanvas {
     // cabe.
     const recuo = peso.recuoDoTexto * k;
     const larguraCompleta = larguraDoNome + 9 * k + larguraDoDetalhe;
+    // E O DETALHE CEDE AO HUD PELA MESMA LEI (crítica de 12/11): o nome do
+    // alvo em foco fica no meio da tela e o detalhe dele corria por baixo
+    // da ficha aberta — a disputa então tirava o NOME inteiro (Sagittarius
+    // A✱ em inglês, cuja distância é mais comprida). Se só o detalhe é
+    // que alcança uma área reservada, sai só o nome.
+    // (a caixa e a folga são as da disputa: `caixaEm` e os 8 px do texto)
+    const naReserva = (largura: number) => {
+      const left = ladoNatural ? ancoraX - recuo - largura : ancoraX + recuo;
+      const r: Rect = { left: left - 5 * k, right: left + largura + 5 * k, top: ancoraY - 12 * k, bottom: ancoraY + 12 * k };
+      return this.reservadas.some((rect) => intersects(r, rect, 8 * k));
+    };
     const comDetalhe =
       larguraDoDetalhe > 0 &&
-      (ancoraX + recuo + larguraCompleta <= this.width || ancoraX - recuo - larguraCompleta >= 0);
+      (ancoraX + recuo + larguraCompleta <= this.width || ancoraX - recuo - larguraCompleta >= 0) &&
+      !(naReserva(larguraCompleta) && !naReserva(larguraDoNome));
     if (!comDetalhe) this.detalhes[i] = '';
     // SEM DETALHE, SEM VÃO: desde a F5 o detalhe é vazio na maioria dos
     // nomes, e somar o vão de 9 px a uma string vazia daria a cada nome
@@ -1241,15 +1255,18 @@ export class LabelCanvas {
     let esquerda = ladoPreferido;
     let textoY = linhaDoTexto;
     let caixaDoTexto = caixaEm(ladoPreferido, linhaDoTexto);
-    if (label.dirigido) {
+    if (label.dirigido || label.outroLado) {
       // A EXCEÇÃO DO FILME: só o assunto declarado procura outra linha.
+      // Os planetas do sistema em quadro (`outroLado`, 13/11) procuram só
+      // o OUTRO LADO da mesma linha: irmãos a 15 px um do outro cabem
+      // os dois quando um escreve à esquerda.
       // O que ele evita é ESPAÇO OCUPADO por quem está vivo — o
       // perdedor da disputa não reserva nada, e por isso não conta aqui.
       busca: for (let lado = 0; lado < 2; lado++) {
         const esq = lado === 0 ? ladoPreferido : !ladoPreferido;
         // o outro lado só é vaga se o texto couber nele inteiro (a borda)
         if (lado === 1 && desvioDe(esq) !== 0) continue;
-        for (const passo of DESLOCAMENTOS_DIRIGIDOS) {
+        for (const passo of label.dirigido ? DESLOCAMENTOS_DIRIGIDOS : MESMA_LINHA) {
           const y = ancoraY + passo * k;
           const tentativa = caixaEm(esq, y);
           if (this.ocupado(tentativa, 8 * k, label.key)) continue;

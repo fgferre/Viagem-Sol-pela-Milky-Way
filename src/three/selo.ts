@@ -36,6 +36,7 @@ import {
   varianteDaTerraEmTexto,
   nivelDaNebulosaEmTexto,
   particulasDaGalaxiaEmTexto,
+  galaxiaEmTexto,
   poeiraEmTexto,
   rotuloDaEscalaDeResolucao,
 } from './atlasConfig';
@@ -47,6 +48,7 @@ import type {
   VarianteDaTerra,
   NivelDaNebulosa,
   ParticulasDaGalaxia,
+  CaminhoDaGalaxia,
   QualityLevel,
   TipoDePoeira,
   ToneMapMode,
@@ -86,6 +88,10 @@ export const PROCEDENCIA: Record<Procedencia, { rotulo: string; oQue: string }> 
     get rotulo() { return t('selo.tier.medido'); },
     get oQue() { return t('selo.tier.medidoOQue'); },
   },
+  // A GALÁXIA ENTROU AQUI em 12/11/2026, quando a de partículas virou
+  // padrão: cada ponto é sorteado de um modelo guiado pela literatura —
+  // nada pintado. A clássica (lâminas) só existe escolhida à mão, e aí o
+  // registro declara a escolha (`galaxia`).
   derivado: {
     get rotulo() { return t('selo.tier.derivado'); },
     get oQue() { return t('selo.tier.derivadoOQue'); },
@@ -415,6 +421,11 @@ export interface EstadoDaVista {
    */
   particulas: ParticulasDaGalaxia | null;
   /**
+   * A GALÁXIA DE FORA escolhida à mão (12/11/2026) — `null` = a cadeia do
+   * preset (WebGPU → partículas → clássica). Estado vivo do Director.
+   */
+  galaxia: CaminhoDaGalaxia | null;
+  /**
    * A POEIRA PERTO DE CASA escolhida à mão (pedido do dono, 27/09) —
    * `null` = a variante do preset. Mesmo contrato do `particulas`:
    * estado vivo do Director, não a porta `?poeira=`. `'teste'` é a
@@ -654,6 +665,22 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     desvia: (e) => e.luz === 'assistida' && e.luzDoRoteiro > 0,
   },
   /**
+   * O BRILHO DO GARGANTUA DE PERTO (12/11/2026). Onde o selo diz ESCALA
+   * REAL perto de Sgr A✱ (`escalaDaVista`) o disco tem o tamanho verdadeiro,
+   * mas a luz dele é de autor: o gás real do buraco é ralo e quase não
+   * brilha. De longe quem fala é a linha de culpados do eixo ESCALA; aqui,
+   * esta. `volta: 'nenhuma'`: é o desenho do objeto, não gesto do
+   * visitante — só some com a camada do buraco desligada.
+   */
+  {
+    chave: 'brilho-do-buraco',
+    eixo: 'brilho',
+    get rotulo() { return t('selo.desvio.brilhoDoBuraco'); },
+    volta: 'nenhuma',
+    desvia: (e) =>
+      (e.distanciaAoCentroPc ?? Infinity) < ENTREGA_DO_BURACO_PC && !e.camadasEscondidas.includes('nobh'),
+  },
+  /**
    * A POLÍTICA DE LUZ dos corpos resolvidos (Onda 6, D2/D8; reescrita no
    * item 91) — a linha da lei de luz, no eixo BRILHO existente (registro
    * único, NUNCA eixo novo). `assistida` é o DEFAULT do Atlas: o globo
@@ -839,6 +866,21 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
       t('selo.desvio.particulasCom', {
         nivel: e.particulas === null ? '' : particulasDaGalaxiaEmTexto(e.particulas),
       }),
+  },
+  /**
+   * A GALÁXIA ESCOLHIDA À MÃO (12/11/2026), no molde das partículas:
+   * estado VIVO, `volta: 'vivo'`, a porta `?galaxia=` como espelho. A
+   * clássica desenha lâminas pintadas; as outras duas trocam o número de
+   * partículas da mesma galáxia — as três mudam a imagem.
+   */
+  {
+    chave: 'galaxia',
+    eixo: 'brilho',
+    get rotulo() { return t('selo.desvio.galaxia'); },
+    volta: 'vivo',
+    desvia: (e) => e.galaxia !== null,
+    rotuloVivo: (e) =>
+      t('selo.desvio.galaxiaCom', { caminho: e.galaxia === null ? '' : galaxiaEmTexto(e.galaxia) }),
   },
   /**
    * O SEXTO CONTROLE DA GAVETA AVANÇADO (pedido do dono, 27/09), no
@@ -1121,8 +1163,8 @@ export function escalaDaVista(
   distanciaPc: number,
   distanciaAoCentroPc: number = Infinity
 ): 'real' | 'fora' {
-  // O SEGUNDO DOMÍNIO 1:1 (12/11/2026): a menos de 100 RS reais de Sgr A✱
-  // (8,5 UA) o disco é desenhado no tamanho verdadeiro do buraco, e as
+  // O SEGUNDO DOMÍNIO 1:1 (12/11/2026): a menos de 24 RS reais de Sgr A✱
+  // (2,0 UA, a vista de perto) o disco é desenhado no tamanho verdadeiro do buraco, e as
   // partículas da galáxia são instrumento declarado — a mesma situação de
   // casa. O brilho do disco é de autor e fica no cadastro (`escala.ts`).
   return distanciaPc < LIMIAR_SISTEMA_SOLAR_PC || distanciaAoCentroPc < ENTREGA_DO_BURACO_PC

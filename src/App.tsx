@@ -15,7 +15,7 @@ import type { NamedStar } from './three/config';
 import { cartografiaMedida } from './three/cartography/galacticAssets';
 import type { EstadoDaPoeira } from './three/selo';
 import { HUD_POR_FASE, arrastoFazAlgo } from './three/fases';
-import { TIER_DE_PRODUTO } from './three/core/engine';
+import { PRESETS, TIER_DE_PRODUTO } from './three/core/engine';
 import { LabelCanvas } from './components/LabelCanvas';
 import { sondarGl } from './lib/glProbe';
 import { t } from './lib/idioma';
@@ -37,7 +37,12 @@ import { construirIndice } from './lib/buscaEstrelas';
 import {
   Convite,
 } from './components/Spotlight';
-import { PASSOS_DO_CONVITE_DO_ATLAS, PASSOS_DO_CONVITE_DO_ATLAS_TOQUE } from './components/passosDoConvite';
+import {
+  conviteDoAtlasSome,
+  PASSOS_DO_CONVITE_DO_ATLAS,
+  PASSOS_DO_CONVITE_DO_ATLAS_TOQUE,
+  type GestosDoAtlas,
+} from './components/passosDoConvite';
 import { Ajustes } from './components/Ajustes';
 import { gravarPreferencia, lerPreferencias } from './lib/preferencias';
 import { LUGARES_DO_FILME } from './lib/lugaresDoFilme';
@@ -278,6 +283,9 @@ export default function App() {
     relevo: 'real',
     particulas: null,
     poeira: null,
+    // a cadeia do preset até o Director publicar quem de fato desenha
+    galaxia: null,
+    galaxiaViva: PRESETS[TIER_DE_PRODUTO].galaxia,
   });
   const [paused, setPaused] = useState(false);
   const [rate, setRate] = useState(1);
@@ -762,19 +770,30 @@ export default function App() {
   // primeiro gesto que ele ensina — girar, escolher um astro, abrir a
   // Busca — ou depois de meio minuto na tela. Some e fica visto: quem
   // já agiu aprendeu, e quem leu e não agiu não precisa dele de novo.
+  // GESTO é o que acontece DEPOIS que o cartão apareceu: o retrato do
+  // instante em que ele surge vale como "antes" (`conviteDoAtlasSome`),
+  // e o tempo conta a partir dali, não a cada mudança.
+  const gestosAgora: GestosDoAtlas = { girou: girouNoAtlas, foco, busca: gaveta === 'busca' };
+  const gestosDoInicio = useRef<{ de: object; antes: GestosDoAtlas } | null>(null);
+  if (convite?.onde !== 'atlas') gestosDoInicio.current = null;
+  else if (gestosDoInicio.current?.de !== convite) {
+    gestosDoInicio.current = { de: convite, antes: gestosAgora };
+  }
+  const conviteSome =
+    gestosDoInicio.current !== null &&
+    conviteDoAtlasSome(gestosDoInicio.current.antes, gestosAgora);
+  const sumirConviteDoAtlas = () => {
+    gravarPreferencia('conviteAtlasVisto', true);
+    setConvite(null);
+  };
   useEffect(() => {
     if (convite?.onde !== 'atlas') return;
-    const sumir = () => {
-      gravarPreferencia('conviteAtlasVisto', true);
-      setConvite(null);
-    };
-    if (girouNoAtlas || foco !== null || gaveta === 'busca') {
-      sumir();
-      return;
-    }
-    const id = window.setTimeout(sumir, CONVITE_DO_ATLAS_MS);
+    const id = window.setTimeout(sumirConviteDoAtlas, CONVITE_DO_ATLAS_MS);
     return () => window.clearTimeout(id);
-  }, [convite?.onde, girouNoAtlas, foco, gaveta]);
+  }, [convite]);
+  useEffect(() => {
+    if (conviteSome) sumirConviteDoAtlas();
+  }, [conviteSome]);
 
   const fecharConvite = () => {
     if (convite) {
@@ -956,6 +975,7 @@ export default function App() {
     trocarTerra,
     trocarRelevo,
     trocarParticulas,
+    trocarGalaxia,
     trocarPoeira,
     trocarTom,
     trocarLente,
@@ -1233,7 +1253,12 @@ export default function App() {
 
         {/* dica do pausar-e-olhar */}
         {inJourney && paused && (
-          <div className="free-hint">{t('dica.pausado')}</div>
+          <div className="free-hint veu-legivel">
+            <span className="veu-sombra" aria-hidden="true">
+              {t('dica.pausado')}
+            </span>
+            <span>{t('dica.pausado')}</span>
+          </div>
         )}
         </div>
       )}
@@ -1243,7 +1268,10 @@ export default function App() {
           `.dest-line`): a distância continua viva a cada render, sem
           remontar nada; só o trecho semântico troca de key. */}
       {hud.rumo && dest && (
-        <div className="dest-line">
+        <div className="dest-line veu-legivel">
+          <span className="veu-sombra" aria-hidden="true">
+            {dest}
+          </span>
           <span key={realceDest} className={realceDest > 0 ? 'realce-texto' : undefined}>
             {dest}
           </span>
@@ -1257,7 +1285,14 @@ export default function App() {
           a distância denuncia o dolly — juntos desfazem a dúvida das
           Três Marias. Só no filme; ocupa a vaga do sol-line, que lá
           nunca desenha */}
-      {hud.lente && lente && <div className="lente-line">{lente}</div>}
+      {hud.lente && lente && (
+        <div className="lente-line veu-legivel">
+          <span className="veu-sombra" aria-hidden="true">
+            {lente}
+          </span>
+          <span>{lente}</span>
+        </div>
+      )}
 
       {/* O SELO NO FILME (F4 da viagem solar, 06/10): o beat de luz
           honesta mexe no brilho por cima da escolha do visitante, e o
@@ -1327,8 +1362,9 @@ export default function App() {
               regime. Os quatro passos do Atlas (`passosDoConvite.ts`)
               passaram a `alvo: null`, que o `Spotlight` já tolera (sem
               furo, só o véu e o cartão soltos). O `girouNoAtlas` continua
-              vivo: ele ainda decide se o convite se oferece (abaixo), só
-              deixou de apagar uma dica que não existe mais. */}
+              vivo: girar DEPOIS que o convite apareceu o fecha
+              (`conviteDoAtlasSome`), só deixou de apagar uma dica que não
+              existe mais. */}
 
           {/* O SELO. Lê o estado da vista do Director a cada render — e o
               render acontece quando o foco muda, que é quando a vista
@@ -1492,7 +1528,8 @@ export default function App() {
           indice={indice}
           verbo={phase === 'atlas' ? 'enquadrar' : 'visitar'}
           onEscolher={(entrada, raios) =>
-            escolherAlvo(entrada, directorRef.current, raios ? 'corpo' : 'orbita', raios)
+            // `raios: 0` é o degrau do corpo SEM pino (`destinosDaBusca.ts`)
+            escolherAlvo(entrada, directorRef.current, raios !== undefined ? 'corpo' : 'orbita', raios)
           }
           celular={celular}
         />
@@ -1511,6 +1548,7 @@ export default function App() {
         onTerra={trocarTerra}
         onRelevo={trocarRelevo}
         onParticulas={trocarParticulas}
+        onGalaxia={trocarGalaxia}
         onPoeira={trocarPoeira}
         tom={tom}
         onTom={trocarTom}
@@ -1551,7 +1589,7 @@ export default function App() {
           onFechar={fecharConvite}
         />
       )}
-      {convite?.onde === 'atlas' && phase === 'atlas' && !girouNoAtlas && (
+      {convite?.onde === 'atlas' && phase === 'atlas' && (
         <Convite
           passo={convite.passo}
           passos={

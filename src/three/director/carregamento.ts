@@ -24,7 +24,9 @@ import { LuaResolvida } from '../world/corpos/lua';
 import { ROCHOSOS, RochosoResolvido } from '../world/corpos/rochoso';
 import { GIGANTES, GiganteResolvido } from '../world/corpos/gigante';
 import type { AtorDoPalco, PostoNoPalco } from './palco';
-import type { QualityLevel } from '../core/engine';
+import type { CaminhoDaGalaxia, QualityLevel } from '../core/engine';
+import { PRESETS } from '../core/engine';
+import { CamadaWebgpu, webgpuFalhouNestaPagina } from '../world/galaxiaWebgpu/camadaWebgpu';
 
 /**
  * O POSTO de um corpo no palco — os quatro traços que o distinguem no
@@ -185,32 +187,93 @@ export function descartarCarga(carga: CargaDoMundo) {
  * caminho, com o mundo velho ainda desenhando, e a única diferença
  * entre os dois é o número que entra aqui.
  */
+/**
+ * O ORÇAMENTO DA GALÁXIA DE PARTÍCULAS POR TIER (12/11/2026, a nova virou
+ * padrão): `sorteios` do motor WebGPU (~4 M partículas cada) e o teto de
+ * instâncias do caminho WebGL, em milhões. A régua: a nova não pode custar
+ * mais que a clássica no mesmo tier de longe nem no filme (medido neste
+ * Mac, 1280×800 e 390×844, PLAN-GALAXIA.md). Com 4 sorteios a meia
+ * distância passava da clássica em cinema; com 2, não. O filme em t=148
+ * ainda está na cessão (a camada WebGPU só entra fora do disco) e quem
+ * desenha ali é o WebGL: com 5 M ele custava o dobro da clássica, com 2 M
+ * (cinema) e 1 M (alta, cuja clássica desenha metade) fica abaixo. O
+ * telefone vai ao WebGL com 0,5 M. `?sorteios=` e `?lodmax=` varrem.
+ */
+export const ORCAMENTO_DA_GALAXIA: Record<QualityLevel, { sorteios: number; tetoLodMilhoes: number }> = {
+  cinema: { sorteios: 2, tetoLodMilhoes: 2 },
+  alta: { sorteios: 2, tetoLodMilhoes: 1 },
+  performance: { sorteios: 1, tetoLodMilhoes: 0.5 },
+};
+
 export async function montarCarga(opts: {
   catalogos: GalacticAssets | null;
   tier: QualityLevel;
+  /** a galáxia escolhida à mão (`?galaxia=`, Ajustes); `null` = a do preset */
+  galaxia: CaminhoDaGalaxia | null;
   aoAvancar: (etapa: EtapaDaCadeia) => void;
 }): Promise<CargaDoMundo> {
   const { catalogos, tier, aoAvancar } = opts;
   const query = new URLSearchParams(window.location.search);
-  const modo = query.get('galaxia');
+  // A CADEIA (12/11/2026): WebGPU → partículas no WebGL → clássica. O
+  // primeiro degrau é o pedido; um WebGPU que já falhou nesta página não
+  // é tentado de novo (a camada cai sozinha para o WebGL, `Galaxy`).
+  const pedidoDoCaminho = opts.galaxia ?? PRESETS[tier].galaxia;
+  const caminho: CaminhoDaGalaxia =
+    pedidoDoCaminho === 'webgpu' && webgpuFalhouNestaPagina() ? 'particulas' : pedidoDoCaminho;
+  const orcamento = ORCAMENTO_DA_GALAXIA[tier];
+  const sorteios = caminho === 'webgpu' ? Number(query.get('sorteios')) || orcamento.sorteios : 1;
   const pedido = {
     seed: SEMENTE_DA_GALAXIA,
     catalogos,
     populationScale: tier === 'performance' ? 0.28 : 1,
-    soParticulas: modo === 'particulas' || modo === 'webgpu',
+    soParticulas: caminho !== 'classica',
     search: window.location.search,
   };
-  const carga = await assarCargaEmWorker(pedido, aoAvancar);
-  const dustMapTexture = texturaDoMapa(carga.poeira);
-  const structureMapTexture = texturaDoMapa(carga.estrutura);
-  const galaxy = new Galaxy(carga, dustMapTexture, structureMapTexture);
-  // ?galaxia=webgpu: mais sorteios do MESMO modelo (outra semente cada um),
-  // em trabalhadores, depois que o app já abriu; no telefone, só o primeiro
-  galaxy.ligarWebgpu(
-    carga,
-    tier === 'performance' ? 1 : Number(query.get('sorteios')) || 4,
-    (s) => assarCargaEmWorker({ ...pedido, seed: SEMENTE_DA_GALAXIA + s * 7919 }, () => {})
+  // A ORDEM DA CARGA (13/11/2026). A carga principal, os sorteios extras
+  // do motor WebGPU (cada um no seu trabalhador, já no formato do motor) e
+  // a camada WebGPU (dispositivo, shaders, sonda da ponte) começam JUNTOS.
+  // Até aqui camada e sorteio vinham em fila depois da carga: ~11 s até a
+  // imagem completa em cinema, contra ~5 da clássica. Medido neste M1: o
+  // extra em paralelo atrasa a principal em ~0,5–1 s (dois trabalhadores
+  // em quatro núcleos rápidos); depois dela, em fila, a vista de fora
+  // passava de 12 s. Os sorteios entram no motor na ordem.
+  const principal = assarCargaEmWorker(
+    { ...pedido, nuvens: pedido.soParticulas },
+    aoAvancar
   );
+  const extras = Array.from({ length: sorteios - 1 }, (_, i) =>
+    assarCargaEmWorker(
+      { ...pedido, seed: SEMENTE_DA_GALAXIA + (i + 1) * 7919, paraOMotor: true },
+      () => {}
+    ).then((c) => c.pacote!)
+  );
+  const camada = caminho === 'webgpu' ? CamadaWebgpu.criar(principal, sorteios, (s) => extras[s - 1]) : null;
+  const assar = async (soParticulas: boolean, pronta?: Promise<CargaAssada>) => {
+    const carga = await (pronta ?? assarCargaEmWorker({ ...pedido, soParticulas }, aoAvancar));
+    const dustMapTexture = texturaDoMapa(carga.poeira);
+    const structureMapTexture = texturaDoMapa(carga.estrutura);
+    try {
+      const galaxy = new Galaxy(carga, dustMapTexture, structureMapTexture, {
+        soParticulas,
+        tetoLodMilhoes: orcamento.tetoLodMilhoes,
+      });
+      return { carga, galaxy, dustMapTexture, structureMapTexture };
+    } catch (e) {
+      dustMapTexture.dispose();
+      structureMapTexture.dispose();
+      throw e;
+    }
+  };
+  // o último degrau: se as partículas não montam, a clássica — e só ela
+  const montado = pedido.soParticulas
+    ? await assar(true, principal).catch((e: unknown) => {
+        console.warn('[galáxia] as partículas não montaram — segue a clássica.', e);
+        return assar(false);
+      })
+    : await assar(false, principal);
+  const { carga, galaxy, dustMapTexture, structureMapTexture } = montado;
+  // O MOTOR WEBGPU: mais sorteios do MESMO modelo (outra semente cada um)
+  if (camada) galaxy.ligarWebgpu(camada);
   return {
     galaxy,
     dustMapTexture,

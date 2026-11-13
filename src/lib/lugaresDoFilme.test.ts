@@ -100,6 +100,21 @@ describe('os lugares do céu', () => {
     expect(CENTRO_DA_ANA_DE_SAGITARIO.distanceTo(SGR_DWARF_POS)).toBeLessThan(1e-6);
   });
 
+  it('a busca e a ficha dizem a MESMA distância, e uma vista não diz nenhuma', async () => {
+    // a crítica de 12/11: a paleta media o vetor da cena (418 anos-luz
+    // das Plêiades) e a ficha citava a literatura (444)
+    (globalThis as { window?: unknown }).window ??= { location: { search: '' } };
+    const { LUGARES_DA_BUSCA } = await import('../three/world/lugaresDoCeu');
+    for (const naBusca of LUGARES_DA_BUSCA) {
+      const linha = LUGARES_DO_FILME.find((l) => l.id === naBusca.id)!;
+      const daFicha = linha.distanciaPc?.doSolAoCentro ? undefined : linha.distanciaPc?.valor;
+      expect(naBusca.d, naBusca.id).toBe(daFicha);
+    }
+    const d = (id: string) => LUGARES_DA_BUSCA.find((l) => l.id === id)!.d;
+    expect(d('pleiades')).toBe(136.2);
+    expect(d('nosso-lugar')).toBeUndefined();
+  });
+
   it('o foco publicado numa língua é reconhecido na outra', () => {
     expect(chaveDoFoco('Plêiades', indice)).toBe('pleiades');
     expect(chaveDoFoco('Pleiades', indice)).toBe('pleiades');

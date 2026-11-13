@@ -25,7 +25,11 @@ import { AU_PARA_PC } from './frameGalactico';
 export interface Numero {
   readonly v: number;
   readonly p: Procedencia;
-  /** autor, ano, revista ou arXiv; para `derivado`, a lei usada */
+  /** autor, ano, revista ou arXiv; para `derivado`, a lei usada. Sai
+   *  IGUAL nas duas línguas, então é só citação: o método ("interferometria",
+   *  "diâmetro + fluxo") vai em comentário ao lado — palavra solta aqui
+   *  aparecia em português na ficha inglesa (crítica de 12/11; a prova é
+   *  `ficha.test.ts`, "a fonte que sai igual nas duas línguas") */
   readonly fonte: string;
 }
 
@@ -134,11 +138,11 @@ const PROXIMA: EstrelaVisitavel = {
   nomeNoCatalogo: 'Proxima Centauri',
   hip: 70890,
   tipo: { texto: 'M5.5Ve', v: 0, p: 'medido', fonte: 'Bessell 1991, AJ 101, 662' },
-  teffK: { v: 3054, p: 'derivado', fonte: 'Boyajian et al. 2012, ApJ 757, 112 (diâmetro + fluxo)' },
-  raioRsol: { v: 0.1542, p: 'medido', fonte: 'Boyajian et al. 2012, ApJ 757, 112 (interferometria)' },
-  massaMsol: { v: 0.1221, p: 'derivado', fonte: 'Mann et al. 2015, ApJ 804, 64 (relação massa–M_K)' },
+  teffK: { v: 3054, p: 'derivado', fonte: 'Boyajian et al. 2012, ApJ 757, 112' }, // diâmetro + fluxo
+  raioRsol: { v: 0.1542, p: 'medido', fonte: 'Boyajian et al. 2012, ApJ 757, 112' }, // interferometria
+  massaMsol: { v: 0.1221, p: 'derivado', fonte: 'Mann et al. 2015, ApJ 804, 64' }, // relação massa–M_K
   luminosidadeLsol: { v: 0.001567, p: 'derivado', fonte: 'Pineda et al. 2021, AJ 161, 172' },
-  rotacaoDias: { v: 84.9, p: 'medido', fonte: 'Osorio et al. 2026, A&A 711, A116 (fotometria)' },
+  rotacaoDias: { v: 84.9, p: 'medido', fonte: 'Osorio et al. 2026, A&A 711, A116' }, // fotometria
   superficie: {
     granuloEmRaios: granulo(3054, 0.1542, 0.1221),
     // anãs M: convecção eficiente, contraste baixo (Beeck et al. 2013,
@@ -154,23 +158,23 @@ const SIRIUS: EstrelaVisitavel = {
   nomeNoCatalogo: 'Sirius',
   hip: 32349,
   tipo: { texto: 'A1V', v: 0, p: 'medido', fonte: 'Gray et al. 2003, AJ 126, 2048' },
-  teffK: { v: 9845, p: 'derivado', fonte: 'Davis et al. 2011, PASA 28, 58 (diâmetro + fluxo)' },
-  raioRsol: { v: 1.713, p: 'derivado', fonte: 'Davis et al. 2011, PASA 28, 58 (diâmetro SUSI 6,04 mas + paralaxe)' },
-  massaMsol: { v: 2.063, p: 'medido', fonte: 'Bond et al. 2017, ApJ 840, 70 (órbita)' },
+  teffK: { v: 9845, p: 'derivado', fonte: 'Davis et al. 2011, PASA 28, 58' }, // diâmetro + fluxo
+  raioRsol: { v: 1.713, p: 'derivado', fonte: 'Davis et al. 2011, PASA 28, 58 (SUSI)' }, // diâmetro 6,04 mas + paralaxe
+  massaMsol: { v: 2.063, p: 'medido', fonte: 'Bond et al. 2017, ApJ 840, 70' }, // órbita
   luminosidadeLsol: { v: 24.7, p: 'derivado', fonte: 'Davis et al. 2011, PASA 28, 58' },
   superficie: {
     granuloEmRaios: granulo(9845, 1.713, 2.063),
     // estrelas A: zona de convecção rasa, quase sem granulação visível
-    contrasteGranulos: { v: 0.015, p: 'derivado', fonte: 'Tremblay et al. 2013, A&A 557, A7 (contraste cai acima de ~7000 K)' },
+    contrasteGranulos: { v: 0.015, p: 'derivado', fonte: 'Tremblay et al. 2013, A&A 557, A7' },
     bordaU: { v: 0.5, p: 'derivado', fonte: CLARET },
     bordaDifusaRaios: { v: 1, p: 'derivado', fonte: 'fotosfera de anã: borda nítida' },
   },
   companheira: {
     nome: 'Sirius B',
     tipo: 'DA2',
-    teffK: { v: 25369, p: 'derivado', fonte: 'Joyce et al. 2018, MNRAS 479, 1612 (espectro HST)' },
+    teffK: { v: 25369, p: 'derivado', fonte: 'Joyce et al. 2018, MNRAS 479, 1612 (HST)' }, // espectro
     raioRsol: { v: 0.0081, p: 'derivado', fonte: 'Joyce et al. 2018, MNRAS 479, 1612' },
-    massaMsol: { v: 1.018, p: 'medido', fonte: 'Bond et al. 2017, ApJ 840, 70 (órbita)' },
+    massaMsol: { v: 1.018, p: 'medido', fonte: 'Bond et al. 2017, ApJ 840, 70' }, // órbita
     orbita: {
       periodoAnos: 50.1284,
       periastroAno: 1994.5715,
@@ -179,7 +183,7 @@ const SIRIUS: EstrelaVisitavel = {
       iGraus: 136.336,
       nodoGraus: 45.4,
       argPeriastroGraus: 149.161,
-      fonte: 'Bond et al. 2017, ApJ 840, 70 (astrometria HST)',
+      fonte: 'Bond et al. 2017, ApJ 840, 70 (HST)', // astrometria
     },
   },
 };
@@ -189,11 +193,11 @@ const BETELGEUSE: EstrelaVisitavel = {
   nomeNoCatalogo: 'Betelgeuse',
   hip: 27989,
   tipo: { texto: 'M1–M2 Ia-ab', v: 0, p: 'medido', fonte: 'Keenan & McNeil 1989, ApJS 71, 245' },
-  teffK: { v: 3600, p: 'medido', fonte: 'Levesque & Massey 2020, ApJL 891, L37 (espectro)' },
-  raioRsol: { v: 764, p: 'derivado', fonte: 'Joyce et al. 2020, ApJ 902, 63 (modelos + pulsação)' },
+  teffK: { v: 3600, p: 'medido', fonte: 'Levesque & Massey 2020, ApJL 891, L37' }, // espectro
+  raioRsol: { v: 764, p: 'derivado', fonte: 'Joyce et al. 2020, ApJ 902, 63' }, // modelos + pulsação
   massaMsol: { v: 18, p: 'derivado', fonte: 'Joyce et al. 2020, ApJ 902, 63 (16,5–19)' },
   luminosidadeLsol: { v: 87100, p: 'derivado', fonte: 'Joyce et al. 2020, ApJ 902, 63' },
-  rotacaoDias: { v: 36 * 365.25, p: 'derivado', fonte: 'Kervella et al. 2018, A&A 609, A67 (ALMA, v sin i 5,5 km/s)' },
+  rotacaoDias: { v: 36 * 365.25, p: 'derivado', fonte: 'Kervella et al. 2018, A&A 609, A67 (ALMA)' }, // v sin i 5,5 km/s
   superficie: {
     granuloEmRaios: granulo(3600, 764, 18),
     // poucas células do tamanho da estrela: previstas por Schwarzschild
@@ -206,7 +210,7 @@ const BETELGEUSE: EstrelaVisitavel = {
     bordaU: { v: 0.8, p: 'derivado', fonte: CLARET },
     // a camada molecular (MOLsphere) a ~1,3 raio borra a borda no
     // infravermelho (Perrin et al. 2004, A&A 418, 675)
-    bordaDifusaRaios: { v: 1.3, p: 'medido', fonte: 'Perrin et al. 2004, A&A 418, 675 (interferometria)' },
+    bordaDifusaRaios: { v: 1.3, p: 'medido', fonte: 'Perrin et al. 2004, A&A 418, 675' }, // interferometria
   },
 };
 
@@ -216,8 +220,8 @@ const VEGA: EstrelaVisitavel = {
   hip: 91262,
   tipo: { texto: 'A0Va', v: 0, p: 'medido', fonte: 'Gray et al. 2003, AJ 126, 2048' },
   // a média do disco; a forma real está em `achatamento`
-  teffK: { v: 9600, p: 'derivado', fonte: 'média da superfície do modelo de Monnier et al. 2012' },
-  raioRsol: { v: 2.726, p: 'medido', fonte: 'Monnier et al. 2012, ApJL 761, L3 (raio equatorial, CHARA/MIRC)' },
+  teffK: { v: 9600, p: 'derivado', fonte: 'Monnier et al. 2012, ApJL 761, L3' }, // média da superfície do modelo
+  raioRsol: { v: 2.726, p: 'medido', fonte: 'Monnier et al. 2012, ApJL 761, L3 (CHARA/MIRC)' }, // raio equatorial
   massaMsol: { v: 2.15, p: 'derivado', fonte: 'Monnier et al. 2012, ApJL 761, L3' },
   luminosidadeLsol: { v: 47.2, p: 'derivado', fonte: 'Monnier et al. 2012, ApJL 761, L3' },
   rotacaoDias: { v: 0.71, p: 'derivado', fonte: 'Monnier et al. 2012, ApJL 761, L3' },
@@ -231,7 +235,7 @@ const VEGA: EstrelaVisitavel = {
   },
   superficie: {
     granuloEmRaios: granulo(9600, 2.6, 2.15),
-    contrasteGranulos: { v: 0.015, p: 'derivado', fonte: 'Tremblay et al. 2013, A&A 557, A7 (contraste cai acima de ~7000 K)' },
+    contrasteGranulos: { v: 0.015, p: 'derivado', fonte: 'Tremblay et al. 2013, A&A 557, A7' },
     bordaU: { v: 0.5, p: 'derivado', fonte: CLARET },
     bordaDifusaRaios: { v: 1, p: 'derivado', fonte: 'fotosfera de anã: borda nítida' },
   },
@@ -253,7 +257,10 @@ const VEGA: EstrelaVisitavel = {
  * `rotacaoDe`. Achatamento não entra: β Pic gira rápido (v sen i ≈ 130 km/s)
  * mas o arquivo não guarda v sen i nem a inclinação — fica redonda.
  */
-const PSCOMP = 'NASA Exoplanet Archive, PSCompPars (12/11/2026)';
+// a data em ISO: "12/11/2026" lê 11 de dezembro em inglês
+const PSCOMP = 'NASA Exoplanet Archive, PSCompPars (2026-11-12)';
+// fontes só como citação (a ficha sai nas duas línguas): Tremblay 2013 = o
+// contraste da granulação cai acima de ~7000 K; Vida 2017 = fotometria K2
 
 function anfitria(c: {
   id: string;
@@ -274,7 +281,7 @@ function anfitria(c: {
       ? { v: 0.04, p: 'derivado' as const, fonte: 'Beeck et al. 2013, A&A 558, A48 (simulação)' }
       : T < 7000
         ? { v: 0.15, p: 'derivado' as const, fonte: 'como o Sol (estrela F/G/K); Tremblay et al. 2013, A&A 557, A7' }
-        : { v: 0.015, p: 'derivado' as const, fonte: 'Tremblay et al. 2013, A&A 557, A7 (contraste cai acima de ~7000 K)' };
+        : { v: 0.015, p: 'derivado' as const, fonte: 'Tremblay et al. 2013, A&A 557, A7' };
   const u = T < 3900 ? 0.7 : T < 5300 ? 0.72 : T < 6200 ? 0.62 : T < 7500 ? 0.55 : 0.5;
   return {
     id: c.id,
@@ -300,7 +307,7 @@ const ANFITRIAS: readonly EstrelaVisitavel[] = [
     id: 'trappist-1', nome: 'TRAPPIST-1', tipo: 'M8.0 V', teffK: 2566, raioRsol: 0.1192, massaMsol: 0.0898,
     lum: 10 ** -3.25727,
     // a modulação do K2, junto com as erupções (de memória)
-    rotacaoDias: { v: 3.3, p: 'medido', fonte: 'Vida et al. 2017, ApJ 841, 124 (fotometria K2)' },
+    rotacaoDias: { v: 3.3, p: 'medido', fonte: 'Vida et al. 2017, ApJ 841, 124' },
   }),
   anfitria({ id: '51-peg', nome: 'Helvetios', hip: 113357, tipo: 'G5 V', teffK: 5761, raioRsol: 1.19, massaMsol: 1.07, lum: 10 ** 0.13631 }),
   anfitria({ id: '55-cnc', nome: 'Copernicus', hip: 43587, tipo: 'G8 V', teffK: 5198, raioRsol: 0.98, massaMsol: 1.015, lum: 10 ** -0.19695 }),
@@ -310,7 +317,8 @@ const ANFITRIAS: readonly EstrelaVisitavel[] = [
   anfitria({ id: 'hd-189733', nome: 'HD 189733', hip: 98505, tipo: 'K2 V', teffK: 5052, raioRsol: 0.75, massaMsol: 0.79, lum: 10 ** -0.46119 }),
   anfitria({
     id: 'fomalhaut', nome: 'Fomalhaut', hip: 113368, tipo: 'A3 V', teffK: 8590, raioRsol: 1.842, massaMsol: 1.92, lum: 16.63,
-    fonte: 'Mamajek 2012, ApJL 754, L20 (de memória)',
+    // números transcritos de memória do artigo — falta conferir no PDF
+    fonte: 'Mamajek 2012, ApJL 754, L20',
   }),
   anfitria({ id: 'bet-pic', nome: 'β Pic', hip: 27321, tipo: 'A6 V', teffK: 8039, raioRsol: 1.544, massaMsol: 1.789, lum: 10 ** 0.95282 }),
 ];

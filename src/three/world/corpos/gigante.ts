@@ -260,7 +260,11 @@ export const REGIOES_DO_ANEL: readonly {
  * ~3°: a mancha clara em volta da sombra da câmera no anel.
  */
 export const SURTO_DE_OPOSICAO = 0.4;
-/** largura do surto, em radianos de fase (1°) */
+/**
+ * largura do surto, em radianos de fase (1°). ALARGADA de propósito: o
+ * medido pelo Hubble é ~0,1° de meia largura (French et al. 2007) — com
+ * ele a mancha não ocuparia um pixel; a amplitude acima é a medida.
+ */
 export const LARGURA_DO_SURTO_RAD = Math.PI / 180;
 
 const suaveCpu = (a: number, b: number, x: number): number => {
@@ -356,6 +360,27 @@ const LARGURA_Q1R = 5 / BODY_AXES.quaoar[0];
  * fragmento descarta logo, antes da luz.
  */
 export const FOLGA_DAS_FAIXAS = 0.5;
+
+/**
+ * O ANEL QUE É DISCO (12/11/2026): a faixa cobre ao menos esta fração do
+ * raio externo. Saturno (0,52) passa; os fios finos de Urano (0,18), de
+ * Netuno (0,15), de Haumea e o par de Quaoar (0,38, dois fios com vazio no
+ * meio) não — eles não mudam o tamanho do que se vê.
+ */
+export const FAIXA_DE_DISCO = 0.45;
+
+/**
+ * O RAIO DO ASSUNTO, em pc: o corpo, ou o anel quando o anel é disco. É a
+ * régua do quadro de perto (a escada enquadra planeta + anéis) e do que
+ * cede diante dele (nomes sobre o disco, linhas de outra escala). `null`
+ * para quem não está em `BODY_AXES`.
+ */
+export function raioDoAssuntoPc(id: string): number | null {
+  if (!BODY_AXES[id]) return null;
+  const r = raiosDoGigantePc(id).a;
+  const anel = ANEIS_CITADOS[id];
+  return anel && (anel.rExt - anel.rInt) / anel.rExt >= FAIXA_DE_DISCO ? r * anel.rExt : r;
+}
 
 /** Raios do corpo em pc — BODY_AXES pelos conversores únicos. */
 export function raiosDoGigantePc(id: string): { a: number; c: number; b: number } {

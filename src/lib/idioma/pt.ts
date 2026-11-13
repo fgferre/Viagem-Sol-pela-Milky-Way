@@ -241,6 +241,12 @@ export const PT = {
   'ajustes.particulas.todas': 'Todas',
   'ajustes.particulas.metade': 'Metade',
   'ajustes.particulas.quarto': '¼',
+  'ajustes.galaxiaControle': 'Galáxia',
+  'ajustes.galaxiaNota':
+    'Como a galáxia vista de fora é desenhada. WebGPU: dezenas de milhões de partículas. WebGL: as mesmas partículas, em menor número (a reserva de quem não tem WebGPU). Clássica: a de antes, com camadas pintadas. Em Preset o app tenta nessa ordem e marca a que está desenhando.',
+  'ajustes.galaxia.webgpu': 'WebGPU',
+  'ajustes.galaxia.particulas': 'WebGL',
+  'ajustes.galaxia.classica': 'Clássica',
   // ROTULO CURTO (polimento 06/09): com o "{degrau}" (ex.: "· 140%")
   // sempre junto, "Tamanho do texto" só não cabia por ele.
   'ajustes.texto': 'Texto · {degrau}',
@@ -371,7 +377,7 @@ export const PT = {
   // SEM promessa de filme (item 129/F5 continua valendo): o clique aqui
   // faz o MESMO que a entrada "lugar" da busca já faz — enquadra o
   // centro galáctico no Atlas, não entra no filme.
-  'busca.destino.sagittarius-a': 'A galáxia inteira, em volta do centro',
+  'busca.destino.sagittarius-a': 'O buraco negro no centro da galáxia',
   // os lugares do céu profundo (12/11/2026) — `lugaresDoFilme.ts`
   'busca.destino.via-lactea': 'A galáxia inteira, vista de fora',
   'busca.destino.nosso-lugar': 'Onde o Sol fica no disco',
@@ -545,7 +551,7 @@ export const PT = {
   'ficha.sonda.naCena.valor': 'um marcador do tamanho de um instrumento, não a sonda — ela tem poucos metros',
   'ficha.fonte.horizons': 'JPL Horizons, consultado em {data}',
   'ficha.fonte.arquivoDeExoplanetas': 'NASA Exoplanet Archive, consultado em {data}',
-  'ficha.exo.zonaPresa': 'temperatura fora da faixa válida ({a}–{b} K): presa na borda',
+  'ficha.exo.zonaPresa': 'a fórmula só vale para estrelas de {a} a {b} K; para esta estrela, a zona desenhada é uma extrapolação',
   'ficha.exo.metodo.transito': 'trânsito',
   'ficha.exo.metodo.velocidadeRadial': 'velocidade radial',
   'ficha.exo.metodo.imagem': 'imagem direta',
@@ -599,7 +605,7 @@ export const PT = {
   'ficha.cometa.inativo': 'inativo: longe demais do Sol para o gelo de água sublimar',
   'ficha.cometa.naCena': 'o que se vê aqui',
   'ficha.cometa.naCena.valor':
-    'a posição é medida (elementos do JPL); a coma e as caudas são física calculada aqui, partícula por partícula — poeira empurrada pela luz do Sol, íons levados pelo vento solar, gás que se desfaz —, com brilho realçado; de longe, o núcleo é um marcador',
+    'a posição é medida (elementos do JPL); a coma e as caudas são física calculada aqui, partícula por partícula — poeira empurrada pela luz do Sol, íons levados pelo vento solar, gás que se desfaz —, com brilho realçado; de perto, a luz se adapta à distância (como um olho), a coma junto ao núcleo é a mesma lei somada ao longo da visada, e o relevo do núcleo é ilustrativo (o tamanho e o albedo são medidos); de longe, o núcleo é um marcador',
   'ficha.cometa.ultimo': 'último periélio',
   'ficha.cometa.proximo': 'próximo periélio',
   'ficha.cometa.perielio': 'distância no periélio',
@@ -686,7 +692,7 @@ export const PT = {
   'selo.tier.medido': 'medido',
   'selo.tier.medidoOQue': 'catálogo e efeméride',
   'selo.tier.derivado': 'derivado',
-  'selo.tier.derivadoOQue': 'cor e temperatura por modelo',
+  'selo.tier.derivadoOQue': 'cor e temperatura por modelo; a galáxia, partículas sorteadas de um modelo',
   'selo.tier.artistico': 'artístico',
   'selo.tier.artisticoOQue': 'o disco do Sol, o clarão e a cruz de luz das estrelas',
   'selo.cartografiaProcedural': 'cartografia: procedural (os mapas não chegaram)',
@@ -710,6 +716,8 @@ export const PT = {
   'selo.desvio.lente': 'lente de cinema ligada: reflexos da câmera, não do céu',
   'selo.desvio.doseDoSol': 'o arranque mostra o Sol mais limpo do que a data pede',
   'selo.desvio.luzDoRoteiro': 'a luz está em transição pelo roteiro, entre a assistida e a real',
+  'selo.desvio.brilhoDoBuraco':
+    'o disco de Sagittarius A✱ tem o tamanho real, mas o brilho é artístico: o gás de verdade quase não brilha',
   'selo.desvio.amostragem': 'amostragem abaixo de cinema',
   'selo.desvio.camada': 'camada desligada: {nome}',
   'selo.desvio.msaa': 'suavização de bordas escolhida à mão',
@@ -726,6 +734,8 @@ export const PT = {
   'selo.desvio.relevoCom': 'relevo da Terra realçado {fator}×',
   'selo.desvio.particulas': 'partículas da galáxia escolhidas à mão',
   'selo.desvio.particulasCom': 'partículas da galáxia escolhidas à mão: {nivel}',
+  'selo.desvio.galaxia': 'galáxia escolhida à mão',
+  'selo.desvio.galaxiaCom': 'galáxia escolhida à mão: {caminho}',
   'selo.desvio.poeira': 'poeira perto de casa escolhida à mão',
   'selo.desvio.poeiraCom': 'poeira perto de casa escolhida à mão: {variante}',
   'selo.desvio.poeiraTeste': 'teste (volume sintético)',

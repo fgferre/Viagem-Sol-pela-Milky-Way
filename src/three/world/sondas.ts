@@ -111,9 +111,19 @@ export function poseDoSegmento(
 const _pos = new THREE.Vector3();
 
 /**
- * OS NOMES E OS MARCADORES DAS SONDAS — o losango na posição viva, com o
- * nome ao lado (o mesmo sistema de rótulos dos corpos e dos lugares).
- * Sonda fora da tabela (antes do lançamento) não tem rótulo.
+ * OS NOMES E OS MARCADORES DAS SONDAS — o losango na posição viva (o
+ * mesmo sistema de rótulos dos corpos e dos lugares). Sonda fora da
+ * tabela (antes do lançamento) não tem rótulo.
+ *
+ * A SONDA É QUIETA (crítica de 12/11: o dono não quer sonda disputando
+ * com planeta, Sol ou lugar). O NOME só aparece quando ela é o assunto:
+ * em foco, ou com a câmera PERTO DELA: mais perto dela do que ela está do
+ * Sol E mais perto dela do que a câmera está do Sol (13/11) — só a
+ * primeira metade deixava a Pioneer 10, a 120 UA, escrever o nome no
+ * retrato de Urano, que está a 19 UA do Sol e do lado dela. Fora disso
+ * sobra o losango, sem
+ * texto (com a camada de ícones desligada, nada). Quem a cala quando ela
+ * se confunde com o Sol na tela é o produtor (`esmaecerSondasColadasNoSol`).
  */
 export function projetarSondas(
   camera: THREE.PerspectiveCamera,
@@ -124,12 +134,17 @@ export function projetarSondas(
   const out: StarLabel[] = [];
   for (const sonda of SONDAS) {
     if (!posicaoDaSondaNaCena(sonda.id, jd, _pos)) continue;
+    const emFoco = sonda.id === foco;
+    const dist = _pos.distanceTo(camera.position);
+    const comNome = emFoco || dist < Math.min(_pos.length(), camera.position.length());
+    if (!comNome && !comMarcador) continue;
     const l = projectForced(camera, sonda.nome, '', _pos, `${CHAVE_DE_SONDA}${sonda.id}`);
     if (!l) continue;
-    l.distPc = _pos.distanceTo(camera.position);
+    l.distPc = dist;
     l.opacity = 0.95;
     l.detalhe = classeEmTexto('sonda');
-    l.prioridade = sonda.id === foco ? PRIORIDADE_DO_ROTULO.foco : PRIORIDADE_DO_ROTULO.sonda;
+    l.prioridade = emFoco ? PRIORIDADE_DO_ROTULO.foco : PRIORIDADE_DO_ROTULO.sonda;
+    if (!comNome) l.icone = true;
     if (comMarcador) {
       l.comAnel = true;
       l.formaDoIcone = 'losango';

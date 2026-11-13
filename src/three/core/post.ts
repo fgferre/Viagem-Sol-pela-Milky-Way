@@ -844,6 +844,8 @@ class CenaResolvidaUmaVez extends Pass {
   private quad: FullScreenQuad;
   private cena: THREE.Scene;
   private camera: THREE.Camera;
+  /** quem montou os dois framebuffers (o primeiro `render`) — ver o `dispose` do destino */
+  private renderer: THREE.WebGLRenderer | null = null;
 
   constructor(
     cena: THREE.Scene,
@@ -871,7 +873,22 @@ class CenaResolvidaUmaVez extends Pass {
     // ordem das chamadas de tamanho deixava o alvo sem dispor). Quem
     // dispõe o destino dispõe o alvo; a volta é explícita em
     // `Post.aplicarAmostras`.
-    destino.addEventListener('dispose', () => this.alvo.dispose());
+    destino.addEventListener('dispose', () => {
+      // A CONTA DO THREE VÊ DUAS TEXTURAS ONDE HÁ UMA (13/11/2026): ao
+      // montar cada um dos dois framebuffers ele soma 1 em
+      // `info.memory.textures`, mesmo quando a textura de GL já existe; ao
+      // dispor, quem chega primeiro apaga a textura e desconta 1, e o
+      // segundo não acha mais o que descontar. Sem esta linha cada troca de
+      // amostras (a troca de tier) deixava +1 na régua do juiz de memória
+      // sem nenhuma textura de GL a mais — medido criando e apagando
+      // texturas no próprio contexto WebGL.
+      const montado = (rt: THREE.WebGLRenderTarget) =>
+        (this.renderer!.properties.get(rt) as { __webglFramebuffer?: unknown }).__webglFramebuffer !==
+        undefined;
+      const contadaDuasVezes = this.renderer !== null && montado(this.alvo) && montado(destino);
+      this.alvo.dispose();
+      if (contadaDuasVezes) this.renderer!.info.memory.textures--;
+    });
     this.copia = new THREE.ShaderMaterial({
       uniforms: THREE.UniformsUtils.clone(CopyShader.uniforms),
       vertexShader: CopyShader.vertexShader,
@@ -908,6 +925,7 @@ class CenaResolvidaUmaVez extends Pass {
     readBuffer: THREE.WebGLRenderTarget
   ) {
     this.sincronizar();
+    this.renderer = renderer;
     const limpavaSozinho = renderer.autoClear;
     renderer.autoClear = false;
     // 1. a cena no alvo multiamostrado — o ÚNICO resolve do quadro
@@ -1380,10 +1398,11 @@ export class Post {
     const rt = this.cena.alvo;
     if (rt.samples === alvo) return;
     rt.samples = alvo;
-    rt.dispose();
-    // e o dono da textura compartilhada vai junto: dispor o alvo apagou a
-    // textura de GL que o framebuffer do `renderTarget1` ainda aponta
+    // o dono da textura compartilhada PRIMEIRO: o ouvinte dele dispõe o
+    // alvo e acerta a conta do three enquanto os dois framebuffers ainda
+    // existem (dispor o alvo antes deixava a conta com 1 a mais por troca)
     this.composer.renderTarget1.dispose();
+    rt.dispose();
   }
 
   /** o MSAA escolhido à mão agora; `null` = o do preset (item 145) */

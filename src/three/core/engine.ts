@@ -237,6 +237,25 @@ export function lerPortaParticulas(
 }
 
 /**
+ * COMO A GALÁXIA DE FORA É DESENHADA (12/11/2026: a nova virou padrão).
+ * `webgpu` — as partículas pelo motor WebGPU (dezenas de milhões);
+ * `particulas` — as mesmas partículas pelo WebGL (a reserva de quem não
+ * tem WebGPU); `classica` — as sete lâminas pintadas mais as partículas
+ * de antes, byte a byte. O preset aponta o primeiro degrau; quando um
+ * degrau falha o desenho cai sozinho para o seguinte (`Galaxy`,
+ * `montarCarga`). A escolha à mão (`?galaxia=`, Ajustes) existe para
+ * comparar.
+ */
+export type CaminhoDaGalaxia = 'webgpu' | 'particulas' | 'classica';
+
+export const CAMINHOS_DA_GALAXIA: readonly CaminhoDaGalaxia[] = ['webgpu', 'particulas', 'classica'];
+
+/** a lei da porta `?galaxia=`, no mesmo contrato de `lerPortaGas`. */
+export function lerPortaGalaxia(bruto: string | null | undefined): CaminhoDaGalaxia | null {
+  return CAMINHOS_DA_GALAXIA.find((v) => v === bruto) ?? null;
+}
+
+/**
  * A POEIRA PERTO DE CASA (pedido do dono, 27/09) — o sexto controle da
  * gaveta Avançado. `hoje` é o modelo procedural de sempre (poeira
  * desligada no Director); as outras três trocam para o bloco medido
@@ -362,6 +381,9 @@ export interface QualityPreset {
    *  manda a da cena) — mesma regra do gás: todo preset aponta uma, `null`
    *  é só da porta `?lente=` e da fileira de Ajustes. */
   lente: ModoDaLente;
+  /** o primeiro degrau da cadeia da galáxia neste tier (12/11/2026) —
+   *  mesma regra do gás: `null` é só da porta `?galaxia=` e de Ajustes */
+  galaxia: CaminhoDaGalaxia;
 }
 
 // grain agora é DISPLAY-space (film pass pós-tonemap): 0.055 era
@@ -387,6 +409,9 @@ export interface QualityPreset {
 // LENTE (lente padrão por tier, 13/10): cinema e alta abrem na `hollywood`;
 // performance abre sem lente (`nenhuma`), a imagem de sempre. `?lente=` e
 // a fileira de Ajustes sempre vencem.
+// GALÁXIA (12/11/2026, a nova virou padrão): cinema e alta tentam o motor
+// WebGPU; performance (o telefone) vai às partículas no WebGL com teto
+// próprio — WebGPU em telefone não está provado. Medido em `PLAN-GALAXIA.md`.
 // EXPORTADO (redesenho do painel de Ajustes): o painel precisa mostrar
 // qual valor da gaveta o preset RESOLVE, para marcar o segmento efetivo
 // quando o controle está em "do preset" — sem isso ele lê `null` e não
@@ -401,6 +426,7 @@ export const PRESETS: Record<QualityLevel, QualityPreset> = {
     poeira: 'hoje',
     terra: 'profundidade',
     lente: 'hollywood',
+    galaxia: 'webgpu',
   },
   alta: {
     pixelRatio: 1.5,
@@ -411,6 +437,7 @@ export const PRESETS: Record<QualityLevel, QualityPreset> = {
     poeira: 'hoje',
     terra: 'profundidade',
     lente: 'hollywood',
+    galaxia: 'webgpu',
   },
   performance: {
     pixelRatio: 1.0,
@@ -421,6 +448,7 @@ export const PRESETS: Record<QualityLevel, QualityPreset> = {
     poeira: 'hoje',
     terra: 'classica',
     lente: 'nenhuma',
+    galaxia: 'particulas',
   },
 };
 
@@ -692,6 +720,10 @@ export interface EstadoDaQualidade {
    * configuração viva de `definirPoeira`.
    */
   poeira: TipoDePoeira | null;
+  /** a galáxia escolhida à mão (`null` = a cadeia do preset) */
+  galaxia: CaminhoDaGalaxia | null;
+  /** a galáxia que ESTÁ desenhando agora — depois das quedas da cadeia */
+  galaxiaViva: CaminhoDaGalaxia;
 }
 
 /**

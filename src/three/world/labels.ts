@@ -174,6 +174,13 @@ export interface StarLabel {
    */
   dirigido?: boolean;
   /**
+   * PODE ESCREVER DO OUTRO LADO da âncora quando o lado natural está
+   * ocupado (13/11) — só o lado, na mesma linha, sem o peso nem o
+   * holofote do `dirigido`. É dos planetas do sistema em quadro, irmãos
+   * que projetam a poucos pixels um do outro.
+   */
+  outroLado?: boolean;
+  /**
    * ESTE NOME ESTÁ SAINDO — a rampa dele desce (item 115, bloco B).
    *
    * Quem marca é `RampasDeRotulo`, no rótulo que a régua CORTOU e cuja
@@ -308,9 +315,10 @@ export const PRIORIDADE_DO_ROTULO = {
    *  abaixo de qualquer corpo da casa. Fora do mapa do Eyes, que não tem
    *  céu profundo. */
   lugar: 12,
-  /** uma SONDA (pilar 4, 12/11/2026): marcador de instrumento, abaixo
-   *  das luas e acima dos asteroides — ela é assunto, mas não é corpo */
-  sonda: 20,
+  /** uma SONDA (pilar 4, 12/11/2026): marcador de instrumento, o degrau
+   *  mais baixo dos nomeados — o dono não quer sonda disputando com
+   *  corpo, lugar ou estrela (crítica de 12/11); em foco ela vale o foco */
+  sonda: 4,
   /** um COMETA (pilar 4, 12/11/2026): ao lado das sondas — o nome só
    *  aparece perto do Sol ou em foco (`world/cometas.ts`) */
   cometa: 19,
@@ -492,6 +500,46 @@ export function cessaoPorTamanhoAparente(raioNdc: number): number {
   if (!Number.isFinite(raioNdc)) return raioNdc > 0 ? 0 : 1;
   const sai = (1 - raioNdc / RAIO_NDC_DE_CESSAO) / BORRAO_DA_CESSAO + 1;
   return Math.min(1, Math.max(0, sai));
+}
+
+/**
+ * A PROXIMIDADE DO ASSUNTO (12/11/2026) — 0 de longe, 1 quando o corpo
+ * (com o anel, se o anel é disco: `raioDoAssuntoPc`) é o retrato do
+ * quadro. A régua é o raio aparente sobre a MEIA-DIMENSÃO MENOR da tela
+ * (no retrato, a largura), para o celular e o desktop cederem no mesmo
+ * enquadramento. Na vista do sistema de Saturno, com Titã em quadro, o
+ * anel mede ~0,07; na chegada de perto, 0,5 a 0,7.
+ *
+ * É ela que faz o que é de outra escala recuar de perto — as linhas das
+ * luas, as órbitas e os nomes dos outros planetas, os nomes de estrela em
+ * volta — e voltar quando a câmera se afasta. Só mede: as camadas
+ * desligadas continuam desligadas.
+ */
+export const ASSUNTO_COMECA = 0.12;
+export const ASSUNTO_PERTO = 0.35;
+
+export function proximidadeDoAssunto(raioNdc: number, aspect: number): number {
+  const relativo = raioNdc / Math.min(1, aspect > 0 ? aspect : 1);
+  if (!Number.isFinite(relativo)) return relativo > 0 ? 1 : 0;
+  return THREE.MathUtils.smoothstep(relativo, ASSUNTO_COMECA, ASSUNTO_PERTO);
+}
+
+/**
+ * QUANTO UM PONTO DA TELA ESTÁ SOBRE O ASSUNTO: 1 até `dentro` raios
+ * aparentes do centro dele, 0 a partir de `fora`. `dx`/`dy` na unidade dos
+ * rótulos (fração da largura e da altura); `raioNdc` na meia-altura.
+ */
+export function sobreOAssunto(
+  dx: number,
+  dy: number,
+  aspect: number,
+  raioNdc: number,
+  dentro: number,
+  fora: number
+): number {
+  if (!(raioNdc > 0)) return 0;
+  const sep = Math.hypot(2 * dx * aspect, 2 * dy) / raioNdc;
+  return 1 - THREE.MathUtils.smoothstep(sep, dentro, fora);
 }
 
 /**
@@ -831,12 +879,27 @@ function escondidaPorDisco(
   return false;
 }
 
+/** o nome do centro galáctico — o rótulo `sgr-a` e o foco dele na escada */
+export const NOME_DE_SGR_A = 'Sagittarius A✱';
+
+/**
+ * A VIZINHANÇA DO CENTRO (pc de Sgr A✱): dentro dela o nome do buraco
+ * esmaece em `[SGR_A_ESMAECE_EM, SGR_A_SOME_EM]` e os nomes da escala da
+ * galáxia (`lugaresDoCeu.ts`) entram na mesma faixa, ao contrário — é a
+ * mesma lei da vizinhança do Sol, aplicada ao outro lugar denso do disco.
+ */
+export const SGR_A_ESMAECE_EM = 800;
+export const SGR_A_SOME_EM = 1200;
+
 export function projectLabels(
   camera: THREE.PerspectiveCamera,
   named: NamedStar[],
   maxLabels = 7,
   prevKeys?: Set<string>,
-  oclusores?: readonly OclusorDeRotulo[]
+  oclusores?: readonly OclusorDeRotulo[],
+  /** Sgr A✱ é o FOCO escolhido: o nome dele não some por distância —
+   *  só cede quando o buraco enche a tela, como todo alvo seguido */
+  centroEmFoco = false
 ): StarLabel[] {
   const camPos = camera.position;
   const out: StarLabel[] = [];
@@ -858,17 +921,17 @@ export function projectLabels(
   // o coração da galáxia tem nome quando estamos perto dele. O teto
   // caiu de 2,6 kpc para 1,2 (revisão: na fuga do centro a etiqueta
   // ficava flutuando sobre névoa, apontando um objeto já invisível).
-  if (dGC > 6 && dGC < 1200) {
+  if (dGC > 6 && (centroEmFoco || dGC < SGR_A_SOME_EM)) {
     const p = projectPoint(camera, GAL.GC_POS);
     if (p) {
       out.push({
-        name: 'Sagittarius A✱',
+        name: NOME_DE_SGR_A,
         spect: 'SMBH',
         distPc: dGC,
         x: p.x,
         y: p.y,
         opacity:
-          (1 - THREE.MathUtils.smoothstep(dGC, 800, 1200)) *
+          (centroEmFoco ? 1 : 1 - THREE.MathUtils.smoothstep(dGC, SGR_A_ESMAECE_EM, SGR_A_SOME_EM)) *
           THREE.MathUtils.smoothstep(dGC, 6, 16) *
           0.95,
         key: 'sgr-a',

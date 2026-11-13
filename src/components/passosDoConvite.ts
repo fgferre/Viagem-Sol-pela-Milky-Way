@@ -53,3 +53,25 @@ export interface PassoDoConvite {
   alvo: string | null;
   texto: ChaveDeTexto;
 }
+
+/** o que o convite do Atlas olha para saber se o visitante já agiu */
+export interface GestosDoAtlas {
+  girou: boolean;
+  foco: string | null;
+  busca: boolean;
+}
+
+/**
+ * O CONVITE DO ATLAS SOME? Só por gesto feito DEPOIS que o cartão
+ * apareceu (12/11/2026): `antes` é o retrato do instante em que ele
+ * surgiu. Uma seleção que já existia — a do link com `?foco=`, ou a do
+ * astro escolhido antes de "Rever o convite" — não é gesto do visitante
+ * e não o apaga; escolher outro astro, girar ou abrir a Busca, sim.
+ */
+export function conviteDoAtlasSome(antes: GestosDoAtlas, agora: GestosDoAtlas): boolean {
+  return (
+    (agora.girou && !antes.girou) ||
+    agora.foco !== antes.foco ||
+    (agora.busca && !antes.busca)
+  );
+}

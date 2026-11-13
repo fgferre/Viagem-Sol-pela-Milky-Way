@@ -52,6 +52,7 @@ import type { NamedStar } from '../three/config';
 import { APELIDOS_DE_ESTRELAS } from './apelidosDeEstrelas';
 import { CONSTELACOES, NOMES_DAS_CONSTELACOES } from './atlas/constelacoes';
 import { LUGARES_DO_FILME } from './lugaresDoFilme';
+import { exoplanetaPorId } from './exoplanetas';
 import { idiomaAtual } from './idioma';
 
 /** um documento do motor: UMA chave normalizada do índice de texto */
@@ -118,8 +119,9 @@ export interface LugarBuscavel {
   raioPc?: number;
   /** a palavra da classe ('aglomerado aberto'); ausente = sem selo */
   classe?: string;
-  /** distância ao Sol em PARSECS, como `NamedStar.d` — a nota da paleta */
-  d: number;
+  /** distância ao Sol em PARSECS, como `NamedStar.d` — a nota da paleta;
+   *  ausente = sem nota (uma vista, que não fica a distância nenhuma) */
+  d?: number;
   x: number;
   y: number;
   z: number;
@@ -537,23 +539,82 @@ export function buscar(
     return nome;
   };
 
+  // A ESTRELA ANTES DOS PLANETAS DELA (13/11): "trappist" casava as oito
+  // entradas no mesmo degrau, e a regra "casa antes do céu" punha os sete
+  // planetas na frente da estrela. O planeta cuja anfitriã casou no MESMO
+  // degrau ordena como ela — pelas chaves dela —, e dentro da família vem
+  // a estrela e depois os planetas, de dentro para fora.
+  const representante = new Map<number, { rep: number; ordem: number }>();
+  for (const [i, score] of melhorPorEntrada) {
+    const entrada = indice.entradas[i];
+    if (entrada.tipo !== 'corpo') continue;
+    const achado = exoplanetaPorId(entrada.corpo.id);
+    if (!achado) continue;
+    const anfitria = indiceDaEstrela(indice, achado.sistema.estrela);
+    if (anfitria === undefined || melhorPorEntrada.get(anfitria) !== score) continue;
+    representante.set(i, { rep: anfitria, ordem: achado.planeta.aUA });
+  }
+  const rep = (i: number) => representante.get(i)?.rep ?? i;
+  const ordemNaFamilia = (i: number) => representante.get(i)?.ordem ?? -1;
+
   return [...melhorPorEntrada]
     .map(([i, score]) => ({ indice: i, entrada: indice.entradas[i], score }))
-    .sort(
-      (a, b) =>
+    .sort((a, b) => {
+      const ra = rep(a.indice);
+      const rb = rep(b.indice);
+      const ea = indice.entradas[ra];
+      const eb = indice.entradas[rb];
+      return (
         b.score - a.score ||
-        ordemDoTipo(a.entrada) - ordemDoTipo(b.entrada) ||
+        ordemDoTipo(ea) - ordemDoTipo(eb) ||
         // a relevância do motor é ZERO em todos os quatro degraus
         // literais, então esta linha não muda nada lá: ela só ordena o
         // degrau tolerante, onde o score é o mesmo para todos e quem
         // deve vir na frente é quem se parece MAIS com o que se digitou
-        (relevancia.get(b.indice) ?? 0) - (relevancia.get(a.indice) ?? 0) ||
-        brilhoDe(a.entrada) - brilhoDe(b.entrada) ||
-        nomeDe(a.indice).length - nomeDe(b.indice).length ||
-        (nomeDe(a.indice) < nomeDe(b.indice) ? -1 : nomeDe(a.indice) > nomeDe(b.indice) ? 1 : 0) ||
+        (relevancia.get(rb) ?? 0) - (relevancia.get(ra) ?? 0) ||
+        brilhoDe(ea) - brilhoDe(eb) ||
+        nomeDe(ra).length - nomeDe(rb).length ||
+        (nomeDe(ra) < nomeDe(rb) ? -1 : nomeDe(ra) > nomeDe(rb) ? 1 : 0) ||
+        ra - rb ||
+        ordemNaFamilia(a.indice) - ordemNaFamilia(b.indice) ||
         a.indice - b.indice
-    )
+      );
+    })
     .slice(0, limite);
+}
+
+/** a entrada de uma estrela pelo nome, memoizada por índice */
+const estrelasPorNome = new WeakMap<IndiceEstrelas, Map<string, number>>();
+function indiceDaEstrela(indice: IndiceEstrelas, nome: string): number | undefined {
+  let mapa = estrelasPorNome.get(indice);
+  if (!mapa) {
+    mapa = new Map();
+    indice.entradas.forEach((e, i) => {
+      if (e.tipo === 'estrela') mapa!.set(e.estrela.n, i);
+    });
+    estrelasPorNome.set(indice, mapa);
+  }
+  return mapa.get(nome);
+}
+
+/**
+ * O QUE O ENTER ESCOLHE: a linha `ativo` da lista da consulta que está na
+ * caixa AGORA. A lista na tela pode estar atrasada (a paleta a calcula de
+ * um valor adiado, para a digitação não engasgar): quem digitava "terra"
+ * e apertava Enter antes de ela alcançar o texto caía na primeira linha
+ * de "t" — Titã. Lista em dia é reaproveitada; atrasada, a busca roda de
+ * novo ali, uma vez, sobre o texto da caixa.
+ */
+export function alvoDoEnter(
+  consultaAgora: string,
+  consultaDaLista: string,
+  lista: readonly ResultadoBusca[],
+  ativo: number,
+  indice: IndiceEstrelas,
+  limite = 8
+): EntradaDaBusca | null {
+  const atual = consultaAgora === consultaDaLista ? lista : buscar(consultaAgora, indice, limite);
+  return atual[Math.min(ativo, atual.length - 1)]?.entrada ?? null;
 }
 
 // ---- o DEEP-LINK (`?foco=`), os dois lados ------------------------

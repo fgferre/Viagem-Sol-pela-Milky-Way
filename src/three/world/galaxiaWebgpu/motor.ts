@@ -11,15 +11,14 @@ import { EX, EY, EZ, GAL } from '../baseGalactica';
 import {
   celulaDaParticula,
   CELULAS_DA_GRADE,
-  gerarNuvensDePoeira,
+  LADO_DO_TAU_DAS_NUVENS as N_TAU,
   ladoDaChave,
-  tauDasNuvens,
+  tauDasNuvensEmMeia,
 } from '../geradorDaGalaxia';
 import { BYTES_DOS_UNIFORMES, WGSL_DEPOSITO, WGSL_EXTINCAO, WGSL_TOM } from './motorWgsl';
 
 const ESCALA = 65536; // ponto fixo do acumulador: 1 unidade de cena = 2^16
 const BYTES_DA_PARTICULA = 20;
-const N_TAU = 1024;
 const USO = { mapRead: 0x01, copySrc: 0x04, copyDst: 0x08, uniform: 0x40, storage: 0x80, queryResolve: 0x200 };
 
 export interface CameraDoMotor {
@@ -56,6 +55,48 @@ function rgb9e5(r: number, g: number, b: number): number {
   const s = 2 ** (e - 24);
   const q = (v: number) => Math.min(511, Math.max(0, Math.round(v / s)));
   return (q(r) | (q(g) << 9) | (q(b) << 18) | (e << 27)) >>> 0;
+}
+
+/** um sorteio no formato da GPU: `m` partículas de 20 bytes e o espaçamento de cada uma */
+export interface SorteioEmpacotado {
+  dados: ArrayBuffer;
+  esp: Float32Array;
+  m: number;
+}
+
+/**
+ * Um sorteio do gerador (`bright`, stride 8) no formato do motor: 20 bytes
+ * por partícula. Do primeiro vêm também os indivíduos (estrela jovem, nó
+ * H II, aglomerado, halo, núcleo); dos seguintes só as populações
+ * contínuas, que passam a dividir a luz pelo número de sorteios. CPU pura:
+ * os sorteios extras se empacotam no trabalhador da carga (13/11/2026), e
+ * só os 24 bytes por partícula atravessam para a thread, não os 32 do `bright`.
+ */
+export function empacotarSorteio(bright: Float32Array, n: number, primeiro: boolean): SorteioEmpacotado {
+  const dados = new ArrayBuffer(n * BYTES_DA_PARTICULA);
+  const f = new Float32Array(dados);
+  const u = new Uint32Array(dados);
+  const esp = new Float32Array(n);
+  const chaves = new Uint16Array(n);
+  const porChave = new Uint32Array(65536);
+  for (let i = 0; i < n; i++) porChave[(chaves[i] = celulaDaParticula(bright, i))]++;
+  let m = 0;
+  for (let i = 0; i < n; i++) {
+    const individuo = chaves[i] === CELULAS_DA_GRADE;
+    if (individuo && !primeiro) continue;
+    const o = i * 8;
+    const d = m * 5;
+    f[d] = bright[o];
+    f[d + 1] = bright[o + 1];
+    f[d + 2] = bright[o + 2];
+    f[d + 3] = bright[o + 6];
+    const a = bright[o + 7];
+    u[d + 4] = rgb9e5(bright[o + 3] * a, bright[o + 4] * a, bright[o + 5] * a);
+    // espaçamento local (pc) para as filhas: 1/√Σ da célula; 0 = indivíduo
+    esp[m] = individuo ? 0 : ladoDaChave(chaves[i]) / Math.sqrt(porChave[chaves[i]]);
+    m++;
+  }
+  return { dados, esp, m };
 }
 
 export class MotorDaGalaxia {
@@ -97,7 +138,8 @@ export class MotorDaGalaxia {
 
   private constructor(
     gpu: GPUDevice, tela: HTMLCanvasElement | OffscreenCanvas, capacidade: number,
-    pipelines: { ext: GPUPipeline; dep: GPUPipeline; tom: GPUPipeline }, formato: string
+    pipelines: { ext: GPUPipeline; dep: GPUPipeline; tom: GPUPipeline }, formato: string,
+    meio: Uint16Array
   ) {
     this.linear = formato === 'rgba16float';
     this.gpu = gpu;
@@ -117,11 +159,9 @@ export class MotorDaGalaxia {
     this.bufU = gpu.createBuffer({ size: BYTES_DOS_UNIFORMES, usage: USO.uniform | USO.copyDst });
 
     // τ⊥ das nuvens de poeira: a mesma textura do modo só-partículas
-    const tau = tauDasNuvens(gerarNuvensDePoeira(), N_TAU, GALACTIC_MODEL.diskRadiusPc);
-    const meio = new Uint16Array(tau.length);
-    for (let i = 0; i < tau.length; i++) meio[i] = THREE.DataUtils.toHalfFloat(tau[i]);
-    const texTau = gpu.createTexture({ size: [N_TAU, N_TAU], format: 'r16float', usage: 0x04 | 0x02 });
-    gpu.queue.writeTexture({ texture: texTau }, meio, { bytesPerRow: N_TAU * 2 }, [N_TAU, N_TAU]);
+    // (R a camada fina do molecular, G a espessa do atômico)
+    const texTau = gpu.createTexture({ size: [N_TAU, N_TAU], format: 'rg16float', usage: 0x04 | 0x02 });
+    gpu.queue.writeTexture({ texture: texTau }, meio, { bytesPerRow: N_TAU * 4 }, [N_TAU, N_TAU]);
 
     this.pExt = pipelines.ext;
     this.pDep = pipelines.dep;
@@ -139,7 +179,10 @@ export class MotorDaGalaxia {
   static async criar(
     tela: HTMLCanvasElement | OffscreenCanvas, capacidade: number,
     /** saída linear em rgba16float (para virar textura do app) em vez de imagem pronta */
-    linear = false
+    linear = false,
+    /** o τ⊥ das nuvens já assado pela carga (pode chegar depois do
+     *  dispositivo: é esperado por último); sem ele o motor o faz aqui */
+    nuvens?: Uint16Array | Promise<Uint16Array | undefined>
   ): Promise<MotorDaGalaxia | null> {
     if (!navigator.gpu) return null;
     const adaptador = await navigator.gpu.requestAdapter({ powerPreference: 'high-performance' });
@@ -160,20 +203,24 @@ export class MotorDaGalaxia {
     };
     const formato = linear ? 'rgba16float' : navigator.gpu.getPreferredCanvasFormat();
     const mTom = await modulo(WGSL_TOM, 'tom');
-    return new MotorDaGalaxia(gpu, tela, capacidade, {
-      ext: gpu.createComputePipeline({
+    // as versões ASSÍNCRONAS (13/11/2026): as síncronas compilavam na
+    // thread e a seguravam ~0,5 s logo no começo da carga
+    const [ext, dep, tom] = await Promise.all([
+      gpu.createComputePipelineAsync({
         layout: 'auto', compute: { module: await modulo(WGSL_EXTINCAO, 'extinção'), entryPoint: 'main' },
       }),
-      dep: gpu.createComputePipeline({
+      gpu.createComputePipelineAsync({
         layout: 'auto', compute: { module: await modulo(WGSL_DEPOSITO, 'depósito'), entryPoint: 'main' },
       }),
-      tom: gpu.createRenderPipeline({
+      gpu.createRenderPipelineAsync({
         layout: 'auto',
         vertex: { module: mTom, entryPoint: 'vs' },
         fragment: { module: mTom, entryPoint: 'fs', targets: [{ format: formato }] },
         primitive: { topology: 'triangle-list' },
       }),
-    }, formato);
+    ]);
+    const pipelines = { ext, dep, tom };
+    return new MotorDaGalaxia(gpu, tela, capacidade, pipelines, formato, (await nuvens) ?? tauDasNuvensEmMeia());
   }
 
   private liga(p: GPUPipeline, entradas: unknown[]) {
@@ -183,37 +230,13 @@ export class MotorDaGalaxia {
     });
   }
 
-  /**
-   * Um sorteio do gerador (`bright`, stride 8) entra na GPU em 20 bytes por
-   * partícula. Do primeiro vêm também os indivíduos (estrela jovem, nó
-   * H II, aglomerado, halo, núcleo); dos seguintes só as populações
-   * contínuas, que passam a dividir a luz pelo número de sorteios.
-   */
+  /** um sorteio do gerador direto na GPU (empacotado aqui, na thread) */
   acrescentar(bright: Float32Array, n: number) {
-    const primeiro = this.sorteios === 0;
-    const dados = new ArrayBuffer(n * BYTES_DA_PARTICULA);
-    const f = new Float32Array(dados);
-    const u = new Uint32Array(dados);
-    const esp = new Float32Array(n);
-    const chaves = new Uint16Array(n);
-    const porChave = new Uint32Array(65536);
-    for (let i = 0; i < n; i++) porChave[(chaves[i] = celulaDaParticula(bright, i))]++;
-    let m = 0;
-    for (let i = 0; i < n; i++) {
-      const individuo = chaves[i] === CELULAS_DA_GRADE;
-      if (individuo && !primeiro) continue;
-      const o = i * 8;
-      const d = m * 5;
-      f[d] = bright[o];
-      f[d + 1] = bright[o + 1];
-      f[d + 2] = bright[o + 2];
-      f[d + 3] = bright[o + 6];
-      const a = bright[o + 7];
-      u[d + 4] = rgb9e5(bright[o + 3] * a, bright[o + 4] * a, bright[o + 5] * a);
-      // espaçamento local (pc) para as filhas: 1/√Σ da célula; 0 = indivíduo
-      esp[m] = individuo ? 0 : ladoDaChave(chaves[i]) / Math.sqrt(porChave[chaves[i]]);
-      m++;
-    }
+    this.acrescentarPacote(empacotarSorteio(bright, n, this.sorteios === 0));
+  }
+
+  /** um sorteio já empacotado (`empacotarSorteio`, feito no trabalhador) */
+  acrescentarPacote({ dados, esp, m }: SorteioEmpacotado) {
     if (this.total + m > this.capacidade) throw new Error('motor: capacidade de partículas excedida');
     this.gpu.queue.writeBuffer(this.bufP, this.total * BYTES_DA_PARTICULA, new Uint8Array(dados, 0, m * BYTES_DA_PARTICULA));
     this.gpu.queue.writeBuffer(this.bufEsp, this.total * 4, esp.subarray(0, m));
@@ -323,6 +346,28 @@ export class MotorDaGalaxia {
       enc.copyBufferToBuffer(this.bufRelogio, 0, this.bufLeitura, 0, 48);
     }
     this.gpu.queue.submit([enc.finish()]);
+  }
+
+  /** resolve quando o dispositivo se perde (driver, GPU reiniciada…) ou é destruído */
+  get perdido(): Promise<{ message: string }> {
+    return this.gpu.lost;
+  }
+
+  /**
+   * Pinta a tela inteira com `cor` (luz linear) e espera a GPU: a sonda da
+   * PONTE — quem a lê do outro lado é o WebGL do app (`camadaWebgpu.ts`).
+   */
+  async pintar(w: number, h: number, cor: readonly number[]) {
+    this.redimensionar(w, h);
+    const enc = this.gpu.createCommandEncoder();
+    const p = enc.beginRenderPass({
+      colorAttachments: [
+        { view: this.ctx.getCurrentTexture().createView(), loadOp: 'clear', storeOp: 'store', clearValue: cor },
+      ],
+    });
+    p.end();
+    this.gpu.queue.submit([enc.finish()]);
+    await this.gpu.queue.onSubmittedWorkDone();
   }
 
   /** solta o dispositivo e, com ele, todos os buffers */

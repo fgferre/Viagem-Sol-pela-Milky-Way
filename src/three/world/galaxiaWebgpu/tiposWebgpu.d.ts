@@ -71,6 +71,8 @@ interface GPUDevice extends EventTarget {
   createShaderModule(d: { code: string }): GPUShaderModule;
   createComputePipeline(d: DescGPU): GPUPipeline;
   createRenderPipeline(d: DescGPU): GPUPipeline;
+  createComputePipelineAsync(d: DescGPU): Promise<GPUPipeline>;
+  createRenderPipelineAsync(d: DescGPU): Promise<GPUPipeline>;
   createBindGroup(d: DescGPU): GPUBindGroup;
   createCommandEncoder(): GPUCommandEncoder;
   createQuerySet(d: DescGPU): GPUQuerySet;

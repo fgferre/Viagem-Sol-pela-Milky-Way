@@ -43,6 +43,7 @@ import type {
   GasVolumetrico,
   VarianteDaTerra,
   NivelDaNebulosa,
+  CaminhoDaGalaxia,
   ParticulasDaGalaxia,
   TipoDePoeira,
 } from './core/engine';
@@ -287,6 +288,11 @@ export function particulasDaGalaxiaEmTexto(nivel: ParticulasDaGalaxia): string {
   return t(`ajustes.particulas.${nivel}` as ChaveDeTexto);
 }
 
+/** COMO A GALÁXIA DE FORA É DESENHADA, como o visitante lê (12/11/2026) */
+export function galaxiaEmTexto(caminho: CaminhoDaGalaxia): string {
+  return t(`ajustes.galaxia.${caminho}` as ChaveDeTexto);
+}
+
 /**
  * A POEIRA PERTO DE CASA COMO O VISITANTE A LÊ (pedido do dono, 27/09).
  * Mesma doutrina do gás e das partículas: a variante é chave
@@ -345,7 +351,8 @@ export const foraDoPreset = (e: EstadoDaQualidade): boolean =>
   e.gas !== null ||
   e.terra !== null ||
   e.particulas !== null ||
-  e.poeira !== null;
+  e.poeira !== null ||
+  e.galaxia !== null;
 
 export function rotuloDaQualidade(e: EstadoDaQualidade): string {
   // PERSONALIZADO (item 145, +145b, +149): mexeu num controle da gaveta

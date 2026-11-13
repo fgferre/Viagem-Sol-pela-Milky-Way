@@ -5,7 +5,14 @@
 // ============================================================
 import { WORLD } from '../config';
 import { GLSL_CARTOGRAPHY, LUT_DISK } from '../cartography/galacticModel';
-import { GLSL_NOISE, GLSL_GALAXY, glslDensity, glslBakeDensity, corridorCore } from './common';
+import {
+  GLSL_NOISE,
+  GLSL_GALAXY,
+  glslDensity,
+  glslBakeDensity,
+  corridorCore,
+  SEMENTES_DO_BAKE,
+} from './common';
 import { blackbodyLinear } from '../luzDaCasa';
 import { glslNumber } from '../glslNumber';
 import { GLSL_UNRESOLVED, glslResolvedCatalog } from '../world/wrappedStars';
@@ -498,8 +505,8 @@ void main() {
 // ver common.ts) numa fatia z do volume 128³ que segue a câmera.
 // nebula.ts renderiza 128 vezes, uma por fatia (uFatia 0..127), num
 // THREE.WebGL3DRenderTarget RGBA — R/G/B/A na ordem que nebulaBake
-// devolve. As sementes vêm de uSeedCloudTex (256×2, texelFetch): as
-// ≤256 nuvens do catálogo mais perto do CENTRO do volume, escolhidas por
+// devolve. As sementes vêm de uSeedCloudTex (SEMENTES_DO_BAKE×2,
+// texelFetch): toda nuvem do catálogo que alcança a caixa, escolhida por
 // nuvensSemente.sementesParaBake a cada pedido de reassar.
 export function nebulaBakeFrag(
   variante: Exclude<GasVolumetrico, 'antigo'>,
@@ -517,7 +524,7 @@ uniform vec3 uVolTamanho;
 ${GLSL_NOISE}
 ${GLSL_GALAXY}
 ${GLSL_CARTOGRAPHY}
-${glslBakeDensity(256, fino, piramide)}
+${glslBakeDensity(SEMENTES_DO_BAKE, fino, piramide)}
 
 void main() {
   vec2 uv = gl_FragCoord.xy / 128.0;

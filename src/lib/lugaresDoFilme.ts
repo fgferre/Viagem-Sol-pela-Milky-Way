@@ -101,7 +101,12 @@ export interface LugarDoCeu {
    *  não ganha nome na cena — quem marca o lugar é o rótulo do Sol */
   semRotulo?: true;
   /** a distância da LITERATURA ao Sol, em pc (a ficha a escreve em
-   *  anos-luz — parsec não aparece na tela) */
+   *  anos-luz — parsec não aparece na tela). É a ÚNICA distância do
+   *  lugar: a nota da busca lê esta mesma (`LUGARES_DA_BUSCA`).
+   *  `doSolAoCentro` = o destino é uma VISTA e o número não é a distância
+   *  até ele, é a do Sol ao centro: a ficha o rotula assim e a busca não
+   *  o mostra. O próprio centro (Sagittarius A✱) não leva a marca — para
+   *  ele as duas distâncias são a mesma. */
   distanciaPc?: { valor: number; fonte: string; doSolAoCentro?: true };
   oQueE?: { pt: string; en: string };
   fatos?: readonly FatoDoLugar[];
@@ -136,7 +141,7 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     en: ['Sagittarius A*', 'Sgr A*', 'Black hole', 'Galactic center', 'Galactic centre'],
     alvo: { centroGalactico: true },
     classe: 'buraco negro',
-    distanciaPc: { valor: 8150, fonte: 'Reid et al. 2019 (VLBI)', doSolAoCentro: true },
+    distanciaPc: { valor: 8150, fonte: 'Reid et al. 2019 (VLBI)' },
     oQueE: {
       pt: 'O buraco negro supermassivo no centro da Via Láctea: 4 milhões de vezes a massa do Sol num espaço menor que a órbita de Mercúrio. Ele quase não brilha — o gás que cai nele é ralo — e se revela pelo que faz: as estrelas mais próximas giram em volta dele em poucos anos, e a luz que passa perto se curva.',
       en: 'The supermassive black hole at the centre of the Milky Way: 4 million times the Sun’s mass in a space smaller than Mercury’s orbit. It barely shines — the gas falling in is thin — and it shows itself by what it does: the nearest stars circle it in a few years, and light passing close to it bends.',
@@ -186,8 +191,8 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
       },
       {
         campo: 'naCena',
-        pt: 'de perto, a sombra e o disco têm o tamanho real, e a luz das estrelas e do gás atrás deles é desviada pela relatividade geral, calculada aqui raio a raio (buraco sem rotação). O disco de acreção é o “Gargantua”, inspirado no filme Interstellar, e o brilho dele é artístico: o gás que cai em Sgr A✱ é ralo e brilha em rádio e raios X, quase nada em luz visível. De longe o disco é desenhado muito maior que o real (até 125.884 vezes), para ser visto, e encolhe até o tamanho verdadeiro a 8,5 UA do buraco. Onde a luz desviada viria de fora da tela, mostra-se a cena sem desvio — uma aproximação.',
-        en: 'up close, the shadow and the disc are true to size, and the light of the stars and gas behind them is bent by general relativity, computed here ray by ray (non-rotating hole). The accretion disc is the “Gargantua”, inspired by the film Interstellar, and its brightness is artistic: the gas falling into Sgr A✱ is thin and shines in radio and X-rays, hardly at all in visible light. From afar the disc is drawn far larger than real (up to 125,884 times) so it can be seen, and it shrinks to its true size 8.5 AU from the hole. Where the bent light would come from outside the screen, the unbent scene is shown — an approximation.',
+        pt: 'de perto, a sombra e o disco têm o tamanho real, e a luz das estrelas e do gás atrás deles é desviada pela relatividade geral (buraco sem rotação): calculada raio a raio perto do buraco e, mais longe, pela fórmula do desvio fraco. O disco de acreção é o “Gargantua”, inspirado no filme Interstellar, e o brilho dele é artístico: o gás que cai em Sgr A✱ é ralo e brilha em rádio e raios X, quase nada em luz visível. De longe o disco é desenhado muito maior que o real (até 125.884 vezes), para ser visto, e encolhe até o tamanho verdadeiro a 2 UA do buraco, onde fica a vista de perto. Onde a luz desviada viria de fora da tela, mostra-se a cena sem desvio — uma aproximação.',
+        en: 'up close, the shadow and the disc are true to size, and the light of the stars and gas behind them is bent by general relativity (non-rotating hole): computed ray by ray near the hole and, further out, by the weak-bending formula. The accretion disc is the “Gargantua”, inspired by the film Interstellar, and its brightness is artistic: the gas falling into Sgr A✱ is thin and shines in radio and X-rays, hardly at all in visible light. From afar the disc is drawn far larger than real (up to 125,884 times) so it can be seen, and it shrinks to its true size 2 AU from the hole, where the close view sits. Where the bent light would come from outside the screen, the unbent scene is shown — an approximation.',
         procedencia: 'derivado',
         fonte: {
           pt: 'relatividade geral (Schwarzschild 1916)',
@@ -231,7 +236,7 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
         pt: '≈ 112 milhões de anos',
         en: '≈ 112 million years',
         procedencia: 'derivado',
-        fonte: 'Dahm 2015 (lithium depletion boundary)',
+        fonte: { pt: 'Dahm 2015 (limite de depleção do lítio)', en: 'Dahm 2015 (lithium depletion boundary)' },
       },
       {
         campo: 'membros',
@@ -405,9 +410,9 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
       },
       {
         campo: 'naCena',
-        pt: 'braços, barra, gás e poeira são partículas de um modelo; o desenho segue as medidas, não uma foto',
-        en: 'arms, bar, gas and dust are particles of a model; the drawing follows measurements, not a photograph',
-        procedencia: 'artistico',
+        pt: 'estrelas, gás e poeira são milhões de partículas sorteadas de um modelo científico; perto do Sol a estrutura segue medidas, o lado de lá do centro é modelado; não é uma foto',
+        en: 'stars, gas and dust are millions of particles drawn from a scientific model; near the Sun the structure follows measurements, the far side of the centre is modelled; not a photograph',
+        procedencia: 'derivado',
         fonte: MODELO_DA_CASA,
       },
     ],
@@ -446,9 +451,9 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
       },
       {
         campo: 'naCena',
-        pt: 'a posição do Sol é medida; o desenho dos braços em volta dele é um modelo de partículas',
-        en: 'the Sun’s position is measured; the arms drawn around it are a particle model',
-        procedencia: 'artistico',
+        pt: 'a posição do Sol é medida; os braços em volta dele são partículas sorteadas de um modelo guiado por medidas',
+        en: 'the Sun’s position is measured; the arms around it are particles drawn from a model guided by measurements',
+        procedencia: 'derivado',
         fonte: MODELO_DA_CASA,
       },
     ],

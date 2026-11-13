@@ -235,6 +235,12 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.particulas.todas': 'All',
   'ajustes.particulas.metade': 'Half',
   'ajustes.particulas.quarto': '¼',
+  'ajustes.galaxiaControle': 'Galaxy',
+  'ajustes.galaxiaNota':
+    'How the galaxy seen from outside is drawn. WebGPU: tens of millions of particles. WebGL: the same particles, fewer of them (the fallback without WebGPU). Classic: the old one, with painted layers. On Preset the app tries them in that order and marks the one drawing now.',
+  'ajustes.galaxia.webgpu': 'WebGPU',
+  'ajustes.galaxia.particulas': 'WebGL',
+  'ajustes.galaxia.classica': 'Classic',
   'ajustes.texto': 'Text size · {degrau}',
   'ajustes.textoNota':
     'Applies to the whole HUD — captions, controls, seal and the star names. It does not touch the scene: inside the Atlas the framing backs off a little so the larger text does not cover the target.',
@@ -349,7 +355,7 @@ export const EN: Record<keyof typeof PT, string> = {
   // NO film promise (item 129/F5 still holds): the click here does the
   // SAME thing the "place" search entry already does — frames the
   // galactic centre in the Atlas, does not start the film.
-  'busca.destino.sagittarius-a': 'The whole galaxy, around its centre',
+  'busca.destino.sagittarius-a': 'The black hole at the centre of the galaxy',
   'busca.destino.via-lactea': 'The whole galaxy, from outside',
   'busca.destino.nosso-lugar': 'Where the Sun sits in the disc',
   'busca.destino.pleiades': 'The Seven Sisters, up close',
@@ -520,7 +526,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.cometa.inativo': 'inactive: too far from the Sun for water ice to sublimate',
   'ficha.cometa.naCena': 'what you see here',
   'ficha.cometa.naCena.valor':
-    'the position is measured (JPL elements); the coma and tails are physics computed here, particle by particle — dust pushed by sunlight, ions carried by the solar wind, gas breaking apart —, with boosted brightness; from afar, the nucleus is a marker',
+    'the position is measured (JPL elements); the coma and tails are physics computed here, particle by particle — dust pushed by sunlight, ions carried by the solar wind, gas breaking apart —, with boosted brightness; up close, the light adapts to distance (like an eye), the coma near the nucleus is the same law summed along the line of sight, and the nucleus relief is illustrative (size and albedo are measured); from afar, the nucleus is a marker',
   'ficha.cometa.ultimo': 'last perihelion',
   'ficha.cometa.proximo': 'next perihelion',
   'ficha.cometa.perielio': 'perihelion distance',
@@ -540,7 +546,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.fonte.modeloDasCaudas': 'Finson & Probstein (1968); Haser (1957); the app’s brightness gain',
   'ficha.fonte.horizons': 'JPL Horizons, retrieved on {data}',
   'ficha.fonte.arquivoDeExoplanetas': 'NASA Exoplanet Archive, retrieved on {data}',
-  'ficha.exo.zonaPresa': 'temperature outside the valid range ({a}–{b} K): clamped to the edge',
+  'ficha.exo.zonaPresa': 'the formula only holds for stars from {a} to {b} K; for this star, the zone drawn is an extrapolation',
   'ficha.exo.metodo.transito': 'transit',
   'ficha.exo.metodo.velocidadeRadial': 'radial velocity',
   'ficha.exo.metodo.imagem': 'direct imaging',
@@ -655,7 +661,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.tier.medido': 'measured',
   'selo.tier.medidoOQue': 'catalog and ephemeris',
   'selo.tier.derivado': 'derived',
-  'selo.tier.derivadoOQue': 'color and temperature from a model',
+  'selo.tier.derivadoOQue': 'color and temperature from a model; the galaxy, particles drawn from a model',
   'selo.tier.artistico': 'artistic',
   'selo.tier.artisticoOQue': "the Sun's disk, the glare and the diffraction spikes",
   'selo.cartografiaProcedural': 'cartography: procedural (the maps did not arrive)',
@@ -679,6 +685,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.desvio.lente': 'cinema lens on: camera reflections, not the sky',
   'selo.desvio.doseDoSol': 'the opening shows the Sun cleaner than the date asks for',
   'selo.desvio.luzDoRoteiro': 'the light is in a scripted transition, between assisted and real',
+  'selo.desvio.brilhoDoBuraco':
+    "Sagittarius A✱'s disc is true to size, but its brightness is artistic: the real gas barely shines",
   'selo.desvio.amostragem': 'sampling below cinema',
   'selo.desvio.camada': 'layer turned off: {nome}',
   'selo.desvio.msaa': 'edge smoothing set by hand',
@@ -695,6 +703,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.desvio.relevoCom': 'Earth relief enhanced {fator}×',
   'selo.desvio.particulas': 'galaxy particles set by hand',
   'selo.desvio.particulasCom': 'galaxy particles set by hand: {nivel}',
+  'selo.desvio.galaxia': 'galaxy set by hand',
+  'selo.desvio.galaxiaCom': 'galaxy set by hand: {caminho}',
   'selo.desvio.poeira': 'dust near home set by hand',
   'selo.desvio.poeiraCom': 'dust near home set by hand: {variante}',
   'selo.desvio.poeiraTeste': 'test (synthetic volume)',

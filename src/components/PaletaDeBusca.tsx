@@ -26,7 +26,7 @@
 // ============================================================
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
-import { buscar, nomeDaEntrada } from '../lib/buscaEstrelas';
+import { alvoDoEnter, buscar, nomeDaEntrada } from '../lib/buscaEstrelas';
 import { classeEmTexto } from '../three/atlasConfig';
 import type { EntradaDaBusca, IndiceEstrelas } from '../lib/buscaEstrelas';
 import { destinosDaBusca } from '../lib/destinosDaBusca';
@@ -77,7 +77,8 @@ function notaDaEntrada(entrada: EntradaDaBusca): string {
   // tem tipo espectral nem órbita, e a nota não inventa uma palavra de
   // classe para preencher a linha — a mesma lei da lua sem efeméride
   if (entrada.tipo === 'lugar') {
-    return notaDeDistancia(entrada.lugar.d * UA_POR_PC, numeroDoIdioma) ?? '';
+    const d = entrada.lugar.d;
+    return d === undefined ? '' : (notaDeDistancia(d * UA_POR_PC, numeroDoIdioma) ?? '');
   }
   // A CLASSE SAIU DAQUI (redesenho, pedido do dono: "aplica o mesmo
   // padrão no painel de Busca") — ela virou o selo `.atlas-busca-tipo`
@@ -115,8 +116,13 @@ function tipoDaEntrada(entrada: EntradaDaBusca): string | null {
  * fala também apelido, designação de Bayer completa, constelação e
  * lugar — nas duas línguas. "alfa cen", que este comentário citava
  * como o caso do vazio, hoje acha Rigil Kentaurus.
+ *
+ * A DESIGNAÇÃO E O CATÁLOGO já têm exemplo na própria frase da dica e da
+ * ajuda ("designação (gama vel)", "catálogo (hd 48915)"), traduzido com
+ * ela — repeti-los aqui dizia "gama vel · hd 48915" duas vezes na mesma
+ * linha, e em inglês "gamma vel" e "gama vel" lado a lado (crítica de 12/11).
  */
-const EXEMPLOS = ['sirius', 'rigil', 'gama vel', 'hd 48915'];
+const EXEMPLOS = ['sirius', 'rigil'];
 
 export function PaletaDeBusca({
   aberta,
@@ -253,7 +259,9 @@ export function PaletaDeBusca({
       });
     } else if (event.key === 'Enter') {
       event.preventDefault();
-      confirmar(escolhido);
+      // o texto da CAIXA, não o da lista (que pode estar atrasada)
+      const alvo = alvoDoEnter(consulta, consultaLenta, resultados, escolhido, indice, limite);
+      if (alvo) escolher(alvo);
     }
   };
 
@@ -282,8 +290,8 @@ export function PaletaDeBusca({
   );
   // O EXEMPLO DE CORPO É O ÚNICO TERMO TRADUZIDO da lista: "terra" vira
   // "earth", e a busca casa os dois (item 129/F5, tabelas bilíngues).
-  // Os outros quatro são NOMES e designações de catálogo — sirius, hd
-  // 48915 —, e nome próprio não muda de língua.
+  // Os outros são NOMES — sirius, rigil —, e nome próprio não muda de
+  // língua.
   const exemplos = (corpos > 0 ? [t('busca.exemploCorpo'), ...EXEMPLOS] : EXEMPLOS)
     .join(' · ');
   const aviso = vazio

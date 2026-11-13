@@ -65,6 +65,7 @@ import {
 } from '../cinematic/atlasRig';
 import { EX, EZ, GAL } from '../world/baseGalactica';
 import { RS_SGR_A_PC } from '../../lib/buracoNegro';
+import { ENTREGA_DO_BURACO_PC } from '../escala';
 import {
   CORPOS_DO_SISTEMA,
   LUAS_DO_SISTEMA,
@@ -79,7 +80,12 @@ import { RAIO_LUA_PC } from '../world/corpos/lua';
 import type { RochosoResolvido } from '../world/corpos/rochoso';
 import { fatorDoRaioMaximo, posicaoDoRochosoUA, raiosDoRochosoPc } from '../world/corpos/rochoso';
 import type { GiganteResolvido } from '../world/corpos/gigante';
-import { ANEIS_CITADOS, posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
+import {
+  ANEIS_CITADOS,
+  posicaoDoGiganteUA,
+  raioDoAssuntoPc,
+  raiosDoGigantePc,
+} from '../world/corpos/gigante';
 import { RETRATO_2026 } from '../world/planetas/retrato2026';
 import type { IdRetrato } from '../world/planetas/retrato2026';
 import { escalaDaUi, larguraDeCss } from '../../lib/uiScale';
@@ -89,7 +95,7 @@ import { estrelaVisitavelPorNome, raioDaEstrelaPc, type EstrelaVisitavel } from 
 // (`cinematic/enquadramento.ts`): exportá-lo DAQUI fazia o único ciclo de
 // import de valor do `src/` — a escada precisa da `Escolha`, e a escolha
 // precisava do ponto
-import { ORIGEM } from '../cinematic/enquadramento';
+import { MARGEM_DE_ENQUADRAMENTO, ORIGEM } from '../cinematic/enquadramento';
 
 /** rascunho do polo do corpo — o rig COPIA, ninguém guarda a referência */
 const POLO_DO_CORPO = new THREE.Vector3();
@@ -128,6 +134,26 @@ export function soloDoCorpo(
   if (id === 'sun') return { pisoRaio: solRaioPc };
   if (!BODY_AXES[id]) return { pisoRaio: null };
   return { pisoRaio: raiosDoRochosoPc(id).a * fatorDoRaioMaximo(id), kDoPiso: K_PISO_DO_CORPO };
+}
+
+/**
+ * QUANTO DA MEIA-TELA APERTADA O ANEL OCUPA na chegada de perto (12/11/2026).
+ * Com a ficha aberta no desktop isso dá planeta + anéis em ~55% da largura
+ * livre; no celular, ~70% da largura.
+ */
+export const ANEL_NO_QUADRO = 0.7;
+
+/**
+ * A ESFERA DO QUADRO DE PERTO de um corpo de raio `raioPc`. O corpo cujo anel
+ * é disco (`raioDoAssuntoPc`) é enquadrado PELO ANEL — de perto o retrato é
+ * planeta + anéis, e a esfera do planeta sozinho deixava os anéis vazando a
+ * tela —, e a régua do `?d=` continua sendo o raio do planeta. Os outros,
+ * bit a bit como antes.
+ */
+export function quadroDePerto(id: string, raioPc: number): { raio: number; regua: number | null } {
+  const assunto = raioDoAssuntoPc(id);
+  if (assunto === null || !(assunto > raioPc * 1.01)) return { raio: raioPc, regua: null };
+  return { raio: assunto / (MARGEM_DE_ENQUADRAMENTO * ANEL_NO_QUADRO), regua: raioPc };
 }
 
 /**
@@ -170,14 +196,26 @@ export interface EstadoDaEscada {
 const RAIO_DO_CENTRO_GALACTICO_PC = 6000;
 
 /**
- * O DEGRAU DE PERTO de Sagittarius A✱ (12/11/2026): a esfera enquadrada
- * tem 10 raios de Schwarzschild REAIS (0,85 UA), o que põe a câmera a
- * ~25 RS sob a lente de 58° — a sombra com ~12° de diâmetro e o anel de
- * Einstein com ~32°. O piso do zoom é 2 × 3 RS = 6 RS, fora da órbita
+ * O DEGRAU DE PERTO de Sagittarius A✱ (12/11/2026; aproximado em 13/11):
+ * a esfera enquadrada tem 7,4 raios de Schwarzschild REAIS (0,63 UA), o
+ * que põe a câmera a 23,96 RS (medido a 1280×800 sob a lente de 58°) —
+ * dentro dos 24 RS onde o buraco já é desenhado em escala real
+ * (`RAIOS_DA_ENTREGA_DO_BURACO`, `escala.ts`). O piso do zoom é 2 × 3 RS = 6 RS, fora da órbita
  * circular estável mais interna (3 RS) e longe da esfera de fótons.
  */
-export const RAIO_DO_DEGRAU_DO_BURACO_PC = 10 * RS_SGR_A_PC;
+export const RAIO_DO_DEGRAU_DO_BURACO_PC = 7.4 * RS_SGR_A_PC;
 const PISO_DO_BURACO_PC = 3 * RS_SGR_A_PC;
+/**
+ * O NÚCLEO DA VISTA DE PERTO (13/11/2026; ver `distanciaComNucleo`): em
+ * retrato a esfera de 7,4 RS só cabia na largura a ~36 RS (390×844), fora
+ * da escala real. A câmera não passa de um milésimo dentro da entrega
+ * (23,976 RS — o arredondamento da posição a 8 kpc não a joga para fora;
+ * a 1280×800 ela pousa antes, a 23,96, e nada muda), e o disco pode sair
+ * pelos lados; o que nunca sai do retângulo útil — nem por baixo da folha
+ * — é a esfera de 3 RS: a sombra (raio aparente ~2,5 RS) e o anel claro
+ * que a contorna.
+ */
+const NUCLEO_DO_BURACO = { raio: 3 * RS_SGR_A_PC, teto: 0.999 * ENTREGA_DO_BURACO_PC };
 /**
  * De onde a câmera olha o buraco: do lado do Sol, 5° ABAIXO do plano
  * galáctico — o disco e o bojo do outro lado passam logo acima da sombra,
@@ -938,8 +976,8 @@ export class Escada {
    * esfera de `RAIO_DO_DEGRAU_DO_BURACO_PC`. A rampa da escada atravessa
    * as 9 ordens de grandeza entre a galáxia (kpc) e o buraco (UA) como
    * atravessa as do Sol; a precisão aguenta porque a posição da câmera é
-   * double na CPU e a lente se calcula RELATIVA ao buraco
-   * (`lenteDoBuracoNegro.ts`).
+   * double na CPU e o Gargantua se calcula RELATIVO ao buraco
+   * (`world/blackHole.ts`).
    */
   aproximarDoBuraco() {
     if (this.phase !== 'atlas') return;
@@ -947,6 +985,7 @@ export class Escada {
       rampa: this.rampaDaEscada(),
       polo: GAL.NGP,
       pisoRaio: PISO_DO_BURACO_PC,
+      nucleo: NUCLEO_DO_BURACO,
     });
     this.enquadrarAgora();
     this.focoCorpoId = null;
@@ -1074,8 +1113,13 @@ export class Escada {
     const i = CORPOS_DO_SISTEMA.findIndex((c) => c.id === id);
     if (i < 0 || !this.planetas) return;
     if (ver === 'corpo') {
-      // `?foco=marte&ver=corpo` — o degrau reproduzido por URL
+      // `?foco=marte&ver=corpo` — o degrau reproduzido por URL. O TRIO
+      // INTEIRO, como no ramo dos anões: com `focoEstrela` velho (vindo de
+      // um lugar do céu) `aproximarDoCorpo` descia à estrela ou ao buraco
+      // em vez do planeta, e o cartão deixava a câmera no lugar anterior
       this.focoCorpoId = id;
+      this.focoEstrela = false;
+      this.focoSonda = null;
       this.ver = 'orbita';
       if (this.escada.podeAproximar) {
         this.aproximarDoCorpo();
@@ -1201,7 +1245,10 @@ export class Escada {
         : ehGigante
           ? raiosDoGigantePc(id).a
           : raiosDoRochosoPc(id).a;
-    this.atlas.focar(centro, raioPc, centro, {
+    // de perto, o retrato: planeta + anéis quando o anel é disco
+    const quadro = quadroDePerto(id, raioPc);
+    this.atlas.focar(centro, quadro.raio, centro, {
+      regua: quadro.regua,
       rampa: this.rampaDaEscada(),
       // o eixo do PLANETA no alto da tela, não o da eclíptica (Onda 7)
       polo: this.poloDoCorpo(id),
@@ -1464,7 +1511,8 @@ export class Escada {
       if (!centro || raio === null) return null;
       return {
         alvo: centro,
-        raio,
+        // a MESMA esfera de `aproximarDoCorpo` (o anel que é disco entra)
+        raio: quadroDePerto(id, raio).raio,
         eixoDe: centro,
         pai: null,
         polo: this.poloDoCorpo(id)?.clone() ?? null,

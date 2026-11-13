@@ -548,9 +548,9 @@ function gerarPonte(escala: number, rnd: () => number): VizinhaSorteada {
 // ---- ANDRÔMEDA -------------------------------------------------------
 
 /**
- * M31: bojo clássico de Sérsic n ≈ 2, R_e ≈ 1 kpc, ~30 % da luz V
- * (Courteau et al. 2011, de memória); disco exponencial de h = 5,3 kpc
- * (Courteau et al. 2011, de memória) até 25 kpc com z0 0,4 kpc; o ANEL
+ * M31: bojo clássico de Sérsic n ≈ 2, R_e ≈ 1 kpc, 23 % da luz
+ * (Courteau et al. 2011, conferido em 12/11/2026); disco exponencial de
+ * h = 5,3 kpc (idem) até 25 kpc com z0 0,4 kpc; o ANEL
  * de formação de estrelas a ~10 kpc (Habing et al. 1984; Gordon et al.
  * 2006, de memória) e um anel externo fraco a ~15 kpc; poeira fina (σ
  * 150 pc) concentrada nos anéis e em braços que os ligam — a forma dos
@@ -563,7 +563,7 @@ function gerarM31(escala: number, rnd: () => number): VizinhaSorteada {
   const L = L_V.m31;
   // dois braços frouxos (pitch ~ 7°) que viram o anel — artístico
   const espiral = (k: number, r: number) => k * Math.PI + Math.log(r / 4000) / Math.tan(7 * GRAU);
-  // 1 · bojo (30 %): Sérsic n=2 pelo raio de meia luz; perfil sorteado por
+  // 1 · bojo (23 %): Sérsic n=2 pelo raio de meia luz; perfil sorteado por
   // r = R_e·(x/b)^n com x ~ gama(2n) (a CDF exata de Sérsic em 2D)
   let ini = s.n;
   const nBojo = Math.round(N * 0.25);
@@ -578,7 +578,7 @@ function gerarM31(escala: number, rnd: () => number): VizinhaSorteada {
     const c = Math.acos(2 * rnd() - 1);
     s.put(doDisco(b, r * Math.sin(c) * Math.cos(a), r * Math.sin(c) * Math.sin(a) * 0.9, r * Math.cos(c) * 0.75), POP_BOJO, FUNDO + 40, 1);
   }
-  normalizar(s, ini, s.n, L * 0.3);
+  normalizar(s, ini, s.n, L * 0.23);
   // 2 · disco velho (54 %)
   ini = s.n;
   const nDisco = Math.round(N * 0.58);
@@ -587,7 +587,7 @@ function gerarM31(escala: number, rnd: () => number): VizinhaSorteada {
     const a = rnd() * 2 * Math.PI;
     s.put(doDisco(b, r * Math.cos(a), r * Math.sin(a), alturaSech2(rnd, 400)), rnd() < 0.12 ? POP_GIGANTE : POP_VELHA, FUNDO + 70, 1);
   }
-  normalizar(s, ini, s.n, L * 0.54);
+  normalizar(s, ini, s.n, L * 0.61);
   // 3 · jovens (12 %): o anel de 10 kpc, o de 15 kpc e os braços
   ini = s.n;
   const nJovem = Math.round(N * 0.14);

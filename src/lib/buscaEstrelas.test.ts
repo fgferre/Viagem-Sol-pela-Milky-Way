@@ -30,6 +30,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { NamedStar } from '../three/config';
 import {
   SCORE,
+  alvoDoEnter,
   buscar,
   chaveDeLink,
   chaveDoFoco,
@@ -48,6 +49,7 @@ import { CORPOS_DO_SISTEMA } from '../three/atlasConfig';
 import { RETRATO_2026 } from '../three/world/planetas/retrato2026';
 import type { IdRetrato } from '../three/world/planetas/retrato2026';
 import { definirIdioma } from './idioma';
+import { SISTEMAS_PLANETARIOS, comAnfitrias } from './exoplanetas';
 
 const meta = JSON.parse(
   readFileSync(new URL('../../public/data/stars_meta.json', import.meta.url), 'utf8')
@@ -124,6 +126,7 @@ describe('texto', () => {
     expect(nomes('γ² Vel')).toEqual(['γ² Vel']);
     expect(nomes('gam vel')).toEqual(['γ² Vel']); // abreviação HYG
     expect(nomes('gama vel')).toEqual(['γ² Vel']); // como um brasileiro digita
+    expect(nomes('gamma vel')).toEqual(['γ² Vel']); // o exemplo da dica em inglês
     expect(nomes('alfa mus')).toEqual(['α Mus']);
     expect(nomes('tau cet')).toEqual(['τ Cet']);
     // e o GENITIVO latino, que é como a designação se escreve por fora
@@ -401,6 +404,17 @@ describe('os corpos do sistema entram no MESMO índice', () => {
     expect(r[0].entrada.tipo === 'corpo' && r[0].entrada.corpo.nome).toBe('Sol');
   });
 
+  it('o Enter age sobre o texto da caixa, não sobre a lista atrasada', () => {
+    const nome = (e: EntradaDaBusca | null) => (e ? nomeDaEntrada(e) : null);
+    // a lista de "s" ainda na tela, e a caixa já diz "sirius"
+    const deS = buscar('s', comCorpos, 8);
+    expect(nome(deS[0].entrada)).not.toBe('Sirius');
+    expect(nome(alvoDoEnter('sirius', 's', deS, 0, comCorpos, 8))).toBe('Sirius');
+    // lista em dia: a linha que as setas escolheram, sem buscar de novo
+    expect(alvoDoEnter('s', 's', deS, 2, comCorpos, 8)).toBe(deS[2].entrada);
+    expect(alvoDoEnter('xkcdq', 's', deS, 0, comCorpos, 8)).toBeNull();
+  });
+
   it('e o catálogo não muda de resposta por eles existirem', () => {
     // o desempate por tipo só age dentro do MESMO score, então a
     // ordenação das estrelas continua a de antes, uma a uma
@@ -637,5 +651,24 @@ describe('as duas grafias do corpo — a busca e o foco', () => {
     expect(chaveDoFoco('Vulcano', comCorpos)).toBeNull();
     definirIdioma('en');
     expect(chaveDoFoco('Vulcan', comCorpos)).toBeNull();
+  });
+});
+
+describe('a estrela antes dos planetas dela (13/11)', () => {
+  const planetas: CorpoBuscavel[] = SISTEMAS_PLANETARIOS.flatMap((s) =>
+    s.planetas.map((pl) => ({ id: pl.id, nome: pl.nome, classe: 'exoplaneta', rUA: Number.NaN }))
+  );
+  const comExo = construirIndice(comAnfitrias(nomeadas), planetas);
+
+  it('"TRAPPIST" lista a estrela e depois os sete, de dentro para fora', () => {
+    const lista = buscar('TRAPPIST', comExo, 8).map((r) => nomeDaEntrada(r.entrada));
+    expect(lista).toEqual([
+      'TRAPPIST-1',
+      ...['b', 'c', 'd', 'e', 'f', 'g', 'h'].map((l) => `TRAPPIST-1 ${l}`),
+    ]);
+  });
+
+  it('o planeta digitado por inteiro continua na frente da estrela', () => {
+    expect(nomeDaEntrada(buscar('trappist-1 e', comExo, 8)[0].entrada)).toBe('TRAPPIST-1 e');
   });
 });

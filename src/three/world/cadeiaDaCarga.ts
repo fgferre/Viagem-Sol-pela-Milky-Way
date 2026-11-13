@@ -19,7 +19,9 @@ import {
 } from '../cartography/dustMap';
 import { bakeGalacticStructureMap } from '../cartography/structureMap';
 import type { GalacticAssets } from '../cartography/galacticAssets';
-import { buildGalaxy } from './geradorDaGalaxia';
+import { buildGalaxy, tauDasNuvensEmMeia } from './geradorDaGalaxia';
+import { empacotarSorteio } from './galaxiaWebgpu/motor';
+import type { SorteioEmpacotado } from './galaxiaWebgpu/motor';
 
 /** as etapas do loader que a cadeia atravessa DEPOIS de começar */
 export type EtapaDaCadeia = 'structure' | 'galaxy';
@@ -35,6 +37,12 @@ export interface EntradaDaCarga {
   /** ?galaxia=particulas: as partículas carregam a galáxia inteira (ensaio);
    *  ausente = o buffer de sempre, bit a bit */
   soParticulas?: boolean;
+  /** devolver também o τ⊥ das nuvens (`nuvens`): só a carga principal do
+   *  modo só-partículas o pede — os sorteios extras não */
+  nuvens?: boolean;
+  /** um sorteio EXTRA do motor WebGPU: volta só empacotado (`pacote`) e o
+   *  `bright` vem vazio — a thread não precisa dele */
+  paraOMotor?: boolean;
 }
 
 export interface CargaAssada {
@@ -48,6 +56,10 @@ export interface CargaAssada {
   /** stride 8: x,y,z,r,g,b,size,alpha — o contrato de `GalaxyBuffers` */
   bright: Float32Array;
   brightCount: number;
+  /** o τ⊥ das nuvens de poeira em meia precisão (`tauDasNuvensEmMeia`), ou null */
+  nuvens: Uint16Array | null;
+  /** o sorteio no formato do motor (só com `paraOMotor`), ou null */
+  pacote: SorteioEmpacotado | null;
 }
 
 /**
@@ -58,7 +70,7 @@ export interface CargaAssada {
  * worker a thread congela como sempre congelou, mas o rótulo pinta.
  */
 export async function assarCarga(
-  { seed, catalogos, populationScale, soParticulas }: EntradaDaCarga,
+  { seed, catalogos, populationScale, soParticulas, nuvens, paraOMotor }: EntradaDaCarga,
   aoAvancar: (etapa: EtapaDaCadeia) => void | Promise<void>
 ): Promise<CargaAssada> {
   const poeira = bakeDustMap(catalogos ? catalogos.dustDensity : null);
@@ -89,7 +101,9 @@ export async function assarCarga(
     estrutura: estrutura.pixels,
     coberturaDeGas: estrutura.gasCoverageFraction,
     coberturaDeJovens: estrutura.youngCoverageFraction,
-    bright: populacao.bright,
+    bright: paraOMotor ? new Float32Array(0) : populacao.bright,
     brightCount: populacao.brightCount,
+    nuvens: nuvens ? tauDasNuvensEmMeia() : null,
+    pacote: paraOMotor ? empacotarSorteio(populacao.bright, populacao.brightCount, false) : null,
   };
 }

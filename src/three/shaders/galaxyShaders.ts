@@ -66,6 +66,35 @@ const WARPSLIT = qnum('warpslit', 0);
 // multiplicativos: em vez de quads escurecendo o que calha de estar
 // atrás, cada partícula é extinta pela fração da coluna de poeira que
 // está DE FATO entre ela e a câmera.
+/**
+ * A POEIRA DO GÁS ATÔMICO mora numa camada mais espessa que a do molecular:
+ * sech²(z/h) com h = 134,4 pc dentro de 4,4 kpc e +14,8 pc/kpc fora (o disco
+ * de poeira do COBE/DIRBE, Drimmel & Spergel 2001, arXiv astro-ph/0101259,
+ * tab. 1: 134 pc → 188 pc no Sol). A gaussiana de σ 58 pc que todo o τ usava
+ * é a dos BRAÇOS desse mesmo modelo (exp(−(z/80 pc)²), σ 57 pc) e fica com o
+ * gás molecular. De cima a coluna não muda (o τ do atômico é ~0,1, regime
+ * linear); de lado a faixa onde τ > 1 se alarga, pela conta, de ±150 para
+ * ±240 pc e atravessa o bojo, onde o molecular quase não existe (na foto o
+ * ganho é pequeno: o τ⊥ do atômico é ~0,1).
+ * Devolve a densidade vertical normalizada (1/pc) no ponto, ou a média dela
+ * no intervalo ±zMeio — a mesma "camada inteira" da gaussiana, por tanh.
+ */
+export const POEIRA_ATOMICA = { h0Pc: 134.4, flarePcPorPc: 0.0148, inicioPc: 4400 };
+const GLSL_POEIRA_ATOMICA = /* glsl */ `
+float poeiraAtomica(float z, float zMeio, float r, float camada) {
+  float h = ${POEIRA_ATOMICA.h0Pc.toFixed(1)} + ${POEIRA_ATOMICA.flarePcPorPc.toFixed(4)} * max(r - ${POEIRA_ATOMICA.inicioPc.toFixed(1)}, 0.0);
+  float e = exp(-2.0 * abs(z) / h);
+  float g = 2.0 * e / ((1.0 + e) * (1.0 + e)) / h;
+  if (camada > 0.0 && abs(zMeio) > 0.05 * h) {
+    float ea = exp(-2.0 * abs(z - zMeio) / h);
+    float eb = exp(-2.0 * abs(z + zMeio) / h);
+    float ta = sign(z - zMeio) * (1.0 - ea) / (1.0 + ea);
+    float tb = sign(z + zMeio) * (1.0 - eb) / (1.0 + eb);
+    g = mix(g, 0.5 * (tb - ta) / (2.0 * zMeio), camada);
+  }
+  return g;
+}`;
+
 export const GALAXY_VERT = /* glsl */ `
 attribute vec3 aColor;
 attribute float aSize;   // diâmetro físico em pc
@@ -91,7 +120,17 @@ uniform float uNucleo;
 // C × o espaçamento médio 1/√Σ₀ das partículas DESENHADAS (galaxy.ts)
 uniform float uNucleoPc;
 // 1 = pegada em TENDA (ver GALAXY_FRAG), 0 = a gaussiana de sempre
-varying float vTenda;
+varying vec2 vTenda; // x: tenda da pegada de longe, y: da de perto
+// AS DUAS PEGADAS (ver o bloco do núcleo em main): x, y = lado do ponto ÷
+// lado da pegada de perto / da de longe; z, w = o brilho por área de cada uma
+varying vec4 vDuas;
+// o PISO do alvo de partículas por pixel que a LARGURA da tenda persegue
+// (galaxy.ts): na cessão e sob o teto de instâncias a tenda alarga até ele
+uniform float uRhoPiso;
+// a fração de uFade que a pegada de PERTO leva: só a rampa de dentro do
+// disco (galaxy.ts). O ganho das lâminas (6,99·externalFade) é luz da lei de
+// longe; na lei de tela ele fazia de cada partícula próxima um ponto claro.
+uniform float uGanhoPerto;
 // NÍVEL DE DETALHE POR CÉLULA (galaxy.ts, planejarCelulas): por desenho,
 // R início no buffer · G partículas disponíveis (0 = intervalo global) ·
 // B as mesmas por pc² da coluna · A a razão de espessura 2,5·σz/lado
@@ -118,6 +157,7 @@ float erfAprox(float x) {
     - 0.284496736) * t + 0.254829592) * t * exp(-a * a);
   return sign(x) * y;
 }
+${GLSL_POEIRA_ATOMICA}
 #endif
 
 varying vec3 vColor;
@@ -165,7 +205,8 @@ void main() {
       gl_PointSize = 1.0;
       vColor = vec3(0.0);
       vAlpha = 0.0;
-      vTenda = 0.0;
+      vTenda = vec2(0.0);
+      vDuas = vec4(0.0);
       return;
     }
     if (gl_InstanceID > 0) {
@@ -219,7 +260,8 @@ void main() {
   // o mesmo fluxo e baixa o pico. O corte segue julgando o pico que o
   // ponto de sempre teria, senão a luz espalhada some por ser larga.
   float corteDoNucleo = 1.0;
-  vTenda = 0.0;
+  vTenda = vec2(0.0);
+  vDuas = vec4(1.0, 1.0, 1.0, 0.0);
   if (uNucleo > 0.0) {
     // CADA TIPO COMO O QUE É. Longe, a partícula de fundo (disco velho,
     // espesso, bojo/barra, halo, esporão) é muitas estrelas fracas não
@@ -242,8 +284,16 @@ void main() {
     // largura h com densidade ρL tem variação (2/3)/√(ρL·h²); h = √(ρ/ρL)
     // dá o grão de ρ partículas por pixel. Onde o nível de detalhe alcança
     // o alvo, ρL = ρ e a tenda fica no piso de 2 px; onde as filhas batem
-    // no teto, ela alarga só o que falta.
-    if (rhoLod > 0.0) nucleoPx = 2.0 * sqrt(uRho / rhoLod);
+    // no teto, ela alarga só o que falta. O alvo da largura nunca desce do
+    // PISO uRhoPiso: quando o teto de instâncias afina o prefixo (ρ desce), a
+    // tenda alarga na mesma conta — borrão em vez de areia (passagem do
+    // filme, t=144–147: ρ caía de 12 para 0,3 partícula por pixel e a tenda
+    // ficava em 2 px). Na cessão (k < 1) o alvo vai do piso ao ρ do nível de
+    // detalhe junto com a lei de longe: o custo é o preenchimento, ~4·ρ
+    // fragmentos por pixel, e o ρ cheio na cessão triplicava o quadro.
+    float k = uNucleo * smoothstep(300.0, 1500.0, dist);
+    float rhoTenda = mix(uRhoPiso, max(uRho, uRhoPiso), k);
+    if (rhoLod > 0.0) nucleoPx = 2.0 * sqrt(rhoTenda / rhoLod);
     float resolvido = step(2.5, tipo) * step(tipo, 5.5);
     // teto de preenchimento: 40 px na régua de 1080 linhas
     float tetoPx = 40.0 * max(uScreenH, 1.0) / ${glslNumber(ALTURA_DE_CALIBRACAO_DO_SIGMA_PX)};
@@ -257,14 +307,29 @@ void main() {
     // superfície fica e o que sobra da nuvem cai fora do rastro.
     float pxDep = min(px, tetoPx);
     float depNovo = pxDep * pxDep / ${glslNumber(PISO_DE_TELA_AO_QUADRADO)};
-    // perto (< ~1 kpc) as partículas voltam a ser pontos resolvidos
-    float k = uNucleo * smoothstep(300.0, 1500.0, dist);
+    // perto (< ~1 kpc) as partículas voltam a ser pontos resolvidos (k → 0)
     float depVelho = escritoPx * escritoPx * fluxoDaTela;
-    float largura2 = mix(escritoPx, largura, k);
-    corteDoNucleo = (largura2 * largura2) / (escritoPx * escritoPx);
-    fluxoDaTela = mix(depVelho, depNovo, k) / (largura2 * largura2);
-    escritoPx = largura2;
-    vTenda = k * (1.0 - resolvido * smoothstep(2.0, 4.0, px));
+    // AS DUAS PEGADAS NUM PONTO SÓ. A luz é (1 − k)·depVelho na pegada de
+    // perto (a lei de tela, com o ganho de dentro do disco) mais k·depNovo
+    // na de longe (a tenda alargada até ρ partículas por pixel). Cada uma no
+    // SEU tamanho: misturar os tamanhos punha a luz da lei de longe — de
+    // perto até ~150× a da lei de tela — numa pegada de poucos pixels, e na
+    // cessão do filme (t=142–147) a luz da tela inteira vinha de pontos
+    // esparsos e muito claros: areia, e os borrões de perto.
+    // A de perto também se espalha assim que a câmera sai do disco (sA, nos
+    // primeiros 15 % da rampa): perto do bojo os pontos da lei de tela eram
+    // a areia que sobrava. Dentro do disco (uNucleo = 0) nada disso roda.
+    float tendaB = 1.0 - resolvido * smoothstep(2.0, 4.0, px);
+    float sA = smoothstep(0.0, 0.15, uNucleo);
+    float larguraA = mix(escritoPx, max(escritoPx, largura), sA);
+    float lado = k >= 1.0 ? largura : k > 0.0 ? max(larguraA, largura) : larguraA;
+    corteDoNucleo = mix(depVelho, depNovo, k) / (escritoPx * escritoPx);
+    vDuas = vec4(
+      lado / larguraA, lado / largura,
+      (1.0 - k) * depVelho * uGanhoPerto / (larguraA * larguraA), k * depNovo / (largura * largura));
+    fluxoDaTela = 1.0;
+    escritoPx = lado;
+    vTenda = vec2(tendaB, sA * tendaB);
   }
 #endif
 
@@ -386,9 +451,12 @@ void main() {
         0.5 * (erfAprox(ub) - erfAprox(ua)) / (2.0 * zMeio) * (2.5066283 * sigmaD);
       g = mix(g, gCamada, uNucleo);
     }
+    // a camada espessa do gás atômico (canal G; ver poeiraAtomica)
+    float gA = poeiraAtomica(zTil, zMeio, rS, uNucleo);
+    vec2 tpRG = texture2D(uTauMap, sxy / (2.0 * GAL_DISK_RADIUS) + 0.5).rg;
+    tau += tpRG.r * g / (2.5066283 * sigmaD) + tpRG.g * gA;
 #else
     float g = exp(-zTil * zTil / (2.0 * sigmaD * sigmaD));
-#endif
     float tp = texture2D(uTauMap, sxy / (2.0 * GAL_DISK_RADIUS) + 0.5).r;
     // PISO DIFUSO da poeira. A âncora do NORTE (A_V = 1,5 mag/kpc ⇒
     // τ⊥ = 0,2455 no Sol) é a coluna TOTAL; o mapa já carrega a parte
@@ -398,11 +466,9 @@ void main() {
     // frequência de raspão — a lâmina do plano sobrevivia inteira e a
     // faixa escura ficava rasa (medido: laneDepth 0,12 sem, 0,37 com o
     // piso cheio — que por sua vez tirou o face-on da banda de ruído).
-#ifndef GALAXIA_PARTICULAS
-    // (só-partículas: o difuso já são nuvens do mapa — gerarNuvensDePoeira)
     tp += 0.6 * exp(-rS / 5200.0);
-#endif
     tau += tp * g / (2.5066283 * sigmaD);
+#endif
   }
   }
   tau *= dTau;
@@ -455,13 +521,23 @@ precision highp float;
 varying vec3 vColor;
 varying float vAlpha;
 #ifdef GALAXIA_PARTICULAS
-varying float vTenda;
+varying vec2 vTenda; // x: tenda da pegada de longe, y: da de perto
+varying vec4 vDuas;
 #endif
 
 void main() {
   vec2 uv = gl_PointCoord * 2.0 - 1.0;
   float r2 = dot(uv, uv);
 #ifdef GALAXIA_PARTICULAS
+  // as duas pegadas (GALAXY_VERT): a de perto, sempre gaussiana, e a de
+  // longe, tenda ou gaussiana; cada uma na sua escala dentro do ponto. Sem
+  // o núcleo (dentro do disco) vDuas = (1, 1, 1, 0): a gaussiana de sempre.
+  vec2 uvA = uv * vDuas.x;
+  float rA = dot(uvA, uvA);
+  float tendaA = max(1.0 - abs(uvA.x), 0.0) * max(1.0 - abs(uvA.y), 0.0) * 0.690376;
+  float iA = mix(rA > 1.0 ? 0.0 : exp(-rA * 4.5), tendaA, vTenda.y);
+  uv *= vDuas.y;
+  r2 = dot(uv, uv);
   // A TENDA (?galaxia=particulas, longe). A gaussiana amostrada num ponto
   // de 1–2 px deposita conforme a FASE sub-pixel do centro: no ponto de
   // 1 px o peso vai de 1 a 0 (coeficiente de variação ~1,4 sobre a média
@@ -470,7 +546,7 @@ void main() {
   // (partição da unidade nos centros de pixel); 0,690376 = π(1−e^−4,5)/4,5
   // iguala a integral dela à da gaussiana, então vAlpha vale para as duas.
   float tenda = max(1.0 - abs(uv.x), 0.0) * max(1.0 - abs(uv.y), 0.0) * 0.690376;
-  float i = mix(r2 > 1.0 ? 0.0 : exp(-r2 * 4.5), tenda, vTenda);
+  float i = vDuas.z * iA + vDuas.w * mix(r2 > 1.0 ? 0.0 : exp(-r2 * 4.5), tenda, vTenda.x);
 #else
   if (r2 > 1.0) discard;
   float i = exp(-r2 * 4.5);

@@ -24,6 +24,7 @@ import {
   desvioDaOrientacao,
   direcaoDaLua,
   direcaoDeRepouso,
+  distanciaComNucleo,
   enquadrar,
   giroQueProduz,
   orbitaMaisExterna,
@@ -34,6 +35,7 @@ import { slerpDir } from './movimentos';
 import { LARGURA_DE_MESA_PX, retanguloUtilDoAtlas } from './retanguloDoAtlas';
 import type { ReservaDaFicha } from './retanguloDoAtlas';
 import { ORIGEM } from './enquadramento';
+import type { NucleoDoEnquadramento } from './enquadramento';
 
 // A FACHADA: o retângulo útil e a matemática do enquadramento moram
 // ao lado (./retanguloDoAtlas, ./enquadramento) e este arquivo os
@@ -258,6 +260,15 @@ export class AtlasRig {
   readonly alvo = new THREE.Vector3();
   /** raio da esfera enquadrada, em pc */
   private raio = 0;
+  /** o núcleo do foco (ver `distanciaComNucleo`); `null` = a esfera só */
+  private nucleo: NucleoDoEnquadramento | null = null;
+  /**
+   * A RÉGUA DO `?d=` quando ela não é a esfera enquadrada (12/11/2026): de
+   * perto de Saturno o quadro é o do anel, mas `?d=12` continua sendo 12
+   * raios do PLANETA — link copiado e cartão não mudam de sentido.
+   * `null` = a própria esfera.
+   */
+  private regua: number | null = null;
   /**
    * O QUE O DEDO DO VISITANTE ACUMULOU — uma ROTAÇÃO, guardada no frame
    * da pose de repouso (ver `GiroDoVisitante`). A identidade é o
@@ -406,6 +417,7 @@ export class AtlasRig {
     temPai: false,
     giro: new THREE.Quaternion(),
     polo: POLO_ECLIPTICO.clone(),
+    nucleo: null as NucleoDoEnquadramento | null,
     /** o pino de distância que a câmera MOSTRAVA no quadro da troca */
     distancia: null as number | null,
     /** a inclinação que a câmera MOSTRAVA — a rampa a leva ao θ do destino */
@@ -448,6 +460,10 @@ export class AtlasRig {
        * Ausente = a chegada de sempre, bit a bit.
        */
       poloDoAnel?: THREE.Vector3 | null;
+      /** a régua do `?d=`, em pc, quando não é `raio` (ver `regua`) */
+      regua?: number | null;
+      /** o núcleo do enquadramento (ver `distanciaComNucleo`) */
+      nucleo?: NucleoDoEnquadramento | null;
     } = {}
   ) {
     const pai = opcoes.pai ?? null;
@@ -480,6 +496,7 @@ export class AtlasRig {
       } else {
         this.partida.alvo.copy(this.alvo);
         this.partida.raio = this.raio;
+        this.partida.nucleo = this.nucleo;
         this.partida.eixoDe.copy(this.eixoDe);
         this.partida.temPai = this.pai !== null;
         if (this.pai) this.partida.pai.copy(this.pai);
@@ -523,6 +540,8 @@ export class AtlasRig {
     }
     this.alvo.copy(alvo);
     this.raio = raio;
+    this.nucleo = opcoes.nucleo ?? null;
+    this.regua = opcoes.regua && opcoes.regua > 0 ? opcoes.regua : null;
     this.eixoDe.copy(eixoDe);
     if (pai) {
       this.paiGuardado.copy(pai);
@@ -618,6 +637,7 @@ export class AtlasRig {
       // o snapshot de partida, ANTES de o referencial trocar
       this.partida.alvo.copy(this.alvo);
       this.partida.raio = this.raio;
+      this.partida.nucleo = this.nucleo;
       this.partida.eixoDe.copy(this.eixoDe);
       this.partida.temPai = this.pai !== null;
       if (this.pai) this.partida.pai.copy(this.pai);
@@ -642,6 +662,8 @@ export class AtlasRig {
     const polo = opcoes.polo ?? POLO_ECLIPTICO;
     this.alvo.copy(alvo);
     this.raio = raio;
+    this.nucleo = null;
+    this.regua = null;
     this.eixoDe.copy(eixoDe);
     this.pai = null;
     this.polo.copy(polo);
@@ -745,6 +767,8 @@ export class AtlasRig {
     const polo = opcoes.polo ?? POLO_ECLIPTICO;
     this.alvo.copy(alvo);
     this.raio = raio;
+    this.nucleo = null;
+    this.regua = null;
     this.eixoDe.copy(eixoDe);
     this.pai = null;
     this.polo.copy(polo);
@@ -870,7 +894,7 @@ export class AtlasRig {
     // sem pino, a distância da partida sai da lei LINEAR do
     // enquadramento (ver `fatorDeEnquadramento`) — a mesma régua que o
     // `apply` recalcula por quadro, sem precisar de câmera aqui
-    const dPartida = p.distancia ?? this.fatorDeEnquadramento * p.raio;
+    const dPartida = p.distancia ?? distanciaComNucleo(this.fatorDeEnquadramento * p.raio, p.raio, p.nucleo);
     _posPartida.copy(p.alvo).addScaledVector(_dir, dPartida);
     _baseDaPose.lookAt(_posPartida, p.alvo, _up);
     inclinarQuat(_quatPartida.setFromRotationMatrix(_baseDaPose), p.incl);
@@ -967,7 +991,8 @@ export class AtlasRig {
    * há régua (raio zero, o instante antes do primeiro enquadramento).
    */
   get distanciaEmRaios(): number | null {
-    return this.raio > 0 ? this.distancia / this.raio : null;
+    const regua = this.raioDoAlvo;
+    return regua > 0 ? this.distancia / regua : null;
   }
 
   /** o alvo tem PAI (o degrau "lua")? — o religador do relógio pergunta */
@@ -975,9 +1000,9 @@ export class AtlasRig {
     return this.pai !== null;
   }
 
-  /** o raio de enquadramento do alvo vivo, em pc — a régua do `?d=`. */
+  /** a régua do `?d=` do alvo vivo, em pc — o raio enquadrado, salvo `regua` */
   get raioDoAlvo(): number {
-    return this.raio;
+    return this.regua ?? this.raio;
   }
 
   /**
@@ -1556,7 +1581,7 @@ export class AtlasRig {
         this.escreverPose(
           camera, fatorUi, larguraPx,
           this.alvo, this.raio, this.eixoDe, this.pai, this.giro, this.polo,
-          this.distanciaPinada, extra, this.incl
+          this.distanciaPinada, extra, this.incl, this.nucleo
         )
       );
       return;
@@ -1575,7 +1600,7 @@ export class AtlasRig {
       this.escreverPose(
         camera, fatorUi, larguraPx,
         this.alvo, this.raio, this.eixoDe, this.pai, this.giro, this.polo,
-        this.distanciaPinada, extra, this.incl
+        this.distanciaPinada, extra, this.incl, this.nucleo
       )
     );
     _posDestino.copy(camera.position);
@@ -1584,7 +1609,8 @@ export class AtlasRig {
       camera, fatorUi, larguraPx,
       this.partida.alvo, this.partida.raio, this.partida.eixoDe,
       this.partida.temPai ? this.partida.pai : null, this.partida.giro,
-      this.partida.polo, this.partida.distancia, extra, this.partida.incl
+      this.partida.polo, this.partida.distancia, extra, this.partida.incl,
+      this.partida.nucleo
     );
     _posPartida.copy(camera.position);
     _quatPartida.copy(camera.quaternion);
@@ -1616,10 +1642,11 @@ export class AtlasRig {
    * Guarda a régua do quadro: a distância PURA do enquadramento e o
    * fator `distância/raio` que a lente e o HUD produziram. É de onde o
    * piso e o teto do zoom saem sem o rig ter de conhecer DOM fora do
-   * `apply`.
+   * `apply`. O fator é o da lei linear (sem o núcleo): é da lente e do
+   * HUD, não do alvo; a distância guardada é a escrita, com o núcleo.
    */
   private registrarEnquadramento(pura: number) {
-    this.distanciaEnquadrada = pura;
+    this.distanciaEnquadrada = distanciaComNucleo(pura, this.raio, this.nucleo);
     this.fatorDeEnquadramento = this.raio > 0 ? pura / this.raio : 0;
   }
 
@@ -1648,7 +1675,8 @@ export class AtlasRig {
     polo: THREE.Vector3,
     pinada: number | null = null,
     extra?: ReservaDaFicha,
-    incl = 0
+    incl = 0,
+    nucleo: NucleoDoEnquadramento | null = null
   ): number {
     const { distancia, giroY, giroX } = enquadrar({
       rAlvo: raio,
@@ -1667,7 +1695,7 @@ export class AtlasRig {
     poseDoVisitante(_dir, polo, giro, _dir, _up);
     const escrita = pinada !== null && Number.isFinite(pinada) && pinada > 0
       ? pinada
-      : distancia;
+      : distanciaComNucleo(distancia, raio, nucleo);
     camera.position.copy(alvo).addScaledVector(_dir, escrita);
     camera.up.copy(_up);
     camera.lookAt(alvo);

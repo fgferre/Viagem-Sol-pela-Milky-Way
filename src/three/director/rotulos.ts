@@ -9,13 +9,14 @@
 // visitar continua no director (é gesto de navegação): ele lê a última
 // projeção pelo getter `alvos` — a mesma lista única da pendência 30.
 // ============================================================
-import { projetarLugares } from '../world/lugaresDoCeu';
+import { abrirVagaNoGrupo, lugarNoAlvo, projetarCompanheiras, projetarLugares } from '../world/lugaresDoCeu';
 import { projetarSondas } from '../world/sondas';
 import { projetarCometas } from '../world/cometas';
 import { projetarExoplanetas } from '../world/exoplanetas';
 import type { SistemaPlanetario } from '../../lib/exoplanetas';
 import * as THREE from 'three';
 import {
+  NOME_DE_SGR_A,
   PRIORIDADE_DO_ROTULO,
   RampasDeRotulo,
   aplicarReguaDeRelevancia,
@@ -25,8 +26,12 @@ import {
   projectCorpos,
   projectLabels,
   projectForced,
+  proximidadeDoAssunto,
+  raioAparenteNdc,
+  sobreOAssunto,
 } from '../world/labels';
 import type { CorpoRotulavel, OclusorDeRotulo, StarLabel } from '../world/labels';
+import { raioDoAssuntoPc } from '../world/corpos/gigante';
 import { GAL } from '../world/galaxy';
 import { numeroDoIdioma } from '../tempoDoAtlas';
 import { t } from '../../lib/idioma';
@@ -57,6 +62,9 @@ export interface QuadroDeRotulos {
    * prioridade 100 e não cede a nada (item 73).
    */
   foco: string | null;
+  /** o NOME da estrela ou do ponto em foco no Atlas (`Sagittarius A✱`,
+   *  uma estrela do catálogo) — o alvo escolhido não cede a nada */
+  focoEstrela?: string | null;
   /** a SONDA em foco (pilar 4) — a escada é a dona; `null` fora dela */
   focoSonda?: string | null;
   /** o COMETA em foco (pilar 4) — o nome dele aparece mesmo longe do Sol */
@@ -64,6 +72,9 @@ export interface QuadroDeRotulos {
   /** o EXOPLANETA em foco (12/11) e o sistema ativo, cujos planetas têm nome */
   focoExoplaneta?: string | null;
   sistemaAtivo?: { sistema: SistemaPlanetario; pos: THREE.Vector3 } | null;
+  /** o ALVO do Atlas (13/11) — quando ele é o centro de um lugar do céu,
+   *  esse lugar está em foco e as membros e companheiras dele têm a vez */
+  alvoDoAtlas?: THREE.Vector3 | null;
   /** o instante vivo (JD TDB) — as sondas se põem no lugar por ele;
    *  ausente = nenhuma sonda (os quadros de teste antigos) */
   jd?: number;
@@ -117,6 +128,23 @@ export const TETO_DE_CANDIDATAS_ESTELARES = 24;
  */
 export const LUA_ACENDE_EM = 0.012;
 export const LUA_ACESA_EM = 0.035;
+
+/**
+ * NADA ESCRITO SOBRE O RETRATO (12/11/2026), em raios aparentes do assunto
+ * (o planeta, ou o anel que é disco): a lua cujo marcador cai até
+ * `LUA_DENTRO_DO_ASSUNTO` some — Jano e Epimeteu correm rente à borda do
+ * anel, e o nome deles, à direita do marcador, riscava o anel —, e acende
+ * de novo até `LUA_FORA_DO_ASSUNTO` (Mimas, a 1,3, fica inteira). Os nomes de
+ * ESTRELA cedem mais longe: somem até `ESTRELA_DENTRO_DO_ASSUNTO` e voltam
+ * inteiros em `ESTRELA_FORA_DO_ASSUNTO`. As duas leis pesam pela
+ * proximidade (`proximidadeDoAssunto`): na vista do sistema não mordem.
+ */
+export const LUA_DENTRO_DO_ASSUNTO = 1.1;
+export const LUA_FORA_DO_ASSUNTO = 1.3;
+export const ESTRELA_DENTRO_DO_ASSUNTO = 1.5;
+export const ESTRELA_FORA_DO_ASSUNTO = 3;
+
+const _assunto = new THREE.Vector3();
 
 /** linear [0..1] → canal sRGB 0..255 (a curva exata, não gama 2,2) */
 function srgb255(u: number): number {
@@ -420,6 +448,135 @@ export class Rotulos {
   }
 
   /**
+   * O ASSUNTO NA TELA — onde o corpo `id` cai no quadro (unidade dos
+   * rótulos), o raio aparente dele com o anel que é disco (meia-altura = 1)
+   * e a proximidade. `null` sem posição viva ou atrás da câmera.
+   */
+  private assuntoNaTela(
+    id: string,
+    planetas: Planetas | null,
+    cam: THREE.PerspectiveCamera
+  ): { x: number; y: number; raioNdc: number; perto: number; centro: THREE.Vector3; raio: number } | null {
+    const raio = raioDoAssuntoPc(id);
+    const pos = this.posicaoDoCorpo(
+      `${CHAVE_DE_CORPO}${id}`,
+      planetas?.posicoes ?? null,
+      CORPOS_DO_SISTEMA
+    );
+    if (!pos || raio === null) return null;
+    _assunto.set(pos[0], pos[1], pos[2]);
+    const centro = _assunto.clone();
+    const dist = _assunto.distanceTo(cam.position);
+    _assunto.project(cam);
+    if (_assunto.z > 1 || _assunto.z < -1) return null;
+    const raioNdc = raioAparenteNdc(raio, dist, Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2));
+    return {
+      x: (_assunto.x + 1) / 2,
+      y: (1 - _assunto.y) / 2,
+      raioNdc,
+      perto: proximidadeDoAssunto(raioNdc, cam.aspect),
+      centro,
+      raio,
+    };
+  }
+
+  /**
+   * O RETRATO NÃO DIVIDE O QUADRO (12/11/2026). Quando um corpo é o
+   * assunto da tela (`proximidadeDoAssunto`):
+   *  · a lua cujo marcador cai sobre o disco do PAI (planeta ou anel que é
+   *    disco) cede — vale com ou sem foco, como a linha dela. E a lua que
+   *    ESTÁ dentro do assunto — mais perto do pai do que o anel alcança —
+   *    cede de onde quer que se olhe (13/11): o círculo da tela mede o
+   *    anel na profundidade do centro, e a perspectiva e a borda da lente
+   *    jogavam Atlas e Epimeteu para fora dele, com um fantasma do nome
+   *    na borda do anel;
+   *  · com FOCO, o que é de outra escala recua: os nomes dos outros
+   *    planetas e das luas deles (ficam o foco, as luas dele, o pai de uma
+   *    lua em foco e o Sol), e os nomes de estrela em volta do assunto.
+   * Tudo volta quando a câmera se afasta. Só mexe na opacidade: a camada
+   * desligada continua fora, e o clique segue o que está escrito.
+   */
+  private cederAoAssunto(
+    foco: string | null,
+    planetas: Planetas | null,
+    cam: THREE.PerspectiveCamera,
+    corpos: readonly StarLabel[],
+    luas: readonly StarLabel[],
+    estrelas: readonly StarLabel[] = []
+  ) {
+    const assuntos = new Map<string, ReturnType<Rotulos['assuntoNaTela']>>();
+    const assuntoDe = (id: string) => {
+      if (!assuntos.has(id)) assuntos.set(id, this.assuntoNaTela(id, planetas, cam));
+      return assuntos.get(id) ?? null;
+    };
+    for (const lua of luas) {
+      const id = lua.key.slice(CHAVE_DE_CORPO.length);
+      const pai = PAI_DA_LUA.get(id);
+      if (!pai || id === foco) continue;
+      const a = assuntoDe(pai);
+      if (!a || a.perto <= 0) continue;
+      const naTela = sobreOAssunto(
+        lua.x - a.x,
+        lua.y - a.y,
+        cam.aspect,
+        a.raioNdc,
+        LUA_DENTRO_DO_ASSUNTO,
+        LUA_FORA_DO_ASSUNTO
+      );
+      const p = this.posicaoDoCorpo(lua.key, null, []);
+      const noEspaco = p
+        ? 1 -
+          THREE.MathUtils.smoothstep(
+            Math.hypot(p[0] - a.centro.x, p[1] - a.centro.y, p[2] - a.centro.z) / a.raio,
+            LUA_DENTRO_DO_ASSUNTO,
+            LUA_FORA_DO_ASSUNTO
+          )
+        : 0;
+      lua.opacity *= 1 - a.perto * Math.max(naTela, noEspaco);
+    }
+    if (!foco) return;
+    const a = assuntoDe(foco);
+    if (!a || a.perto <= 0) return;
+    const paiDoFoco = PAI_DA_LUA.get(foco);
+    for (const c of [...corpos, ...luas]) {
+      const id = c.key.slice(CHAVE_DE_CORPO.length);
+      if (id === foco || id === 'sun' || id === paiDoFoco || PAI_DA_LUA.get(id) === foco) continue;
+      c.opacity *= 1 - a.perto;
+    }
+    for (const e of estrelas) {
+      if (e.key === 'sol-home' || e.key === 'sgr-a') continue;
+      e.opacity *=
+        1 -
+        a.perto *
+          sobreOAssunto(
+            e.x - a.x,
+            e.y - a.y,
+            cam.aspect,
+            a.raioNdc,
+            ESTRELA_DENTRO_DO_ASSUNTO,
+            ESTRELA_FORA_DO_ASSUNTO
+          );
+    }
+  }
+
+  /**
+   * A SONDA COLADA NO SOL NÃO TEM NOME NEM MARCA (crítica de 12/11) — a
+   * mesma lei da lua colada no pai, com o Sol no papel do pai. De onde o
+   * sistema solar inteiro cabe num pixel, a Voyager projeta em cima do
+   * Sol e o rótulo dela tomava o lugar do "SOL"; ela só é um objeto à
+   * parte quando se descola dele na tela. Sol atrás da câmera = descolada.
+   */
+  private esmaecerSondasColadasNoSol(cam: THREE.PerspectiveCamera, sondas: StarLabel[]) {
+    if (sondas.length === 0) return;
+    const sol = projectForced(cam, '', '', { x: 0, y: 0, z: 0 }, '');
+    if (!sol) return;
+    for (const s of sondas) {
+      const sep = Math.hypot(s.x - sol.x, s.y - sol.y);
+      s.opacity *= THREE.MathUtils.smoothstep(sep, LUA_ACENDE_EM, LUA_ACESA_EM);
+    }
+  }
+
+  /**
    * A FICHA ABRIU (ou fechou) — o único leitor da câmera se declara.
    * Ver `emitCamera`: sem esta porta, publicar era trabalho feito para
    * ninguém, 4 vezes por segundo, durante todo arrasto no Atlas.
@@ -528,7 +685,7 @@ export class Rotulos {
       return projectForced(cam, nomeDoSolEmCaixaAlta(), 'G2V', { x: 0, y: 0, z: 0 }, 'sol-home');
     }
     if (name === 'SGR') {
-      return projectForced(cam, 'Sagittarius A✱', 'SMBH', GAL.GC_POS, 'sgr-a');
+      return projectForced(cam, NOME_DE_SGR_A, 'SMBH', GAL.GC_POS, 'sgr-a');
     }
     const corpo = CORPO_DO_ROTEIRO.get(name);
     if (corpo) return this.resolveCorpoDirigido(cam, corpo, planetas);
@@ -760,6 +917,7 @@ export class Rotulos {
           cam, LUAS_DO_SISTEMA, this.luaPosParaRotulo, this.oclusoresDeRotulo, this.raioPorChave, isentoDeOclusao
         );
         this.esmaecerLuasColadasNoPai(corpos, luas);
+        this.cederAoAssunto(quadro.foco, planetas, cam, corpos, luas);
         icones = [...corpos, ...luas];
         for (const c of icones) {
           const id = c.key.slice(6);
@@ -875,7 +1033,8 @@ export class Rotulos {
           named,
           TETO_DE_CANDIDATAS_ESTELARES,
           this.prevLabelKeys,
-          this.oclusoresDeRotulo
+          this.oclusoresDeRotulo,
+          quadro.focoEstrela === NOME_DE_SGR_A
         );
         // a prioridade das ESTRELAS é escrita AQUI e não dentro de
         // `projectLabels`, que é o mesmo caminho do FILME: sem
@@ -892,13 +1051,28 @@ export class Rotulos {
         // medida, a foto e as saídas possíveis moram no item 82 do
         // `PENDENCIAS.md`, que é onde o dono decide; repeti-las aqui
         // seria a segunda cópia que envelhece calada.
-        for (const e of estrelas) e.prioridade = prioridadeDeEstrela(e.tier);
+        //
+        // O SOL E O CENTRO NÃO SÃO "UMA ESTRELA DO CÉU" (crítica de 12/11):
+        // de longe eles são os dois marcos da galáxia e valem o degrau do
+        // Sol (o `Star`/`Galaxy` 100 do Eyes). Com o peso de estrela
+        // própria (10) a Voyager — colada no Sol na tela — tomava a vaga
+        // do "SOL" na Via Láctea inteira.
+        // E no canal PRIMÁRIO, como o corpo do Sol (a variante `.sun`).
+        for (const e of estrelas) {
+          if (e.key === 'sol-home' || e.key === 'sgr-a') {
+            e.prioridade = PRIORIDADE_DO_ROTULO.sol;
+            e.canalPrimario = true;
+          } else e.prioridade = prioridadeDeEstrela(e.tier);
+        }
+        // de perto, o retrato: nada sobre o disco, a outra escala recua
+        this.cederAoAssunto(quadro.foco, planetas, cam, corpos, luas, estrelas);
         // OS LUGARES DO CÉU (céu profundo, 12/11): só fora do sistema
         // solar, e cada um só enquanto lê como objeto (`projetarLugares`)
         // AS SONDAS (pilar 4, 12/11): marcador e nome na posição viva,
         // só no Atlas — onde a máquina do tempo as move
         const sondas =
           fase === 'atlas' ? projetarSondas(cam, quadro.jd ?? Number.NaN, quadro.focoSonda ?? null, !quadro.iconesEscondidos) : [];
+        this.esmaecerSondasColadasNoSol(cam, sondas);
         // OS COMETAS (pilar 4, 12/11): perto do Sol ou em foco
         const cometas =
           fase === 'atlas' ? projetarCometas(cam, quadro.jd ?? Number.NaN, quadro.focoCometa ?? null, !quadro.iconesEscondidos) : [];
@@ -913,12 +1087,26 @@ export class Rotulos {
                 !quadro.iconesEscondidos
               )
             : [];
-        const lista = [...corpos, ...luas, ...estrelas, ...projetarLugares(cam), ...sondas, ...cometas, ...exoplanetas];
+        // O LUGAR EM FOCO (13/11): as companheiras ganham nome e o grupo, a vez
+        const lugarEmFoco = fase === 'atlas' ? lugarNoAlvo(quadro.alvoDoAtlas) : undefined;
+        const companheiras = lugarEmFoco ? projetarCompanheiras(cam, lugarEmFoco.id) : [];
+        const lista = [
+          ...corpos, ...luas, ...estrelas, ...projetarLugares(cam), ...companheiras, ...sondas, ...cometas, ...exoplanetas,
+        ];
+        if (lugarEmFoco) abrirVagaNoGrupo(lugarEmFoco.id, lista);
         // O ALVO ESCOLHIDO NÃO CEDE A NADA. A chave do corpo em foco é a
         // mesma que o hit-test reconhece; o `sol-home` cobre o caso da
         // estrela da casa vista de longe.
         if (quadro.foco) {
           const chaveDoFoco = `${CHAVE_DE_CORPO}${quadro.foco}`;
+          for (const l of lista) {
+            if (l.key === chaveDoFoco) l.prioridade = PRIORIDADE_DO_ROTULO.foco;
+          }
+        }
+        // a ESTRELA (ou o centro) em foco, pelo nome — a chave de uma
+        // estrela do céu É o nome dela; a do centro é `sgr-a`
+        if (quadro.focoEstrela) {
+          const chaveDoFoco = quadro.focoEstrela === NOME_DE_SGR_A ? 'sgr-a' : quadro.focoEstrela;
           for (const l of lista) {
             if (l.key === chaveDoFoco) l.prioridade = PRIORIDADE_DO_ROTULO.foco;
           }

@@ -30,9 +30,6 @@ uniform float uTanHalf;  // tan(fov/2) vertical
 uniform float uAspect;
 uniform float uFade;
 uniform float uMarchB;   // fronteira zona integrada ↔ analítica (RS)
-// 1 = o fundo JÁ chega dobrado pela lente exata (lenteDoBuracoNegro.ts,
-// modo ?bh=ambos): aqui só se pintam o disco e a sombra, sem dobrar de novo
-uniform float uFundoDobrado;
 
 // raio da câmera pelo pixel uv (0..1), no referencial local
 vec3 rayAt(vec2 uv) {
@@ -194,10 +191,6 @@ void main(){
   // fora da zona forte, o march devolve o MESMO analítico do composite
   // (a costura entre os dois fica dentro da banda de mistura)
   if(b > uMarchB){
-    if(uFundoDobrado > 0.5){
-      gl_FragColor = vec4(texture2D(tScene, vUv).rgb, 1.0);
-      return;
-    }
     vec3 pv = dirToUv(bentWeak);
     vec2 cuv = clamp(pv.xy, 0.0, 1.0);
     float ok = smoothstep(0.0, 0.06, pv.z) *
@@ -281,7 +274,7 @@ void main(){
       (1.0 - smoothstep(0.0, 0.3, length(pv.xy - cuv) * 2.0));
     vec3 lensed = texture2D(tScene, cuv).rgb;
     vec3 fallback = texture2D(tScene, vUv).rgb;
-    bg = (uFundoDobrado > 0.5 ? fallback : mix(fallback, lensed, ok)) * trans * deep;
+    bg = mix(fallback, lensed, ok) * trans * deep;
   }
   // anel de fótons a partir do perigeu rastreado
   float pg = (minR-1.55)*4.0;
@@ -316,7 +309,7 @@ void main(){
     vec2 cuv = clamp(pv.xy, 0.0, 1.0);
     float ok = smoothstep(0.0, 0.06, pv.z) *
       (1.0 - smoothstep(0.0, 0.2, length(pv.xy - cuv)));
-    vec3 weak = uFundoDobrado > 0.5 ? base : mix(base, texture2D(tScene, cuv).rgb, ok);
+    vec3 weak = mix(base, texture2D(tScene, cuv).rgb, ok);
     if(b < uMarchB){
       float k = (uMarchB - b) / 6.0; // costura march ↔ analítico
       outCol = mix(weak, texture2D(tMarch, vUv).rgb, k);

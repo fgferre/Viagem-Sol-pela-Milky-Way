@@ -18,8 +18,14 @@ import type { LugarDoCeu } from '../../lib/lugaresDoFilme';
 import { classeEmTexto } from '../atlasConfig';
 import { GRAU, PHASE_OFFSET_GRAUS } from '../cinematic/enquadramento';
 import { EX, EY, EZ, GAL } from './baseGalactica';
-import { CENTRO_PNM, GNM, M31 } from './geradorDasVizinhas';
-import { PRIORIDADE_DO_ROTULO, projectForced } from './labels';
+import { CENTRO_M110, CENTRO_M32, CENTRO_PNM, GNM, M31 } from './geradorDasVizinhas';
+import {
+  OPACIDADE_MINIMA_DO_ROTULO,
+  PRIORIDADE_DO_ROTULO,
+  SGR_A_ESMAECE_EM,
+  SGR_A_SOME_EM,
+  projectForced,
+} from './labels';
 import type { StarLabel } from './labels';
 
 /** o prefixo da chave do rótulo de um lugar — o clique o reconhece */
@@ -66,8 +72,15 @@ function posicaoDe(lugar: LugarDoCeu): THREE.Vector3 | null {
 
 /**
  * OS LUGARES DO CÉU que a busca alcança — as palavras vêm da tabela, a
- * GEOMETRIA vem daqui. Toda posição é medida do Sol, que está na
- * origem: o comprimento do vetor É a distância que a paleta mostra.
+ * GEOMETRIA vem daqui. Toda posição é medida do Sol, que está na origem.
+ *
+ * A DISTÂNCIA QUE A PALETA MOSTRA NÃO É o comprimento do vetor (crítica
+ * de 12/11): é a da literatura (`distanciaPc`), a MESMA que a ficha
+ * escreve. O vetor é onde a cena desenha o lugar — a média das membros
+ * no catálogo da casa, a anã onde a galáxia a põe —, e a paleta dizia
+ * 418 anos-luz das Plêiades enquanto a ficha, um clique depois, dizia
+ * 444. Uma VISTA cuja distância é do Sol ao centro ("Nosso lugar", a
+ * galáxia de cima) não leva número: o destino não fica a essa distância.
  */
 export const LUGARES_DA_BUSCA: readonly LugarBuscavel[] = LUGARES_DO_FILME.flatMap((lugar) => {
   const p = posicaoDe(lugar);
@@ -79,7 +92,7 @@ export const LUGARES_DA_BUSCA: readonly LugarBuscavel[] = LUGARES_DO_FILME.flatM
       ...(lugar.nomeEn ? { nomeEn: lugar.nomeEn } : {}),
       ...(lugar.raioPc ? { raioPc: lugar.raioPc } : {}),
       ...(lugar.classe ? { classe: lugar.classe } : {}),
-      d: p.length(),
+      ...(lugar.distanciaPc && !lugar.distanciaPc.doSolAoCentro ? { d: lugar.distanciaPc.valor } : {}),
       x: p.x,
       y: p.y,
       z: p.z,
@@ -186,40 +199,46 @@ const FORA_DO_SISTEMA_PC = 1;
  *  `projectLabels`): só aí os nomes da escala da galáxia aparecem */
 const FORA_DA_VIZINHANCA_PC = 2000;
 
-/** a que fração do raio, acima do centro, o nome do lugar se apoia */
-const ALTURA_DO_NOME = 0.5;
-
-const _topo = new THREE.Vector3();
-const _cima = new THREE.Vector3();
+const _centro = new THREE.Vector3();
 
 /**
  * OS NOMES DOS LUGARES NA CENA. Um lugar tem nome quando LÊ como objeto:
  * nem tão longe que vire um ponto (raio aparente < 0,3°), nem tão perto
  * que a câmera esteja dentro dele (a menos de dois raios — aí quem fala
  * são os nomes das estrelas-membro e o cabeçalho da ficha). O nome fica
- * ACIMA do centro (meio raio), não nele: assim ele não disputa a vaga
- * com a estrela que mora no meio do aglomerado. Uma VISTA (`semRotulo`)
- * não tem nome na cena.
+ * NO CENTRO, como todo nome da casa (crítica de 12/11): até então ele se
+ * apoiava meio raio de ENQUADRAMENTO acima do centro, e como a chegada
+ * enquadra todo lugar pelo mesmo raio, o nome caía sempre no mesmo ponto
+ * da tela, longe do objeto — o raio de enquadramento é bem maior que o
+ * que se vê (o raio de maré das Plêiades, o disco inteiro de Andrômeda).
+ * Uma VISTA (`semRotulo`) não tem nome na cena.
+ *
+ * OS NOMES DA ESCALA DA GALÁXIA só aparecem fora das DUAS vizinhanças:
+ * a do Sol (`FORA_DA_VIZINHANCA_PC`) e a do centro, onde o nome é o de
+ * Sagittarius A✱ — eles entram na mesma faixa em que o dele sai. Dentro
+ * do bojo a anã de Sagitário, dezoito mil parsecs atrás do buraco, não
+ * é objeto que se veja, e o nome dela lia como o nome do buraco.
  */
 export function projetarLugares(camera: THREE.PerspectiveCamera): StarLabel[] {
   const out: StarLabel[] = [];
   const dHome = camera.position.length();
   if (dHome < FORA_DO_SISTEMA_PC) return out;
-  _cima.set(0, 1, 0).applyQuaternion(camera.quaternion);
+  const dGC = camera.position.distanceTo(GAL.GC_POS);
+  const foraDoCentro = THREE.MathUtils.smoothstep(dGC, SGR_A_ESMAECE_EM, SGR_A_SOME_EM);
   for (const lugar of LUGARES_DA_BUSCA) {
     const linha = lugarDaTabela(lugar.id);
     if (!linha?.raioPc || linha.semRotulo) continue;
     if (linha.categoria === 'galaxia' && dHome < FORA_DA_VIZINHANCA_PC) continue;
-    _topo.set(lugar.x, lugar.y, lugar.z);
-    const dist = _topo.distanceTo(camera.position);
+    _centro.set(lugar.x, lugar.y, lugar.z);
+    const dist = _centro.distanceTo(camera.position);
     const raioAparente = Math.atan(linha.raioPc / Math.max(dist, 1e-9)) / GRAU;
     const opacidade =
       THREE.MathUtils.smoothstep(raioAparente, 0.3, 0.6) *
       (1 - THREE.MathUtils.smoothstep(raioAparente, 22, 27)) *
-      0.95;
+      0.95 *
+      (linha.categoria === 'galaxia' ? foraDoCentro : 1);
     if (opacidade < 0.02) continue;
-    _topo.addScaledVector(_cima, linha.raioPc * ALTURA_DO_NOME);
-    const l = projectForced(camera, nomeDoLugar(lugar), '', _topo, `${CHAVE_DE_LUGAR}${lugar.id}`);
+    const l = projectForced(camera, nomeDoLugar(lugar), '', _centro, `${CHAVE_DE_LUGAR}${lugar.id}`);
     if (!l) continue;
     l.distPc = dist;
     l.opacity = opacidade;
@@ -228,4 +247,89 @@ export function projetarLugares(camera: THREE.PerspectiveCamera): StarLabel[] {
     out.push(l);
   }
   return out;
+}
+
+/** o prefixo da chave de uma COMPANHEIRA desenhada sem linha na tabela */
+export const CHAVE_DE_COMPANHEIRA = 'companheira:';
+
+/**
+ * AS COMPANHEIRAS DE UM LUGAR (13/11): o que a cena desenha junto com ele
+ * e que, com ele em foco, tem nome — as elípticas de Andrômeda, que não
+ * são destino próprio, e a Pequena Nuvem para a Grande, que é.
+ */
+const COMPANHEIRAS: Readonly<Record<string, readonly { id: string; nome: string; centro: THREE.Vector3 }[]>> = {
+  andromeda: [
+    { id: 'm32', nome: 'M32', centro: CENTRO_M32 },
+    { id: 'm110', nome: 'M110', centro: CENTRO_M110 },
+  ],
+};
+const LUGARES_COMPANHEIROS: Readonly<Record<string, readonly string[]>> = {
+  'grande-nuvem-de-magalhaes': ['pequena-nuvem-de-magalhaes'],
+};
+
+/** o lugar cujo centro é o alvo do Atlas — o lugar em foco, ou nada */
+export function lugarNoAlvo(alvo: THREE.Vector3 | null | undefined): LugarBuscavel | undefined {
+  if (!alvo) return undefined;
+  return LUGARES_DA_BUSCA.find(
+    (l) => l.raioPc !== undefined && _centro.set(l.x, l.y, l.z).distanceTo(alvo) < l.raioPc * 1e-6
+  );
+}
+
+/** os nomes das companheiras do lugar em foco, no centro de cada uma */
+export function projetarCompanheiras(camera: THREE.PerspectiveCamera, idDoLugar: string): StarLabel[] {
+  const out: StarLabel[] = [];
+  for (const c of COMPANHEIRAS[idDoLugar] ?? []) {
+    const l = projectForced(camera, c.nome, '', c.centro, `${CHAVE_DE_COMPANHEIRA}${c.id}`);
+    if (!l) continue;
+    l.distPc = c.centro.distanceTo(camera.position);
+    l.prioridade = PRIORIDADE_DO_ROTULO.lugar;
+    out.push(l);
+  }
+  return out;
+}
+
+/** quanto o nome do lugar sobe acima do grupo, em fração da altura */
+export const FOLGA_DO_NOME_DO_GRUPO = 0.05;
+/** de que distância na horizontal (fração da largura) outro nome divide a
+ *  linha com o nome do lugar — o comprimento de um nome de galáxia */
+const LARGURA_DO_NOME_DO_GRUPO = 0.25;
+
+/**
+ * O LUGAR EM FOCO DÁ A VEZ AO QUE ELE CONTÉM (13/11). As estrelas-membro
+ * com nome e as companheiras em quadro podem escrever do outro lado da
+ * âncora (`outroLado`), e o nome do lugar sai do centro — onde tomava a
+ * vaga de Atlas e Electra nas Plêiades — para logo acima do grupo; se
+ * outro nome já está nessa linha (a anã de Sagitário sobre a Grande
+ * Nuvem), logo abaixo. Sem ninguém do grupo em quadro, o nome fica no
+ * centro, como sempre.
+ */
+export function abrirVagaNoGrupo(idDoLugar: string, lista: readonly StarLabel[]): void {
+  const membros = new Set<string>([
+    ...(lugarDaTabela(idDoLugar)?.membros ?? []),
+    ...(COMPANHEIRAS[idDoLugar] ?? []).map((c) => `${CHAVE_DE_COMPANHEIRA}${c.id}`),
+    ...(LUGARES_COMPANHEIROS[idDoLugar] ?? []).map((id) => `${CHAVE_DE_LUGAR}${id}`),
+  ]);
+  if (membros.size === 0) return;
+  const proprio = lista.find((l) => l.key === `${CHAVE_DE_LUGAR}${idDoLugar}`);
+  let topo = Number.POSITIVE_INFINITY;
+  let base = Number.NEGATIVE_INFINITY;
+  for (const l of lista) {
+    if (!membros.has(l.key)) continue;
+    l.outroLado = true;
+    if (l.opacity < OPACIDADE_MINIMA_DO_ROTULO) continue;
+    topo = Math.min(topo, l.y);
+    base = Math.max(base, l.y);
+  }
+  if (!proprio || !Number.isFinite(topo)) return;
+  const acima = Math.min(proprio.y, topo) - FOLGA_DO_NOME_DO_GRUPO;
+  const ocupada = (y: number) =>
+    lista.some(
+      (l) =>
+        l !== proprio &&
+        !membros.has(l.key) &&
+        l.opacity >= OPACIDADE_MINIMA_DO_ROTULO &&
+        Math.abs(l.y - y) < FOLGA_DO_NOME_DO_GRUPO &&
+        Math.abs(l.x - proprio.x) < LARGURA_DO_NOME_DO_GRUPO
+    );
+  proprio.y = ocupada(acima) ? Math.max(proprio.y, base) + FOLGA_DO_NOME_DO_GRUPO : acima;
 }

@@ -39,16 +39,21 @@ import { raiosDoRochosoPc } from '../world/corpos/rochoso';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
 import { EPOCA_JD_TDB } from '../world/planetas/retrato2026';
 import { RAIO_EQ_TERRA_PC, posicaoDaTerraUA } from '../world/corpos/terra';
-import { posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
+import { ANEL_SATURNO, posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
 import { AtlasRig, K_MIN_RAIOS, K_PISO_DO_CORPO } from '../cinematic/atlasRig';
 import { IDS_ESCULPIDOS, criaGeometriaEsculpida } from '../world/corpos/esculpido';
+import { LUGARES_DA_BUSCA } from '../world/lugaresDoCeu';
+import { GAL } from '../world/baseGalactica';
+import { ENTREGA_DO_BURACO_PC } from '../escala';
+import { RS_SGR_A_PC } from '../../lib/buracoNegro';
+import { ATLAS_FOV_GRAUS, enquadrar, retanguloUtilDoAtlas } from '../cinematic/atlasRig';
 
 // O runner da casa é `node` (vitest.config.ts) e o enquadramento pergunta
 // a largura da janela (`larguraDeCss`) a cada `apply`. Uma linha de
 // `window` mínimo resolve, como em `world/labels.test.ts` — trocar o
 // ambiente de TODOS os testes por jsdom para ler um número seria caro.
 (globalThis as { window?: unknown }).window = { innerWidth: 1200, location: { search: '' } };
-const { Escada, soloDoCorpo } = await import('./escada');
+const { Escada, quadroDePerto, soloDoCorpo } = await import('./escada');
 
 /** posição da efeméride/retrato (eclíptica, UA) → frame da cena (pc) */
 function paraPc(p: { x: number; y: number; z: number }): THREE.Vector3 {
@@ -136,7 +141,7 @@ function noQuadro(camera: THREE.PerspectiveCamera, centro: THREE.Vector3, raio: 
 }
 
 /** a escada com o rig REAL e o mundo de mentira em volta */
-function bancada({ comEfemeride = false, comAnoes = false } = {}) {
+function bancada({ comEfemeride = false, comAnoes = false, comSaturno = false } = {}) {
   const atlas = new AtlasRig();
   const camera = new THREE.PerspectiveCamera(35, 4 / 3, 0.1, 1e6);
   // sem efeméride: as posições saem do retrato, e o instante é o da
@@ -189,6 +194,9 @@ function bancada({ comEfemeride = false, comAnoes = false } = {}) {
       // a lista viva dos gigantes CONSTRUÍDOS — é ela que abre o degrau
       gigantes: () => [
         { corpo: { id: 'jupiter', planeta: true } as unknown as GiganteResolvido },
+        ...(comSaturno
+          ? [{ corpo: { id: 'saturn', planeta: true } as unknown as GiganteResolvido }]
+          : []),
       ],
     },
   });
@@ -224,6 +232,38 @@ describe('o degrau `corpo` de um corpo que não é a Terra', () => {
 
     // e o defeito que existiu, dito pelo nome: a câmera NÃO está na Terra
     expect(camera.position.distanceTo(TERRA)).toBeGreaterThan(3 * AU_PARA_PC);
+  });
+
+  it('Saturno de perto é o retrato COM os anéis — e `?d=` segue em raios do planeta (12/11)', () => {
+    // MEDIDO no navegador: o degrau enquadrava a esfera do PLANETA, e os
+    // anéis (2,3 raios) vazavam a tela; o cartão pinava 12 raios fixos, e o
+    // desktop com a ficha aberta mostrava Saturno em ~10% da largura
+    const { escada, atlas, camera, aplicar } = bancada({ comSaturno: true });
+    const SATURNO = paraPc(posicaoDoGiganteUA('saturn', EPOCA_JD_TDB, null)!);
+    const R = raiosDoGigantePc('saturn').a;
+    escada.focarNoCorpo('saturn', 'corpo');
+    aplicar();
+    const d = camera.position.distanceTo(SATURNO);
+    // o anel inteiro cabe na meia-altura da lente, com folga
+    const meiaV = THREE.MathUtils.degToRad(camera.fov) / 2;
+    expect(Math.asin((ANEL_SATURNO.rExt * R) / d)).toBeLessThan(meiaV * 0.8);
+    // a régua do link não mudou de sentido
+    expect(atlas.raioDoAlvo).toBe(R);
+    expect(atlas.distanciaEmRaios).toBeCloseTo(d / R, 6);
+    // e o religador do relógio mantém o MESMO quadro
+    const pose = camera.position.toArray();
+    escada.recomporAlvo();
+    aplicar();
+    expect(camera.position.toArray()).toEqual(pose);
+    // `?d=12` continua sendo 12 raios de Saturno
+    escada.pinarEmRaios(12);
+    aplicar();
+    expect(camera.position.distanceTo(SATURNO) / R).toBeCloseTo(12, 3);
+    // sem anel de disco, o quadro é o de sempre
+    for (const id of ['jupiter', 'uranus', 'neptune', 'earth']) {
+      const r = raiosDoGigantePc(id).a;
+      expect(quadroDePerto(id, r)).toEqual({ raio: r, regua: null });
+    }
   });
 
   it('a Terra não mudou um bit: gesto e religador dão a mesma pose', () => {
@@ -329,6 +369,44 @@ describe('o degrau `corpo` de um corpo que não é a Terra', () => {
     aplicar();
     expect(atlas.alvo.distanceTo(TERRA)).toBeGreaterThan(3 * AU_PARA_PC);
     expect(camera.position.toArray()).toEqual(poseDoGesto);
+  });
+
+  it('o cartão de um planeta chega a ele vindo de QUALQUER lugar do céu (12/11)', () => {
+    // MEDIDO no navegador: das Híades (ou da Via Láctea de cima, ou de
+    // Sgr A✱) o cartão "Saturno: os anéis, de perto" deixava a câmera no
+    // lugar anterior, a linha de cima com o nome velho, e a busca seguinte
+    // não movia mais nada — o `focoEstrela` do lugar sobrevivia e o degrau
+    // do corpo descia à estrela ou ao buraco em vez do planeta.
+    const controle = bancada();
+    controle.escada.focarNoCorpo('jupiter', 'corpo');
+    const nomeDeJupiter = controle.focos.at(-1);
+    // a mesma porta de `escolherAlvo` para um lugar
+    const visitar = (e: InstanceType<typeof Escada>, l: (typeof LUGARES_DA_BUSCA)[number]) =>
+      l.raioPc ? e.visitarLugar(l) : e.visitarEstrela({ n: l.nome, x: l.x, y: l.y, z: l.z });
+    const sgrA = LUGARES_DA_BUSCA.find((l) => l.id === 'sagittarius-a')!;
+    const origens = [
+      ...LUGARES_DA_BUSCA.map((l) => (e: InstanceType<typeof Escada>) => visitar(e, l)),
+      // o buraco de perto (o degrau corpo do centro)
+      (e: InstanceType<typeof Escada>) => {
+        visitar(e, sgrA);
+        e.aproximarDoCorpo();
+      },
+    ];
+    for (const ir of origens) {
+      const { escada, camera, aplicar, focos } = bancada();
+      ir(escada);
+      // o cartão: o mesmo par que `escolherAlvo` dispara (ver + raios)
+      escada.focarNoCorpo('jupiter', 'corpo');
+      escada.pinarEmRaios(10);
+      aplicar();
+      expect(escada.escadaViva).toMatchObject({ degrau: 'corpo', corpoId: 'jupiter' });
+      expect(focos.at(-1)).toBe(nomeDeJupiter);
+      expect(camera.position.distanceTo(JUPITER) / RAIO_JUPITER).toBeCloseTo(10, 3);
+      // e a busca seguinte ainda move a câmera
+      escada.focarNoCorpo('earth', 'corpo');
+      aplicar();
+      expect(camera.position.distanceTo(TERRA)).toBeLessThan(10 * RAIO_EQ_TERRA_PC);
+    }
   });
 });
 
@@ -493,5 +571,52 @@ describe('o piso da câmera é o SOLO REAL de cada corpo (07/10, "câmera mais l
       geo.dispose();
       expect(pisoDe(id) / raiosDoRochosoPc(id).a, id).toBeGreaterThan(pico);
     }
+  });
+});
+
+describe('a vista de perto de Sgr A✱ é escala real em qualquer tela (13/11)', () => {
+  // MEDIDO no navegador: a 390×844 a esfera de 7,4 RS só cabia na largura
+  // a 35,8 RS, fora dos 24 RS da escala real — o selo dizia FORA DE ESCALA
+  const dePerto = (largura: number, altura: number, base = 0) => {
+    const { escada, camera, atlas } = bancada();
+    camera.aspect = largura / altura;
+    escada.visitarLugar(LUGARES_DA_BUSCA.find((l) => l.id === 'sagittarius-a')!);
+    escada.aproximarDoCorpo();
+    const extra = { base, direita: 0 };
+    atlas.apply(camera, 1, largura, 0, extra);
+    const pela = (raio: number) =>
+      enquadrar({
+        rAlvo: raio,
+        fovDeg: ATLAS_FOV_GRAUS,
+        aspect: camera.aspect,
+        retanguloUtil: retanguloUtilDoAtlas(1, largura, extra),
+      }).distancia;
+    return { d: camera.position.distanceTo(GAL.GC_POS), pela };
+  };
+
+  it('a mesa não muda: a esfera de 7,4 RS cabe antes da entrega', () => {
+    const { d, pela } = dePerto(1280, 800);
+    expect(d / pela(7.4 * RS_SGR_A_PC)).toBeCloseTo(1, 6);
+    expect(d).toBeLessThan(ENTREGA_DO_BURACO_PC);
+  });
+
+  it('retrato, com e sem a folha: a câmera fica dentro da entrega e a sombra cabe', () => {
+    for (const [largura, altura, folha] of [
+      [390, 844, 0], [390, 844, 0.19], [360, 800, 0], [360, 800, 0.2], [320, 568, 0], [320, 568, 0.28],
+    ]) {
+      const { d, pela } = dePerto(largura, altura, folha);
+      const tela = `${largura}×${altura} folha ${folha}`;
+      expect(d / RS_SGR_A_PC, tela).toBeGreaterThan(23.9);
+      expect(d, tela).toBeLessThan(ENTREGA_DO_BURACO_PC);
+      expect(d, tela).toBeGreaterThanOrEqual(pela(3 * RS_SGR_A_PC));
+    }
+  });
+
+  it('tela estreita demais: a sombra vence a entrega e não sai do quadro', () => {
+    // nos telefones de verdade o núcleo cabe de sobra (ver acima); ele só
+    // manda abaixo de ~0,27 de aspecto — 200×800 é a régua do caso extremo
+    const { d, pela } = dePerto(200, 800);
+    expect(d / pela(3 * RS_SGR_A_PC)).toBeCloseTo(1, 6);
+    expect(d).toBeGreaterThan(ENTREGA_DO_BURACO_PC);
   });
 });
