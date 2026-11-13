@@ -24,6 +24,7 @@
 // para quem quiser conferir.
 // ============================================================
 import type { Procedencia } from '../three/selo';
+import { RS_SGR_A_PC } from './buracoNegro';
 
 export type CategoriaDeLugar = 'aglomerado' | 'nebulosa' | 'galaxia';
 
@@ -59,7 +60,13 @@ export interface FatoDoLugar {
     | 'sombra'
     | 'anelEht'
     | 'estrelaS2'
-    | 'luz';
+    | 'luz'
+    | 'periodo'
+    | 'periastro'
+    | 'velocidade'
+    | 'desvioParaOVermelho'
+    | 'precessao'
+    | 'estrela';
   pt: string;
   en: string;
   procedencia: Procedencia;
@@ -96,6 +103,9 @@ export interface LugarDoCeu {
   /** o raio da esfera ENQUADRADA, em pc — ausente = a lei antiga do
    *  centro galáctico (`escada.irAte`), que fica como estava */
   raioPc?: number;
+  /** o piso do zoom, em pc — ausente = o de estrela à distância do lugar
+   *  (`raioDeEnquadramentoEstelar`), que é maior que um lugar de UA */
+  pisoPc?: number;
   vista?: VistaDoLugar;
   /** uma VISTA, não um objeto (a galáxia de cima, o endereço do Sol):
    *  não ganha nome na cena — quem marca o lugar é o rótulo do Sol */
@@ -202,20 +212,94 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     ],
   },
   {
+    // A ÓRBITA DE S2 (13/11/2026): o lugar é a órbita inteira em volta do
+    // buraco, vista do lado do Sol com o norte celeste no alto — o céu dos
+    // artigos. A estrela anda com o relógio (`lib/estrelasS.ts`); o nome
+    // dela na cena é o da estrela viva (`world/estrelasS.ts`), por isso a
+    // linha não tem rótulo de lugar.
+    id: 's2',
+    nome: 'S2',
+    pt: ['S2', 'S0-2', 'Estrela S2', 'Estrelas S'],
+    en: ['S2', 'S0-2', 'Star S2', 'S stars', 'S-stars'],
+    alvo: { cena: 'centroGalactico' },
+    classe: 'estrela',
+    // o apoastro de S2 é 1.944 UA (0,0094 pc): a esfera de 0,0105 pc o contém
+    raioPc: 0.0105,
+    // o piso do degrau de perto do buraco (3 RS, `escada.ts`)
+    pisoPc: 3 * RS_SGR_A_PC,
+    vista: 'doSol',
+    semRotulo: true,
+    distanciaPc: { valor: 8150, fonte: 'Reid et al. 2019 (VLBI)' },
+    oQueE: {
+      pt: 'Uma estrela azul e quente, dez vezes mais pesada que o Sol, que dá uma volta em torno do buraco negro do centro da galáxia a cada 16 anos. A órbita dela, medida no infravermelho desde 1992, é a prova de que ali há 4 milhões de massas solares num ponto — e, no periastro de 2018, mostrou dois efeitos da relatividade geral.',
+      en: 'A hot blue star, ten times heavier than the Sun, that circles the black hole at the centre of the galaxy every 16 years. Its orbit, measured in the infrared since 1992, is the proof that 4 million solar masses sit in a single point — and at its 2018 closest approach it showed two effects of general relativity.',
+    },
+    fatos: [
+      {
+        campo: 'periodo',
+        pt: 'uma volta a cada 16,05 anos',
+        en: 'one orbit every 16.05 years',
+        procedencia: 'medido',
+        fonte: 'GRAVITY Collaboration 2020 (A&A 636, L5)',
+      },
+      {
+        campo: 'periastro',
+        pt: '120 UA do buraco (≈ 1.400 raios de Schwarzschild), em 19 de maio de 2018; o próximo em 2034',
+        en: '120 AU from the hole (≈ 1,400 Schwarzschild radii), on 19 May 2018; the next in 2034',
+        procedencia: 'medido',
+        fonte: 'GRAVITY Collaboration 2018 (A&A 615, L15)',
+      },
+      {
+        campo: 'velocidade',
+        pt: '≈ 7.650 km/s no periastro — 2,55 % da velocidade da luz',
+        en: '≈ 7,650 km/s at closest approach — 2.55 % of the speed of light',
+        procedencia: 'medido',
+        fonte: 'GRAVITY Collaboration 2018 (A&A 615, L15)',
+      },
+      {
+        campo: 'desvioParaOVermelho',
+        pt: 'no periastro a luz chega ≈ 200 km/s mais avermelhada que pela lei de Newton (desvio gravitacional + Doppler transverso); medido f = 0,90 ± 0,09 ± 0,15, onde 1 é a relatividade geral e 0 é Newton',
+        en: 'at closest approach its light arrives ≈ 200 km/s redder than Newton predicts (gravitational redshift + transverse Doppler); measured f = 0.90 ± 0.09 ± 0.15, where 1 is general relativity and 0 is Newton',
+        procedencia: 'medido',
+        fonte: 'GRAVITY Collaboration 2018 (A&A 615, L15)',
+      },
+      {
+        campo: 'precessao',
+        pt: 'a elipse gira ≈ 12′ a cada volta (precessão de Schwarzschild; a relatividade geral prevê 12,1′); medido f = 1,10 ± 0,19, onde 1 é a relatividade geral',
+        en: 'the ellipse turns ≈ 12′ each orbit (Schwarzschild precession; general relativity predicts 12.1′); measured f = 1.10 ± 0.19, where 1 is general relativity',
+        procedencia: 'medido',
+        fonte: 'GRAVITY Collaboration 2020 (A&A 636, L5)',
+      },
+      {
+        campo: 'estrela',
+        pt: 'anã do tipo B: ≈ 28.500 K na superfície, ≈ 5,5 raios do Sol, ≈ 13,6 massas solares, ≈ 6,6 milhões de anos',
+        en: 'a B-type dwarf: ≈ 28,500 K at the surface, ≈ 5.5 solar radii, ≈ 13.6 solar masses, ≈ 6.6 million years old',
+        procedencia: 'derivado',
+        fonte: 'Habibi et al. 2017 (ApJ 847, 120)',
+      },
+      {
+        campo: 'naCena',
+        pt: 'S2 e 17 vizinhas (Gillessen et al. 2017) estão onde as órbitas medidas as põem na data do relógio, e a órbita de Kepler não inclui a precessão. Cada estrela é um ponto de luz: nenhum disco de estrela S foi resolvido. Perto do centro o buraco é desenhado maior que o real, e a sombra inflada esconde as estrelas S que ela cobre na tela.',
+        en: 'S2 and 17 neighbours (Gillessen et al. 2017) sit where the measured orbits put them on the clock’s date, and the Kepler orbit leaves out the precession. Each star is a point of light: no S star’s disc has ever been resolved. Near the centre the hole is drawn larger than real, and the inflated shadow hides the S stars it covers on screen.',
+        procedencia: 'derivado',
+        fonte: { pt: 'leis de Kepler com os elementos medidos', en: 'Kepler’s laws with the measured elements' },
+      },
+    ],
+  },
+  {
     id: 'pleiades',
     nome: 'Plêiades',
     nomeEn: 'Pleiades',
     pt: ['Plêiades', 'Sete Irmãs', 'M45', 'Messier 45', 'Aglomerado das Plêiades'],
     en: ['Pleiades', 'Seven Sisters', 'M45', 'Messier 45', 'Subaru', 'Melotte 22'],
     // a média das nove nomeadas abaixo, como o catálogo as desenha
-    alvo: { pc: [64.28, 97.63, 52.59] },
+    alvo: { pc: [67.68, 102.77, 55.37] },
     membros: ['Alcyone', 'Atlas', 'Electra', 'Maia', 'Merope', 'Taygeta', 'Pleione', 'Celaeno', 'Asterope'],
     categoria: 'aglomerado',
     classe: 'aglomerado aberto',
     // 7 pc põem a câmera a ~45 pc do centro, do lado do Sol: perto o
-    // bastante para as nove encherem o miolo do quadro, longe o bastante
-    // para o erro de profundidade do catálogo (ver `naCena`) não desfazer
-    // a forma que se conhece do céu
+    // bastante para as nove encherem o miolo do quadro com a forma que
+    // se conhece do céu
     raioPc: 7,
     vista: 'doSol',
     distanciaPc: { valor: 136.2, fonte: 'Melis et al. 2014 (VLBI)' },
@@ -254,8 +338,8 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
       },
       {
         campo: 'naCena',
-        pt: 'as distâncias do catálogo para estas estrelas são medidas antigas e espalham o aglomerado ao longo da linha de visada (de 342 a 462 anos-luz); por isso a vista é do lado do Sol, onde a forma é a do céu.',
-        en: 'the catalogue’s distances for these stars are older measurements and spread the cluster along the line of sight (342 to 462 light-years); that is why the view is from the Sun’s side, where the shape is the one in the sky.',
+        pt: 'a medida de distância do Gaia erra nas estrelas muito brilhantes; as daqui cuja medida é ruim recebem a distância do aglomerado, e a profundidade desenhada fica igual à largura que se vê no céu.',
+        en: 'Gaia’s distance measurement goes wrong for very bright stars; those here with a poor measurement take the cluster’s distance, and the depth drawn equals the width seen in the sky.',
         procedencia: 'derivado',
         fonte: CATALOGO_DA_CASA,
       },
@@ -268,7 +352,7 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     pt: ['Híades', 'Melotte 25', 'Caldwell 41', 'Cabeça do Touro'],
     en: ['Hyades', 'Melotte 25', 'Caldwell 41', 'Head of the Bull'],
     // a média das onze nomeadas abaixo, como o catálogo as desenha
-    alvo: { pc: [17.33, 39.96, 14.46] },
+    alvo: { pc: [17.39, 40.1, 14.51] },
     membros: [
       'Ain', 'Chamukuy', 'Prima Hyadum', 'Secunda Hyadum', 'θ¹ Tau', 'δ² Tau',
       'δ³ Tau', 'ρ Tau', 'κ¹ Tau', 'κ² Tau', 'υ Tau',
@@ -313,8 +397,8 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
       },
       {
         campo: 'naCena',
-        pt: 'as distâncias do catálogo para estas estrelas são medidas antigas e espalham um pouco o aglomerado ao longo da linha de visada.',
-        en: 'the catalogue’s distances for these stars are older measurements and spread the cluster a little along the line of sight.',
+        pt: 'cada estrela está na distância medida para ela; só as de medida ruim são puxadas para a distância do aglomerado.',
+        en: 'each star sits at the distance measured for it; only those with a poor measurement are pulled towards the cluster’s distance.',
         procedencia: 'derivado',
         fonte: CATALOGO_DA_CASA,
       },
@@ -326,17 +410,20 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     nomeEn: 'Orion Nebula',
     pt: ['Nebulosa de Órion', 'Grande Nebulosa de Órion', 'M42', 'Messier 42', 'NGC 1976'],
     en: ['Orion Nebula', 'Great Orion Nebula', 'M42', 'Messier 42', 'NGC 1976'],
-    // a posição da literatura (RA 5h35m17s, Dec −5°23′28″) a 414 pc —
-    // nenhuma nomeada do catálogo é membro do aglomerado da nebulosa
-    alvo: { pc: [44.39, 409.82, -38.89] },
+    // θ¹ Ori C, a estrela que acende o gás, como o catálogo da casa a
+    // desenha (414 pc, a distância do Trapézio por VLBI — Menten et al.
+    // 2007 —, que o catálogo dá às estrelas dele): o gás desenhado em
+    // `world/nebulosaDeOrion.ts` nasce em volta DELA, e o teste de lá
+    // cobra que os dois números são o mesmo
+    alvo: { pc: [44.381, 409.7733, -38.8873] },
     categoria: 'nebulosa',
     classe: 'nebulosa de emissão',
-    raioPc: 4,
+    raioPc: 2.5,
     vista: 'doSol',
     distanciaPc: { valor: 414, fonte: 'Menten et al. 2007 (VLBA)' },
     oQueE: {
-      pt: 'O gás da nebulosa ainda não está desenhado: o que se vê aqui são as estrelas da espada e do cinturão de Órion. A nebulosa de verdade é um berçário de estrelas: uma nuvem de hidrogênio acesa por dentro pelas estrelas jovens do Trapézio. É a região de formação de estrelas de grande massa mais próxima do Sol, visível a olho nu na espada de Órion.',
-      en: 'The nebula’s gas is not drawn yet: what you see here are the stars of Orion’s sword and belt. The real nebula is a stellar nursery: a hydrogen cloud lit from inside by the young stars of the Trapezium. It is the nearest region forming massive stars, visible to the naked eye in Orion’s sword.',
+      pt: 'Um berçário de estrelas: uma bolha de gás aberta na face de uma nuvem escura, acesa por dentro pela estrela mais quente do Trapézio, θ¹ Ori C. A luz dela arranca os elétrons do hidrogênio e do oxigênio, e o gás brilha em vermelho e verde-azulado. É a região de formação de estrelas de grande massa mais próxima do Sol, visível a olho nu na espada de Órion.',
+      en: 'A stellar nursery: a bubble of gas opened on the face of a dark cloud, lit from inside by the hottest star of the Trapezium, θ¹ Ori C. Its light strips the electrons from hydrogen and oxygen, and the gas glows red and blue-green. It is the nearest region forming massive stars, visible to the naked eye in Orion’s sword.',
     },
     fatos: [
       {
@@ -361,11 +448,21 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
         fonte: 'Hillenbrand 1997',
       },
       {
+        campo: 'nucleo',
+        pt: 'θ¹ Ori C, estrela O7V de ≈ 39.000 K, acende o gás; ela fica ≈ 0,2 parsec (0,7 ano-luz) na frente da parede da nuvem',
+        en: 'θ¹ Ori C, an O7V star of ≈ 39,000 K, lights the gas; it sits ≈ 0.2 parsec (0.7 light-year) in front of the cloud wall',
+        procedencia: 'medido',
+        fonte: 'Pabst et al. 2020; Kraus et al. 2009; O’Dell & Henney 2008',
+      },
+      {
         campo: 'naCena',
-        pt: 'o gás da nebulosa ainda não está desenhado; o que se vê são as estrelas da espada e do cinturão de Órion. O lugar e a distância são reais.',
-        en: 'the nebula’s gas is not drawn yet; what you see are the stars of Orion’s sword and belt. The place and the distance are real.',
+        pt: 'medido: a distância, o tamanho, a estrela que acende, a parede 0,2 pc atrás dela, a Barra vista de lado a 2′ a sudeste, o véu de poeira na frente, a bolha de ~4 parsecs soprada pelo vento da estrela e aberta para sudoeste, M43 ao norte com a faixa escura, e o brilho caindo do miolo para fora com a luz da estrela. Inventado: a forma exata da parede (uma tigela rasa, de borda mais alta a nordeste) e da bolha, as duas asas (cristas da parede como a Barra), o traçado da Baía Escura e das faixas de poeira, o contorno e o fundo da nuvem escura por trás, o gás que rareia longe da parede e todo o detalhe fino — fios, dobras e grumos são ruído de computador. A luz espalhada pelo véu é a de quem olha do lado do Sol. Ganho de brilho: a tela mostra a luz que a estrela manda elevada a 0,3 (cem vezes mais luz aparecem como quatro vezes mais brilho), uma lei fixa do objeto, a mesma de qualquer lugar, para o miolo e a parte larga caberem juntos na mesma foto. O gás está em volta de θ¹ Ori C onde o catálogo a põe (1.304 anos-luz, dentro da faixa medida de 1.266 a 1.350); só ela, das estrelas do Trapézio, tem nome no catálogo.',
+        en: 'measured: the distance, the size, the star that lights it, the wall 0.2 pc behind it, the Bar seen edge-on 2′ to the southeast, the dust veil in front, the ~4-parsec bubble blown by the star’s wind and open to the southwest, M43 to the north with its dark lane, and the brightness falling from the core outwards with the star’s light. Invented: the exact shape of the wall (a shallow bowl whose rim is higher to the northeast) and of the bubble, the two wings (ridges of the wall like the Bar), the outline of the Dark Bay and of the dust lanes, the outline and back of the dark cloud behind, the gas thinning away from the wall and all the fine detail — threads, folds and clumps are computer noise. The light scattered by the veil is the one seen from the Sun’s side. Brightness gain: the screen shows the light the star sends raised to the power 0.3 (a hundred times more light shows as four times more brightness), a fixed law of the object, the same from anywhere, so the core and the wide part fit in the same picture. The gas sits around θ¹ Ori C where the catalogue places it (1,304 light-years, within the measured range of 1,266 to 1,350); of the Trapezium stars, only it is named in the catalogue.',
         procedencia: 'artistico',
-        fonte: MODELO_DA_CASA,
+        fonte: {
+          pt: 'O’Dell & Henney 2008; van der Werf et al. 2013; Pabst et al. 2019; Güdel et al. 2008; O’Dell & Abel 2025; Berné et al. 2022; Simón-Díaz et al. 2011; Kounkel et al. 2017',
+          en: 'O’Dell & Henney 2008; van der Werf et al. 2013; Pabst et al. 2019; Güdel et al. 2008; O’Dell & Abel 2025; Berné et al. 2022; Simón-Díaz et al. 2011; Kounkel et al. 2017',
+        },
       },
     ],
   },

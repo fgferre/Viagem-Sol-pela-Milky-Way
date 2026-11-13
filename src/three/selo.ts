@@ -37,6 +37,8 @@ import {
   nivelDaNebulosaEmTexto,
   particulasDaGalaxiaEmTexto,
   galaxiaEmTexto,
+  nomeDoControleDoLaboratorio,
+  valorDoLaboratorioEmTexto,
   poeiraEmTexto,
   rotuloDaEscalaDeResolucao,
 } from './atlasConfig';
@@ -54,6 +56,8 @@ import type {
   ToneMapMode,
 } from './core/engine';
 import { TOM_PADRAO } from './core/engine';
+import { CONTROLES_DO_LABORATORIO } from './world/laboratorioDaGalaxia';
+import type { Laboratorio } from './world/laboratorioDaGalaxia';
 import type { PoliticaDeLuz } from '../lib/atlas/luz';
 import { LANTERNA_DE_LEITURA, PASSOS_DA_EXPOSICAO_REAL } from '../lib/atlas/luzDaVisita';
 
@@ -426,6 +430,11 @@ export interface EstadoDaVista {
    */
   galaxia: CaminhoDaGalaxia | null;
   /**
+   * O LABORATÓRIO DA GALÁXIA (Ajustes, 13/11/2026) — cada controle `null`
+   * no padrão. Estado vivo do Director, não as portas da URL.
+   */
+  laboratorio: Laboratorio;
+  /**
    * A POEIRA PERTO DE CASA escolhida à mão (pedido do dono, 27/09) —
    * `null` = a variante do preset. Mesmo contrato do `particulas`:
    * estado vivo do Director, não a porta `?poeira=`. `'teste'` é a
@@ -522,6 +531,9 @@ export const ARQUIVOS_GOVERNADOS = [
   // a máquina do tempo governa a imagem (ela move os dez corpos e
   // reescreve a magnitude deles): porta nova ali tem de se declarar
   'three/tempoDoAtlas.ts',
+  // o laboratório da galáxia (13/11/2026): a tabela dos controles É a
+  // lista das portas deles (`lerLaboratorio`)
+  'three/world/laboratorioDaGalaxia.ts',
   'components/Ajustes.tsx',
   'components/HudDoAtlas.tsx',
 ] as const;
@@ -882,6 +894,28 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
     rotuloVivo: (e) =>
       t('selo.desvio.galaxiaCom', { caminho: e.galaxia === null ? '' : galaxiaEmTexto(e.galaxia) }),
   },
+  /**
+   * O LABORATÓRIO DA GALÁXIA (Ajustes, 13/11/2026), uma linha por controle
+   * — a chave é a porta de URL dele. Fora do padrão a galáxia deixa de ser
+   * a do modelo medido desenhado pela régua da casa e vira uma imagem
+   * acertada à mão; mesmo molde da `galaxia`: estado VIVO, `volta: 'vivo'`.
+   */
+  ...CONTROLES_DO_LABORATORIO.map(
+    (c): CaminhoDoSelo => ({
+      chave: c.id,
+      eixo: 'brilho',
+      get rotulo() { return t('selo.desvio.laboratorio'); },
+      volta: 'vivo',
+      desvia: (e) => e.laboratorio[c.id] !== null,
+      rotuloVivo: (e) => {
+        const v = e.laboratorio[c.id];
+        return t('selo.desvio.laboratorioCom', {
+          controle: nomeDoControleDoLaboratorio(c.id),
+          valor: v === null ? '' : valorDoLaboratorioEmTexto(c.id, v, true),
+        });
+      },
+    })
+  ),
   /**
    * O SEXTO CONTROLE DA GAVETA AVANÇADO (pedido do dono, 27/09), no
    * mesmo molde dos cinco de cima: estado VIVO, `volta: 'vivo'`, porta

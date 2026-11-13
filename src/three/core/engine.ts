@@ -9,6 +9,7 @@
 // quem aplica é o Director, pela via viva que a letra C abriu, e só
 // quando o visitante escolheu Auto.
 // ============================================================
+import type { Laboratorio } from '../world/laboratorioDaGalaxia';
 import * as THREE from 'three';
 import { LIMIAR_SISTEMA_SOLAR_PC } from '../escala';
 
@@ -724,6 +725,10 @@ export interface EstadoDaQualidade {
   galaxia: CaminhoDaGalaxia | null;
   /** a galáxia que ESTÁ desenhando agora — depois das quedas da cadeia */
   galaxiaViva: CaminhoDaGalaxia;
+  /** o laboratório da galáxia (13/11/2026): cada controle, `null` = padrão */
+  laboratorio: Laboratorio;
+  /** um mundo novo está sendo sorteado (galáxia ou sorteios trocados): o painel diz "aplicando…" */
+  galaxiaReassando: boolean;
 }
 
 /**

@@ -129,6 +129,8 @@ export interface PoseDoLugar {
   raio: number;
   eixoDe: THREE.Vector3;
   polo: THREE.Vector3;
+  /** o piso do zoom que a linha pede (`pisoPc`); ausente = o de estrela */
+  pisoRaio?: number;
 }
 
 /**
@@ -189,7 +191,13 @@ export function poseDoLugar(lugar: Pick<LugarBuscavel, 'id' | 'x' | 'y' | 'z'>):
       break;
     }
   }
-  return { alvo, raio: linha.raioPc, eixoDe: eixoQuePousaEm(dir, polo), polo };
+  return {
+    alvo,
+    raio: linha.raioPc,
+    eixoDe: eixoQuePousaEm(dir, polo),
+    polo,
+    ...(linha.pisoPc ? { pisoRaio: linha.pisoPc } : {}),
+  };
 }
 
 /** além disto do Sol (pc) o visitante saiu do sistema solar: os nomes dos

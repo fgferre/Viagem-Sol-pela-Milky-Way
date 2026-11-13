@@ -2,6 +2,8 @@
 // Director — orquestra engine, mundo e cinemática.
 // API consumida pelo React: eventos de legenda/progresso/fase.
 // ============================================================
+import { lerLaboratorio, LABORATORIO_PADRAO } from './world/laboratorioDaGalaxia';
+import type { IdDoLaboratorio, Laboratorio } from './world/laboratorioDaGalaxia';
 import * as THREE from 'three';
 import {
   Engine,
@@ -166,6 +168,7 @@ import { ESCRITOR_DE_CAMERA } from './fases';
 import type { EscritorDeCamera, Phase } from './fases';
 import { filmeDe, type Filme } from './cinematic/filme';
 import { BlackHolePass, entregaDoBuraco } from './world/blackHole';
+import { EstrelasS } from './world/estrelasS';
 import { loadStarData } from './config';
 import type { NamedStar, StarsMeta } from './config';
 import type { CorpoBuscavel, LugarBuscavel } from '../lib/buscaEstrelas';
@@ -914,6 +917,9 @@ export class Director {
   private sun: StellarBody;
   private dust: Dust;
   private blackHole: BlackHolePass | null = null;
+  /** as estrelas S em volta de Sgr A✱, por cima do passe do buraco */
+  private estrelasS: EstrelasS | null = null;
+  private passeDasEstrelasS: { enabled: boolean } | null = null;
   private bgColor = new THREE.Color(0x000106);
   /** o filme em cartaz — o que o `play()` toca e o caminho do filme lê
    *  (planos, carga, calendário, dose do Sol, pinos); sem `?filme=`, o
@@ -1152,6 +1158,15 @@ export class Director {
    * muda), então vai pela mesma via viva da troca de tier.
    */
   private galaxiaForcada: CaminhoDaGalaxia | null = lerPortaGalaxia(this.debug.get('galaxia'));
+  /**
+   * O LABORATÓRIO DA GALÁXIA (Ajustes, 13/11/2026) — os botões do protótipo
+   * WebGPU e os do nível de detalhe do WebGL; cada um `null` = padrão. Lido
+   * no CAMPO (as portas da URL, pela lei de cada controle) para valer já na
+   * primeira galáxia. Todos são vivos, menos os sorteios, que reassam.
+   */
+  private laboratorio: Laboratorio = lerLaboratorio(this.debug);
+  /** o reassar dos sorteios espera o visitante parar de clicar (≠ 0: um pedido esperando) */
+  private esperaDosSorteios = 0;
   /**
    * A POEIRA PERTO DE CASA ESCOLHIDA À MÃO (pedido do dono, 27/09) —
    * `null` = a do preset ('hoje', por ora). Mesmo contrato de
@@ -2115,6 +2130,7 @@ export class Director {
       catalogos: this.catalogos,
       tier: this.tierDoMundo,
       galaxia: this.galaxiaForcada,
+      sorteios: this.laboratorio.sorteios,
       aoAvancar: (etapa) => this.rotular(etapa),
     });
     if (this.disposed) {
@@ -2195,6 +2211,8 @@ export class Director {
     this.blackHole = new BlackHolePass();
     this.blackHole.setQuality(this.engine.quality);
     this.post.addBlackHole(this.blackHole);
+    this.estrelasS = new EstrelasS();
+    this.passeDasEstrelasS = this.post.addSobreOBuraco(this.estrelasS.cena, this.engine.camera, this.blackHole);
     this.engine.scene.add(this.stars.points);
     // a SEGUNDA passada do campo (item 37) — a de quem está na frente de
     // todas as nuvens da visada, desenhada depois do quad multiplicativo.
@@ -2476,6 +2494,8 @@ export class Director {
       // Sem este termo o gate fotografaria o mundo VELHO com o `?q=`
       // novo no selo, e mediria a corrida em vez da imagem.
       this.trocaPedida !== null ||
+      // os sorteios do laboratório pedidos e ainda na espera do clique seguinte
+      Boolean(this.esperaDosSorteios) ||
       // A GALÁXIA AINDA CHEGANDO (12/11/2026): a camada WebGPU e os
       // sorteios extras entram segundos depois de o app abrir — capturar
       // antes fotografaria a reserva WebGL dizendo ser a galáxia padrão
@@ -3186,6 +3206,8 @@ export class Director {
       poeira: this.poeiraForcada,
       galaxia: this.galaxiaForcada,
       galaxiaViva: this.galaxy?.caminho ?? this.galaxiaForcada ?? this.engine.preset.galaxia,
+      laboratorio: this.laboratorio,
+      galaxiaReassando: this.trocaPedida !== null || Boolean(this.esperaDosSorteios),
     });
     // a variante do gás (um dos sete controles acima) decide o modo
     // efetivo da poeira (`Nebula.poeiraModoEfetivo`) — toda troca de
@@ -3408,9 +3430,42 @@ export class Director {
     this.publicarQualidade();
   }
 
-  /** o pedido que um mundo atende — o tier e a galáxia escolhida */
+  /**
+   * O LABORATÓRIO DA GALÁXIA, AO VIVO (Ajustes, 13/11/2026). Um controle
+   * por vez (`id`, valor; `null` volta ao padrão) ou todos de uma vez
+   * (`zerar`). Os vivos chegam à galáxia no quadro seguinte, num mundo só
+   * — o filme, o Atlas e o voo livre veem a mesma galáxia. Os sorteios
+   * mudam o mundo: o pedido espera 0,4 s sem clique (três cliques
+   * seguidos assam um mundo, não três) e vai pela via da troca de tier,
+   * nos trabalhadores da carga, com o mundo velho na tela até o novo.
+   */
+  forcarLaboratorio(id: IdDoLaboratorio, valor: number | null) {
+    this.definirLaboratorio({ ...this.laboratorio, [id]: valor });
+  }
+
+  zerarLaboratorio() {
+    this.definirLaboratorio(LABORATORIO_PADRAO);
+  }
+
+  private definirLaboratorio(lab: Laboratorio) {
+    const sorteiosMudaram = lab.sorteios !== this.laboratorio.sorteios;
+    this.laboratorio = lab;
+    this.galaxy?.definirLaboratorio(lab);
+    this.perturbar();
+    if (sorteiosMudaram) {
+      window.clearTimeout(this.esperaDosSorteios);
+      this.esperaDosSorteios = window.setTimeout(() => {
+        this.esperaDosSorteios = 0;
+        void this.reassarMundo(this.engine.quality);
+        this.publicarQualidade();
+      }, 400);
+    }
+    this.publicarQualidade();
+  }
+
+  /** o pedido que um mundo atende — o tier, a galáxia escolhida e os sorteios */
   private chaveDoMundo(q: QualityLevel) {
-    return `${q}|${this.galaxiaForcada ?? 'preset'}`;
+    return `${q}|${this.galaxiaForcada ?? 'preset'}|${this.laboratorio.sorteios ?? 'preset'}`;
   }
 
   /**
@@ -3465,6 +3520,7 @@ export class Director {
     g.setFracaoDeParticulas(
       FRACAO_DE_PARTICULAS[this.particulasForcadas ?? this.engine.preset.particulas]
     );
+    g.definirLaboratorio(this.laboratorio);
   }
 
   /**
@@ -3541,6 +3597,7 @@ export class Director {
     // apaga o pedido em voo, para a captura parar de esperar por ele.
     if (chave === this.chaveDoMundoNaTela) {
       this.trocaPedida = null;
+      this.publicarQualidade();
       return;
     }
     this.trocaPedida = chave;
@@ -3548,6 +3605,7 @@ export class Director {
       catalogos: this.catalogos,
       tier: q,
       galaxia: this.galaxiaForcada,
+      sorteios: this.laboratorio.sorteios,
       // o loader não aparece: a troca é viva, e o rótulo de etapa é do
       // carregamento. O visitante vê o mundo velho até o mundo novo
       // estar pronto — que é a promessa inteira da letra C.
@@ -3629,6 +3687,8 @@ export class Director {
     // medida contra o que acabou de ser descartado
     this.nebula.invalidarLut();
     this.perturbar();
+    // o "aplicando…" do laboratório apaga e o caminho novo aparece no painel
+    this.publicarQualidade();
   }
 
   /**
@@ -3818,6 +3878,7 @@ export class Director {
       realceDoRelevo: this.realceDoRelevo('earth'),
       particulas: this.particulasForcadas,
       galaxia: this.galaxiaForcada,
+      laboratorio: this.laboratorio,
       // a bancada `?poeira=teste` vence a variante enquanto vale (ver
       // `aplicarPoeira`), e o selo a nomeia — `forcarPoeira` a desarma
       poeira: this.poeiraTeste ? 'teste' : this.poeiraForcada,
@@ -4478,6 +4539,22 @@ export class Director {
       const semBuraco = this.hide.has('nobh');
       const e = entregaDoBuraco(dGC);
       this.blackHole.updateFrame(cam.position, cam, time, semBuraco ? 0 : e.fade, e.rsPc);
+      // AS ESTRELAS S (13/11): a mesma distância decide; a sombra desenhada
+      // esconde as que ela cobre (`world/estrelasS.ts`)
+      if (this.estrelasS && this.passeDasEstrelasS) {
+        this.estrelasS.atualizar({
+          camPos: cam.position,
+          jd: this.maquinaDoTempo.jdVivo,
+          rsPc: e.rsPc,
+          buracoDesenhado: !semBuraco && e.fade > 0.001,
+          hPx,
+          pr2: pr2Atual,
+          expoM0: this.stars?.expoM0 ?? EXPO_M0,
+          sigmaPx: this.stars?.sigmaPx ?? SIGMA_PX,
+          orbitas: !this.hide.has('noorbitass'),
+        });
+        this.passeDasEstrelasS.enabled = this.estrelasS.ativo;
+      }
     }
     // AUTO-EXPOSIÇÃO: a vista externa é outro assunto fotográfico. A
     // rodada 18 venceu com 1,40 (sem knee); a rodada 20, com o knee
@@ -4844,6 +4921,7 @@ export class Director {
     // mostrador órfão da sessão anterior na tela.
     step('contadorFps', () => this.contadorFps?.descartar());
     step('blackHole', () => this.blackHole?.dispose());
+    step('estrelasS', () => this.estrelasS?.dispose());
     // recursos do mundo ANTES do renderer: material descartado depois
     // de renderer.dispose() não chama deleteProgram
     step('stars', () => this.stars?.dispose());
