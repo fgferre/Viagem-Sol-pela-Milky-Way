@@ -1,6 +1,12 @@
-// Serve: lei — o disco de Sgr A✱ é uma fatia fina: inclinado sai igual ao plano de sempre, de lado vira faixa e não risco
+// Serve: lei — o disco de Sgr A✱ é uma fatia fina: inclinado sai igual ao plano de sempre, de lado vira faixa e não risco; a borda rala não tapa o fundo
 import { describe, expect, it } from 'vitest';
-import { BH_MARCH_FRAG, ESPESSURA_DO_DISCO, fatiaDoDisco } from './blackHoleShaders';
+import {
+  BH_MARCH_FRAG,
+  ESPESSURA_DO_DISCO,
+  RAIO_DENSO_RS,
+  densidadeDoDisco,
+  fatiaDoDisco,
+} from './blackHoleShaders';
 
 const R_IN = 2.75;
 const R_OUT = 26;
@@ -45,5 +51,17 @@ describe('a fatia do disco', () => {
 
   it('além da borda do disco não há fatia', () => {
     expect(fatiaDoDisco(0, R_OUT + 1, R_IN, R_OUT)).toBe(1);
+  });
+
+  it('a borda externa rala quase não tapa; por dentro tapa como sempre', () => {
+    for (const r of [2.8, 3.1, 4, 6, RAIO_DENSO_RS]) expect(densidadeDoDisco(r, R_OUT)).toBe(1);
+    expect(densidadeDoDisco(13, R_OUT)).toBeLessThan(0.3);
+    expect(densidadeDoDisco(20, R_OUT)).toBeLessThan(0.05);
+    for (let r = RAIO_DENSO_RS; r < R_OUT; r += 0.5) {
+      expect(densidadeDoDisco(r + 0.5, R_OUT)).toBeLessThanOrEqual(densidadeDoDisco(r, R_OUT));
+    }
+    // o brilho segue com alpha; só o que tapa (trans) leva a densidade
+    expect(BH_MARCH_FRAG).toContain('col += trans * alpha * dcol;');
+    expect(BH_MARCH_FRAG).toContain('trans *= 1.0 - tapa;');
   });
 });

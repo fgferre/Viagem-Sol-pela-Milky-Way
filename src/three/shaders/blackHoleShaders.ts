@@ -73,6 +73,29 @@ export function fatiaDoDisco(y: number, r: number, rIn: number, rOut: number): n
   return 1 - (1 - u) * (1 - u);
 }
 
+// O quanto o disco TAPA o fundo segue a densidade, lida no envelope radial
+// da emissão (fluxo · ganho radial + brilho interno, × rampa externa),
+// relativa à de RAIO_DENSO_RS: por dentro dele o disco tapa como sempre; por
+// fora, proporcional ao que brilha. Espelho TS para o teste.
+export const RAIO_DENSO_RS = 8;
+export function envelopeDoDisco(r: number, rOut: number): number {
+  const x = Math.max(r, 3.001);
+  const flux = Math.max(Math.pow(x / 3, -3) * (1 - Math.sqrt(3 / x)), 0);
+  const s = (a: number, b: number, v: number) => {
+    const t = Math.min(Math.max((v - a) / (b - a), 0), 1);
+    return t * t * (3 - 2 * t);
+  };
+  const radialGain = 0.38 + 0.62 * (1 - s(4, 18, r));
+  const qg = (r - 3.1) * 3;
+  const outerFade = 1 - s(rOut - 10, rOut, r);
+  return (flux * 11 * radialGain + Math.exp(-qg * qg) * 2.8) * outerFade;
+}
+/** fração da opacidade que tapa o fundo no raio r (1 = a de sempre) */
+export function densidadeDoDisco(r: number, rOut: number): number {
+  return Math.min(envelopeDoDisco(r, rOut) / envelopeDoDisco(RAIO_DENSO_RS, rOut), 1);
+}
+const ENVELOPE_REF_GLSL = envelopeDoDisco(RAIO_DENSO_RS, 26).toFixed(5);
+
 export const BH_MARCH_FRAG = /* glsl */ `
 ${COMMON}
 
@@ -182,7 +205,8 @@ bool diskShade(vec3 q, float w, vec3 rayDir, inout vec3 col, inout float trans){
 
   float I = flux*11.0*turb*streak*laneMask*radialGain;
   float qg = (qr-3.1)*3.0;                            // regra 1 do README: quadrado é multiplicação
-  I += exp(-qg*qg)*2.8;                               // brilho interno
+  float brilhoInterno = exp(-qg*qg)*2.8;
+  I += brilhoInterno;
   // rampa externa mais curta que a da demo (era uDout-14): com o disco
   // compacto de 26 RS ela comia o meio do disco
   float outerFade = 1.0 - smoothstep(uDout-10.0, uDout, qr);
@@ -198,9 +222,18 @@ bool diskShade(vec3 q, float w, vec3 rayDir, inout vec3 col, inout float trans){
 
   vec3 dcol = blackbody(temp*dop*g) * I * (dop*dop*dop) * g * uDiskBright;
   float alpha = mix(uOpFar, uOpNear, 1.0 - smoothstep(4.0, 13.0, qr)) * outerFade;
-  if(w != 1.0) alpha = 1.0 - pow(1.0 - alpha, w);
+  // gás que quase não brilha quase não tapa: a absorção segue a densidade,
+  // lida no envelope radial da emissão (sem a turbulência, que é padrão, e
+  // sem Doppler, que é do observador); o brilho fica o de sempre. Por
+  // dentro de ~${RAIO_DENSO_RS} RS nada muda; a borda externa rala vira gás opticamente
+  // fino e deixa o fundo passar — de lado era ela o risco escuro.
+  float tapa = alpha * min((flux*11.0*radialGain + brilhoInterno)*outerFade / ${ENVELOPE_REF_GLSL}, 1.0);
+  if(w != 1.0){
+    alpha = 1.0 - pow(1.0 - alpha, w);
+    tapa = 1.0 - pow(1.0 - tapa, w);
+  }
   col += trans * alpha * dcol;
-  trans *= 1.0 - alpha;
+  trans *= 1.0 - tapa;
   if(trans < 0.02){ trans = 0.0; return true; }
   return false;
 }
