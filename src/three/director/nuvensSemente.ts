@@ -8,19 +8,41 @@
 import * as THREE from 'three';
 import { galactocentricToScene } from '../world/baseGalactica';
 import type { Nebula } from '../world/nebula';
+import {
+  CORTE_D2_DA_SEMENTE,
+  RAIO_MINIMO_DA_SEMENTE,
+  SEMENTES_DO_BAKE,
+} from '../shaders/common';
+
+/**
+ * A nuvem soma alguma coisa a algum voxel da caixa assada? Alcance da
+ * metaball do bake (`CORTE_D2_DA_SEMENTE`, `RAIO_MINIMO_DA_SEMENTE` —
+ * glslBakeDensity) contra a distância do centro dela até a CAIXA (não até
+ * o centro da caixa: a esfera deixava de fora as quinas, que o raio
+ * alcança). (dx, dy, dz) = nuvem − centro da caixa, em pc.
+ */
+export function sementeAlcancaOVolume(
+  dx: number,
+  dy: number,
+  dz: number,
+  raio: number,
+  meiaAresta: number
+): boolean {
+  const ex = Math.max(Math.abs(dx) - meiaAresta, 0);
+  const ey = Math.max(Math.abs(dy) - meiaAresta, 0);
+  const ez = Math.max(Math.abs(dz) - meiaAresta, 0);
+  const r = Math.max(raio, RAIO_MINIMO_DA_SEMENTE);
+  return ex * ex + ey * ey + ez * ez < CORTE_D2_DA_SEMENTE * r * r;
+}
 
 export class NuvensSemente {
   private pool: Float32Array | null = null;
   private readonly scratch = new Float32Array(32 * 5);
-  /** scratch das ≤256 sementes do bake — ver `sementesParaBake` */
-  private readonly scratchBake = new Float32Array(256 * 5);
+  /** scratch das sementes do bake — ver `sementesParaBake` */
+  private readonly scratchBake = new Float32Array(SEMENTES_DO_BAKE * 5);
   private timer = 0;
-  /**
-   * meia-aresta do volume assado (Nebula.MEIA_ARESTA) + margem por nuvem
-   * (3× o raio — cobre a metaball inteira, d2c < 5.5 ⇒ |p−c| < √5.5·r
-   * ≈ 2.35·r, com folga): o alcance de `sementesParaBake` por nuvem.
-   */
-  private static readonly ALCANCE_BASE = 1000;
+  /** meia-aresta do volume assado (Nebula.MEIA_ARESTA) */
+  private static readonly MEIA_ARESTA = 1000;
 
   /**
    * Nuvens CO/complexos em coords de cena para semear o raymarch. Guarda
@@ -72,11 +94,13 @@ export class NuvensSemente {
   }
 
   /**
-   * REDESIGN (PLAN.md, 05/09) — as ≤256 nuvens do pool mais perto do
-   * CENTRO do volume assado (não da câmera: o cubo pode estar até 350 pc
-   * à frente dela). Sem fade de fronteira — a textura de sementes não
-   * tem limite de 32 nem precisa esconder popping, porque reassar já é
-   * o evento discreto. Chamada de dentro de `Nebula.bake()`, pelo
+   * REDESIGN (PLAN.md, 05/09) — TODAS as nuvens do pool que alcançam o
+   * volume assado (`sementeAlcancaOVolume`), em ordem de distância ao
+   * centro. Todas, não as N mais perto: o voxel de um ponto do espaço tem
+   * de sair igual em qualquer centro, senão o reassar acende de uma vez a
+   * nuvem que o corte anterior deixou de fora (o véu azul de Scutum,
+   * 12/11). O teto SEMENTES_DO_BAKE só corta se o catálogo ficar mais
+   * denso do que o medido. Chamada de dentro de `Nebula.bake()`, pelo
    * callback ligado em `construir()`.
    */
   private sementesParaBake(centro: THREE.Vector3, nebula: Nebula) {
@@ -87,13 +111,11 @@ export class NuvensSemente {
       const dx = pool[o] - centro.x;
       const dy = pool[o + 1] - centro.y;
       const dz = pool[o + 2] - centro.z;
-      const d = Math.sqrt(dx * dx + dy * dy + dz * dz);
-      const alcance = NuvensSemente.ALCANCE_BASE + 3 * pool[o + 3];
-      if (d > alcance) continue;
-      candidatos.push({ d, o });
+      if (!sementeAlcancaOVolume(dx, dy, dz, pool[o + 3], NuvensSemente.MEIA_ARESTA)) continue;
+      candidatos.push({ d: Math.sqrt(dx * dx + dy * dy + dz * dz), o });
     }
     candidatos.sort((a, b) => a.d - b.d);
-    const n = Math.min(candidatos.length, 256);
+    const n = Math.min(candidatos.length, SEMENTES_DO_BAKE);
     const saida = this.scratchBake;
     for (let i = 0; i < n; i++) {
       const o = candidatos[i].o;

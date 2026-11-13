@@ -7,12 +7,14 @@ import {
   TETO_DA_ESPERA_DA_PIRAMIDE_S,
   cenaParaHelioGalactico,
   empilharTabelas,
+  listarSementesPorFatia,
   medidoPelosNiveis,
   pesoDoNivel,
   raiosDoNivel,
   texelNaPilha,
 } from './nebula';
-import { MEDIA_DA_LANE } from '../shaders/common';
+import { CORTE_D2_DA_SEMENTE, MEDIA_DA_LANE } from '../shaders/common';
+import { sementeAlcancaOVolume } from '../director/nuvensSemente';
 import { GAL, helioGalacticoParaCena } from './baseGalactica';
 import type { VolumeDePoeira } from '../cartography/galacticAssets';
 import {
@@ -836,5 +838,47 @@ describe('a pirâmide da poeira na GPU (E3c) — a Nebula', () => {
     expect(nebula.piramideAssentada).toBe(false);
     nebula.atualizarPiramide(renderer, 100 + TETO_DA_ESPERA_DA_PIRAMIDE_S, camera);
     expect(nebula.piramideAssentada).toBe(true);
+  });
+});
+
+// o véu azul de Scutum (12/11): o bake cortava as sementes pela distância ao
+// centro, e o reassar seguinte acendia de uma vez as que tinham ficado de fora
+describe('sementes do bake: o voxel de um ponto não depende do centro', () => {
+  it('toda nuvem que soma a um ponto entra no bake de qualquer caixa que o contém, e na fatia dele', () => {
+    let semente = 777;
+    const aleatorio = () => ((semente = (semente * 1103515245 + 12345) % 2 ** 31) / 2 ** 31);
+    const nuvens: number[][] = [];
+    for (let i = 0; i < 2000; i++) {
+      nuvens.push([(aleatorio() - 0.5) * 6000, (aleatorio() - 0.5) * 6000, (aleatorio() - 0.5) * 6000, 4 + aleatorio() ** 3 * 400]);
+    }
+    const meia = 1000;
+    const voxel = (2 * meia) / 128;
+    // a câmera andou 400 pc: dois centros cujas caixas contêm os mesmos pontos
+    for (const centro of [[0, 0, 0], [234.375, -312.5, 156.25]]) {
+      const dentro = nuvens.filter(([x, y, z, r]) =>
+        sementeAlcancaOVolume(x - centro[0], y - centro[1], z - centro[2], r, meia)
+      );
+      const entradas = new Float32Array(dentro.flat().flatMap((v, i) => (i % 4 === 3 ? [v, 1] : [v])));
+      const indices = new Float32Array(dentro.length * 128);
+      const contagem = new Int32Array(128);
+      listarSementesPorFatia(entradas, dentro.length, centro[2] - meia, voxel, indices, contagem);
+      for (let k = 0; k < 200; k++) {
+        const f = Math.floor(aleatorio() * 128);
+        const p = [
+          centro[0] + (aleatorio() - 0.5) * 2 * meia,
+          centro[1] + (aleatorio() - 0.5) * 2 * meia,
+          centro[2] - meia + (f + 0.5) * voxel,
+        ];
+        const listadas = new Set(Array.from(indices.subarray(f * dentro.length, f * dentro.length + contagem[f])));
+        for (const n of nuvens) {
+          const r = Math.max(n[3], 8);
+          const d2c = ((p[0] - n[0]) ** 2 + (p[1] - n[1]) ** 2 + (p[2] - n[2]) ** 2) / (r * r);
+          if (d2c >= CORTE_D2_DA_SEMENTE) continue;
+          const i = dentro.indexOf(n);
+          expect(i).toBeGreaterThanOrEqual(0);
+          expect(listadas.has(i)).toBe(true);
+        }
+      }
+    }
   });
 });
