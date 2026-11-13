@@ -735,6 +735,9 @@ export class ClaraoDeAsas {
       this.cor[j * 3 + 2] = b;
     }
 
+    // UM plano para todos os quads: cada vaga com a sua geometria punha
+    // 65 delas residentes (memoria.mjs, teto de 80 no mundo inteiro)
+    const plano = new THREE.PlaneGeometry(2, 2);
     const novoMaterial = () => {
       const mat = new THREE.ShaderMaterial({
         vertexShader: VERT,
@@ -757,7 +760,7 @@ export class ClaraoDeAsas {
         transparent: true,
       });
       seguirALente(mat, FRAG, FRAG_DA_LENTE);
-      const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
+      const quad = new THREE.Mesh(plano, mat);
       quad.visible = false;
       quad.frustumCulled = false;
       quad.renderOrder = 3;
@@ -796,7 +799,7 @@ export class ClaraoDeAsas {
       depthTest: true,
       transparent: true,
     });
-    const sonda = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.sondaMat);
+    const sonda = new THREE.Mesh(plano, this.sondaMat);
     sonda.position.set(this.pos[0], this.pos[1], this.pos[2]);
     sonda.visible = false;
     sonda.frustumCulled = false;
