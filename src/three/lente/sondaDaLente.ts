@@ -21,6 +21,7 @@ import * as THREE from 'three';
 import { RAIO_DO_SOL_NA_CENA } from '../escala';
 import { RAMP_DURATION_MS, stepRampToward } from '../world/lodStellar';
 import { ndcNaTela, SondaDeOclusao } from '../world/sondaDeOclusao';
+import { MARGEM_MAXIMA_DA_BORDA } from './presets';
 
 export const TOQUES_DA_LENTE = 12;
 
@@ -70,6 +71,12 @@ void main() {
 }
 `;
 
+/** A distância do ponto (NDC) à borda mais próxima, em alturas do quadro
+ *  (a mesma medida do gatilho de borda do passe); negativa fora da tela. */
+export function distanciaDaBorda(ndc: THREE.Vector3, aspecto: number): number {
+  return Math.min(((1 - Math.abs(ndc.x)) * aspecto) / 2, (1 - Math.abs(ndc.y)) / 2);
+}
+
 /** O raio aparente do disco do Sol na tela, px do buffer, com o piso. */
 function raioDoDiscoPx(distancia: number, alturaPx: number, tanHalfFov: number): number {
   const angulo = Math.asin(Math.min(1, RAIO_DO_SOL_NA_CENA / distancia));
@@ -101,6 +108,10 @@ export class SondaDaLente {
   private valor = 1;
   /** já houve medida desde o último reinício? A primeira vale por inteiro, sem rampa */
   private medido = false;
+  /** o valor é o apagado provisório do Sol que chegou na tela sem medida */
+  private esperando = false;
+  /** no quadro anterior o Sol estava no alcance da lente (ver `atualizar`) */
+  private noAlcance = false;
   private readonly v = new THREE.Vector3();
   private readonly vNdc = new THREE.Vector3();
 
@@ -151,6 +162,8 @@ export class SondaDaLente {
       for (const c of this.consultas) c.invalidar();
       this.respostas.fill(null);
       this.medido = false;
+      this.esperando = false;
+      this.noAlcance = false;
       this.valor = 1;
       return this.valor;
     }
@@ -166,20 +179,36 @@ export class SondaDaLente {
       (u.uDeslocPx.value as THREE.Vector2).set(this.desloc[i * 2], this.desloc[i * 2 + 1]);
       this.meshes[i].visible = true;
     }
+    // O ALCANCE DA LENTE: o Sol na tela ou na margem de fora onde o passe
+    // ainda desenha o reflexo (`borda.margem`). Quem vinha no alcance no
+    // quadro anterior já estava com o valor À MOSTRA: daqui em diante ele
+    // só anda pela rampa, nunca salta.
+    const vinhaNoAlcance = this.noAlcance;
+    const ndc = this.vNdc.set(0, 0, 0).project(cam);
+    this.noAlcance = distanciaDaBorda(ndc, q.larguraPx / q.alturaPx) > -MARGEM_MAXIMA_DA_BORDA;
     const alvo = this.fracaoVisivel();
     if (alvo === null) {
-      // nenhum toque na tela: a pergunta não tem resposta e fica a última
-      // medida — um Sol escondido que sai pela borda não volta a refletir.
-      // Sem medida ainda (corte de filme, lente recém-ligada), o Sol na tela
-      // espera apagado as 1–3 respostas, sem clarão de 300 ms; fora da tela,
-      // 1, a regra do clarão
-      if (!this.medido) this.valor = ndcNaTela(this.vNdc.set(0, 0, 0).project(cam)) ? 0 : 1;
-    } else if (!this.medido) {
+      // nenhum toque na tela: a pergunta não tem resposta e fica o valor de
+      // agora — um Sol escondido que sai pela borda não volta a refletir.
+      // Sem medida ainda e chegando de fora do alcance (corte de filme, lente
+      // recém-ligada), o Sol na tela espera apagado as 1–3 respostas, sem
+      // clarão de 300 ms; fora da tela, 1, a regra do clarão. Já no alcance
+      // (o Sol que DESLIZA da margem para dentro), o reflexo que estava à
+      // mostra fica como está: apagar à espera da resposta piscava dois
+      // quadros a lente inteira (filme solar, t = 196,6 s, 12/11).
+      if (!this.medido && !vinhaNoAlcance) {
+        this.esperando = ndcNaTela(ndc);
+        this.valor = this.esperando ? 0 : 1;
+      }
+    } else if (!this.medido && (this.esperando || !vinhaNoAlcance)) {
+      // a primeira medida de quem esperava apagado (ou acabou de chegar) vale por inteiro
       this.valor = alvo;
       this.medido = true;
     } else {
       this.valor = stepRampToward(this.valor, alvo, q.dtS, RAMP_DURATION_MS);
+      this.medido = true;
     }
+    if (this.medido) this.esperando = false;
     return this.valor;
   }
 

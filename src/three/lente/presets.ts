@@ -241,8 +241,14 @@ const PO_LEVE = [
   [0.02, 0.22, 0.1, 0.3, 0.4],
 ] as const;
 
+/** A margem de fora da tela do gatilho de borda: a das lentes reais e a da Hollywood. */
+const MARGEM_COMUM = 0.12;
+const MARGEM_DA_HOLLYWOOD = 0.15;
+/** a maior margem de fora da tela em que alguma receita ainda desenha o reflexo, em alturas do quadro */
+export const MARGEM_MAXIMA_DA_BORDA = Math.max(MARGEM_COMUM, MARGEM_DA_HOLLYWOOD);
+
 function montar(nome: NomeDoPreset): Preset {
-  const bordaComum: Borda = { zona: 0.2, ganhoBrilho: 1.5, ganhoTamanho: 1.2, margem: 0.12 };
+  const bordaComum: Borda = { zona: 0.2, ganhoBrilho: 1.5, ganhoTamanho: 1.2, margem: MARGEM_COMUM };
   if (nome === 'redonda') {
     // prime esférica de cinema moderna (Gauss duplo Agfa, íris de 9 lâminas curvas): quente e discreta
     return {
@@ -315,7 +321,7 @@ function montar(nome: NomeDoPreset): Preset {
   // preset de artista: brilho dourado com muitos raios, corrente rica de hexágonos e orbes, halo arco-íris, sujeira visível
   const hexa = { laminas: 6, redondeza: 0.12, rotacao: 0.2 };
   return {
-    borda: { zona: 0.25, ganhoBrilho: 1.8, ganhoTamanho: 1.3, margem: 0.15 },
+    borda: { zona: 0.25, ganhoBrilho: 1.8, ganhoTamanho: 1.3, margem: MARGEM_DA_HOLLYWOOD },
     elementos: [
       { tipo: 'brilho', int1: 2.2, raio1: 0.013, cor1: [1, 0.8, 0.5], int2: 0.14, raio2: 0.1, cor2: [1, 0.62, 0.28], esticar: 1 },
       // muitos raios finos de comprimentos variados — curtos e fracos desde 09/10 (ele, pela
