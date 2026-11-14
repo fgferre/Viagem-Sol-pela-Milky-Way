@@ -84,6 +84,7 @@ import { AneisTenuesDeSaturno } from './aneisTenues';
 import type { QuadroDosAneisTenues } from './aneisTenues';
 import { LajotaDoAnel, VOLUME_DA_LAJOTA } from './lajotaDoAnel';
 import type { QuadroDaLajota } from './lajotaDoAnel';
+import { GLSL_CESSAO_DAS_PEDRAS, PEDRAS_3D, PedrasDoAnel } from './pedrasDoAnel';
 import { posicaoKepler } from '../../../lib/atlas/kepler';
 import { cessaoAlvo, gateBinario, saltoGuardado } from './terra';
 import { CANAL_MAP, type Seguradores, TexturasDoCorpo, diametroPedidoPelaTela } from './texturas';
@@ -1203,7 +1204,7 @@ export const COR_DO_GELO_DO_ANEL = [1.145, 0.97, 0.867] as const;
 export const G_DO_ANEL = -0.25;
 export const K_DIFRACAO = 1.5;
 
-const GLSL_CAMADA_DO_ANEL = /* glsl */ `
+export const GLSL_CAMADA_DO_ANEL = /* glsl */ `
 // assimetria da fase: partícula de regolito de gelo RETROESPALHA
 // (g < 0). Suave de propósito — Henyey-Greenstein forte derrubaria o
 // anel a um nono do brilho em fase 90°, e o céu real não faz isso.
@@ -1566,7 +1567,7 @@ ${GLSL_SOMBRA_DO_PLANETA_NO_ANEL}
 ${GLSL_CAMADA_DO_ANEL}
 ${GLSL_PLANETSHINE_NO_ANEL}
 ${GLSL_RUIDO_DE_VALOR}
-${GLSL_ESPETACULO_DO_ANEL}${BRILHO_MEDIDO_DO_ANEL ? GLSL_BRILHO_MEDIDO_DO_ANEL : ''}
+${GLSL_ESPETACULO_DO_ANEL}${BRILHO_MEDIDO_DO_ANEL ? GLSL_BRILHO_MEDIDO_DO_ANEL : ''}${PEDRAS_3D ? GLSL_CESSAO_DAS_PEDRAS : ''}
 void main() {
   float r = length(vPos.xy);
   float uBase = ((r - uAnelRaios.x) / max(uAnelRaios.y - uAnelRaios.x, 1.0e-6))
@@ -1620,7 +1621,9 @@ void main() {
   // o planetshine NÃO leva a sombra do planeta: o planeta é a FONTE
   vec3 doGlobo = (tinta * IF_RETRO)
     * (planetshineNoAnel(vPos, r, view, mu, tau, nDotV) * uLuzGanho);
-  gl_FragColor = vec4(direta + doGlobo, clamp(camada.y, 0.0, 1.0));
+  gl_FragColor = vec4(direta + doGlobo, ${
+    PEDRAS_3D ? 'cederAsPedras(clamp(camada.y, 0.0, 1.0), vPos, tau)' : 'clamp(camada.y, 0.0, 1.0)'
+  });
 }
 `;
 
@@ -1849,6 +1852,8 @@ export class GiganteResolvido {
   private lajota: LajotaDoAnel | null = null;
   /** o quadro da lajota, REUSADO (zero alocação por tick, M4 da casa) */
   private quadroDaLajota: QuadroDaLajota | null = null;
+  /** `?pedras=3d`: as pedras 3D no lugar da lajota (`pedrasDoAnel.ts`) */
+  private pedras: PedrasDoAnel | null = null;
   /** item 139: o CHÃO do anel para o palco (o ponto do plano mais próximo
    *  da câmera), REUSADO — nasce com a lajota, e só com ela */
   private chaoDoAnel: { raioPc: number; centroPc: THREE.Vector3 } | null = null;
@@ -2176,7 +2181,7 @@ export class GiganteResolvido {
       // superfície que o palco faz: a de menor distância. Sem isso a
       // soleira do grão colado na lente seria uma segunda conta do plano
       // de corte, livre para divergir da primeira.
-      if (this.lajota && this.quadroDaLajota) {
+      if ((this.lajota || this.pedras) && this.quadroDaLajota) {
         const l = this.quadroDaLajota;
         l.dirSolLocal.copy(ua.uDirSolLocal.value as THREE.Vector3);
         l.camLocal.copy(ua.uCamLocal.value as THREE.Vector3);
@@ -2193,8 +2198,14 @@ export class GiganteResolvido {
             mandaOChao ? chao!.raioPc : this.raioA
           ) / this.raioA;
         l.tier = this.tierVivo();
-        this.lajota.fixarNoAnel(this.anel.matrix);
-        this.lajota.atualizar(l);
+        if (this.pedras) {
+          this.pedras.fixarNoAnel(this.anel.matrix);
+          this.pedras.atualizar({ ...l, jd: this.jdEscrito });
+          (ua.uCamDasPedras!.value as THREE.Vector4).copy(this.pedras.cessao);
+        } else if (this.lajota) {
+          this.lajota.fixarNoAnel(this.anel.matrix);
+          this.lajota.atualizar(l);
+        }
       }
     }
   }
@@ -2302,6 +2313,8 @@ export class GiganteResolvido {
                 uMediasDoBrilho: { value: new Float32Array(REGIOES_DO_ANEL.length * 3).fill(1) },
               }
             : {}),
+          // só com `?pedras=3d`: a cessão do disco às pedras
+          ...(placa && PEDRAS_3D ? { uCamDasPedras: { value: new THREE.Vector4() } } : {}),
         },
         transparent: true,
         depthWrite: false,
@@ -2328,12 +2341,25 @@ export class GiganteResolvido {
         // item 139 — a lajota volumétrica: as partículas e pedras de gelo
         // de DENTRO do anel. Nasce com o anel e vive escondida: só entra
         // no desenho com a câmera rente ao plano (ver `atualizar` dela).
-        this.lajota = new LajotaDoAnel({
-          glslSombraDoPlaneta: GLSL_SOMBRA_DO_PLANETA_NO_ANEL,
-          glslConstantesDoAnel: GLSL_CONSTANTES_DO_ANEL,
-          rInt: anel.rInt,
-          rExt: anel.rExt,
-        });
+        // Com `?pedras=3d` quem mora ali são as pedras 3D, no lugar dela.
+        if (PEDRAS_3D) {
+          this.pedras = new PedrasDoAnel({
+            glslSombraDoPlaneta: GLSL_SOMBRA_DO_PLANETA_NO_ANEL,
+            glslConstantesDoAnel: GLSL_CONSTANTES_DO_ANEL,
+            glslRegiaoDoAnel: GLSL_REGIAO_DO_ANEL,
+            glslCamadaDoAnel: GLSL_CAMADA_DO_ANEL,
+            glslRuido: GLSL_RUIDO_DE_VALOR,
+            rInt: anel.rInt,
+            rExt: anel.rExt,
+          });
+        } else {
+          this.lajota = new LajotaDoAnel({
+            glslSombraDoPlaneta: GLSL_SOMBRA_DO_PLANETA_NO_ANEL,
+            glslConstantesDoAnel: GLSL_CONSTANTES_DO_ANEL,
+            rInt: anel.rInt,
+            rExt: anel.rExt,
+          });
+        }
         this.quadroDaLajota = {
           dirSolLocal: new THREE.Vector3(),
           camLocal: new THREE.Vector3(),
@@ -2349,7 +2375,7 @@ export class GiganteResolvido {
           raioPc: VOLUME_DA_LAJOTA.meiaEspessura * this.raioA,
           centroPc: new THREE.Vector3(),
         };
-        this.group.add(this.lajota.malha);
+        this.group.add((this.pedras ?? this.lajota!).malha);
         void this.ligarPerfilDoAnel();
       }
     }
@@ -2380,6 +2406,7 @@ export class GiganteResolvido {
       }
     }
     this.lajota?.ligarPerfil(textura);
+    this.pedras?.ligarPerfil(textura);
     if (this.matSuperficie) {
       this.matSuperficie.uniforms.uMapaAnel.value = textura;
       this.ringshine = new RingshineDoAnel(bytes, this.kPolar);
@@ -2399,6 +2426,7 @@ export class GiganteResolvido {
     this.matAnel?.dispose();
     this.tenues?.dispose();
     this.lajota?.dispose();
+    this.pedras?.dispose();
     this.dummyAnel?.dispose();
     this.texturas.dispose();
   }

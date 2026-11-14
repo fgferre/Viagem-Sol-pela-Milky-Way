@@ -455,6 +455,26 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
       'luz por cima (aditivo, sem escrever profundidade), e o RAIO em que o ' +
       'enxame vive é o do perfil medido, sem exagero nenhum',
   },
+  {
+    id: 'pedras-do-anel-de-saturno',
+    nome: 'as pedras 3D de dentro do anel (só com ?pedras=3d)',
+    classe: 'instrumento',
+    fator: 512,
+    fatorDeBrilho: null,
+    endereco: 'src/three/world/corpos/pedrasDoAnel.ts:79',
+    razao:
+      'O QUE É DE VERDADE: as três oitavas menores (pedras de 1,6 a 12,5 m, o ' +
+      'tamanho das maiores partículas medidas no anel), a lei de tamanhos dN/ds ' +
+      '∝ s⁻³, o lugar e a densidade de cada pedra (o perfil medido do anel, até o ' +
+      'teto do campo), a lâmina de ±15 m dessas oitavas e o cisalhamento de Kepler ' +
+      'no relógio do app. O QUE É EXAGERO: as nove oitavas de cima, até pedaços de ' +
+      '6,4 km — 512× a maior partícula real, e é o fator desta linha. Cada uma é ' +
+      'um AGLOMERADO (a multidão que a lajota já confessava) e se desfaz nas partes ' +
+      'quando a câmera chega perto; a lâmina delas engorda com o tamanho (±2,5 ' +
+      'tamanhos, até ±8 km); e o GIRO próprio de cada pedra (1 a 3 voltas a cada 6 h ' +
+      'de relógio) é escolha de cinema. O campo carrega no máximo τ ≈ 0,6: no miolo ' +
+      'do B o resto fica no disco liso',
+  },
 ] as const;
 
 /**
