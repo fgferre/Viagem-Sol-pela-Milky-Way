@@ -131,6 +131,9 @@ uniform float uRhoPiso;
 // disco (galaxy.ts). O ganho das lâminas (6,99·externalFade) é luz da lei de
 // longe; na lei de tela ele fazia de cada partícula próxima um ponto claro.
 uniform float uGanhoPerto;
+// 1 = o WebGL desenha também a lei de longe; 0 = ela é da camada WebGPU
+// (galaxy.ts, A CESSÃO) e aqui sobra só a pegada de perto
+uniform float uLonge;
 // NÍVEL DE DETALHE POR CÉLULA (galaxy.ts, planejarCelulas): por desenho,
 // R início no buffer · G partículas disponíveis (0 = intervalo global) ·
 // B as mesmas por pc² da coluna · A a razão de espessura 2,5·σz/lado
@@ -324,9 +327,17 @@ void main() {
     float larguraA = mix(escritoPx, max(escritoPx, largura), sA);
     float lado = k >= 1.0 ? largura : k > 0.0 ? max(larguraA, largura) : larguraA;
     corteDoNucleo = mix(depVelho, depNovo, k) / (escritoPx * escritoPx);
+    float parteLonge = k * depNovo / (largura * largura);
+    if (uLonge < 0.5) {
+      // a lei de longe é da camada WebGPU: o ponto só leva a de perto, no
+      // tamanho dela, e o corte julga só essa luz (k = 1: nada a desenhar)
+      lado = larguraA;
+      corteDoNucleo = (1.0 - k) * depVelho * uGanhoPerto / (escritoPx * escritoPx);
+      parteLonge = 0.0;
+    }
     vDuas = vec4(
       lado / larguraA, lado / largura,
-      (1.0 - k) * depVelho * uGanhoPerto / (larguraA * larguraA), k * depNovo / (largura * largura));
+      (1.0 - k) * depVelho * uGanhoPerto / (larguraA * larguraA), parteLonge);
     fluxoDaTela = 1.0;
     escritoPx = lado;
     vTenda = vec2(tendaB, sA * tendaB);
