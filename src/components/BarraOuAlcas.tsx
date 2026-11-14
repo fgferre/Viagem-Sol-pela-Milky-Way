@@ -866,9 +866,16 @@ export function BarraOuAlcas({
         </span>
       </button>
       {revealGalaxy && (
-        <button className="hud-btn small reveal-btn" onClick={revealGalaxy}>
+        <button
+          className="hud-btn small reveal-btn"
+          onClick={revealGalaxy}
+          aria-label={t('barra.verAGalaxia')}
+        >
           <Icone nome="galaxia" tamanho={16} />
-          <span>{t('barra.verAGalaxia')}</span>
+          {/* a forma curta é a do cartão estreito do celular (09-celular.css);
+              o nome acessível é sempre o inteiro */}
+          <span className="filme-transporte-longo">{t('barra.verAGalaxia')}</span>
+          <span className="filme-transporte-curto">{t('busca.filtro.galaxia')}</span>
         </button>
       )}
     </div>
