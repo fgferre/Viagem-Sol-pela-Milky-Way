@@ -660,14 +660,21 @@ float ruido(vec3 p) {
  *  - `brilhoTermico`: a luz PRÓPRIA da superfície quente, na unidade da
  *    luz da estrela que bate de frente (a mesma que o albedo multiplica):
  *    B_λ(T) / (B_λ(T⋆)·(R⋆/a)²) por canal, com λ = 610, 550 e 465 nm.
- *    A razão entre o brilho próprio e o refletido é física; o resto é o
- *    brilho da visita.
+ *  - `brilhoNaTela` (14/11): onde a luz refletida manda, o brilho próprio
+ *    entra na MESMA exposição, e a razão entre os dois é física. Onde o
+ *    brilho próprio manda (a lava, o gigante jovem), a exposição é a dele
+ *    e a intensidade é comprimida (potência 0,4 sobre o canal mais forte,
+ *    a cor intacta): entre 1.300 K e 2.800 K a lei de Planck anda mil
+ *    vezes no visível, e sem a compressão a fenda morna some e a quente
+ *    estoura. A COR de cada temperatura é a de Planck; a intensidade é a
+ *    da visita.
  */
 export const GLSL_FACE_DO_EXOPLANETA = /* glsl */ `
 uniform vec4 uFace;     // (classe: 0 = sem face; T subestelar K; T piso K; travado 0/1)
 uniform vec3 uSemente;  // o id do planeta em três números de 0 a 100
 uniform vec3 uCorDaLuz; // a cor da estrela que acende o planeta (linear, máximo 1)
 uniform vec2 uEstrela;  // (Teff da estrela K, diluição (R⋆/a)²)
+uniform vec3 uBrilho;   // (escala: 0 = sem brilho próprio; potência; pico)
 vec3 hash33(vec3 p) {
   return fract(sin(vec3(
     dot(p, vec3(127.1, 311.7, 74.7)),
@@ -700,6 +707,11 @@ vec3 brilhoTermico(float T) {
   vec3 e = exp(-C2_POR_LAMBDA / T);
   vec3 estrela = exp(C2_POR_LAMBDA / uEstrela.x) - 1.0;
   return estrela * e / max(1.0 - e, 1.0e-6) / max(uEstrela.y, 1.0e-12);
+}
+vec3 brilhoNaTela(float T) {
+  vec3 e = brilhoTermico(T) * uCorDaLuz * uBrilho.x;
+  float m = max(max(e.r, e.g), max(e.b, 1.0e-20));
+  return e * (uBrilho.z * pow(m, uBrilho.y) / m);
 }
 `;
 

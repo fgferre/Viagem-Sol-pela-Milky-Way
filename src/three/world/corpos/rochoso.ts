@@ -646,6 +646,9 @@ void main() {
 }
 `;
 
+/** quantas fraturas o gelo tem (arcos de círculo máximo) */
+export const LINHAS_DO_GELO = 12;
+
 /**
  * PROCEDURAL (F6) — o −3 inventado do doador, declarado. Sem mapa:
  * albedo = cor-base + ruído 3 oitavas. Lambert + eclipse como as irmãs
@@ -654,94 +657,214 @@ void main() {
  * nunca o modelo de luz.
  *
  * A FACE DOS EXOPLANETAS ROCHOSOS (13/11/2026) mora neste mesmo ramo, que
- * estava sem consumidor desde o item 151: com `uFace.x` = 1 o albedo, o
+ * estava sem consumidor desde o item 151: com `uFace.x` > 0 o albedo, o
  * relevo e o brilho próprio saem de {@link GLSL_FACE_ROCHOSA}; com 0 (o
  * padrão de `uniformsDaFace`) é o −3 de sempre, letra por letra. A luz é
  * a mesma nos dois — só a cor da estrela (`uCorDaLuz`) entra a mais.
  */
 const GLSL_FACE_ROCHOSA = /* glsl */ `
-// as crateras: uma por célula sorteada, perfil de bacia com borda, em
-// unidades da célula; as 8 células vizinhas bastam porque o centro fica no
-// miolo da célula e o raio não passa de meia célula. A profundidade varia
-// (as velhas estão gastas) e o perfil é o de uma cratera simples: ~1/5 do
-// diâmetro de fundo, borda de ~1/25
-float crateras(vec3 p, float densidade) {
+// rochoso: (planícies de lava velha, crateras, cadeias, bacias grandes);
+// gelado: (—, crateras, sujeira, —) — tudo de 0 a 1, menos as bacias (0 a 3)
+uniform vec4 uMundo;
+uniform vec3 uAlbedoMar; // a cor das planícies de lava velha (basalto)
+// as fraturas do gelo, sorteadas na CPU pela semente (\`linhasDoGelo\`):
+// (eixo do círculo máximo, largura) e (centro do trecho, força)
+uniform vec4 uLinhas[${LINHAS_DO_GELO}];
+uniform vec4 uTrechos[${LINHAS_DO_GELO}];
+
+// UMA OITAVA DE CRATERAS (p em unidades da célula; \`escala\` = a célula em
+// raios do planeta; densidade = a chance de a célula ter uma). O raio sai
+// de uma lei de potência dentro da oitava — N(>r) ∝ r⁻², muitas pequenas e
+// poucas grandes, a das superfícies velhas do sistema solar —, e como cada
+// oitava dobra a frequência com a mesma ocupação por célula, a lei continua
+// entre elas. A idade (sorteada; quase todas velhas) gasta a borda e rasa a
+// bacia; a nova clareia o chão e o entorno. O centro fica a um raio da
+// borda da própria célula e o material ejetado passa dela no máximo meia
+// célula: as 8 células do lado do ponto bastam
+void oitavaDeCrateras(vec3 p, float densidade, float escala, inout float h, inout float fresco) {
   vec3 i = floor(p);
   vec3 f = fract(p);
   vec3 lado = step(0.5, f) * 2.0 - 1.0;
-  float h = 0.0;
   for (int k = 0; k < 8; k++) {
     float fk = float(k);
     vec3 c = vec3(mod(fk, 2.0), mod(floor(fk * 0.5), 2.0), floor(fk * 0.25)) * lado;
     vec3 cel = i + c;
     vec3 s = hash33(cel);
     if (s.x > densidade) continue;
-    vec3 centro = c + 0.3 + 0.4 * hash33(cel + 7.31);
-    float r = 0.12 + 0.2 * s.y;
+    float r = min(0.1 * inversesqrt(1.0 - 0.96 * s.y), 0.45);
+    vec3 centro = c + r + (1.0 - 2.0 * r) * fract(s.yzx * 31.7 + s.zxy * 7.3);
     float d = length(f - centro) / r;
-    float x = (d - 1.0) / 0.3;
-    float borda = 0.08 * exp(-x * x);
-    float bacia = d < 1.0 ? 0.4 * max(d * d - 1.0, -0.8) : 0.0;
-    h += (bacia + borda) * r * (0.3 + 0.7 * s.z);
+    if (d > 1.6) continue;
+    float nova = (1.0 - s.z) * (1.0 - s.z) * (1.0 - s.z);
+    float idade = 1.0 - nova;
+    float bacia = d < 1.0 ? max(d * d - 1.0, -0.75) * mix(0.45, 0.22, idade) : 0.0;
+    float x = (d - 1.0) / mix(0.18, 0.35, idade);
+    h += (bacia + mix(0.14, 0.035, idade) * exp(-x * x)) * r * escala;
+    fresco += nova * (1.0 - smoothstep(0.7, 1.6, d));
   }
-  return h;
 }
-// as células de convecção da lava: a distância à borda mais perto
-float bordaDaCelula(vec3 p) {
-  vec3 i = floor(p);
-  vec3 f = fract(p);
-  float d1 = 9.0;
-  float d2 = 9.0;
-  for (int k = 0; k < 27; k++) {
-    float fk = float(k);
-    vec3 c = vec3(mod(fk, 3.0), mod(floor(fk / 3.0), 3.0), floor(fk / 9.0)) - 1.0;
-    float d = length(c + hash33(i + c) - f);
-    if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) { d2 = d; }
+
+// as quatro oitavas (cada uma 2,3× menor), e cada uma some antes de a
+// célula ficar menor que uns 5 pixels: sem isso a borda das pequenas virava
+// chuvisco — eram os pontinhos acesos no terminador
+void crateras(vec3 q, float densidade, float f0, int oitavas, float fundura, float pix, out float h, out float fresco) {
+  h = 0.0;
+  fresco = 0.0;
+  float f = f0;
+  for (int o = 0; o < 4; o++) {
+    if (o >= oitavas) break;
+    float some = 1.0 - smoothstep(0.06, 0.2, pix * f);
+    if (some > 0.0) {
+      float ho = 0.0;
+      float fo = 0.0;
+      oitavaDeCrateras(q * f, densidade, fundura / f, ho, fo);
+      h += ho * some;
+      fresco += fo * some;
+    }
+    f *= 2.3;
   }
-  return d2 - d1;
 }
-// albedo, altura (fração do raio) e brilho próprio de um rochoso
+
+// A ROCHA NUA: planaltos e terras baixas num ruído dobrado (os contornos
+// deixam de ser bolhas), planícies de lava velha enchendo o que é baixo —
+// muitas no mundo quente e grande, quase nenhuma no pequeno e morno —, uma a
+// três bacias de impacto grandes com anéis, serras e rugas, e as crateras,
+// raras onde a lava cobriu e acumuladas onde o chão é velho
+void rochaNua(vec3 p, vec3 q, float grao, float pix, out vec3 cor, out float h) {
+  float d1 = ruido(q * 1.2) - 0.5;
+  float d2 = ruido(q * 1.2 + 5.2) - 0.5;
+  vec3 dobra = vec3(d1, d2, d1 - d2);
+  float terras = fbm(q * 1.5 + dobra * 1.6, 4);
+  float mancha = ruido(q * 4.5 + 2.0);
+  float alto = smoothstep(0.47, 0.63, terras);
+  float nivel = mix(0.22, 0.56, uMundo.x);
+  float mar = smoothstep(nivel + 0.07, nivel - 0.05, terras + 0.08 * (mancha - 0.5));
+  float bacia = 0.0;
+  float anel = 0.0;
+  for (int i = 0; i < 3; i++) {
+    if (float(i) >= uMundo.w) break;
+    vec3 s = hash33(uSemente * 1.37 + float(i) * 11.3);
+    vec3 eixo = normalize(s * 2.0 - 0.999);
+    float raio = 0.22 + 0.3 * fract(s.x * 7.13);
+    float a = acos(clamp(dot(p, eixo), -1.0, 1.0)) / raio + 0.1 * dobra.y;
+    bacia = max(bacia, 1.0 - smoothstep(0.8, 1.0, a));
+    float x1 = (a - 1.0) / 0.07;
+    float x2 = (a - 1.55) / 0.09;
+    anel += exp(-x1 * x1) + 0.4 * exp(-x2 * x2);
+  }
+  mar = max(mar, bacia * smoothstep(0.25, 0.5, uMundo.x));
+  float crista = 1.0 - abs(2.0 * ruido(q * 3.3 + dobra * 2.2) - 1.0);
+  float cadeia = pow(crista, 6.0) * uMundo.z;
+  float idade = mix(1.0, 0.2, mar) * (0.4 + 1.2 * mancha);
+  float hc;
+  float fresco;
+  crateras(q, min(0.8 * uMundo.y * uMundo.y * idade, 0.6), 2.0, 4, 1.0, pix, hc, fresco);
+  vec3 terra = uAlbedoBase * mix(0.8, 1.2, alto) * (0.82 + 0.36 * grao);
+  cor = mix(terra, uAlbedoMar * (0.88 + 0.24 * grao), mar);
+  cor *= mix(1.0, 0.85, bacia * (1.0 - mar));
+  // o chão da cratera mais escuro e a borda mais clara: com a estrela
+  // alta o relevo some, e a cratera ainda se lê pela cor
+  cor *= (1.0 + 0.6 * min(fresco, 1.0)) * (1.0 + clamp(hc * 60.0, -0.3, 0.2));
+  h = mix(
+    0.012 * terras + 0.004 * cadeia + 0.0015 * anel - 0.004 * bacia,
+    0.012 * nivel + 0.0012 * cadeia - 0.004 * bacia,
+    mar
+  ) + hc;
+}
+
+// O GELO (o mundo gelado inteiro; no temperado, onde o chão fica abaixo do
+// degelo): claro, liso e de poucas crateras rasas — o gelo relaxa —, riscado
+// pelas LINEAE de Europa: rachaduras de maré em arcos de círculo máximo,
+// longas, em várias direções, uma faixa escura de sal e poeira com a crista
+// clara no meio; manchas de terreno caótico, a rede fina entre as linhas e
+// geada nova nos polos. As linhas são só cor (o relevo de uma linha de um
+// pixel virava tracejado), e a largura nunca fica abaixo de pixel e meio:
+// longe, ela esmaece em vez de piscar
+void superficieDeGelo(vec3 p, vec3 q, float grao, float pix, out vec3 cor, out float h) {
+  float mancha = fbm(q * 2.4 + 11.0, 3);
+  float caos = smoothstep(0.6, 0.7, fbm(q * 1.7 + 4.0, 2));
+  float lin = 0.0;
+  float crista = 0.0;
+  for (int k = 0; k < ${LINHAS_DO_GELO}; k++) {
+    float x = abs(dot(p, uLinhas[k].xyz) + 0.04 * (mancha - 0.5));
+    float largura = uLinhas[k].w;
+    float w = max(largura, 1.5 * pix);
+    float forca = smoothstep(-0.1, 0.35, dot(p, uTrechos[k].xyz)) * (largura / w) * uTrechos[k].w;
+    lin = max(lin, (1.0 - smoothstep(0.3 * w, w, x)) * forca * 0.75);
+    crista = max(crista, (1.0 - smoothstep(0.0, 0.3 * w, x)) * forca);
+  }
+  float fino = pow(1.0 - abs(2.0 * ruido(q * 13.0 + mancha * 4.0) - 1.0), 16.0) * (1.0 - smoothstep(0.03, 0.08, pix * 13.0));
+  float hc;
+  float fresco;
+  crateras(q, uMundo.y, 3.0, 2, 0.5, pix, hc, fresco);
+  vec3 limpo = vec3(0.8, 0.84, 0.9) * (0.94 + 0.08 * grao) * mix(0.96, 1.04, mancha);
+  vec3 sujo = mix(vec3(0.62, 0.5, 0.42), vec3(0.46, 0.33, 0.25), uMundo.z);
+  // o terreno escuro (as regiões velhas de Ganimedes): mais no mundo sujo
+  float escuro = uMundo.z * smoothstep(0.5, 0.58, mancha + 0.05 * (grao - 0.5));
+  float s = 0.9 * lin + caos * (0.35 + 0.5 * mancha) * (0.4 + 0.6 * uMundo.z) + 0.35 * fino + 0.55 * escuro;
+  cor = mix(limpo, sujo * (0.85 + 0.3 * grao), clamp(s, 0.0, 1.0));
+  cor = mix(cor, vec3(0.86, 0.89, 0.94), 0.5 * crista);
+  float calota = smoothstep(0.78, 0.92, abs(p.y) + 0.06 * (mancha - 0.5));
+  cor = mix(cor, vec3(0.9, 0.92, 0.95), 0.8 * calota);
+  cor *= 1.0 + 0.3 * min(fresco, 1.0);
+  h = 0.003 * (mancha - 0.5) + 0.0015 * caos * (grao - 0.5) + hc;
+}
+
+// A LAVA: crosta escura e irregular, rachada por fendas incandescentes (o
+// ruído "de crista" dobrado, em duas escalas — nada de células regulares).
+// A fenda tem a temperatura do lugar e a cor sai de Planck: vermelho-escuro
+// perto da fusão, laranja e amarelo onde é mais quente; ela alarga e abre
+// em lagos perto do ponto embaixo da estrela. O magma embaixo está sempre
+// perto da fusão, então na noite as fendas fundas ainda brilham, em brasa
+void faceDeLava(vec3 q, float T, float grao, out vec3 cor, out float h, out vec3 brilho) {
+  vec3 dobra = vec3(fbm(q * 2.0, 3), fbm(q * 2.0 + 5.2, 3), fbm(q * 2.0 + 9.7, 3)) - 0.5;
+  vec3 qw = q * 4.0 + dobra * 1.6;
+  float Tv = T * (0.92 + 0.16 * ruido(q * 2.6 + 1.7));
+  float calor = clamp((Tv - 1100.0) / max(uFace.y - 1100.0, 1.0), 0.0, 1.0);
+  float r1 = 1.0 - abs(2.0 * fbm(qw, 4) - 1.0);
+  float r2 = 1.0 - abs(2.0 * fbm(qw * 2.6 + 3.1, 3) - 1.0);
+  float c2 = calor * calor;
+  float w1 = mix(0.035, 0.12, c2 * c2);
+  float fenda = smoothstep(1.0 - w1, 1.0 - 0.25 * w1, r1);
+  float fina = smoothstep(1.0 - 0.45 * w1, 1.0 - 0.1 * w1, r2) * smoothstep(0.3, 0.7, calor);
+  // perto do ponto embaixo da estrela a crosta se parte em jangadas que
+  // boiam num lago aberto
+  float lago = smoothstep(0.93, 1.0, calor + 0.1 * (ruido(qw * 0.6) - 0.5)) * smoothstep(0.6, 0.8, r2);
+  float aberto = max(max(fenda, 0.8 * fina), lago);
+  float Tfenda = max(Tv, 1150.0 + 300.0 * r1) * mix(0.9, 1.0, aberto);
+  brilho = brilhoNaTela(mix(0.55 * Tv, Tfenda, aberto));
+  cor = vec3(0.035, 0.03, 0.028) * (0.6 + 0.8 * grao) * (1.0 - 0.8 * aberto);
+  h = (1.0 - aberto) * (0.003 * (0.6 + 0.4 * r2) + 0.002 * (grao - 0.5));
+}
+
+// albedo, altura (fração do raio) e brilho próprio de um rochoso. uFace.x:
+// 1 temperado (gelo onde o chão fica abaixo do degelo), 2 quente (rocha
+// nua: dentro da zona habitável a água se perde), 4 gelado (só gelo); a
+// lava é o quente cujo ponto embaixo da estrela passa da fusão. Os ramos
+// são por planeta (uniformes): ninguém paga pelo que não tem
 void faceRochosa(vec3 p, vec3 dirSol, out vec3 albedo, out float altura, out vec3 brilho) {
   vec3 q = p + uSemente;
-  float terras = fbm(q * 1.7, 5);
-  float planaltos = smoothstep(0.42, 0.62, terras);
-  // quatro tamanhos de cratera, os grandes raros (altura em raios)
-  float c = crateras(q * 3.0, 0.3) / 3.0 + crateras(q * 7.0, 0.45) / 7.0
-    + crateras(q * 17.0, 0.6) / 17.0 + 0.5 * crateras(q * 41.0, 0.7) / 41.0;
-  float grao = fbm(q * 24.0, 3);
+  float pix = length(fwidth(p));
+  float grao = fbm(q * 24.0, 2);
   float T = temperaturaLocal(p, dirSol);
-  vec3 rocha = uAlbedoBase * mix(0.65, 1.45, planaltos) * (0.8 + 0.4 * grao);
-  rocha *= 1.0 + clamp(c * 40.0, -0.3, 0.3);
-  albedo = rocha;
-  altura = 0.01 * terras + c;
   brilho = vec3(0.0);
-  // o gelo: onde a superfície sem atmosfera fica abaixo do degelo, e só
-  // onde a água não se perdeu (uFace.x = 1: além da borda de dentro). Os
-  // dois ramos abaixo são por planeta (uniforme): quem não tem gelo nem
-  // lava não paga por eles
-  if (uFace.x < 1.5) {
-    float frio = smoothstep(300.0, 245.0, T + 90.0 * (fbm(q * 3.1, 4) - 0.5) + 30.0 * (grao - 0.5));
-    float linhas = pow(1.0 - abs(2.0 * fbm(q * 4.3, 4) - 1.0), 18.0) * smoothstep(0.35, 0.6, fbm(q * 2.2 + 3.3, 3));
-    vec3 gelo = mix(vec3(0.62, 0.66, 0.7), vec3(0.42, 0.33, 0.27), linhas * 0.8) * (0.9 + 0.2 * grao);
-    albedo = mix(rocha, gelo, frio);
-    altura = 0.01 * terras + c * mix(1.0, 0.3, frio) - 0.0015 * linhas * frio;
-  }
-  // a lava: onde passa da fusão do basalto. A crosta resfriada boia em
-  // placas rachadas pelas células de convecção — muitas perto da borda da
-  // fusão, poucas onde é mais quente — e as rachaduras mostram o líquido
   if (uFace.y > ${FRONTEIRAS_DA_CLASSE.lavaSubestelarK.toFixed(1)}) {
-    vec3 qw = q * 7.0 + 1.5 * vec3(fbm(q * 3.0, 3), fbm(q * 3.0 + 5.2, 3), fbm(q * 3.0 + 9.7, 3));
-    float Tv = T * (0.94 + 0.12 * fbm(q * 2.3, 4));
-    float fundido = smoothstep(1350.0, 1450.0, Tv);
-    // perto do ponto embaixo da estrela a crosta não se forma: um mar aberto
-    float largura = mix(0.015, 0.06, smoothstep(1500.0, 2400.0, Tv));
-    float crosta = smoothstep(largura, largura + 0.04, bordaDaCelula(qw)) * (1.0 - smoothstep(2350.0, 2650.0, Tv));
-    albedo = mix(albedo, vec3(0.02, 0.018, 0.017), fundido);
-    // a rocha some sob a lava devagar, por uns 20° de arco: um degrau aqui
-    // viraria uma escarpa de frente para a estrela, um fio de luz
-    altura *= 1.0 - smoothstep(0.35, 0.75, T / uFace.y);
-    float Tsup = Tv * mix(1.0, 0.75, crosta) * (0.94 + 0.12 * grao);
-    brilho = brilhoTermico(Tsup) * fundido;
+    faceDeLava(q, T, grao, albedo, altura, brilho);
+    return;
+  }
+  bool soGelo = uFace.x > 3.5;
+  albedo = vec3(0.0);
+  altura = 0.0;
+  if (!soGelo) rochaNua(p, q, grao, pix, albedo, altura);
+  if (uFace.x < 1.5 || soGelo) {
+    float frio = soGelo ? 1.0 : smoothstep(290.0, 250.0, T + 90.0 * (fbm(q * 3.1, 3) - 0.5));
+    if (frio > 0.0) {
+      vec3 gelo;
+      float alturaDoGelo;
+      superficieDeGelo(p, q, grao, pix, gelo, alturaDoGelo);
+      albedo = mix(albedo, gelo, frio);
+      altura = mix(altura, alturaDoGelo, frio);
+    }
   }
 }
 `;
@@ -768,20 +891,24 @@ void main() {
   vec3 pElip = vLocal * uEscalaLocal;
   vec3 albedo;
   vec3 brilho = vec3(0.0);
+  // o relevo imaginado não faz sombra: sem um teto pela esfera lisa, a
+  // parede virada para a estrela acendia além do terminador (o −3 de
+  // sempre nunca chega a 2, e o min o deixa bit a bit igual)
+  float teto = 2.0;
   if (uFace.x > 0.5) {
     float altura;
     faceRochosa(normSeguro(vLocal), uDirSolLocal, albedo, altura, brilho);
+    teto = 2.5 * dot(n, uDirSolLocal) + 0.02;
     n = normalComBumpDoAlbedo(n, pElip, altura);
   } else {
     float g = 0.5 * ruido(vLocal * 3.0) + 0.3 * ruido(vLocal * 7.0) + 0.2 * ruido(vLocal * 15.0);
     albedo = uAlbedoBase * (0.72 + 0.56 * g);
   }
-  float ndotlGeo = dot(n, uDirSolLocal);
+  float ndotlGeo = min(dot(n, uDirSolLocal), teto);
   vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);
   vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;
   vec3 fill = lanternaDeLeitura(n, normSeguro(uCamLocal - pElip), sombras);
-  vec3 luz = uLuzGanho * uCorDaLuz;
-  gl_FragColor = vec4(albedo * luzDoGlobo(luzSol, fill) * uCorDaLuz + brilho * luz, 1.0);
+  gl_FragColor = vec4(albedo * luzDoGlobo(luzSol, fill) * uCorDaLuz + brilho, 1.0);
 }
 `;
 
@@ -797,7 +924,43 @@ export function uniformsDaFace(): Record<string, THREE.IUniform> {
     uSemente: { value: new THREE.Vector3() },
     uCorDaLuz: { value: new THREE.Vector3(1, 1, 1) },
     uEstrela: { value: new THREE.Vector2(5772, 1) },
+    uBrilho: { value: new THREE.Vector3(0, 1, 1) },
+    uMundo: { value: new THREE.Vector4(0, 0, 0, 0) },
+    uAlbedoMar: { value: new THREE.Vector3() },
+    uLinhas: { value: Array.from({ length: LINHAS_DO_GELO }, () => new THREE.Vector4()) },
+    uTrechos: { value: Array.from({ length: LINHAS_DO_GELO }, () => new THREE.Vector4()) },
   };
+}
+
+/**
+ * AS FRATURAS DO GELO de um planeta, sorteadas UMA vez na CPU pela semente
+ * (no shader, o sorteio por pixel custava um terço do quadro do mundo
+ * gelado): para cada uma, o eixo do círculo máximo e a largura (0,004 a
+ * 0,012 raio), e o centro do trecho onde ela aparece com a força.
+ */
+export function linhasDoGelo(semente: readonly [number, number, number]): { linhas: THREE.Vector4[]; trechos: THREE.Vector4[] } {
+  // mulberry32 com a semente: o mesmo planeta, as mesmas fraturas
+  let a = Math.floor(semente[0] * 1000 + semente[1] * 7919 + semente[2] * 104729) >>> 0;
+  const sorteio = () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const direcao = () => {
+    const z = 2 * sorteio() - 1;
+    const f = 2 * Math.PI * sorteio();
+    const r = Math.sqrt(1 - z * z);
+    return [r * Math.cos(f), z, r * Math.sin(f)] as const;
+  };
+  const linhas: THREE.Vector4[] = [];
+  const trechos: THREE.Vector4[] = [];
+  for (let k = 0; k < LINHAS_DO_GELO; k++) {
+    linhas.push(new THREE.Vector4(...direcao(), 0.004 + 0.008 * sorteio()));
+    trechos.push(new THREE.Vector4(...direcao(), 0.5 + 0.5 * sorteio()));
+  }
+  return { linhas, trechos };
 }
 
 /**
