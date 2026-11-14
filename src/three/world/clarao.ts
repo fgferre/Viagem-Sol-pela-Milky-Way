@@ -44,7 +44,15 @@ import {
   glslBracosDeDifracao,
   glslNucleoEHalo,
 } from '../shaders/common';
-import { BETA_DA_EMISSAO } from '../shaders/starShaders';
+import {
+  AMOSTRAS_DO_FATOR_TAU,
+  BETA_DA_EMISSAO,
+  LARGURA_DA_TABELA_DO_ANEL,
+  LIMIAR_DO_ANEL,
+  PISO_DA_TRANSMISSAO_DO_ANEL,
+  PISO_DO_MU_DO_ANEL,
+  UNIFORMES_DOS_ANEIS,
+} from '../shaders/starShaders';
 import {
   ESTRELAS_SEGUEM_A_LENTE,
   UNIFORMES_DA_ASSINATURA,
@@ -703,15 +711,17 @@ export function meiaDaArtePx(m: number, screenH: number): number {
 // por caixa = soma acumulada: contínua no raio, então o T anda contínuo com
 // a câmera — sem rampa, ele vale no MESMO quadro em que o anel cobre o
 // ponto. Os anéis procedurais (sem perfil) e os véus aditivos não tapam.
-
-/** o lado da tabela do fatorTau, amostrado em [rInt, rExt]: ~9 km por
- *  amostra contra a transição mais curta (Cassini, 120 km) */
-const AMOSTRAS_DO_FATOR_TAU = 8192;
+// Os números e o GLSL gêmeo moram em `starShaders.ts`: o ponto de cada
+// estrela atravessa o anel pela mesma conta (`escreverAneisNosPontos`).
 
 interface TabelaDoAnel {
   /** soma acumulada de α por caixa (n + 1 entradas) */
   readonly soma: Float64Array;
   readonly fatorTau: Float32Array;
+  /** as duas tabelas para a GPU: a soma em BYTES (inteiros exatos em
+   *  float32) a partir do texel 0 e o fatorTau a partir de `baseDoTau` */
+  readonly textura: THREE.DataTexture;
+  readonly baseDoTau: number;
 }
 
 const tabelasDosAneis = new WeakMap<Readonly<AnelComPerfil>, TabelaDoAnel>();
@@ -727,7 +737,14 @@ function tabelaDoAnel(anel: Readonly<AnelComPerfil>): TabelaDoAnel {
     const r = anel.rInt + ((anel.rExt - anel.rInt) * k) / (AMOSTRAS_DO_FATOR_TAU - 1);
     fatorTau[k] = regiaoDoAnelCpu(r * anel.kmPorRaio).fatorTau;
   }
-  t = { soma, fatorTau };
+  const L = LARGURA_DA_TABELA_DO_ANEL;
+  const baseDoTau = Math.ceil((n + 1) / L) * L;
+  const dados = new Float32Array(baseDoTau + Math.ceil(AMOSTRAS_DO_FATOR_TAU / L) * L);
+  for (let i = 0; i < n; i++) dados[i + 1] = dados[i] + anel.perfil[i * 4 + 3];
+  dados.set(fatorTau, baseDoTau);
+  const textura = new THREE.DataTexture(dados, L, dados.length / L, THREE.RedFormat, THREE.FloatType);
+  textura.needsUpdate = true;
+  t = { soma, fatorTau, textura, baseDoTau };
   tabelasDosAneis.set(anel, t);
   return t;
 }
@@ -776,7 +793,7 @@ export function transmitanciaDosAneis(
     const r = rPc / anel.raioPc;
     // a malha (RingGeometry) vai de rInt a rExt: fora dela, nada desenha
     if (!(r > anel.rInt && r < anel.rExt)) continue;
-    const mu = Math.max(Math.abs(dn), 0.02);
+    const mu = Math.max(Math.abs(dn), PISO_DO_MU_DO_ANEL);
     const tab = tabelaDoAnel(anel);
     const n = tab.soma.length - 1;
     const dudr = U_PERFIL_ESCALA / (anel.rExt - anel.rInt);
@@ -785,14 +802,51 @@ export function transmitanciaDosAneis(
     const pegadaR = (radPorPx * t * Math.sqrt(1 + (erd / mu) ** 2)) / anel.raioPc;
     const w = Math.max(pegadaR * dudr * n, 1);
     const alfa = (integralDeAlfa(tab.soma, x + 0.5 * w) - integralDeAlfa(tab.soma, x - 0.5 * w)) / w;
-    if (alfa < 0.004) continue;
+    if (alfa < LIMIAR_DO_ANEL) continue;
     const k = ((r - anel.rInt) / (anel.rExt - anel.rInt)) * (AMOSTRAS_DO_FATOR_TAU - 1);
     const k0 = Math.min(Math.floor(k), AMOSTRAS_DO_FATOR_TAU - 2);
     const fz = tab.fatorTau[k0] + (k - k0) * (tab.fatorTau[k0 + 1] - tab.fatorTau[k0]);
-    const tau = -Math.log(Math.max(1 - alfa, 1e-3)) * fz;
+    const tau = -Math.log(Math.max(1 - alfa, PISO_DA_TRANSMISSAO_DO_ANEL)) * fz;
     tr *= Math.exp(-tau / mu);
   }
   return tr;
+}
+
+/**
+ * O MESMO anel para o PONTO de cada estrela: escreve `UNIFORMES_DOS_ANEIS`
+ * (starShaders.ts), que o vértice de todo desenhista de ponto estelar lê
+ * para dar, estrela a estrela, o número de `transmitanciaDosAneis`. Sem
+ * anel com perfil desliga o termo (o ponto sai bit a bit o de antes). Só
+ * um anel tem perfil medido (Saturno): um segundo seria ignorado aqui.
+ */
+export function escreverAneisNosPontos(
+  aneis: readonly Readonly<AnelComPerfil>[],
+  cam: { x: number; y: number; z: number },
+  radPorPx: number
+): void {
+  const u = UNIFORMES_DOS_ANEIS;
+  const anel = aneis[0];
+  if (!anel) {
+    u.uAnelLigado.value = 0;
+    return;
+  }
+  const tab = tabelaDoAnel(anel);
+  const n = tab.soma.length - 1;
+  const caixasPorRaio = (U_PERFIL_ESCALA / (anel.rExt - anel.rInt)) * n;
+  const c = anel.centroPc;
+  u.uAnelLigado.value = 1;
+  u.uAnelCentro.value.set(
+    (c.x - cam.x) / anel.raioPc,
+    (c.y - cam.y) / anel.raioPc,
+    (c.z - cam.z) / anel.raioPc
+  );
+  u.uAnelPolo.value.copy(anel.polo);
+  u.uAnelRaioPc.value = anel.raioPc;
+  u.uAnelRaios.value.set(anel.rInt, anel.rExt);
+  u.uAnelCaixas.value.set(caixasPorRaio, U_PERFIL_BASE * n, n);
+  u.uAnelRadPorPx.value = Number.isFinite(radPorPx) && radPorPx > 0 ? radPorPx : 0;
+  u.uAnelBaseDoTau.value = tab.baseDoTau;
+  u.uAnelTabela.value = tab.textura;
 }
 
 export class ClaraoDeAsas {

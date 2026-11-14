@@ -38,6 +38,7 @@ import {
   meiaDaArtePx,
   passoDoOrcamento,
   presencaNaFronteira,
+  escreverAneisNosPontos,
   transmitanciaDosAneis,
   veuDaLente,
   veuDaLenteNaTela,
@@ -52,6 +53,11 @@ import {
 import { EXPO_M0, SIGMA_PX, picoDaPsf, sigmaDaPsfPx } from '../luzDaCasa';
 import { RAMP_DURATION_MS } from './lodStellar';
 import { U_PERFIL_BASE, U_PERFIL_ESCALA, regiaoDoAnelCpu } from './corpos/gigante';
+import {
+  AMOSTRAS_DO_FATOR_TAU,
+  LARGURA_DA_TABELA_DO_ANEL,
+  UNIFORMES_DOS_ANEIS,
+} from '../shaders/starShaders';
 
 const META = JSON.parse(
   readFileSync(new URL('../../../public/data/stars_meta.json', import.meta.url), 'utf8')
@@ -425,6 +431,29 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     expect((interna.mats[k].uniforms.uGanho.value as number) / pleno).toBeCloseTo(t, 6);
     expect((interna.matsDoCampo[k].uniforms.uGanho.value as number) / halo).toBeCloseTo(t, 6);
     c.dispose();
+
+    // o PONTO lê a mesma lei (starShaders.ts): sem anel o termo desliga, e
+    // com anel os uniforms carregam o plano relativo à câmera e as tabelas
+    // da CPU — a soma de α em bytes inteiros e o fatorTau — numa textura
+    const ua = UNIFORMES_DOS_ANEIS;
+    escreverAneisNosPontos([], q.camPos, 1e-3);
+    expect(ua.uAnelLigado.value).toBe(0);
+    const anel = anelEm(rBorda);
+    escreverAneisNosPontos([anel], q.camPos, 1e-3);
+    expect(ua.uAnelLigado.value).toBe(1);
+    const cRel = anel.centroPc.clone().sub(q.camPos).divideScalar(raioPc);
+    expect(ua.uAnelCentro.value.distanceTo(cRel)).toBeLessThan(1e-9 * cRel.length());
+    expect(ua.uAnelRadPorPx.value).toBe(1e-3);
+    const dados = (ua.uAnelTabela.value as THREE.DataTexture).image.data as Float32Array;
+    expect(dados[1000]).toBe(255 * 100 + 128 * 900);
+    expect(dados[caixas]).toBe(255 * 200 + 128 * (caixas - 200));
+    const base = ua.uAnelBaseDoTau.value;
+    expect(base % LARGURA_DA_TABELA_DO_ANEL).toBe(0);
+    expect(dados[base]).toBe(Math.fround(regiaoDoAnelCpu(1.11 * kmPorRaio).fatorTau));
+    expect(dados[base + AMOSTRAS_DO_FATOR_TAU - 1]).toBe(
+      Math.fround(regiaoDoAnelCpu(2.326 * kmPorRaio).fatorTau)
+    );
+    escreverAneisNosPontos([], q.camPos, 1e-3);
   });
 
   it('a receita montada é BYTE A BYTE a de antes', () => {

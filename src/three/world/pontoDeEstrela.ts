@@ -12,7 +12,12 @@
 import * as THREE from 'three';
 import { M_V_SOL_DO_CAMPO, blackbodyLinear, radianciaVisivelDeCorpoNegro } from '../luzDaCasa';
 import { GLSL_STAR_PSF } from '../shaders/common';
-import { BETA_DA_EMISSAO, STAR_FRAG } from '../shaders/starShaders';
+import {
+  BETA_DA_EMISSAO,
+  GLSL_ANEIS_NO_CAMINHO,
+  STAR_FRAG,
+  UNIFORMES_DOS_ANEIS,
+} from '../shaders/starShaders';
 import { GLSL_PONTO_NA_BORDA, GLSL_PONTO_NA_BORDA_VARYINGS } from '../shaders/pontoNaBorda';
 
 const VERT_PONTO = /* glsl */ `
@@ -29,12 +34,16 @@ varying float vPeak;
 ${GLSL_PONTO_NA_BORDA_VARYINGS}
 ${GLSL_STAR_PSF}
 ${GLSL_PONTO_NA_BORDA}
+${GLSL_ANEIS_NO_CAMINHO}
 void main() {
   float size; float peak; float sigmaFrac;
   starPSF(uM, uExpoM0, uSigmaPx, uScreenH, size, peak, sigmaFrac);
   vColor = uCor;
   vSigma = sigmaFrac;
-  vPeak = peak * uPeso * uPr2;
+  float peso = uPeso;
+  // o anel com perfil no caminho, pela lei do campo (starShaders.ts)
+  if (uAnelLigado > 0.5) peso *= transmitanciaDosAneis(modelMatrix[3].xyz - cameraPosition);
+  vPeak = peak * peso * uPr2;
   gl_Position = projectionMatrix * (modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0));
   gl_PointSize = size;
   prenderPontoNoClip(uScreenH);
@@ -81,6 +90,7 @@ export class PontoDeEstrela {
         uCor: { value: new THREE.Vector3(r, g, b) },
         uBeta: { value: BETA_DA_EMISSAO },
         uArteDaCruz: { value: 1 },
+        ...UNIFORMES_DOS_ANEIS,
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,
