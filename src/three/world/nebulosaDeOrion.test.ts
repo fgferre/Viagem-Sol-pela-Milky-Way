@@ -97,9 +97,17 @@ describe('a nebulosa de Órion', () => {
     expect(espessuraDaCamada(2)).toBeGreaterThan(2 * espessuraDaCamada(0.2));
   });
 
-  it('a lei fixa do brilho na tela: 100× de fluxo viram 100^0,3 ≈ 4×', () => {
-    expect(GAMA_DO_BRILHO).toBe(0.3);
-    expect(brilhoNaTela(brilhoDaFrente(0.2, 1)) / brilhoNaTela(brilhoDaFrente(2, 1))).toBeCloseTo(100 ** 0.3, 9);
+  it('a lei fixa do brilho na tela: 100× de fluxo viram 100^0,12 ≈ 1,7×', () => {
+    expect(GAMA_DO_BRILHO).toBe(0.12);
+    expect(brilhoNaTela(brilhoDaFrente(0.2, 1)) / brilhoNaTela(brilhoDaFrente(2, 1))).toBeCloseTo(100 ** 0.12, 9);
+  });
+
+  it('a luz acende a parede só dentro do leque e a cor soma o [O III] 4959 e as Balmer azuis', () => {
+    const frag = orionAssadoFrag(CAIXA_DO_NUCLEO, '');
+    expect(frag).toContain('float orLeque(vec2 xy)');
+    expect(frag).toContain('orLeque(xy) * borda');
+    expect(frag).toContain('OR_COR_OIII_4959');
+    expect(frag).toContain('OR_COR_BALMER_AZUL');
   });
 
   it('a pele ionizada brilha com Q/(4πd²)·cos: D⁻² e cosseno, com piso no fundo da tigela', () => {

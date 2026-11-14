@@ -69,7 +69,7 @@
 // o engrossar da camada com a distância e todo o detalhe fino (fios
 // que escorrem para longe do Trapézio, dobras da parede) — ruído
 // procedural, estatisticamente plausível, sem medida por trás. E o
-// GANHO: o brilho que chega à tela é o fluxo da estrela elevado a 0,3
+// GANHO: o brilho que chega à tela é o fluxo da estrela elevado a 0,12
 // (lei fixa do objeto, a mesma de qualquer câmera — ver `GAMA_DO_BRILHO`).
 // ============================================================
 import { corDaLinhaDeEmissao } from '../luzDaCasa';
@@ -170,8 +170,8 @@ export const BARRA = {
  * alturas em pc) é de autor, guiado pela forma das fotos de M42.
  */
 export const ASAS = [
-  { de: 110, ate: 225, raioDe: 0.6, raioAte: 1.7, alturaPc: 0.35 },
-  { de: 0, ate: -80, raioDe: 0.75, raioAte: 1.9, alturaPc: 0.3 },
+  { de: 110, ate: 225, raioDe: 0.6, raioAte: 1.7, alturaPc: 0.56 },
+  { de: 0, ate: -80, raioDe: 0.75, raioAte: 1.9, alturaPc: 0.48 },
 ] as const;
 const asa = (r: number, angulo: number, a: (typeof ASAS)[number]) => {
   const k = Math.min(1, Math.max(0, (angulo - a.de) / (a.ate - a.de)));
@@ -242,21 +242,19 @@ export const BAIA_ESCURA: readonly [number, number, number][] = [
  * cosseno, linhas, espalhamento) são físicas; o que a tela recebe é o
  * fluxo da estrela elevado a `GAMA_DO_BRILHO`, uma lei FIXA do objeto
  * (não depende de câmera, foco nem do que está na tela): o miolo a
- * 0,2 pc recebe 100× o fluxo da asa a 2 pc, e a tela mostra ~4×. Sem
- * ela as asas somem no preto ou o miolo estoura em branco; com 0,4 (a
- * 2ª versão) a parte larga sumia na chegada. Declarado na ficha.
+ * 0,2 pc recebe 100× o fluxo da asa a 2 pc, e a tela mostra ~1,7×. Sem
+ * ela as asas somem no preto ou o miolo estoura em branco; a lei plana
+ * deixa a parte larga (a luz espalhada pela poeira, que além de ~5′
+ * domina — O'Dell & Harris 2010) aparecer na chegada. Declarado na ficha.
  */
-export const GAMA_DO_BRILHO = 0.3;
-const GANHO_DA_CAMADA = 0.05;
+export const GAMA_DO_BRILHO = 0.12;
+const GANHO_DA_CAMADA = 0.125;
 const GANHO_DA_FRENTE_FINA = 0.02;
-const GANHO_DO_DIFUSO = 0.03;
+const GANHO_DO_DIFUSO = 0.18;
 const GANHO_DA_ESTENDIDA = 0.12;
 const GANHO_DO_INTERIOR = 0.015;
-const GANHO_DE_M43 = 0.15;
-const GANHO_DO_ESPALHADO = 0.01;
-/** a parede é acesa até este tanto além da bolha do véu (o raio
- *  normalizado dela é multiplicado por isto; autor) */
-const ALCANCE_DA_LUZ_NA_PAREDE = 0.72;
+const GANHO_DE_M43 = 0.3;
+const GANHO_DO_ESPALHADO = 0.015;
 /** o passo mais curto da marcha em cada grade (pc): perto da resolução
  *  dela — mais curto que isso não acrescenta detalhe, só custo */
 const PASSO_MINIMO_PC = { nucleo: 0.04, volume: 0.25 };
@@ -271,6 +269,29 @@ export const ORION_LIGADA =
 const PARTES =
   typeof window === 'undefined' ? 255 : Number(new URLSearchParams(window.location.search).get('orpartes') ?? 255);
 const parte = (bit: number) => ((PARTES & bit) !== 0 ? '1.0' : '0.0');
+/**
+ * A COR E O BRILHO, ancorados:
+ *  • [O III] 4959 = 5007/2,98 (razão fixa pelos átomos, Storey & Zeippen
+ *    2000);
+ *  • Hγ/Hβ = 0,469 e Hδ/Hβ = 0,259, recombinação caso B a 10⁴ K
+ *    (Osterbrock & Ferland) — o azul das Balmer que faz o vermelho rosado;
+ *  • a camada sobre a parede com o [O III] inteiro: perto do Trapézio a
+ *    razão medida é 3–4 (O'Dell & Henney 2008).
+ * De autor: o ganho de tela da camada e da luz espalhada (além de ~5′ a
+ * luz espalhada pela poeira domina, O'Dell & Harris 2010) e o leque
+ * (ver `LEQUE_PC`).
+ */
+const O3_DA_CAMADA = 1.0;
+/**
+ * O LEQUE: até onde a parede é acesa, em pc a partir da estrela, por rumo — de 45 em 45 graus a partir do leste, rumo ao norte.
+ * Curto ao norte e a nordeste, onde a Baía Escura e a faixa de M43 fecham
+ * o brilho a poucos minutos de arco; longo ao sul e a sudoeste, por onde a
+ * cavidade se abre (Güdel 2008; O'Dell & Harris 2010). Os números são de
+ * autor, guiados pela forma das fotos de M42 — como as asas.
+ */
+const LEQUE_PC = [0.95, 0.55, 0.7, 1.25, 1.7, 2.1, 2.0, 1.9, 0.95];
+const BALMER_AZUL = { hgama: 0.469, hdelta: 0.259 };
+const O3_4959_POR_5007 = 1 / 2.98;
 
 // ---- As leis, em TS (espelho testado do GLSL) ----------------------------
 
@@ -432,14 +453,15 @@ const vec3 OR_COR_HBETA = ${v3(CORES_DAS_LINHAS.hbeta)};
 const vec3 OR_COR_OIII = ${v3(CORES_DAS_LINHAS.oiii)};
 const vec3 OR_COR_FINA = ${v3(COR_DA_FRENTE_FINA)};
 const vec3 OR_COR_ESPALHADA = ${v3(COR_ESPALHADA)};
-
+const vec3 OR_COR_OIII_4959 = ${v3(corDaLinhaDeEmissao(495.9))};
+const vec3 OR_COR_BALMER_AZUL = ${v3([0, 1, 2].map((i) => BALMER_AZUL.hgama * corDaLinhaDeEmissao(434.0)[i] + BALMER_AZUL.hdelta * corDaLinhaDeEmissao(410.2)[i]))};
 // a cor da camada a uma distância d (soma das linhas por Hβ) — espelho de corDaFrente
 vec3 orCorDaFrente(float d, float o3peso) {
   float x = d * ${n(1 / 0.5)};
   float fora = 1.0 - 1.0 / (1.0 + x * x);
   float o3 = o3peso * 3.5 / (1.0 + x * x);
   float n2 = ${n(HALFA_POR_HBETA)} * (0.15 + 0.3 * fora);
-  return ${n(HALFA_POR_HBETA)} * OR_COR_HALFA + n2 * OR_COR_NII + OR_COR_HBETA + o3 * OR_COR_OIII;
+  return ${n(HALFA_POR_HBETA)} * OR_COR_HALFA + n2 * OR_COR_NII + OR_COR_HBETA + o3 * OR_COR_OIII + o3 * ${n(O3_4959_POR_5007)} * OR_COR_OIII_4959 + OR_COR_BALMER_AZUL;
 }
 `;
 
@@ -527,7 +549,21 @@ float orDentro(float s, float r) {
   float vaza = 0.05 * exp(-r * 0.6);
   return mix(vaza, 1.0, 1.0 - smoothstep(${n(BOLHA.pele - 0.12)}, ${n(BOLHA.cascaDe + 0.1)}, s));
 }
-
+// o leque (ver LEQUE_PC): a luz que chega à parede e à bolha acaba
+// numa borda roída por ruído largo, curta ao norte, longa ao sul
+const float OR_LEQUE[9] = float[9](${LEQUE_PC.map(n).join(', ')});
+float orLeque(vec2 xy) {
+  float r = length(xy);
+  if (r < 0.05) return 1.0;
+  float th = degrees(atan(xy.y, xy.x));
+  float k = (th < 0.0 ? th + 360.0 : th) / 45.0;
+  int i = min(int(k), 7);
+  float R = mix(OR_LEQUE[i], OR_LEQUE[i + 1], smoothstep(0.0, 1.0, k - float(i))) *
+    (0.8 + 0.5 * fbm(vec3(xy * 0.8 + 13.0, 2.0), 3));
+  // M43 tem a estrela dela (NU Ori): a parede dentro dela fica acesa
+  float m43 = 1.0 - smoothstep(0.8, 1.2, length(xy - vec2(${n(M43.x)}, ${n(M43.y)})) * ${n(1 / M43.raio)});
+  return max(mix(0.05 * exp(-r * 0.6), 1.0, 1.0 - smoothstep(0.7 * R, 1.2 * R, r)), m43);
+}
 // o traçado da Baía Escura: distância em raios da faixa
 float orBaia(vec2 xy) {
   float m = 1e9;
@@ -581,8 +617,9 @@ vec4 orSuperficie(vec2 xy) {
   // a parede da tigela é acesa até a borda: a luz que chega a ela é a
   // da cavidade inteira, mais larga que a bolha do véu (autor)
   float luz = pow(max(cosInc, ${n(PISO_DA_INCIDENCIA)}) / (d * d), ${n(GAMA_DO_BRILHO)}) *
-    orDentro(orBolha(sup) * ${n(ALCANCE_DA_LUZ_NA_PAREDE)} * (0.8 + 0.45 * fbm(vec3(xy * 0.6 + 31.0, 1.0), 3)), r) * borda;
+    orLeque(xy) * borda;
   float f = orFios(sup);
+  f = f * f * 0.55;
   luz *= ${parte(128)};
   return vec4(z, nf, luz * f * ${n(GANHO_DA_CAMADA)}, luz * (0.5 + 0.5 * f) * ${n(GANHO_DA_FRENTE_FINA)});
 }
@@ -618,9 +655,9 @@ vec4 orCampo(vec3 q) {
     vec3 gB = (q - OR_BOLHA_C) * OR_BOLHA_INV * OR_BOLHA_INV;
     float parede = 1.0 - 0.3 * smoothstep(0.35, 0.8, abs(gB.z) / max(length(gB), 1e-4));
     float xp = (s - ${n(BOLHA.pele)}) * ${n(1 / BOLHA.meiaLarguraDaPele)};
-    em += ${parte(2)} * orCorDaFrente(r, 1.0) * (fluxoB * exp(-xp * xp) * parede * f * ${n(GANHO_DA_ESTENDIDA)});
+    em += ${parte(2)} * orCorDaFrente(r, 1.0) * (fluxoB * exp(-xp * xp) * parede * f * ${n(GANHO_DA_ESTENDIDA)} * orLeque(q.xy));
     // 3b) o gás ralo que enche a bolha: baixa ionização (autor)
-    em += ${parte(4)} * orCorDaFrente(r, 0.3) * (fluxoB * den * junto * (0.3 + 0.7 * f) * ${n(GANHO_DO_INTERIOR)});
+    em += ${parte(4)} * orCorDaFrente(r, 0.3) * (fluxoB * den * junto * (0.3 + 0.7 * f) * ${n(GANHO_DO_INTERIOR)} * orLeque(q.xy));
     // 4) o véu: a tampa da casca, poeira neutra que absorve e espalha a
     //    luz da estrela; concentrado na tampa da frente, ralo nos lados
     float casca = smoothstep(${n(BOLHA.cascaDe - 0.02)}, ${n(BOLHA.cascaDe + 0.06)}, s) * (1.0 - smoothstep(0.93, 1.03, s));
@@ -793,7 +830,7 @@ void orTrecho(vec3 o, vec3 d, float ta, float tb, float dtAlvo, float jitter, bo
       float dS = max(length(vec3(q.xy, s.x)), ${n(ESTRELA_NA_FRENTE_DA_MIF_PC)});
       float H = ${n(CAMADA_IONIZADA.pertoPc)} * (1.0 + ${n(CAMADA_IONIZADA.crescePorPc)} * max(dS - 0.25, 0.0));
       float dtc = i == 0 ? dt * jitter : dt;
-      acc += T * (orCorDaFrente(dS, 0.5) * (orPele(hPrev, h, dtc, H) * s.z) +
+      acc += T * (orCorDaFrente(dS, ${n(O3_DA_CAMADA)}) * (orPele(hPrev, h, dtc, H) * s.z) +
                   OR_COR_FINA * (orPele(hPrev, h, dtc, ${n(FRENTE_FINA_PC)}) * s.w));
       hPrev = h;
     } else {
