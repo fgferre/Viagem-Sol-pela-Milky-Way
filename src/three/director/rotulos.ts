@@ -9,12 +9,15 @@
 // visitar continua no director (é gesto de navegação): ele lê a última
 // projeção pelo getter `alvos` — a mesma lista única da pendência 30.
 // ============================================================
-import { abrirVagaNoGrupo, lugarNoAlvo, projetarCompanheiras, projetarLugares } from '../world/lugaresDoCeu';
+import { CHAVE_DE_LUGAR, abrirVagaNoGrupo, lugarNoAlvo, projetarCompanheiras, projetarLugares } from '../world/lugaresDoCeu';
 import { projetarS2 } from '../world/estrelasS';
 import { projetarSondas } from '../world/sondas';
 import { CHAVE_DE_COMETA, posicaoDoCometaNaCena, projetarCometas, raioDoCorpoDoCometaPc } from '../world/cometas';
 import { COMETAS } from '../../lib/cometas';
-import { projetarExoplanetas } from '../world/exoplanetas';
+import { CHAVE_DE_EXOPLANETA, posicaoDoExoplanetaNaCena, projetarExoplanetas } from '../world/exoplanetas';
+import { assuntoDasTabelas } from '../cinematic/assuntos';
+import { nomeDoLugar } from '../../lib/buscaEstrelas';
+import { posicaoDaCompanheira } from '../../lib/atlas/estrelasVisitaveis';
 import type { SistemaPlanetario } from '../../lib/exoplanetas';
 import * as THREE from 'three';
 import {
@@ -44,7 +47,7 @@ import { cenaPcParaHeliocentricaEclipticaUA } from '../../lib/atlas/frameGalacti
 import { UA_POR_PC } from '../world/planetas/planetas';
 import type { Planetas } from '../world/planetas/planetas';
 import { RAIO_DO_SOL_NA_CENA, kmParaPc } from '../escala';
-import { CHAVE_DE_CORPO, CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA } from '../atlasConfig';
+import { CHAVE_DE_CORPO, CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA, classeEmTexto } from '../atlasConfig';
 import { corDaOrbita } from '../world/orbitas';
 import type { NamedStar } from '../config';
 import type { Phase } from '../fases';
@@ -105,6 +108,10 @@ export interface QuadroDeRotulos {
   /** os discos das ESTRELAS COM CORPO deste quadro (piloto de 12/11,
    *  `director/estrelasNoQuadro.ts`) — escondem nome pela mesma lei */
   oclusoresDeEstrelas?: readonly OclusorDeRotulo[];
+  /** onde a estrela com corpo está DESENHADA (o ponto do catálogo; a das
+   *  nomeadas sem o piloto) — a companheira e os exoplanetas do assunto do
+   *  filme orbitam a partir dela; ausente = esses assuntos ficam sem nome */
+  posicaoDaEstrelaComLugar?: (nome: string) => THREE.Vector3 | null;
 }
 
 /**
@@ -214,6 +221,9 @@ const CORPO_DO_ROTEIRO = new Map<string, { corpo: CorpoRotulavel; i: number; lua
   ...CORPOS_DO_SISTEMA.map((corpo, i) => [corpo.id, { corpo, i, lua: false }] as const),
   ...LUAS_DO_SISTEMA.map((corpo, i) => [corpo.id, { corpo, i, lua: true }] as const),
 ]);
+
+/** a posição do assunto do filme que se move (companheira, exoplaneta), reusada */
+const _movel = new THREE.Vector3();
 
 export class Rotulos {
   /** última projeção de rótulos — alvo do clicar-para-visitar */
@@ -720,11 +730,11 @@ export class Rotulos {
     cam: THREE.PerspectiveCamera,
     named: NamedStar[],
     target: readonly string[] | undefined,
-    planetas: Planetas | null
+    quadro: QuadroDeRotulos
   ): StarLabel[] {
     const forced: StarLabel[] = [];
     for (const name of target ?? []) {
-      const l = this.resolveForcedLabel(cam, named, name, planetas);
+      const l = this.resolveForcedLabel(cam, named, name, quadro);
       if (l) {
         l.dirigido = true;
         forced.push(l);
@@ -733,25 +743,69 @@ export class Rotulos {
     return forced;
   }
 
-  /** etiqueta forçada do assunto do shot ('SOL' | 'SGR' | id de corpo da casa | nome HYG) */
+  /**
+   * A ETIQUETA FORÇADA DO ASSUNTO DO SHOT — o nome sai das tabelas da Busca
+   * e do Atlas (`cinematic/assuntos.ts`), na posição do instante do filme
+   * para o que se move. A ORDEM guarda o que já funcionava: 'SOL', 'SGR', os
+   * corpos da casa e as estrelas das nomeadas resolvem como antes; a
+   * companheira vem ANTES das nomeadas porque a linha "Sirius B" do catálogo
+   * está a 0,033 pc de onde a órbita a desenha; os lugares e os exoplanetas,
+   * que não são nomeadas, vêm depois.
+   */
   private resolveForcedLabel(
     cam: THREE.PerspectiveCamera,
     named: NamedStar[],
     name: string,
-    planetas: Planetas | null
+    quadro: QuadroDeRotulos
   ): StarLabel | null {
-    if (name === 'SOL') {
+    const assunto = assuntoDasTabelas(name);
+    if (assunto?.tipo === 'sol') {
       return projectForced(cam, nomeDoSolEmCaixaAlta(), 'G2V', { x: 0, y: 0, z: 0 }, 'sol-home');
     }
-    if (name === 'SGR') {
+    if (assunto?.tipo === 'sgr') {
       const l = projectForced(cam, NOME_DE_SGR_A, '', GAL.GC_POS, 'sgr-a');
       if (l) l.detalhe = classeDeSgrA();
       return l;
     }
-    const corpo = CORPO_DO_ROTEIRO.get(name);
-    if (corpo) return this.resolveCorpoDirigido(cam, corpo, planetas);
+    if (assunto?.tipo === 'corpo') {
+      const corpo = CORPO_DO_ROTEIRO.get(assunto.id);
+      return corpo ? this.resolveCorpoDirigido(cam, corpo, quadro.planetas) : null;
+    }
+    const jd = quadro.jd ?? Number.NaN;
+    const posDe = quadro.posicaoDaEstrelaComLugar;
+    if (assunto?.tipo === 'companheira') {
+      const c = assunto.principal.companheira!;
+      const a = posDe?.(assunto.principal.nomeNoCatalogo);
+      if (!a || !Number.isFinite(jd)) return null;
+      const d = a.length();
+      const rel = posicaoDaCompanheira(jd, c.orbita, [a.x / d, a.y / d, a.z / d], d);
+      _movel.set(a.x + rel[0], a.y + rel[1], a.z + rel[2]);
+      return projectForced(cam, c.nome, c.tipo, _movel, c.nome);
+    }
     const star = named.find((s) => s.n === name);
-    return star ? projectForced(cam, star.n, star.s, star, star.n) : null;
+    if (star) {
+      // a estrela COM CORPO tem o nome onde o corpo é desenhado (o ponto do
+      // catálogo), não no do nome, arredondado: de perto de Sirius os dois
+      // ficam a ~40 UA um do outro, e o nome caía no vazio ao lado do disco
+      const desenhada = assunto?.tipo === 'estrela' ? posDe?.(star.n) : null;
+      return projectForced(cam, star.n, star.s, desenhada ?? star, star.n);
+    }
+    if (assunto?.tipo === 'lugar') {
+      const lugar = assunto.lugar;
+      const l = projectForced(cam, nomeDoLugar(lugar), '', lugar, `${CHAVE_DE_LUGAR}${lugar.id}`);
+      if (l && lugar.classe) l.detalhe = classeEmTexto(lugar.classe);
+      return l;
+    }
+    if (assunto?.tipo === 'exoplaneta') {
+      const a = posDe?.(assunto.sistema.estrela);
+      if (!a || !posicaoDoExoplanetaNaCena(assunto.planeta.id, jd, a, _movel)) return null;
+      const l = projectForced(
+        cam, assunto.planeta.nome, '', _movel, `${CHAVE_DE_EXOPLANETA}${assunto.planeta.id}`
+      );
+      if (l) l.detalhe = classeEmTexto('exoplaneta');
+      return l;
+    }
+    return null;
   }
 
   /**
@@ -965,7 +1019,7 @@ export class Rotulos {
           ? this.fios.beatDaViagem()
           : null;
       const falados = roteiro
-        ? this.forcadosDoBeat(cam, named as NamedStar[], roteiro.target, planetas)
+        ? this.forcadosDoBeat(cam, named as NamedStar[], roteiro.target, quadro)
         : [];
       // OS ÍCONES DOS CORPOS (item 89): com os NOMES desligados e a
       // camada de ícones LIGADA, cada corpo mantém um marcador discreto
@@ -1034,7 +1088,7 @@ export class Rotulos {
             );
         if (dHome < 1.5 && !meta.target) labels = [];
         if (meta.target) {
-          const forced = this.forcadosDoBeat(cam, named, meta.target, planetas);
+          const forced = this.forcadosDoBeat(cam, named, meta.target, quadro);
           const keys = new Set(forced.map((l) => l.key));
           // O ROTEIRO ASSUME A FRENTE: os assuntos ocupam primeiro; o
           // fundo preserva a régua existente e disputa só o que sobrou.

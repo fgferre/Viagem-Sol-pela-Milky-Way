@@ -1265,6 +1265,73 @@ describe('o corpo da casa como assunto do beat (viagem solar)', () => {
       ['Atlas', 'Atlas', 'B8III'],
     ]);
   });
+
+  it('filme estelar: um lugar, uma companheira e um exoplaneta ganham nome, os dois últimos na data do filme', async () => {
+    const { posicaoDaCompanheira, estrelaVisitavelPorNome } = await import('../../lib/atlas/estrelasVisitaveis');
+    const sirius = new THREE.Vector3(-0.4944, 2.4768, -0.7584);
+    // a linha do catálogo, arredondada: ~40 UA de onde o corpo é desenhado
+    const siriusDoNome: NamedStar = { n: 'Sirius', x: -0.4945, y: 2.4769, z: -0.7585, m: -1.44, s: 'A0m...', d: 2.64, t: 0 };
+    const trappist = new THREE.Vector3(5, 10, -2);
+    const anfitria = (nome: string) => (nome === 'Sirius' ? sirius : nome === 'TRAPPIST-1' ? trappist : null);
+    /** o nome do assunto, com a câmera a `d` pc de `alvo` olhando para ele, no instante `jd` */
+    const nomeDe = (assunto: string, alvo: THREE.Vector3, d: number, jd: number) => {
+      const publicadas: StarLabel[][] = [];
+      const rotulos = new Rotulos({
+        onLabels: (l) => publicadas.push(l),
+        onDest: () => {},
+        onSol: () => {},
+        onLente: () => {},
+        onCamera: () => {},
+        beatDaViagem: () => ({ target: [assunto], quiet: true }) as JourneyMeta,
+        raioFisicoDe: () => null,
+      });
+      const cam = new THREE.PerspectiveCamera(40, 1.6, 1e-9, 1e5);
+      cam.position.copy(alvo).add(new THREE.Vector3(0, 0, d));
+      cam.lookAt(alvo);
+      cam.updateMatrixWorld();
+      rotulos.projetar(cam, {
+        fase: 'journey', named: [siriusDoNome], dHome: cam.position.length(), planetas: null, foco: null,
+        nomesEscondidos: false, iconesEscondidos: false, texto3d: false, jd,
+        posicaoDaEstrelaComLugar: anfitria,
+      });
+      return { l: publicadas.at(-1)![0], cam };
+    };
+    // o lugar: o centro da tabela da Busca, a classe na língua da tela
+    const orion = lugares.LUGARES_DA_BUSCA.find((l) => l.id === 'nebulosa-de-orion')!;
+    const centro = new THREE.Vector3(orion.x, orion.y, orion.z);
+    const neb = nomeDe('Nebulosa de Órion', centro, 30, 2461042).l;
+    expect([neb.key, neb.name, neb.detalhe, neb.dirigido]).toEqual([
+      'lugar:nebulosa-de-orion', 'Nebulosa de Órion', 'nebulosa de emissão', true,
+    ]);
+    expect([neb.x, neb.y]).toEqual([0.5, 0.5]);
+    // a companheira: na órbita de Bond 2017, no instante pedido — e em
+    // outro instante, noutro lugar
+    const sir = estrelaVisitavelPorNome('Sirius')!;
+    const ondeB = (jd: number) => {
+      const d = sirius.length();
+      const r = posicaoDaCompanheira(jd, sir.companheira!.orbita, [sirius.x / d, sirius.y / d, sirius.z / d], d);
+      return sirius.clone().add(new THREE.Vector3(...r));
+    };
+    for (const jd of [2461042, 2461042 + 3650]) {
+      const { l, cam } = nomeDe('Sirius B', sirius, 1e-3, jd);
+      const p = ondeB(jd).project(cam);
+      expect([l.key, l.name, l.spect]).toEqual(['Sirius B', 'Sirius B', 'DA2']);
+      expect(l.x).toBeCloseTo((p.x + 1) / 2, 12);
+      expect(l.y).toBeCloseTo((1 - p.y) / 2, 12);
+    }
+    expect(ondeB(2461042).distanceTo(ondeB(2461042 + 3650))).toBeGreaterThan(1e-5);
+    // a estrela com corpo tem o nome no corpo, não na linha do catálogo
+    const a = nomeDe('Sirius', sirius, 1e-3, 2461042).l;
+    expect([a.key, a.x, a.y]).toEqual(['Sirius', 0.5, 0.5]);
+    // o exoplaneta: pelo apelido da Busca, onde o Atlas o põe naquele dia
+    const e = exo.posicaoDoExoplanetaNaCena('trappist-1e', 2461042, trappist)!;
+    const { l: planeta, cam } = nomeDe('TRAPPIST-1e', trappist, 1e-6, 2461042);
+    const p = e.clone().project(cam);
+    expect([planeta.key, planeta.name, planeta.detalhe]).toEqual([
+      'exoplaneta:trappist-1e', 'TRAPPIST-1 e', 'exoplaneta',
+    ]);
+    expect(planeta.x).toBeCloseTo((p.x + 1) / 2, 12);
+  });
 });
 
 describe('os nomes na escala da galáxia (crítica de 12/11)', () => {

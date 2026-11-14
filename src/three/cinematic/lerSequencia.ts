@@ -31,9 +31,11 @@ export interface Shot extends CameraDoPlano, ApoiosDoPlano {
   captions?: ShotCaption[];
   /** assuntos declarados para a direção de etiquetas existente.
    *  'SOL' e 'SGR' são pseudo-alvos; um id de `CORPOS_DO_SISTEMA` ou de
-   *  `LUAS_DO_SISTEMA` ('earth', 'moon', 'io'…) nomeia o corpo da casa; o
-   *  resto é nome de estrela do HYG. Este leitor não confere nomes: o que
-   *  não resolve some calado no desenho (`director/rotulos.ts`). */
+   *  `LUAS_DO_SISTEMA` ('earth', 'moon', 'io'…) nomeia o corpo da casa; um
+   *  lugar do céu, uma companheira ou um exoplaneta, pelo nome da Busca
+   *  (`assuntos.ts`); o resto é nome de estrela do HYG. Quem passa
+   *  `assuntoConhecido` ao leitor recusa na montagem o nome que não
+   *  resolve; sem ele, o que não resolve some calado no desenho. */
   target?: string[];
   /** silencia as etiquetas de fundo durante o beat */
   quiet?: boolean;
@@ -57,6 +59,14 @@ export interface Shot extends CameraDoPlano, ApoiosDoPlano {
    * (`director/lenteDoFilme.ts`).
    */
   lenteDeCinema?: ModoDaLente;
+  /**
+   * O RELÓGIO QUE ANDA (E0 do filme estelar): durante este plano a data do
+   * céu avança tantos dias por segundo de filme — os planetas de TRAPPIST-1
+   * giram na tela. Ausente, o céu fica parado no plano. Quem faz a data é o
+   * filme (`filmes/montagem.ts`, `relogioDosPlanos`); o leitor só a lê. No
+   * JSON: `"relogio": {"diasPorSegundo": 1.5}` ou um número nomeado.
+   */
+  diasPorSegundo?: number;
 }
 
 function legenda(valor: unknown, campo: string): ShotCaption {
@@ -85,7 +95,10 @@ function legenda(valor: unknown, campo: string): ShotCaption {
 export function lerSequencia(
   dado: unknown,
   pontos: Readonly<Record<string, Vector3>> = {},
-  numeros: Readonly<Record<string, number>> = {}
+  numeros: Readonly<Record<string, number>> = {},
+  /** o filme diz o que sabe nomear: nome fora disso é erro de montagem,
+   *  em vez de um assunto mudo na tela */
+  assuntoConhecido?: (nome: string) => boolean
 ): Shot[] {
   const planos = lista(objeto(dado, 'sequencia').planos, 'planos');
   if (!planos.length) return erro('planos', 'deve conter ao menos um plano');
@@ -103,10 +116,23 @@ export function lerSequencia(
       captions: opcional(p.legendas, `${campo}.legendas`, (v, c) =>
         Array.from(lista(v, c), (item, j) => legenda(item, `${c}[${j}]`))),
       target: opcional(p.assuntos, `${campo}.assuntos`, (v, c) =>
-        Array.from(lista(v, c), (item, j) => texto(item, `${c}[${j}]`))),
+        Array.from(lista(v, c), (item, j) => {
+          const nome = texto(item, `${c}[${j}]`);
+          if (assuntoConhecido && !assuntoConhecido(nome)) {
+            return erro(`${c}[${j}]`, `não nomeia nada que o filme saiba desenhar: “${nome}”`);
+          }
+          return nome;
+        })),
       quiet: opcional(p.fundoSilencioso, `${campo}.fundoSilencioso`, booleano),
       dest: opcional(p.destino, `${campo}.destino`, texto),
       lingua,
+      diasPorSegundo: opcional(p.relogio, `${campo}.relogio`, (v, c) => {
+        const r = objeto(v, c).diasPorSegundo;
+        const taxa = typeof r === 'string'
+          ? (Object.hasOwn(numeros, r) ? numeros[r] : erro(`${c}.diasPorSegundo`, `não encontra o número “${r}”`))
+          : r;
+        return numero(taxa, `${c}.diasPorSegundo`);
+      }),
       lenteDeCinema: opcional(p.lenteDeCinema, `${campo}.lenteDeCinema`, (v, c) =>
         MODOS_DA_LENTE.find((m) => m === v) ?? erro(c, 'deve ser nenhuma, redonda, anamorfica ou hollywood')),
     };

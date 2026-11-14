@@ -1308,7 +1308,8 @@ export class Director {
     this.oclusoresJuntos.push(...planetas);
     return this.oclusoresJuntos;
   }
-  private posicaoDaAnfitria(nome: string): THREE.Vector3 | null {
+  // arrow: o quadro dos rótulos a recebe como fio, sem alocar por quadro
+  private readonly posicaoDaAnfitria = (nome: string): THREE.Vector3 | null => {
     const doCorpo = this.estrelasNoQuadro?.posicaoDe(nome);
     if (doCorpo) return doCorpo;
     let pos = this.anfitriasPorNome.get(nome);
@@ -1319,7 +1320,7 @@ export class Director {
       this.anfitriasPorNome.set(nome, pos);
     }
     return pos;
-  }
+  };
   /** pré-compilação em voo; o dispose do renderer espera por ela */
   private warmup: Promise<unknown> | null = null;
   /** download disparado no construtor, consumido pelo init */
@@ -4719,6 +4720,7 @@ export class Director {
       // o corpo focado continua com nome (item 109)
       texto3d: this.rotulos3dLigado && !!this.rotulos3d,
       oclusoresDeEstrelas: this.oclusoresDoQuadro(),
+      posicaoDaEstrelaComLugar: this.posicaoDaAnfitria,
     });
     // a camada 3D espelha o QUE ESTE QUADRO decidiu desenhar — depois
     // do projetar, para o texto nunca correr um quadro atrás do anel.

@@ -62,6 +62,21 @@ describe('lerSequencia — item 75', () => {
     for (const [dado, campo] of casos) expect(() => lerSequencia(dado, pontos)).toThrow(campo);
   });
 
+  it('recusa na montagem o assunto que o filme não sabe nomear, com o nome no erro', () => {
+    const conhece = (nome: string) => nome === 'Sirius';
+    expect(lerSequencia({ planos: [{ ...plano, assuntos: ['Sirius'] }] }, pontos, {}, conhece)[0].target).toEqual(['Sirius']);
+    expect(() => lerSequencia({ planos: [plano] }, pontos, {}, conhece)).toThrow(/planos\[0\]\.assuntos\[0\].*“Sol”/);
+  });
+
+  it('lê o relógio que anda: dias por segundo, em número ou nomeado', () => {
+    const [a, b, c] = lerSequencia(
+      { planos: [{ ...plano, relogio: { diasPorSegundo: 1.5 } }, { ...plano, relogio: { diasPorSegundo: 'taxa' } }, plano] },
+      pontos, { taxa: 0.25 }
+    );
+    expect([a.diasPorSegundo, b.diasPorSegundo, c.diasPorSegundo]).toEqual([1.5, 0.25, undefined]);
+    expect(() => lerSequencia({ planos: [{ ...plano, relogio: { diasPorSegundo: 'nada' } }] }, pontos)).toThrow(/relogio/);
+  });
+
   it('lê a lente de cinema da cena (decisão de 09/10) e recusa a que não existe', () => {
     const [a, b] = lerSequencia({ planos: [{ ...plano, lenteDeCinema: 'anamorfica' }, plano] }, pontos);
     expect([a.lenteDeCinema, b.lenteDeCinema]).toEqual(['anamorfica', undefined]);
