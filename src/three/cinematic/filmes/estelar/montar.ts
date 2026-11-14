@@ -29,7 +29,11 @@ import { LUGARES_DA_BUSCA } from '../../../world/lugaresDoCeu';
 import { ESTRELAS_DO_FILME } from './estrelas';
 import { PONTOS_DAS_JUNTAS } from './atos/juntas';
 import { NUMEROS_PROLOGO, PONTOS_PROLOGO } from './atos/prologo';
+import { NUMEROS_CRESCER, PONTOS_CRESCER } from './atos/crescer';
+import { NUMEROS_ENVELHECER, PONTOS_ENVELHECER } from './atos/envelhecer';
 import prologo from '../../roteiros/estelar/prologo.json';
+import crescer from '../../roteiros/estelar/crescer.json';
+import envelhecer from '../../roteiros/estelar/envelhecer.json';
 
 /** o céu do filme: o instante do galáctico, 2026-01-01 16:00 UTC — escolha
  *  nossa; nada nos atos depende da hora (o Sol gira por ela, e o relógio
@@ -37,7 +41,7 @@ import prologo from '../../roteiros/estelar/prologo.json';
 export const JD_DO_FILME_ESTELAR_TDB = JD_DO_FILME_TDB;
 
 /** os roteiros, na ordem do filme */
-const ROTEIROS: readonly unknown[] = [prologo];
+const ROTEIROS: readonly unknown[] = [prologo, crescer, envelhecer];
 
 /** os lugares do céu como pontos, pelo id da Busca */
 const PONTOS_DOS_LUGARES = Object.fromEntries(
@@ -51,10 +55,16 @@ const PONTOS: Readonly<Record<string, THREE.Vector3>> = {
   ...ESTRELAS_DO_FILME,
   ...PONTOS_DAS_JUNTAS,
   ...PONTOS_PROLOGO,
+  ...PONTOS_CRESCER,
+  ...PONTOS_ENVELHECER,
 };
 
 /** os números nomeados de todos os atos */
-const NUMEROS: Readonly<Record<string, number>> = { ...NUMEROS_PROLOGO };
+const NUMEROS: Readonly<Record<string, number>> = {
+  ...NUMEROS_PROLOGO,
+  ...NUMEROS_CRESCER,
+  ...NUMEROS_ENVELHECER,
+};
 
 /** o que um plano do filme estelar pode nomear */
 export function conheceAssunto(nome: string): boolean {

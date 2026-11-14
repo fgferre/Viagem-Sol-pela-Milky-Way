@@ -39,6 +39,11 @@ export const ESTRELAS_DO_FILME: Readonly<Record<string, THREE.Vector3>> = {
   Alnitak: f32(18.920448, 224.81355, -7.654639),
   Alnilam: f32(62.784035, 602.62964, -12.709049),
   Mintaka: f32(25.862326, 210.7222, -1.1042491),
+  // as Plêiades que a câmera atravessa (ato 3)
+  Alcyone: f32(67.26668, 103.07514, 55.072258),
+  Atlas: f32(66.50937, 103.55558, 54.934067),
+  Merope: f32(67.96885, 103.00369, 54.81368),
+  Taygeta: f32(67.742, 101.57597, 55.559345),
   // a velhice e o que sobra (ato 4)
   Aldebaran: f32(7.02806, 18.28841, 5.8067064),
   Sirius: f32(-0.49449053, 2.4769337, -0.7584803),
