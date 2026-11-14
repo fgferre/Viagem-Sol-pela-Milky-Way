@@ -160,6 +160,21 @@ export function motivoDoBloqueio(
   return null;
 }
 
+/** os que só mexem nas filhas, e o teto do tier não deixa sobrar nenhuma */
+const PRESOS_AO_TETO: readonly IdDoLaboratorio[] = ['lodk', 'lodesp'];
+
+/**
+ * PRESO AO TETO? (13/11/2026, medido: `capturas/controles-galaxia/apagados-medida.md`).
+ * Com o Teto de pontos no do tier (ou abaixo) o teto corta as filhas
+ * primeiro e não sobra nenhuma (fK = 0): Filhas no máximo e Alcance das
+ * filhas não mudam um pixel, nos três tiers e em sete vistas. A Densidade
+ * NÃO entra: em Alta e Performance ela ainda mexe um pouco (a busca do
+ * teto parte dela, e no filme em Performance o teto nem é alcançado).
+ */
+export function presoAoTeto(id: IdDoLaboratorio, lab: Laboratorio, tier: Tier): boolean {
+  return PRESOS_AO_TETO.includes(id) && valorDoControle(lab, 'lodmax', tier) <= padraoDoControle('lodmax', tier);
+}
+
 /** as opções do quadro do motor WebGPU que o laboratório governa */
 export interface OpcoesDoLaboratorioWebgpu {
   k: number;

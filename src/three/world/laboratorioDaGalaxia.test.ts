@@ -1,6 +1,6 @@
 // O laboratório da galáxia (Ajustes, 13/11/2026): a porta de URL de cada
 // controle vai e volta, "Voltar ao padrão" apaga todas, e a regra de quem
-// fica desligado depende só do caminho que desenha.
+// fica desligado depende do caminho que desenha (e, para as filhas, do teto).
 import { describe, expect, it } from 'vitest';
 import {
   CONTROLES_DO_LABORATORIO,
@@ -11,6 +11,7 @@ import {
   motivoDoBloqueio,
   opcoesWebgpu,
   padraoDoControle,
+  presoAoTeto,
 } from './laboratorioDaGalaxia';
 
 describe('laboratório da galáxia', () => {
@@ -59,5 +60,22 @@ describe('laboratório da galáxia', () => {
       expect(motivoDoBloqueio(c.id, 'webgpu')).toBe(null);
       expect(motivoDoBloqueio(c.id, 'particulas')).toBe(c.motor === 'webgpu' ? 'semWebgpu' : null);
     }
+  });
+
+  it('presos ao teto: Filhas no máximo e Alcance só acendem com o teto acima do do tier, e a escolha fica guardada', () => {
+    const presos = ['lodk', 'lodesp'];
+    for (const tier of ['cinema', 'alta', 'performance'] as const) {
+      const teto = padraoDoControle('lodmax', tier);
+      for (const c of CONTROLES_DO_LABORATORIO) {
+        if (c.id === 'lodmax') continue;
+        const escolhido = { ...LABORATORIO_PADRAO, [c.id]: c.valores[0] };
+        expect(presoAoTeto(c.id, escolhido, tier)).toBe(presos.includes(c.id));
+        expect(presoAoTeto(c.id, { ...escolhido, lodmax: teto }, tier)).toBe(presos.includes(c.id));
+        expect(presoAoTeto(c.id, { ...escolhido, lodmax: 5 }, tier)).toBe(false);
+      }
+    }
+    const q = new URLSearchParams();
+    escreverLaboratorio(q, { ...LABORATORIO_PADRAO, lodk: 16 });
+    expect(q.get('lodk')).toBe('16');
   });
 });
