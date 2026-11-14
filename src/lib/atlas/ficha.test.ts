@@ -956,8 +956,18 @@ describe('as unidades e os selos que o visitante lê', () => {
     expect(lua.linhas[0]!.rotulo).toBe('Distância — Terra');
     expect(lua.linhas[0]!.valor).toMatch(/mil km$/);
     const marte = ficha('mars')!.secoes.find((s) => s.id === 'agora')!;
-    expect(marte.linhas[0]!.rotulo).toBe('Distância — Sol');
+    expect(marte.linhas[0]!.rotulo).toBe('distância do Sol');
     expect(marte.linhas[0]!.valor).toMatch(/ UA$/);
+  });
+
+  it('em inglês a linha do planeta também diz "distance from the Sun"', () => {
+    definirIdioma('en');
+    try {
+      const marte = ficha('mars')!.secoes.find((s) => s.id === 'agora')!;
+      expect(marte.linhas[0]!.rotulo).toBe('distance from the Sun');
+    } finally {
+      definirIdioma('pt-BR');
+    }
   });
 
   it('nenhuma linha da ficha fala em parsec', () => {

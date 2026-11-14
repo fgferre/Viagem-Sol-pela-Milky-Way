@@ -366,7 +366,14 @@ function secaoAgora(entrada: EntradaDaFicha): LinhaDaFicha[] {
   }
 
   return [
-    linha(t('ficha.campo.distanciaDe', { pai }), distancia, 'medido', registro.modelo),
+    // em torno do Sol a linha diz o mesmo que a do cometa ("distância do Sol");
+    // "Distância — Sol" na linha recolhida do celular lia como lista de campos
+    linha(
+      registro.centro === 'sun' ? t('ficha.cometa.doSol') : t('ficha.campo.distanciaDe', { pai }),
+      distancia,
+      'medido',
+      registro.modelo
+    ),
     linha(
       t('ficha.campo.velocidadeOrbital'),
       velocidade,
