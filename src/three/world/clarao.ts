@@ -62,7 +62,7 @@ import {
 import { alcanceDoEspinhoPx, ganhoDeEntradaDoFlare, raioVisivelDaAsaPx } from '../estrela';
 import { M_V_SOL_DO_CAMPO, picoDaPsf, psfPointSizePx, sigmaDaPsfPx } from '../luzDaCasa';
 import { RAMP_DURATION_MS, stepRampToward } from './lodStellar';
-import { ndcNaTela, SondaDeOclusao } from './sondaDeOclusao';
+import { SondaDeOclusao } from './sondaDeOclusao';
 import {
   U_PERFIL_BASE,
   U_PERFIL_ESCALA,
@@ -354,6 +354,10 @@ const FRAG_DA_LENTE = ESTRELAS_SEGUEM_A_LENTE ? receitaSegueALente(FRAG, '1.0 / 
 // (`visibilidade`, os MESMOS 300 ms do orçamento), não uma cobertura parcial.
 const MEIA_PX_DA_SONDA = 1;
 
+/** Até onde, fora do quadro, a sonda ainda responde (NDC): o teto do
+ *  clarão é 0,07·H de meia-largura = 0,14 em NDC vertical, com folga. */
+const ALCANCE_DA_SONDA_NDC = 1.15;
+
 /** Quantas consultas de oclusão ficam em voo ao mesmo tempo — o bastante
  *  para NUNCA esperar a GPU (a leitura é sempre não-bloqueante), sabendo
  *  que a sonda desenha UMA vez por quadro (ver a mecânica, mais abaixo:
@@ -371,8 +375,17 @@ void main() {
   // o piso é só guarda de divisão (o mesmo do clarão: 1e-6 pc inflava a
   // sonda de uma visitada pequena vista a menos de 0,4 UA)
   float extent = uMeiaPx * 2.0 * max(-c.z, 1e-30) / (projectionMatrix[1][1] * uScreenH);
-  c.xy += position.xy * extent;
   gl_Position = projectionMatrix * c;
+  // A ESTRELA LOGO FORA DO QUADRO ainda joga o clarão para dentro dele: a
+  // sonda pergunta então no pixel da BORDA mais perto dela (Sírius 2 px
+  // abaixo do quadro, atrás de Io, acendia os braços em cima da lua —
+  // filme do Sol, t = 165 s). Dentro do quadro o grampo não mexe em nada.
+  if (gl_Position.w > 0.0) {
+    float my = (uMeiaPx * 4.0 + 2.0) / uScreenH;
+    vec2 lim = (1.0 - vec2(my * projectionMatrix[0][0] / projectionMatrix[1][1], my)) * gl_Position.w;
+    gl_Position.xy = clamp(gl_Position.xy, -lim, lim);
+  }
+  gl_Position.xy += position.xy * extent * vec2(projectionMatrix[0][0], projectionMatrix[1][1]);
   // nunca no fundo do depth: z de NDC 1 − 4,8e−7 = depth 1 − 2,4e−7
   gl_Position.z = min(gl_Position.z, gl_Position.w * (1.0 - 4.8e-7));
 }
@@ -1275,11 +1288,17 @@ export class ClaraoDeAsas {
   //
   // O PONTO FORA DA TELA (medido no Sol em 23/09: a 2 % acima da borda, a
   // cruz ainda entrava no quadro): a sonda cairia fora da imagem e seria
-  // descartada — "tapado" sem corpo nenhum. Fora da tela a pergunta não
-  // tem resposta: o clarão segue como antes da sonda (não oculto), e as
-  // consultas já em voo, feitas com o ponto ainda dentro, não valem mais.
+  // descartada — "tapado" sem corpo nenhum. Até onde o clarão alcança o
+  // quadro (`ALCANCE_DA_SONDA_NDC`) a sonda é grampeada na borda
+  // (`SONDA_VERT`) e responde por ela; além disso a pergunta não tem
+  // resposta: o clarão segue não oculto, e as consultas já em voo não
+  // valem mais.
   private centroNaTela(sonda: THREE.Object3D, camera: THREE.Camera): boolean {
-    return ndcNaTela(this.vSonda.setFromMatrixPosition(sonda.matrixWorld).project(camera));
+    const v = this.vSonda.setFromMatrixPosition(sonda.matrixWorld);
+    // atrás da câmera a projeção espelha o ponto para dentro do quadro
+    if (v.clone().applyMatrix4(camera.matrixWorldInverse).z >= 0) return false;
+    v.project(camera);
+    return Math.abs(v.x) <= ALCANCE_DA_SONDA_NDC && Math.abs(v.y) <= ALCANCE_DA_SONDA_NDC && v.z <= 1;
   }
 
   /** O ÚNICO lugar que escreve `oculta` — a consulta de oclusão da vaga
