@@ -1209,11 +1209,13 @@ describe('o corpo da casa como assunto do beat (viagem solar)', () => {
       cam, LUAS_DO_SISTEMA.filter((l) => l.id === 'moon'), Float32Array.of(perto.x, perto.y, perto.z)
     );
     // nada copiado à mão: o que o Atlas projeta, mais o que faz dele assunto
+    // (e os discos do quadro, que a publicação dá a todo nome)
     expect(lua).toEqual({
       ...doAtlas,
       dirigido: true,
       alfaDoTexto: ALFA_DO_TEXTO_APONTADO,
       alfaDoIcone: ALFA_DO_TEXTO_APONTADO,
+      discos: lua.discos,
     });
     expect(lua.opacity).toBe(0.95);
     // classe, prioridade e canal ficam — lua no secundário, planeta no primário
@@ -1340,6 +1342,31 @@ describe('os nomes na escala da galáxia (crítica de 12/11)', () => {
     const centro = noAtlas(cam, { focoEstrela: 'Sagittarius A✱' }).find((l) => l.key === 'sgr-a')!;
     expect(centro.prioridade).toBe(PRIORIDADE_DO_ROTULO.foco);
     expect(centro.opacity).toBeGreaterThan(0.5);
+    // o que ele é, na língua do visitante — não a sigla inglesa (13/11)
+    expect([centro.spect, centro.detalhe]).toEqual(['', 'buraco negro']);
+    definirIdioma('en');
+    expect(noAtlas(cam, { focoEstrela: 'Sagittarius A✱' }).find((l) => l.key === 'sgr-a')!.detalhe).toBe('black hole');
+    definirIdioma('pt-BR');
+  });
+
+  it('o cometa de perto é retrato: o nome dele cede, e estrela nenhuma é escrita sobre a cabeça (13/11)', async () => {
+    const { posicaoDoCometaNaCena, poseDoCometaDePerto } = await import('../world/cometas');
+    const jd = 2446471.0;
+    const nucleo = posicaoDoCometaNaCena('halley', jd)!;
+    const pose = poseDoCometaDePerto('halley', jd, 5.5)!;
+    // a câmera a 2,5 cabeças do núcleo, olhando para ele; uma estrela atrás
+    // da coma, a meio raio aparente do centro
+    const cam = new THREE.PerspectiveCamera(58, 1.6, 1e-14, 1e7);
+    const eixo = nucleo.clone().normalize();
+    cam.position.copy(nucleo).addScaledVector(eixo, -2.5 * pose.raio);
+    cam.lookAt(nucleo);
+    cam.updateMatrixWorld(true);
+    const lado = new THREE.Vector3(0, 1, 0).cross(eixo).normalize();
+    const atras = nucleo.clone().addScaledVector(eixo, 10).addScaledVector(lado, 0.4 * (10 / 2.5));
+    const estrela: NamedStar = { n: 'Atrás', x: atras.x, y: atras.y, z: atras.z, m: -1, s: 'A0V', d: 1, t: 0 };
+    const alvos = noAtlas(cam, { named: [estrela], focoCometa: 'halley', jd });
+    expect(alvos.find((l) => l.key === 'cometa:halley')!.causaDoSumico).toBe('tamanho');
+    expect(alvos.find((l) => l.key === 'Atrás')?.opacity ?? 0).toBe(0);
   });
 
   it('o nome do lugar fica NO objeto, e a anã de Sagitário cala dentro do bojo', () => {
@@ -1471,6 +1498,21 @@ describe('os nomes dentro de um lugar em foco (13/11)', () => {
     const topo = Math.min(yAntes, ...companheiras.map((l) => l.y));
     expect(proprio.y).toBeCloseTo(topo - lugares.FOLGA_DO_NOME_DO_GRUPO, 6);
     expect(companheiras.every((l) => l.outroLado)).toBe(true);
+  });
+
+  it('o lugar em foco não perde o nome de perto, e tem o peso do foco (13/11, Grande Nuvem)', () => {
+    const nuvem = lugares.LUGARES_DA_BUSCA.find((l) => l.id === 'grande-nuvem-de-magalhaes')!;
+    const centro = new THREE.Vector3(nuvem.x, nuvem.y, nuvem.z);
+    const cam = new THREE.PerspectiveCamera(58, 1.6, 1, 1e8);
+    // a sete kpc, onde o "Aproximar" deixa a câmera: o raio da tabela passa dos 27°
+    cam.position.copy(centro).add(new THREE.Vector3(0, 0, 7000));
+    cam.lookAt(centro);
+    cam.updateMatrixWorld(true);
+    const chave = 'lugar:grande-nuvem-de-magalhaes';
+    expect(lugares.projetarLugares(cam).some((l) => l.key === chave)).toBe(false);
+    const emFoco = lugares.projetarLugares(cam, nuvem.id).find((l) => l.key === chave)!;
+    expect(emFoco.opacity).toBeGreaterThan(0.9);
+    expect(emFoco.prioridade).toBe(PRIORIDADE_DO_ROTULO.foco);
   });
 
   it('as estrelas-membro abrem a vaga; outro nome na linha de cima manda o do lugar para baixo', () => {

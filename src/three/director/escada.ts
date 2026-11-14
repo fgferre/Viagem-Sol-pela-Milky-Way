@@ -47,7 +47,7 @@ import type { Planetas } from '../world/planetas/planetas';
 import type { FreeRoam } from '../cinematic/cameraRig';
 import type { CorpoBuscavel, LugarBuscavel } from '../../lib/buscaEstrelas';
 import { nomeDoLugar } from '../../lib/buscaEstrelas';
-import { poseDoLugar, type PoseDoLugar } from '../world/lugaresDoCeu';
+import { poseDePertoDaEstrelaS, poseDoLugar, type PoseDoLugar } from '../world/lugaresDoCeu';
 import { poseDaSonda } from '../world/sondas';
 import { poseDoCometa, poseDoCometaDePerto } from '../world/cometas';
 import { poseDoExoplaneta, poseDoSistema } from '../world/exoplanetas';
@@ -523,7 +523,7 @@ export class Escada {
 
   /** escolhe uma ESTRELA (ou o centro galáctico) sem mover a câmera —
    *  mesma fronteira de `selecionarCorpo`: quem chama é `escolha.ts` */
-  selecionarPonto(pos: THREE.Vector3, raio: number, nome: string) {
+  selecionarPonto(pos: THREE.Vector3, raio: number, nome: string, lugar?: LugarBuscavel) {
     // a re-mira desliza (item 110) — era AQUI que o pulo mais doía:
     // escolher uma estrela estando no degrau corpo girava 45° num quadro
     this.atlas.selecionar(pos, raio, pos, { rampa: this.rampaDaEscada() });
@@ -532,6 +532,10 @@ export class Escada {
     this.focoEstrela = true;
     this.focoSonda = null;
     this.estrelaFocada = { nome, pos: pos.clone() };
+    // o lugar escolhido leva o degrau de perto DELE; um ponto, nenhum —
+    // senão o "Aproximar" de Sgr A✱ cairia no lugar anterior de mesmo
+    // centro (S2)
+    this.lugarFocado = lugar ? poseDoLugar(lugar) : null;
     this.ver = 'orbita';
     this.pinoDeBoot = null;
     this.events.onFoco(nome);
@@ -748,6 +752,7 @@ export class Escada {
       this.focoEstrela = true;
       this.focoSonda = null;
       this.estrelaFocada = { nome, pos: pos.clone() };
+      this.lugarFocado = null;
       this.ver = 'orbita';
       this.events.onFoco(nome);
       this.emitirEscada();
@@ -1018,10 +1023,18 @@ export class Escada {
   }
 
   /** o lugar em foco, se ele tem degrau de perto e o rig ainda mira nele */
-  private lugarDePerto(): (PoseDoLugar & { raioDePerto: number }) | null {
+  private lugarDePerto(): PoseDoLugar | null {
     const l = this.lugarFocado;
-    if (!this.focoEstrela || !l?.raioDePerto || this.atlas.alvo.distanceToSquared(l.alvo) > 1e-18) return null;
-    return { ...l, raioDePerto: l.raioDePerto };
+    if (!this.focoEstrela || !(l?.raioDePerto || l?.estrelaDePerto)) return null;
+    return this.atlas.alvo.distanceToSquared(l.alvo) > 1e-18 ? null : l;
+  }
+
+  /** a pose do degrau de perto da estrela S do lugar em foco, no instante
+   *  `jd` — só com o degrau de perto de pé (o relógio a recompõe) */
+  private poseDaEstrelaDePerto(jd: number): PoseDoLugar | null {
+    const l = this.lugarFocado;
+    if (!l?.estrelaDePerto || !this.focoEstrela || this.ver !== 'corpo') return null;
+    return poseDePertoDaEstrelaS(l.estrelaDePerto, jd, l.pisoRaio);
   }
 
   /** a estrela em foco, se ela é do piloto e o piloto está ligado */
@@ -1221,13 +1234,17 @@ export class Escada {
    */
   aproximarDoCorpo() {
     if (this.phase !== 'atlas') return;
+    // o lugar com degrau de perto vem ANTES do buraco: S2 mora no centro
+    if (this.focoEstrela && this.lugarDePerto()) {
+      this.aproximarDoLugar();
+      return;
+    }
     if (this.focoNoCentro) {
       this.aproximarDoBuraco();
       return;
     }
     if (this.focoEstrela) {
-      if (this.lugarDePerto()) this.aproximarDoLugar();
-      else this.aproximarDaEstrela();
+      this.aproximarDaEstrela();
       return;
     }
     if (this.pequeno?.tipo === 'cometa') {
@@ -1305,11 +1322,16 @@ export class Escada {
    */
   private aproximarDoLugar() {
     const l = this.lugarDePerto();
-    if (!l) return;
-    this.atlas.focar(l.alvo, l.raioDePerto, l.eixoDe, {
+    // a estrela S do lugar (S2): ela no meio e o buraco ao fundo
+    const estrela = l?.estrelaDePerto
+      ? poseDePertoDaEstrelaS(l.estrelaDePerto, this.maquinaDoTempo.jdVivo, l.pisoRaio)
+      : null;
+    const pose = estrela ?? (l?.raioDePerto ? { ...l, raio: l.raioDePerto } : null);
+    if (!pose) return;
+    this.atlas.focar(pose.alvo, pose.raio, pose.eixoDe, {
       rampa: this.rampaDaEscada(),
-      polo: l.polo,
-      pisoRaio: l.pisoRaio ?? raioDeEnquadramentoEstelar(l.alvo.length()),
+      polo: pose.polo,
+      pisoRaio: pose.pisoRaio ?? raioDeEnquadramentoEstelar(pose.alvo.length()),
     });
     this.enquadrarAgora();
     this.ver = 'corpo';
@@ -1497,7 +1519,11 @@ export class Escada {
   } | null {
     const jd = this.maquinaDoTempo.jdVivo;
     const { degrau } = this.escada;
-    if (degrau === 'estrela') return null;
+    if (degrau === 'estrela') {
+      // a estrela S de perto anda com o relógio; as outras não andam
+      const s = this.poseDaEstrelaDePerto(jd);
+      return s ? { alvo: s.alvo, raio: s.raio, eixoDe: s.eixoDe, pai: null, polo: s.polo } : null;
+    }
     // A SONDA ANDA COM O RELÓGIO: a mesma pose da chegada, no instante
     // vivo — fora da tabela (antes do lançamento) não há o que recompor
     if (degrau === 'sonda' || degrau === 'cometa' || degrau === 'exoplaneta') {

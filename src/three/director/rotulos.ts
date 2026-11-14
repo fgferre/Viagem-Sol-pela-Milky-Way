@@ -12,7 +12,8 @@
 import { abrirVagaNoGrupo, lugarNoAlvo, projetarCompanheiras, projetarLugares } from '../world/lugaresDoCeu';
 import { projetarS2 } from '../world/estrelasS';
 import { projetarSondas } from '../world/sondas';
-import { projetarCometas } from '../world/cometas';
+import { CHAVE_DE_COMETA, posicaoDoCometaNaCena, projetarCometas, raioDoCorpoDoCometaPc } from '../world/cometas';
+import { COMETAS } from '../../lib/cometas';
 import { projetarExoplanetas } from '../world/exoplanetas';
 import type { SistemaPlanetario } from '../../lib/exoplanetas';
 import * as THREE from 'three';
@@ -22,6 +23,8 @@ import {
   RampasDeRotulo,
   aplicarReguaDeRelevancia,
   alvoDoCanalDeTexto,
+  classeDeSgrA,
+  discosNaTela,
   nomeDoSolEmCaixaAlta,
   prioridadeDeEstrela,
   projectCorpos,
@@ -31,7 +34,7 @@ import {
   raioAparenteNdc,
   sobreOAssunto,
 } from '../world/labels';
-import type { CorpoRotulavel, OclusorDeRotulo, StarLabel } from '../world/labels';
+import type { CorpoRotulavel, DiscoNaTela, OclusorDeRotulo, StarLabel } from '../world/labels';
 import { raioDoAssuntoPc } from '../world/corpos/gigante';
 import { GAL } from '../world/galaxy';
 import { numeroDoIdioma } from '../tempoDoAtlas';
@@ -40,7 +43,7 @@ import { notaDeDistancia } from '../../lib/unidades';
 import { cenaPcParaHeliocentricaEclipticaUA } from '../../lib/atlas/frameGalactico';
 import { UA_POR_PC } from '../world/planetas/planetas';
 import type { Planetas } from '../world/planetas/planetas';
-import { RAIO_DO_SOL_NA_CENA } from '../escala';
+import { RAIO_DO_SOL_NA_CENA, kmParaPc } from '../escala';
 import { CHAVE_DE_CORPO, CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA } from '../atlasConfig';
 import { corDaOrbita } from '../world/orbitas';
 import type { NamedStar } from '../config';
@@ -147,6 +150,36 @@ export const ESTRELA_FORA_DO_ASSUNTO = 3;
 
 const _assunto = new THREE.Vector3();
 
+/**
+ * O ASSUNTO NA TELA — onde a esfera de centro `_assunto` e raio `raio` cai
+ * no quadro (unidade dos rótulos), o raio aparente dela (meia-altura = 1) e
+ * a proximidade. `null` atrás da câmera.
+ */
+function assuntoEm(raio: number, cam: THREE.PerspectiveCamera): AssuntoNaTela | null {
+  const centro = _assunto.clone();
+  const dist = _assunto.distanceTo(cam.position);
+  _assunto.project(cam);
+  if (_assunto.z > 1 || _assunto.z < -1) return null;
+  const raioNdc = raioAparenteNdc(raio, dist, Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2));
+  return {
+    x: (_assunto.x + 1) / 2,
+    y: (1 - _assunto.y) / 2,
+    raioNdc,
+    perto: proximidadeDoAssunto(raioNdc, cam.aspect),
+    centro,
+    raio,
+  };
+}
+type AssuntoNaTela = { x: number; y: number; raioNdc: number; perto: number; centro: THREE.Vector3; raio: number };
+
+/** o cometa em foco como assunto: a esfera que enche o quadro dele */
+function assuntoDoCometa(id: string, jd: number, cam: THREE.PerspectiveCamera): AssuntoNaTela | null {
+  const raio = raioDoCorpoDoCometaPc(id, jd);
+  if (raio === null || !posicaoDoCometaNaCena(id, jd, _assunto)) return null;
+  return assuntoEm(raio, cam);
+}
+const _cometa = new THREE.Vector3();
+
 /** linear [0..1] → canal sRGB 0..255 (a curva exata, não gama 2,2) */
 function srgb255(u: number): number {
   const v = u <= 0.0031308 ? u * 12.92 : 1.055 * u ** (1 / 2.4) - 0.055;
@@ -241,6 +274,9 @@ export class Rotulos {
   ];
   /** os oclusores de corpo, reusados quadro a quadro (ver acima) */
   private readonly poolDeOclusores: OclusorDeRotulo[] = [];
+  /** os mesmos discos NA TELA, os resolvidos — o texto não os atravessa
+   *  (`discosNaTela`); a lista é reescrita por quadro */
+  private readonly discos: DiscoNaTela[] = [];
   /** raio físico por id — não muda em sessão, e o fio é da escada */
   private readonly raiosDeCorpo = new Map<string, number | null>();
   /**
@@ -339,10 +375,33 @@ export class Rotulos {
    * erraria justamente no caso que interessa (a lua que passa
    * rasante atrás do pai).
    */
-  private montarOclusores(planetas: Planetas | null, estrelas?: readonly OclusorDeRotulo[]) {
+  private montarOclusores(
+    planetas: Planetas | null,
+    estrelas?: readonly OclusorDeRotulo[],
+    jdDosCometas = Number.NaN
+  ) {
     // a entrada zero é o Sol, e ela não se remonta
     this.oclusoresDeRotulo.length = 1;
     if (estrelas) for (const o of estrelas) this.oclusoresDeRotulo.push(o);
+    // OS COMETAS (crítica de 13/11): o NÚCLEO é corpo como os outros —
+    // "Fomalhaut" era escrita sobre o do 67P. A coma não: ela é gás
+    // translúcido, as estrelas e Vênus aparecem através dela. Só onde eles
+    // têm nome e corpo: no Atlas (`jd` vivo).
+    if (Number.isFinite(jdDosCometas)) {
+      for (const c of COMETAS) {
+        if (!c.nucleo.km) continue;
+        const raio = kmParaPc(c.nucleo.km / 2);
+        const n = this.oclusoresDeRotulo.length;
+        const o = this.oclusorDoPool(n);
+        if (!posicaoDoCometaNaCena(c.id, jdDosCometas, _cometa)) continue;
+        o.x = _cometa.x;
+        o.y = _cometa.y;
+        o.z = _cometa.z;
+        o.raio = raio;
+        o.chave = `${CHAVE_DE_COMETA}${c.id}`;
+        this.oclusoresDeRotulo.push(o);
+      }
+    }
     if (!planetas) return;
     this.somarOclusores(CORPOS_DO_SISTEMA, planetas.posicoes);
     this.somarOclusores(LUAS_DO_SISTEMA, this.luaPosParaRotulo);
@@ -361,12 +420,7 @@ export class Rotulos {
       if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
       const raio = this.raioDeCorpo(corpos[i].id);
       if (raio === null || !(raio > 0)) continue;
-      const n = this.oclusoresDeRotulo.length;
-      let o = this.poolDeOclusores[n - 1];
-      if (!o) {
-        o = { x: 0, y: 0, z: 0, raio: 0 };
-        this.poolDeOclusores[n - 1] = o;
-      }
+      const o = this.oclusorDoPool(this.oclusoresDeRotulo.length);
       o.x = x;
       o.y = y;
       o.z = z;
@@ -374,6 +428,16 @@ export class Rotulos {
       o.chave = corpos[i].chave;
       this.oclusoresDeRotulo.push(o);
     }
+  }
+
+  /** o objeto reusado da entrada `n` da lista (a zero é o Sol, fora do pool) */
+  private oclusorDoPool(n: number): OclusorDeRotulo {
+    let o = this.poolDeOclusores[n - 1];
+    if (!o) {
+      o = { x: 0, y: 0, z: 0, raio: 0 };
+      this.poolDeOclusores[n - 1] = o;
+    }
+    return o;
   }
 
   /**
@@ -457,7 +521,7 @@ export class Rotulos {
     id: string,
     planetas: Planetas | null,
     cam: THREE.PerspectiveCamera
-  ): { x: number; y: number; raioNdc: number; perto: number; centro: THREE.Vector3; raio: number } | null {
+  ): AssuntoNaTela | null {
     const raio = raioDoAssuntoPc(id);
     const pos = this.posicaoDoCorpo(
       `${CHAVE_DE_CORPO}${id}`,
@@ -466,19 +530,7 @@ export class Rotulos {
     );
     if (!pos || raio === null) return null;
     _assunto.set(pos[0], pos[1], pos[2]);
-    const centro = _assunto.clone();
-    const dist = _assunto.distanceTo(cam.position);
-    _assunto.project(cam);
-    if (_assunto.z > 1 || _assunto.z < -1) return null;
-    const raioNdc = raioAparenteNdc(raio, dist, Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2));
-    return {
-      x: (_assunto.x + 1) / 2,
-      y: (1 - _assunto.y) / 2,
-      raioNdc,
-      perto: proximidadeDoAssunto(raioNdc, cam.aspect),
-      centro,
-      raio,
-    };
+    return assuntoEm(raio, cam);
   }
 
   /**
@@ -496,6 +548,10 @@ export class Rotulos {
    *    lua em foco e o Sol), e os nomes de estrela em volta do assunto.
    * Tudo volta quando a câmera se afasta. Só mexe na opacidade: a camada
    * desligada continua fora, e o clique segue o que está escrito.
+   *
+   * O COMETA EM FOCO é retrato pela mesma lei (crítica de 13/11: "Azha" e
+   * "Zibal" escritos sobre a coma de Halley, de perto): o assunto é o que
+   * enche o quadro dele (`raioDoCorpoDoCometaPc`).
    */
   private cederAoAssunto(
     foco: string | null,
@@ -503,7 +559,8 @@ export class Rotulos {
     cam: THREE.PerspectiveCamera,
     corpos: readonly StarLabel[],
     luas: readonly StarLabel[],
-    estrelas: readonly StarLabel[] = []
+    estrelas: readonly StarLabel[] = [],
+    cometa: { id: string; jd: number } | null = null
   ) {
     const assuntos = new Map<string, ReturnType<Rotulos['assuntoNaTela']>>();
     const assuntoDe = (id: string) => {
@@ -535,13 +592,12 @@ export class Rotulos {
         : 0;
       lua.opacity *= 1 - a.perto * Math.max(naTela, noEspaco);
     }
-    if (!foco) return;
-    const a = assuntoDe(foco);
+    const a = foco ? assuntoDe(foco) : cometa ? assuntoDoCometa(cometa.id, cometa.jd, cam) : null;
     if (!a || a.perto <= 0) return;
-    const paiDoFoco = PAI_DA_LUA.get(foco);
+    const paiDoFoco = foco ? PAI_DA_LUA.get(foco) : undefined;
     for (const c of [...corpos, ...luas]) {
       const id = c.key.slice(CHAVE_DE_CORPO.length);
-      if (id === foco || id === 'sun' || id === paiDoFoco || PAI_DA_LUA.get(id) === foco) continue;
+      if (id === foco || id === 'sun' || (foco && (id === paiDoFoco || PAI_DA_LUA.get(id) === foco))) continue;
       c.opacity *= 1 - a.perto;
     }
     for (const e of estrelas) {
@@ -636,6 +692,8 @@ export class Rotulos {
     for (let i = labels.length - 1; i >= 0; i--) {
       const l = labels[i];
       if (l.causaDoSumico === 'oclusao' && (semRampa || !(l.opacity > 0))) labels.splice(i, 1);
+      // o texto não atravessa disco na frente dele — a lei é do desenho
+      else if (this.discos.length > 0) l.discos = this.discos;
     }
     this.fios.onLabels(labels);
   }
@@ -686,7 +744,9 @@ export class Rotulos {
       return projectForced(cam, nomeDoSolEmCaixaAlta(), 'G2V', { x: 0, y: 0, z: 0 }, 'sol-home');
     }
     if (name === 'SGR') {
-      return projectForced(cam, NOME_DE_SGR_A, 'SMBH', GAL.GC_POS, 'sgr-a');
+      const l = projectForced(cam, NOME_DE_SGR_A, '', GAL.GC_POS, 'sgr-a');
+      if (l) l.detalhe = classeDeSgrA();
+      return l;
     }
     const corpo = CORPO_DO_ROTEIRO.get(name);
     if (corpo) return this.resolveCorpoDirigido(cam, corpo, planetas);
@@ -867,7 +927,12 @@ export class Rotulos {
     this.dtDeRampa = 0;
     // OS DISCOS DO QUADRO, antes de qualquer projeção: eles valem para
     // as estrelas e para os corpos, e a lista é a mesma nos dois ramos.
-    this.montarOclusores(planetas, quadro.oclusoresDeEstrelas);
+    this.montarOclusores(
+      planetas,
+      quadro.oclusoresDeEstrelas,
+      fase === 'atlas' ? (quadro.jd ?? Number.NaN) : Number.NaN
+    );
+    discosNaTela(cam, this.oclusoresDeRotulo, this.discos);
     // A ISENÇÃO DO ALVO SEGUIDO (item 125, F4 · O11): o corpo em foco não
     // é escondido por globo nenhum — o `setCanBeOccluded(false)` deles,
     // que o `unfollow` desfaz. Aqui o "desfazer" é de graça: a chave sai
@@ -1066,7 +1131,10 @@ export class Rotulos {
           } else e.prioridade = prioridadeDeEstrela(e.tier);
         }
         // de perto, o retrato: nada sobre o disco, a outra escala recua
-        this.cederAoAssunto(quadro.foco, planetas, cam, corpos, luas, estrelas);
+        this.cederAoAssunto(
+          quadro.foco, planetas, cam, corpos, luas, estrelas,
+          fase === 'atlas' && quadro.focoCometa ? { id: quadro.focoCometa, jd: quadro.jd ?? Number.NaN } : null
+        );
         // OS LUGARES DO CÉU (céu profundo, 12/11): só fora do sistema
         // solar, e cada um só enquanto lê como objeto (`projetarLugares`)
         // AS SONDAS (pilar 4, 12/11): marcador e nome na posição viva,
@@ -1094,7 +1162,7 @@ export class Rotulos {
         // A ESTRELA S2 (13/11): o nome na estrela viva, só no Atlas
         const estrelaS2 = fase === 'atlas' ? projetarS2(cam, quadro.jd ?? Number.NaN) : [];
         const lista = [
-          ...corpos, ...luas, ...estrelas, ...projetarLugares(cam), ...companheiras, ...sondas, ...cometas, ...exoplanetas,
+          ...corpos, ...luas, ...estrelas, ...projetarLugares(cam, lugarEmFoco?.id), ...companheiras, ...sondas, ...cometas, ...exoplanetas,
           ...estrelaS2,
         ];
         if (lugarEmFoco) abrirVagaNoGrupo(lugarEmFoco.id, lista);

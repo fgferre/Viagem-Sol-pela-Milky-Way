@@ -727,7 +727,7 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
     expect(variantes.some((e) => e.larguraPx < maisLarga)).toBe(true);
     const fonte = linhaDe('earth', 'fonte');
     expect(fonte.valor).toContain('Solar System Scope');
-    expect(fonte.valor).toMatch(/· 8192 px de largura$/);
+    expect(fonte.valor).toMatch(/· 8.192 px de largura$/);
   });
 });
 
@@ -835,7 +835,7 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     // três algarismos significativos: Ballesteros não vale mais que isso, e
     // "9927 K" fingiria uma precisão que a fórmula não tem.
     const t = temperatureFromBV(arcturus.ci!);
-    expect(linha.valor).toBe(`${Number(t.toPrecision(3))} K`.replace('.', ','));
+    expect(linha.valor).toBe(`${Number(t.toPrecision(3))} K`.replace(/^(\d)(\d{3}) K$/, '$1.$2 K'));
   });
 
   it('a estrela com a distância do aglomerado diz isso, com o nome dele, e não finge paralaxe', () => {
@@ -956,8 +956,18 @@ describe('as unidades e os selos que o visitante lê', () => {
     expect(lua.linhas[0]!.rotulo).toBe('Distância — Terra');
     expect(lua.linhas[0]!.valor).toMatch(/mil km$/);
     const marte = ficha('mars')!.secoes.find((s) => s.id === 'agora')!;
-    expect(marte.linhas[0]!.rotulo).toBe('Distância — Sol');
+    expect(marte.linhas[0]!.rotulo).toBe('distância do Sol');
     expect(marte.linhas[0]!.valor).toMatch(/ UA$/);
+  });
+
+  it('em inglês a linha do planeta também diz "distance from the Sun"', () => {
+    definirIdioma('en');
+    try {
+      const marte = ficha('mars')!.secoes.find((s) => s.id === 'agora')!;
+      expect(marte.linhas[0]!.rotulo).toBe('distance from the Sun');
+    } finally {
+      definirIdioma('pt-BR');
+    }
   });
 
   it('nenhuma linha da ficha fala em parsec', () => {

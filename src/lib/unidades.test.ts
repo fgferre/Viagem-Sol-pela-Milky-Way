@@ -18,6 +18,7 @@ import {
   notaDeDistancia,
 } from './unidades';
 import { definirIdioma } from './idioma';
+import { numeroDoIdioma } from '../three/tempoDoAtlas';
 
 /** o formatador injetado dos testes: uma casa, vírgula decimal */
 const fmt = (v: number) => String(Math.round(v * 100) / 100).replace('.', ',');
@@ -172,5 +173,24 @@ describe('notaDeDistancia — o plural muda de regra com a língua', () => {
     expect(comCasas(0.0167, 3)).toBe('0,017');
     definirIdioma('en');
     expect(comCasas(0.0167, 3)).toBe('0.017');
+  });
+});
+
+describe('separador de milhar — todo número de 4 algarismos ou mais', () => {
+  afterEach(() => definirIdioma('pt-BR'));
+
+  it('pt-BR: 1.350 anos-luz, 3.237 mil km, 3.998 mil km; 999 e a décima ficam como estão', () => {
+    definirIdioma('pt-BR');
+    expect(notaDeDistancia(1350 * UA_POR_AL, numeroDoIdioma)).toBe('1.350 anos-luz');
+    expect(notaDeDistancia(3_237_000 / 149597870.7, numeroDoIdioma)).toBe('3.237 mil km');
+    expect(notaDeDistancia(999 * UA_POR_AL, numeroDoIdioma)).toBe('999 anos-luz');
+    expect(numeroDoIdioma(1234.5)).toBe('1.234,5');
+  });
+
+  it('inglês: 1,350 light-years, 3,237 thousand km', () => {
+    definirIdioma('en');
+    expect(notaDeDistancia(1350 * UA_POR_AL, numeroDoIdioma)).toBe('1,350 light-years');
+    expect(notaDeDistancia(3_237_000 / 149597870.7, numeroDoIdioma)).toBe('3,237 thousand km');
+    expect(numeroDoIdioma(1234.5)).toBe('1,234.5');
   });
 });

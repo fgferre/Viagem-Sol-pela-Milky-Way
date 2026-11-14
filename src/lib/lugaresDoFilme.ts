@@ -110,6 +110,10 @@ export interface LugarDoCeu {
    *  ficha), em pc, pela mesma vista — ausente = o lugar não tem o que
    *  mostrar mais de perto do que a chegada já mostra, e o botão não existe */
   raioDePertoPc?: number;
+  /** o degrau de PERTO enquadra esta ESTRELA S (`lib/estrelasS.ts`) e não
+   *  o centro do lugar: ela no meio, o buraco ao fundo, e a câmera anda com
+   *  ela no relógio (`poseDePertoDaEstrelaS`) */
+  estrelaDePerto?: string;
   vista?: VistaDoLugar;
   /** só para a vista `doSol`: a câmera sobe estes graus acima do plano da
    *  galáxia, girando em volta do lugar — ausente = 0, a linha de visada
@@ -148,8 +152,8 @@ const CATALOGO_DA_CASA = { pt: 'catálogo da casa (AT-HYG)', en: 'the app’s ca
 const MODELO_DA_CASA = { pt: 'modelo da galáxia da casa', en: 'the app’s galaxy model' };
 const MODELO_DAS_VIZINHAS = { pt: 'modelo de partículas da casa', en: 'the app’s particle model' };
 const MASSA_POR_ESTRELA = {
-  pt: 'massa estelar ÷ massa média de uma estrela (0,3–0,5 M☉)',
-  en: 'stellar mass ÷ the mean mass of a star (0.3–0.5 M☉)',
+  pt: 'massa estelar ÷ massa média de uma estrela (0,3–\u20600,5\u00A0M☉)',
+  en: 'stellar mass ÷ the mean mass of a star (0.3–\u20600.5\u00A0M☉)',
 };
 const TEMPO_DA_LUZ = { pt: 'distância ÷ velocidade da luz', en: 'distance ÷ speed of light' };
 
@@ -242,6 +246,9 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     // o disco já é faixa e não risco; a elipse de S2 sai 2,4 % menor no
     // eixo maior e girada 2,8° em relação à do céu (o teste da linha cobra)
     elevacaoGraus: 6,
+    // o "Aproximar" vai à estrela: era o mesmo degrau do buraco (o alvo do
+    // lugar É o centro) e dava o mesmo quadro de Sagittarius A✱ (14/11)
+    estrelaDePerto: 'S2',
     semRotulo: true,
     distanciaPc: { valor: 8150, fonte: 'Reid et al. 2019 (VLBI)' },
     oQueE: {
@@ -251,8 +258,9 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     fatos: [
       {
         campo: 'periodo',
-        pt: 'uma volta a cada 16,05 anos',
-        en: 'one orbit every 16.05 years',
+        // o nome da linha já é "Uma volta": o valor não repete a palavra
+        pt: 'a cada 16,05 anos',
+        en: 'every 16.05 years',
         procedencia: 'medido',
         fonte: 'GRAVITY Collaboration 2020 (A&A 636, L5)',
       },

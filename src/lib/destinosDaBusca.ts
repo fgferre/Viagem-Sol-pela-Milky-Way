@@ -77,7 +77,10 @@ const LISTA: readonly {
   { id: 'pleiades', categoria: 'galaxia', consulta: 'pleiades' },
   { id: 'hyades', categoria: 'galaxia', consulta: 'hyades' },
   { id: 'nebulosa-de-orion', categoria: 'galaxia', consulta: 'nebulosa-de-orion' },
-  { id: 'sagittarius-a', categoria: 'galaxia', consulta: 'sagittarius-a' },
+  // SAGITTARIUS A✱ EM `raios: 0` (14/11/2026): a prévia do cartão é o
+  // buraco de perto (`ver: 'corpo'`), e sem isto o clique parava na
+  // galáxia inteira a 6 kpc — a vista da Via Láctea tem cartão próprio
+  { id: 'sagittarius-a', categoria: 'galaxia', consulta: 'sagittarius-a', raios: 0 },
   { id: 'ana-de-sagitario', categoria: 'galaxia', consulta: 'ana-de-sagitario' },
   // AS VIZINHAS (pilar 3, 12/11/2026): além da nossa galáxia, a maior
   // companheira e a grande espiral do lado
