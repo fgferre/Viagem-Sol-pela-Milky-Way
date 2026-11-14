@@ -78,9 +78,11 @@ import { CONSULTADO_EM, estadoDaSonda, janelaDaSonda } from '../sondas';
 import type { Cometa } from '../cometas';
 import {
   EXOPLANETAS_CONSULTADOS_EM,
+  FONTES_DA_CLASSE,
   FONTE_DA_ZONA_HABITAVEL,
   HZ_TEFF_VALIDA,
   INCLINACAO_CONVENCIONAL_GRAUS,
+  climaDoExoplaneta,
   ehAnfitriaAcrescentada,
   geometriaDoPlaneta,
   sistemaDaEstrela,
@@ -1496,6 +1498,59 @@ function emTerrasOuJupiteres(terras: number, porJupiter: number): string {
 }
 
 /**
+ * A CARA NA CENA, por canal (13/11/2026): a CLASSE é derivada dos números
+ * (com as fontes das fronteiras), o CALOR é derivado da estrela e da
+ * distância, a COR é medida só em HD 189733 b, e a SUPERFÍCIE é sempre
+ * imaginada — o desenho da casa a partir da classe.
+ */
+function linhasDaFace(planeta: Exoplaneta, estrela: EstrelaVisitavel | null): (LinhaDaFicha | null)[] {
+  const linhas: (LinhaDaFicha | null)[] = [];
+  if (estrela) {
+    const c = climaDoExoplaneta(planeta, {
+      teffK: estrela.teffK.v,
+      raioRsol: estrela.raioRsol.v,
+      massaMsol: estrela.massaMsol.v,
+      luminosidadeLsol: estrela.luminosidadeLsol.v,
+    });
+    const gas = c.classe === 'subnetuno' || c.classe === 'giganteQuente' || c.classe === 'giganteFrio';
+    const classe = [
+      t(`ficha.exo.classe.${c.classe}`),
+      gas ? ` (${t(`ficha.exo.nuvens.${c.sudarsky}`)})` : '',
+      c.travado ? `; ${t('ficha.exo.travado')}` : '',
+    ].join('');
+    linhas.push(
+      linha(t('ficha.exo.classe'), classe, 'derivado', t('ficha.exo.fonte.classe', { fontes: FONTES_DA_CLASSE })),
+      linha(
+        t('ficha.exo.calor'),
+        t('ficha.exo.calor.valor', { teq: inteiroDoIdioma(Math.round(c.teqK)), sub: inteiroDoIdioma(Math.round(c.subestelarK)) }),
+        'derivado',
+        t('ficha.exo.fonte.calor')
+      ),
+      linha(
+        t('ficha.exo.superficie'),
+        t(
+          gas
+            ? planeta.albedo
+              ? 'ficha.exo.superficie.gasMedida'
+              : 'ficha.exo.superficie.gas'
+            : c.classe === 'lava'
+              ? 'ficha.exo.superficie.lava'
+              : c.classe === 'rochosoQuente'
+                ? 'ficha.exo.superficie.quente'
+                : 'ficha.exo.superficie.rochoso'
+        ),
+        'artistico',
+        t('ficha.exo.fonte.imaginada')
+      )
+    );
+  }
+  if (planeta.albedo) {
+    linhas.push(linha(t('ficha.exo.aparencia'), t('ficha.exo.aparencia.medida'), 'medido', planeta.albedo.fonte));
+  }
+  return linhas;
+}
+
+/**
  * A FICHA DE UM EXOPLANETA. "O planeta" é o que o arquivo sabe, cada
  * número com o selo e a fonte; "o que se vê aqui" separa o medido (a
  * órbita), o derivado (a zona habitável) e o convencional ou desconhecido
@@ -1576,9 +1631,7 @@ export function montarFichaDeExoplaneta(
         )
       : linha(t('ficha.exo.fase'), t('ficha.exo.fase.arbitraria'), 'artistico', t('ficha.exo.fonte.convencao')),
     estrela ? linha(t('ficha.exo.zonaHabitavel'), t('ficha.exo.zona.naCena'), 'derivado', fonteDaZona(estrela)) : null,
-    planeta.albedo
-      ? linha(t('ficha.exo.aparencia'), t('ficha.exo.aparencia.medida'), 'medido', planeta.albedo.fonte)
-      : linha(t('ficha.exo.aparencia'), t('ficha.exo.aparencia.desconhecida'), 'artistico', t('ficha.exo.fonte.semImagem')),
+    ...linhasDaFace(planeta, estrela),
   ];
   const so = (l: (LinhaDaFicha | null)[]) => l.filter((x): x is LinhaDaFicha => x !== null);
   return {

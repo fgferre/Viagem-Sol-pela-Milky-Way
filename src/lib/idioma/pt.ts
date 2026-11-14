@@ -652,9 +652,35 @@ export const PT = {
   'ficha.exo.aparencia': 'aparência',
   'ficha.exo.aparencia.medida':
     'cor medida: azul-escuro (albedo 0,40 no azul, menos de 0,12 no verde); o vermelho não foi medido',
-  'ficha.exo.aparencia.desconhecida':
-    'desconhecida: uma esfera cinza do tamanho da ficha, acesa pela cor da estrela, com brilho realçado para a visita',
-  'ficha.exo.fonte.semImagem': 'nenhum telescópio resolveu o disco deste planeta',
+  'ficha.exo.classe': 'classe',
+  'ficha.exo.classe.lava': 'mundo de lava',
+  'ficha.exo.classe.rochosoQuente': 'rochoso quente',
+  'ficha.exo.classe.rochosoTemperado': 'rochoso temperado',
+  'ficha.exo.classe.gelado': 'mundo gelado',
+  'ficha.exo.classe.subnetuno': 'sub-Netuno',
+  'ficha.exo.classe.giganteQuente': 'gigante gasoso quente',
+  'ficha.exo.classe.giganteFrio': 'gigante gasoso',
+  'ficha.exo.nuvens.1': 'nuvens de amônia',
+  'ficha.exo.nuvens.2': 'nuvens de água',
+  'ficha.exo.nuvens.3': 'sem nuvens, azul do espalhamento',
+  'ficha.exo.nuvens.4': 'metais alcalinos, quase sem nuvens',
+  'ficha.exo.nuvens.5': 'nuvens de silicato',
+  'ficha.exo.travado': 'travado por maré: o mesmo lado sempre voltado para a estrela',
+  'ficha.exo.fonte.classe': 'decidida pelo raio, a massa, a densidade e a temperatura: {fontes}',
+  'ficha.exo.calor': 'calor na cena',
+  'ficha.exo.calor.valor': '{teq} K de equilíbrio e {sub} K no ponto embaixo da estrela, sem atmosfera',
+  'ficha.exo.fonte.calor': 'calculadas da distância e da temperatura e do raio da estrela, com albedo zero',
+  'ficha.exo.superficie': 'superfície',
+  'ficha.exo.superficie.rochoso':
+    'imaginada a partir da classe: planaltos, crateras e gelo onde o chão sem atmosfera ficaria abaixo do degelo; brilho realçado para a visita',
+  'ficha.exo.superficie.quente':
+    'imaginada a partir da classe: rocha nua, escura e craterada, sem gelo (dentro da zona habitável a água se perde); brilho realçado para a visita',
+  'ficha.exo.superficie.lava':
+    'imaginada a partir da classe: mar de lava e crosta rachada onde o chão passaria da fusão da rocha; o brilho próprio sai da temperatura pela lei de Planck',
+  'ficha.exo.superficie.gas':
+    'imaginada a partir da classe: faixas, fios e tempestades nas cores da classe de nuvens; brilho realçado para a visita',
+  'ficha.exo.superficie.gasMedida': 'imaginada: faixas, fios e tempestades; só a cor é medida',
+  'ficha.exo.fonte.imaginada': 'desenho da casa a partir da classe; nenhum telescópio resolveu o disco',
   'ficha.cometa.doSol': 'distância do Sol',
   'ficha.cometa.daTerra': 'distância da Terra',
   'ficha.cometa.velocidade': 'velocidade em relação ao Sol',

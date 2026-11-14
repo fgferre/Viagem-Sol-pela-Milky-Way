@@ -645,9 +645,35 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.exo.aparencia': 'appearance',
   'ficha.exo.aparencia.medida':
     'measured colour: deep blue (albedo 0.40 in blue, under 0.12 in green); red was not measured',
-  'ficha.exo.aparencia.desconhecida':
-    'unknown: a grey sphere the size on this sheet, lit by the star’s colour, with brightness raised for the visit',
-  'ficha.exo.fonte.semImagem': 'no telescope has resolved this planet’s disk',
+  'ficha.exo.classe': 'class',
+  'ficha.exo.classe.lava': 'lava world',
+  'ficha.exo.classe.rochosoQuente': 'hot rocky planet',
+  'ficha.exo.classe.rochosoTemperado': 'temperate rocky planet',
+  'ficha.exo.classe.gelado': 'icy world',
+  'ficha.exo.classe.subnetuno': 'sub-Neptune',
+  'ficha.exo.classe.giganteQuente': 'hot gas giant',
+  'ficha.exo.classe.giganteFrio': 'gas giant',
+  'ficha.exo.nuvens.1': 'ammonia clouds',
+  'ficha.exo.nuvens.2': 'water clouds',
+  'ficha.exo.nuvens.3': 'cloudless, scattering blue',
+  'ficha.exo.nuvens.4': 'alkali metals, almost cloudless',
+  'ficha.exo.nuvens.5': 'silicate clouds',
+  'ficha.exo.travado': 'tidally locked: the same side always faces the star',
+  'ficha.exo.fonte.classe': 'decided by radius, mass, density and temperature: {fontes}',
+  'ficha.exo.calor': 'heat in the scene',
+  'ficha.exo.calor.valor': '{teq} K equilibrium and {sub} K at the point under the star, with no atmosphere',
+  'ficha.exo.fonte.calor': 'computed from the distance and the star’s temperature and radius, with zero albedo',
+  'ficha.exo.superficie': 'surface',
+  'ficha.exo.superficie.rochoso':
+    'imagined from the class: highlands, craters and ice where airless ground would stay below thawing; brightness raised for the visit',
+  'ficha.exo.superficie.quente':
+    'imagined from the class: bare, dark, cratered rock with no ice (inside the habitable zone’s edge water is lost); brightness raised for the visit',
+  'ficha.exo.superficie.lava':
+    'imagined from the class: a lava sea and cracked crust where the ground would pass the melting of rock; its own glow comes from the temperature by Planck’s law',
+  'ficha.exo.superficie.gas':
+    'imagined from the class: bands, streaks and storms in the colours of the cloud class; brightness raised for the visit',
+  'ficha.exo.superficie.gasMedida': 'imagined: bands, streaks and storms; only the colour is measured',
+  'ficha.exo.fonte.imaginada': 'the app’s drawing from the class; no telescope has resolved the disk',
   'ficha.fonte.daTrajetoria': 'computed from the Horizons trajectory',
   'ficha.fonte.reguaDeEscala': 'the app’s scale rule',
   'ficha.secao.companheira': '{nome} (white dwarf)',
