@@ -29,7 +29,7 @@ import { POEIRA_ATOMICA } from '../../shaders/galaxyShaders';
 const n = (v: number) => (Number.isInteger(v) ? `${v}.0` : `${v}`);
 
 /** bytes do bloco de uniformes */
-export const BYTES_DOS_UNIFORMES = 208;
+export const BYTES_DOS_UNIFORMES = 224;
 
 // a fração da luz que as cascas de estrelas do app NÃO resolvem a esta
 // distância (1,0 além de ~5 kpc): o mesmo polinômio, em WGSL
@@ -47,6 +47,7 @@ struct U {
   n: u32, k: u32, borrifo: u32, base: u32,
   filtro: u32, linha: u32, pesoDasCelulas: f32, alfa: f32,
   linear: f32, pesoParcial: f32, nCheio: u32, nTotal: u32,
+  pesoFixo: f32, pesoPerto: f32, livre0: f32, livre1: f32,
 }
 struct P { x: f32, y: f32, z: f32, tam: f32, cor: u32 }
 
@@ -189,7 +190,11 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
 
   let tipo = floor(p.tam * 0.001);
   let dist = max(length(u.cam - p0), 1.0);
-  let px = (p.tam - 1000.0 * tipo) * u.screenH / (2.0 * u.tanHalfFov * dist);
+  // A CESSÃO (galaxy.ts): a lei de perto (< ~1,5 kpc da câmera) é do WebGL
+  // até o fim da subida; aqui só a parte de longe de cada partícula
+  let cessao = u.pesoFixo + u.pesoPerto * smoothstep(300.0, 1500.0, dist);
+  if (cessao <= 0.0) { return; }
+  let px =(p.tam - 1000.0 * tipo) * u.screenH / (2.0 * u.tanHalfFov * dist);
   let pxDep = min(px, u.tetoPx);
   // indivíduos (estrela jovem, nó H II, aglomerado, halo, núcleo) valem
   // inteiros; as populações contínuas dividem a luz pelos sorteios
@@ -199,7 +204,7 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
   let peso = select(select(u.pesoParcial, u.pesoDasCelulas, i < u.nCheio), 1.0, individuo);
   // fluxo total em unidade de cena × pixel: 0,1726 = 0,690376/4, a integral
   // da pegada (tenda ou gaussiana) por px² de largura
-  let fluxo = peso * u.ganho * unresolved(dist) * 0.172594 * pxDep * pxDep / 0.49;
+  let fluxo = cessao * peso * u.ganho * unresolved(dist) * 0.172594 * pxDep * pxDep / 0.49;
   // a cor em rgb9e5, já vezes o alpha da partícula
   let escalaDaCor = exp2(f32(p.cor >> 27u) - 24.0);
   let cor = vec3f(f32(p.cor & 511u), f32((p.cor >> 9u) & 511u), f32((p.cor >> 18u) & 511u)) * escalaDaCor;

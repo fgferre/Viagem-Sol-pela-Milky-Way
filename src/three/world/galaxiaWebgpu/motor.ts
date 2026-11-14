@@ -43,6 +43,13 @@ export interface OpcoesDoQuadro {
   lod: number;
   /** o uFade da vista de fora (galaxy.ts): 1 + 6,99 */
   ganho: number;
+  /**
+   * A CESSÃO por partícula (galaxy.ts): o motor leva pesoFixo +
+   * pesoPerto·smoothstep(300, 1500, d) da luz de cada uma — o resto (a lei
+   * de perto) fica com o WebGL. Ausentes: 1 e 0, tudo.
+   */
+  pesoFixo?: number;
+  pesoPerto?: number;
 }
 
 /** rgb9e5: três mantissas de 9 bits e um expoente comum de 5 */
@@ -311,6 +318,8 @@ export class MotorDaGalaxia {
     uF[49] = (s - cheios) / s;
     uI[50] = this.limites[cheios - 1];
     uI[51] = this.total;
+    uF[52] = op.pesoFixo ?? 1;
+    uF[53] = op.pesoPerto ?? 0;
     this.nQuadro++;
     this.usadas = usados;
     this.gpu.queue.writeBuffer(this.bufU, 0, this.dadosU);

@@ -25,7 +25,7 @@
 import * as THREE from 'three';
 import type { GalaxyBuffers } from '../geradorDaGalaxia';
 import { MotorDaGalaxia } from './motor';
-import type { SorteioEmpacotado } from './motor';
+import type { OpcoesDoQuadro, SorteioEmpacotado } from './motor';
 import type { OpcoesDoLaboratorioWebgpu } from '../laboratorioDaGalaxia';
 
 /** partículas por sorteio com folga (o gerador dá ~4,02 M na qualidade alta) */
@@ -227,7 +227,8 @@ export class CamadaWebgpu {
   /**
    * Um quadro. `peso` é a fração da luz das partículas que cabe à camada
    * (o resto fica com o WebGL); `ganho` é o uFade das partículas;
-   * `opcoes`, os botões do motor que o laboratório da galáxia governa.
+   * `opcoes`, os botões do motor que o laboratório da galáxia governa, e a
+   * cessão por partícula (`pesoFixo`/`pesoPerto`, galaxy.ts).
    */
   update(
     camera: THREE.PerspectiveCamera,
@@ -236,7 +237,7 @@ export class CamadaWebgpu {
     tanMeioFov: number,
     ganho: number,
     peso: number,
-    opcoes: OpcoesDoLaboratorioWebgpu
+    opcoes: OpcoesDoLaboratorioWebgpu & Pick<OpcoesDoQuadro, 'pesoFixo' | 'pesoPerto'>
   ) {
     this.mesh.visible = peso > 0.001 && ganho > 0.001;
     if (!this.mesh.visible) return;

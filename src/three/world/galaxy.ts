@@ -134,6 +134,8 @@ export class Galaxy {
   private webgpuEmVoo = false;
   /** a fração da luz das partículas que cabe à camada WebGPU, do último `update` */
   private cessao = 0;
+  /** a lei de longe é toda da camada WebGPU neste quadro: o WebGL só desenha a de perto */
+  private longeNoWebgpu = false;
   /** quem acompanha a troca do caminho que desenha (Director → painel e selo) */
   aoMudarCaminho: (() => void) | null = null;
   private descartada = false;
@@ -298,6 +300,7 @@ export class Galaxy {
       this.brightMat.uniforms.uRho = { value: this.rhoLod };
       this.brightMat.uniforms.uRhoPiso = { value: controleDoLaboratorio('lodpiso').padrao! };
       this.brightMat.uniforms.uGanhoPerto = { value: 1 };
+      this.brightMat.uniforms.uLonge = { value: 1 };
       this.brightMat.uniforms.uKMax = { value: this.kmaxLod };
       this.brightMat.uniforms.uFracK = { value: 1 };
       this.brightMat.uniforms.uEspLod = { value: controleDoLaboratorio('lodesp').padrao! };
@@ -983,6 +986,13 @@ export class Galaxy {
       const mMax = (rho * f * f * projMax) / (sig * dMin * dMin);
       const kPerto = this.lod!.fade * ss(dMin, 300, 1500);
       const kLonge = this.lod!.fade * ss(dMax, 300, 1500);
+      // com a lei de longe na camada WebGPU, célula toda além de 1,5 kpc
+      // não tem luz de perto nenhuma para o WebGL
+      if (this.longeNoWebgpu && kPerto >= 1) {
+        L.counts[d] = 0;
+        L.insts[d] = 0;
+        continue;
+      }
       const qMax = mMax >= 1 ? 1 : 1 - kPerto * (1 - mMax);
       const kMax = Math.min(kmax, (1 + kLonge * Math.max(mMax - 1, 0)) * fK);
       const n = Math.min(disp, Math.ceil(qMax * disp) + 1);
@@ -1047,8 +1057,21 @@ export class Galaxy {
   ) {
     this.group.visible =
       externalFade > 0.001 || markerFade > 0.001 || localBandFade > 0.001;
-    // a parte da luz que a camada WebGPU desenharia desta câmera (ver A CESSÃO)
-    this.cessao = this.group.visible ? THREE.MathUtils.smoothstep(externalFade, 0.8, 1) : 0;
+    // A CESSÃO (13/11/2026) — duas rampas, só da posição da câmera (pelo
+    // externalFade) e do nível (quem tem a camada WebGPU):
+    //  · longe: a lei de longe (núcleo, tenda, nível de detalhe) assume as
+    //    partículas a mais de ~1,5 kpc. Com a camada, ela fecha logo depois
+    //    de sair do plano (externalFade 0 → 0,25, ~600 → ~1,1 kpc de altura)
+    //    e essa luz é toda dela; o WebGL fica só com a de perto. Sem a camada
+    //    a rampa é a de sempre (o próprio externalFade).
+    //  · perto: a lei de perto (pontos resolvidos, < ~1,5 kpc da câmera)
+    //    passa do WebGL à camada só no fim (externalFade 0,8 → 1, ~1,7 kpc do
+    //    plano), quando sobram poucas partículas tão perto.
+    // A luz de cada partícula é dividida, nunca duplicada: a soma é 1.
+    const longeW = THREE.MathUtils.smoothstep(externalFade, 0, 0.25);
+    const perto = 1 - THREE.MathUtils.smoothstep(externalFade, 0.8, 1);
+    // a parte da luz que a camada WebGPU desenharia desta câmera
+    this.cessao = this.group.visible ? 1 - perto * (1 - longeW) : 0;
     if (!this.group.visible) return;
 
     // SOMA, não max. As duas rampas são complementares por construção
@@ -1084,27 +1107,40 @@ export class Galaxy {
         ? (brightFade + Galaxy.GANHO_DAS_LAMINAS * externalFade) / this.fracaoDeParticulas
         : brightFade / this.fracaoDeParticulas;
       if (this.camadaWebgpu?.falhou) this.soltarWebgpu();
-      if (this.camadaWebgpu && camera && screenW) {
-        // A CESSÃO: fora do disco (externalFade = 1) a luz das partículas é
-        // toda da camada WebGPU e o WebGL não desenha; na borda do disco as
-        // duas se cruzam; dentro, só o WebGL. A camada não tem a rampa de
-        // perto (< 1,5 kpc) do GALAXY_VERT — por isso só entra quando a
-        // câmera já está a ~1,7 kpc do plano.
-        // O motor desenha TODOS os seus sorteios, qualquer que seja a fração
-        // de partículas do WebGL: o ganho dele não leva o ÷ fração (em
-        // `alta`, metade, a galáxia saía com o dobro da luz).
-        const cessao = this.cessao;
-        const ganho = (u.uFade.value as number) * this.fracaoDeParticulas;
-        this.camadaWebgpu.update(camera, screenW, screenH, tanHalfFov, ganho, cessao, this.opcoesDoMotor);
-        u.uFade.value = (u.uFade.value as number) * (1 - cessao);
+      this.longeNoWebgpu = !!(this.soParticulas && this.camadaWebgpu && camera && screenW);
+      let longe = externalFade;
+      let ganhoPerto = brightFade / (brightFade + Galaxy.GANHO_DAS_LAMINAS * externalFade);
+      if (this.longeNoWebgpu) {
+        // O GANHO DA LEI DE LONGE com a rampa adiantada. A luz das lâminas
+        // (6,99·externalFade) entra pela lei de longe; com a rampa de sempre
+        // a partícula distante levava (1 − e)·bF + e·(bF + 6,99·e) =
+        // bF + 6,99·e². Com a rampa `longe` adiantada, o ganho que dá a
+        // MESMA luz é bF + 6,99·e²/longe: a galáxia não clareia por a camada
+        // entrar mais cedo, e com longe = e ele é o de sempre.
+        longe = longeW;
+        const ganhoLonge =
+          longe > 0 ? brightFade + (Galaxy.GANHO_DAS_LAMINAS * externalFade * externalFade) / longe : brightFade;
+        ganhoPerto = (perto * brightFade) / ganhoLonge;
+        u.uFade.value = ganhoLonge / this.fracaoDeParticulas;
+        // A camada leva, de cada partícula, a lei de longe (longe ×
+        // smoothstep(300, 1500, d)) e, no fim, também a de perto (1 − perto);
+        // o WebGL, o resto da de perto. O motor desenha TODOS os seus
+        // sorteios, qualquer que seja a fração de partículas do WebGL: o
+        // ganho dele não leva o ÷ fração (em `alta`, metade, a galáxia saía
+        // com o dobro da luz).
+        this.camadaWebgpu!.update(camera!, screenW!, screenH, tanHalfFov, ganhoLonge, this.cessao > 0.001 ? 1 : 0, {
+          ...this.opcoesDoMotor,
+          pesoFixo: 1 - perto,
+          pesoPerto: perto * longe,
+        });
       }
       if (this.soParticulas) {
-        // o núcleo entra pela MESMA rampa que acende a luz das lâminas
-        u.uNucleo.value = externalFade;
+        u.uNucleo.value = longe;
         // a pegada de perto (lei de tela) leva só a rampa de dentro do disco
-        u.uGanhoPerto.value = brightFade / (brightFade + Galaxy.GANHO_DAS_LAMINAS * externalFade);
+        u.uGanhoPerto.value = ganhoPerto;
+        u.uLonge.value = this.longeNoWebgpu ? 0 : 1;
         u.uNucleoPc.value = this.nucleoPc();
-        if (this.lod) this.lod.fade = externalFade;
+        if (this.lod) this.lod.fade = longe;
       }
     }
     // As lâminas contínuas só entram na vista externa. De dentro
@@ -1162,8 +1198,11 @@ export class Galaxy {
     // dentro do disco — tem termo próprio de localBandFade; halo e anã
     // não, e sem gate desenhavam um billboard quase de tela cheia
     // somando exatamente zero durante toda a viagem interna.
+    // com a lei de longe na camada WebGPU, o WebGL só existe enquanto houver
+    // lei de perto para desenhar
     this.brightPts.visible =
-      this.showPts && brightFade > 0.001 && (this.brightMat.uniforms.uFade.value as number) > 0;
+      this.showPts && brightFade > 0.001 && (this.brightMat.uniforms.uFade.value as number) > 0 &&
+      (!this.longeNoWebgpu || (this.brightMat.uniforms.uGanhoPerto.value as number) > 0);
     this.glowMesh.visible =
       this.showGlow && (this.glowMat.uniforms.uFade.value as number) > 0.001;
     this.haloMesh.visible =
