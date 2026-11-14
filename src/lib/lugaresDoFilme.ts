@@ -106,6 +106,10 @@ export interface LugarDoCeu {
   /** o piso do zoom, em pc — ausente = o de estrela à distância do lugar
    *  (`raioDeEnquadramentoEstelar`), que é maior que um lugar de UA */
   pisoPc?: number;
+  /** o raio da esfera enquadrada no degrau de PERTO (o "Aproximar" da
+   *  ficha), em pc, pela mesma vista — ausente = o lugar não tem o que
+   *  mostrar mais de perto do que a chegada já mostra, e o botão não existe */
+  raioDePertoPc?: number;
   vista?: VistaDoLugar;
   /** uma VISTA, não um objeto (a galáxia de cima, o endereço do Sol):
    *  não ganha nome na cena — quem marca o lugar é o rótulo do Sol */
@@ -598,6 +602,8 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     categoria: 'galaxia',
     classe: 'galáxia satélite',
     raioPc: 9_300,
+    // de perto: a barra, o braço e o 30 Dourado, sem a Via Láctea ao lado
+    raioDePertoPc: 3_000,
     vista: 'comAViaLactea',
     distanciaPc: { valor: 49_590, fonte: 'Pietrzyński et al. 2019' },
     oQueE: {
@@ -652,6 +658,7 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     categoria: 'galaxia',
     classe: 'galáxia satélite',
     raioPc: 4_500,
+    raioDePertoPc: 2_000,
     vista: 'doSol',
     distanciaPc: { valor: 62_440, fonte: 'Graczyk et al. 2020' },
     oQueE: {
@@ -709,6 +716,9 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     categoria: 'galaxia',
     classe: 'galáxia espiral',
     raioPc: 40_000,
+    // de perto: o disco (26 kpc de raio no modelo) enche o quadro e a
+    // câmera fica a ~37 kpc do centro, do lado de fora dele
+    raioDePertoPc: 15_000,
     vista: 'doSol',
     distanciaPc: { valor: 761_000, fonte: 'Li et al. 2021 (HST)' },
     oQueE: {

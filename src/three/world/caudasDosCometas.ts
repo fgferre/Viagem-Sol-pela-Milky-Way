@@ -506,7 +506,7 @@ const PERTO_DOS_IONS_KM = 3e4;
  * de 2,5 milhões de km e inteira dentro de 10⁵ km. Lei fixa do objeto e
  * da distância da câmera: não olha a tela, o foco nem o modo.
  */
-const ATIVIDADE_DE_HALLEY = brilhoRelativo(cometaPorId('halley') as Cometa, 0.5871);
+export const ATIVIDADE_DE_HALLEY = brilhoRelativo(cometaPorId('halley') as Cometa, 0.5871);
 
 /** a correção da exposição de perto pela atividade (1 de longe) */
 export function correcaoPelaAtividade(dKm: number, atividade: number): number {
