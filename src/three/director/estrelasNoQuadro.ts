@@ -14,11 +14,10 @@
 //    dormente que o item 38 deixou para "a estrela que ganha corpo").
 // A ÓPTICA É A DO SOL (12/11, "a luz da estrela é uma só"): cada estrela
 // montada candidata ao CLARÃO DE ASAS pela mesma lei do Sol — a magnitude e
-// a cor do ponto que ela é de longe, a soltura da repartição dela — e cede
-// à hero de autor enquanto a hero está no quadro (as duas são a óptica do
-// mesmo ponto; somar dobraria a cruz). A hero, por sua vez, cede ao corpo
-// pela mesma cessão do ponto do catálogo. A LENTE DE CINEMA segue a fonte
-// de maior irradiância na câmera (`fonteDaLente`): o Sol, ou a visitada.
+// a cor do ponto que ela é de longe, a soltura da repartição dela —, na
+// MESMA vaga que ela tem de longe como nomeada (a luz única). A LENTE DE
+// CINEMA segue a fonte de maior irradiância na câmera (`fonteDaLente`): o
+// Sol, ou a visitada.
 //
 // PREGUIÇOSO: a malha só nasce quando o Atlas foca a estrela ou a câmera
 // chega a menos de `RAIO_DE_PREPARO_PC`. Sem estrela por perto nada é
@@ -40,9 +39,6 @@ import { RAIO_SOL_PC } from '../escala';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
 import { bvToColor } from '../shaders/common';
 import { BV_MEDIDO, SOL_BV, type CandidataVisitada } from '../world/clarao';
-import { chegadaDaHero, partilhaDoCorpo, type Chegada, type HeroStars } from '../world/heroStars';
-import { UA_DO_FIM_DA_LENTE } from '../lente/passeDaLente';
-import { UA_POR_PC } from '../../lib/unidades';
 import { cessaoDoSol } from './solNoQuadro';
 import type { PoliticaDeLuz } from '../../lib/atlas/luz';
 import {
@@ -304,19 +300,6 @@ interface Superficie {
 const M_BASE_DO_SOL = M_V_SOL_DO_CAMPO - 5;
 
 /**
- * A FRAÇÃO DA LENTE (0..1) de uma estrela de `mBase` vista a `dPc`: a lei
- * da lente (`amplitudeDaLente`, o `fadeLonge`) na distância do Sol de MESMA
- * irradiância — a mesma troca de distância de `fonteDaLente`. 1 até
- * `UA_DO_FIM_DA_LENTE`, (fim/d)² além. A chegada da hero a lê para encolher
- * enquanto a lente acende (`chegadaDaHero`).
- */
-export function fracaoDaLente(dPc: number, mBase: number): number {
-  const dUA = dPc * UA_POR_PC * Math.pow(10, 0.2 * (mBase - M_BASE_DO_SOL));
-  if (!(dUA > 0)) return 0;
-  return dUA <= UA_DO_FIM_DA_LENTE ? 1 : (UA_DO_FIM_DA_LENTE / dUA) ** 2;
-}
-
-/**
  * A FONTE DA LENTE quando não é o Sol: onde está, o raio, o fator que leva
  * a distância verdadeira à distância do Sol de MESMA irradiância
  * (10^(0,2·(mBase − mBase☉)), a lei do ponto) e a cor relativa à do Sol,
@@ -327,7 +310,7 @@ export interface FonteDaLente {
   raioPc: number;
   fatorDeDistancia: number;
   tinta: [number, number, number];
-  /** a candidata ao clarão que é a fonte (a luz única cede o halo dela à lente) */
+  /** a candidata ao clarão que é a fonte (o halo do campo dela cede à lente) */
   candidata: CandidataVisitada | null;
 }
 
@@ -350,7 +333,7 @@ interface Piloto {
   indice: number;
   /** m − 5·log10(d) do NOME (o sidecar): a conferência do casamento com o catálogo */
   mBaseDoNome: number;
-  /** o índice na lista de nomeadas (a identidade dela no clarão da luz única) */
+  /** o índice na lista de nomeadas (a identidade dela no clarão) */
   nomeada: number;
   /** o mesmo para a companheira (−1 = sem nomeada própria) */
   nomeadaDaCompanheira: number;
@@ -382,7 +365,6 @@ function estadoDe(id: string, raioPc: number, teffK: number, pos: THREE.Vector3)
 }
 
 const _dir = new THREE.Vector3();
-const _chegada: Chegada = { s: 0, escala: 1, fracaoDaAltura: 0 };
 
 export class EstrelasNoQuadro {
   readonly group = new THREE.Group();
@@ -399,8 +381,6 @@ export class EstrelasNoQuadro {
     politicaDeLuz: () => PoliticaDeLuz;
     /** os meios do motor do Sol (renderer, câmera e o tier vivo) */
     motorDoSol: () => MeiosDoMotor;
-    /** as heroes de autor (a cessão delas e a presença que o clarão respeita) */
-    heroes: () => HeroStars | undefined;
   };
   /** as candidatas ao clarão deste quadro (`atualizar` escreve) */
   private readonly candidatas: (CandidataVisitada & { raioPc: number })[] = [];
@@ -495,7 +475,7 @@ export class EstrelasNoQuadro {
       // a lei do vertex do catálogo: m = −0,15 − 2,5·logLum + 5·log10(d)
       const geo = stars.points.geometry;
       mBase = -0.15 - 2.5 * (geo.getAttribute('aLogLum') as THREE.BufferAttribute).getX(p.indice);
-      // o B−V MEDIDO onde há (a mesma tabela da hero): uma estrela, uma cor
+      // o B−V MEDIDO onde há (a mesma tabela do clarão): uma estrela, uma cor
       // — Betelgeuse é 1,85 medida e 1,50 no catálogo
       cor = bvToColor(BV_MEDIDO[d.nomeNoCatalogo] ?? (geo.getAttribute('aCi') as THREE.BufferAttribute).getX(p.indice));
     }
@@ -509,8 +489,6 @@ export class EstrelasNoQuadro {
         mBase,
         cor,
         soltura: 1,
-        presenca: 1,
-        pisoPx: 0,
         nomeada: p.nomeada,
         raioPc: corpo.raioPc,
       },
@@ -537,8 +515,6 @@ export class EstrelasNoQuadro {
           mBase: ponto.mBase,
           cor: ponto.cor,
           soltura: 1,
-          presenca: 1,
-          pisoPx: 0,
           nomeada: p.nomeadaDaCompanheira,
           raioPc: cb.raioPc,
         },
@@ -553,8 +529,7 @@ export class EstrelasNoQuadro {
    * não o do nome: a posição do nome vem arredondada a 1e-4 pc, e para
    * Sirius isso punha o corpo a ~40 UA do próprio ponto — de perto, os
    * dois apareciam em lugares diferentes. Uma vez, quando o catálogo
-   * chega; escrito no MESMO vetor que `posicaoDe` entrega. A hero de autor
-   * da mesma estrela vai junto: uma estrela, um lugar.
+   * chega; escrito no MESMO vetor que `posicaoDe` entrega.
    */
   private resolverLugares(): boolean {
     if (this.lugaresResolvidos) return true;
@@ -566,7 +541,6 @@ export class EstrelasNoQuadro {
       if (p.indice < 0) continue;
       p.pos.set(xyz.getX(p.indice), xyz.getY(p.indice), xyz.getZ(p.indice));
       eixoDeRotacao(p.dados, p.pos, p.eixo);
-      this.fios.heroes()?.moverPara(p.dados.nomeNoCatalogo, p.pos);
     }
     this.lugaresResolvidos = true;
     return true;
@@ -627,16 +601,8 @@ export class EstrelasNoQuadro {
     this.candidatas.length = 0;
     // sem o catálogo não há lugar certo (nem ponto a ceder): espera
     if (!this.resolverLugares()) return;
-    const heroes = this.fios.heroes();
     for (const p of this.pilotos) {
       const emFoco = q.focoNome === p.dados.nomeNoCatalogo;
-      // A CHEGADA DA HERO (`chegadaDaHero`): de 3× o tamanho de autor para
-      // dentro, a hero desce até a luz que a lente e o clarão vão mostrar —
-      // escrita montada ou não (a de Sirius começa a 0,65 pc, antes do preparo)
-      const tamHero = heroes?.tamanhoDe(p.dados.nomeNoCatalogo) ?? 0;
-      const dCam = q.camPos.distanceTo(p.pos);
-      const chegada = chegadaDaHero(dCam, tamHero, tanHalfFov, fracaoDaLente(dCam, p.mBaseDoNome), _chegada);
-      if (tamHero > 0) heroes?.escreverEscala(p.dados.nomeNoCatalogo, chegada.escala);
       // o motor do Sol é PESADO (sim, bakes, coroa 3D): fora de foco e longe,
       // desmonta — e devolve o ponto, o palco e a memória. Trocar de TIER
       // também: o corpo nasce com o tier do aparelho (como o Sol, que o
@@ -661,19 +627,7 @@ export class EstrelasNoQuadro {
         stars.writeFocus(p.indice, cede);
         p.cedeu = cede;
       }
-      // a hero de autor da MESMA estrela passa ao CLARÃO enquanto o disco
-      // cresce (`partilhaDoCorpo`): a luz que ela larga é a que o disco
-      // ganha. As duas são a óptica do mesmo ponto (somar dobraria a cruz)
-      // e cada uma pesa cor e alfa pelo próprio ganho — a luz vai com o
-      // QUADRADO do ganho, então elas partilham ganho² (hero² + clarão² = 1),
-      // não ganho: a soma linear afundava a luz pela metade no meio da troca
-      const w = a.corpo.group.visible ? partilhaDoCorpo(leiA.discoPx, alturaCss) : 0;
-      heroes?.escreverCessao(p.dados.nomeNoCatalogo, 1 - Math.sqrt(1 - w));
-      const hero = heroes?.presenca(p.dados.nomeNoCatalogo, q.camPos) ?? 0;
       a.clarao.soltura = leiA.solturaDoClarao;
-      a.clarao.presenca = Math.sqrt(Math.max(0, 1 - hero * hero));
-      a.clarao.pisoPx =
-        tamHero > 0 && chegada.s > 0 && heroes?.group.visible ? chegada.fracaoDaAltura * alturaCss : 0;
       if (p.indice >= 0 ? (stars?.points.visible ?? false) : !escondido) this.candidatas.push(a.clarao);
       if (p.pontoProprio) {
         p.pontoProprio.points.visible = !escondido;
@@ -729,7 +683,6 @@ export class EstrelasNoQuadro {
     p.companheira = null;
     if (stars && p.indice >= 0 && p.cedeu !== 0) stars.writeFocus(p.indice, 0);
     p.cedeu = 0;
-    this.fios.heroes()?.escreverCessao(p.dados.nomeNoCatalogo, 0);
   }
 
   /** as estrelas montadas que candidatam ao clarão neste quadro (pela lei do Sol) */

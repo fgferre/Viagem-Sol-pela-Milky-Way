@@ -71,18 +71,19 @@ describe('a varredura reproduzível — gl_PointSize contra o cadastro', () => {
 });
 
 describe('a segunda varredura — quem desenha luz em QUAD aditivo', () => {
-  // O buraco que ela fecha: `heroStars.ts` desenha as 16 em billboards e
-  // NUNCA escreve `gl_PointSize`, então a primeira varredura não podia
-  // achá-lo — e o cadastro pôde afirmar por dias que "as 16" tinham
-  // morrido com a peça VIVA e instanciada pelo director. Uma varredura
-  // que não alcança a representação não a vigia.
+  // O buraco que ela fecha: `heroStars.ts` (apagado em 13/11) desenhava
+  // as 16 em billboards e NUNCA escrevia `gl_PointSize`, então a primeira
+  // varredura não podia achá-lo — e o cadastro pôde afirmar por dias que
+  // "as 16" tinham morrido com a peça VIVA e instanciada pelo director.
+  // Uma varredura que não alcança a representação não a vigia. O clarão
+  // de asas é hoje o desenhista de quad que ela tem de enxergar.
   const emissores = TODOS.filter((c) => {
     const fonte = readFileSync(c, 'utf8');
     return PADRAO_DE_QUAD_ADITIVO.every((p) => p.test(fonte));
   }).map((c) => relative(RAIZ, c));
 
-  it('a varredura ENXERGA as heroes de autor (o escape que a fechou)', () => {
-    expect(emissores).toContain('src/three/world/heroStars.ts');
+  it('a varredura ENXERGA o clarão de asas (quad sem gl_PointSize, o escape que a fechou)', () => {
+    expect(emissores).toContain('src/three/world/clarao.ts');
   });
 
   it('todo quad aditivo achado no fonte está coberto por uma linha do cadastro', () => {

@@ -79,7 +79,6 @@ const INSTRUMENT = `(() => {
     ['uLayerAlpha', 'cena:laminas-poeira'],
     ['uCell', 'cena:wrappedStars'],
     ['uMarchB', 'cena:buracoNegro'],
-    ['uZoom', 'cena:heroStars'],
     // a Terra resolvida (Onda 6, F2a): os três programas do stack novo,
     // batizados pelos uniformes/funções que só eles têm
     ['uMapaRugosidade', 'cena:terra(superficie)'],

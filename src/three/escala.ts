@@ -30,8 +30,8 @@
 //   se declara aqui.
 //
 // A fronteira separa de verdade, e foi conferida: a fotosfera é material
-// opaco (`sun.js`, sem `transparent`); os dois clarões (`clarao.ts` e as
-// heroes de `heroStars.ts`), a coroa e as raias já não escrevem
+// opaco (`sun.js`, sem `transparent`); o clarão (`clarao.ts`), a coroa e
+// as raias já não escrevem
 // profundidade. Não é régua inventada: é a diferença entre CORPO e
 // BORRÃO DO INSTRUMENTO, que é como SpaceEngine, Celestia e Stellarium
 // resolvem o mesmo problema — raio físico sempre, e a troca ponto↔disco
@@ -209,12 +209,9 @@ export const ESPELHO_ESCALA_COMPLEXO = 1.2;
 // px de tela e derivada do fluxo pela asa Moffat (`estrela.ts`), e é o
 // que a entrada `clarao-estelar` abaixo declara.
 //
-// O COEFICIENTE, PORÉM, NÃO MORREU. Ele voltou vivo com o resgate das 16
-// em 16/08 e é o tamanho de autor das heroes (`0.08 * lum` em
-// `heroStars.ts`) — tamanho em PARSEC, fora da lei, e sem espelho aqui.
-// Fica declarado e não remendado: quem unifica é o M3, com o gate de
-// foto do dono; inventar agora uma linha de escala para uma arte que o
-// M3 pode apagar seria registro especulativo.)
+// O COEFICIENTE voltou vivo com o resgate das 16 em 16/08, como o tamanho
+// de autor das heroes (`0.08 * lum` em `heroStars.ts`), e morreu de vez
+// com elas na luz única de 13/11.)
 
 /**
  * As duas classes, e a fronteira entre elas é a REGRA deste arquivo.
@@ -309,10 +306,8 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
     // camada deixou de ter tamanho em parsec — é óptica em px de tela,
     // derivada do fluxo pela asa Moffat: R ∝ F^(1/2β), β = 2,4
     // (`estrela.ts`). O número vivo é `claraoPx` da repartição, por
-    // fonte e por quadro. A entrada cobre `clarao.ts` e só ele: as 16
-    // heroes de autor seguem com o coeficiente 0,08·10^(−0,3m) em
-    // parsec, fora da lei e fora deste cadastro até o M3 (ver a nota
-    // dos espelhos acima).
+    // fonte e por quadro. A entrada cobre `clarao.ts`, que desde a luz
+    // única (13/11) desenha toda estrela forte.
     fator: null,
     // a asa explícita carrega a fração declarada do fluxo POR CIMA do
     // que o sprite já deposita — `FRACAO_DA_ASA` (0,06), a partição de

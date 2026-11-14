@@ -68,7 +68,7 @@ describe('o teardown não esquece nenhum filho', () => {
     // do DÍGITO no nome: a varredura antiga (`[A-Za-z]+`) não o via, e
     // foi exatamente assim que a camada ficou fora do teardown até 30/08
     expect(CONSTRUIDOS.length).toBeGreaterThan(10);
-    for (const nome of ['engine', 'sun', 'stars', 'heroes', 'rotulos3d']) {
+    for (const nome of ['engine', 'sun', 'stars', 'clarao', 'rotulos3d']) {
       expect(CONSTRUIDOS, `${nome} sumiu da varredura`).toContain(nome);
     }
   });

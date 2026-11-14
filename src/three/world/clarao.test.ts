@@ -10,9 +10,8 @@
 //  2. A ELEGIBILIDADE PELA LEI — quem ganha slot é decidido pelo fluxo
 //     (a asa tem de exceder o que o sprite já desenha), nunca por nome,
 //     e o teste prova que a escolha emerge da física quando a câmera
-//     está em casa. (A identidade "as 16" NÃO morreu: as heroes de
-//     autor voltaram em 16/08 e vivem em `heroStars.ts` — esta camada é
-//     que ficou só com o Sol.)
+//     está em casa — o Sol, as nomeadas e as visitadas pela mesma régua
+//     (a luz única, 13/11; as heroes de autor morreram com ela).
 //  3. A CAMADA DE VERDADE — instancia `ClaraoDeAsas` com o sidecar REAL
 //     do repo (o mesmo molde de lodStellar.test.ts antes do M2):
 //     profundidade pela §5.15, billboards em px pela lei, Sol como
@@ -22,7 +21,6 @@ import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import type { StarsMeta } from '../config';
-import { HeroStars } from './heroStars';
 import {
   BV_MEDIDO,
   ClaraoDeAsas,
@@ -34,8 +32,16 @@ import {
   SOL_BV,
   criarSlots,
   fatiaDoCampo,
+  haloDaLuz,
+  HALO_NO_TETO,
+  MARGEM_DO_VEU,
   meiaDaArtePx,
   passoDoOrcamento,
+  presencaNaFronteira,
+  escreverAneisNosPontos,
+  transmitanciaDosAneis,
+  veuDaLente,
+  veuDaLenteNaTela,
 } from './clarao';
 import type { CandidatoAoClarao } from './clarao';
 import {
@@ -46,6 +52,12 @@ import {
 } from '../estrela';
 import { EXPO_M0, SIGMA_PX, picoDaPsf, sigmaDaPsfPx } from '../luzDaCasa';
 import { RAMP_DURATION_MS } from './lodStellar';
+import { U_PERFIL_BASE, U_PERFIL_ESCALA, regiaoDoAnelCpu } from './corpos/gigante';
+import {
+  AMOSTRAS_DO_FATOR_TAU,
+  LARGURA_DA_TABELA_DO_ANEL,
+  UNIFORMES_DOS_ANEIS,
+} from '../shaders/starShaders';
 
 const META = JSON.parse(
   readFileSync(new URL('../../../public/data/stars_meta.json', import.meta.url), 'utf8')
@@ -243,6 +255,35 @@ describe('2. a elegibilidade pela lei — a identidade "as 16" emerge, não se d
     expect(fatiaDoCampo(NaN)).toBe(1);
     for (let l = 0; l < 1; l += 0.1) expect(fatiaDoCampo(l + 0.1)).toBeLessThan(fatiaDoCampo(l));
   });
+
+  it('a luz única: o halo cresce devagar com a luz e o véu da lente só vale com a fonte à vista', () => {
+    // o céu de casa inteiro (m ≥ −1,5) tem o mesmo halo; acima dele o halo
+    // cresce com a luz, nunca passa de 1 e nunca desce
+    expect(haloDaLuz(-1.5)).toBeCloseTo(HALO_NO_TETO, 12);
+    expect(haloDaLuz(2)).toBeCloseTo(HALO_NO_TETO, 12);
+    for (let m = -1.5; m > -30; m -= 0.5) {
+      expect(haloDaLuz(m - 0.5)).toBeGreaterThanOrEqual(haloDaLuz(m));
+      expect(haloDaLuz(m - 0.5)).toBeLessThanOrEqual(1);
+    }
+    expect(haloDaLuz(-16)).toBeGreaterThan(haloDaLuz(-11)); // Sirius A sobre B, de perto
+    expect(haloDaLuz(NaN)).toBe(0);
+    // o véu: a luz da lente × quanto a fonte está no quadro; sem `naTela`, nenhum
+    expect(veuDaLente({ fracao: 0.8, candidata: null, naTela: 1 })).toBeCloseTo(0.8, 12);
+    expect(veuDaLente({ fracao: 0.8, candidata: null })).toBe(0);
+    expect(veuDaLente(undefined)).toBe(0);
+    // no quadro 1, atrás da câmera 0, e fora da borda cai suave até a margem
+    expect(veuDaLenteNaTela(0, 0, true, 16 / 9)).toBe(1);
+    expect(veuDaLenteNaTela(0, 0, false, 16 / 9)).toBe(0);
+    expect(veuDaLenteNaTela(0, 1 + 2 * MARGEM_DO_VEU, true, 16 / 9)).toBe(0);
+    const meio = veuDaLenteNaTela(0, 1 + MARGEM_DO_VEU, true, 16 / 9);
+    expect(meio).toBeGreaterThan(0);
+    expect(meio).toBeLessThan(1);
+    // a fronteira das vagas: presença 0 no corte, 1 num fator 2 acima, contínua
+    expect(presencaNaFronteira(5, 0)).toBe(1); // sem ninguém de fora, sem fronteira
+    expect(presencaNaFronteira(2, 2)).toBe(0);
+    expect(presencaNaFronteira(4, 2)).toBe(1);
+    expect(presencaNaFronteira(2.0001, 2)).toBeLessThan(1e-3);
+  });
 });
 
 describe('3. a camada de verdade, com o sidecar real', () => {
@@ -274,58 +315,148 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     c.dispose();
   });
 
-  it('a sonda de oclusão do Sol mora no MESMO grupo, com profundidade LIGADA e sem pintar nada', () => {
-    // outro corpo (não o Sol) pode tapar o clarão — a §5.15 acima só
-    // proíbe o Sol ocluir a si mesmo. A sonda testa profundidade contra o
-    // resto da cena; por isso ela é o OPOSTO dos billboards de cima em
-    // todo campo relevante, e mora no mesmo `group` para desenhar no
-    // mesmo passe.
+  it('a sonda de oclusão, uma por vaga, mora no MESMO grupo, com profundidade LIGADA e sem pintar nada', () => {
+    // outro corpo pode tapar o clarão — a §5.15 acima só proíbe a estrela
+    // ocluir a si mesma. A sonda testa profundidade contra o resto da cena;
+    // por isso ela é o OPOSTO dos billboards de cima em todo campo
+    // relevante, e mora no mesmo `group` para desenhar no mesmo passe.
     const c = new ClaraoDeAsas(META.named);
-    const sonda = c.group.children[c.group.children.length - 1] as THREE.Mesh;
-    const mat = sonda.material as THREE.ShaderMaterial;
-    expect(mat.depthTest).toBe(true);
-    expect(mat.depthWrite).toBe(false);
-    expect(mat.colorWrite).toBe(false);
-    expect(mat.transparent).toBe(true);
-    expect(sonda.renderOrder).toBe(-1);
-    expect(sonda.frustumCulled).toBe(false);
+    const sondas = c.group.children.slice(-ORCAMENTO_DO_CLARAO) as THREE.Mesh[];
+    expect(c.group.children).toHaveLength(2 * ORCAMENTO_DO_CLARAO);
+    for (const sonda of sondas) {
+      const mat = sonda.material as THREE.ShaderMaterial;
+      expect(mat.depthTest).toBe(true);
+      expect(mat.depthWrite).toBe(false);
+      expect(mat.colorWrite).toBe(false);
+      expect(mat.transparent).toBe(true);
+      expect(sonda.renderOrder).toBe(-1);
+      expect(sonda.frustumCulled).toBe(false);
+    }
     c.dispose();
   });
 
-  it('outro corpo tapando o Sol apaga o clarão pela MESMA rampa do orçamento, e o traz de volta', () => {
+  it('um corpo tapando QUALQUER estrela apaga clarão e halo pela rampa de 300 ms, mantém a vaga e os traz de volta', () => {
     // Não há GPU nesta suíte (`node`, sem WebGLRenderer): a consulta de
     // oclusão de verdade só corre no navegador. O que se prova aqui é o
-    // contrato entre ela e o orçamento — `registrarOclusaoDoSol` é o
-    // MESMO método que o callback da sonda chamaria com um resultado de
-    // GPU; o cast alcança-o sem abrir a API pública da camada.
-    const c = new ClaraoDeAsas(META.named);
-    const registrar = (oculto: boolean) =>
-      (c as unknown as { registrarOclusaoDoSol(oculto: boolean): void }).registrarOclusaoDoSol(
-        oculto
-      );
-
+    // contrato entre ela e a vaga — `registrarOclusao` é o MESMO método
+    // que o callback da sonda chamaria com um resultado de GPU; o cast
+    // alcança-o sem abrir a API pública da camada. Uma regra para toda
+    // vaga: o Sol e Sirius passam pelo mesmo caminho.
+    const c = new ClaraoDeAsas(META.named, { camadaDoCampo: 1 });
+    const interna = c as unknown as {
+      registrarOclusao(vaga: number, oculto: boolean): void;
+      slots: { indice: number }[];
+      mats: THREE.ShaderMaterial[];
+      matsDoCampo: THREE.ShaderMaterial[];
+      meshes: THREE.Mesh[];
+      sondas: THREE.Mesh[];
+    };
     for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(true));
-    expect(c.ocupacao().find((o) => o.indice === 0)?.ganho).toBe(1);
+    const iSirius = 1 + META.named.findIndex((s) => s.n === 'Sirius');
+    for (const indice of [0, iSirius]) {
+      const k = interna.slots.findIndex((s) => s.indice === indice);
+      expect(k).toBeGreaterThanOrEqual(0);
+      const pleno = interna.mats[k].uniforms.uGanho.value as number;
+      const halo = interna.matsDoCampo[k].uniforms.uGanho.value as number;
+      expect(pleno).toBeGreaterThan(0);
 
-    // um corpo diferente do Sol tapa o centro dele: a sonda registra
-    // oculto, e o candidato 0 deixa de ser elegível — a MESMA rampa de
-    // 300 ms de "fonte oculta" apaga o slot, sem gatilho nem tempo novo
-    registrar(true);
-    c.atualizar(quadroEmCasa(true));
-    const saindo = c.ocupacao().find((o) => o.indice === 0);
-    if (saindo) expect(saindo.ganho).toBeLessThan(1);
-    for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(true));
-    expect(c.ocupacao()).toHaveLength(0);
+      interna.registrarOclusao(k, true);
+      c.atualizar(quadroEmCasa(true)); // 16 ms: um degrau da rampa, nunca o estalo
+      const passo = interna.mats[k].uniforms.uGanho.value as number;
+      expect(passo).toBeLessThan(pleno);
+      expect(passo).toBeGreaterThan(0.9 * pleno);
+      expect((interna.matsDoCampo[k].uniforms.uGanho.value as number) / halo).toBeCloseTo(passo / pleno, 6);
+      for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(true));
+      // apagado — mas a vaga fica, e a sonda continua correndo
+      expect(interna.slots[k].indice).toBe(indice);
+      expect(interna.meshes[k].visible).toBe(false);
+      expect(interna.sondas[k].visible).toBe(true);
 
-    // o Sol reaparece: a sonda registra visível de novo, e o clarão sobe
-    // pela MESMA rampa de entrada
-    registrar(false);
-    for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(true));
-    expect(c.ocupacao().find((o) => o.indice === 0)?.ganho).toBe(1);
+      interna.registrarOclusao(k, false);
+      for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(true));
+      expect(interna.mats[k].uniforms.uGanho.value as number).toBeCloseTo(pleno, 9);
+    }
     c.dispose();
   });
 
-  it('a receita montada é BYTE A BYTE a de antes, nos DOIS shaders', () => {
+  it('um anel no caminho apaga clarão e halo pela opacidade DELE, no mesmo quadro: e^(−τ/μ)', () => {
+    // perfil sintético: α = 1 no meio da régua, 0,5 nas bordas — a lei do
+    // `ANEL_FRAG` (τ = −ln(1 − α)·fatorTau, μ = |d·n|) e nada inventado
+    const caixas = 2048;
+    const perfil = new Uint8Array(caixas * 4);
+    for (let i = 0; i < caixas; i++) perfil[i * 4 + 3] = i >= 900 && i < 1100 ? 255 : 128;
+    const c = new ClaraoDeAsas(META.named, { camadaDoCampo: 1 });
+    const interna = c as unknown as {
+      slots: { indice: number }[];
+      mats: THREE.ShaderMaterial[];
+      matsDoCampo: THREE.ShaderMaterial[];
+    };
+    const q = quadroEmCasa(true);
+    const s = META.named.find((x) => x.n === 'Sirius')!;
+    const u = new THREE.Vector3(s.x, s.y, s.z).sub(q.camPos).normalize();
+    const e = new THREE.Vector3(0, 0, 1).cross(u).normalize();
+    const raioPc = 1e-6;
+    const kmPorRaio = 60268;
+    // o anel inclinado 60° da linha de visada (μ = 0,5), furado a r raios
+    const polo = u.clone().multiplyScalar(0.5).addScaledVector(e, Math.sqrt(0.75));
+    const anelEm = (r: number, dist = 1e-4) => ({
+      centroPc: q.camPos.clone().addScaledVector(u, dist).addScaledVector(new THREE.Vector3().crossVectors(polo, e).normalize(), -r * raioPc),
+      polo, raioPc, rInt: 1.11, rExt: 2.326, kmPorRaio, perfil,
+    });
+    const esperado = (r: number, alfa: number) =>
+      Math.exp(-(-Math.log(Math.max(1 - alfa, 1e-3)) * regiaoDoAnelCpu(r * kmPorRaio).fatorTau) / 0.5);
+    const sirius = new THREE.Vector3(s.x, s.y, s.z);
+    // no centro de uma caixa longe das bordas da faixa, a pegada de uma
+    // caixa é o próprio α
+    const rMeio = 1.11 + ((1000.5 / caixas - U_PERFIL_BASE) / U_PERFIL_ESCALA) * (2.326 - 1.11);
+    const rBorda = 1.11 + ((300.5 / caixas - U_PERFIL_BASE) / U_PERFIL_ESCALA) * (2.326 - 1.11);
+    expect(transmitanciaDosAneis([anelEm(rMeio)], q.camPos, sirius, 0)).toBeCloseTo(esperado(rMeio, 1), 9);
+    expect(transmitanciaDosAneis([anelEm(rBorda)], q.camPos, sirius, 0)).toBeCloseTo(esperado(rBorda, 128 / 255), 6);
+    // fora da malha, ou ATRÁS da estrela, não tapa
+    expect(transmitanciaDosAneis([anelEm(2.5)], q.camPos, sirius, 0)).toBe(1);
+    expect(transmitanciaDosAneis([anelEm(rBorda, 10)], q.camPos, sirius, 0)).toBe(1);
+    // de longe o pixel mistura as caixas, como o mipmap: a pegada larga
+    // leva a faixa opaca para a média
+    const rVizinho = 1.11 + ((880.5 / caixas - U_PERFIL_BASE) / U_PERFIL_ESCALA) * (2.326 - 1.11);
+    const fino = transmitanciaDosAneis([anelEm(rVizinho)], q.camPos, sirius, 0);
+    expect(fino).toBeCloseTo(esperado(rVizinho, 128 / 255), 6);
+    expect(transmitanciaDosAneis([anelEm(rVizinho)], q.camPos, sirius, 1e-3)).toBeLessThan(0.5 * fino);
+
+    for (let i = 0; i < 30; i++) c.atualizar(q);
+    const k = interna.slots.findIndex((x) => x.indice === 1 + META.named.indexOf(s));
+    const pleno = interna.mats[k].uniforms.uGanho.value as number;
+    const halo = interna.matsDoCampo[k].uniforms.uGanho.value as number;
+    c.atualizar({ ...q, aneis: [anelEm(rBorda)], tanHalfFov: 0 });
+    const t = esperado(rBorda, 128 / 255);
+    expect((interna.mats[k].uniforms.uGanho.value as number) / pleno).toBeCloseTo(t, 6);
+    expect((interna.matsDoCampo[k].uniforms.uGanho.value as number) / halo).toBeCloseTo(t, 6);
+    c.dispose();
+
+    // o PONTO lê a mesma lei (starShaders.ts): sem anel o termo desliga, e
+    // com anel os uniforms carregam o plano relativo à câmera e as tabelas
+    // da CPU — a soma de α em bytes inteiros e o fatorTau — numa textura
+    const ua = UNIFORMES_DOS_ANEIS;
+    escreverAneisNosPontos([], q.camPos, 1e-3);
+    expect(ua.uAnelLigado.value).toBe(0);
+    const anel = anelEm(rBorda);
+    escreverAneisNosPontos([anel], q.camPos, 1e-3);
+    expect(ua.uAnelLigado.value).toBe(1);
+    const cRel = anel.centroPc.clone().sub(q.camPos).divideScalar(raioPc);
+    expect(ua.uAnelCentro.value.distanceTo(cRel)).toBeLessThan(1e-9 * cRel.length());
+    expect(ua.uAnelRadPorPx.value).toBe(1e-3);
+    const dados = (ua.uAnelTabela.value as THREE.DataTexture).image.data as Float32Array;
+    expect(dados[1000]).toBe(255 * 100 + 128 * 900);
+    expect(dados[caixas]).toBe(255 * 200 + 128 * (caixas - 200));
+    const base = ua.uAnelBaseDoTau.value;
+    expect(base % LARGURA_DA_TABELA_DO_ANEL).toBe(0);
+    expect(dados[base]).toBe(Math.fround(regiaoDoAnelCpu(1.11 * kmPorRaio).fatorTau));
+    expect(dados[base + AMOSTRAS_DO_FATOR_TAU - 1]).toBe(
+      Math.fround(regiaoDoAnelCpu(2.326 * kmPorRaio).fatorTau)
+    );
+    escreverAneisNosPontos([], q.camPos, 1e-3);
+  });
+
+  it('a receita montada é BYTE A BYTE a de antes', () => {
     // "claramente a regra que desenha sirius é totalmente diferente da
     // que desenha o sol... o desenho de spikes de sirius é muito
     // superioir" (dono, 16/08). Resposta: o mesmo desenho — e desde
@@ -338,11 +469,8 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     // chega à GPU. Os blocos abaixo foram copiados byte a byte do texto
     // de ANTES da unificação: se a montagem mover um espaço, cai aqui.
     const c = new ClaraoDeAsas(META.named);
-    const h = new HeroStars(META.named);
-    const fragDo = (o: THREE.Object3D) =>
-      ((o as THREE.Mesh).material as THREE.ShaderMaterial).fragmentShader;
-    const fragDoSol = fragDo(c.group.children[0]);
-    const fragDasHeroes = fragDo(h.group.children[0]);
+    const fragDoSol = ((c.group.children[0] as THREE.Mesh).material as THREE.ShaderMaterial)
+      .fragmentShader;
 
     expect(fragDoSol).toContain(
       `  float core = exp(-r * r * 90.0) * 3.0;
@@ -351,30 +479,15 @@ describe('3. a camada de verdade, com o sidecar real', () => {
   float ay = exp(-abs(uv.x) * 16.0) * exp(-abs(uv.y) * 2.4);
   float spikes = (ax + ay) * 0.8;`
     );
-    // nas heroes os mesmos números; o `uCore` que multiplicava núcleo e
-    // braços nunca foi escrito (valia 1,0) e saiu em 09/10/2026
-    expect(fragDasHeroes).toContain(
-      `  float core = exp(-r * r * 90.0) * 3.0;
-  float glow = exp(-r * 4.5) * 0.9;
-
-  // spikes de difração
-  float ax = exp(-abs(uv.y) * 16.0) * exp(-abs(uv.x) * 2.4);
-  float ay = exp(-abs(uv.x) * 16.0) * exp(-abs(uv.y) * 2.4);
-  float spikes = (ax + ay) * 0.8;`
-    );
-    for (const frag of [fragDoSol, fragDasHeroes]) {
-      expect(frag).toContain('vec3(1.0, 0.98, 0.95)');
-    }
+    expect(fragDoSol).toContain('vec3(1.0, 0.98, 0.95)');
     c.dispose();
-    h.dispose();
   });
 
-  it('os números da receita NÃO voltam a ser redigitados nos dois fontes', () => {
+  it('os números da receita NÃO voltam a ser redigitados no fonte', () => {
     // A VARREDURA INVERTIDA do endereço único, no idioma de
     // `simbolosProibidos.test.ts`: o que os fontes tinham de conter
     // agora não podem conter. Sem ela, nada impede a cópia de renascer
     // — e a cópia só é notada quando alguém corrige um lado só.
-    const heroes = readFileSync(new URL('./heroStars.ts', import.meta.url), 'utf8');
     const clarao = readFileSync(new URL('./clarao.ts', import.meta.url), 'utf8');
     for (const linha of [
       'exp(-r * r * 90.0) * 3.0',
@@ -384,21 +497,22 @@ describe('3. a camada de verdade, com o sidecar real', () => {
       '(ax + ay) * 0.8',
       'vec3(1.0, 0.98, 0.95)',
     ]) {
-      expect(heroes, linha).not.toContain(linha);
       expect(clarao, linha).not.toContain(linha);
     }
   });
 
-  it('no RESGATE a camada é SÓ do Sol: nomeada nunca ocupa slot', () => {
-    // ordem do dono (16/08): as 16 voltaram à arte do filme
-    // (heroStars.ts); esta camada fica só com o Sol até o M3 unificar de
-    // novo, com o visto dele na estética
+  it('a luz única: as nomeadas disputam os slots com o Sol, só pelo fluxo', () => {
+    // a decisão do dono (13/11): nenhum desenho de autor por classe — o
+    // Sol e as nomeadas pela MESMA régua; Sirius de casa tem clarão
     const c = new ClaraoDeAsas(META.named);
+    const sirius = 1 + META.named.findIndex((s) => s.n === 'Sirius');
     for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(true));
-    expect(c.ocupacao().every((o) => o.indice === 0)).toBe(true);
-    // e com o Sol-ponto oculto, a camada fica VAZIA
+    expect(c.ocupacao().some((o) => o.indice === 0)).toBe(true);
+    expect(c.ocupacao().some((o) => o.indice === sirius)).toBe(true);
+    // com o Sol-ponto oculto só o Sol sai
     for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(false));
-    expect(c.ocupacao()).toHaveLength(0);
+    expect(c.ocupacao().some((o) => o.indice === 0)).toBe(false);
+    expect(c.ocupacao().some((o) => o.indice === sirius)).toBe(true);
     c.dispose();
   });
 
@@ -449,7 +563,7 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     const sigma = sigmaDaPsfPx(SIGMA_PX, 900);
     const esperado = Math.min(
       FATOR_DE_ENCHIMENTO_DO_SOL *
-        Math.max(raioVisivelDaAsaPx(pico, sigma), alcanceDoEspinhoPx(pico, sigma)),
+        Math.max(raioVisivelDaAsaPx(pico, sigma), alcanceDoEspinhoPx(pico, sigma), meiaDaArtePx(m, 900)),
       OCUPACAO_MAXIMA_DA_TELA * 900
     );
     const meshes = c.group.children.filter(
@@ -468,7 +582,7 @@ describe('3. a camada de verdade, com o sidecar real', () => {
 
   it('BV_MEDIDO é o literal de antes da fusão, entrada por entrada', () => {
     // A tabela existia DUAS vezes — aqui e como `HERO_BV` em
-    // heroStars.ts, com diff vazio nas 16. A fusão só é honesta se
+    // heroStars.ts (apagado em 13/11), com diff vazio nas 16. A fusão só é honesta se
     // nenhum número tiver andado no caminho: este é o literal que as
     // duas cópias tinham no commit anterior, colado inteiro.
     expect(BV_MEDIDO).toEqual({
@@ -615,9 +729,12 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     //     (13/11: `lente` entrou por decisão — a luz que a lente de cinema
     //     acendeu, só lida pela luz única: ela só TIRA do halo do campo
     //     (`fatiaDoCampo` ≤ 1), nunca toca tamanho, teto nem a camada 0.)
+    //     (13/11: `aneis` e `tanHalfFov` entraram por decisão — o anel no
+    //     caminho multiplica a presença por uma transmitância ≤ 1; tamanho
+    //     e teto não passam por eles.)
     expect(camposDaInterface(CLARAO, 'QuadroDoClarao')).toEqual([
       'camPos', 'screenH', 'dtS', 'solVisivel', 'solturaDoSol', 'expoM0', 'sigmaPx', 'pr',
-      'transmitanciaDoSol', 'visitadas', 'lente',
+      'transmitanciaDoSol', 'visitadas', 'lente', 'aneis', 'tanHalfFov',
     ]);
     //     ...e o módulo do Sol no quadro não recebe MODO nenhum para
     //     repassar: o `fase: Phase` que sobrava no parâmetro (sem leitor,

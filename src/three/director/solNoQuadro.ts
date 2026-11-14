@@ -22,7 +22,13 @@ import {
 } from '../world/corpos/corpos';
 import { repartir } from '../estrela';
 import type { JanelaDoQuadro, Reparticao } from '../estrela';
-import { ClaraoDeAsas, type CandidataVisitada, type LuzDaLenteNoQuadro } from '../world/clarao';
+import {
+  ClaraoDeAsas,
+  escreverAneisNosPontos,
+  type CandidataVisitada,
+  type LuzDaLenteNoQuadro,
+} from '../world/clarao';
+import type { AnelComPerfil } from '../world/corpos/gigante';
 import type { StellarBody } from '../world/stellarBody';
 import type { Planetas } from '../world/planetas/planetas';
 import type { StarField } from '../world/stars';
@@ -99,8 +105,10 @@ export class SolNoQuadro {
     /** as estrelas visitadas que candidatam ao clarão pela mesma lei
      *  (`EstrelasNoQuadro.candidatasAoClarao`); vazio = só o Sol */
     visitadas: () => readonly CandidataVisitada[];
-    /** a luz que a lente acendeu e de quem (só a luz única a lê) */
-    lente?: () => LuzDaLenteNoQuadro | undefined;
+    /** a luz que a lente acendeu e de quem (o halo do campo cede a ela) */
+    lente: () => LuzDaLenteNoQuadro;
+    /** os anéis desenhados neste quadro — o clarão os atravessa pela opacidade deles */
+    aneis: () => readonly Readonly<AnelComPerfil>[];
   };
 
   constructor(fios: SolNoQuadro['fios']) {
@@ -243,6 +251,10 @@ export class SolNoQuadro {
     // que o dono cobrou em 16/08 continua paga por construção) e plena no
     // ponto — as duas travas exponenciais que explodiam o clarão no recuo
     // (wPonto × 1/filtro) morreram na sonda densa de 17/08.
+    // o ponto de cada estrela atravessa os anéis pela MESMA lei do clarão
+    // abaixo (os uniforms que todo desenhista de ponto estelar lê)
+    const aneis = this.fios.aneis();
+    escreverAneisNosPontos(aneis, q.camPos, (2 * q.tanHalfFov) / q.hPx);
     const clarao = this.fios.clarao();
     if (clarao) {
       clarao.group.visible = !this.fios.escondido('noclarao');
@@ -261,7 +273,9 @@ export class SolNoQuadro {
         pr: q.prAtual,
         transmitanciaDoSol: this.transmitanciaDoSolVisto,
         visitadas: this.fios.visitadas(),
-        lente: this.fios.lente?.(),
+        lente: this.fios.lente(),
+        aneis,
+        tanHalfFov: q.tanHalfFov,
       });
     }
   }

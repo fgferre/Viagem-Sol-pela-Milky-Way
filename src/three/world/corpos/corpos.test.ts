@@ -165,12 +165,7 @@ describe('Sol-ator × corpo resolvido: o conflito que a F3 dissolveu (D1)', () =
     // fotométrico da camada dos dez, repartidos pela lei — e a soma dos
     // pesos é 1 por construção (estrela.test.ts), não por janela. O
     // clarão de asas (clarao.ts) não é um terceiro DESENHISTA do Sol: é
-    // a óptica POR CIMA, do raio do sprite para fora. As heroes
-    // RESGATADAS (item 44, ordem do dono 16/08) desenham as 16 NOMEADAS
-    // e nunca o Sol — o invariante cobrado aqui é esse, não a ausência
-    // do arquivo.
-    const heroes = readFileSync(new URL('../heroStars.ts', import.meta.url), 'utf8');
-    expect(heroes).not.toMatch(/class SunStar/);
+    // a óptica POR CIMA, do raio do sprite para fora.
     const clarao = readFileSync(new URL('../clarao.ts', import.meta.url), 'utf8');
     expect(clarao).not.toMatch(/class SunStar/);
   });

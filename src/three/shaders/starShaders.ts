@@ -16,6 +16,109 @@ import { lerBetaDaEmissao } from '../luzDaCasa';
 import { BRANQUEAMENTO_MEIA_ALTURA, FRACAO_DOS_ESPINHOS, LIMIAR_DO_CLARAO } from '../estrela';
 import { GLSL_PONTO_NA_BORDA, GLSL_PONTO_NA_BORDA_VARYINGS } from './pontoNaBorda';
 import { ESTRELAS_SEGUEM_A_LENTE, pontoSegueALente } from './estrelasDaLente';
+import * as THREE from 'three';
+
+// ─── OS ANÉIS NO CAMINHO DO PONTO (13/11) ────────────────────────────────
+// O anel com perfil não escreve profundidade e desenha ANTES das estrelas:
+// sem isto, o ponto atrás do anel B saía inteiro. A lei é a do clarão
+// (`transmitanciaDosAneis`, world/clarao.ts) — a mesma do `ANEL_FRAG`:
+//   τ = −ln(max(1 − ā, PISO_DA_TRANSMISSAO)) · fatorTau(r),
+//   μ = max(|d·n|, PISO_DO_MU), T = e^{−τ/μ}  (T = 1 onde ā < LIMIAR —
+//   o `discard` do material).
+// Os números moram AQUI e a CPU os importa; as tabelas (a soma acumulada
+// de α por caixa e o fatorTau) são as da CPU, numa textura só, e a GPU as
+// lê sem filtro (`texelFetch`): o vértice dá o MESMO número que a CPU dá
+// ao clarão da mesma estrela. Com `uAnelLigado` = 0 nada roda e o ponto
+// sai bit a bit o de antes.
+
+/** o `discard` do `ANEL_FRAG`: abaixo deste α o anel não desenha */
+export const LIMIAR_DO_ANEL = 0.004;
+/** o piso do cosseno de visada do `ANEL_FRAG` (rasante sem divisão por 0) */
+export const PISO_DO_MU_DO_ANEL = 0.02;
+/** o piso de 1 − α do `tauDaOpacidade` (α = 1 sem log de zero) */
+export const PISO_DA_TRANSMISSAO_DO_ANEL = 1e-3;
+/** o lado da tabela do fatorTau, amostrado em [rInt, rExt]: ~9 km por
+ *  amostra contra a transição mais curta (Cassini, 120 km) */
+export const AMOSTRAS_DO_FATOR_TAU = 8192;
+/** a largura da textura das tabelas (o mínimo que todo WebGL2 aceita é 2048) */
+export const LARGURA_DA_TABELA_DO_ANEL = 1024;
+
+const tabelaVazia = new THREE.DataTexture(new Float32Array(1), 1, 1, THREE.RedFormat, THREE.FloatType);
+tabelaVazia.needsUpdate = true;
+
+/** os uniforms do anel no caminho — os MESMOS objetos em todo desenhista de
+ *  ponto estelar; quem escreve é `escreverAneisNosPontos` (clarao.ts) */
+export const UNIFORMES_DOS_ANEIS = {
+  /** 0 = nenhum anel com perfil desenhado: o termo nem roda */
+  uAnelLigado: { value: 0 },
+  /** (centro − câmera) em raios do corpo, subtraído em float64 na CPU */
+  uAnelCentro: { value: new THREE.Vector3() },
+  /** a normal do plano do anel (unitária) */
+  uAnelPolo: { value: new THREE.Vector3(0, 0, 1) },
+  /** o raio do corpo em pc (a régua de `uAnelCentro`) */
+  uAnelRaioPc: { value: 1 },
+  /** os raios da malha (rInt, rExt), em raios do corpo */
+  uAnelRaios: { value: new THREE.Vector2(1, 2) },
+  /** x = caixas por raio do corpo, y = a caixa de rInt, z = caixas */
+  uAnelCaixas: { value: new THREE.Vector3(1, 0, 1) },
+  /** o ângulo de um pixel do buffer (a pegada do mipmap); 0 = filtro linear */
+  uAnelRadPorPx: { value: 0 },
+  /** onde começa a tabela do fatorTau na textura (índice de texel) */
+  uAnelBaseDoTau: { value: 0 },
+  /** R32F: a soma acumulada de α (em bytes) e, depois, o fatorTau */
+  uAnelTabela: { value: tabelaVazia as THREE.Texture },
+};
+
+/** O termo em GLSL: `transmitanciaDosAneis(alvo − câmera, em pc)`. */
+export const GLSL_ANEIS_NO_CAMINHO = /* glsl */ `
+uniform float uAnelLigado;
+uniform vec3 uAnelCentro;
+uniform vec3 uAnelPolo;
+uniform float uAnelRaioPc;
+uniform vec2 uAnelRaios;
+uniform vec3 uAnelCaixas;
+uniform float uAnelRadPorPx;
+uniform float uAnelBaseDoTau;
+uniform sampler2D uAnelTabela;
+float tabelaDoAnel(int i) {
+  return texelFetch(uAnelTabela, ivec2(i % ${LARGURA_DA_TABELA_DO_ANEL}, i / ${LARGURA_DA_TABELA_DO_ANEL}), 0).r;
+}
+float transmitanciaDosAneis(vec3 rel) {
+  float l = length(rel);
+  if (!(l > 0.0)) return 1.0;
+  vec3 d = rel / l;
+  float dn = dot(d, uAnelPolo);
+  if (dn == 0.0) return 1.0;
+  // tudo em raios do corpo: o plano a t da câmera, ENTRE ela e a estrela
+  float t = dot(uAnelCentro, uAnelPolo) / dn;
+  if (!(t > 0.0 && t < l / uAnelRaioPc)) return 1.0;
+  vec3 h = d * t - uAnelCentro;
+  float r = length(h);
+  if (!(r > uAnelRaios.x && r < uAnelRaios.y)) return 1.0;
+  float mu = max(abs(dn), ${glslNumber(PISO_DO_MU_DO_ANEL)});
+  float x = (r - uAnelRaios.x) * uAnelCaixas.x + uAnelCaixas.y;
+  float erd = dot(h, d) / r;
+  float w = max(uAnelRadPorPx * t * sqrt(1.0 + (erd / mu) * (erd / mu)) * uAnelCaixas.x, 1.0);
+  // α médio na pegada = (∫ de x − w/2 a x + w/2) / w, a soma acumulada
+  // interpolada; a parte inteira subtrai inteiros exatos (bytes somados)
+  float xa = x - 0.5 * w;
+  float xb = x + 0.5 * w;
+  int ia = int(clamp(floor(xa), 0.0, uAnelCaixas.z - 1.0));
+  int ib = int(clamp(floor(xb), 0.0, uAnelCaixas.z - 1.0));
+  float sa = tabelaDoAnel(ia);
+  float sb = tabelaDoAnel(ib);
+  float alfa = ((sb - sa) + (xb - float(ib)) * (tabelaDoAnel(ib + 1) - sb)
+    - (xa - float(ia)) * (tabelaDoAnel(ia + 1) - sa)) / (255.0 * w);
+  if (alfa < ${glslNumber(LIMIAR_DO_ANEL)}) return 1.0;
+  float k = (r - uAnelRaios.x) / (uAnelRaios.y - uAnelRaios.x) * ${glslNumber(AMOSTRAS_DO_FATOR_TAU - 1)};
+  int k0 = min(int(floor(k)), ${AMOSTRAS_DO_FATOR_TAU - 2});
+  int base = int(uAnelBaseDoTau);
+  float f0 = tabelaDoAnel(base + k0);
+  float fz = f0 + (k - float(k0)) * (tabelaDoAnel(base + k0 + 1) - f0);
+  float tau = -log(max(1.0 - alfa, ${glslNumber(PISO_DA_TRANSMISSAO_DO_ANEL)})) * fz;
+  return exp(-tau / mu);
+}
+`;
 
 /**
  * O β da compressão na emissão, resolvido UMA vez — e aqui, que é o módulo
@@ -86,6 +189,7 @@ ${GLSL_ORION_BASE}
 ${GLSL_STAR_COLOR}
 ${GLSL_STAR_PSF}
 ${GLSL_PONTO_NA_BORDA}
+${GLSL_ANEIS_NO_CAMINHO}
 
 void main() {
   // A PASSADA PRIMEIRO, antes de qualquer conta: quem não é desta
@@ -144,6 +248,9 @@ void main() {
   }
   alpha *= uFade; // some ao deixar a vizinhança solar
   alpha *= 1.0 - aFocus; // cede ao corpo da estrela (piloto 12/11)
+  // o anel com perfil no caminho a apaga pela opacidade DELE (a lei do
+  // clarão); sem anel desenhado o termo nem roda
+  if (uAnelLigado > 0.5) alpha *= transmitanciaDosAneis(worldPos - uCamPos);
 
   vColor = col;
   vSigma = sigmaFrac;
