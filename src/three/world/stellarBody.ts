@@ -1578,6 +1578,9 @@ export class StellarBody {
   private readonly pesoDasCamadas = { value: 1 };
   /** cache do último `uFiltroSolar` escrito — nasce no valor do uniform */
   private filtroSolarAnterior = 1;
+  /** o brilho da estrela no nível da visita (g = 0): o da casca em volta do
+   *  disco, que não recebe o filtro (`escreverBrilho`, `criarABordaDifusa`) */
+  private readonly brilhoDaVisita = { value: 1 };
   /** a fase do ciclo VIVA (a da data), escrita pelo director por quadro */
   private faseDoCicloViva: FaseDoCiclo;
   /** a data do filme em cartaz (JD TDB) ou null — o relógio do giro
@@ -1984,13 +1987,19 @@ export class StellarBody {
    *  · O VÉU (`veu` > 0): a luz que a exposição da visita não põe no disco
    *    vira o espalhamento da câmera em volta dele, como fração da borda do
    *    disco JÁ COMPRIMIDA (ver `RAIO_DO_VEU` e `forcaDoVeu`).
-   * A emissão passa pelos MESMOS fios da fotosfera (o brilho da estrela, o
-   * filtro, o ar, a compressão e o peso da lei), partilhando os uniforms.
+   * A REGRA É A DO SOL (14/11): só a FOTOSFERA recebe a radiância verdadeira
+   * do filtro aberto (g = 1); o que fica em volta do disco — no Sol a coroa,
+   * as espículas, a ejeção — é desenhado sempre no nível da visita. A casca
+   * recebia o fator do filtro, e com o disco entre ~8 e ~90 px ela estourava
+   * inteira: um disco branco chapado de 2,4 raios em Betelgeuse (as plumas
+   * viravam caroços na borda) e de 2 raios em Sirius e Vega (o véu). Agora
+   * ela lê `uBrilhoDaVisita` (radiância × exposição plena, sem o filtro):
+   * com g = 0 é bit a bit a de antes. O ar, a compressão e o peso da lei
+   * seguem os da fotosfera, partilhando os uniforms.
    */
   private criarABordaDifusa(ctx: any) {
     const p = this.params;
     const su = ctx.sunUniforms;
-    const fator = literalGlsl(radianciaDeTela(RADIANCIA_DA_FOTOSFERA, RAIO_DO_SOL_NA_CENA));
     const rEnv = Math.max(1, p.bordaDifusaRaios ?? 1);
     const veu = Math.max(0, p.veu ?? 0);
     const rCasca = Math.max(1 + (rEnv - 1) * PLUMA_MAX * ALCANCE_DA_ATMOSFERA, veu > 0 ? RAIO_DO_VEU : 1);
@@ -2014,9 +2023,8 @@ export class StellarBody {
         uniform vec3 uCorFria;
         uniform vec3 uCorQuente;
         uniform vec3 uPaleta;
-        uniform float uFiltroSolar;
         uniform vec3 uTransmitancia;
-        uniform float uBrilhoDaEstrela;
+        uniform float uBrilhoDaVisita;
         uniform float uWorldFade;
         uniform float uRaio;
         uniform float uTime;
@@ -2057,7 +2065,7 @@ export class StellarBody {
             * (1.0 - smoothstep(${literalGlsl(0.5 * (RAIO_DO_VEU + 1))}, ${literalGlsl(RAIO_DO_VEU)}, b));`
               : ''
           }
-          vec3 k = c * uPaleta * pow(${fator}, uFiltroSolar) * uTransmitancia * uBrilhoDaEstrela;
+          vec3 k = c * uPaleta * uTransmitancia * uBrilhoDaVisita;
           // o véu sobre a borda do disco como a tela a mostra (comprimida)
           vec3 borda = comprimir3(k * ${literalGlsl(1 - u)}, ${literalGlsl(BETA_DA_EMISSAO)});
           gl_FragColor = vec4((comprimir3(k * luz, ${literalGlsl(BETA_DA_EMISSAO)}) + borda * veu) * uWorldFade, 1.0);
@@ -2066,9 +2074,8 @@ export class StellarBody {
         uCorFria: ctx.corFria,
         uCorQuente: ctx.corQuente,
         uPaleta: ctx.paleta,
-        uFiltroSolar: su.uFiltroSolar,
         uTransmitancia: su.uTransmitancia,
-        uBrilhoDaEstrela: su.uBrilhoDaEstrela ?? { value: 1 },
+        uBrilhoDaVisita: this.brilhoDaVisita,
         uWorldFade: su.uWorldFade,
         uTime: su.uTime,
         uRaio: { value: p.radiusPc },
@@ -2239,12 +2246,15 @@ export class StellarBody {
    * O BRILHO DE OUTRA ESTRELA na unidade da casa (a superfície do Sol = 1):
    * radiância visível(T) × exposição da visita — o mesmo produto do piloto
    * (`brilhoDe` × `uExposicao`). Entra na radiância ANTES da compressão,
-   * junto com a transmitância. No Sol não existe (no-op).
+   * junto com a transmitância. No Sol não existe (no-op). `kDaVisita` é o
+   * mesmo produto com a exposição PLENA (a de g = 0): o nível em que a casca
+   * em volta do disco é desenhada em qualquer distância (`criarABordaDifusa`).
    */
-  escreverBrilho(k: number) {
+  escreverBrilho(k: number, kDaVisita: number = k) {
     const u = this.ctx.sunUniforms.uBrilhoDaEstrela;
     if (!u || !Number.isFinite(k) || k < 0) return;
     u.value = k;
+    if (Number.isFinite(kDaVisita) && kDaVisita >= 0) this.brilhoDaVisita.value = kDaVisita;
   }
 
   // Sim + bake síncronos: põe as regiões NA FASE PEDIDA, evolui o Br na
