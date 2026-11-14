@@ -298,10 +298,13 @@ void main() {
 /** `FRAG` com os braços trocados pela assinatura da lente de Ajustes (`estrelasDaLente.ts`). */
 const FRAG_DA_LENTE = ESTRELAS_SEGUEM_A_LENTE ? receitaSegueALente(FRAG, '1.0 / max(uMeiaPx, 1e-6)') : FRAG;
 
-// ─── A SONDA DE OCLUSÃO — outro corpo tapou o CENTRO do Sol? ─────────────
-// A §5.15 acima só promete que o clarão nunca é ocluído pelo SOL — nunca
-// disse nada sobre um corpo DIFERENTE (Hipérion, um planeta) na frente,
-// e por isso o clarão atravessava esses corpos. A pergunta pede um
+// ─── A SONDA DE OCLUSÃO — outro corpo tapou o PONTO da estrela? ──────────
+// A §5.15 acima só promete que o clarão nunca é ocluído pela estrela que o
+// causa — nunca disse nada sobre um corpo DIFERENTE (Hipérion, um planeta)
+// na frente, e por isso o clarão atravessava esses corpos. Nasceu para o
+// Sol (23/09) e desde 13/11 é UMA SONDA POR VAGA, a mesma para toda
+// estrela: Aldebaran e Rígel atrás do globo de Saturno, no filme do Sol
+// (t = 236 s), acendiam o clarão em cima do planeta. A pergunta pede um
 // desenhista PRÓPRIO: o `VERT`/`FRAG` acima é o texto que o oráculo de
 // conformidade tranca byte a byte, e a sonda não é a lei do clarão — é
 // um instrumento à parte, que mora no MESMO grupo só para desenhar no
@@ -313,7 +316,8 @@ const FRAG_DA_LENTE = ESTRELAS_SEGUEM_A_LENTE ? receitaSegueALente(FRAG, '1.0 / 
 // quando a sonda desenha o depth só tem as superfícies sólidas — os corpos
 // resolvidos. Brilho, poeira e o que mais vier depois não contam.
 //
-// ONDE ELA FICA (medido em 23/09, Hipérion a 9,5 UA do Sol). Com o near
+// ONDE ELA FICA (medido em 23/09, Hipérion a 9,5 UA do Sol; vale para
+// qualquer estrela, que só fica mais longe). Com o near
 // da câmera em ~1 km, o Sol cai onde o depth de 24 bits já não distingue
 // nada do fundo (1 − 7,6e−10): uma sonda no centro dele empata com o
 // fundo e às vezes é descartada no arredondamento — o clarão sumia com o
@@ -322,7 +326,18 @@ const FRAG_DA_LENTE = ESTRELAS_SEGUEM_A_LENTE ? receitaSegueALente(FRAG, '1.0 / 
 // quatro degraus antes do fundo. Continua atrás de todo corpo capaz de
 // tapar o Sol inteiro — isso exige estar a menos de ~10 % do caminho (é o
 // caso de Júpiter, o maior) — e à frente da fotosfera, então o Sol nunca
-// tapa o próprio clarão (§5.15).
+// tapa o próprio clarão (§5.15). A estrela visitada idem: a sonda só corre
+// com soltura > 0 (disco < 10 px), e aí a câmera está a milhares de raios
+// dela — a metade do caminho fica muito à frente do corpo que ela monta.
+//
+// O QUE A SONDA NÃO VÊ, declarado: anéis, atmosferas, poeira — tudo que é
+// translúcido e não escreve profundidade. O PONTO da estrela também
+// atravessa o anel (as camadas de estrelas desenham depois dele, só com o
+// depth dos sólidos), então o clarão segue o ponto: os dois atravessam.
+//
+// A RESPOSTA É BINÁRIA (a consulta só diz "alguma amostra passou") e a
+// estrela é um ponto: quem dá a passagem suave é a rampa da vaga
+// (`visibilidade`, os MESMOS 300 ms do orçamento), não uma cobertura parcial.
 const MEIA_PX_DA_SONDA = 1;
 
 /** Quantas consultas de oclusão ficam em voo ao mesmo tempo — o bastante
@@ -339,7 +354,9 @@ void main() {
   vec4 c = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
   // metade do caminho até o Sol, na mesma direção: mesmo pixel na tela
   c.xyz *= 0.5;
-  float extent = uMeiaPx * 2.0 * max(-c.z, 1e-6) / (projectionMatrix[1][1] * uScreenH);
+  // o piso é só guarda de divisão (o mesmo do clarão: 1e-6 pc inflava a
+  // sonda de uma visitada pequena vista a menos de 0,4 UA)
+  float extent = uMeiaPx * 2.0 * max(-c.z, 1e-30) / (projectionMatrix[1][1] * uScreenH);
   c.xy += position.xy * extent;
   gl_Position = projectionMatrix * c;
   // nunca no fundo do depth: z de NDC 1 − 4,8e−7 = depth 1 − 2,4e−7
@@ -671,14 +688,19 @@ export class ClaraoDeAsas {
   private readonly matsDoCampo: THREE.ShaderMaterial[] = [];
   private readonly meshesDoCampo: THREE.Mesh[] = [];
 
-  // ── a sonda de oclusão do Sol (candidato 0) — ver a seção dedicada,
-  // logo antes de `ocupacao()` — mesmo grupo, desenhista à parte
+  // ── a sonda de oclusão, UMA POR VAGA — ver a seção dedicada, logo
+  // antes de `ocupacao()` — mesmo grupo, desenhista à parte
   private readonly sondaMat: THREE.ShaderMaterial;
-  private readonly sondaMesh: THREE.Mesh;
-  private readonly consultas: SondaDeOclusao;
-  /** true quando a ÚLTIMA consulta resolvida achou o Sol tapado por
-   *  OUTRO corpo — nunca pela §5.15 (o próprio Sol não conta aqui) */
-  private solOculto = false;
+  private readonly sondas: THREE.Mesh[] = [];
+  private readonly consultas: SondaDeOclusao[] = [];
+  /** por vaga: a ÚLTIMA consulta resolvida achou o ponto tapado por OUTRO
+   *  corpo — nunca pela §5.15 (a estrela não conta para si mesma) */
+  private readonly oculta: Uint8Array;
+  /** por vaga: a presença pela oclusão, 0..1 — a rampa de 300 ms rumo a
+   *  0 (tapada) ou 1 (à vista); multiplica o clarão e o halo da vaga */
+  private readonly visibilidade: Float64Array;
+  /** por vaga: o candidato a quem as respostas da sonda pertencem */
+  private readonly donoDaSonda: Int32Array;
   private readonly vSonda = new THREE.Vector3();
 
   // o cadastro de candidatos: 0 = Sol (na origem), 1.. = as nomeadas.
@@ -705,6 +727,9 @@ export class ClaraoDeAsas {
     } = {}
   ) {
     this.slots = criarSlots();
+    this.oculta = new Uint8Array(this.slots.length);
+    this.visibilidade = new Float64Array(this.slots.length).fill(1);
+    this.donoDaSonda = new Int32Array(this.slots.length).fill(-1);
     this.nNomeadas = named.length;
     const n = named.length + 1 + VAGAS_DE_VISITADAS;
     this.marcaDaVisita = new Uint32Array(n);
@@ -784,7 +809,7 @@ export class ClaraoDeAsas {
       }
     }
 
-    // a sonda entra DEPOIS dos ORCAMENTO_DO_CLARAO quads: quem lê
+    // as sondas entram DEPOIS dos ORCAMENTO_DO_CLARAO quads: quem lê
     // `group.children[0..ORCAMENTO_DO_CLARAO-1]` continua vendo só os
     // billboards do clarão (clarao.test.ts)
     this.sondaMat = new THREE.ShaderMaterial({
@@ -799,19 +824,21 @@ export class ClaraoDeAsas {
       depthTest: true,
       transparent: true,
     });
-    const sonda = new THREE.Mesh(plano, this.sondaMat);
-    sonda.position.set(this.pos[0], this.pos[1], this.pos[2]);
-    sonda.visible = false;
-    sonda.frustumCulled = false;
-    sonda.renderOrder = -1; // a PRIMEIRA da fila transparente: só o depth dos sólidos
-    // a mecânica da consulta é a comum (`sondaDeOclusao.ts`); fora da
-    // tela (sem resposta) conta como à vista, ver a seção da mecânica
-    this.consultas = new SondaDeOclusao(TAMANHO_DA_PISCINA_DE_SONDAS, (visivel) =>
-      this.registrarOclusaoDoSol(visivel === false)
-    );
-    this.consultas.ligar(sonda, (camera) => this.centroNaTela(camera));
-    this.group.add(sonda);
-    this.sondaMesh = sonda;
+    for (let k = 0; k < this.slots.length; k++) {
+      const sonda = new THREE.Mesh(plano, this.sondaMat);
+      sonda.visible = false;
+      sonda.frustumCulled = false;
+      sonda.renderOrder = -1; // a PRIMEIRA da fila transparente: só o depth dos sólidos
+      // a mecânica da consulta é a comum (`sondaDeOclusao.ts`); fora da
+      // tela (sem resposta) conta como à vista, ver a seção da mecânica
+      const consultas = new SondaDeOclusao(TAMANHO_DA_PISCINA_DE_SONDAS, (visivel) =>
+        this.registrarOclusao(k, visivel === false)
+      );
+      consultas.ligar(sonda, (camera) => this.centroNaTela(sonda, camera));
+      this.group.add(sonda);
+      this.sondas.push(sonda);
+      this.consultas.push(consultas);
+    }
   }
 
   /**
@@ -838,9 +865,6 @@ export class ClaraoDeAsas {
     const soltura = this.soltura[i];
     // superfície é a dona: com a soltura em zero o clarão nem candidata
     if (!(soltura > 0)) return;
-    // outro corpo tapa o CENTRO do Sol (a sonda acima): some pela MESMA
-    // rampa de saída do orçamento — nenhum gatilho ou tempo novo
-    if (i === 0 && this.solOculto) return;
     const dx = this.pos[i * 3] - q.camPos.x;
     const dy = this.pos[i * 3 + 1] - q.camPos.y;
     const dz = this.pos[i * 3 + 2] - q.camPos.z;
@@ -869,6 +893,14 @@ export class ClaraoDeAsas {
     if (el.length > teto) el.length = teto;
   }
 
+  /** o candidato tem vaga, e a sonda dela o deu por tapado com a rampa já em zero */
+  private tapadaPorInteiro(indice: number): boolean {
+    for (let k = 0; k < this.slots.length; k++) {
+      if (this.slots[k].indice === indice) return this.oculta[k] === 1 && this.visibilidade[k] === 0;
+    }
+    return false;
+  }
+
   /** o índice no cadastro de uma visitada (a mesma regra do laço de `atualizar`); null = o Sol */
   private indiceDaFonte(v: CandidataVisitada | null): number {
     if (!v) return 0;
@@ -893,15 +925,7 @@ export class ClaraoDeAsas {
         ? q.solturaDoSol
         : 1;
 
-    // A SONDA DE OCLUSÃO corre sempre que o Sol PODERIA ter clarão — a
-    // MESMA condição de entrada do candidato 0, logo abaixo. `solOculto`
-    // (lido ali) só decide ELEGIBILIDADE; a sonda precisa continuar
-    // rodando mesmo tapada, senão nunca veria o Sol reaparecer.
-    const sondaDeveCorrer = q.solVisivel && solturaDoSol > 0;
-    this.sondaMesh.visible = sondaDeveCorrer;
-    if (sondaDeveCorrer) {
-      this.sondaMat.uniforms.uScreenH.value = q.screenH;
-    }
+    this.sondaMat.uniforms.uScreenH.value = q.screenH;
 
     // o Sol e as estrelas VISITADAS (12/11): a que o motor do Sol monta
     // candidata pela mesma lei, com os números do ponto dela
@@ -943,8 +967,18 @@ export class ClaraoDeAsas {
 
     // A FRONTEIRA DO ORÇAMENTO NÃO CORTA (`presencaNaFronteira`): o corte é
     // o pico do primeiro elegível que ficou DE FORA × a folga da troca; sem
-    // ninguém de fora, não há fronteira (0)
-    const corte = el.length > this.slots.length ? RAZAO_DE_TROCA * el[this.slots.length].pico : 0;
+    // ninguém de fora, não há fronteira (0). A fila conta só quem se VÊ: a
+    // estrela inteira atrás de um corpo guarda a vaga (a sonda dela precisa
+    // continuar correndo), mas não empurra a fronteira das outras
+    let corte = 0;
+    let naFila = 0;
+    for (const c of el) {
+      if (this.tapadaPorInteiro(c.indice)) continue;
+      if (naFila++ === this.slots.length) {
+        corte = RAZAO_DE_TROCA * c.pico;
+        break;
+      }
+    }
 
     passoDoOrcamento(this.slots, el, q.dtS);
     const veu = veuDaLente(q.lente);
@@ -953,7 +987,17 @@ export class ClaraoDeAsas {
       const s = this.slots[k];
       const mesh = this.meshes[k];
       const gemeo = this.meshesDoCampo[k];
+      const sonda = this.sondas[k];
       if (gemeo) gemeo.visible = false;
+      sonda.visible = false;
+      // a vaga trocou de dono: as respostas em voo eram do anterior, e o
+      // novo começa à vista (a mesma regra de "sem resposta")
+      if (this.donoDaSonda[k] !== s.indice) {
+        this.donoDaSonda[k] = s.indice;
+        this.oculta[k] = 0;
+        this.visibilidade[k] = 1;
+        this.consultas[k].invalidar();
+      }
       if (s.indice < 0 || s.ganho <= 0) {
         mesh.visible = false;
         continue;
@@ -979,18 +1023,33 @@ export class ClaraoDeAsas {
         mesh.visible = false;
         continue;
       }
+      // A OCLUSÃO, a mesma para toda vaga: a sonda corre sempre que a vaga
+      // PODERIA ter clarão — também tapada, senão nunca veria a estrela
+      // reaparecer —, e a presença anda pela rampa de 300 ms do orçamento
+      sonda.visible = true;
+      sonda.position.set(this.pos[i * 3], this.pos[i * 3 + 1], this.pos[i * 3 + 2]);
+      const vis = (this.visibilidade[k] = stepRampToward(
+        this.visibilidade[k],
+        this.oculta[k] ? 0 : 1,
+        q.dtS,
+        RAMP_DURATION_MS
+      ));
+      if (!(vis > 0)) {
+        mesh.visible = false;
+        continue;
+      }
       mesh.visible = true;
-      mesh.position.set(this.pos[i * 3], this.pos[i * 3 + 1], this.pos[i * 3 + 2]);
+      mesh.position.copy(sonda.position);
       const u = this.mats[k].uniforms;
       (u.uCor.value as THREE.Color).setRGB(
         this.cor[i * 3],
         this.cor[i * 3 + 1],
         this.cor[i * 3 + 2]
       );
-      // presença = rampa do orçamento × entrada × soltura: o brilho da
-      // forma é FIXO — é o desenho superior que o dono apontou; a lei
-      // manda só em presença e tamanho
-      u.uGanho.value = s.ganho * entrada;
+      // presença = rampa do orçamento × entrada × soltura × oclusão: o
+      // brilho da forma é FIXO — é o desenho superior que o dono apontou;
+      // a lei manda só em presença e tamanho
+      u.uGanho.value = s.ganho * entrada * vis;
       const t = i === 0 ? q.transmitanciaDoSol : undefined;
       (u.uTransmitancia.value as THREE.Vector3).set(t ? t[0] : 1, t ? t[1] : 1, t ? t[2] : 1);
       u.uMeiaPx.value = meiaPx;
@@ -1031,21 +1090,21 @@ export class ClaraoDeAsas {
   // alcança. É esse único draw, com a profundidade dos corpos resolvidos
   // já escrita pela fila opaca, que a consulta mede.
   //
-  // CENTRO DO SOL FORA DA TELA (medido em 23/09: a 2 % acima da borda, a
+  // O PONTO FORA DA TELA (medido no Sol em 23/09: a 2 % acima da borda, a
   // cruz ainda entrava no quadro): a sonda cairia fora da imagem e seria
   // descartada — "tapado" sem corpo nenhum. Fora da tela a pergunta não
   // tem resposta: o clarão segue como antes da sonda (não oculto), e as
-  // consultas já em voo, feitas com o Sol ainda dentro, não valem mais.
-  private centroNaTela(camera: THREE.Camera): boolean {
-    return ndcNaTela(this.vSonda.setFromMatrixPosition(this.sondaMesh.matrixWorld).project(camera));
+  // consultas já em voo, feitas com o ponto ainda dentro, não valem mais.
+  private centroNaTela(sonda: THREE.Object3D, camera: THREE.Camera): boolean {
+    return ndcNaTela(this.vSonda.setFromMatrixPosition(sonda.matrixWorld).project(camera));
   }
 
-  /** O ÚNICO lugar que escreve `solOculto` — a consulta de oclusão chama
-   *  daqui de cima (com GPU de verdade); o teste de unidade chama esta
-   *  mesma função por um cast controlado, sem GPU nenhuma, para provar a
-   *  rampa sem depender de um `WebGLRenderer` de verdade. */
-  private registrarOclusaoDoSol(oculto: boolean): void {
-    this.solOculto = oculto;
+  /** O ÚNICO lugar que escreve `oculta` — a consulta de oclusão da vaga
+   *  chama daqui de cima (com GPU de verdade); o teste de unidade chama
+   *  esta mesma função por um cast controlado, sem GPU nenhuma, para
+   *  provar a rampa sem depender de um `WebGLRenderer` de verdade. */
+  private registrarOclusao(vaga: number, oculto: boolean): void {
+    this.oculta[vaga] = oculto ? 1 : 0;
   }
 
   /** leitura para depuração/oráculos: quem ocupa os slots agora */
@@ -1057,7 +1116,7 @@ export class ClaraoDeAsas {
     this.mats.forEach((m) => m.dispose());
     this.matsDoCampo.forEach((m) => m.dispose());
     this.sondaMat.dispose();
-    this.consultas.dispose();
+    this.consultas.forEach((c) => c.dispose());
     this.group.traverse((o) => {
       if (o instanceof THREE.Mesh) o.geometry.dispose();
     });

@@ -307,55 +307,67 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     c.dispose();
   });
 
-  it('a sonda de oclusão do Sol mora no MESMO grupo, com profundidade LIGADA e sem pintar nada', () => {
-    // outro corpo (não o Sol) pode tapar o clarão — a §5.15 acima só
-    // proíbe o Sol ocluir a si mesmo. A sonda testa profundidade contra o
-    // resto da cena; por isso ela é o OPOSTO dos billboards de cima em
-    // todo campo relevante, e mora no mesmo `group` para desenhar no
-    // mesmo passe.
+  it('a sonda de oclusão, uma por vaga, mora no MESMO grupo, com profundidade LIGADA e sem pintar nada', () => {
+    // outro corpo pode tapar o clarão — a §5.15 acima só proíbe a estrela
+    // ocluir a si mesma. A sonda testa profundidade contra o resto da cena;
+    // por isso ela é o OPOSTO dos billboards de cima em todo campo
+    // relevante, e mora no mesmo `group` para desenhar no mesmo passe.
     const c = new ClaraoDeAsas(META.named);
-    const sonda = c.group.children[c.group.children.length - 1] as THREE.Mesh;
-    const mat = sonda.material as THREE.ShaderMaterial;
-    expect(mat.depthTest).toBe(true);
-    expect(mat.depthWrite).toBe(false);
-    expect(mat.colorWrite).toBe(false);
-    expect(mat.transparent).toBe(true);
-    expect(sonda.renderOrder).toBe(-1);
-    expect(sonda.frustumCulled).toBe(false);
+    const sondas = c.group.children.slice(-ORCAMENTO_DO_CLARAO) as THREE.Mesh[];
+    expect(c.group.children).toHaveLength(2 * ORCAMENTO_DO_CLARAO);
+    for (const sonda of sondas) {
+      const mat = sonda.material as THREE.ShaderMaterial;
+      expect(mat.depthTest).toBe(true);
+      expect(mat.depthWrite).toBe(false);
+      expect(mat.colorWrite).toBe(false);
+      expect(mat.transparent).toBe(true);
+      expect(sonda.renderOrder).toBe(-1);
+      expect(sonda.frustumCulled).toBe(false);
+    }
     c.dispose();
   });
 
-  it('outro corpo tapando o Sol apaga o clarão pela MESMA rampa do orçamento, e o traz de volta', () => {
+  it('um corpo tapando QUALQUER estrela apaga clarão e halo pela rampa de 300 ms, mantém a vaga e os traz de volta', () => {
     // Não há GPU nesta suíte (`node`, sem WebGLRenderer): a consulta de
     // oclusão de verdade só corre no navegador. O que se prova aqui é o
-    // contrato entre ela e o orçamento — `registrarOclusaoDoSol` é o
-    // MESMO método que o callback da sonda chamaria com um resultado de
-    // GPU; o cast alcança-o sem abrir a API pública da camada.
-    const c = new ClaraoDeAsas(META.named);
-    const registrar = (oculto: boolean) =>
-      (c as unknown as { registrarOclusaoDoSol(oculto: boolean): void }).registrarOclusaoDoSol(
-        oculto
-      );
-
+    // contrato entre ela e a vaga — `registrarOclusao` é o MESMO método
+    // que o callback da sonda chamaria com um resultado de GPU; o cast
+    // alcança-o sem abrir a API pública da camada. Uma regra para toda
+    // vaga: o Sol e Sirius passam pelo mesmo caminho.
+    const c = new ClaraoDeAsas(META.named, { camadaDoCampo: 1 });
+    const interna = c as unknown as {
+      registrarOclusao(vaga: number, oculto: boolean): void;
+      slots: { indice: number }[];
+      mats: THREE.ShaderMaterial[];
+      matsDoCampo: THREE.ShaderMaterial[];
+      meshes: THREE.Mesh[];
+      sondas: THREE.Mesh[];
+    };
     for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(true));
-    expect(c.ocupacao().find((o) => o.indice === 0)?.ganho).toBe(1);
+    const iSirius = 1 + META.named.findIndex((s) => s.n === 'Sirius');
+    for (const indice of [0, iSirius]) {
+      const k = interna.slots.findIndex((s) => s.indice === indice);
+      expect(k).toBeGreaterThanOrEqual(0);
+      const pleno = interna.mats[k].uniforms.uGanho.value as number;
+      const halo = interna.matsDoCampo[k].uniforms.uGanho.value as number;
+      expect(pleno).toBeGreaterThan(0);
 
-    // um corpo diferente do Sol tapa o centro dele: a sonda registra
-    // oculto, e o candidato 0 deixa de ser elegível — a MESMA rampa de
-    // 300 ms de "fonte oculta" apaga o slot, sem gatilho nem tempo novo
-    registrar(true);
-    c.atualizar(quadroEmCasa(true));
-    const saindo = c.ocupacao().find((o) => o.indice === 0);
-    if (saindo) expect(saindo.ganho).toBeLessThan(1);
-    for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(true));
-    expect(c.ocupacao().some((o) => o.indice === 0)).toBe(false);
+      interna.registrarOclusao(k, true);
+      c.atualizar(quadroEmCasa(true)); // 16 ms: um degrau da rampa, nunca o estalo
+      const passo = interna.mats[k].uniforms.uGanho.value as number;
+      expect(passo).toBeLessThan(pleno);
+      expect(passo).toBeGreaterThan(0.9 * pleno);
+      expect((interna.matsDoCampo[k].uniforms.uGanho.value as number) / halo).toBeCloseTo(passo / pleno, 6);
+      for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(true));
+      // apagado — mas a vaga fica, e a sonda continua correndo
+      expect(interna.slots[k].indice).toBe(indice);
+      expect(interna.meshes[k].visible).toBe(false);
+      expect(interna.sondas[k].visible).toBe(true);
 
-    // o Sol reaparece: a sonda registra visível de novo, e o clarão sobe
-    // pela MESMA rampa de entrada — depois de a nomeada mais fraca sair
-    // pela dela (com as vagas cheias, o Sol espera a vaga)
-    registrar(false);
-    for (let i = 0; i < 60; i++) c.atualizar(quadroEmCasa(true));
-    expect(c.ocupacao().find((o) => o.indice === 0)?.ganho).toBe(1);
+      interna.registrarOclusao(k, false);
+      for (let i = 0; i < 30; i++) c.atualizar(quadroEmCasa(true));
+      expect(interna.mats[k].uniforms.uGanho.value as number).toBeCloseTo(pleno, 9);
+    }
     c.dispose();
   });
 
