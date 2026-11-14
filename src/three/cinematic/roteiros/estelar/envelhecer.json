@@ -1,0 +1,143 @@
+{
+  "planos": [
+    {
+      "nome": "rumoAAldebaran",
+      "qa": {"rumoAAldebaran": 0.5},
+      "camera": {
+        "duracao": 8,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Aldebaran",
+          "de": "miranteDasHiades",
+          "para": "chegadaEmAldebaran"
+        },
+        "mira": {"tipo": "fixo", "ponto": "Aldebaran"},
+        "lente": [36, 40],
+        "ritmo": "glide"
+      },
+      "assuntos": ["Aldebaran"],
+      "fundoSilencioso": true
+    },
+    {
+      "nome": "aGiganteLaranja",
+      "qa": {"aGiganteLaranja": 0.4},
+      "camera": {
+        "duracao": 11,
+        "movimento": {
+          "tipo": "arco",
+          "centro": "Aldebaran",
+          "direcaoDe": "chegadaEmAldebaranDirecao",
+          "direcaoPara": "fimDoArcoDeAldebaranDirecao",
+          "raio": ["raioDoArcoDeAldebaranDe", "raioDoArcoDeAldebaranPara"]
+        },
+        "mira": {
+          "tipo": "passagem",
+          "de": "Aldebaran",
+          "assunto": "Aldebaran",
+          "rumo": "Sirius",
+          "entrada": 0.02,
+          "saida": 0.62
+        },
+        "lente": [40, 40],
+        "ritmo": "smooth"
+      },
+      "assuntos": ["SOL"],
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.08,
+          "texto": "Aldebaran",
+          "subtexto": "Inchou: 45 vezes o raio do Sol",
+          "en": {"texto": "Aldebaran", "subtexto": "Swollen to 45 times the Sun's radius"},
+          "duracao": 4.6
+        },
+        {
+          "em": 0.58,
+          "texto": "O Sol fará o mesmo",
+          "en": {"texto": "The Sun will do the same"},
+          "duracao": 4.4
+        }
+      ]
+    },
+    {
+      "nome": "rumoASirius",
+      "qa": {"rumoASirius": 0.5},
+      "camera": {
+        "duracao": 8,
+        "movimento": {
+          "tipo": "sequencia",
+          "trechos": [
+            {"ate": 0.1, "movimento": {"tipo": "reta", "de": "fimDoArcoDeAldebaran", "para": "alemDeAldebaran"}},
+            {
+              "ate": 1,
+              "movimento": {"tipo": "aproximacao", "centro": "siriusB", "de": "alemDeAldebaran", "para": "chegadaEmB"}
+            }
+          ]
+        },
+        "mira": {"tipo": "pan-direcao", "de": "Sirius", "para": "siriusB", "ate": 0.5},
+        "lente": [40, 40],
+        "ritmo": "glide"
+      },
+      "assuntos": ["Sirius"],
+      "fundoSilencioso": true
+    },
+    {
+      "nome": "siriusB",
+      "qa": {"siriusB": 0.7},
+      "camera": {
+        "duracao": 10,
+        "movimento": {
+          "tipo": "arco",
+          "centro": "siriusB",
+          "direcaoDe": "chegadaEmBDirecao",
+          "direcaoPara": "fimDoArcoDeBDirecao",
+          "raio": ["raioDoArcoDeBDe", "raioDoArcoDeBPara"]
+        },
+        "mira": {"tipo": "fixo", "ponto": "siriusB"},
+        "lente": [40, 40],
+        "ritmo": "smooth"
+      },
+      "assuntos": ["Sirius"],
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.3,
+          "texto": "Sírius B",
+          "subtexto": "O que sobra: o caroço de uma estrela morta",
+          "en": {"texto": "Sirius B", "subtexto": "What remains: the core of a dead star"},
+          "duracao": 6.5
+        }
+      ]
+    },
+    {
+      "nome": "saidaDeSirius",
+      "qa": {"saidaDeSirius": 0.3},
+      "camera": {
+        "duracao": 6,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "siriusB",
+          "de": "fimDoArcoDeB",
+          "para": "saidaDeSirius",
+          "ritmoDaDirecao": "launch"
+        },
+        "mira": {"tipo": "pan-direcao", "de": "siriusB", "para": "Proxima Centauri", "ate": 0.85},
+        "lente": [40, 40],
+        "ritmo": "glide"
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.04,
+          "texto": "Do tamanho da Terra",
+          "subtexto": "e com a massa do Sol",
+          "en": {"texto": "The size of the Earth", "subtexto": "with the mass of the Sun"},
+          "duracao": 4.6
+        }
+      ]
+    }
+  ]
+}

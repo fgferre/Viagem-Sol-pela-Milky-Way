@@ -1,0 +1,139 @@
+{
+  "planos": [
+    {
+      "nome": "rumoAsPleiades",
+      "qa": {"rumoAsPleiades": 0.5},
+      "camera": {
+        "duracao": 9,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "passagemNasPleiades",
+          "de": "saidaDeOrion",
+          "para": "entradaNasPleiades"
+        },
+        "mira": {"tipo": "pan", "de": "pleiades", "para": "adianteNaEntrada", "ritmo": "launch"},
+        "lente": [40, 58],
+        "ritmo": "glide"
+      },
+      "assuntos": ["Plêiades"],
+      "fundoSilencioso": true
+    },
+    {
+      "nome": "dentroDasPleiades",
+      "qa": {"dentroDasPleiades": 0.5},
+      "camera": {
+        "duracao": 12,
+        "movimento": {
+          "tipo": "sequencia",
+          "trechos": [
+            {
+              "ate": "fracaoDaRetaNasPleiades",
+              "movimento": {"tipo": "reta", "de": "entradaNasPleiades", "para": "fimDaRetaNasPleiades"}
+            },
+            {
+              "ate": 1,
+              "movimento": {
+                "tipo": "curva",
+                "de": "fimDaRetaNasPleiades",
+                "controle1": "controleDaCurvaDe",
+                "controle2": "controleDaCurvaPara",
+                "para": "saidaDasPleiades"
+              }
+            }
+          ]
+        },
+        "mira": {
+          "tipo": "passagem",
+          "de": "adianteNaEntrada",
+          "assunto": "adianteNaEntrada",
+          "rumo": "hyades",
+          "entrada": 0.01,
+          "saida": "fracaoDaRetaNasPleiades"
+        },
+        "lente": [58, 58],
+        "ritmo": "glide"
+      },
+      "assuntos": ["Atlas", "Alcyone", "Merope", "Taygeta"],
+      "fundoSilencioso": true,
+      "legendas": [
+        {
+          "em": 0.25,
+          "texto": "Plêiades",
+          "subtexto": "112 milhões de anos: irmãs que ainda viajam juntas",
+          "en": {"texto": "The Pleiades", "subtexto": "112 million years old: sisters still travelling together"},
+          "duracao": 6
+        }
+      ]
+    },
+    {
+      "nome": "rumoAsHiades",
+      "qa": {"rumoAsHiades": 0.5},
+      "camera": {
+        "duracao": 9,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "hyades",
+          "de": "saidaDasPleiades",
+          "para": "chegadaNasHiades",
+          "ritmoDaDirecao": "linear"
+        },
+        "mira": {"tipo": "fixo", "ponto": "hyades"},
+        "lente": [58, 50],
+        "ritmo": "glide"
+      },
+      "assuntos": ["Híades"],
+      "fundoSilencioso": true
+    },
+    {
+      "nome": "hiadesDeCima",
+      "qa": {"hiadesDeCima": 0.5},
+      "camera": {
+        "duracao": 8,
+        "movimento": {
+          "tipo": "arco",
+          "centro": "hyades",
+          "direcaoDe": "chegadaNasHiadesDirecao",
+          "direcaoPara": "atrasDasHiades",
+          "raio": ["raioDoArcoDasHiadesDe", "raioDoArcoDasHiadesPara"]
+        },
+        "mira": {"tipo": "pan", "de": "hyades", "para": "Aldebaran", "ritmo": "launch"},
+        "lente": [50, 45],
+        "ritmo": "smooth"
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.2,
+          "texto": "Híades",
+          "subtexto": "625 milhões de anos: o grupo já se afrouxa",
+          "en": {"texto": "The Hyades", "subtexto": "625 million years old: the group is loosening"},
+          "duracao": 5.5
+        }
+      ]
+    },
+    {
+      "nome": "aLaranja",
+      "qa": {"aLaranja": 0.5},
+      "camera": {
+        "duracao": 6,
+        "movimento": {"tipo": "fixo", "ponto": "miranteDasHiades"},
+        "mira": {"tipo": "fixo", "ponto": "Aldebaran"},
+        "lente": [45, 36],
+        "ritmoDaLente": "glide"
+      },
+      "assuntos": ["Aldebaran"],
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.15,
+          "texto": "A laranja não é do grupo",
+          "subtexto": "Aldebaran fica na frente, a meio caminho de casa",
+          "en": {"texto": "The orange one is not a member", "subtexto": "Aldebaran sits in front, halfway home"},
+          "duracao": 5
+        }
+      ]
+    }
+  ]
+}

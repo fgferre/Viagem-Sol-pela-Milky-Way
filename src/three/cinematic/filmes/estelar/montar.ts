@@ -31,9 +31,17 @@ import { PONTOS_DAS_JUNTAS } from './atos/juntas';
 import { NUMEROS_PROLOGO, PONTOS_PROLOGO } from './atos/prologo';
 import { NUMEROS_BETELGEUSE, PONTOS_BETELGEUSE } from './atos/betelgeuse';
 import { PONTOS_ORION } from './atos/orion';
+import { NUMEROS_CRESCER, PONTOS_CRESCER } from './atos/crescer';
+import { NUMEROS_ENVELHECER, PONTOS_ENVELHECER } from './atos/envelhecer';
+import { NUMEROS_FICAM, PONTOS_FICAM } from './atos/ficam';
+import { NUMEROS_EPILOGO, PONTOS_EPILOGO } from './atos/epilogo';
 import prologo from '../../roteiros/estelar/prologo.json';
 import betelgeuse from '../../roteiros/estelar/betelgeuse.json';
 import orion from '../../roteiros/estelar/orion.json';
+import crescer from '../../roteiros/estelar/crescer.json';
+import envelhecer from '../../roteiros/estelar/envelhecer.json';
+import ficam from '../../roteiros/estelar/ficam.json';
+import epilogo from '../../roteiros/estelar/epilogo.json';
 
 /** o céu do filme: o instante do galáctico, 2026-01-01 16:00 UTC — escolha
  *  nossa; nada nos atos depende da hora (o Sol gira por ela, e o relógio
@@ -41,7 +49,7 @@ import orion from '../../roteiros/estelar/orion.json';
 export const JD_DO_FILME_ESTELAR_TDB = JD_DO_FILME_TDB;
 
 /** os roteiros, na ordem do filme */
-const ROTEIROS: readonly unknown[] = [prologo, betelgeuse, orion];
+const ROTEIROS: readonly unknown[] = [prologo, betelgeuse, orion, crescer, envelhecer, ficam, epilogo];
 
 /** os lugares do céu como pontos, pelo id da Busca */
 const PONTOS_DOS_LUGARES = Object.fromEntries(
@@ -57,10 +65,21 @@ const PONTOS: Readonly<Record<string, THREE.Vector3>> = {
   ...PONTOS_PROLOGO,
   ...PONTOS_BETELGEUSE,
   ...PONTOS_ORION,
+  ...PONTOS_CRESCER,
+  ...PONTOS_ENVELHECER,
+  ...PONTOS_FICAM,
+  ...PONTOS_EPILOGO,
 };
 
 /** os números nomeados de todos os atos */
-const NUMEROS: Readonly<Record<string, number>> = { ...NUMEROS_PROLOGO, ...NUMEROS_BETELGEUSE };
+const NUMEROS: Readonly<Record<string, number>> = {
+  ...NUMEROS_PROLOGO,
+  ...NUMEROS_BETELGEUSE,
+  ...NUMEROS_CRESCER,
+  ...NUMEROS_ENVELHECER,
+  ...NUMEROS_FICAM,
+  ...NUMEROS_EPILOGO,
+};
 
 /** o que um plano do filme estelar pode nomear */
 export function conheceAssunto(nome: string): boolean {
