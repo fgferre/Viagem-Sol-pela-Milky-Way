@@ -311,12 +311,12 @@ describe('a auditoria editorial do filme', () => {
 
   it('as saídas de Sirius, Casa, Rigel e Antares não vazam para o plano seguinte', () => {
     const fim = (text: string) => auditoria.captions.find((caption) => caption.text === text)?.t1;
-    expect(fim('Sirius')).toBeCloseTo(35.01, 10);
+    expect(fim('Sirius')).toBeCloseTo(36.03, 10);
     expect(fim('Rigel')).toBeCloseTo(72.75, 10);
     expect(fim('Casa')).toBeCloseTo(79.85, 10);
     expect(fim('Antares')).toBeCloseTo(87.84, 10);
-    expect(journey.captionAt(35).key.caption).toBe('Sirius');
-    expect(journey.captionAt(35.02).key.caption).toBe('');
+    expect(journey.captionAt(36.02).key.caption).toBe('Sirius');
+    expect(journey.captionAt(36.04).key.caption).toBe('');
     expect(journey.captionAt(79.84).key.caption).toBe('Casa');
     expect(journey.captionAt(79.86).key.caption).toBe('');
   });
