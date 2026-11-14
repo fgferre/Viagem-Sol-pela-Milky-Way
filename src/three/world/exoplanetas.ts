@@ -489,6 +489,10 @@ export class SistemasPlanetarios {
   readonly group = new THREE.Group();
   /** a gaveta (`noexoplanetas`): órbitas e zona; os planetas ficam */
   ligado = true;
+  /** o plano do filme pode apagar a zona e as linhas em separado
+   *  (`camadas`); a gaveta acima continua mandando nas duas */
+  zonaLigada = true;
+  linhasLigadas = true;
   private readonly montagens = new Map<string, Montagem>();
   private ativoAgora: { sistema: SistemaPlanetario; pos: THREE.Vector3 } | null = null;
   private readonly poolDeOclusores: OclusorDeRotulo[] = [];
@@ -645,6 +649,7 @@ export class SistemasPlanetarios {
     const [a, b] = LINHAS_SOMEM_RAIOS;
     const fator = Math.min(1, Math.max(0, (pertoEmRaios - a) / (b - a)));
     m.orbitas.visible = this.ligado && fator > 0;
+    for (const o of m.orbitas.children) o.visible = o === m.zona ? this.zonaLigada : this.linhasLigadas;
     m.orbitas.traverse((o) => {
       const mat = (o as THREE.Mesh).material as THREE.Material | undefined;
       if (mat && typeof mat.userData.alfa === 'number') mat.opacity = mat.userData.alfa * fator;

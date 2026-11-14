@@ -67,6 +67,19 @@ export interface Shot extends CameraDoPlano, ApoiosDoPlano {
    * JSON: `"relogio": {"diasPorSegundo": 1.5}` ou um número nomeado.
    */
   diasPorSegundo?: number;
+  /**
+   * AS CAMADAS QUE O PLANO DESLIGA (segunda passada do estelar): a faixa
+   * da zona habitável e as linhas de órbita dos sistemas planetários. De
+   * perto a zona vira parede verde e as linhas riscam o quadro. Só
+   * `false` desliga; ausente, vale o que as Camadas do Atlas dizem. No
+   * JSON: `"camadas": {"zonaHabitavel": false, "orbitas": false}`.
+   */
+  camadas?: CamadasDoPlano;
+}
+
+export interface CamadasDoPlano {
+  zonaHabitavel?: boolean;
+  orbitas?: boolean;
 }
 
 function legenda(valor: unknown, campo: string): ShotCaption {
@@ -132,6 +145,16 @@ export function lerSequencia(
           ? (Object.hasOwn(numeros, r) ? numeros[r] : erro(`${c}.diasPorSegundo`, `não encontra o número “${r}”`))
           : r;
         return numero(taxa, `${c}.diasPorSegundo`);
+      }),
+      camadas: opcional(p.camadas, `${campo}.camadas`, (v, c) => {
+        const o = objeto(v, c);
+        for (const k of Object.keys(o)) {
+          if (k !== 'zonaHabitavel' && k !== 'orbitas') erro(`${c}.${k}`, 'camada desconhecida (zonaHabitavel ou orbitas)');
+        }
+        return {
+          zonaHabitavel: opcional(o.zonaHabitavel, `${c}.zonaHabitavel`, booleano),
+          orbitas: opcional(o.orbitas, `${c}.orbitas`, booleano),
+        };
       }),
       lenteDeCinema: opcional(p.lenteDeCinema, `${campo}.lenteDeCinema`, (v, c) =>
         MODOS_DA_LENTE.find((m) => m === v) ?? erro(c, 'deve ser nenhuma, redonda, anamorfica ou hollywood')),

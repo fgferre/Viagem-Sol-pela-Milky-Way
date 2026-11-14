@@ -4228,7 +4228,12 @@ export class Director {
     // OS SISTEMAS PLANETÁRIOS, no mesmo ponto: os planetas do sistema
     // ativo entram no palco antes de o near o ler (world/exoplanetas.ts)
     if (this.exoplanetas) {
+      // o plano do filme pode desligar a zona e as linhas (`camadas`);
+      // ausente, só a gaveta do Atlas manda
+      const camadas = this.phase === 'journey' ? this.rig.metaAt(this.journeyT).camadas : undefined;
       this.exoplanetas.ligado = !this.hide.has('noexoplanetas');
+      this.exoplanetas.linhasLigadas = camadas?.orbitas !== false;
+      this.exoplanetas.zonaLigada = camadas?.zonaHabitavel !== false;
       this.exoplanetas.update({
         jd: this.maquinaDoTempo.jdVivo,
         camPos: cam.position,

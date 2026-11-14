@@ -785,6 +785,8 @@ export interface JourneyMeta {
   dest?: string;
   /** a lente de cinema que o diretor escolheu para o shot (ausente: nenhuma) */
   lenteDeCinema?: Shot['lenteDeCinema'];
+  /** as camadas que o plano desliga (ausente: as do Atlas valem) */
+  camadas?: Shot['camadas'];
 }
 
 export class Journey {
@@ -865,7 +867,7 @@ export class Journey {
 
   metaAt(t: number): JourneyMeta {
     const s = this.planos[this.shotAt(t).i];
-    return { target: s.target, quiet: s.quiet ?? false, dest: s.dest, lenteDeCinema: s.lenteDeCinema };
+    return { target: s.target, quiet: s.quiet ?? false, dest: s.dest, lenteDeCinema: s.lenteDeCinema, camadas: s.camadas };
   }
 
   /** cada marca da barra É uma legenda — leva o título junto, para o HUD
