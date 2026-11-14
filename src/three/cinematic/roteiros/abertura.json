@@ -50,33 +50,27 @@
         "duracao": 7,
         "movimento": {
           "tipo": "curva", "de": "saidaSolar",
-          "controle1": [0.15, 1.1, 0.15], "controle2": [0.175, 1.189, 0.674],
+          "controle1": [1.138, 0.826, 0.914], "controle2": [1.721, 3.956, 0.58],
           "para": "saidaDeSirius",
-          "progresso": {
-            "tipo": "soma",
-            "curvas": [
-              { "tipo": "rampa", "de": 0, "para": 0.3 },
-              { "tipo": "rampa", "de": 0, "para": 0.7, "ritmo": "launch" }
-            ]
-          }
+          "progresso": { "tipo": "rampa", "de": 0, "para": 1, "ritmo": "smooth" }
         },
         "mira": {
-          "tipo": "passagem", "de": "Sol", "assunto": "miraDeSirius", "rumo": "Alnilam",
-          "entrada": 0.5, "saida": 0.82
+          "tipo": "passagem", "de": "Sol", "assunto": [-0.716, 3.592, -1.099], "rumo": "Alnilam",
+          "entrada": 0.2, "saida": 0.82
         },
-        "lente": [56, 63], "ritmo": "glide",
+        "lente": [56, 63], "ritmo": "linear", "ritmoDaLente": "glide",
         "efeitoDeVelocidade": { "tipo": "pulso", "amplitude": 0.25 },
         "inclinacao": { "tipo": "pulso", "amplitude": 0.08 }
       },
       "assuntos": ["Sirius", "SOL"],
       "legendas": [{
-        "em": 0.38, "texto": "Sirius",
+        "em": 0.15, "texto": "Sirius",
         "subtexto": "brilha tanto por estar a 8,6 anos-luz — é só uma vizinha",
         "en": {
           "texto": "Sirius",
           "subtexto": "it shines this brightly only because it is 8.6 light-years away — a neighbor"
         },
-        "duracao": 2.35
+        "duracao": 4.98
       }]
     }
   ]
