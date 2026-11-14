@@ -84,7 +84,7 @@ export const PT = {
   'hud.fim.solar.linha': 'Um fogo só. Cada mundo faz uma coisa diferente com ele.',
   'hud.fim.solar.credito':
     'posições reais de janeiro de 2026 · mapas das sondas, reconstruídos',
-  'hud.fim.estelar.linha': 'O Sol está na metade do caminho.',
+  'hud.fim.estelar.linha': 'Toda estrela é um lugar.',
   'hud.fim.estelar.credito': 'estrelas, aglomerados e nebulosa em posições reais · superfícies pelas medidas de cada estrela',
   'hud.fim.reviver': 'Reviver a viagem',
   'hud.fim.ficarAqui': 'Ficar neste céu',
