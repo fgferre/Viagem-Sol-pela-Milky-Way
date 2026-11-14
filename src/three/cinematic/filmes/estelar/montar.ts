@@ -27,6 +27,7 @@ import { montarAtos, relogioDosPlanos } from '../montagem';
 import { CIMA_DA_ECLIPTICA } from '../solar/atos/geometria';
 import { LUGARES_DA_BUSCA } from '../../../world/lugaresDoCeu';
 import { ESTRELAS_DO_FILME } from './estrelas';
+import { PONTOS_DAS_JUNTAS } from './atos/juntas';
 import { NUMEROS_PROLOGO, PONTOS_PROLOGO } from './atos/prologo';
 import prologo from '../../roteiros/estelar/prologo.json';
 
@@ -48,6 +49,7 @@ const PONTOS: Readonly<Record<string, THREE.Vector3>> = {
   Sol: new THREE.Vector3(0, 0, 0),
   ...PONTOS_DOS_LUGARES,
   ...ESTRELAS_DO_FILME,
+  ...PONTOS_DAS_JUNTAS,
   ...PONTOS_PROLOGO,
 };
 
