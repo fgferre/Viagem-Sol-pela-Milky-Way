@@ -1,0 +1,106 @@
+{
+  "planos": [
+    {
+      "nome": "volta",
+      "qa": {
+        "volta": 0.8
+      },
+      "camera": {
+        "duracao": 9,
+        "movimento": {
+          "tipo": "sequencia",
+          "trechos": [
+            {
+              "ate": 0.3,
+              "movimento": {
+                "tipo": "aproximacao",
+                "centro": "TRAPPIST-1",
+                "de": "sistemaAberto",
+                "para": "saidaDeTrappist",
+                "progresso": {
+                  "tipo": "rampa",
+                  "de": 0,
+                  "para": 1,
+                  "ritmo": "smooth"
+                }
+              }
+            },
+            {
+              "ate": 1,
+              "movimento": {
+                "tipo": "aproximacao",
+                "centro": "Sol",
+                "de": "saidaDeTrappist",
+                "para": "pertoDoSol",
+                "ritmoDaDirecao": "easeOut",
+                "progresso": {
+                  "tipo": "rampa",
+                  "de": 0,
+                  "para": 1,
+                  "ritmo": "smooth"
+                }
+              }
+            }
+          ]
+        },
+        "ritmo": "linear",
+        "mira": {
+          "tipo": "pan-direcao",
+          "de": "TRAPPIST-1",
+          "para": "Sol",
+          "ate": 0.35
+        },
+        "lente": [
+          "lenteAberta",
+          "lenteDoSol"
+        ],
+        "inclinacao": {
+          "tipo": "rampa",
+          "de": "rolagemAberta",
+          "para": 0,
+          "ritmo": "smooth"
+        }
+      },
+      "assuntos": [
+        "SOL"
+      ],
+      "fundoSilencioso": true
+    },
+    {
+      "nome": "naMetade",
+      "lenteDeCinema": "hollywood",
+      "qa": {
+        "naMetade": 0.4
+      },
+      "camera": {
+        "duracao": 11,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Sol",
+          "de": "pertoDoSol",
+          "para": "recuoDoSol"
+        },
+        "mira": {
+          "tipo": "fixo",
+          "ponto": "Sol"
+        },
+        "lente": [
+          "lenteDoSol",
+          "lenteDoSol"
+        ]
+      },
+      "olhar": "assunto",
+      "fundoSilencioso": true,
+      "legendas": [
+        {
+          "em": 0.3,
+          "texto": "Na metade do caminho",
+          "en": {
+            "texto": "Halfway along the road"
+          },
+          "duracao": 5
+        }
+      ]
+    }
+  ]
+}
