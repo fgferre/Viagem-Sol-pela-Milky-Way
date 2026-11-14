@@ -398,6 +398,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.destino.betelgeuse': 'A supergiant in Orion',
   'busca.destino.rigil-kentaurus': 'The nearest star system',
   'busca.destino.trappist-1': 'Seven Earth-sized planets',
+  'busca.destino.s2': 'The star that circles the black hole',
   // NO film promise (item 129/F5 still holds): the click here does the
   // SAME thing the "place" search entry already does — frames the
   // galactic centre in the Atlas, does not start the film.
@@ -406,6 +407,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.destino.nosso-lugar': 'Where the Sun sits in the disc',
   'busca.destino.pleiades': 'The Seven Sisters, up close',
   'busca.destino.hyades': 'The open cluster nearest the Sun',
+  'busca.destino.nebulosa-de-orion': 'A stellar nursery, lit from within',
   'busca.destino.ana-de-sagitario': 'A galaxy being swallowed by ours',
   'busca.destino.grande-nuvem-de-magalhaes': 'Our galaxy’s largest companion',
   'busca.destino.andromeda': 'The big spiral next door',
