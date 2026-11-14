@@ -17,6 +17,11 @@
 // medido (ou o derivado da massa, declarado). De longe ele é o MARCADOR
 // de instrumento dos rótulos; as órbitas e a zona habitável são
 // instrumento de leitura, como as órbitas do Sistema Solar — nunca luz.
+// MENOR QUE UM PIXEL, o planeta é o PONTO DE LUZ da casa (a lei dos
+// planetas do Sol, `planetas/planetas.ts`, pelo material irmão): brilho
+// pela luz da estrela, pelo raio, pela distância à estrela, pelo albedo
+// da face imaginada e pela fase; o ponto cede ao disco pela régua do
+// disco (`cessaoPorDisco`, 4→12 px), a mesma dos planetas do Sol.
 //
 // A APARÊNCIA: ninguém a viu. A CLASSE sai dos números
 // (`climaDoExoplaneta`) e a FACE é imaginada a partir dela, desenhada
@@ -62,6 +67,9 @@ import { uniformsDeEclipseNeutros } from './corpos/eclipseNoMaterial';
 import { PRIORIDADE_DO_ROTULO, projectForced } from './labels';
 import type { OclusorDeRotulo, StarLabel } from './labels';
 import { LARGURA_DA_FITA_PX } from './orbitas';
+import { cessaoPorDisco } from './lodStellar';
+import { diametroAparentePx } from './corpos/corpos';
+import { FASE_MIN, PONTO_ZERO_SOL_PC } from './planetas/planetas';
 import { eixoQuePousaEm } from './lugaresDoCeu';
 import type { PoseDaSonda } from './sondas';
 
@@ -231,6 +239,7 @@ const _y = new THREE.Vector3();
 const _z = new THREE.Vector3();
 const _giro = new THREE.Matrix4();
 const _inv = new THREE.Quaternion();
+const _rel = new THREE.Vector3();
 
 /**
  * O NOME CURTO DENTRO DO PRÓPRIO SISTEMA (13/11): a letra ("TRAPPIST-1 e"
@@ -446,6 +455,7 @@ export function faceDoPlaneta(pl: Exoplaneta, c: ClimaDoExoplaneta, teffK: numbe
     vert: rochoso ? ROCHOSO_VERT : GIGANTE_VERT,
     frag: rochoso ? ROCHOSO_PROC_FRAG : GIGANTE_PROC_FRAG,
     uniforms: u,
+    albedoMedio,
   };
 }
 
@@ -456,7 +466,18 @@ interface Montagem {
   zona: THREE.Mesh | null;
   bases: BaseDaOrbita[];
   /** `giroHoras` = null no travado (a cara para a estrela) */
-  corpos: { planeta: Exoplaneta; malha: THREE.Mesh; raioPc: number; travado: boolean; giroHoras: number | null }[];
+  corpos: {
+    planeta: Exoplaneta;
+    malha: THREE.Mesh;
+    raioPc: number;
+    travado: boolean;
+    giroHoras: number | null;
+    /** a magnitude do ponto a 1 pc, fase zero, SEM a distância à estrela:
+     *  `−0,15 − 2,5·log L − 2,5·log(p·R²)` com R em UA (falta `+5·log r`) */
+    magSemDistancia: number;
+  }[];
+  /** a cor do ponto: a luz da estrela, como a casa a pinta no planeta */
+  corDoPonto: readonly [number, number, number];
   descartaveis: { dispose(): void }[];
 }
 
@@ -497,9 +518,35 @@ export class SistemasPlanetarios {
   private ativoAgora: { sistema: SistemaPlanetario; pos: THREE.Vector3 } | null = null;
   private readonly poolDeOclusores: OclusorDeRotulo[] = [];
   private readonly listaDeOclusores: OclusorDeRotulo[] = [];
+  /** os pontos de luz dos planetas do sistema ativo (`ligarPontos`) */
+  private pontos: THREE.Points | null = null;
 
   constructor() {
     this.group.name = 'exoplanetas';
+  }
+
+  /**
+   * O PONTO DE LUZ de cada planeta, no material IRMÃO da camada dos
+   * planetas do Sol (`Planetas.materialIrmao`): a mesma lei de magnitude,
+   * a mesma PSF e a mesma cessão; as posições vão relativas à câmera.
+   */
+  ligarPontos(material: THREE.ShaderMaterial) {
+    const n = Math.max(1, ...SISTEMAS_PLANETARIOS.map((s) => s.planetas.length));
+    const geo = new THREE.BufferGeometry();
+    const atributo = (k: number, inicial = 0) => new THREE.BufferAttribute(new Float32Array(n * k).fill(inicial), k);
+    geo.setAttribute('position', atributo(3));
+    geo.setAttribute('aMagBase', atributo(1));
+    geo.setAttribute('aCor', atributo(3));
+    geo.setAttribute('aEhSol', atributo(1));
+    // mudo até o primeiro quadro com sistema: a cessão 1 apaga o vértice
+    geo.setAttribute('aCede', atributo(1, 1));
+    geo.setAttribute('aFase', atributo(1, 1));
+    geo.setAttribute('aRaio', atributo(1));
+    this.pontos = new THREE.Points(geo, material);
+    this.pontos.frustumCulled = false;
+    this.pontos.renderOrder = 7;
+    this.pontos.visible = false;
+    this.group.add(this.pontos);
   }
 
   /** o sistema ativo deste quadro (os rótulos o leem) */
@@ -575,9 +622,22 @@ export class SistemasPlanetarios {
       malha.scale.setScalar(raioDoPlanetaUa(pl));
       grupo.add(malha);
       const giro = giroDoExoplaneta(pl, clima);
-      return { planeta: pl, malha, raioPc: raioDoPlanetaUa(pl) * AU_PARA_PC, travado: clima.travado, giroHoras: giro?.horas ?? null };
+      // o albedo geométrico do ponto: o medido (HD 189733 b, média dos
+      // canais), senão o médio da face imaginada — o que o disco desenha
+      const albedo = pl.albedo ? (pl.albedo.rgb[0] + pl.albedo.rgb[1] + pl.albedo.rgb[2]) / 3 : face.albedoMedio;
+      const rUa = raioDoPlanetaUa(pl);
+      const magSemDistancia =
+        PONTO_ZERO_SOL_PC - 2.5 * Math.log10(estrela?.luminosidadeLsol.v ?? 1) - 2.5 * Math.log10(albedo * rUa * rUa);
+      return {
+        planeta: pl,
+        malha,
+        raioPc: rUa * AU_PARA_PC,
+        travado: clima.travado,
+        giroHoras: giro?.horas ?? null,
+        magSemDistancia,
+      };
     });
-    const m = { sistema, grupo, orbitas, zona, bases, corpos, descartaveis };
+    const m = { sistema, grupo, orbitas, zona, bases, corpos, descartaveis, corDoPonto: luz };
     this.group.add(grupo);
     this.montagens.set(sistema.id, m);
     return m;
@@ -595,6 +655,8 @@ export class SistemasPlanetarios {
     focoSistema: string | null;
     posDe: (nome: string) => THREE.Vector3 | null;
     palco: { registrar(id: string, raioPc: number, pos: THREE.Vector3): void; remover(id: string): void };
+    /** a tela, para a régua do disco do ponto de luz */
+    tela?: { hPx: number; fovDeg: number; pr: number };
   }) {
     let escolhido: { sistema: SistemaPlanetario; pos: THREE.Vector3 } | null = null;
     let dMin = RAIO_DO_SISTEMA_ATIVO_PC;
@@ -617,10 +679,19 @@ export class SistemasPlanetarios {
       for (const c of m.corpos) q.palco.remover(`exoplaneta:${c.planeta.id}`);
     }
     this.ativoAgora = escolhido;
+    if (this.pontos) this.pontos.visible = false;
     if (!escolhido || !Number.isFinite(q.jd)) return;
     const m = this.montagens.get(escolhido.sistema.id) ?? this.montar(escolhido.sistema, escolhido.pos);
     m.grupo.visible = true;
     m.grupo.position.copy(escolhido.pos);
+    const geo = this.pontos?.geometry;
+    const cede = geo?.getAttribute('aCede') as THREE.BufferAttribute | undefined;
+    if (geo && cede) {
+      (cede.array as Float32Array).fill(1);
+      const cor = geo.getAttribute('aCor') as THREE.BufferAttribute;
+      for (let k = 0; k < m.corpos.length; k++) cor.setXYZ(k, m.corDoPonto[0], m.corDoPonto[1], m.corDoPonto[2]);
+      cor.needsUpdate = true;
+    }
     let pertoEmRaios = Infinity;
     m.corpos.forEach((c, k) => {
       const r = posicaoDoExoplaneta(c.planeta, m.bases[k], q.jd);
@@ -645,7 +716,26 @@ export class SistemasPlanetarios {
       (u.uCamLocal.value as THREE.Vector3).copy(q.camPos).sub(_pos).divideScalar(c.raioPc).applyQuaternion(_inv);
       q.palco.registrar(`exoplaneta:${c.planeta.id}`, c.raioPc, _pos);
       pertoEmRaios = Math.min(pertoEmRaios, q.camPos.distanceTo(_pos) / c.raioPc);
+      if (geo && cede) {
+        // O PONTO: posição relativa à câmera (o material irmão), magnitude
+        // a 1 pc com a distância à estrela VIVA (n, em UA), fase de
+        // Lambert simplificada da casa, (1 + cos α)/2, com α no planeta
+        // entre a estrela e a câmera, e a cessão pela régua do disco
+        _rel.copy(_pos).sub(q.camPos);
+        const d = Math.max(_rel.length(), 1e-30);
+        (geo.getAttribute('position') as THREE.BufferAttribute).setXYZ(k, _rel.x, _rel.y, _rel.z);
+        (geo.getAttribute('aMagBase') as THREE.BufferAttribute).setX(k, c.magSemDistancia + 5 * Math.log10(n));
+        const cosAlfa = (r[0] * _rel.x + r[1] * _rel.y + r[2] * _rel.z) / (n * d);
+        (geo.getAttribute('aFase') as THREE.BufferAttribute).setX(k, Math.max(0.5 * (1 + cosAlfa), FASE_MIN));
+        (geo.getAttribute('aRaio') as THREE.BufferAttribute).setX(k, c.raioPc);
+        const t = q.tela;
+        cede.setX(k, t ? cessaoPorDisco(diametroAparentePx(c.raioPc, d, t.hPx, t.fovDeg), t.pr) : 1);
+      }
     });
+    if (geo && cede) {
+      for (const nome of ['position', 'aMagBase', 'aFase', 'aRaio', 'aCede']) geo.getAttribute(nome).needsUpdate = true;
+      this.pontos!.visible = true;
+    }
     const [a, b] = LINHAS_SOMEM_RAIOS;
     const fator = Math.min(1, Math.max(0, (pertoEmRaios - a) / (b - a)));
     m.orbitas.visible = this.ligado && fator > 0;
@@ -684,6 +774,8 @@ export class SistemasPlanetarios {
   }
 
   dispose() {
+    this.pontos?.geometry.dispose();
+    (this.pontos?.material as THREE.Material | undefined)?.dispose();
     for (const m of this.montagens.values()) for (const d of m.descartaveis) d.dispose();
     this.montagens.clear();
   }

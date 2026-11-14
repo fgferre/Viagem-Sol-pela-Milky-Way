@@ -583,6 +583,30 @@ export class Planetas {
   }
 
   /**
+   * O MESMO PONTO PARA QUEM MORA LONGE DA ORIGEM (os planetas de outras
+   * estrelas, segunda passada do filme estelar). O vertex, o fragment e
+   * os uniformes são OS DESTA camada — objetos compartilhados, então a
+   * tela, o instrumento, o `uPr2` e a lente andam juntos —, e a única
+   * diferença é a origem: quem usa este material escreve `position`
+   * RELATIVA À CÂMERA, e a câmera dele fica em zero. A 12 pc da origem o
+   * float32 tem passo de 0,2 UA, e as sete órbitas de TRAPPIST-1 cabem
+   * em 0,06 UA: com posição absoluta os sete pontos cairiam num só.
+   */
+  materialIrmao(): THREE.ShaderMaterial {
+    const m = new THREE.ShaderMaterial({
+      vertexShader: PLANETAS_VERT,
+      fragmentShader: STAR_FRAG,
+      uniforms: { ...this.material.uniforms, uCamPos: { value: new THREE.Vector3() } },
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      depthTest: true,
+      transparent: true,
+    });
+    seguirALente(m, STAR_FRAG, STAR_FRAG_DA_LENTE);
+    return m;
+  }
+
+  /**
    * O quadro inteiro da camada: a porta e os uniforms.
    *
    * O CORTE DE DISTÂNCIA MORREU NO M1 da Lei da Estrela, junto com a

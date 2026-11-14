@@ -2273,6 +2273,7 @@ export class Director {
     this.orbitasDosCometas = new OrbitasDosCometas();
     this.engine.scene.add(this.orbitasDosCometas.group);
     this.exoplanetas = new SistemasPlanetarios();
+    this.exoplanetas.ligarPontos(this.planetas.materialIrmao());
     this.engine.scene.add(this.exoplanetas.group);
     this.caudas = new CaudasDosCometas();
     this.engine.scene.add(this.caudas.group);
@@ -4240,6 +4241,7 @@ export class Director {
         focoSistema: this.phase === 'atlas' ? this.escada.sistemaEmFoco : null,
         posDe: (nome) => this.posicaoDaAnfitria(nome),
         palco: this.palco,
+        tela: { hPx, fovDeg: cam.fov, pr: prAtual },
       });
     }
 
