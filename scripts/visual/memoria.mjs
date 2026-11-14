@@ -108,7 +108,7 @@
 // desde a letra D dos Ajustes nada troca sem escolha do visitante, e o tier
 // pedido é escolha explícita) e o SINAL de prontidão do próprio app no
 // lugar de espera cega.
-import { abrirSessao, APP_PADRAO, dorme } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, dorme, esperarCapaSair } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const JANELA = process.env.JANELA || '1200x900';
@@ -135,6 +135,9 @@ const TIER = process.env.TIER || 'alta';
  */
 const JD_PINADO = 2460409.26395835;
 const BOOT = `atlas=1&jd=${JD_PINADO}&q=${TIER}`;
+/** a rede do `soltar` da tela de carga (`hospedeiro.ts`: `terminate` 1 s
+ *  depois de a capa desmontar), com folga — ver a amostra do boot */
+const REDE_DO_WORKER_DA_CAPA_MS = 1200;
 // ERAM 5 ciclos até 30/08 (corte iii do item 113, decisão do dono): o
 // veredito é delta ZERO por ciclo, e um dispose faltando aparece já no
 // 2º–3º. O que fica SEM VIGIA: vazamento que só se manifesta depois do
@@ -527,6 +530,17 @@ try {
     const boot = await sessao.ir(BOOT);
     const fase = await sessao.js('window.__director.captura.fase');
     if (fase !== 'atlas') throw new Error(`boot não abriu no Atlas (fase '${fase}')`);
+    // A AMOSTRA DO BOOT ESPERA A CAPA SAIR (13/11/2026). A tela de carga
+    // desenha num worker PRÓPRIO (`telaDeCarga/hospedeiro.ts`) e fica na
+    // frente ~2 s depois do sinal de assentar, de propósito (ver
+    // `esperarCapaSair`); esse worker só fecha quando a capa desmonta. Com
+    // o assentar em ~7 s a amostra caía nessa janela e contava a capa
+    // como worker que sobreviveu à carga (o falso 1 de b0a4fe33 e de
+    // 9b28d710 em diante). Os workers da CARGA terminam antes do sinal
+    // (`assarCargaEmWorker`), e qualquer worker vivo depois da capa
+    // continua contado.
+    await esperarCapaSair(sessao.send);
+    await dorme(REDE_DO_WORKER_DA_CAPA_MS);
     const amostras = [await amostrar('boot')];
     for (let c = 1; c <= ciclos; c++) {
       await sessao.js('window.__director.partirDoAtlas()');

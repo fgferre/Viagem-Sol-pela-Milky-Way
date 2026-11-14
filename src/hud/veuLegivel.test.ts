@@ -36,7 +36,7 @@ const variavel = (css: string, nome: string) => new RegExp(`${nome}:\\s*([^;]+);
 
 describe('o véu de legibilidade', () => {
   it('o teto das linhas pequenas dá 4,5:1 ao cinza delas, e o do título dá 3:1', () => {
-    const pequenas = rgb(variavel(corpo(FILME, '.controls-bar.veu-sombra *'), '--teto'));
+    const pequenas = rgb(variavel(corpo(FILME, '.veu-legivel > .veu-sombra *'), '--teto'));
     const titulo = rgb(variavel(corpo(FILME, '.veu-legivel > .veu-sombra .caption-title'), '--teto'));
     expect(contraste(hex(variavel(BASE, '--texto-2')), pequenas)).toBeGreaterThanOrEqual(4.5);
     expect(contraste(hex(variavel(BASE, '--texto')), titulo)).toBeGreaterThanOrEqual(3);
@@ -61,13 +61,36 @@ describe('o véu do topo do filme', () => {
   const BARRA = readFileSync(new URL('../components/BarraOuAlcas.tsx', import.meta.url), 'utf8');
   const CONTROLES = ler('03-controles.css');
 
-  it('mistura por darken logo abaixo da barra e veste o mesmo teto da legenda', () => {
+  it('mistura por darken logo abaixo da barra', () => {
     const veu = corpo(FILME, '.controls-bar.veu-sombra');
     expect(veu).toMatch(/mix-blend-mode:\s*darken/);
     const zVeu = Number(/z-index:\s*(\d+)/.exec(veu)![1]);
     const zBarra = Number(/z-index:\s*(\d+)/.exec(corpo(CONTROLES, '.controls-bar'))![1]);
     expect(zVeu).toBe(zBarra - 1);
-    expect(FILME).toMatch(/\.veu-legivel > \.veu-sombra \*,\s*\.controls-bar\.veu-sombra \*\s*\{\s*--teto/);
+  });
+
+  // 13/11: o dono achou a mancha pesada, depois a fita dura um adesivo — o
+  // meio-termo é penumbra macia, mais clara e com metade do alcance da
+  // legenda, sem baixar o piso de 4,5:1 dos rótulos cinza
+  it('teto próprio: 4,5:1 ao cinza dos rótulos, mais claro que o da legenda', () => {
+    const topo = rgb(variavel(corpo(FILME, '.controls-bar.veu-sombra *'), '--teto'));
+    const legenda = rgb(variavel(corpo(FILME, '.veu-legivel > .veu-sombra *'), '--teto'));
+    expect(contraste(hex(variavel(BASE, '--texto-2')), topo)).toBeGreaterThanOrEqual(4.5);
+    expect(topo[0]).toBeGreaterThan(legenda[0]);
+  });
+
+  it('forma macia e curta: miolo no traço e cadeia de sombras com metade do alcance da legenda', () => {
+    const botao = corpo(FILME, '.controls-bar.veu-sombra .hud-btn');
+    expect(botao).toMatch(/-webkit-text-stroke:\s*\d+px/);
+    const raios = (css: string) => [...css.matchAll(/drop-shadow\(0 0 (\d+)px/g)].map((m) => Number(m[1]));
+    const topo = raios(botao);
+    expect(topo.length).toBeGreaterThanOrEqual(3);
+    const cadeia = FILME.indexOf('.veu-legivel > .veu-sombra:not(.caption-wrap),');
+    const legenda = raios(FILME.slice(cadeia, FILME.indexOf('}', cadeia)));
+    const soma = (r: number[]) => r.reduce((a, b) => a + b, 0);
+    expect(soma(topo)).toBeLessThanOrEqual(soma(legenda) / 2);
+    expect(cadeia).toBeGreaterThan(0);
+    expect(FILME.slice(cadeia, FILME.indexOf('{', cadeia))).not.toMatch(/controls-bar/);
   });
 
   it('esmaece com a barra: mesmas classes e o mesmo chromeSumido, depois dela no documento', () => {

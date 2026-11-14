@@ -247,6 +247,56 @@ export const PT = {
   'ajustes.galaxia.webgpu': 'WebGPU',
   'ajustes.galaxia.particulas': 'WebGL',
   'ajustes.galaxia.classica': 'Clássica',
+  // O LABORATÓRIO DA GALÁXIA (13/11/2026): os botões do protótipo WebGPU e
+  // os do WebGL, numa seção recolhida dentro de Avançado
+  'ajustes.lab.titulo': 'Laboratório da galáxia',
+  'ajustes.lab.grupo.webgpu': 'Motor WebGPU · a galáxia vista de fora',
+  'ajustes.lab.grupo.webgl': 'Partículas WebGL · de dentro do disco e na passagem',
+  'ajustes.lab.bloqueio.classica': 'Desligados: a galáxia Clássica não é feita de partículas.',
+  'ajustes.lab.bloqueio.semWebgpu': 'Desligados: quem desenha agora é o WebGL. Para usá-los, escolha WebGPU em Galáxia.',
+  'ajustes.lab.bloqueio.teto':
+    'Filhas no máximo e Alcance das filhas: desligados, porque com este Teto de pontos não sobra nenhuma filha. Suba o teto para usá-los.',
+  'ajustes.lab.aplicando': 'aplicando…',
+  'ajustes.lab.voltar': 'Voltar ao padrão',
+  'ajustes.lab.todas': 'Todas',
+  'ajustes.lab.milhoes': '{n} milhões',
+  'ajustes.lab.filhas': 'Filhas por partícula',
+  'ajustes.lab.filhasNota':
+    'Cada partícula vira várias vizinhas mais fracas, com a mesma luz no total: a galáxia fica mais lisa e mais cheia, e o quadro mais pesado.',
+  'ajustes.lab.borrifo': 'Desenho dos pontos',
+  'ajustes.lab.borrifo.0': 'Tenda',
+  'ajustes.lab.borrifo.1': 'Borrifo',
+  'ajustes.lab.borrifoNota':
+    'Tenda reparte a luz de cada ponto entre os pixels vizinhos: a imagem fica calma quando a câmera anda. Borrifo joga cada ponto num pixel sorteado: mais leve e mais nítido parado, mas a galáxia "ferve" em movimento.',
+  'ajustes.lab.filtro': 'Filtro do grão',
+  'ajustes.lab.filtro.1': 'Ligado',
+  'ajustes.lab.filtro.0': 'Desligado',
+  'ajustes.lab.filtroNota':
+    'Um desfoque bem leve antes da cor final: corta pela metade o chuvisco em movimento. Desligado, a galáxia fica mais nítida e mais granulada.',
+  'ajustes.lab.lod': 'Detalhe de longe',
+  'ajustes.lab.lodNota':
+    'Quantas partículas por pixel bastam quando a galáxia está longe. Menos é mais leve e mais granulado; "Todas" desenha todas as partículas sempre. Com 2 sorteios a diferença só aparece bem de longe, e mais em "Todas".',
+  'ajustes.lab.fatia': 'Renovação da poeira',
+  'ajustes.lab.fatiaNota':
+    'De quantos em quantos quadros a sombra da poeira sobre cada partícula é refeita. 1 é o mais exato e o mais pesado; 8 é leve, mas num voo rápido a sombra atrasa um pouco.',
+  'ajustes.lab.sorteios': 'Sorteios da galáxia',
+  'ajustes.lab.sorteiosNota':
+    'Quantas vezes a galáxia é sorteada do modelo, cerca de 4 milhões de partículas cada. Mais sorteios: mais partículas de verdade e imagem mais fina, com mais memória e quadro mais pesado. Leva alguns segundos; a galáxia de antes fica na tela até a nova chegar.',
+  'ajustes.lab.lodrho': 'Densidade de pontos',
+  'ajustes.lab.lodrhoNota':
+    'Quantos pontos por pixel o WebGL tenta pôr na tela. Mais é mais liso e mais pesado. Com o teto de pontos de cada qualidade quem decide é o teto: em Cinema a imagem não muda, em Alta e Performance muda pouco. Com o Teto de pontos mais alto ele age por inteiro.',
+  'ajustes.lab.lodk': 'Filhas no máximo',
+  'ajustes.lab.lodkNota':
+    'Até quantas vizinhas cada partícula pode virar quando a câmera chega perto. 1 desliga as filhas: de perto, pontos soltos. Só aparece com o Teto de pontos mais alto (com o de cada qualidade as filhas já saem primeiro).',
+  'ajustes.lab.lodmax': 'Teto de pontos',
+  'ajustes.lab.lodmaxNota':
+    'O máximo de pontos por quadro, em milhões. Acima dele as filhas somem primeiro e o grão aumenta. Mais alto é mais nítido e mais pesado.',
+  'ajustes.lab.lodpiso': 'Maciez dos pontos',
+  'ajustes.lab.lodpisoNota':
+    'Quanto cada ponto se espalha quando o teto de pontos aperta. Mais alto deixa a galáxia mais lisa e menos arenosa, e o quadro mais pesado.',
+  'ajustes.lab.lodesp': 'Alcance das filhas',
+  'ajustes.lab.lodespNota':
+    'Quão longe da partícula-mãe as filhas caem. Pouco: grumos de luz; muito: um véu mais liso. Só aparece quando há filhas, isto é, com o Teto de pontos mais alto.',
   // ROTULO CURTO (polimento 06/09): com o "{degrau}" (ex.: "· 140%")
   // sempre junto, "Tamanho do texto" só não cabia por ele.
   'ajustes.texto': 'Texto · {degrau}',
@@ -374,6 +424,7 @@ export const PT = {
   'busca.destino.betelgeuse': 'Uma supergigante em Órion',
   'busca.destino.rigil-kentaurus': 'O sistema estelar mais próximo',
   'busca.destino.trappist-1': 'Sete planetas do tamanho da Terra',
+  'busca.destino.s2': 'A estrela que dá a volta no buraco negro',
   // SEM promessa de filme (item 129/F5 continua valendo): o clique aqui
   // faz o MESMO que a entrada "lugar" da busca já faz — enquadra o
   // centro galáctico no Atlas, não entra no filme.
@@ -383,6 +434,7 @@ export const PT = {
   'busca.destino.nosso-lugar': 'Onde o Sol fica no disco',
   'busca.destino.pleiades': 'As Sete Irmãs, de perto',
   'busca.destino.hyades': 'O aglomerado mais próximo do Sol',
+  'busca.destino.nebulosa-de-orion': 'Um berçário de estrelas, aceso por dentro',
   'busca.destino.ana-de-sagitario': 'Uma galáxia sendo engolida pela nossa',
   'busca.destino.grande-nuvem-de-magalhaes': 'A maior companheira da nossa galáxia',
   'busca.destino.andromeda': 'A grande espiral vizinha',
@@ -537,6 +589,12 @@ export const PT = {
   'ficha.lugar.anelEht': 'o que o EHT viu',
   'ficha.lugar.estrelaS2': 'a estrela S2',
   'ficha.lugar.luz': 'a luz que vemos saiu de lá',
+  'ficha.lugar.periodo': 'uma volta',
+  'ficha.lugar.periastro': 'mais perto do buraco',
+  'ficha.lugar.velocidade': 'velocidade',
+  'ficha.lugar.desvioParaOVermelho': 'desvio para o vermelho',
+  'ficha.lugar.precessao': 'precessão',
+  'ficha.lugar.estrela': 'a estrela',
   'ficha.sonda.doSol': 'distância do Sol',
   'ficha.sonda.luz': 'a luz leva, daqui à Terra',
   'ficha.sonda.velocidade': 'velocidade em relação ao Sol',
@@ -648,6 +706,15 @@ export const PT = {
   'ficha.estrela.separacaoEmUa': '{ua} UA',
   'ficha.estrela.corPelaTemperatura': 'pela temperatura (corpo negro)',
   'ficha.estrela.tamanhoPeloRaio': 'o raio da ficha',
+  'ficha.campo.veu': 'véu de luz',
+  'ficha.campo.granulacao': 'granulação',
+  'ficha.campo.celulasGigantes': 'células gigantes',
+  'ficha.estrela.veu':
+    'mais radiante que o Sol: o disco aparece numa exposição mais baixa e a luz que sobra vira um véu em volta dele, como numa câmera — a força e o alcance do véu são escolha',
+  'ficha.estrela.granulacaoExtrapolada':
+    'a real tem ~{real} % de contraste, invisível; desenhada no piso de {piso} % para a superfície não sair lisa',
+  'ficha.estrela.celulasRealcadas':
+    'a temperatura das células vira cor e brilho pela lei de Planck; o contraste está realçado, e as escalas menores de células (que aparecem de perto), o relevo da borda e as plumas do envelope são desenho',
   'ficha.estrela.desenhoInventado':
     'grânulos, células, manchas e erupções: o tamanho da célula segue a lei dos dados ({lei}), mas o desenho exato é inventado',
   'ficha.fonte.daEfemeride': 'da efeméride',
@@ -667,6 +734,16 @@ export const PT = {
   'ficha.fonte.catalogoHyg': 'catálogo HYG/AT-HYG',
   'ficha.fonte.bayerIau': 'Bayer, sigla IAU',
   'ficha.fonte.paralaxe': 'paralaxe Gaia DR3',
+  // a estrela de paralaxe imprecisa que recebeu a distância do aglomerado
+  'ficha.fonte.distanciaDoAglomerado': 'distância do aglomerado ({aglomerado}), não a da estrela',
+  'ficha.aglomerado.pleiades': 'Plêiades',
+  'ficha.aglomerado.hyades': 'Híades',
+  'ficha.aglomerado.praesepe': 'Presépio, M44',
+  'ficha.aglomerado.m7': 'M7',
+  'ficha.aglomerado.alfaPersei': 'α Persei',
+  'ficha.aglomerado.hPersei': 'h Persei',
+  'ficha.aglomerado.chiPersei': 'χ Persei',
+  'ficha.aglomerado.trapezio': 'Trapézio de Órion',
   'ficha.fonte.ballesteros': 'de B−V, por Ballesteros',
   'ficha.fonte.sinteseDaLiteratura': 'síntese da literatura',
   'ficha.hora': 'hora',
@@ -727,6 +804,8 @@ export const PT = {
   'selo.desvio.particulasCom': 'partículas da galáxia escolhidas à mão: {nivel}',
   'selo.desvio.galaxia': 'galáxia escolhida à mão',
   'selo.desvio.galaxiaCom': 'galáxia escolhida à mão: {caminho}',
+  'selo.desvio.laboratorio': 'galáxia ajustada à mão',
+  'selo.desvio.laboratorioCom': 'galáxia ajustada à mão: {controle} {valor}',
   'selo.desvio.poeira': 'poeira perto de casa escolhida à mão',
   'selo.desvio.poeiraCom': 'poeira perto de casa escolhida à mão: {variante}',
   'selo.desvio.poeiraTeste': 'teste (volume sintético)',
@@ -759,6 +838,7 @@ export const PT = {
   'camada.nowrap': 'Campo envolvente',
   'camada.nodust': 'Poeira próxima',
   'camada.nobh': 'Buraco negro (Sgr A✱)',
+  'camada.noorbitass': 'Órbitas das estrelas S',
   'camada.nocat': 'Catálogo HYG',
   'camada.nonomes': 'Nomes na tela',
   'camada.noclarao': 'Clarão das estrelas',
@@ -793,6 +873,8 @@ export const PT = {
     'Desliga a poeira interestelar com paralaxe perto da câmera, visível ao atravessar o disco da galáxia.',
   'camada.nobh.nota':
     'Desliga o buraco negro Sagitário A*, visível só de perto, no centro da galáxia.',
+  'camada.noorbitass.nota':
+    'Desliga as linhas das órbitas medidas das estrelas que giram em volta de Sgr A✱, visíveis perto do centro da galáxia.',
   'camada.nocat.nota':
     'Desliga os pontos do catálogo real de estrelas (HYG), visíveis perto do sistema solar.',
   'camada.nonomes.nota':

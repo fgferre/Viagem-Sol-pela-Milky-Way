@@ -47,7 +47,7 @@ import {
   UA_POR_PC,
 } from '../unidades';
 import { NOMES_DOS_CORPOS, classeEmTexto, nomeDoCorpo } from '../../three/atlasConfig';
-import { decimalDoIdioma, idiomaAtual, t } from '../idioma';
+import { decimalDoIdioma, idiomaAtual, t, type ChaveDeTexto } from '../idioma';
 import type { Procedencia } from '../../three/selo';
 import { numeroDoIdioma } from '../../three/tempoDoAtlas';
 import { AU_KM } from './elementosOrbitais';
@@ -64,7 +64,13 @@ import type { PosicaoEcliptica } from './kepler';
 import { REGISTRO_ORBITAL } from './registroOrbital';
 import { designacaoDeBayer } from './constelacoes';
 import { temperatureFromBV } from './stellarPhysics';
-import { estrelaVisitavelPorNome, type EstrelaVisitavel, type Numero } from './estrelasVisitaveis';
+import {
+  PISO_DO_CONTRASTE_NA_TELA,
+  TEFF_DO_SOL_K,
+  estrelaVisitavelPorNome,
+  type EstrelaVisitavel,
+  type Numero,
+} from './estrelasVisitaveis';
 import type { NamedStar } from '../../three/config';
 import type { LugarDoCeu } from '../lugaresDoFilme';
 import type { Sonda } from '../sondas';
@@ -1032,8 +1038,43 @@ function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
         t('ficha.estrela.desenhoInventado', { lei: e.superficie.granuloEmRaios.fonte }),
         'artistico'
       ),
+      // as concessões que a física da estrela liga (nenhuma no Sol, nenhuma
+      // por nome): mais radiante que o Sol, véu; granulação abaixo do piso,
+      // extrapolada; células gigantes, realçadas e com envelope desenhado
+      e.teffK.v > TEFF_DO_SOL_K ? linha(t('ficha.campo.veu'), t('ficha.estrela.veu'), 'artistico') : null,
+      e.superficie.contrasteGranulos.v < PISO_DO_CONTRASTE_NA_TELA
+        ? linha(
+            t('ficha.campo.granulacao'),
+            t('ficha.estrela.granulacaoExtrapolada', {
+              real: numeroDoIdioma(e.superficie.contrasteGranulos.v * 100),
+              piso: numeroDoIdioma(PISO_DO_CONTRASTE_NA_TELA * 100),
+            }),
+            'artistico',
+            e.superficie.contrasteGranulos.fonte
+          )
+        : null,
+      e.superficie.celulasGigantesEmRaios
+        ? linha(t('ficha.campo.celulasGigantes'), t('ficha.estrela.celulasRealcadas'), 'artistico')
+        : null,
     ].filter((l): l is LinhaDaFicha => l !== null),
   };
+}
+
+/** Os ids de `scripts/data/aglomerados.json` e o nome que a ficha mostra. */
+const NOME_DO_AGLOMERADO: Record<string, ChaveDeTexto> = {
+  pleiades: 'ficha.aglomerado.pleiades',
+  hyades: 'ficha.aglomerado.hyades',
+  praesepe: 'ficha.aglomerado.praesepe',
+  m7: 'ficha.aglomerado.m7',
+  alfaPersei: 'ficha.aglomerado.alfaPersei',
+  hPersei: 'ficha.aglomerado.hPersei',
+  chiPersei: 'ficha.aglomerado.chiPersei',
+  trapezio: 'ficha.aglomerado.trapezio',
+};
+
+function nomeDoAglomerado(id: string): string {
+  const chave = NOME_DO_AGLOMERADO[id];
+  return chave ? t(chave) : id;
 }
 
 /**
@@ -1081,12 +1122,21 @@ export function montarFichaDeEstrela(
       // A designação de Bayer é a MESMA estrela dita de outro jeito, e para
       // quem só conhece "Sirius" ela é a ponte com qualquer carta do céu.
       linha(t('ficha.campo.designacao'), designacao, 'medido', t('ficha.fonte.bayerIau')),
-      linha(
-        t('ficha.campo.distancia'),
-        notaDeDistancia(estrela.d * UA_POR_PC, numeroDoIdioma),
-        'medido',
-        t('ficha.fonte.paralaxe')
-      ),
+      // a estrela de paralaxe imprecisa que é membro de aglomerado recebe a
+      // distância DELE (scripts/data/aglomerados.json) — e a ficha diz isso
+      estrela.ag
+        ? linha(
+            t('ficha.campo.distancia'),
+            notaDeDistancia(estrela.d * UA_POR_PC, numeroDoIdioma),
+            'derivado',
+            t('ficha.fonte.distanciaDoAglomerado', { aglomerado: nomeDoAglomerado(estrela.ag) })
+          )
+        : linha(
+            t('ficha.campo.distancia'),
+            notaDeDistancia(estrela.d * UA_POR_PC, numeroDoIdioma),
+            'medido',
+            t('ficha.fonte.paralaxe')
+          ),
       linha(t('ficha.campo.magnitude'), comCasas(estrela.m, 2), 'medido', CATALOGO),
       piloto ? null : linha(t('ficha.campo.tipoEspectral'), estrela.s || null, 'medido', CATALOGO),
       linha(

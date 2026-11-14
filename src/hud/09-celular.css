@@ -595,6 +595,37 @@
     touch-action: none;
   }
 
+  /* O TIPO E O NOME QUEBRAM, NUNCA CORTAM, nos dois estados (13/11, o
+     dono viu "NEBULOSA DE EMISSÃO" cortada com texto grande). MEDIDO a
+     430/390/360 px, pt e en, `ui` 1 e 1,4: com o "…" da mesa o tipo
+     cortava em 44 de 192 combinações (compacta e expandida) e o nome em
+     14 da expandida. Quebra entre
+     palavras, e dentro de uma só quando ela sozinha não cabe
+     ("Churyumov–" a 320 px com texto grande) — palavra partida se lê,
+     palavra com "…" não. Os `<span>` de dentro (`04-atlas.css`) cortavam
+     a si mesmos, por isso entram na mesma regra. */
+  .atlas-ficha :is(.hud-cabecalho-eyebrow, .hud-cabecalho-titulo--nome, .atlas-ficha-nome),
+  .atlas-ficha :is(.atlas-ficha-classe, .atlas-ficha-nome) > span {
+    white-space: normal;
+    overflow-wrap: break-word;
+    text-overflow: clip;
+  }
+  /* NA EXPANDIDA COM TEXTO GRANDE o tipo desce para uma linha própria,
+     com a largura toda, e "?", "Recolher" e "✕" ficam juntos na linha de
+     cima, à direita: ao lado deles sobravam 50–80 px para o tipo (medido a
+     360/390 px, `ui` 1,4), nem uma palavra inteira. `order` só troca a
+     ordem VISUAL do tipo, que não é focável: a do Tab e a do leitor de
+     tela seguem a do documento. Em `ui` 1 a linha é a de sempre (o tipo
+     longo quebra ao lado dos botões, regra acima). A dica do "?" mora
+     num portal. */
+  :root[data-texto-grande] .atlas-ficha[data-ficha-estado='expandida'] .hud-cabecalho-linha {
+    justify-content: flex-end;
+  }
+  :root[data-texto-grande] .atlas-ficha[data-ficha-estado='expandida'] .hud-cabecalho-eyebrow {
+    order: 1;
+    flex: 1 1 100%;
+  }
+
   /* O CABEÇALHO DA COMPACTA (refeito 12/11, crítica de visitante: a
      linha única "GALÁXIA ESPIRAL · Galáxi… De…" cortava o nome e o botão).
      MEDIDO a 390/360/320 px, pt e en, `ui` 1 e 1,4: o eyebrow sozinho
@@ -615,22 +646,28 @@
   /* O CONTÊINER das regras de largura logo abaixo (`@container`): a
      pergunta é "quanto espaço o NOME tem", e quem sabe é o cabeçalho, não
      a janela. */
+  /* SEM FILETE NA COMPACTA (13/11): o filete separa o cabeçalho PRESO do
+     corpo que rola por baixo dele, e a compacta não rola. MEDIDO: o
+     conteúdo dela passava 19 px da altura fixa já com nome de uma linha
+     (o "Sistema" a 7,6 px da borda) e 24 px com nome de duas (3,1 px);
+     o filete e as folgas dele eram 13 px dessa conta, e a linha
+     "rótulo · valor" vira legenda do nome, logo abaixo dele. */
   .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho {
     container: cabecalho-da-ficha / inline-size;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    padding-bottom: 0.4rem;
-    margin-bottom: 0.5rem;
-    border-bottom: 1px solid var(--borda);
+    padding-bottom: 0;
+    margin-bottom: 0.4rem;
+    border-bottom: 0;
   }
   .atlas-ficha[data-ficha-estado='compacta'] .hud-alca {
     flex: 0 0 100%;
+    margin-bottom: 0.4rem;
   }
-  /* UM FILETE SÓ: o `.hud-cabecalho-corpo` traz o dele de `01-base.css`
-     (respiro de 0,7rem + borda) e o cabeçalho acima traz outro — eram
-     duas linhas a 7 px uma da outra, e os 12 px que elas gastavam
-     empurravam os botões da escada 5 px para fora da compacta. */
+  /* NEM O FILETE DO CORPO: o `.hud-cabecalho-corpo` traz o dele de
+     `01-base.css` (respiro de 0,7rem + borda) — pela mesma razão do
+     cabeçalho, acima. */
   .atlas-ficha[data-ficha-estado='compacta'] .hud-cabecalho-corpo {
     flex: 1 1 100%;
     min-width: 0;
@@ -657,17 +694,6 @@
     font-size: 0.9375rem;
     letter-spacing: 0;
     line-height: 1.15;
-    /* O NOME QUEBRA, não corta: entre palavras, e dentro de uma só
-       quando ela sozinha não cabe na largura ("Churyumov–" a 320 px com
-       texto grande) — palavra partida se lê, palavra com "…" não. */
-    white-space: normal;
-    overflow-wrap: break-word;
-    text-overflow: clip;
-  }
-  .atlas-ficha[data-ficha-estado='compacta'] .atlas-ficha-nome,
-  .atlas-ficha[data-ficha-estado='compacta'] .atlas-ficha-nome > span {
-    white-space: normal;
-    text-overflow: clip;
   }
   /* OS TRÊS BOTÕES, à direita, cada um nas duas linhas — colocados em
      ordem pelo próprio documento ("?", "Detalhes", "✕"); quando o "?"
@@ -690,6 +716,11 @@
     width: 44px;
     min-width: 44px;
     padding: 0;
+  }
+  /* A ESCADA DA COMPACTA, pela mesma régua: 44 px de alvo, sem crescer
+     com o texto (`2.75rem`, `04-atlas.css`, dava 62 px em `ui` 1,4). */
+  .atlas-ficha[data-ficha-estado='compacta'] .atlas-ficha-escada .hud-btn {
+    min-height: 44px;
   }
 
   /* TEXTO GRANDE NUMA FOLHA ESTREITA — a régua em `rem`, de propósito:

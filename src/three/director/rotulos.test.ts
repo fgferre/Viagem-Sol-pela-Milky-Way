@@ -34,12 +34,18 @@ let Rotulos: typeof TipoRotulos;
 let GAL: typeof import('../world/galaxy').GAL;
 let projetarLugares: typeof import('../world/lugaresDoCeu').projetarLugares;
 let CENTRO_DA_ANA_DE_SAGITARIO: THREE.Vector3;
+let posicaoDaSondaNaCena: typeof import('../world/sondas').posicaoDaSondaNaCena;
+let lugares: typeof import('../world/lugaresDoCeu');
+let exo: typeof import('../world/exoplanetas');
 
 beforeAll(async () => {
   (globalThis as unknown as { window: unknown }).window = { location: { search: '' } };
   ({ Rotulos } = await import('./rotulos'));
   ({ GAL } = await import('../world/galaxy'));
   ({ projetarLugares, CENTRO_DA_ANA_DE_SAGITARIO } = await import('../world/lugaresDoCeu'));
+  ({ posicaoDaSondaNaCena } = await import('../world/sondas'));
+  lugares = await import('../world/lugaresDoCeu');
+  exo = await import('../world/exoplanetas');
 });
 
 type Publicada = readonly [number, number, number] | null;
@@ -1311,6 +1317,21 @@ describe('os nomes na escala da galáxia (crítica de 12/11)', () => {
     expect(noAtlas(cam, { iconesEscondidos: true }).some((l) => l.key.startsWith('sonda:') && l.icone)).toBe(false);
   });
 
+  it('a sonda só tem nome com a câmera perto DELA, não só do lado dela (13/11, Urano e a Pioneer 10)', () => {
+    const p = posicaoDaSondaNaCena('pioneer-10', JD)!;
+    // a câmera a 19 UA do Sol, na direção da sonda (que está a 130+ UA):
+    // mais perto dela do que ela do Sol, mas muito mais perto do Sol
+    const cam = new THREE.PerspectiveCamera(50, 1.6, 1e-12, 1e7);
+    cam.position.copy(p).setLength(19 / 206_265);
+    cam.lookAt(p);
+    const pioneer = noAtlas(cam).find((l) => l.key === 'sonda:pioneer-10')!;
+    expect(pioneer.icone).toBe(true);
+    // a meio caminho entre ela e o Sol, sim: ali ela é o objeto do quadro
+    cam.position.copy(p).multiplyScalar(0.7);
+    cam.lookAt(p);
+    expect(noAtlas(cam).find((l) => l.key === 'sonda:pioneer-10')?.icone).toBeUndefined();
+  });
+
   it('Sagittarius A✱ em foco tem nome a qualquer distância; fora de foco, só na vizinhança dele', () => {
     const cam = new THREE.PerspectiveCamera(50, 1.6, 1e-9, 1e7);
     cam.position.copy(GAL.GC_POS).add(new THREE.Vector3(0, 0, 5000));
@@ -1341,7 +1362,7 @@ describe('o retrato de perto (12/11): nada escrito sobre Saturno, a outra escala
   // escritos sobre os anéis, "NETUNO" no meio do quadro e nomes de
   // estrela em volta do planeta. Saturno na origem, a câmera a `d` raios.
   const R = raiosDoGigantePc('saturn').a;
-  function quadro(dEmRaios: number, foco: string | null) {
+  function quadro(dEmRaios: number, foco: string | null, olhaAoLado = 0) {
     const rotulos = new Rotulos({
       onLabels: () => {},
       onDest: () => {},
@@ -1353,7 +1374,7 @@ describe('o retrato de perto (12/11): nada escrito sobre Saturno, a outra escala
     });
     const cam = new THREE.PerspectiveCamera(58, 1.6, R * 1e-3, 1e4);
     cam.position.set(0, R * dEmRaios * 0.45, R * dEmRaios);
-    cam.lookAt(0, 0, 0);
+    cam.lookAt(olhaAoLado * R, 0, 0);
     cam.updateMatrixWorld();
     const posicoes = new Float32Array(CORPOS_DO_SISTEMA.length * 3).fill(Number.NaN);
     const por = (id: string, x: number, y: number, z: number) => {
@@ -1366,6 +1387,8 @@ describe('o retrato de perto (12/11): nada escrito sobre Saturno, a outra escala
     const planetas = { points: { visible: true }, posicoes } as unknown as Planetas;
     rotulos.escreverPosicaoDeLua('pan', new THREE.Vector3(2 * R, 0, 0));
     rotulos.escreverPosicaoDeLua('titan', new THREE.Vector3(20 * R, 0, 0));
+    // Epimeteu a 1,08 raio do anel, na borda dele
+    rotulos.escreverPosicaoDeLua('epimetheus', new THREE.Vector3(-2.51 * R, 0, 0));
     // uma estrela exatamente atrás do planeta
     const atras = new THREE.Vector3().copy(cam.position).multiplyScalar(-10 / cam.position.length());
     const fundo: NamedStar = { n: 'Fundo', x: atras.x, y: atras.y, z: atras.z, m: 1, s: 'A0V', d: 10, t: 0 };
@@ -1378,7 +1401,13 @@ describe('o retrato de perto (12/11): nada escrito sobre Saturno, a outra escala
       });
     }
     const op = (k: string) => rotulos.alvos.find((l) => l.key === k)?.opacity ?? 0;
-    return { pa: op('corpo:pan'), netuno: op('corpo:neptune'), tita: op('corpo:titan'), fundo: op('Fundo') };
+    return {
+      pa: op('corpo:pan'),
+      epimeteu: op('corpo:epimetheus'),
+      netuno: op('corpo:neptune'),
+      tita: op('corpo:titan'),
+      fundo: op('Fundo'),
+    };
   }
 
   it('de perto: a lua sobre o anel, o outro planeta e a estrela atrás cedem', () => {
@@ -1393,11 +1422,75 @@ describe('o retrato de perto (12/11): nada escrito sobre Saturno, a outra escala
     expect(semFoco.fundo).toBeGreaterThan(0.5);
   });
 
+  it('a lua que está dentro do anel cede inteira, mesmo projetada fora do círculo (13/11)', () => {
+    // Saturno à esquerda do quadro: a borda da lente estica a tela e
+    // Epimeteu cai fora do círculo do anel medido no centro
+    expect(quadro(6, 'saturn', 2.5).epimeteu).toBeLessThan(0.08);
+    expect(quadro(6, null, 2.5).epimeteu).toBeLessThan(0.08);
+  });
+
   it('na vista do sistema de Saturno nada muda: o foco não morde', () => {
     const longe = quadro(60, 'saturn');
     const semFoco = quadro(60, null);
     expect(longe).toEqual(semFoco);
     expect(longe.tita).toBeGreaterThan(0.5);
     expect(longe.netuno).toBeGreaterThan(0.5);
+  });
+});
+
+describe('os nomes dentro de um lugar em foco (13/11)', () => {
+  it('no próprio sistema o planeta diz a letra; o planeta em foco, o nome inteiro', async () => {
+    const { SISTEMAS_PLANETARIOS } = await import('../../lib/exoplanetas');
+    expect(['TRAPPIST-1 e', 'Proxima b', '55 Cancri e'].map(exo.nomeCurtoDoExoplaneta)).toEqual(['e', 'b', 'e']);
+    const sistema = SISTEMAS_PLANETARIOS.find((s) => s.id === 'trappist-1') ?? SISTEMAS_PLANETARIOS[0];
+    const pos = new THREE.Vector3(10, 0, 0);
+    const cam = new THREE.PerspectiveCamera(50, 1.6, 1e-9, 1e3);
+    cam.position.set(10, 0, 3e-6);
+    cam.lookAt(pos);
+    cam.updateMatrixWorld(true);
+    const foco = sistema.planetas[3].id;
+    const nomes = exo.projetarExoplanetas(cam, 2461357, { sistema, pos }, foco, true).map((l) => l.name);
+    expect(nomes).toContain(sistema.planetas[3].nome);
+    expect(nomes.filter((n) => n.length === 1).length).toBe(sistema.planetas.length - 1);
+  });
+
+  it('o lugar em foco: as companheiras têm nome e o nome do lugar sai do meio do grupo', () => {
+    const andromeda = lugares.LUGARES_DA_BUSCA.find((l) => l.id === 'andromeda')!;
+    const centro = new THREE.Vector3(andromeda.x, andromeda.y, andromeda.z);
+    expect(lugares.lugarNoAlvo(centro)?.id).toBe('andromeda');
+    expect(lugares.lugarNoAlvo(centro.clone().addScalar(1000))).toBeUndefined();
+    const cam = new THREE.PerspectiveCamera(50, 1.6, 1, 1e8);
+    cam.position.copy(centro).multiplyScalar(0.5);
+    cam.lookAt(centro);
+    cam.updateMatrixWorld(true);
+    const companheiras = lugares.projetarCompanheiras(cam, 'andromeda');
+    expect(companheiras.map((l) => l.name)).toEqual(['M32', 'M110']);
+    const proprio = lugares.projetarLugares(cam).find((l) => l.key === 'lugar:andromeda')!;
+    const yAntes = proprio.y;
+    lugares.abrirVagaNoGrupo('andromeda', [proprio, ...companheiras]);
+    const topo = Math.min(yAntes, ...companheiras.map((l) => l.y));
+    expect(proprio.y).toBeCloseTo(topo - lugares.FOLGA_DO_NOME_DO_GRUPO, 6);
+    expect(companheiras.every((l) => l.outroLado)).toBe(true);
+  });
+
+  it('as estrelas-membro abrem a vaga; outro nome na linha de cima manda o do lugar para baixo', () => {
+    const lugar = (x: number, y: number): StarLabel => ({
+      name: 'Plêiades', spect: '', distPc: 1, x, y, opacity: 0.95, key: 'lugar:pleiades',
+    });
+    const estrela = (n: string, x: number, y: number): StarLabel => ({
+      name: n, spect: '', distPc: 1, x, y, opacity: 0.92, key: n,
+    });
+    const p = lugar(0.32, 0.45);
+    const membros = [estrela('Atlas', 0.28, 0.47), estrela('Electra', 0.36, 0.43)];
+    lugares.abrirVagaNoGrupo('pleiades', [p, ...membros]);
+    expect(p.y).toBeCloseTo(0.43 - lugares.FOLGA_DO_NOME_DO_GRUPO, 6);
+    expect(membros.every((m) => m.outroLado)).toBe(true);
+    const q = lugar(0.32, 0.45);
+    lugares.abrirVagaNoGrupo('pleiades', [q, estrela('Atlas', 0.28, 0.47), estrela('Vizinha', 0.3, 0.385)]);
+    expect(q.y).toBeCloseTo(0.47 + lugares.FOLGA_DO_NOME_DO_GRUPO, 6);
+    // sem membro em quadro, o nome fica no centro
+    const r = lugar(0.32, 0.45);
+    lugares.abrirVagaNoGrupo('pleiades', [r]);
+    expect(r.y).toBe(0.45);
   });
 });

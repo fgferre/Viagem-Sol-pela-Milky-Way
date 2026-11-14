@@ -107,8 +107,8 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
   },
   {
     id: 'estrelas-com-lugar',
-    nome: 'as estrelas com corpo do piloto (Proxima, Sirius A+B, Betelgeuse, Vega)',
-    arquivos: ['src/three/world/corpoDeEstrela.ts', 'src/three/director/estrelasNoQuadro.ts'],
+    nome: 'as estrelas visitáveis com corpo, pelo motor do Sol (Proxima, Sirius A+B, Betelgeuse, Vega, anfitriãs)',
+    arquivos: ['src/three/world/pontoDeEstrela.ts', 'src/three/director/estrelasNoQuadro.ts'],
     consomeL1: true,
     leiVelhaApagada: true,
     fatorDeBrilho: 1,
@@ -116,11 +116,29 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
     migracao: 'M3',
     emiteGlPointSize: true,
     razao:
-      'piloto de 12/11: a fotosfera emite a radiância visível de corpo negro ' +
-      'pela ponte do Sol (`radianciaDeTela` com o raio do Sol) e o filtro e o ' +
-      'peso de `repartir`; o ponto do catálogo cede por `aFocus` com a ' +
-      'fórmula do Sol-ponto; o ponto de Sirius B é o `starPSF` do campo com ' +
-      'a magnitude da física dela (R², radiância visível)',
+      'piloto de 12/11: o motor do Sol (`StellarBody`) emite a radiância visível ' +
+      'de corpo negro pela ponte do Sol (`radianciaDeTela` com o raio do Sol) e o ' +
+      'filtro e o peso de `repartir`; o ponto do catálogo cede por `aFocus` com a ' +
+      'fórmula do Sol-ponto; o ponto de Sirius B e das anfitriãs fora do catálogo ' +
+      'é o `starPSF` do campo com a magnitude da física delas (R², radiância visível)',
+  },
+  {
+    id: 'estrelas-s',
+    nome: 'as estrelas S em volta de Sgr A✱ (S2 e 17 vizinhas), pontos por cima do passe do buraco',
+    arquivos: ['src/three/world/estrelasS.ts'],
+    consomeL1: true,
+    leiVelhaApagada: false,
+    fatorDeBrilho: 1,
+    destino: 'migra',
+    migracao: 'M3',
+    emiteGlPointSize: true,
+    razao:
+      '13/11: o `starPSF` do campo com a magnitude da física de cada uma (Teff e raio ' +
+      'medidos ou derivados de S9 pela mK, `lib/estrelasS.ts`) e a distância em ' +
+      'float64, sob uma exposição fixa e declarada (S2 a 0,05 pc como Sirius visto de ' +
+      'casa — na magnitude crua o ponto enchia o sprite e virava disco chapado); em ' +
+      'volta, o clarão da receita do filme na régua da luz única; a única regra a mais ' +
+      'é a sombra desenhada, que esconde o ponto que cobre',
   },
   {
     id: 'planetas',

@@ -143,8 +143,7 @@
    no mesmo pixel), e algumas delas pintam cor e sombra com seletores mais
    fortes que estes */
 .veu-legivel > .veu-sombra,
-.veu-legivel > .veu-sombra *,
-.controls-bar.veu-sombra * {
+.veu-legivel > .veu-sombra * {
   --teto: rgb(50 50 50);
   color: var(--teto) !important;
   text-shadow: none !important;
@@ -160,21 +159,41 @@
 .controls-bar.veu-sombra {
   z-index: 44;
   mix-blend-mode: darken;
-}
-.controls-bar.veu-sombra,
-.controls-bar.veu-sombra * {
   pointer-events: none;
 }
+/* O TOPO É MAIS LEVE QUE A LEGENDA (13/11): a cadeia larga da legenda
+   punha cada botão numa mancha escura sobre o Sol e a galáxia bege; um
+   contorno justo e duro no lugar dela virou adesivo. O meio-termo é a
+   penumbra macia de antes, mais clara e com metade do alcance: teto
+   cinza 66 (o cinza dos rótulos ainda dá 4,5:1 contra ele, contra 50 da
+   legenda), miolo no próprio traço — 3 px para fora das letras e do
+   ícone, para o anel de 4 px que a régua mede chegar ao teto — e uma
+   cadeia curta que esfuma até uns 13 px, onde a da legenda vai a 20. */
 .controls-bar.veu-sombra * {
+  --teto: rgb(66 66 66);
+  color: var(--teto) !important;
+  text-shadow: none !important;
   border-color: transparent !important;
   background: none !important;
+  pointer-events: none;
 }
-/* a cadeia mora em cada LINHA (e em cada botão do topo), e não na cópia
-   inteira, para cada uma espalhar o próprio teto */
+.controls-bar.veu-sombra .hud-btn {
+  -webkit-text-stroke: 6px var(--teto);
+  paint-order: stroke fill;
+  filter: drop-shadow(0 0 1px var(--teto)) drop-shadow(0 0 1px var(--teto)) drop-shadow(0 0 2px var(--teto))
+    drop-shadow(0 0 3px var(--teto)) drop-shadow(0 0 4px var(--teto));
+}
+/* o ícone tem 16 px num viewBox de 24: 10,5 unidades = 7 px, o traço de
+   1 px dele mais 3 de cada lado */
+.controls-bar.veu-sombra .hud-btn svg {
+  overflow: visible;
+  stroke-width: 10.5;
+}
+/* a cadeia mora em cada LINHA, e não na cópia inteira, para cada uma
+   espalhar o próprio teto */
 .veu-legivel > .veu-sombra:not(.caption-wrap),
 .veu-sombra .caption-title,
-.veu-sombra .caption-sub,
-.controls-bar.veu-sombra .hud-btn {
+.veu-sombra .caption-sub {
   filter: drop-shadow(0 0 1px var(--teto)) drop-shadow(0 0 1px var(--teto)) drop-shadow(0 0 2px var(--teto))
     drop-shadow(0 0 2px var(--teto)) drop-shadow(0 0 3px var(--teto)) drop-shadow(0 0 5px var(--teto))
     drop-shadow(0 0 8px var(--teto));

@@ -571,3 +571,41 @@
   min-height: 0;
   margin: 0;
 }
+
+/* ---- O LABORATÓRIO DA GALÁXIA (13/11/2026) — os botões do protótipo
+   WebGPU e os do WebGL, recolhidos dentro do Avançado. Dois grupos, cada
+   um com o nome do motor que mexe; quando o caminho que desenha não é o
+   do grupo, a fileira fica à vista e desligada, e o MOTIVO é dito uma vez,
+   logo abaixo do nome do grupo (nunca um botão que some sem explicação). */
+.ajustes-lab-grupo + .ajustes-lab-grupo {
+  margin-top: 0.75rem;
+}
+.ajustes-lab-grupo-titulo {
+  margin: 0.5rem 0 0.15rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--texto);
+}
+.ajustes-lab-motivo {
+  margin: 0 0 0.25rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--texto-2);
+}
+/* o "aplicando…" dos sorteios: a galáxia nova está sendo sorteada */
+.ajustes-lab-aplicando {
+  font-size: 0.8125rem;
+  color: var(--acento);
+  white-space: nowrap;
+}
+/* DESLIGADO À VISTA: a fileira e o "Voltar ao padrão" ficam apagados e
+   sem clique, mas no lugar — o visitante vê o que existe e por que não vale */
+.ajustes-seg button:disabled,
+.ajustes-copiar:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.ajustes-copiar:disabled:hover {
+  background: transparent;
+  border-color: var(--borda);
+}

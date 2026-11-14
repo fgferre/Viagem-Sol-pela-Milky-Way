@@ -56,4 +56,12 @@ describe('o cabeçalho da compacta no celular mede o espaço do nome no próprio
     expect(regras.map((r) => [r[1], /hud-cabecalho-eyebrow \{\s*display: none/.test(r[2]), /hud-ajuda \{\s*display: none/.test(r[2])]))
       .toEqual([['13.5', true, false], ['12', false, true]]);
   });
+
+  it('no celular o tipo e o nome quebram em vez de cortar, nos dois estados (13/11)', () => {
+    const regra = CELULAR_CSS.match(
+      /\.atlas-ficha :is\(\.hud-cabecalho-eyebrow, \.hud-cabecalho-titulo--nome, \.atlas-ficha-nome\),\s*\.atlas-ficha :is\(\.atlas-ficha-classe, \.atlas-ficha-nome\) > span \{([^}]*)\}/
+    )?.[1];
+    expect(regra).toContain('white-space: normal;');
+    expect(regra).toContain('text-overflow: clip;');
+  });
 });

@@ -32,13 +32,26 @@ import {
   StellarBody,
   anguloDoGiro,
   cirurgiaDaCoroaOcultavel,
+  cirurgiaDasFitas,
+  cirurgiaDasParticulas,
+  cirurgiaDaEstrela,
+  cirurgiaDoRelevoDasGigantes,
+  cirurgiaDaForma,
   cirurgiaDaFotosfera,
+  cirurgiaDaMatiz,
   coroaOcultavel,
   epsilonDeSegmentoGlsl,
   literalGlsl,
+  pesoDoFiltro,
+  rocheDe,
   rotSpeedFromPeriod,
+  taxaDeErupcoesPelaAtividade,
+  forcaDoVeu,
+  termoZonalDaForma,
+  tierDaEstrela,
 } from './stellarBody';
 import { uvMeshVertex } from './sol/common.js';
+import { estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
 
 describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
   it('raio: é o FÍSICO, pela fonte única do cadastro (F3)', () => {
@@ -159,17 +172,16 @@ describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
     expect(SOL_PARAMS.knobs.spots * 0.5).toBe(0.5);
   });
 
-  it('teffK ganhou o primeiro consumidor no M1; convective segue RESERVADO', () => {
+  it('teffK é lido pela lei e pela gravidade; dinamo é o PORTÃO DA ATMOSFERA MAGNÉTICA (12/11)', () => {
     expect(SOL_PARAMS.teffK).toBe(5772);
-    expect(SOL_PARAMS.convective).toBe(true);
+    expect(SOL_PARAMS.dinamo).toBe(true);
     const src = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
-    // o consumidor é o ESTADO DA LEI: a instância declara quem ela é e
-    // `repartir` deriva radiância e cor da temperatura — exatamente uma
-    // leitura, dentro de `estadoDaLei`
-    expect(src.match(/p\.teffK/g)).toHaveLength(1);
-    // convective continua declarado e não lido (o núcleo do doador não
-    // tem caminho radiativo — `sol/granulation.js` roda incondicional)
-    expect(src.match(/params\.convective|p\.convective/g)).toBeNull();
+    // o estado da lei, o avermelhamento do limbo, a régua de Planck e a
+    // borda do contínuo, e a média da gravidade (`operarAFotosfera`)
+    expect(src.match(/p\.teffK/g)).toHaveLength(5);
+    // sem envelope convectivo não há dínamo: o construtor (`semDinamo`) e
+    // o tier da estrela (`tierDaEstrela`) leem o campo
+    expect(src).toContain('this.semDinamo = !params.dinamo;');
   });
 });
 
@@ -585,5 +597,130 @@ describe('F4 — a coroa testa profundidade contra os globos, na frente do próp
     expect(ordem('./sol/coronaRays.js', 'coronaRays', '-1')).toBe(true);
     expect(ordem('./sol/coronaVolume.js', 'coronaVol', '-1')).toBe(true);
     expect(ordem('./sol/cme.js', 'cmeMesh', '-0.75')).toBe(true);
+  });
+});
+
+describe('as fitas dos laços na régua do doador (o piso de w de 0,01 pegava sempre)', () => {
+  const CLIP_B = '  vec4 clipB = projectionMatrix * modelViewMatrix * vec4(position + aTan, 1.0);';
+  const fita = ['void main(){', '  vec4 clipA = projectionMatrix * modelViewMatrix * vec4(position, 1.0);', CLIP_B,
+    '  float wA = max(clipA.w, 0.01);', '}'].join('\n');
+
+  it('AGULHA: as duas fitas do vendorizado têm a âncora, e o clip das duas pontas vai a 1/escala antes do piso', () => {
+    const js = readFileSync(new URL('./sol/loops.js', import.meta.url), 'utf8');
+    expect(js.split(`'${CLIP_B}',`)).toHaveLength(3);
+    const escala = RAIO_SOL_PC / 2.2;
+    const novo = cirurgiaDasFitas(fita, escala);
+    const k = literalGlsl(1 / escala);
+    expect(Math.fround(Number(k))).toBe(Math.fround(1 / escala));
+    expect(novo.indexOf(`clipA *= fitasNaReguaDoDoador; clipB *= fitasNaReguaDoDoador;`)).toBeGreaterThan(novo.indexOf(CLIP_B));
+    expect(novo.indexOf('fitasNaReguaDoDoador')).toBeLessThan(novo.indexOf('max(clipA.w, 0.01)'));
+    expect(novo).toContain(`float fitasNaReguaDoDoador = ${k};`);
+    expect(() => cirurgiaDasFitas(novo, escala)).toThrow(/cirurgiaDasFitas/);
+    expect(() => cirurgiaDasFitas('void main(){ }', escala)).toThrow(/cirurgiaDasFitas/);
+  });
+
+  it('o construtor opera as duas fitas, depois de criá-las, com a escala da instância', () => {
+    const src = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
+    const laco = 'for (const o of ctx.loopGroup.children) {';
+    expect(src.split(laco)).toHaveLength(2);
+    expect(src.indexOf(laco)).toBeGreaterThan(src.indexOf('createLoops(ctx);'));
+    expect(src).toContain('m.vertexShader = cirurgiaDasFitas(m.vertexShader, this.scale);');
+  });
+});
+
+describe('o rastro das partículas da ejeção na régua do doador (o piso de w de 1e-4 pegava sempre)', () => {
+  const C1 = '  vec4 c1 = projectionMatrix * mv2;';
+  const PISO = '  vec2 sd = c1.xy/max(abs(c1.w), 1e-4) - gl_Position.xy/max(abs(gl_Position.w), 1e-4);';
+
+  it('AGULHA: o vendorizado tem a âncora uma vez, e as duas pontas vão a 1/escala antes do piso', () => {
+    const js = readFileSync(new URL('./sol/cme.js', import.meta.url), 'utf8');
+    expect(js.split(`'${C1}',`)).toHaveLength(2);
+    const vert = ['void main(){', '  gl_Position = projectionMatrix * mv;', C1, PISO, '}'].join('\n');
+    const escala = RAIO_SOL_PC / 2.2;
+    const novo = cirurgiaDasParticulas(vert, escala);
+    const k = literalGlsl(1 / escala);
+    expect(novo).toContain(`float particulasNaReguaDoDoador = ${k};`);
+    const conta = novo.indexOf('gl_Position *= particulasNaReguaDoDoador; c1 *= particulasNaReguaDoDoador;');
+    expect(conta).toBeGreaterThan(novo.indexOf(C1));
+    expect(conta).toBeLessThan(novo.indexOf(PISO));
+    expect(() => cirurgiaDasParticulas(novo, escala)).toThrow(/cirurgiaDasParticulas/);
+    expect(() => cirurgiaDasParticulas('void main(){ }', escala)).toThrow(/cirurgiaDasParticulas/);
+  });
+
+  it('o construtor opera o material das partículas uma vez, com a escala da instância', () => {
+    const src = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
+    expect(src.split('cirurgiaDasParticulas(particulas.vertexShader, this.scale)')).toHaveLength(2);
+    expect(src.indexOf('const particulas = ctx.cmePts?.ptsMat')).toBeGreaterThan(src.indexOf('createCME(ctx);'));
+  });
+});
+
+describe('um motor, qualquer estrela — os parâmetros novos são neutros no Sol', () => {
+  const sunJs = readFileSync(new URL('./sol/sun.js', import.meta.url), 'utf8');
+  const tier = { fbm: 5, seg: 128, simW: 768, simH: 384, simStep: 1 / 26, prom: 7, chromo: 2048, granFreq: 34, lic7: true, loops: 16, larc: 9, lseg: 44, cstep: 36, cmestep: 24, cmen: 2048 };
+
+  it('o tier do Sol é o MESMO objeto; sem dínamo, o retrato mínimo; laços pela atividade com teto', () => {
+    expect(tierDaEstrela(tier, SOL_PARAMS)).toBe(tier);
+    const a = tierDaEstrela(tier, { ...SOL_PARAMS, dinamo: false, activityLevel: 0 });
+    expect([a.chromo, a.simW, a.simH, a.loops]).toEqual([256, 192, 96, 16]);
+    expect(tierDaEstrela(tier, { ...SOL_PARAMS, activityLevel: 2.06 }).loops).toBe(32);
+    expect(taxaDeErupcoesPelaAtividade(1)).toBe(1);
+    // o regime saturado (nivel ~8) não vira tempestade contínua: teto 6×
+    expect(taxaDeErupcoesPelaAtividade(8.2)).toBe(6);
+    expect(taxaDeErupcoesPelaAtividade(2.06)).toBeCloseTo(4.24, 2);
+    // o véu: zero exato sem excesso, e nenhuma estrela passa do teto
+    expect(forcaDoVeu(0)).toBe(0);
+    expect(forcaDoVeu(0.99)).toBeLessThan(0.5);
+  });
+
+  it('o peso do filtro do Sol: exatamente 1 no Sol e abaixo dele, 0 nas quentes', () => {
+    expect(pesoDoFiltro(5772)).toBe(1);
+    expect(pesoDoFiltro(3054)).toBe(1);
+    expect(pesoDoFiltro(9845)).toBe(0);
+  });
+
+  it('Vega: forma de Roche e escurecimento gravitacional (Monnier 2012) nas duas pontas', () => {
+    const a = estrelaVisitavelPorNome('Vega')!.achatamento!;
+    const polo = rocheDe(0, a);
+    expect(polo.teffK).toBeCloseTo(10070, 6);
+    expect(polo.raio).toBeCloseTo(a.raioPolarRsol.v / a.raioEquatorialRsol.v, 12);
+    const eq = rocheDe(Math.PI / 2, a);
+    expect(eq.teffK).toBeCloseTo(8910, 6);
+    expect(eq.raio).toBeCloseTo(1, 12);
+  });
+
+  it('o termo zonal de grau 2 põe polo e equador nos raios medidos (Vega)', () => {
+    const { a, norma } = termoZonalDaForma(2.418, 2.726);
+    expect((1 + a * -0.5) * norma).toBeCloseTo(1, 12);
+    expect((1 + a) * norma).toBeCloseTo(2.418 / 2.726, 12);
+  });
+
+  it('as âncoras da fotosfera existem UMA vez no vendorizado real; sem pedido, nada muda', () => {
+    expect(cirurgiaDaEstrela(sunJs, {})).toBe(sunJs);
+    const f = cirurgiaDaEstrela(sunJs, { contraste: 0.1, bordaU: 0.5, semDinamo: true, gravidade: true });
+    expect(f).toContain('float limbU = 0.500000;');
+    expect(f).toContain('float plage = 0.0 * st.b');
+    expect(f).toContain('color *= vGravidade;');
+    expect(() => cirurgiaDaForma(sunJs, -0.078, 1.04)).not.toThrow();
+    // avermelhamento 1 e sem gigantes: nada muda
+    expect(cirurgiaDaEstrela(sunJs, { avermelhamento: 1 })).toBe(sunJs);
+    const q = cirurgiaDaEstrela(sunJs, { avermelhamento: 0, gigantes: { tamanhoEmRaios: 0.6, contraste: 0.25 } });
+    expect(q).toContain('color.b *= 1.0 - edge*0.50*0.000000;');
+    expect(q.split('celulasGigantesNaTela(sp/0.600000').length - 1).toBe(1);
+    expect(q).toContain('razaoDePlanck(');
+    // o TiO só no lado frio, e a rede de descidas só no fragment das gigantes
+    expect(q).toContain('* exp(-vec3(0.0, 8.000000, 8.000000) * max(0.0, 1.0 - rGig));');
+    expect(q).toContain('float rede = 0.0;');
+    // a borda do contínuo só com peso; sem dínamo e com contraste, a granulação viva
+    const c = cirurgiaDaEstrela(sunJs, { continuo: 1, teffK: 9845, semDinamo: true, contraste: 0.27 });
+    expect(c).toContain('pow((mu + 0.6666667)/1.6666667, 0.25)');
+    expect(c).toContain('granulacaoViva(sp * uGranFreq, t, mu)');
+    expect(cirurgiaDaEstrela(sunJs, { semDinamo: true, contraste: 0 })).not.toContain('granulacaoViva');
+    expect(() => cirurgiaDoRelevoDasGigantes(cirurgiaDaForma(sunJs, -0.078, 1.04), 0.6, 0.008)).not.toThrow();
+  });
+
+  it('a matiz escreve na saída GLSL3 quando ela existe (as partículas da CME)', () => {
+    const g3 = 'out vec4 fragColor;\nvoid main(){\n  fragColor = vec4(1.0);\n}';
+    expect(cirurgiaDaMatiz(g3)).toContain('fragColor.rgb *= uMatizDaCamada;');
+    expect(cirurgiaDaMatiz('void main(){\n  gl_FragColor = vec4(1.0);\n}')).toContain('gl_FragColor.rgb *= uMatizDaCamada;');
   });
 });

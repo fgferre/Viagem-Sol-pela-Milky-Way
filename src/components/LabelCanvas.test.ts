@@ -462,6 +462,21 @@ describe('um lugar por nome — ou cabe ali, ou some', () => {
     expect(semLugarDoLadoNatural.desenhado).toBe(true);
   });
 
+  it('irmãos com `outroLado` cabem os dois: um escreve do outro lado, na mesma linha (13/11)', () => {
+    // dois planetas do sistema em quadro a 15 px e 24 px um do outro
+    const par = (outroLado: boolean) => {
+      const { rotulos } = bancada();
+      const a = { ...rotulo('exoplaneta:b', 'b', 0.3, 0.3, 21), detalhe: '', comAnel: true, outroLado };
+      const d = { ...rotulo('exoplaneta:d', 'd', 0.3 - 15 / 1200, 0.3 - 24 / 1200, 21), detalhe: '', comAnel: true, outroLado };
+      for (let i = 0; i < 4; i++) rotulos.draw([a, d]);
+      return [a, d];
+    };
+    expect(par(false).filter((l) => l.desenhado).length).toBe(1);
+    const [a, d] = par(true);
+    expect([a.desenhado, d.desenhado]).toEqual([true, true]);
+    expect(a.ladoEsquerdo === d.ladoEsquerdo).toBe(false);
+  });
+
   it('o nome pousa na MESMA ALTURA da âncora: acabaram os traços em diagonal', () => {
     // A TEIA QUE O DONO VIU eram os deslocamentos verticais: um nome que
     // não cabia subia até 102 px e puxava um risco diagonal até o ponto.

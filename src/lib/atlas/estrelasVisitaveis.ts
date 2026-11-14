@@ -1,7 +1,8 @@
 /**
  * TODA ESTRELA É UM LUGAR — o piloto (pilar 2 do NORTE, 12/11/2026).
  *
- * A ficha física das quatro estrelas que ganham corpo. O catálogo
+ * A ficha física das estrelas visitáveis, que ganham corpo pelo motor do
+ * Sol (`three/world/stellarBody.ts`). O catálogo
  * (`stars.bin`) sabe posição, luminosidade e B−V; não sabe raio, massa,
  * forma nem superfície. Estes números vêm de artigos, cada um com a sua
  * procedência no vocabulário do selo:
@@ -18,6 +19,8 @@
  * `named` trazem). Ver o fim de `docs/LEI-DA-ESTRELA.md` (M3).
  */
 import type { Procedencia } from '../../three/selo';
+import { RAIO_SOL_PC } from '../../three/escala';
+import { AU_PARA_PC } from './frameGalactico';
 
 export interface Numero {
   readonly v: number;
@@ -79,10 +82,6 @@ export interface Superficie {
   readonly celulasGigantesEmRaios?: Numero;
   /** escurecimento de borda linear na banda V: I(μ)/I(1) = 1 − u(1 − μ) */
   readonly bordaU: Numero;
-  /** fração do disco coberta por manchas frias */
-  readonly manchas: Numero;
-  /** erupções frequentes (anãs M ativas) */
-  readonly erupcoes: boolean;
   /** atmosfera estendida que borra a borda, em raios (1 = borda nítida) */
   readonly bordaDifusaRaios: Numero;
 }
@@ -105,7 +104,9 @@ export interface EstrelaVisitavel {
   readonly companheira?: Companheira;
 }
 
-const TEFF_SOL_K = 5772;
+/** a Teff do Sol (K): a régua das concessões que só a física liga */
+export const TEFF_DO_SOL_K = 5772;
+const TEFF_SOL_K = TEFF_DO_SOL_K;
 
 /**
  * O TAMANHO DO GRÂNULO, em raios da estrela. Os grânulos medem de 3 a 10
@@ -148,10 +149,6 @@ const PROXIMA: EstrelaVisitavel = {
     // A&A 558, A48, simulações MURaM de 3000–4000 K)
     contrasteGranulos: { v: 0.04, p: 'derivado', fonte: 'Beeck et al. 2013, A&A 558, A48 (simulação)' },
     bordaU: { v: 0.7, p: 'derivado', fonte: CLARET },
-    // a modulação de brilho com a rotação prova manchas grandes; o
-    // desenho delas é nosso
-    manchas: { v: 0.08, p: 'artistico', fonte: 'modulação fotométrica de ~84 d prova manchas; padrão inventado' },
-    erupcoes: true,
     bordaDifusaRaios: { v: 1, p: 'derivado', fonte: 'fotosfera de anã: borda nítida' },
   },
 };
@@ -168,10 +165,8 @@ const SIRIUS: EstrelaVisitavel = {
   superficie: {
     granuloEmRaios: granulo(9845, 1.713, 2.063),
     // estrelas A: zona de convecção rasa, quase sem granulação visível
-    contrasteGranulos: { v: 0.015, p: 'derivado', fonte: 'Tremblay et al. 2013, A&A 557, A7 (contraste cai acima de ~7000 K)' },
+    contrasteGranulos: { v: 0.015, p: 'derivado', fonte: 'Tremblay et al. 2013, A&A 557, A7' },
     bordaU: { v: 0.5, p: 'derivado', fonte: CLARET },
-    manchas: { v: 0, p: 'derivado', fonte: 'estrela A sem dínamo convectivo: sem manchas' },
-    erupcoes: false,
     bordaDifusaRaios: { v: 1, p: 'derivado', fonte: 'fotosfera de anã: borda nítida' },
   },
   companheira: {
@@ -213,8 +208,6 @@ const BETELGEUSE: EstrelaVisitavel = {
     celulasGigantesEmRaios: { v: 0.6, p: 'derivado', fonte: 'Chiavassa et al. 2010, A&A 515, A12 (simulação 3D)' },
     contrasteGranulos: { v: 0.25, p: 'derivado', fonte: 'Chiavassa et al. 2010, A&A 515, A12 (simulação 3D)' },
     bordaU: { v: 0.8, p: 'derivado', fonte: CLARET },
-    manchas: { v: 0, p: 'derivado', fonte: 'o padrão é de convecção, não de manchas magnéticas' },
-    erupcoes: false,
     // a camada molecular (MOLsphere) a ~1,3 raio borra a borda no
     // infravermelho (Perrin et al. 2004, A&A 418, 675)
     bordaDifusaRaios: { v: 1.3, p: 'medido', fonte: 'Perrin et al. 2004, A&A 418, 675' }, // interferometria
@@ -242,10 +235,8 @@ const VEGA: EstrelaVisitavel = {
   },
   superficie: {
     granuloEmRaios: granulo(9600, 2.6, 2.15),
-    contrasteGranulos: { v: 0.015, p: 'derivado', fonte: 'Tremblay et al. 2013, A&A 557, A7 (contraste cai acima de ~7000 K)' },
+    contrasteGranulos: { v: 0.015, p: 'derivado', fonte: 'Tremblay et al. 2013, A&A 557, A7' },
     bordaU: { v: 0.5, p: 'derivado', fonte: CLARET },
-    manchas: { v: 0, p: 'derivado', fonte: 'estrela A sem dínamo convectivo: sem manchas' },
-    erupcoes: false,
     bordaDifusaRaios: { v: 1, p: 'derivado', fonte: 'fotosfera de anã: borda nítida' },
   },
 };
@@ -261,13 +252,15 @@ const VEGA: EstrelaVisitavel = {
  *     `CONTRASTE_REAL_DO_SOL`), A 0,015 (Tremblay et al. 2013);
  *   - borda de Claret aproximada por classe (M 0,7 · K 0,72 · G 0,62 ·
  *     F 0,55 · A 0,5);
- *   - manchas: só onde a atividade foi medida, com o padrão inventado;
- *     sem medida, disco limpo — escolha declarada (`artistico`).
- * Rotação e achatamento não entram (sem medida no arquivo usada aqui).
+ * A atividade (manchas, ciclo, erupções, laços) sai da rotação pela lei de
+ * Rossby (`atividadeDe`); sem período medido, a rotação é a da lei única
+ * `rotacaoDe`. Achatamento não entra: β Pic gira rápido (v sen i ≈ 130 km/s)
+ * mas o arquivo não guarda v sen i nem a inclinação — fica redonda.
  */
 // a data em ISO: "12/11/2026" lê 11 de dezembro em inglês
 const PSCOMP = 'NASA Exoplanet Archive, PSCompPars (2026-11-12)';
-const ARTE_SEM_MANCHAS = 'sem medida de manchas: disco limpo, escolha nossa';
+// fontes só como citação (a ficha sai nas duas línguas): Tremblay 2013 = o
+// contraste da granulação cai acima de ~7000 K; Vida 2017 = fotometria K2
 
 function anfitria(c: {
   id: string;
@@ -279,8 +272,7 @@ function anfitria(c: {
   massaMsol: number;
   lum: number;
   fonte?: string;
-  manchas?: { v: number; fonte: string };
-  erupcoes?: boolean;
+  rotacaoDias?: Numero;
 }): EstrelaVisitavel {
   const fonte = c.fonte ?? PSCOMP;
   const T = c.teffK;
@@ -289,7 +281,7 @@ function anfitria(c: {
       ? { v: 0.04, p: 'derivado' as const, fonte: 'Beeck et al. 2013, A&A 558, A48 (simulação)' }
       : T < 7000
         ? { v: 0.15, p: 'derivado' as const, fonte: 'como o Sol (estrela F/G/K); Tremblay et al. 2013, A&A 557, A7' }
-        : { v: 0.015, p: 'derivado' as const, fonte: 'Tremblay et al. 2013, A&A 557, A7 (contraste cai acima de ~7000 K)' };
+        : { v: 0.015, p: 'derivado' as const, fonte: 'Tremblay et al. 2013, A&A 557, A7' };
   const u = T < 3900 ? 0.7 : T < 5300 ? 0.72 : T < 6200 ? 0.62 : T < 7500 ? 0.55 : 0.5;
   return {
     id: c.id,
@@ -300,14 +292,11 @@ function anfitria(c: {
     raioRsol: { v: c.raioRsol, p: 'medido', fonte },
     massaMsol: { v: c.massaMsol, p: 'derivado', fonte },
     luminosidadeLsol: { v: c.lum, p: 'derivado', fonte },
+    ...(c.rotacaoDias ? { rotacaoDias: c.rotacaoDias } : {}),
     superficie: {
       granuloEmRaios: granulo(T, c.raioRsol, c.massaMsol),
       contrasteGranulos: contraste,
       bordaU: { v: u, p: 'derivado', fonte: CLARET },
-      manchas: c.manchas
-        ? { v: c.manchas.v, p: 'artistico', fonte: c.manchas.fonte }
-        : { v: 0, p: 'artistico', fonte: ARTE_SEM_MANCHAS },
-      erupcoes: c.erupcoes ?? false,
       bordaDifusaRaios: { v: 1, p: 'derivado', fonte: 'fotosfera de anã: borda nítida' },
     },
   };
@@ -317,21 +306,15 @@ const ANFITRIAS: readonly EstrelaVisitavel[] = [
   anfitria({
     id: 'trappist-1', nome: 'TRAPPIST-1', tipo: 'M8.0 V', teffK: 2566, raioRsol: 0.1192, massaMsol: 0.0898,
     lum: 10 ** -3.25727,
-    manchas: { v: 0.05, fonte: 'erupções e manchas vistas pelo K2 (Vida et al. 2017, ApJ 841, 124); padrão inventado' },
-    erupcoes: true,
+    // a modulação do K2, junto com as erupções (de memória)
+    rotacaoDias: { v: 3.3, p: 'medido', fonte: 'Vida et al. 2017, ApJ 841, 124' },
   }),
   anfitria({ id: '51-peg', nome: 'Helvetios', hip: 113357, tipo: 'G5 V', teffK: 5761, raioRsol: 1.19, massaMsol: 1.07, lum: 10 ** 0.13631 }),
   anfitria({ id: '55-cnc', nome: 'Copernicus', hip: 43587, tipo: 'G8 V', teffK: 5198, raioRsol: 0.98, massaMsol: 1.015, lum: 10 ** -0.19695 }),
   anfitria({ id: 'tau-cet', nome: 'τ Cet', hip: 8102, tipo: 'G8.5 V', teffK: 5310, raioRsol: 0.83, massaMsol: 0.783, lum: 10 ** -0.30539 }),
-  anfitria({
-    id: 'eps-eri', nome: 'Ran', hip: 16537, tipo: 'K2 V', teffK: 5020, raioRsol: 0.759, massaMsol: 0.82, lum: 10 ** -0.41928,
-    manchas: { v: 0.03, fonte: 'manchas medidas pela fotometria do MOST (Croll et al. 2006, ApJ 648, 607); padrão inventado' },
-  }),
+  anfitria({ id: 'eps-eri', nome: 'Ran', hip: 16537, tipo: 'K2 V', teffK: 5020, raioRsol: 0.759, massaMsol: 0.82, lum: 10 ** -0.41928 }),
   anfitria({ id: 'kepler-186', nome: 'Kepler-186', tipo: 'M1 V', teffK: 3788, raioRsol: 0.472, massaMsol: 0.478, lum: 10 ** -1.385 }),
-  anfitria({
-    id: 'hd-189733', nome: 'HD 189733', hip: 98505, tipo: 'K2 V', teffK: 5052, raioRsol: 0.75, massaMsol: 0.79, lum: 10 ** -0.46119,
-    manchas: { v: 0.02, fonte: 'manchas cruzadas nos trânsitos (Pont et al. 2008, MNRAS 385, 109); padrão inventado' },
-  }),
+  anfitria({ id: 'hd-189733', nome: 'HD 189733', hip: 98505, tipo: 'K2 V', teffK: 5052, raioRsol: 0.75, massaMsol: 0.79, lum: 10 ** -0.46119 }),
   anfitria({
     id: 'fomalhaut', nome: 'Fomalhaut', hip: 113368, tipo: 'A3 V', teffK: 8590, raioRsol: 1.842, massaMsol: 1.92, lum: 16.63,
     // números transcritos de memória do artigo — falta conferir no PDF
@@ -350,4 +333,278 @@ export const ESTRELAS_VISITAVEIS: readonly EstrelaVisitavel[] = [PROXIMA, SIRIUS
 
 export function estrelaVisitavelPorNome(nomeNoCatalogo: string): EstrelaVisitavel | null {
   return ESTRELAS_VISITAVEIS.find((e) => e.nomeNoCatalogo === nomeNoCatalogo) ?? null;
+}
+
+// ─── A ATIVIDADE MAGNÉTICA PELA FÍSICA (o motor do Sol para outra estrela) ──
+
+/** O período de rotação do Sol que esta régua usa (o mesmo do motor:
+ *  Carrington sideral, `SOL_ROT_PERIOD_DAYS` de `stellarBody.ts`). */
+const ROTACAO_SOL_DIAS = 25.38;
+/** Faixa de massa em que a calibração de τ vale (Wright et al. 2011). */
+const MASSA_MIN_WRIGHT = 0.09;
+const MASSA_MAX_WRIGHT = 1.36;
+/** Ro de saturação e expoente do regime não saturado (Wright et al. 2011). */
+const RO_SATURACAO = 0.13;
+const EXPOENTE_ROSSBY = -2.7;
+/** Acima desta temperatura não há envelope convectivo que sustente dínamo. */
+export const TEFF_SEM_ENVELOPE_K = 7000;
+/**
+ * O FALLBACK DECLARADO fora da calibração (supergigantes, gigantes, massas
+ * fora de 0,09–1,36 M☉): atividade BAIXA, 1 % da do Sol em L_X/L_bol —
+ * ARTÍSTICO. Betelgeuse não tem dínamo do tipo solar medido; não há lei a
+ * extrapolar, e zero apagaria o motor inteiro.
+ */
+export const ATIVIDADE_FORA_DA_CALIBRACAO = 0.01;
+/**
+ * A COMPRESSÃO da razão física para o `activityLevel` do motor (que
+ * multiplica os knobs `spots`/`cycle`): nivel = razão^0,3 — ARTÍSTICO,
+ * declarado. A razão em L_X/L_bol varia ~4 ordens entre estrelas; o knob
+ * do motor foi calibrado num Sol só, e Proxima (~11× o Sol pela lei) sai ~2×.
+ */
+export const EXPOENTE_DO_NIVEL_DE_ATIVIDADE = 0.3;
+
+/**
+ * O LIMITE DA QUEIMA DE HIDROGÊNIO (~0,075 M☉): entre ele e a borda de
+ * Wright (0,09) τ é o da borda — declarado. TRAPPIST-1 (0,0898 M☉) fica
+ * 0,2 % abaixo da borda; uma anã M8 totalmente convectiva como as de 0,09.
+ */
+const MASSA_DA_QUEIMA_DE_H = 0.075;
+
+/**
+ * O tempo de renovação convectiva, em dias — Wright et al. 2011 (ApJ 743,
+ * 48), eq. 11: log τ = 1,16 − 1,49 log(M/M☉) − 0,54 log²(M/M☉), válida em
+ * 0,09–1,36 M☉; de 0,075 a 0,09 vale a da borda (`MASSA_DA_QUEIMA_DE_H`).
+ * Fora disso devolve null.
+ */
+export function tempoConvectivoDias(massaMsol: number): number | null {
+  if (!(massaMsol >= MASSA_DA_QUEIMA_DE_H && massaMsol <= MASSA_MAX_WRIGHT)) return null;
+  const l = Math.log10(Math.max(massaMsol, MASSA_MIN_WRIGHT));
+  return Math.pow(10, 1.16 - 1.49 * l - 0.54 * l * l);
+}
+
+/** O número de Rossby do Sol na régua acima (P☉ / τ(1 M☉) ≈ 1,76). */
+const RO_SOL = ROTACAO_SOL_DIAS / tempoConvectivoDias(1)!;
+
+export interface AtividadeMagnetica {
+  /** número de Rossby P_rot/τ (null: sem envelope ou fora da calibração) */
+  readonly rossby: number | null;
+  /** L_X/L_bol relativa ao Sol (Sol = 1) */
+  readonly razao: number;
+  /** o `activityLevel` do motor: razao^EXPOENTE (Sol = 1) */
+  readonly nivel: number;
+  readonly regime: 'sem envelope' | 'saturado' | 'nao saturado' | 'fora da calibracao';
+}
+
+/**
+ * A ATIVIDADE MAGNÉTICA pela rotação e pela massa (Wright et al. 2011):
+ * L_X/L_bol ∝ Ro^−2,7 abaixo da saturação, constante para Ro < 0,13;
+ * normalizada pelo Sol (M = 1, P = 25,38 d → 1 exato: (Ro/Ro☉) = 1).
+ * Sem envelope convectivo (T ≳ 7.000 K) → 0. Fora da faixa de massa ou sem
+ * período → o fallback declarado.
+ */
+export function atividadeMagnetica(
+  teffK: number,
+  massaMsol: number,
+  rotacaoDias: number | undefined
+): AtividadeMagnetica {
+  if (teffK >= TEFF_SEM_ENVELOPE_K) return { rossby: null, razao: 0, nivel: 0, regime: 'sem envelope' };
+  const tau = tempoConvectivoDias(massaMsol);
+  if (tau === null || !(rotacaoDias !== undefined && rotacaoDias > 0)) {
+    return {
+      rossby: null,
+      razao: ATIVIDADE_FORA_DA_CALIBRACAO,
+      nivel: Math.pow(ATIVIDADE_FORA_DA_CALIBRACAO, EXPOENTE_DO_NIVEL_DE_ATIVIDADE),
+      regime: 'fora da calibracao',
+    };
+  }
+  const rossby = rotacaoDias / tau;
+  const saturado = rossby < RO_SATURACAO;
+  const razao = Math.pow((saturado ? RO_SATURACAO : rossby) / RO_SOL, EXPOENTE_ROSSBY);
+  return {
+    rossby,
+    razao,
+    nivel: Math.pow(razao, EXPOENTE_DO_NIVEL_DE_ATIVIDADE),
+    regime: saturado ? 'saturado' : 'nao saturado',
+  };
+}
+
+/**
+ * A ROTAÇÃO DE UMA ESTRELA VISITÁVEL — a lei ÚNICA para quem não tem período
+ * medido (12/11):
+ *  · medido nos dados → ele;
+ *  · com envelope convectivo e τ calibrado → o NÚMERO DE ROSSBY DO SOL,
+ *    P = Ro☉·τ(M) (`derivado`): estrelas de campo, velhas, convergem para
+ *    perto dele — o freio magnético enfraquece em Ro ≈ Ro☉ (van Saders et
+ *    al. 2016, Nature 529, 181). Dá atividade 1, "como o Sol", às anfitriãs
+ *    G/K/M sem medida;
+ *  · sem envelope (estrelas A) ou fora da calibração → o período do Sol,
+ *    ARTÍSTICO (o disco de uma estrela A é liso: o giro não se vê).
+ */
+export function rotacaoDe(e: EstrelaVisitavel): Numero {
+  if (e.rotacaoDias) return e.rotacaoDias;
+  const tau = e.teffK.v < TEFF_SEM_ENVELOPE_K ? tempoConvectivoDias(e.massaMsol.v) : null;
+  if (tau !== null) {
+    return {
+      v: RO_SOL * tau,
+      p: 'derivado',
+      fonte: 'número de Rossby do Sol × τ de Wright et al. 2011 (van Saders et al. 2016, Nature 529, 181)',
+    };
+  }
+  return { v: ROTACAO_SOL_DIAS, p: 'artistico', fonte: 'sem período medido: o do Sol, escolha nossa' };
+}
+
+/**
+ * A ATIVIDADE DE UMA ESTRELA VISITÁVEL pela rotação da lei única
+ * (`rotacaoDe`). Quem gira pelo Rossby do Sol tem atividade EXATAMENTE 1
+ * (a conta Ro☉·τ/τ não volta ao mesmo bit, e 1 é o que o motor pula).
+ */
+export function atividadeDe(e: EstrelaVisitavel): AtividadeMagnetica {
+  const r = rotacaoDe(e);
+  if (!e.rotacaoDias && r.p === 'derivado') return { rossby: RO_SOL, razao: 1, nivel: 1, regime: 'nao saturado' };
+  return atividadeMagnetica(e.teffK.v, e.massaMsol.v, e.rotacaoDias?.v);
+}
+
+/**
+ * A LINHA DE LINSKY & HAISCH (1979, ApJL 229, L27): gigantes e
+ * supergigantes frias (aqui: log g < 3,5 e Teff < 4.500 K) não têm coroa
+ * quente nem dínamo de tipo solar — no lugar, vento frio e uma atmosfera
+ * molecular estendida. As duas fronteiras são aproximadas da linha (K1–K3
+ * III), declaradas.
+ */
+const LOG_G_DAS_GIGANTES = 3.5;
+const TEFF_DA_LINHA_DE_LINSKY_HAISCH_K = 4500;
+const LOG_G_DO_SOL = 4.438;
+
+/** log g (cgs) pela massa e pelo raio: g ∝ M/R² ancorado no Sol. */
+export function logGravidade(massaMsol: number, raioRsol: number): number {
+  return LOG_G_DO_SOL + Math.log10(massaMsol / (raioRsol * raioRsol));
+}
+
+/**
+ * O DÍNAMO DE TIPO SOLAR (o portão `dinamo` do motor do Sol): envelope
+ * convectivo (Teff < `TEFF_SEM_ENVELOPE_K`) E não estar além da linha de
+ * Linsky & Haisch. Sem ele o motor não constrói manchas, ciclo, laços,
+ * proeminências, espículas, erupções, CME nem coroa quente.
+ */
+export function temDinamoSolar(e: { teffK: Numero; massaMsol: Numero; raioRsol: Numero }): boolean {
+  if (e.teffK.v >= TEFF_SEM_ENVELOPE_K) return false;
+  const gigante = logGravidade(e.massaMsol.v, e.raioRsol.v) < LOG_G_DAS_GIGANTES;
+  return !(gigante && e.teffK.v < TEFF_DA_LINHA_DE_LINSKY_HAISCH_K);
+}
+
+// ─── AS PARTES PURAS DO CORPO (vindas do motor simples, apagado em 12/11) ──
+
+/** O raio físico de enquadramento (o EQUATORIAL, o maior), em pc. */
+export function raioDaEstrelaPc(e: EstrelaVisitavel): number {
+  return e.raioRsol.v * RAIO_SOL_PC;
+}
+
+/**
+ * A CONCESSÃO CINEMATOGRÁFICA DOS GRÂNULOS — a MESMA que o Sol já faz, e
+ * declarada como artística no selo. O motor do Sol mostra a textura de
+ * convecção na frequência `granFreq` sobre a esfera unitária (22/30/34 nos
+ * três tiers): célula visível de ~1/30 do raio, contra os 1,87e-3 R☉ do
+ * grânulo real — ~18× maior. Sem a concessão, a disco cheio toda anã seria
+ * um disco liso ao lado de um Sol granulado.
+ *
+ * Cada estrela herda o MESMO fator, e a lei física relativa fica de pé: o
+ * tamanho na tela é `granuloEmRaios × ESCALA` (Proxima ~0,67× o do Sol,
+ * Sirius ~1,4×, Vega ~2×). TETO: um grânulo para de crescer em 0,1 R
+ * (passado isso deixa de ser granulação e vira célula gigante — é o caso de
+ * Betelgeuse, cujas células gigantes reais de 0,6 R não precisam de
+ * concessão nenhuma); nunca fica MENOR que o físico.
+ */
+export const GRANULO_DO_SOL_NA_TELA_EM_RAIOS = 1 / 30;
+const ESCALA_CINEMATOGRAFICA_DOS_GRANULOS = GRANULO_DO_SOL_NA_TELA_EM_RAIOS / GRANULO_SOL_EM_RAIOS;
+const TETO_DO_GRANULO_NA_TELA_EM_RAIOS = 0.1;
+
+export function granuloNaTelaEmRaios(granuloEmRaios: number): number {
+  return Math.max(
+    granuloEmRaios,
+    Math.min(granuloEmRaios * ESCALA_CINEMATOGRAFICA_DOS_GRANULOS, TETO_DO_GRANULO_NA_TELA_EM_RAIOS)
+  );
+}
+
+/** O contraste rms real da granulação do Sol (a régua do contraste relativo). */
+export const CONTRASTE_REAL_DO_SOL = 0.15;
+
+/**
+ * O PISO DO CONTRASTE NA TELA — a concessão gêmea da do tamanho do grânulo,
+ * ARTÍSTICA, declarada: nenhuma superfície com zona convectiva sai mais lisa
+ * que a da anã M (0,04, Beeck et al. 2013). As estrelas A têm zonas finas de
+ * ionização do H e do He que as simulações 3D e o "flicker" do Kepler dão
+ * como granulação de baixo contraste (~1–2 %, Tremblay et al. 2013; Kallinger
+ * & Matthews 2010) — invisível no disco; o piso a EXTRAPOLA para a tela.
+ * Não vale para a anã branca (a companheira: contraste 0).
+ */
+export const PISO_DO_CONTRASTE_NA_TELA = 0.04;
+
+/**
+ * Sob as CÉLULAS GIGANTES, os grânulos pequenos são TÊNUES: o contraste
+ * medido nas simulações (0,25 em Betelgeuse) é o das gigantes, que dominam a
+ * imagem; os grânulos por cima levam 20 % dele — ARTÍSTICO, declarado
+ * (a segunda escala, visível de perto sem cobrir as células).
+ */
+export const FRACAO_DOS_GRANULOS_SOB_AS_GIGANTES = 0.2;
+
+const GRAU = Math.PI / 180;
+const JD_J2000 = 2451545;
+const DIAS_POR_ANO = 365.25;
+
+/**
+ * A POSIÇÃO DA COMPANHEIRA RELATIVA À PRINCIPAL (hoje: Sirius B), em pc na
+ * base da cena (equatorial J2000), no instante `jd`. Kepler + Thiele–Innes
+ * sobre o plano do céu na direção de A; o semieixo em UA é `aSegArco × dPc`
+ * (1″ a 1 pc = 1 UA).
+ *
+ * O SINAL NA LINHA DE VISADA É AMBÍGUO em astrometria pura (a órbita e o
+ * espelho dela pelo plano do céu dão o mesmo traço). Escolha declarada:
+ * z = C·X + H·Y, com z > 0 = MAIS LONGE do Sol que A.
+ */
+export function posicaoDaCompanheira(
+  jd: number,
+  o: Orbita,
+  direcaoDeA: readonly [number, number, number],
+  dPc: number
+): [number, number, number] {
+  const anos = 2000 + (jd - JD_J2000) / DIAS_POR_ANO;
+  let M = (2 * Math.PI * (anos - o.periastroAno)) / o.periodoAnos;
+  M = M - 2 * Math.PI * Math.floor(M / (2 * Math.PI));
+  const e = o.e;
+  let E = e < 0.8 ? M : Math.PI;
+  for (let i = 0; i < 50; i++) {
+    const d = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E));
+    E -= d;
+    if (Math.abs(d) < 1e-14) break;
+  }
+  const X = Math.cos(E) - e;
+  const Y = Math.sqrt(1 - e * e) * Math.sin(E);
+  const aPc = o.aSegArco * dPc * AU_PARA_PC;
+  const w = o.argPeriastroGraus * GRAU;
+  const N = o.nodoGraus * GRAU;
+  const inc = o.iGraus * GRAU;
+  const A = aPc * (Math.cos(w) * Math.cos(N) - Math.sin(w) * Math.sin(N) * Math.cos(inc));
+  const B = aPc * (Math.cos(w) * Math.sin(N) + Math.sin(w) * Math.cos(N) * Math.cos(inc));
+  const F = aPc * (-Math.sin(w) * Math.cos(N) - Math.cos(w) * Math.sin(N) * Math.cos(inc));
+  const G = aPc * (-Math.sin(w) * Math.sin(N) + Math.cos(w) * Math.cos(N) * Math.cos(inc));
+  const C = aPc * Math.sin(w) * Math.sin(inc);
+  const H = aPc * Math.cos(w) * Math.sin(inc);
+  const norte = A * X + F * Y;
+  const leste = B * X + G * Y;
+  const fundo = C * X + H * Y;
+  const [rx, ry, rz] = direcaoDeA;
+  // a base do céu em A: leste = ẑ × r̂ (α crescente), norte = r̂ × leste
+  const lx = -ry;
+  const ly = rx;
+  const ln = Math.hypot(lx, ly) || 1;
+  const ex = lx / ln;
+  const ey = ly / ln;
+  const nx = -rz * ey;
+  const ny = rz * ex;
+  const nz = rx * ey - ry * ex;
+  return [
+    norte * nx + leste * ex + fundo * rx,
+    norte * ny + leste * ey + fundo * ry,
+    norte * nz + fundo * rz,
+  ];
 }

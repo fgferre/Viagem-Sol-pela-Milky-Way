@@ -241,6 +241,54 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.galaxia.webgpu': 'WebGPU',
   'ajustes.galaxia.particulas': 'WebGL',
   'ajustes.galaxia.classica': 'Classic',
+  'ajustes.lab.titulo': 'Galaxy lab',
+  'ajustes.lab.grupo.webgpu': 'WebGPU engine · the galaxy seen from outside',
+  'ajustes.lab.grupo.webgl': 'WebGL particles · inside the disc and on the way out',
+  'ajustes.lab.bloqueio.classica': 'Off: the Classic galaxy is not made of particles.',
+  'ajustes.lab.bloqueio.semWebgpu': 'Off: WebGL is drawing now. To use these, choose WebGPU under Galaxy.',
+  'ajustes.lab.bloqueio.teto':
+    'Most children and Children reach: off, because at this Point ceiling no children are left. Raise the ceiling to use them.',
+  'ajustes.lab.aplicando': 'applying…',
+  'ajustes.lab.voltar': 'Back to default',
+  'ajustes.lab.todas': 'All',
+  'ajustes.lab.milhoes': '{n} million',
+  'ajustes.lab.filhas': 'Children per particle',
+  'ajustes.lab.filhasNota':
+    'Each particle becomes several fainter neighbours carrying the same total light: the galaxy looks smoother and fuller, and the frame gets heavier.',
+  'ajustes.lab.borrifo': 'Point drawing',
+  'ajustes.lab.borrifo.0': 'Tent',
+  'ajustes.lab.borrifo.1': 'Spray',
+  'ajustes.lab.borrifoNota':
+    'Tent shares each point\'s light among neighbouring pixels: the picture stays calm while the camera moves. Spray drops each point on one random pixel: lighter and sharper when still, but the galaxy "boils" in motion.',
+  'ajustes.lab.filtro': 'Grain filter',
+  'ajustes.lab.filtro.1': 'On',
+  'ajustes.lab.filtro.0': 'Off',
+  'ajustes.lab.filtroNota':
+    'A very light blur before the final colour: it halves the flicker in motion. Off, the galaxy is sharper and grainier.',
+  'ajustes.lab.lod': 'Detail from afar',
+  'ajustes.lab.lodNota':
+    'How many particles per pixel are enough when the galaxy is far away. Fewer is lighter and grainier; "All" always draws every particle. With 2 draws the difference only shows from far away, mostly with "All".',
+  'ajustes.lab.fatia': 'Dust refresh',
+  'ajustes.lab.fatiaNota':
+    'Every how many frames the dust shadow on each particle is recomputed. 1 is the most exact and the heaviest; 8 is light, but in a fast flight the shadow lags a little.',
+  'ajustes.lab.sorteios': 'Galaxy draws',
+  'ajustes.lab.sorteiosNota':
+    'How many times the galaxy is drawn from the model, about 4 million particles each. More draws: more real particles and a finer picture, with more memory and a heavier frame. It takes a few seconds; the old galaxy stays on screen until the new one arrives.',
+  'ajustes.lab.lodrho': 'Point density',
+  'ajustes.lab.lodrhoNota':
+    'How many points per pixel WebGL tries to put on screen. More is smoother and heavier. With each quality\'s point ceiling the ceiling decides: on Cinema the image does not change, on High and Performance it changes a little. With a higher Point ceiling it acts fully.',
+  'ajustes.lab.lodk': 'Most children',
+  'ajustes.lab.lodkNota':
+    'Up to how many neighbours each particle can become when the camera gets close. 1 turns children off: loose points up close. It only shows with a higher Point ceiling (with each quality\'s own, children go first).',
+  'ajustes.lab.lodmax': 'Point ceiling',
+  'ajustes.lab.lodmaxNota':
+    'The most points per frame, in millions. Above it the children go first and the grain grows. Higher is sharper and heavier.',
+  'ajustes.lab.lodpiso': 'Point softness',
+  'ajustes.lab.lodpisoNota':
+    'How far each point spreads when the point ceiling bites. Higher makes the galaxy smoother and less sandy, and the frame heavier.',
+  'ajustes.lab.lodesp': 'Children reach',
+  'ajustes.lab.lodespNota':
+    'How far from the parent particle the children land. Little: clumps of light; a lot: a smoother veil. It only shows when there are children, that is, with a higher Point ceiling.',
   'ajustes.texto': 'Text size · {degrau}',
   'ajustes.textoNota':
     'Applies to the whole HUD — captions, controls, seal and the star names. It does not touch the scene: inside the Atlas the framing backs off a little so the larger text does not cover the target.',
@@ -352,6 +400,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.destino.betelgeuse': 'A supergiant in Orion',
   'busca.destino.rigil-kentaurus': 'The nearest star system',
   'busca.destino.trappist-1': 'Seven Earth-sized planets',
+  'busca.destino.s2': 'The star that circles the black hole',
   // NO film promise (item 129/F5 still holds): the click here does the
   // SAME thing the "place" search entry already does — frames the
   // galactic centre in the Atlas, does not start the film.
@@ -360,6 +409,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.destino.nosso-lugar': 'Where the Sun sits in the disc',
   'busca.destino.pleiades': 'The Seven Sisters, up close',
   'busca.destino.hyades': 'The open cluster nearest the Sun',
+  'busca.destino.nebulosa-de-orion': 'A stellar nursery, lit from within',
   'busca.destino.ana-de-sagitario': 'A galaxy being swallowed by ours',
   'busca.destino.grande-nuvem-de-magalhaes': 'Our galaxy’s largest companion',
   'busca.destino.andromeda': 'The big spiral next door',
@@ -506,6 +556,12 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.lugar.anelEht': 'what the EHT saw',
   'ficha.lugar.estrelaS2': 'the star S2',
   'ficha.lugar.luz': 'the light we see left it',
+  'ficha.lugar.periodo': 'one orbit',
+  'ficha.lugar.periastro': 'closest to the hole',
+  'ficha.lugar.velocidade': 'speed',
+  'ficha.lugar.desvioParaOVermelho': 'redshift',
+  'ficha.lugar.precessao': 'precession',
+  'ficha.lugar.estrela': 'the star',
   'ficha.sonda.doSol': 'distance from the Sun',
   'ficha.sonda.luz': 'light takes, from here to Earth',
   'ficha.sonda.velocidade': 'speed relative to the Sun',
@@ -617,6 +673,15 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.estrela.separacaoEmUa': '{ua} au',
   'ficha.estrela.corPelaTemperatura': 'from the temperature (blackbody)',
   'ficha.estrela.tamanhoPeloRaio': 'the radius in this card',
+  'ficha.campo.veu': 'veil of light',
+  'ficha.campo.granulacao': 'granulation',
+  'ficha.campo.celulasGigantes': 'giant cells',
+  'ficha.estrela.veu':
+    'more radiant than the Sun: the disk is shown at a lower exposure and the leftover light becomes a veil around it, as in a camera — the veil\'s strength and reach are a choice',
+  'ficha.estrela.granulacaoExtrapolada':
+    'the real one has ~{real} % contrast, invisible; drawn at the {piso} % floor so the surface does not come out smooth',
+  'ficha.estrela.celulasRealcadas':
+    "the cells' temperature becomes color and brightness through Planck's law; the contrast is boosted, and the smaller scales of cells (which appear up close), the lumpy edge and the envelope plumes are drawn",
   'ficha.estrela.desenhoInventado':
     'granules, cells, spots and flares: the cell size follows the law in the data ({lei}), but the exact pattern is invented',
   'ficha.fonte.daEfemeride': 'from the ephemeris',
@@ -636,6 +701,16 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.fonte.catalogoHyg': 'HYG/AT-HYG catalog',
   'ficha.fonte.bayerIau': 'Bayer, IAU abbreviation',
   'ficha.fonte.paralaxe': 'Gaia DR3 parallax',
+  // the star with an imprecise parallax that took its cluster's distance
+  'ficha.fonte.distanciaDoAglomerado': 'distance of the cluster ({aglomerado}), not of the star',
+  'ficha.aglomerado.pleiades': 'Pleiades',
+  'ficha.aglomerado.hyades': 'Hyades',
+  'ficha.aglomerado.praesepe': 'Praesepe, M44',
+  'ficha.aglomerado.m7': 'M7',
+  'ficha.aglomerado.alfaPersei': 'Alpha Persei',
+  'ficha.aglomerado.hPersei': 'h Persei',
+  'ficha.aglomerado.chiPersei': 'chi Persei',
+  'ficha.aglomerado.trapezio': 'Orion Trapezium',
   'ficha.fonte.ballesteros': 'from B−V, after Ballesteros',
   'ficha.fonte.sinteseDaLiteratura': 'summary of the literature',
   'ficha.hora': 'hour',
@@ -696,6 +771,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'selo.desvio.particulasCom': 'galaxy particles set by hand: {nivel}',
   'selo.desvio.galaxia': 'galaxy set by hand',
   'selo.desvio.galaxiaCom': 'galaxy set by hand: {caminho}',
+  'selo.desvio.laboratorio': 'galaxy tuned by hand',
+  'selo.desvio.laboratorioCom': 'galaxy tuned by hand: {controle} {valor}',
   'selo.desvio.poeira': 'dust near home set by hand',
   'selo.desvio.poeiraCom': 'dust near home set by hand: {variante}',
   'selo.desvio.poeiraTeste': 'test (synthetic volume)',
@@ -728,6 +805,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'camada.nowrap': 'Surrounding field',
   'camada.nodust': 'Nearby dust',
   'camada.nobh': 'Black hole (Sgr A✱)',
+  'camada.noorbitass': 'S-star orbits',
   'camada.nocat': 'HYG catalog',
   'camada.nonomes': 'Names on screen',
   'camada.noclarao': 'Star glare',
@@ -762,6 +840,8 @@ export const EN: Record<keyof typeof PT, string> = {
     "Turns off the interstellar dust with parallax near the camera, visible while crossing the galaxy's disc.",
   'camada.nobh.nota':
     "Turns off the Sagittarius A* black hole, visible only up close, at the galaxy's center.",
+  'camada.noorbitass.nota':
+    "Turns off the lines of the measured orbits of the stars circling Sgr A✱, visible near the galaxy's centre.",
   'camada.nocat.nota':
     'Turns off the real star catalogue points (HYG), visible near the solar system.',
   'camada.nonomes.nota':

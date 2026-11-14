@@ -838,6 +838,26 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     expect(linha.valor).toBe(`${Number(t.toPrecision(3))} K`.replace('.', ','));
   });
 
+  it('a estrela com a distância do aglomerado diz isso, com o nome dele, e não finge paralaxe', () => {
+    // os ids vêm da tabela do build: aglomerado novo sem nome na ficha quebra aqui
+    const tabela = JSON.parse(
+      readFileSync(fileURLToPath(new URL('../../../scripts/data/aglomerados.json', import.meta.url)), 'utf8')
+    ) as { aglomerados: { id: string }[] };
+    const taygeta = { ...sirius, n: 'Taygeta', d: 134.84 };
+    for (const { id } of tabela.aglomerados) {
+      const l = linhasDe(montarFichaDeEstrela('Taygeta', { ...taygeta, ag: id })!).get('distância')!;
+      expect(l.procedencia, id).toBe('derivado');
+      expect(l.fonte, id).toMatch(/^distância do aglomerado \(.+\), não a da estrela$/);
+      expect(l.fonte, id).not.toContain(`(${id})`);
+    }
+    const pleiades = linhasDe(montarFichaDeEstrela('Taygeta', { ...taygeta, ag: 'pleiades' })!).get('distância')!;
+    expect(pleiades.fonte).toContain('Plêiades');
+    // sem `ag`, o que era: medida, paralaxe Gaia DR3
+    const medida = linhasDe(montarFichaDeEstrela('Taygeta', taygeta)!).get('distância')!;
+    expect(medida.procedencia).toBe('medido');
+    expect(medida.fonte).toBe('paralaxe Gaia DR3');
+  });
+
   it('a distância sai na escada da casa: anos-luz, nunca parsec', () => {
     for (const estrela of starsMeta.named.slice(0, 200)) {
       const l = linhasDe(montarFichaDeEstrela(estrela.n, estrela)!);
@@ -881,7 +901,11 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     const dist = comp.linhas.find((l) => l.rotulo === 'separação média')!;
     expect(dist.valor).toContain(`${Math.round(7.4957 * sirius.d * 10) / 10}`.replace('.', ','));
     const img = sir.secoes.find((x) => x.id === 'imagem')!;
-    expect(img.linhas.map((l) => l.procedencia)).toEqual(['derivado', 'derivado', 'artistico']);
+    // mais radiante que o Sol e com granulação abaixo do piso: véu e granulação confessados
+    expect(img.linhas.map((l) => l.procedencia)).toEqual(['derivado', 'derivado', 'artistico', 'artistico', 'artistico']);
+    expect(img.linhas.map((l) => l.rotulo).slice(3)).toEqual(['véu de luz', 'granulação']);
+    const imgProx = prox.secoes.find((x) => x.id === 'imagem')!;
+    expect(imgProx.linhas).toHaveLength(3);
 
     const arc = starsMeta.named.find((s) => s.n === 'Arcturus')!;
     const f = montarFichaDeEstrela('Arcturus', arc)!;

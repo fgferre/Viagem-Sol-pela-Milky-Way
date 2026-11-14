@@ -174,6 +174,13 @@ export interface StarLabel {
    */
   dirigido?: boolean;
   /**
+   * PODE ESCREVER DO OUTRO LADO da âncora quando o lado natural está
+   * ocupado (13/11) — só o lado, na mesma linha, sem o peso nem o
+   * holofote do `dirigido`. É dos planetas do sistema em quadro, irmãos
+   * que projetam a poucos pixels um do outro.
+   */
+  outroLado?: boolean;
+  /**
    * ESTE NOME ESTÁ SAINDO — a rampa dele desce (item 115, bloco B).
    *
    * Quem marca é `RampasDeRotulo`, no rótulo que a régua CORTOU e cuja

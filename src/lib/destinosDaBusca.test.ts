@@ -65,13 +65,18 @@ describe('destinosDaBusca', () => {
       'halley',
     ]);
 
+    // S2 é estrela na aba, mas LUGAR na tabela: o cartão leva aonde o nome leva
     const nomesDeEstrela = estrelas.map((d) =>
-      d.entrada.tipo === 'estrela' ? d.entrada.estrela.n : null
+      d.entrada.tipo === 'estrela'
+        ? d.entrada.estrela.n
+        : d.entrada.tipo === 'lugar'
+          ? d.entrada.lugar.id
+          : null
     );
     expect(
       nomesDeEstrela,
       'alguma estrela da lista fechada não resolveu para o nome certo'
-    ).toEqual(['Sirius', 'Betelgeuse', 'Rigil Kentaurus', 'TRAPPIST-1']);
+    ).toEqual(['Sirius', 'Betelgeuse', 'Rigil Kentaurus', 'TRAPPIST-1', 's2']);
 
     const idsDeLugar = galaxia.map((d) => (d.entrada.tipo === 'lugar' ? d.entrada.lugar.id : null));
     expect(idsDeLugar, 'algum lugar do céu não resolveu').toEqual([
@@ -79,6 +84,7 @@ describe('destinosDaBusca', () => {
       'nosso-lugar',
       'pleiades',
       'hyades',
+      'nebulosa-de-orion',
       'sagittarius-a',
       'ana-de-sagitario',
       'grande-nuvem-de-magalhaes',
@@ -86,10 +92,10 @@ describe('destinosDaBusca', () => {
     ]);
   });
 
-  it('as categorias contam 8/4/8', () => {
+  it('as categorias contam 8/5/9', () => {
     expect(sistema.length).toBe(8);
-    expect(estrelas.length).toBe(4);
-    expect(galaxia.length).toBe(8);
+    expect(estrelas.length).toBe(5);
+    expect(galaxia.length).toBe(9);
   });
 
   it('o cartão de um corpo leva à distância da prévia dele; estrela e lugar não pedem nenhuma', () => {

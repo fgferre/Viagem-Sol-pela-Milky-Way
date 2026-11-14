@@ -42,7 +42,13 @@ import { RAIO_EQ_TERRA_PC, posicaoDaTerraUA } from '../world/corpos/terra';
 import { ANEL_SATURNO, posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
 import { AtlasRig, K_MIN_RAIOS, K_PISO_DO_CORPO } from '../cinematic/atlasRig';
 import { IDS_ESCULPIDOS, criaGeometriaEsculpida } from '../world/corpos/esculpido';
-import { LUGARES_DA_BUSCA } from '../world/lugaresDoCeu';
+import { LUGARES_DA_BUSCA, poseDoLugar } from '../world/lugaresDoCeu';
+import { posicaoDoCometaNaCena, poseDoCometaDePerto } from '../world/cometas';
+import { M31 } from '../world/geradorDasVizinhas';
+import { GAL } from '../world/baseGalactica';
+import { ENTREGA_DO_BURACO_PC } from '../escala';
+import { RS_SGR_A_PC } from '../../lib/buracoNegro';
+import { ATLAS_FOV_GRAUS, enquadrar, retanguloUtilDoAtlas } from '../cinematic/atlasRig';
 
 // O runner da casa é `node` (vitest.config.ts) e o enquadramento pergunta
 // a largura da janela (`larguraDeCss`) a cada `apply`. Uma linha de
@@ -567,5 +573,88 @@ describe('o piso da câmera é o SOLO REAL de cada corpo (07/10, "câmera mais l
       geo.dispose();
       expect(pisoDe(id) / raiosDoRochosoPc(id).a, id).toBeGreaterThan(pico);
     }
+  });
+});
+
+describe('a vista de perto de Sgr A✱ é escala real em qualquer tela (13/11)', () => {
+  // MEDIDO no navegador: a 390×844 a esfera de 7,4 RS só cabia na largura
+  // a 35,8 RS, fora dos 24 RS da escala real — o selo dizia FORA DE ESCALA
+  const dePerto = (largura: number, altura: number, base = 0) => {
+    const { escada, camera, atlas } = bancada();
+    camera.aspect = largura / altura;
+    escada.visitarLugar(LUGARES_DA_BUSCA.find((l) => l.id === 'sagittarius-a')!);
+    escada.aproximarDoCorpo();
+    const extra = { base, direita: 0 };
+    atlas.apply(camera, 1, largura, 0, extra);
+    const pela = (raio: number) =>
+      enquadrar({
+        rAlvo: raio,
+        fovDeg: ATLAS_FOV_GRAUS,
+        aspect: camera.aspect,
+        retanguloUtil: retanguloUtilDoAtlas(1, largura, extra),
+      }).distancia;
+    return { d: camera.position.distanceTo(GAL.GC_POS), pela };
+  };
+
+  it('a mesa não muda: a esfera de 7,4 RS cabe antes da entrega', () => {
+    const { d, pela } = dePerto(1280, 800);
+    expect(d / pela(7.4 * RS_SGR_A_PC)).toBeCloseTo(1, 6);
+    expect(d).toBeLessThan(ENTREGA_DO_BURACO_PC);
+  });
+
+  it('retrato, com e sem a folha: a câmera fica dentro da entrega e a sombra cabe', () => {
+    for (const [largura, altura, folha] of [
+      [390, 844, 0], [390, 844, 0.19], [360, 800, 0], [360, 800, 0.2], [320, 568, 0], [320, 568, 0.28],
+    ]) {
+      const { d, pela } = dePerto(largura, altura, folha);
+      const tela = `${largura}×${altura} folha ${folha}`;
+      expect(d / RS_SGR_A_PC, tela).toBeGreaterThan(23.9);
+      expect(d, tela).toBeLessThan(ENTREGA_DO_BURACO_PC);
+      expect(d, tela).toBeGreaterThanOrEqual(pela(3 * RS_SGR_A_PC));
+    }
+  });
+
+  it('tela estreita demais: a sombra vence a entrega e não sai do quadro', () => {
+    // nos telefones de verdade o núcleo cabe de sobra (ver acima); ele só
+    // manda abaixo de ~0,27 de aspecto — 200×800 é a régua do caso extremo
+    const { d, pela } = dePerto(200, 800);
+    expect(d / pela(3 * RS_SGR_A_PC)).toBeCloseTo(1, 6);
+    expect(d).toBeGreaterThan(ENTREGA_DO_BURACO_PC);
+  });
+});
+
+describe('o "Aproximar" de cometas e de lugares do céu (13/11)', () => {
+  it('um cometa desce à cabeça pelo mesmo botão, e o relógio a acompanha', () => {
+    const { escada, atlas, maquinaDoTempo } = bancada();
+    maquinaDoTempo.jdVivo = 2446471.0;
+    escada.visitarSonda('halley');
+    expect(escada.escadaViva).toMatchObject({ degrau: 'cometa', podeAproximar: true });
+    escada.aproximarDoCorpo();
+    const nucleo = posicaoDoCometaNaCena('halley', 2446471.0)!;
+    expect(escada.escadaViva).toMatchObject({ degrau: 'cometa', podeAproximar: false });
+    expect(atlas.alvo.distanceTo(nucleo)).toBe(0);
+    expect(atlas.raioDoAlvo).toBe(poseDoCometaDePerto('halley', 2446471.0, 5.5)!.raio);
+    maquinaDoTempo.jdVivo = 2446472.0;
+    escada.recomporAlvo();
+    expect(atlas.alvo.distanceTo(posicaoDoCometaNaCena('halley', 2446472.0)!)).toBe(0);
+    expect(atlas.raioDoAlvo).toBe(poseDoCometaDePerto('halley', 2446472.0, 5.5)!.raio);
+  });
+
+  it('só o lugar com vista de perto ganha o botão; Andrômeda enche o quadro sem a câmera entrar nela', () => {
+    for (const l of LUGARES_DA_BUSCA.filter((x) => x.raioPc)) {
+      const { escada } = bancada();
+      escada.visitarLugar(l);
+      const noCentro = new THREE.Vector3(l.x, l.y, l.z).distanceToSquared(GAL.GC_POS) < 1e-18;
+      expect(escada.escadaViva.podeAproximar, l.id).toBe(noCentro || poseDoLugar(l)?.raioDePerto !== undefined);
+    }
+    const { escada, atlas, camera, aplicar } = bancada();
+    const andromeda = LUGARES_DA_BUSCA.find((l) => l.id === 'andromeda')!;
+    escada.visitarLugar(andromeda);
+    escada.aproximarDoCorpo();
+    aplicar();
+    expect(escada.escadaViva).toMatchObject({ degrau: 'estrela', podeAproximar: false });
+    expect(atlas.raioDoAlvo).toBe(poseDoLugar(andromeda)!.raioDePerto);
+    // o disco de estrelas do modelo vai até 26 kpc do centro
+    expect(camera.position.distanceTo(M31.centro)).toBeGreaterThan(26_000);
   });
 });
