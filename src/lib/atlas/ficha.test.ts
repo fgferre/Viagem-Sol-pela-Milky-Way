@@ -727,7 +727,7 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
     expect(variantes.some((e) => e.larguraPx < maisLarga)).toBe(true);
     const fonte = linhaDe('earth', 'fonte');
     expect(fonte.valor).toContain('Solar System Scope');
-    expect(fonte.valor).toMatch(/· 8192 px de largura$/);
+    expect(fonte.valor).toMatch(/· 8.192 px de largura$/);
   });
 });
 
@@ -835,7 +835,7 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     // três algarismos significativos: Ballesteros não vale mais que isso, e
     // "9927 K" fingiria uma precisão que a fórmula não tem.
     const t = temperatureFromBV(arcturus.ci!);
-    expect(linha.valor).toBe(`${Number(t.toPrecision(3))} K`.replace('.', ','));
+    expect(linha.valor).toBe(`${Number(t.toPrecision(3))} K`.replace(/^(\d)(\d{3}) K$/, '$1.$2 K'));
   });
 
   it('a estrela com a distância do aglomerado diz isso, com o nome dele, e não finge paralaxe', () => {
