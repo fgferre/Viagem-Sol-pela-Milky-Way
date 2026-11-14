@@ -1,0 +1,97 @@
+{
+  "planos": [
+    {
+      "nome": "travessiaAOrion",
+      "camera": {
+        "duracao": 9,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "nebulosa-de-orion",
+          "de": "partidaDeBetelgeuse",
+          "para": "orionDeFora"
+        },
+        "mira": {"tipo": "fixo", "ponto": "nebulosa-de-orion"},
+        "lente": [40, 40]
+      },
+      "assuntos": ["Nebulosa de Órion"],
+      "fundoSilencioso": true,
+      "destino": "Nebulosa de Órion"
+    },
+    {
+      "nome": "bercario",
+      "lenteDeCinema": "hollywood",
+      "camera": {
+        "duracao": 10,
+        "movimento": {"tipo": "reta", "de": "orionDeFora", "para": "orionDeForaPerto"},
+        "mira": {"tipo": "fixo", "ponto": "nebulosa-de-orion"},
+        "lente": [40, 40]
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.3,
+          "texto": "Um berçário",
+          "subtexto": "uma bolha de gás aberta na face de uma nuvem escura",
+          "en": {"texto": "A nursery", "subtexto": "a bubble of gas opened on the face of a dark cloud"},
+          "duracao": 6.5
+        }
+      ]
+    },
+    {
+      "nome": "entraEmOrion",
+      "camera": {
+        "duracao": 10,
+        "movimento": {"tipo": "reta", "de": "orionDeForaPerto", "para": "bocaDeOrion"},
+        "mira": {"tipo": "fixo", "ponto": "nebulosa-de-orion"},
+        "lente": [40, 62]
+      },
+      "fundoSilencioso": true
+    },
+    {
+      "nome": "trapezio",
+      "lenteDeCinema": "hollywood",
+      "camera": {
+        "duracao": 10,
+        "movimento": {"tipo": "reta", "de": "bocaDeOrion", "para": "fimDaBocaDeOrion"},
+        "mira": {"tipo": "fixo", "ponto": "nebulosa-de-orion"},
+        "lente": [62, 62]
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.25,
+          "texto": "O Trapézio",
+          "subtexto": "estrelas de 1 a 3 milhões de anos acendem a nuvem",
+          "en": {"texto": "The Trapezium", "subtexto": "stars 1 to 3 million years old light up the cloud"},
+          "duracao": 6.5
+        }
+      ]
+    },
+    {
+      "nome": "voltaParaCasa",
+      "camera": {
+        "duracao": 8,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "nebulosa-de-orion",
+          "de": "fimDaBocaDeOrion",
+          "para": "saidaDeOrion"
+        },
+        "mira": {"tipo": "pan-direcao", "de": "nebulosa-de-orion", "para": "pleiades", "ate": 0.55},
+        "lente": [62, 40]
+      },
+      "assuntos": ["SOL"],
+      "fundoSilencioso": true,
+      "legendas": [
+        {
+          "em": 0.35,
+          "texto": "O Sol nasceu num lugar assim",
+          "en": {"texto": "The Sun was born in a place like this"},
+          "duracao": 4.8
+        }
+      ]
+    }
+  ]
+}

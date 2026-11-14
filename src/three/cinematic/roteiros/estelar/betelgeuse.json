@@ -1,0 +1,121 @@
+{
+  "planos": [
+    {
+      "nome": "figuraSeDesfaz",
+      "camera": {
+        "duracao": 10,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Betelgeuse",
+          "de": "mirante",
+          "para": "fimDaTravessia"
+        },
+        "mira": {"tipo": "pan-direcao", "de": "Alnilam", "para": "Betelgeuse", "ate": 0.02},
+        "lente": [32, 32],
+        "ritmo": "launch"
+      },
+      "assuntos": ["Betelgeuse", "Bellatrix", "Rigel"],
+      "fundoSilencioso": true,
+      "destino": "Betelgeuse",
+      "legendas": [
+        {
+          "em": 0.4,
+          "texto": "A figura se desfaz",
+          "subtexto": "as estrelas dela não estão juntas",
+          "en": {"texto": "The figure comes apart", "subtexto": "its stars are not together"},
+          "duracao": 6
+        }
+      ]
+    },
+    {
+      "nome": "chegadaABetelgeuse",
+      "camera": {
+        "duracao": 9,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Betelgeuse",
+          "de": "fimDaTravessia",
+          "para": "inicioDaOrbitaDeBetelgeuse"
+        },
+        "mira": {"tipo": "fixo", "ponto": "Betelgeuse"},
+        "lente": [32, 50],
+        "ritmo": "settle",
+        "ritmoDaLente": "glide"
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto"
+    },
+    {
+      "nome": "celulasDeBetelgeuse",
+      "lenteDeCinema": "hollywood",
+      "camera": {
+        "duracao": 12,
+        "movimento": {
+          "tipo": "arco",
+          "centro": "Betelgeuse",
+          "direcaoDe": "direcaoDaOrbitaDeBetelgeuseDe",
+          "direcaoPara": "direcaoDaOrbitaDeBetelgeusePara",
+          "raio": ["raioDaOrbitaDeBetelgeuseDe", "raioDaOrbitaDeBetelgeusePara"]
+        },
+        "mira": {"tipo": "fixo", "ponto": "Betelgeuse"},
+        "lente": [50, 50]
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.2,
+          "texto": "Betelgeuse",
+          "subtexto": "18 sóis de massa: vive depressa, e já está no fim",
+          "en": {"texto": "Betelgeuse", "subtexto": "18 suns of mass: it lives fast, and is already near the end"},
+          "duracao": 8
+        }
+      ]
+    },
+    {
+      "nome": "tamanhoDeBetelgeuse",
+      "camera": {
+        "duracao": 7,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Betelgeuse",
+          "de": "fimDaOrbitaDeBetelgeuse",
+          "para": "betelgeuseAfastada"
+        },
+        "mira": {"tipo": "fixo", "ponto": "Betelgeuse"},
+        "lente": [50, 40]
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.3,
+          "texto": "764 vezes o raio do Sol",
+          "subtexto": "3,6 UA: no lugar do Sol, engoliria até Marte",
+          "en": {"texto": "764 times the Sun’s radius", "subtexto": "3.6 AU: in the Sun’s place, it would swallow Mars"},
+          "duracao": 5
+        }
+      ]
+    },
+    {
+      "nome": "viraParaOrion",
+      "camera": {
+        "duracao": 8,
+        "movimento": {"tipo": "reta", "de": "betelgeuseAfastada", "para": "partidaDeBetelgeuse"},
+        "mira": {"tipo": "pan-direcao", "de": "Betelgeuse", "para": "nebulosa-de-orion", "ate": 0.6},
+        "lente": [40, 40]
+      },
+      "assuntos": ["Nebulosa de Órion"],
+      "fundoSilencioso": true,
+      "legendas": [
+        {
+          "em": 0.55,
+          "texto": "Quando explodir",
+          "subtexto": "vira matéria de estrelas novas",
+          "en": {"texto": "When it explodes", "subtexto": "it becomes the stuff of new stars"},
+          "duracao": 3.5
+        }
+      ]
+    }
+  ]
+}
