@@ -143,7 +143,7 @@ function noQuadro(camera: THREE.PerspectiveCamera, centro: THREE.Vector3, raio: 
 }
 
 /** a escada com o rig REAL e o mundo de mentira em volta */
-function bancada({ comEfemeride = false, comAnoes = false, comSaturno = false } = {}) {
+function bancada({ comEfemeride = false, comAnoes = false, comSaturno = false, comPiloto = false } = {}) {
   const atlas = new AtlasRig();
   const camera = new THREE.PerspectiveCamera(35, 4 / 3, 0.1, 1e6);
   // sem efeméride: as posições saem do retrato, e o instante é o da
@@ -182,6 +182,8 @@ function bancada({ comEfemeride = false, comAnoes = false, comSaturno = false } 
       planetas: () =>
         ({ posicoes: new Float32Array(CORPOS_DO_SISTEMA.length * 3) }) as unknown as Planetas,
       meta: () => undefined,
+      // o piloto das estrelas com corpo (`?estrelaslugar`), desligado por padrão aqui
+      estrelasComLugar: () => comPiloto,
       // a lista viva dos rochosos CONSTRUÍDOS. Os anões e asteroides
       // entram aqui com `planeta: false`, que é o que os distingue na
       // lista real — é essa marca que abre (ou não) o degrau do globo
@@ -656,5 +658,13 @@ describe('o "Aproximar" de cometas e de lugares do céu (13/11)', () => {
     expect(atlas.raioDoAlvo).toBe(poseDoLugar(andromeda)!.raioDePerto);
     // o disco de estrelas do modelo vai até 26 kpc do centro
     expect(camera.position.distanceTo(M31.centro)).toBeGreaterThan(26_000);
+  });
+
+  it('a estrela com corpo: o botão some depois de usado, como nos outros destinos (13/11, TRAPPIST-1)', () => {
+    const { escada } = bancada({ comPiloto: true });
+    escada.visitarEstrela({ n: 'TRAPPIST-1', x: 12.4, y: 0, z: 0 });
+    expect(escada.escadaViva).toMatchObject({ degrau: 'estrela', podeAproximar: true });
+    escada.aproximarDoCorpo();
+    expect(escada.escadaViva).toMatchObject({ degrau: 'estrela', podeAproximar: false });
   });
 });

@@ -538,7 +538,7 @@ export function FichaDoObjeto({
           de sempre (o mesmo de "⌕ Buscar"/"⧉ Camadas" na barra); o
           `Segmentado` (`components/Segmentado.tsx`) não muda. */}
       <div className="atlas-ficha-escada">
-        {(podeAproximar || (estrelaEmFoco !== null && estrelaVisitavelPorNome(estrelaEmFoco) !== null)) && (
+        {podeAproximar && (
           <button
             type="button"
             className="hud-btn small"
