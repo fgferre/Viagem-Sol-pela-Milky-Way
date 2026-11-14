@@ -36,7 +36,7 @@ E3 7 s Próxima b (rosto estimado, dito na legenda). E4 8 s travessia. E5 14 s p
 EPÍLOGO (20 s) — F1 9 s volta, o Sol nasce ponto amarelo. F2 11 s arco no Sol: "Na metade do caminho". Tela final: "Viagem estelar".
 
 ## Etapas
-- [ ] E0 PREPARO (um trabalhador opus): (a) `assuntos` do filme nomeia qualquer destino que a Busca conhece (lugares, companheiras, exoplanetas, estrelas com corpo fora do `named`), pelo MESMO índice da Busca, na data do filme;
+- [x] E0 PREPARO (feito 14/11: prancha em capturas/filme-estelar-14-11/e0-prancha-v2.jpg) (um trabalhador opus): (a) `assuntos` do filme nomeia qualquer destino que a Busca conhece (lugares, companheiras, exoplanetas, estrelas com corpo fora do `named`), pelo MESMO índice da Busca, na data do filme;
       (b) Aldebaran estrela com corpo (K5+ III; 45,1 R☉ e ~520 d Hatzes et al. 2015 A&A 580 A31; 3900 K; 1,16 M☉ e 6,4 Ga Farr et al. 2018 ApJL 865 L20; HIP 21421);
       (c) filme `estelar` registrado (montagem no molde do solar: JSON por ato + pontos/números por ato; `jdDoFilme` por partes que pode ANDAR num plano), textos pt/en, prólogo escrito;
       (d) prova: fotos por `?filme=estelar&t=` dos 3 planos do prólogo, um rótulo de lugar no filme, e TRAPPIST-1 em dois instantes com os planetas em lugares diferentes.

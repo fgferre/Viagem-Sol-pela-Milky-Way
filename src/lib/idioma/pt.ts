@@ -72,6 +72,8 @@ export const PT = {
   'hud.filme.galactico.nota': 'do Sol ao centro da Via Láctea — e de volta',
   'hud.filme.solar.titulo': 'Viagem solar',
   'hud.filme.solar.nota': 'do Sol a Saturno, até a Terra virar um ponto',
+  'hud.filme.estelar.titulo': 'Viagem estelar',
+  'hud.filme.estelar.nota': 'a vida de uma estrela, contada pelas vizinhas do Sol',
   'hud.fim.deVoltaACasa': 'de volta a casa',
   // A TELA FINAL DE CADA FILME (`Filme.encerramento`, `cinematic/filme.ts`): o
   // galáctico guarda a citação no roteiro do fim e só a nota do rodapé é chave
@@ -82,6 +84,8 @@ export const PT = {
   'hud.fim.solar.linha': 'Um fogo só. Cada mundo faz uma coisa diferente com ele.',
   'hud.fim.solar.credito':
     'posições reais de janeiro de 2026 · mapas das sondas, reconstruídos',
+  'hud.fim.estelar.linha': 'O Sol está na metade do caminho.',
+  'hud.fim.estelar.credito': 'estrelas, aglomerados e nebulosa em posições reais · superfícies pelas medidas de cada estrela',
   'hud.fim.reviver': 'Reviver a viagem',
   'hud.fim.ficarAqui': 'Ficar neste céu',
   'hud.progressoDaViagem': 'Progresso da viagem',

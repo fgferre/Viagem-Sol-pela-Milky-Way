@@ -73,6 +73,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'hud.filme.galactico.nota': 'from the Sun to the galactic center — and back',
   'hud.filme.solar.titulo': 'Solar journey',
   'hud.filme.solar.nota': 'from the Sun to Saturn, until Earth is a dot',
+  'hud.filme.estelar.titulo': 'Stellar journey',
+  'hud.filme.estelar.nota': 'the life of a star, told by the Sun’s neighbors',
   'hud.fim.deVoltaACasa': 'back home',
   // EACH FILM'S END SCREEN (`Filme.encerramento`, `cinematic/filme.ts`): the
   // galactic one keeps its quotation in the closing script and only the
@@ -84,6 +86,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'hud.fim.solar.linha': 'One fire. Each world does something different with it.',
   'hud.fim.solar.credito':
     'real positions for January 2026 · spacecraft maps, rebuilt',
+  'hud.fim.estelar.linha': 'The Sun is halfway there.',
+  'hud.fim.estelar.credito': 'stars, clusters and nebula in their real places · surfaces from each star’s measurements',
   'hud.fim.reviver': 'Watch it again',
   'hud.fim.ficarAqui': 'Stay in this sky',
   'hud.progressoDaViagem': 'Journey progress',

@@ -366,6 +366,36 @@ function estadoDe(id: string, raioPc: number, teffK: number, pos: THREE.Vector3)
 
 const _dir = new THREE.Vector3();
 
+/**
+ * A estrela do catálogo (`stars.bin`) na posição de um nome: a lei de
+ * `EstrelasNoQuadro.indiceNoCatalogo`, pura — a mesma que os pinos dos
+ * filmes conferem (o corpo é desenhado no ponto, não no nome). `xyz` e
+ * `logLum` são os atributos do campo; −1 = sem casamento.
+ */
+export function indiceNoCatalogo(
+  xyz: ArrayLike<number>,
+  logLum: ArrayLike<number>,
+  pos: { x: number; y: number; z: number },
+  mBaseDoNome: number
+): number {
+  const raio = Math.max(0.01, 1e-3 * Math.hypot(pos.x, pos.y, pos.z));
+  let melhor = -1;
+  let dMin = raio * raio;
+  for (let i = 0; i < xyz.length; i += 3) {
+    const dx = xyz[i] - pos.x;
+    const dy = xyz[i + 1] - pos.y;
+    const dz = xyz[i + 2] - pos.z;
+    const d2 = dx * dx + dy * dy + dz * dz;
+    if (d2 < dMin) {
+      const mBase = -0.15 - 2.5 * logLum[i / 3];
+      if (Number.isFinite(mBaseDoNome) && !(Math.abs(mBase - mBaseDoNome) < 0.5)) continue;
+      dMin = d2;
+      melhor = i / 3;
+    }
+  }
+  return melhor;
+}
+
 export class EstrelasNoQuadro {
   readonly group = new THREE.Group();
   private readonly pilotos: Piloto[] = [];
@@ -560,25 +590,12 @@ export class EstrelasNoQuadro {
     const stars = this.fios.stars();
     if (!stars) return -1;
     const geo = stars.points.geometry;
-    const xyz = (geo.getAttribute('position') as THREE.BufferAttribute).array as Float32Array;
-    const logLum = geo.getAttribute('aLogLum') as THREE.BufferAttribute;
-    const pos = p.pos;
-    const raio = Math.max(0.01, 1e-3 * pos.length());
-    let melhor = -1;
-    let dMin = raio * raio;
-    for (let i = 0; i < xyz.length; i += 3) {
-      const dx = xyz[i] - pos.x;
-      const dy = xyz[i + 1] - pos.y;
-      const dz = xyz[i + 2] - pos.z;
-      const d2 = dx * dx + dy * dy + dz * dz;
-      if (d2 < dMin) {
-        const mBase = -0.15 - 2.5 * logLum.getX(i / 3);
-        if (Number.isFinite(p.mBaseDoNome) && !(Math.abs(mBase - p.mBaseDoNome) < 0.5)) continue;
-        dMin = d2;
-        melhor = i / 3;
-      }
-    }
-    return melhor;
+    return indiceNoCatalogo(
+      (geo.getAttribute('position') as THREE.BufferAttribute).array as Float32Array,
+      (geo.getAttribute('aLogLum') as THREE.BufferAttribute).array as Float32Array,
+      p.pos,
+      p.mBaseDoNome
+    );
   }
 
   /**

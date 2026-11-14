@@ -8,7 +8,8 @@
 // planos, inícios, duração, apoios, o calendário dos quatro relógios e o
 // "cima"; quem registra o filme é o objeto `Filme`.
 import * as THREE from 'three';
-import { lerSequencia, type Shot } from '../../lerSequencia';
+import type { Shot } from '../../lerSequencia';
+import { montarAtos } from '../montagem';
 import { glide } from '../../movimentos';
 import { montarApoiosDoRoteiro } from '../../apoiosDoRoteiro';
 import { JD2_SOLAR_TDB, PINOS_SOLAR, RELOGIOS_SOLAR, type RelogioSolar } from './pinos';
@@ -77,15 +78,9 @@ const TROCA_PARA: Readonly<Partial<Record<RelogioSolar, { inicio: number; duraca
 };
 
 export function montarFilmeSolar(): FilmeSolarMontado {
-  const atos = [prologo, casa, jupiter, saturno, afastamento, epilogo].map((dado) =>
-    lerSequencia(dado, PONTOS, NUMEROS));
-  const shots = atos.flat();
-  const starts: number[] = [];
-  let acc = 0;
-  for (const s of shots) {
-    starts.push(acc);
-    acc += s.dur;
-  }
+  const { shots, starts, duracao, inicioDoAto, planosPorAto } = montarAtos(
+    [prologo, casa, jupiter, saturno, afastamento, epilogo], PONTOS, NUMEROS
+  );
   /**
    * AS TROCAS DE RELÓGIO, em segundos do corte: cada roteiro corre no
    * relógio do seu ato, e onde o relógio muda o céu passa de um ao outro
@@ -125,10 +120,8 @@ export function montarFilmeSolar(): FilmeSolarMontado {
    * 40 UA e nada do quadro atravessa o corte; do primeiro instante do
    * epílogo em diante o céu é o de JD_A, o da Terra no pino.
    */
-  const inicioDoAto: number[] = [];
-  for (let n = 0, i = 0; n < atos.length; i += atos[n].length, n++) inicioDoAto.push(starts[i]);
   const trocas: FilmeSolarMontado['trocas'] = [];
-  for (let n = 1; n < atos.length; n++) {
+  for (let n = 1; n < inicioDoAto.length; n++) {
     const de = RELOGIO_DO_ATO[n - 1];
     const para = RELOGIO_DO_ATO[n];
     if (de === para) continue;
@@ -139,7 +132,7 @@ export function montarFilmeSolar(): FilmeSolarMontado {
   return {
     shots,
     starts,
-    duracao: acc,
+    duracao,
     apoios: montarApoiosDoRoteiro(shots, starts),
     pinos: PINOS_SOLAR,
     jd: JD2_SOLAR_TDB,
@@ -158,6 +151,6 @@ export function montarFilmeSolar(): FilmeSolarMontado {
     },
     // a mesma rotação da cadeia dos pinos, aplicada ao polo da eclíptica
     cima: CIMA_DA_ECLIPTICA.clone(),
-    planosPorAto: atos.map((a) => a.length),
+    planosPorAto,
   };
 }

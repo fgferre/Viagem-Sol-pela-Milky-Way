@@ -46,9 +46,9 @@ describe('o filme como objeto (E1 da viagem solar)', () => {
     expect(aviso).toHaveBeenCalledOnce();
   });
 
-  it('o cartaz tem os filmes do registro, na ordem: galáctico, solar', () => {
+  it('o cartaz tem os filmes do registro, na ordem: galáctico, solar, estelar', () => {
     expect(FILMES_EM_CARTAZ).toEqual([...FILMES.keys()]);
-    expect(FILMES_EM_CARTAZ).toEqual(['galactico', 'solar']);
+    expect(FILMES_EM_CARTAZ).toEqual(['galactico', 'solar', 'estelar']);
   });
 
   it('cada filme do cartaz tem nome, nota e tela final escritos nas duas línguas', () => {

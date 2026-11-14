@@ -1,0 +1,74 @@
+{
+  "planos": [
+    {
+      "nome": "solNaMetade",
+      "lenteDeCinema": "hollywood",
+      "qa": {"solNaMetade": 0.5},
+      "camera": {
+        "duracao": 8,
+        "movimento": {
+          "tipo": "arco",
+          "centro": "Sol",
+          "direcaoDe": "vooDoSolDe",
+          "direcaoPara": "vooDoSolPara",
+          "raio": ["raioDoVooDoSolDe", "raioDoVooDoSolPara"]
+        },
+        "mira": {"tipo": "pan", "de": "miraDoVooDoSolDe", "para": "miraDoVooDoSolPara", "ritmo": "launch"},
+        "lente": [28, 34],
+        "ritmoDaLente": "launch"
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.12,
+          "texto": "O Sol",
+          "subtexto": "4,6 bilhões de anos: metade da vida",
+          "en": {"texto": "The Sun", "subtexto": "4.6 billion years: halfway through its life"},
+          "duracao": 6.5
+        }
+      ]
+    },
+    {
+      "nome": "paraOrion",
+      "lenteDeCinema": "hollywood",
+      "qa": {"paraOrion": 0.5},
+      "camera": {
+        "duracao": 8,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Sol",
+          "de": "fimDoVooDoSol",
+          "para": "mirante",
+          "ritmoDaDirecao": "launch"
+        },
+        "mira": {"tipo": "pan-direcao", "de": "miraDoVooDoSolPara", "para": "Alnilam", "ate": 0.75},
+        "lente": [34, 52],
+        "ritmo": "glide"
+      },
+      "fundoSilencioso": true,
+      "olhar": "assunto",
+      "legendas": [
+        {
+          "em": 0.3,
+          "texto": "Como nasce uma estrela? Como morre?",
+          "en": {"texto": "How is a star born? How does it die?"},
+          "duracao": 5.5
+        }
+      ]
+    },
+    {
+      "nome": "orionDeCasa",
+      "qa": {"orionDeCasa": 0.5},
+      "camera": {
+        "duracao": 6,
+        "movimento": {"tipo": "fixo", "ponto": "mirante"},
+        "mira": {"tipo": "fixo", "ponto": "Alnilam"},
+        "lente": [52, 32],
+        "ritmoDaLente": "glide"
+      },
+      "assuntos": ["Betelgeuse", "Rigel", "Alnitak", "Alnilam", "Mintaka"],
+      "fundoSilencioso": true
+    }
+  ]
+}

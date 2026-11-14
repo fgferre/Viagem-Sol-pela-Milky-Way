@@ -13,6 +13,7 @@ import { doseDaDramaturgia } from '../director/doseDoSol';
 import type { montarApoiosDoRoteiro } from './apoiosDoRoteiro';
 import { APOIOS_DO_FILME, Journey, LUA_PC, REVEAL_T, TERRA_PC, jdDoFilme } from './journey';
 import { montarFilmeSolar } from './filmes/solar/montar';
+import { montarFilmeEstelar } from './filmes/estelar/montar';
 
 /** o que `montarApoiosDoRoteiro` devolve: os pedidos de carga e os marcos de QA */
 export type ApoiosDoRoteiro = ReturnType<typeof montarApoiosDoRoteiro>;
@@ -103,10 +104,34 @@ function montarSolar(): Filme {
   };
 }
 
+/** a viagem estelar (14/11/2026, em montagem no ramo `filme-estelar`): a vida
+ *  de uma estrela pelos lugares reais; uma data só, que anda nos planos que
+ *  declaram relógio, sem galáxia a revelar, Sol inteiro e girando pela data,
+ *  e o polo da eclíptica no alto, como no solar. Sem pinos: os corpos da casa
+ *  ficam na efeméride (o filme não para neles) */
+function montarEstelar(): Filme {
+  const m = montarFilmeEstelar();
+  return {
+    id: 'estelar',
+    titulo: 'hud.filme.estelar.titulo',
+    nota: 'hud.filme.estelar.nota',
+    encerramento: { linha: 'hud.fim.estelar.linha', credito: 'hud.fim.estelar.credito' },
+    journey: new Journey(m.shots, m.starts),
+    apoios: m.apoios,
+    jdDoFilme: m.jdDoFilme,
+    revealT: null,
+    doseDoSol: () => 1,
+    pinos: new Map(),
+    giroPeloRelogio: true,
+    cima: m.cima,
+  };
+}
+
 /** O REGISTRO: id → quem monta. Cada filme só é montado quando pedido. */
 export const FILMES: ReadonlyMap<string, () => Filme> = new Map([
   [FILME_PADRAO, montarGalactico],
   ['solar', montarSolar],
+  ['estelar', montarEstelar],
 ]);
 
 /** os filmes que o HUD oferece, na ordem do cartaz (capa, "Mais" e Atlas): o do
