@@ -22,6 +22,7 @@ import {
   RampasDeRotulo,
   aplicarReguaDeRelevancia,
   alvoDoCanalDeTexto,
+  classeDeSgrA,
   nomeDoSolEmCaixaAlta,
   prioridadeDeEstrela,
   projectCorpos,
@@ -686,7 +687,9 @@ export class Rotulos {
       return projectForced(cam, nomeDoSolEmCaixaAlta(), 'G2V', { x: 0, y: 0, z: 0 }, 'sol-home');
     }
     if (name === 'SGR') {
-      return projectForced(cam, NOME_DE_SGR_A, 'SMBH', GAL.GC_POS, 'sgr-a');
+      const l = projectForced(cam, NOME_DE_SGR_A, '', GAL.GC_POS, 'sgr-a');
+      if (l) l.detalhe = classeDeSgrA();
+      return l;
     }
     const corpo = CORPO_DO_ROTEIRO.get(name);
     if (corpo) return this.resolveCorpoDirigido(cam, corpo, planetas);

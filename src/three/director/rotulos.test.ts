@@ -1340,6 +1340,11 @@ describe('os nomes na escala da galáxia (crítica de 12/11)', () => {
     const centro = noAtlas(cam, { focoEstrela: 'Sagittarius A✱' }).find((l) => l.key === 'sgr-a')!;
     expect(centro.prioridade).toBe(PRIORIDADE_DO_ROTULO.foco);
     expect(centro.opacity).toBeGreaterThan(0.5);
+    // o que ele é, na língua do visitante — não a sigla inglesa (13/11)
+    expect([centro.spect, centro.detalhe]).toEqual(['', 'buraco negro']);
+    definirIdioma('en');
+    expect(noAtlas(cam, { focoEstrela: 'Sagittarius A✱' }).find((l) => l.key === 'sgr-a')!.detalhe).toBe('black hole');
+    definirIdioma('pt-BR');
   });
 
   it('o nome do lugar fica NO objeto, e a anã de Sagitário cala dentro do bojo', () => {

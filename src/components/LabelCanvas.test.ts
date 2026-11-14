@@ -576,6 +576,11 @@ describe('um lugar por nome — ou cabe ali, ou some', () => {
     expect((longo as RotuloComVaga).ladoEsquerdo).toBe(false);
     expect(pintado.x).toBeGreaterThanOrEqual(0);
     expect(pintado.x + nome.length * 7).toBeLessThanOrEqual(375);
+
+    // E A BORDA TEM FOLGA (13/11): "SAGITTARIUS A✱" no celular terminava
+    // no último pixel — a caixa inteira, com a folga dela, fica na tela
+    expect(longo.caixaDaDisputa!.left).toBeGreaterThanOrEqual(0);
+    expect(longo.caixaDaDisputa!.right).toBeLessThanOrEqual(375);
   });
 
   it('E4c: o detalhe cede antes do nome — no meio de um celular sai só o nome, sem empurrão sobre o corpo', () => {

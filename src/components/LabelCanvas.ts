@@ -1195,6 +1195,10 @@ export class LabelCanvas {
     // `detalhes[i]`); o empurrão abaixo fica para o nome que nem sozinho
     // cabe.
     const recuo = peso.recuoDoTexto * k;
+    // A BORDA TEM FOLGA (crítica de 13/11): a folga da própria caixa. Sem
+    // ela "SAGITTARIUS A✱" no celular terminava no último pixel da tela,
+    // colado na borda — dentro dela, mas lido como cortado.
+    const margem = 5 * k;
     const larguraCompleta = larguraDoNome + 9 * k + larguraDoDetalhe;
     // E O DETALHE CEDE AO HUD PELA MESMA LEI (crítica de 12/11): o nome do
     // alvo em foco fica no meio da tela e o detalhe dele corria por baixo
@@ -1209,7 +1213,7 @@ export class LabelCanvas {
     };
     const comDetalhe =
       larguraDoDetalhe > 0 &&
-      (ancoraX + recuo + larguraCompleta <= this.width || ancoraX - recuo - larguraCompleta >= 0) &&
+      (ancoraX + recuo + larguraCompleta <= this.width - margem || ancoraX - recuo - larguraCompleta >= margem) &&
       !(naReserva(larguraCompleta) && !naReserva(larguraDoNome));
     if (!comDetalhe) this.detalhes[i] = '';
     // SEM DETALHE, SEM VÃO: desde a F5 o detalhe é vazio na maioria dos
@@ -1223,15 +1227,14 @@ export class LabelCanvas {
     // natural fica quando o texto cabe; senão vale o outro lado, se ali
     // couber; e só quando nenhum dos dois cabe o texto é EMPURRADO para
     // dentro (`desvioDe`), do lado que precisa do menor empurrão. Quem já
-    // cabia não muda de lugar. A conta é sobre o TEXTO, sem a folga da
-    // caixa: um nome que termina a 3 px da borda está inteiro na tela.
+    // cabia não muda de lugar. A conta é sobre o TEXTO mais a `margem`.
     const inicioDoTexto = (esquerda: boolean) =>
       esquerda
         ? ancoraX - peso.recuoDoTexto * k - conteudo
         : ancoraX + peso.recuoDoTexto * k;
     const desvioDe = (esquerda: boolean) => {
       const inicio = inicioDoTexto(esquerda);
-      return Math.min(Math.max(inicio, 0), Math.max(0, this.width - conteudo)) - inicio;
+      return Math.min(Math.max(inicio, margem), Math.max(margem, this.width - conteudo - margem)) - inicio;
     };
     const ladoPreferido =
       desvioDe(ladoNatural) !== 0 &&

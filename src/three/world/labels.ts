@@ -883,6 +883,13 @@ function escondidaPorDisco(
 export const NOME_DE_SGR_A = 'Sagittarius A✱';
 
 /**
+ * O QUE SAGITTARIUS A✱ É, escrito ao lado do nome (crítica de 13/11): a
+ * classe da tabela dos lugares, na língua de agora, como todo rótulo diz
+ * a sua — e não "SMBH", a sigla inglesa no lugar do tipo espectral.
+ */
+export const classeDeSgrA = (): string => classeEmTexto('buraco negro');
+
+/**
  * A VIZINHANÇA DO CENTRO (pc de Sgr A✱): dentro dela o nome do buraco
  * esmaece em `[SGR_A_ESMAECE_EM, SGR_A_SOME_EM]` e os nomes da escala da
  * galáxia (`lugaresDoCeu.ts`) entram na mesma faixa, ao contrário — é a
@@ -926,7 +933,8 @@ export function projectLabels(
     if (p) {
       out.push({
         name: NOME_DE_SGR_A,
-        spect: 'SMBH',
+        spect: '',
+        detalhe: classeDeSgrA(),
         distPc: dGC,
         x: p.x,
         y: p.y,
