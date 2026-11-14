@@ -50,6 +50,14 @@ vec3 dirToUv(vec3 d) {
   return vec3(uv, z);
 }
 
+// uv dobrado que cai um pouco fora da tela, na faixa em que ainda pesa:
+// lido no ESPELHO da borda, não grudado nela — grudado, a última fileira
+// de pixels se esticava em riscos (estrelas) e borrões (poeira) ao longo
+// da dobra. Dentro da tela devolve o próprio uv. Espelho TS: espelhoNaTela.
+vec2 naTela(vec2 p) {
+  return clamp(1.0 - abs(1.0 - abs(p)), 0.0, 1.0);
+}
+
 // deflexão fraca: α ≈ 2·RS/b, curvando na direção da massa. Válida a
 // poucos % para b ≳ 40 RS — é a metade barata da lente.
 vec3 weakBend(vec3 rd, out float b) {
@@ -58,6 +66,11 @@ vec3 weakBend(vec3 rd, out float b) {
   return normalize(rd - (c / b) * (2.0 / b));
 }
 `;
+
+/** espelho de `naTela` (GLSL), para o teste: uv dobrado → uv lido na cena */
+export function espelhoNaTela(p: number): number {
+  return Math.min(Math.max(1 - Math.abs(1 - Math.abs(p)), 0), 1);
+}
 
 // Meia-espessura do disco sobre o raio (a fatia em `fatia`). Um disco fino
 // de verdade; pequena o bastante para não mexer em nada visto com mais de
@@ -284,7 +297,7 @@ void main(){
     vec2 cuv = clamp(pv.xy, 0.0, 1.0);
     float ok = smoothstep(0.0, 0.06, pv.z) *
       (1.0 - smoothstep(0.0, 0.2, length(pv.xy - cuv)));
-    vec3 lensed = texture2D(tScene, cuv).rgb;
+    vec3 lensed = texture2D(tScene, naTela(pv.xy)).rgb;
     vec3 fallback = texture2D(tScene, vUv).rgb;
     gl_FragColor = vec4(mix(fallback, lensed, ok), 1.0);
     return;
@@ -363,7 +376,7 @@ void main(){
     vec2 cuv = clamp(pv.xy, 0.0, 1.0);
     float ok = smoothstep(0.0, 0.08, pv.z) *
       (1.0 - smoothstep(0.0, 0.3, length(pv.xy - cuv) * 2.0));
-    vec3 lensed = texture2D(tScene, cuv).rgb;
+    vec3 lensed = texture2D(tScene, naTela(pv.xy)).rgb;
     vec3 fallback = texture2D(tScene, vUv).rgb;
     bg = mix(fallback, lensed, ok) * trans * deep;
   }
@@ -400,7 +413,7 @@ void main(){
     vec2 cuv = clamp(pv.xy, 0.0, 1.0);
     float ok = smoothstep(0.0, 0.06, pv.z) *
       (1.0 - smoothstep(0.0, 0.2, length(pv.xy - cuv)));
-    vec3 weak = mix(base, texture2D(tScene, cuv).rgb, ok);
+    vec3 weak = mix(base, texture2D(tScene, naTela(pv.xy)).rgb, ok);
     if(b < uMarchB){
       float k = (uMarchB - b) / 6.0; // costura march ↔ analítico
       outCol = mix(weak, texture2D(tMarch, vUv).rgb, k);

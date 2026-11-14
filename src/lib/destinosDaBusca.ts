@@ -63,16 +63,20 @@ const LISTA: readonly {
   // no quadro de chegada do sistema — a anfitriã que o catálogo não
   // nomeia entra na lista pela `comAnfitrias`, como no app
   { id: 'trappist-1', categoria: 'estrelas', consulta: 'TRAPPIST-1' },
+  // A ESTRELA QUE PESA O BURACO NEGRO (13/11/2026): S2 é um LUGAR da
+  // tabela (`lugaresDoFilme.ts`), mas é uma estrela — mora aqui, na
+  // chegada da órbita, com as outras estrelas S em volta do buraco
+  { id: 's2', categoria: 'estrelas', consulta: 's2' },
   // OS LUGARES DO CÉU (céu profundo, 12/11/2026): a galáxia de fora
   // abre a aba (o cartão grande); depois o endereço do Sol, os lugares
   // perto de casa e, por último, os dois que ficam do outro lado do centro.
-  // A NEBULOSA DE ÓRION NÃO TEM CARTÃO (decisão de 12/11): o gás dela não
-  // está desenhado, e cartão sugerido tem de entregar o que mostra — ela
-  // segue na busca pelo nome, com a ficha que confessa isso
+  // A NEBULOSA DE ÓRION ganhou cartão em 13/11/2026, quando o gás dela
+  // passou a ser desenhado (`world/nebulosaDeOrion.ts`)
   { id: 'via-lactea', categoria: 'galaxia', consulta: 'via-lactea' },
   { id: 'nosso-lugar', categoria: 'galaxia', consulta: 'nosso-lugar' },
   { id: 'pleiades', categoria: 'galaxia', consulta: 'pleiades' },
   { id: 'hyades', categoria: 'galaxia', consulta: 'hyades' },
+  { id: 'nebulosa-de-orion', categoria: 'galaxia', consulta: 'nebulosa-de-orion' },
   { id: 'sagittarius-a', categoria: 'galaxia', consulta: 'sagittarius-a' },
   { id: 'ana-de-sagitario', categoria: 'galaxia', consulta: 'ana-de-sagitario' },
   // AS VIZINHAS (pilar 3, 12/11/2026): além da nossa galáxia, a maior

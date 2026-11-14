@@ -424,6 +424,7 @@ export const PT = {
   'busca.destino.betelgeuse': 'Uma supergigante em Órion',
   'busca.destino.rigil-kentaurus': 'O sistema estelar mais próximo',
   'busca.destino.trappist-1': 'Sete planetas do tamanho da Terra',
+  'busca.destino.s2': 'A estrela que dá a volta no buraco negro',
   // SEM promessa de filme (item 129/F5 continua valendo): o clique aqui
   // faz o MESMO que a entrada "lugar" da busca já faz — enquadra o
   // centro galáctico no Atlas, não entra no filme.
@@ -433,6 +434,7 @@ export const PT = {
   'busca.destino.nosso-lugar': 'Onde o Sol fica no disco',
   'busca.destino.pleiades': 'As Sete Irmãs, de perto',
   'busca.destino.hyades': 'O aglomerado mais próximo do Sol',
+  'busca.destino.nebulosa-de-orion': 'Um berçário de estrelas, aceso por dentro',
   'busca.destino.ana-de-sagitario': 'Uma galáxia sendo engolida pela nossa',
   'busca.destino.grande-nuvem-de-magalhaes': 'A maior companheira da nossa galáxia',
   'busca.destino.andromeda': 'A grande espiral vizinha',
