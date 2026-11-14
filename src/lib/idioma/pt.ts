@@ -254,6 +254,8 @@ export const PT = {
   'ajustes.lab.grupo.webgl': 'Partículas WebGL · de dentro do disco e na passagem',
   'ajustes.lab.bloqueio.classica': 'Desligados: a galáxia Clássica não é feita de partículas.',
   'ajustes.lab.bloqueio.semWebgpu': 'Desligados: quem desenha agora é o WebGL. Para usá-los, escolha WebGPU em Galáxia.',
+  'ajustes.lab.bloqueio.teto':
+    'Filhas no máximo e Alcance das filhas: desligados, porque com este Teto de pontos não sobra nenhuma filha. Suba o teto para usá-los.',
   'ajustes.lab.aplicando': 'aplicando…',
   'ajustes.lab.voltar': 'Voltar ao padrão',
   'ajustes.lab.todas': 'Todas',
@@ -282,7 +284,7 @@ export const PT = {
     'Quantas vezes a galáxia é sorteada do modelo, cerca de 4 milhões de partículas cada. Mais sorteios: mais partículas de verdade e imagem mais fina, com mais memória e quadro mais pesado. Leva alguns segundos; a galáxia de antes fica na tela até a nova chegar.',
   'ajustes.lab.lodrho': 'Densidade de pontos',
   'ajustes.lab.lodrhoNota':
-    'Quantos pontos por pixel o WebGL tenta pôr na tela. Mais é mais liso e mais pesado. Com o teto de pontos de cada qualidade quase sempre quem decide é o teto: este só aparece com o Teto de pontos mais alto.',
+    'Quantos pontos por pixel o WebGL tenta pôr na tela. Mais é mais liso e mais pesado. Com o teto de pontos de cada qualidade quem decide é o teto: em Cinema a imagem não muda, em Alta e Performance muda pouco. Com o Teto de pontos mais alto ele age por inteiro.',
   'ajustes.lab.lodk': 'Filhas no máximo',
   'ajustes.lab.lodkNota':
     'Até quantas vizinhas cada partícula pode virar quando a câmera chega perto. 1 desliga as filhas: de perto, pontos soltos. Só aparece com o Teto de pontos mais alto (com o de cada qualidade as filhas já saem primeiro).',
@@ -422,6 +424,7 @@ export const PT = {
   'busca.destino.betelgeuse': 'Uma supergigante em Órion',
   'busca.destino.rigil-kentaurus': 'O sistema estelar mais próximo',
   'busca.destino.trappist-1': 'Sete planetas do tamanho da Terra',
+  'busca.destino.s2': 'A estrela que dá a volta no buraco negro',
   // SEM promessa de filme (item 129/F5 continua valendo): o clique aqui
   // faz o MESMO que a entrada "lugar" da busca já faz — enquadra o
   // centro galáctico no Atlas, não entra no filme.
@@ -431,6 +434,7 @@ export const PT = {
   'busca.destino.nosso-lugar': 'Onde o Sol fica no disco',
   'busca.destino.pleiades': 'As Sete Irmãs, de perto',
   'busca.destino.hyades': 'O aglomerado mais próximo do Sol',
+  'busca.destino.nebulosa-de-orion': 'Um berçário de estrelas, aceso por dentro',
   'busca.destino.ana-de-sagitario': 'Uma galáxia sendo engolida pela nossa',
   'busca.destino.grande-nuvem-de-magalhaes': 'A maior companheira da nossa galáxia',
   'busca.destino.andromeda': 'A grande espiral vizinha',

@@ -246,6 +246,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.lab.grupo.webgl': 'WebGL particles · inside the disc and on the way out',
   'ajustes.lab.bloqueio.classica': 'Off: the Classic galaxy is not made of particles.',
   'ajustes.lab.bloqueio.semWebgpu': 'Off: WebGL is drawing now. To use these, choose WebGPU under Galaxy.',
+  'ajustes.lab.bloqueio.teto':
+    'Most children and Children reach: off, because at this Point ceiling no children are left. Raise the ceiling to use them.',
   'ajustes.lab.aplicando': 'applying…',
   'ajustes.lab.voltar': 'Back to default',
   'ajustes.lab.todas': 'All',
@@ -274,7 +276,7 @@ export const EN: Record<keyof typeof PT, string> = {
     'How many times the galaxy is drawn from the model, about 4 million particles each. More draws: more real particles and a finer picture, with more memory and a heavier frame. It takes a few seconds; the old galaxy stays on screen until the new one arrives.',
   'ajustes.lab.lodrho': 'Point density',
   'ajustes.lab.lodrhoNota':
-    'How many points per pixel WebGL tries to put on screen. More is smoother and heavier. With each quality\'s point ceiling the ceiling almost always decides: this one only shows with a higher Point ceiling.',
+    'How many points per pixel WebGL tries to put on screen. More is smoother and heavier. With each quality\'s point ceiling the ceiling decides: on Cinema the image does not change, on High and Performance it changes a little. With a higher Point ceiling it acts fully.',
   'ajustes.lab.lodk': 'Most children',
   'ajustes.lab.lodkNota':
     'Up to how many neighbours each particle can become when the camera gets close. 1 turns children off: loose points up close. It only shows with a higher Point ceiling (with each quality\'s own, children go first).',
@@ -398,6 +400,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.destino.betelgeuse': 'A supergiant in Orion',
   'busca.destino.rigil-kentaurus': 'The nearest star system',
   'busca.destino.trappist-1': 'Seven Earth-sized planets',
+  'busca.destino.s2': 'The star that circles the black hole',
   // NO film promise (item 129/F5 still holds): the click here does the
   // SAME thing the "place" search entry already does — frames the
   // galactic centre in the Atlas, does not start the film.
@@ -406,6 +409,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'busca.destino.nosso-lugar': 'Where the Sun sits in the disc',
   'busca.destino.pleiades': 'The Seven Sisters, up close',
   'busca.destino.hyades': 'The open cluster nearest the Sun',
+  'busca.destino.nebulosa-de-orion': 'A stellar nursery, lit from within',
   'busca.destino.ana-de-sagitario': 'A galaxy being swallowed by ours',
   'busca.destino.grande-nuvem-de-magalhaes': 'Our galaxy’s largest companion',
   'busca.destino.andromeda': 'The big spiral next door',

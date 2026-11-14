@@ -131,6 +131,8 @@ export interface PoseDoLugar {
   polo: THREE.Vector3;
   /** o piso do zoom que a linha pede (`pisoPc`); ausente = o de estrela */
   pisoRaio?: number;
+  /** a esfera do degrau de perto (`raioDePertoPc`); ausente = não há */
+  raioDePerto?: number;
 }
 
 /**
@@ -197,6 +199,7 @@ export function poseDoLugar(lugar: Pick<LugarBuscavel, 'id' | 'x' | 'y' | 'z'>):
     eixoDe: eixoQuePousaEm(dir, polo),
     polo,
     ...(linha.pisoPc ? { pisoRaio: linha.pisoPc } : {}),
+    ...(linha.raioDePertoPc ? { raioDePerto: linha.raioDePertoPc } : {}),
   };
 }
 

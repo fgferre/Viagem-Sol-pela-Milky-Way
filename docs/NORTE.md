@@ -49,19 +49,26 @@ palavra dele. Os pilares, em ordem; cada um fecha com imagem lado a lado:
    sondas com trajetória real — o terreno do NASA Eyes.
 5. **Quem chega entende e roda.** O primeiro minuto, o celular e o peso:
    nenhum pilar acima vale se o visitante não chega até ele.
-Placar contra os três, pela documentação de cada um (12/11/2026; beleza
-de imagem não julgada). À frente: nada para instalar e roda no telefone;
-o selo de honestidade por canal; catálogo real de estrelas dentro de uma
-galáxia de partículas, numa viagem só; os filmes. Ausente ou atrás, na
-ordem em que um visitante sente: pousar e voar baixo sobre um mundo
-(SpaceEngine); nada além da nossa galáxia (SpaceEngine); exoplanetas
-(Eyes on Exoplanets, 5.500+ sistemas); asteroides e cometas (Eyes on
-Asteroids, 30.000+); poucas sondas e nenhum evento de missão (Eyes, 150+);
-buraco negro com lente gravitacional (SpaceEngine); complementos do
-usuário (Celestia); só duas línguas. A fila sai daqui: primeiro o que é
-vitrine de shader e não pede dado novo (buraco negro, cometas), depois as
-galáxias vizinhas de partículas, exoplanetas em volta das estrelas-lugar,
-e o voo baixo sobre relevo medido.
+Placar contra os três, pela documentação de cada um (refeito em
+13/11/2026; beleza de imagem não julgada). À frente: nada para instalar e
+roda no telefone; o selo de honestidade por canal; catálogo real de
+estrelas dentro de uma galáxia de partículas, numa viagem só; os filmes.
+Fechado entre 12 e 13/11: buraco negro com lente gravitacional e as
+estrelas S nas órbitas medidas; cometas com cauda; as Nuvens de Magalhães
+e Andrômeda de partículas; exoplanetas em volta de estrelas-lugar
+(TRAPPIST-1, Próxima b); a nebulosa de Órion de gás; 14 estrelas com
+corpo vivo pelo motor do Sol; os aglomerados com a profundidade certa.
+Ausente ou atrás, na ordem em que um visitante sente: pousar e voar baixo
+sobre um mundo (SpaceEngine; o dono: *"não me emociona ainda"*, fica na
+fila); poucos exoplanetas, e lisos (Eyes on Exoplanets, 5.500+);
+asteroides (Eyes on Asteroids, 30.000+); sondas e eventos de missão
+(Eyes, 150+; o dono: *"não acho as sondas importantes"*); complementos
+do usuário (Celestia); só duas línguas. A regra de marcha desde 13/11,
+dele: consolidar e polir antes de abrir frente (*"mais polimento sempre
+bom"*). Quando abrir, a ordem é a do que é vitrine de shader: qualquer
+estrela do catálogo visitável como corpo, os planetas das outras estrelas
+com cara própria, e os anéis vistos de dentro.
+
 ## Escala e honestidade
 - Regra de escala, testável: quem tapa o que está atrás (escreve
   profundidade) tem raio físico real; quem só brilha por cima pode ter

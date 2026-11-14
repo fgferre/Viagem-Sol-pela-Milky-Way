@@ -93,6 +93,7 @@ import {
   CONTROLES_DO_LABORATORIO,
   laboratorioMexido,
   motivoDoBloqueio,
+  presoAoTeto,
   padraoDoControle,
 } from '../three/world/laboratorioDaGalaxia';
 import type { IdDoLaboratorio } from '../three/world/laboratorioDaGalaxia';
@@ -858,10 +859,16 @@ export function Ajustes({
         {(['webgpu', 'webgl'] as const).map((motor) => {
           const controles = CONTROLES_DO_LABORATORIO.filter((c) => c.motor === motor);
           const motivo = motivoDoBloqueio(controles[0].id, qualidade.galaxiaViva);
+          // os presos ao teto: o caminho vale, mas com o teto do tier eles não mudam a imagem
+          const preso = (id: IdDoLaboratorio) =>
+            motivo === null && presoAoTeto(id, qualidade.laboratorio, qualidade.tier);
           return (
             <div className="ajustes-lab-grupo" key={motor}>
               <p className="ajustes-lab-grupo-titulo">{t(`ajustes.lab.grupo.${motor}`)}</p>
               {motivo && <p className="ajustes-lab-motivo">{t(`ajustes.lab.bloqueio.${motivo}`)}</p>}
+              {controles.some((c) => preso(c.id)) && (
+                <p className="ajustes-lab-motivo">{t('ajustes.lab.bloqueio.teto')}</p>
+              )}
               {controles.map((c) => {
                 const valor = qualidade.laboratorio[c.id];
                 const padrao = padraoDoControle(c.id, qualidade.tier);
@@ -883,7 +890,7 @@ export function Ajustes({
                     <Segmentado
                       aria={nome}
                       valor={valor}
-                      desabilitado={motivo !== null}
+                      desabilitado={motivo !== null || preso(c.id)}
                       opcoes={[
                         {
                           valor: null,

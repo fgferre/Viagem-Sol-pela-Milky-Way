@@ -23,6 +23,8 @@ import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import {
   COMETAS,
+  LIMIAR_DE_ATIVIDADE,
+  brilhoRelativo,
   conjuntoVigente,
   estadoDoCometa,
   pontoDaConica,
@@ -35,6 +37,7 @@ import type { StarLabel } from './labels';
 import { LARGURA_DA_FITA_PX } from './orbitas';
 import { naCena, poseDoSegmento, type PoseDaSonda } from './sondas';
 import { kmParaPc } from '../escala';
+import { raioDaCabecaKm } from './caudasDosCometas';
 
 /** o prefixo da chave do rótulo de um cometa — o clique o reconhece */
 export const CHAVE_DE_COMETA = 'cometa:';
@@ -66,6 +69,28 @@ export function poseDoCometa(id: string, jd: number, raioDoNucleoKm: number | nu
   const p = posicaoDoCometaNaCena(id, jd);
   if (!p) return null;
   return poseDoSegmento(p, FRACAO_DO_RAIO, CENTRO_NO_SEGMENTO, kmParaPc(Math.max(3 * (raioDoNucleoKm ?? 2), 5)));
+}
+
+/**
+ * O DEGRAU DE PERTO DE UM COMETA (o "Aproximar" da ficha): a mesma
+ * direção e o mesmo piso da chegada, com a esfera do tamanho da CABEÇA —
+ * o núcleo no centro, a coma e o começo das caudas em quadro. A cabeça de
+ * Halley no periélio de 1986 cabe em 10⁶ km; a dos outros cresce com a
+ * raiz cúbica da atividade NAQUELA data (`brilhoRelativo`, a mesma
+ * grandeza que acende as partículas): o volume da coma segue a produção.
+ * Apagado, o cometa é só o núcleo, e o quadro é ele (três raios, o piso
+ * do zoom); sem tamanho medido não há o que mostrar de perto (`null`).
+ */
+export function poseDoCometaDePerto(id: string, jd: number, raioDoNucleoKm: number | null): PoseDaSonda | null {
+  const pose = poseDoCometa(id, jd, raioDoNucleoKm);
+  const e = estadoDoCometa(id, jd);
+  const cometa = COMETAS.find((c) => c.id === id);
+  if (!pose || !e || !cometa) return null;
+  const atividade = brilhoRelativo(cometa, Math.hypot(e[0], e[1], e[2]));
+  if (atividade > LIMIAR_DE_ATIVIDADE) {
+    return { ...pose, raio: kmParaPc(raioDaCabecaKm(atividade)) };
+  }
+  return raioDoNucleoKm ? { ...pose, raio: kmParaPc(3 * raioDoNucleoKm) } : null;
 }
 
 const _pos = new THREE.Vector3();
