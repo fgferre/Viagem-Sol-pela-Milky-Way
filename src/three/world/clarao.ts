@@ -665,6 +665,46 @@ export function presencaNaFronteira(pico: number, corte: number): number {
 }
 
 /**
+ * NUMA DUPLA, A MAIS FRACA CEDE O CLARÃO À MAIS FORTE (decisão do dono,
+ * 14/11). O defeito de origem é o TETO: ele põe duas estrelas acima dele no
+ * MESMO tamanho e no mesmo ganho — Sirius B, 10 mag mais fraca, saía com o
+ * clarão de Sirius A ao lado dela. A cessão nasce então do teto: ele age como
+ * a exposição de uma câmera ajustada para a mais forte da vizinhança, e a
+ * fraca é desenhada PELA MESMA LEI de qualquer estrela (`meiaDaLei` e
+ * `ganhoDeEntradaDoFlare`), numa magnitude efetiva deslocada por
+ *
+ *   deslocamento = cobertura · presença_da_forte · min(Δm, e)
+ *
+ * com e = quantas magnitudes a forte está ACIMA do teto da arte (0 abaixo
+ * dele: o céu de casa não muda). O ALCANCE da forte é o tamanho que o clarão
+ * dela teria SEM o teto, pela mesma inclinação da arte, medido a partir do da
+ * fraca: meia_fraca · 10^(INCLINACAO_DA_ARTE · Δm) (nunca menos que o
+ * desenhado dela, nunca mais que `tetoPx`, um quadro); dentro dele a
+ * cobertura sobe suave até 1 no centro (smoothstep). Δm = 0 e e = 0 não
+ * deslocam nada, a forte nunca se desloca, e tudo é contínuo na câmera.
+ * Devolve o deslocamento em magnitudes (≥ 0). Pura.
+ */
+export function deslocamentoDaCessao(
+  mFraca: number,
+  meiaDaFracaPx: number,
+  mForte: number,
+  meiaDaFortePx: number,
+  presencaDaForte: number,
+  separacaoPx: number,
+  tetoPx: number
+): number {
+  const dm = mFraca - mForte;
+  const e = MAGNITUDE_DO_TETO_DA_ARTE - mForte;
+  if (!(dm > 0) || !(e > 0) || !(presencaDaForte > 0) || !(separacaoPx >= 0)) return 0;
+  const semTeto = meiaDaFracaPx * Math.pow(10, INCLINACAO_DA_ARTE * dm);
+  const alcance = Math.min(Math.max(meiaDaFortePx, semTeto), tetoPx);
+  if (!(alcance > separacaoPx)) return 0;
+  const t = separacaoPx / alcance;
+  const cobertura = 1 - t * t * (3 - 2 * t);
+  return cobertura * Math.min(1, presencaDaForte) * Math.min(dm, e);
+}
+
+/**
  * O VÉU DA LENTE — a luz que a lente acende é o véu da câmera INTEIRA, não só
  * da fonte: o espalhamento de uma fonte forte à vista levanta o fundo do
  * quadro e afoga o halo macio de toda estrela mais fraca (o "veiling glare"
@@ -889,6 +929,16 @@ export class ClaraoDeAsas {
   /** por vaga: o candidato a quem as respostas da sonda pertencem */
   private readonly donoDaSonda: Int32Array;
   private readonly vSonda = new THREE.Vector3();
+  /** por vaga, deste quadro: magnitude, meia em px do buffer e o ganho
+   *  ANTES da cessão (0 = não desenha) — o que `cederAoMaisForte` compara */
+  private readonly mDaVaga: Float64Array;
+  private readonly meiaDaVaga: Float64Array;
+  private readonly ganhoDaVaga: Float64Array;
+  /** por vaga: o ganho sem a entrada do pico (orçamento × fronteira ×
+   *  soltura × oclusão × anéis) e a fatia do campo sem o halo da luz — o
+   *  que a lei recompõe na magnitude deslocada */
+  private readonly restoDaVaga: Float64Array;
+  private readonly cedidaALente: Float64Array;
 
   // o cadastro de candidatos: 0 = Sol (na origem), 1.. = as nomeadas.
   // mBase = m − 5·log10(d_casa): a MESMA lei de recálculo do campo,
@@ -917,6 +967,11 @@ export class ClaraoDeAsas {
     this.oculta = new Uint8Array(this.slots.length);
     this.visibilidade = new Float64Array(this.slots.length).fill(1);
     this.donoDaSonda = new Int32Array(this.slots.length).fill(-1);
+    this.mDaVaga = new Float64Array(this.slots.length);
+    this.meiaDaVaga = new Float64Array(this.slots.length);
+    this.ganhoDaVaga = new Float64Array(this.slots.length);
+    this.restoDaVaga = new Float64Array(this.slots.length);
+    this.cedidaALente = new Float64Array(this.slots.length);
     this.nNomeadas = named.length;
     const n = named.length + 1 + VAGAS_DE_VISITADAS;
     this.marcaDaVisita = new Uint32Array(n);
@@ -1181,6 +1236,7 @@ export class ClaraoDeAsas {
       const sonda = this.sondas[k];
       if (gemeo) gemeo.visible = false;
       sonda.visible = false;
+      this.ganhoDaVaga[k] = 0;
       // a vaga trocou de dono: as respostas em voo eram do anterior, e o
       // novo começa à vista (a mesma regra de "sem resposta")
       if (this.donoDaSonda[k] !== s.indice) {
@@ -1202,10 +1258,8 @@ export class ClaraoDeAsas {
       const soltura = this.soltura[i];
       const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, cssH);
       const nucleoPx = psfPointSizePx(m, q.expoM0, q.sigmaPx, cssH) * soltura;
-      const entrada =
-        ganhoDeEntradaDoFlare(pico) *
-        (corte > 0 ? presencaNaFronteira(pico, corte) : 1) *
-        soltura;
+      const fronteira = corte > 0 ? presencaNaFronteira(pico, corte) : 1;
+      const entrada = ganhoDeEntradaDoFlare(pico) * fronteira * soltura;
       // a soltura veste o TAMANHO por fora do teto de ocupação: o clarão
       // desabrocha DO teto estacionado (o espelho do brief do dono —
       // "chega no máximo rapidamente e estaciona"), nunca além dele
@@ -1246,6 +1300,10 @@ export class ClaraoDeAsas {
           ? transmitanciaDosAneis(aneis, q.camPos, sonda.position, radPorPx)
           : 1;
       u.uGanho.value = s.ganho * entrada * vis * veuDosAneis;
+      this.ganhoDaVaga[k] = u.uGanho.value;
+      this.restoDaVaga[k] = s.ganho * fronteira * soltura * vis * veuDosAneis;
+      this.mDaVaga[k] = m;
+      this.meiaDaVaga[k] = meiaPx;
       const t = i === 0 ? q.transmitanciaDoSol : undefined;
       (u.uTransmitancia.value as THREE.Vector3).set(t ? t[0] : 1, t ? t[1] : 1, t ? t[2] : 1);
       u.uMeiaPx.value = meiaPx;
@@ -1258,7 +1316,8 @@ export class ClaraoDeAsas {
       // com a luz da estrela (`haloDaLuz`)
       const lente = q.lente;
       const daLente = lente && this.indiceDaFonte(lente.candidata) === i ? lente.fracao : veu;
-      const fatia = gemeo ? fatiaDoCampo(daLente) * haloDaLuz(m) : 0;
+      this.cedidaALente[k] = gemeo ? fatiaDoCampo(daLente) : 0;
+      const fatia = this.cedidaALente[k] * haloDaLuz(m);
       if (gemeo && fatia > 0) {
         gemeo.visible = true;
         gemeo.position.copy(mesh.position);
@@ -1269,6 +1328,79 @@ export class ClaraoDeAsas {
         g.uMeiaPx.value = meiaPx;
         g.uNucleoPx.value = u.uNucleoPx.value;
         g.uScreenH.value = q.screenH;
+      }
+    }
+    this.cederAoMaisForte(q, radPorPx, cssH, sigma, pr);
+  }
+
+  /**
+   * A cessão da dupla (`deslocamentoDaCessao`), entre todos os clarões que
+   * desenham neste quadro: a separação é o ângulo entre as duas direções
+   * vistas da câmera, em px do buffer (`radPorPx`); com várias mais fortes
+   * vale o MAIOR deslocamento, medido contra os números de ANTES da cessão (a
+   * ordem das vagas não muda nada). A fraca deslocada é redesenhada pela
+   * lei de toda estrela — tamanho (`meiaDaLei`), entrada do ganho
+   * (`ganhoDeEntradaDoFlare`) e halo (`haloDaLuz`) na magnitude efetiva; o
+   * núcleo (o ponto) fica o dela. Sem a pegada do pixel (`tanHalfFov`
+   * ausente) não há tela onde medir: nada cede.
+   */
+  private cederAoMaisForte(
+    q: QuadroDoClarao,
+    radPorPx: number,
+    cssH: number,
+    sigma: number,
+    pr: number
+  ): void {
+    if (!(radPorPx > 0)) return;
+    const camPos = q.camPos;
+    const n = this.slots.length;
+    for (let k = 0; k < n; k++) {
+      if (!(this.ganhoDaVaga[k] > 0)) continue;
+      const i = this.slots[k].indice;
+      const ax = this.pos[i * 3] - camPos.x;
+      const ay = this.pos[i * 3 + 1] - camPos.y;
+      const az = this.pos[i * 3 + 2] - camPos.z;
+      let desloc = 0;
+      for (let j = 0; j < n; j++) {
+        if (j === k || !(this.ganhoDaVaga[j] > 0) || !(this.mDaVaga[j] < this.mDaVaga[k])) continue;
+        const o = this.slots[j].indice;
+        const bx = this.pos[o * 3] - camPos.x;
+        const by = this.pos[o * 3 + 1] - camPos.y;
+        const bz = this.pos[o * 3 + 2] - camPos.z;
+        const cx = ay * bz - az * by;
+        const cy = az * bx - ax * bz;
+        const cz = ax * by - ay * bx;
+        const angulo = Math.atan2(Math.sqrt(cx * cx + cy * cy + cz * cz), ax * bx + ay * by + az * bz);
+        desloc = Math.max(
+          desloc,
+          deslocamentoDaCessao(
+            this.mDaVaga[k],
+            this.meiaDaVaga[k],
+            this.mDaVaga[j],
+            this.meiaDaVaga[j],
+            this.ganhoDaVaga[j],
+            angulo / radPorPx,
+            q.screenH
+          )
+        );
+      }
+      if (!(desloc > 0)) continue;
+      const m = this.mDaVaga[k] + desloc;
+      const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, cssH);
+      const meiaPx = this.meiaDaLei(pico, sigma, cssH, m) * this.soltura[i] * pr;
+      const ganho = this.restoDaVaga[k] * ganhoDeEntradaDoFlare(pico);
+      const visivel = meiaPx > 0 && ganho > 0;
+      this.meshes[k].visible = visivel;
+      const u = this.mats[k].uniforms;
+      u.uGanho.value = visivel ? ganho : 0;
+      u.uMeiaPx.value = visivel ? meiaPx : 0;
+      const gemeo = this.meshesDoCampo[k];
+      if (gemeo?.visible) {
+        const g = this.matsDoCampo[k].uniforms;
+        const fatia = this.cedidaALente[k] * haloDaLuz(m);
+        gemeo.visible = visivel && fatia > 0;
+        g.uGanho.value = visivel ? ganho * fatia : 0;
+        g.uMeiaPx.value = visivel ? meiaPx : 0;
       }
     }
   }

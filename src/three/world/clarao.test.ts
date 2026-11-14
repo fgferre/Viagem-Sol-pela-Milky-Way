@@ -30,6 +30,7 @@ import {
   ORCAMENTO_DO_CLARAO,
   RAZAO_DE_TROCA,
   SOL_BV,
+  deslocamentoDaCessao,
   criarSlots,
   fatiaDoCampo,
   haloDaLuz,
@@ -284,6 +285,36 @@ describe('2. a elegibilidade pela lei — a identidade "as 16" emerge, não se d
     expect(presencaNaFronteira(4, 2)).toBe(1);
     expect(presencaNaFronteira(2.0001, 2)).toBeLessThan(1e-3);
   });
+
+  it('numa dupla, nada se desloca sem a forte acima do teto, entre iguais, ou para a forte', () => {
+    // (fraca: m, meia; forte: m, meia, presença; separação; teto)
+    expect(deslocamentoDaCessao(0, 25, -1.4, 60, 1, 0, 900)).toBe(0); // forte abaixo do teto
+    expect(deslocamentoDaCessao(-8, 63, -8, 63, 1, 0, 900)).toBe(0); // duas iguais
+    expect(deslocamentoDaCessao(-18, 63, -8, 63, 1, 0, 900)).toBe(0); // a forte não cede
+    // Sirius B ao lado de A (Δm 10, A 16,5 mag acima do teto): desce 10 mag
+    expect(deslocamentoDaCessao(-8.24, 63, -18.07, 63, 1, 0, 900)).toBeCloseTo(9.83, 12);
+    // Plêiades: a forte 3,7 acima do teto, a vizinha 1,6 abaixo dela desce 1,6
+    expect(deslocamentoDaCessao(-3.6, 50, -5.17, 50, 1, 0, 900)).toBeCloseTo(1.57, 12);
+  });
+
+  it('numa dupla, o deslocamento é contínuo na separação, em Δm e na forte cruzando o teto', () => {
+    const passo = (f: (x: number) => number, de: number, ate: number, h: number, max: number) => {
+      let antes = f(de);
+      for (let x = de + h; x <= ate; x += h) {
+        const agora = f(x);
+        expect(Math.abs(agora - antes)).toBeLessThan(max);
+        antes = agora;
+      }
+    };
+    passo((px) => deslocamentoDaCessao(-8, 63, -18, 63, 1, px, 900), 0, 1000, 1, 0.05);
+    expect(deslocamentoDaCessao(-8, 63, -18, 63, 1, 900, 900)).toBe(0); // além de um quadro, nada
+    passo((dm) => deslocamentoDaCessao(-5 + dm, 50, -5, 50, 1, 20, 900), 0, 12, 0.01, 0.02);
+    passo((x) => deslocamentoDaCessao(0.5 - x, 50, -1.5 - x, 50, 1, 20, 900), -1, 2, 0.01, 0.02);
+    expect(deslocamentoDaCessao(-8, 63, -18, 63, 0.5, 40, 900)).toBeCloseTo(
+      0.5 * deslocamentoDaCessao(-8, 63, -18, 63, 1, 40, 900),
+      12
+    );
+  });
 });
 
 describe('3. a camada de verdade, com o sidecar real', () => {
@@ -514,6 +545,49 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     expect(c.ocupacao().some((o) => o.indice === 0)).toBe(false);
     expect(c.ocupacao().some((o) => o.indice === sirius)).toBe(true);
     c.dispose();
+  });
+
+  it('numa dupla, a mais fraca cede o clarão à mais forte; sozinha, nenhuma muda', () => {
+    // longe de casa, olhando para um par: A em m −8, B 8 mag mais fraca a
+    // ~37 px dela na tela (o caso de Sirius B, sem nome nenhum)
+    const camPos = new THREE.Vector3(100, 0, 0);
+    const A = { vaga: 0, pos: { x: 100, y: 0, z: -0.1 }, mBase: -3, cor: [1, 1, 1] as const, soltura: 1 };
+    const B = { vaga: 1, pos: { x: 100, y: 0.003, z: -0.1 }, mBase: 5, cor: [1, 1, 1] as const, soltura: 1 };
+    const ganhos = (visitadas: (typeof A)[]) => {
+      const c = new ClaraoDeAsas(META.named);
+      const quadro = { ...quadroEmCasa(false), camPos, visitadas, tanHalfFov: Math.tan(Math.PI / 9) };
+      for (let i = 0; i < 30; i++) c.atualizar(quadro);
+      const interna = c as unknown as { slots: { indice: number }[]; mats: THREE.ShaderMaterial[] };
+      const ganho = (vaga: number) => {
+        const k = interna.slots.findIndex((s) => s.indice === META.named.length + 1 + vaga);
+        return k < 0 ? 0 : (interna.mats[k].uniforms.uGanho.value as number);
+      };
+      const g = [ganho(0), ganho(1)];
+      c.dispose();
+      return g;
+    };
+    const [aSo] = ganhos([A]);
+    const [, bSo] = ganhos([B]);
+    const [aJunto, bJunto] = ganhos([A, B]);
+    expect(aSo).toBeGreaterThan(0);
+    expect(bSo).toBeGreaterThan(0);
+    expect(aJunto).toBe(aSo); // a forte, bit a bit
+    expect(bJunto).toBeLessThan(0.1 * bSo); // a fraca cede
+  });
+
+  it('numa dupla, o céu de casa (nenhuma acima do teto) fica bit a bit', () => {
+    const ler = (tanHalfFov?: number) => {
+      const c = new ClaraoDeAsas(META.named, { camadaDoCampo: 1 });
+      for (let i = 0; i < 30; i++) c.atualizar({ ...quadroEmCasa(false), tanHalfFov });
+      const interna = c as unknown as { mats: THREE.ShaderMaterial[]; matsDoCampo: THREE.ShaderMaterial[] };
+      const v = [...interna.mats, ...interna.matsDoCampo].map((m) => [
+        m.uniforms.uGanho.value as number,
+        m.uniforms.uMeiaPx.value as number,
+      ]);
+      c.dispose();
+      return v;
+    };
+    expect(ler(Math.tan(Math.PI / 9))).toEqual(ler());
   });
 
   it('o Sol RESOLVIDO entrega a óptica ao bloom: soltura 0 ⇒ sem asa', () => {
