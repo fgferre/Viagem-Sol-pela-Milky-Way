@@ -39,6 +39,7 @@ import {
   FRONTEIRAS_DA_CLASSE,
   climaDoExoplaneta,
   exoplanetaPorId,
+  giroDoExoplaneta,
   geometriaDoPlaneta,
   pontoDaOrbita,
   posicaoDoExoplaneta,
@@ -51,6 +52,7 @@ import {
 } from '../../lib/exoplanetas';
 import { estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
 import { AU_PARA_PC } from '../../lib/atlas/frameGalactico';
+import { J2000_JD } from '../../lib/atlas/time';
 import { AU_KM } from '../../lib/atlas/elementosOrbitais';
 import { uniformsDaLuzDaVisita } from '../../lib/atlas/luzDaVisita';
 import { blackbodyLinear } from '../luzDaCasa';
@@ -379,7 +381,8 @@ interface Montagem {
   orbitas: THREE.Group;
   zona: THREE.Mesh | null;
   bases: BaseDaOrbita[];
-  corpos: { planeta: Exoplaneta; malha: THREE.Mesh; raioPc: number; travado: boolean }[];
+  /** `giroHoras` = null no travado (a cara para a estrela) */
+  corpos: { planeta: Exoplaneta; malha: THREE.Mesh; raioPc: number; travado: boolean; giroHoras: number | null }[];
   descartaveis: { dispose(): void }[];
 }
 
@@ -494,7 +497,8 @@ export class SistemasPlanetarios {
       const malha = new THREE.Mesh(esfera, mat);
       malha.scale.setScalar(raioDoPlanetaUa(pl));
       grupo.add(malha);
-      return { planeta: pl, malha, raioPc: raioDoPlanetaUa(pl) * AU_PARA_PC, travado: clima.travado };
+      const giro = giroDoExoplaneta(pl, clima);
+      return { planeta: pl, malha, raioPc: raioDoPlanetaUa(pl) * AU_PARA_PC, travado: clima.travado, giroHoras: giro?.horas ?? null };
     });
     const m = { sistema, grupo, orbitas, zona, bases, corpos, descartaveis };
     this.group.add(grupo);
@@ -546,11 +550,15 @@ export class SistemasPlanetarios {
       c.malha.position.set(r[0], r[1], r[2]);
       const n = Math.hypot(r[0], r[1], r[2]) || 1;
       // O GIRO: o polo do planeta é o da órbita; o travado olha a estrela
-      // com o mesmo lado (+x local), o outro fica parado (giro desconhecido)
+      // com o mesmo lado (+x local), o outro gira no dia medido ou suposto
+      // (`giroDoExoplaneta`), no sentido da órbita, com o relógio da cena
       const base = m.bases[k]!;
       _y.set(base.polo[0], base.polo[1], base.polo[2]);
-      if (c.travado) _x.set(-r[0] / n, -r[1] / n, -r[2] / n).addScaledVector(_y, -_x.dot(_y)).normalize();
-      else _x.set(base.u[0], base.u[1], base.u[2]);
+      if (c.travado || c.giroHoras === null) _x.set(-r[0] / n, -r[1] / n, -r[2] / n).addScaledVector(_y, -_x.dot(_y)).normalize();
+      else {
+        const voltas = ((q.jd - J2000_JD) * 24) / c.giroHoras;
+        _x.set(base.u[0], base.u[1], base.u[2]).applyAxisAngle(_y, 2 * Math.PI * (voltas - Math.floor(voltas)));
+      }
       _z.crossVectors(_x, _y);
       c.malha.quaternion.setFromRotationMatrix(_giro.makeBasis(_x, _y, _z));
       _inv.copy(c.malha.quaternion).invert();

@@ -84,6 +84,8 @@ export interface Exoplaneta {
    * Ausente = aparência desconhecida, esfera neutra.
    */
   readonly albedo?: { readonly rgb: readonly [number, number, number]; readonly fonte: string };
+  /** O GIRO, só onde foi medido (horas; o alargamento das linhas do espectro) */
+  readonly giro?: { readonly horas: number; readonly fonte: string };
 }
 
 export interface Cinturao {
@@ -133,6 +135,7 @@ function p(
     contestado?: boolean;
     apelidos?: readonly string[];
     albedo?: Exoplaneta['albedo'];
+    giro?: Exoplaneta['giro'];
   }
 ): Exoplaneta {
   return {
@@ -153,6 +156,7 @@ function p(
     origemDoTc: c.tc ? (c.origemDoTc ?? (c.metodo === 'transito' ? 'transito' : 'velocidadeRadial')) : undefined,
     contestado: c.contestado ?? false,
     albedo: c.albedo,
+    giro: c.giro,
   };
 }
 
@@ -385,6 +389,9 @@ export const SISTEMAS_PLANETARIOS: readonly SistemaPlanetario[] = [
       p('bet-pic-b', 'Beta Pictoris b', {
         P: 8682, a: 10.07, e: 0.105, i: 88.993, w: 23.7, R: medido(18.49485, 'Currie et al. 2013, ApJ 776, 15'), M: medido(2765.107),
         teq: 1612, metodo: 'imagem', ano: 2008, apelidos: ['bet Pic b', 'β Pic b'],
+        // v·sen i = 25 km/s no alargamento do CO; com o raio da ficha e o
+        // equador de lado (a órbita é vista de lado), ~8 h
+        giro: { horas: 8.1, fonte: 'Snellen et al. 2014, Nature 509, 63' },
       }),
       p('bet-pic-d', 'Beta Pictoris d', {
         P: 33200, a: 26, e: 0.44, i: 89, w: 191, R: medido(14.12331568), M: medido(762.788), teq: 600,
@@ -649,6 +656,28 @@ export function sementeDoExoplaneta(id: string): [number, number, number] {
     out.push((h % 100000) / 1000);
   }
   return [out[0]!, out[1]!, out[2]!];
+}
+
+/**
+ * O DIA SUPOSTO de quem não está travado e não tem o giro medido (horas):
+ * o da Terra para os rochosos, o de Netuno para os sub-Netunos, o de
+ * Júpiter para os gigantes. É uma suposição, e a ficha diz.
+ */
+export const GIRO_SUPOSTO_HORAS = { rochoso: 23.9, subnetuno: 16.1, gigante: 9.9 } as const;
+
+/**
+ * O GIRO de um planeta (14/11/2026): `null` no travado (uma volta por
+ * órbita, a cara para a estrela); senão o medido, ou o suposto pela classe.
+ */
+export function giroDoExoplaneta(
+  planeta: Exoplaneta,
+  clima: ClimaDoExoplaneta
+): { readonly horas: number; readonly fonte: string | null } | null {
+  if (clima.travado) return null;
+  if (planeta.giro) return planeta.giro;
+  const s = GIRO_SUPOSTO_HORAS;
+  const horas = clima.classe === 'subnetuno' ? s.subnetuno : clima.classe.startsWith('gigante') ? s.gigante : s.rochoso;
+  return { horas, fonte: null };
 }
 
 // ─── A ÓRBITA NO ESPAÇO ──────────────────────────────────────────────────
