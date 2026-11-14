@@ -667,20 +667,28 @@ export const PT = {
   'ficha.exo.nuvens.5': 'nuvens de silicato',
   'ficha.exo.travado': 'travado por maré: o mesmo lado sempre voltado para a estrela',
   'ficha.exo.fonte.classe': 'decidida pelo raio, a massa, a densidade e a temperatura: {fontes}',
-  'ficha.exo.calor': 'calor na cena',
-  'ficha.exo.calor.valor': '{teq} K de equilíbrio e {sub} K no ponto embaixo da estrela, sem atmosfera',
-  'ficha.exo.fonte.calor': 'calculadas da distância e da temperatura e do raio da estrela, com albedo zero',
+  'ficha.exo.fonte.equilibrioCalculada':
+    'calculada aqui, porque o arquivo não a traz: Teff·√(R⋆/2a), da temperatura e do raio da estrela e da distância, sem atmosfera e com albedo zero',
+  'ficha.exo.giro': 'giro',
+  'ficha.exo.giro.medido': 'uma volta a cada {h} h, do alargamento das linhas do espectro',
+  'ficha.exo.giro.terra': 'suposto: uma volta a cada {h} h, o dia da Terra',
+  'ficha.exo.giro.netuno': 'suposto: uma volta a cada {h} h, o dia de Netuno',
+  'ficha.exo.giro.jupiter': 'suposto: uma volta a cada {h} h, o dia de Júpiter',
+  'ficha.exo.fonte.giro': 'o giro deste planeta não foi medido; a cena usa o de um planeta parecido do Sistema Solar',
   'ficha.exo.superficie': 'superfície',
   'ficha.exo.superficie.rochoso':
-    'imaginada a partir da classe: planaltos, crateras e gelo onde o chão sem atmosfera ficaria abaixo do degelo; brilho realçado para a visita',
+    'imaginada a partir da classe: planaltos de rocha oxidada, planícies de lava velha, crateras e gelo onde o chão sem atmosfera ficaria abaixo do degelo; brilho realçado para a visita',
   'ficha.exo.superficie.quente':
-    'imaginada a partir da classe: rocha nua, escura e craterada, sem gelo (dentro da zona habitável a água se perde); brilho realçado para a visita',
+    'imaginada a partir da classe: rocha nua e escura, de basalto, com planícies de lava velha e crateras, sem gelo (dentro da zona habitável a água se perde); brilho realçado para a visita',
+  'ficha.exo.superficie.gelado':
+    'imaginada a partir da classe: gelo claro e liso riscado por fraturas como as de Europa, poucas crateras e geada nos polos; brilho realçado para a visita',
   'ficha.exo.superficie.lava':
-    'imaginada a partir da classe: mar de lava e crosta rachada onde o chão passaria da fusão da rocha; o brilho próprio sai da temperatura pela lei de Planck',
+    'imaginada a partir da classe: crosta escura rachada por fendas de lava onde o chão passaria da fusão da rocha; a cor de cada fenda é a da temperatura dela pela lei de Planck, e o brilho é comprimido para a visita',
   'ficha.exo.superficie.gas':
     'imaginada a partir da classe: faixas, fios e tempestades nas cores da classe de nuvens; brilho realçado para a visita',
   'ficha.exo.superficie.gasMedida': 'imaginada: faixas, fios e tempestades; só a cor é medida',
-  'ficha.exo.fonte.imaginada': 'desenho da casa a partir da classe; nenhum telescópio resolveu o disco',
+  'ficha.exo.fonte.imaginada':
+    'desenho da casa a partir da classe; nenhum telescópio resolveu o disco. A luz é a da estrela, com o olho meio adaptado à cor dela',
   'ficha.cometa.doSol': 'distância do Sol',
   'ficha.cometa.daTerra': 'distância da Terra',
   'ficha.cometa.velocidade': 'velocidade em relação ao Sol',

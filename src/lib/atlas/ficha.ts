@@ -84,6 +84,7 @@ import {
   INCLINACAO_CONVENCIONAL_GRAUS,
   climaDoExoplaneta,
   ehAnfitriaAcrescentada,
+  giroDoExoplaneta,
   geometriaDoPlaneta,
   sistemaDaEstrela,
   zonaHabitavel,
@@ -1498,20 +1499,40 @@ function emTerrasOuJupiteres(terras: number, porJupiter: number): string {
 }
 
 /**
+ * A TEMPERATURA, numa linha só (14/11/2026): a de equilíbrio do arquivo
+ * quando ele a traz; senão a calculada aqui, dizendo como.
+ */
+function linhaDaTemperatura(planeta: Exoplaneta, estrela: EstrelaVisitavel | null): LinhaDaFicha | null {
+  const teq = planeta.teqK ?? (estrela ? Math.round(climaDaFicha(planeta, estrela).teqK) : null);
+  if (teq === null) return null;
+  return linha(
+    t('ficha.exo.temperatura'),
+    `${inteiroDoIdioma(teq)} K (${inteiroDoIdioma(teq - 273.15)} °C)`,
+    'derivado',
+    t(planeta.teqK === null ? 'ficha.exo.fonte.equilibrioCalculada' : 'ficha.exo.fonte.equilibrio')
+  );
+}
+
+/** o clima de um planeta com os números da ficha física da estrela */
+function climaDaFicha(planeta: Exoplaneta, estrela: EstrelaVisitavel) {
+  return climaDoExoplaneta(planeta, {
+    teffK: estrela.teffK.v,
+    raioRsol: estrela.raioRsol.v,
+    massaMsol: estrela.massaMsol.v,
+    luminosidadeLsol: estrela.luminosidadeLsol.v,
+  });
+}
+
+/**
  * A CARA NA CENA, por canal (13/11/2026): a CLASSE é derivada dos números
- * (com as fontes das fronteiras), o CALOR é derivado da estrela e da
- * distância, a COR é medida só em HD 189733 b, e a SUPERFÍCIE é sempre
- * imaginada — o desenho da casa a partir da classe.
+ * (com as fontes das fronteiras), a COR é medida só em HD 189733 b, a
+ * SUPERFÍCIE é sempre imaginada — o desenho da casa a partir da classe —,
+ * e o GIRO de quem não está travado é o medido ou um suposto (14/11).
  */
 function linhasDaFace(planeta: Exoplaneta, estrela: EstrelaVisitavel | null): (LinhaDaFicha | null)[] {
   const linhas: (LinhaDaFicha | null)[] = [];
   if (estrela) {
-    const c = climaDoExoplaneta(planeta, {
-      teffK: estrela.teffK.v,
-      raioRsol: estrela.raioRsol.v,
-      massaMsol: estrela.massaMsol.v,
-      luminosidadeLsol: estrela.luminosidadeLsol.v,
-    });
+    const c = climaDaFicha(planeta, estrela);
     const gas = c.classe === 'subnetuno' || c.classe === 'giganteQuente' || c.classe === 'giganteFrio';
     const classe = [
       t(`ficha.exo.classe.${c.classe}`),
@@ -1520,12 +1541,6 @@ function linhasDaFace(planeta: Exoplaneta, estrela: EstrelaVisitavel | null): (L
     ].join('');
     linhas.push(
       linha(t('ficha.exo.classe'), classe, 'derivado', t('ficha.exo.fonte.classe', { fontes: FONTES_DA_CLASSE })),
-      linha(
-        t('ficha.exo.calor'),
-        t('ficha.exo.calor.valor', { teq: inteiroDoIdioma(Math.round(c.teqK)), sub: inteiroDoIdioma(Math.round(c.subestelarK)) }),
-        'derivado',
-        t('ficha.exo.fonte.calor')
-      ),
       linha(
         t('ficha.exo.superficie'),
         t(
@@ -1537,12 +1552,21 @@ function linhasDaFace(planeta: Exoplaneta, estrela: EstrelaVisitavel | null): (L
               ? 'ficha.exo.superficie.lava'
               : c.classe === 'rochosoQuente'
                 ? 'ficha.exo.superficie.quente'
-                : 'ficha.exo.superficie.rochoso'
+                : c.classe === 'gelado'
+                  ? 'ficha.exo.superficie.gelado'
+                  : 'ficha.exo.superficie.rochoso'
         ),
         'artistico',
         t('ficha.exo.fonte.imaginada')
       )
     );
+    const giro = giroDoExoplaneta(planeta, c);
+    const horas = giro ? decimalDoIdioma(giro.horas.toFixed(1)) : '';
+    if (giro?.fonte) linhas.push(linha(t('ficha.exo.giro'), t('ficha.exo.giro.medido', { h: horas }), 'derivado', giro.fonte));
+    else if (giro) {
+      const como = gas ? (c.classe === 'subnetuno' ? 'netuno' : 'jupiter') : 'terra';
+      linhas.push(linha(t('ficha.exo.giro'), t(`ficha.exo.giro.${como}`, { h: horas }), 'artistico', t('ficha.exo.fonte.giro')));
+    }
   }
   if (planeta.albedo) {
     linhas.push(linha(t('ficha.exo.aparencia'), t('ficha.exo.aparencia.medida'), 'medido', planeta.albedo.fonte));
@@ -1586,14 +1610,7 @@ export function montarFichaDeExoplaneta(
       M.p,
       M.fonte
     ),
-    planeta.teqK === null
-      ? null
-      : linha(
-          t('ficha.exo.temperatura'),
-          `${inteiroDoIdioma(planeta.teqK)} K (${inteiroDoIdioma(planeta.teqK - 273.15)} °C)`,
-          'derivado',
-          t('ficha.exo.fonte.equilibrio')
-        ),
+    linhaDaTemperatura(planeta, estrela),
     estrela && zona ? linha(t('ficha.exo.zonaHabitavel'), `${zona} (${zonaEmTexto(estrela)})`, 'derivado', fonteDaZona(estrela)) : null,
     linha(t('ficha.exo.descoberta'), `${t(METODOS[planeta.metodo])}, ${planeta.ano}`, 'medido', arquivo),
     linha(

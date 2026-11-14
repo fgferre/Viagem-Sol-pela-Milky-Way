@@ -660,20 +660,28 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.exo.nuvens.5': 'silicate clouds',
   'ficha.exo.travado': 'tidally locked: the same side always faces the star',
   'ficha.exo.fonte.classe': 'decided by radius, mass, density and temperature: {fontes}',
-  'ficha.exo.calor': 'heat in the scene',
-  'ficha.exo.calor.valor': '{teq} K equilibrium and {sub} K at the point under the star, with no atmosphere',
-  'ficha.exo.fonte.calor': 'computed from the distance and the star’s temperature and radius, with zero albedo',
+  'ficha.exo.fonte.equilibrioCalculada':
+    'computed here, because the archive does not list it: Teff·√(R⋆/2a), from the star’s temperature and radius and the distance, with no atmosphere and zero albedo',
+  'ficha.exo.giro': 'spin',
+  'ficha.exo.giro.medido': 'one turn every {h} h, from the broadening of the spectral lines',
+  'ficha.exo.giro.terra': 'assumed: one turn every {h} h, Earth’s day',
+  'ficha.exo.giro.netuno': 'assumed: one turn every {h} h, Neptune’s day',
+  'ficha.exo.giro.jupiter': 'assumed: one turn every {h} h, Jupiter’s day',
+  'ficha.exo.fonte.giro': 'this planet’s spin has not been measured; the scene uses that of a similar Solar System planet',
   'ficha.exo.superficie': 'surface',
   'ficha.exo.superficie.rochoso':
-    'imagined from the class: highlands, craters and ice where airless ground would stay below thawing; brightness raised for the visit',
+    'imagined from the class: oxidised-rock highlands, old lava plains, craters and ice where airless ground would stay below thawing; brightness raised for the visit',
   'ficha.exo.superficie.quente':
-    'imagined from the class: bare, dark, cratered rock with no ice (inside the habitable zone’s edge water is lost); brightness raised for the visit',
+    'imagined from the class: bare, dark basalt with old lava plains and craters, no ice (inside the habitable zone’s edge water is lost); brightness raised for the visit',
+  'ficha.exo.superficie.gelado':
+    'imagined from the class: bright, smooth ice scored by fractures like Europa’s, few craters and frost at the poles; brightness raised for the visit',
   'ficha.exo.superficie.lava':
-    'imagined from the class: a lava sea and cracked crust where the ground would pass the melting of rock; its own glow comes from the temperature by Planck’s law',
+    'imagined from the class: dark crust cracked by lava fissures where the ground would pass the melting of rock; each fissure’s colour is its temperature’s by Planck’s law, and the brightness is compressed for the visit',
   'ficha.exo.superficie.gas':
     'imagined from the class: bands, streaks and storms in the colours of the cloud class; brightness raised for the visit',
   'ficha.exo.superficie.gasMedida': 'imagined: bands, streaks and storms; only the colour is measured',
-  'ficha.exo.fonte.imaginada': 'the app’s drawing from the class; no telescope has resolved the disk',
+  'ficha.exo.fonte.imaginada':
+    'the app’s drawing from the class; no telescope has resolved the disk. The light is the star’s, with the eye half adapted to its colour',
   'ficha.fonte.daTrajetoria': 'computed from the Horizons trajectory',
   'ficha.fonte.reguaDeEscala': 'the app’s scale rule',
   'ficha.secao.companheira': '{nome} (white dwarf)',
