@@ -98,10 +98,11 @@ describe('destinosDaBusca', () => {
     expect(galaxia.length).toBe(9);
   });
 
-  it('o cartão de um corpo leva à distância da prévia dele; estrela e lugar não pedem nenhuma', () => {
-    // a mesma tabela de `scripts/visual/previas-de-destino.mjs` (`d`)
+  it('o cartão leva aonde a prévia dele foi tirada: o corpo à distância dela, Sgr A✱ ao buraco de perto', () => {
+    // a mesma tabela de `scripts/visual/previas-de-destino.mjs` (`d`, `ver`)
     expect(sistema.map((d) => d.raios)).toEqual([4, 4, 4, 10, 0, 5, undefined, undefined]);
-    expect([...estrelas, ...galaxia].every((d) => d.raios === undefined)).toBe(true);
+    expect(galaxia.filter((d) => d.raios !== undefined).map((d) => [d.id, d.raios])).toEqual([['sagittarius-a', 0]]);
+    expect(estrelas.every((d) => d.raios === undefined)).toBe(true);
   });
 
   it('o primeiro de cada categoria é o principal', () => {
