@@ -111,6 +111,12 @@ export interface LugarDoCeu {
    *  mostrar mais de perto do que a chegada já mostra, e o botão não existe */
   raioDePertoPc?: number;
   vista?: VistaDoLugar;
+  /** só para a vista `doSol`: a câmera sobe estes graus acima do plano da
+   *  galáxia, girando em volta do lugar — ausente = 0, a linha de visada
+   *  exata. Existe para S2: o disco do buraco é desenhado no plano da
+   *  galáxia, e o Sol está nele; da linha de visada exata o disco se vê
+   *  de perfil, um risco reto atravessando a sombra (13/11) */
+  elevacaoGraus?: number;
   /** uma VISTA, não um objeto (a galáxia de cima, o endereço do Sol):
    *  não ganha nome na cena — quem marca o lugar é o rótulo do Sol */
   semRotulo?: true;
@@ -218,7 +224,7 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
   {
     // A ÓRBITA DE S2 (13/11/2026): o lugar é a órbita inteira em volta do
     // buraco, vista do lado do Sol com o norte celeste no alto — o céu dos
-    // artigos. A estrela anda com o relógio (`lib/estrelasS.ts`); o nome
+    // artigos, erguido 3° acima do disco. A estrela anda com o relógio (`lib/estrelasS.ts`); o nome
     // dela na cena é o da estrela viva (`world/estrelasS.ts`), por isso a
     // linha não tem rótulo de lugar.
     id: 's2',
@@ -232,6 +238,10 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     // o piso do degrau de perto do buraco (3 RS, `escada.ts`)
     pisoPc: 3 * RS_SGR_A_PC,
     vista: 'doSol',
+    // 3°: o menor ângulo, entre 3, 6, 10 e 15 (prancha de 14/11), em que
+    // o disco já é faixa e não risco; a elipse de S2 sai 2,4 % menor no
+    // eixo maior e girada 2,8° em relação à do céu (o teste da linha cobra)
+    elevacaoGraus: 3,
     semRotulo: true,
     distanciaPc: { valor: 8150, fonte: 'Reid et al. 2019 (VLBI)' },
     oQueE: {
@@ -283,8 +293,8 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
       },
       {
         campo: 'naCena',
-        pt: 'S2 e 17 vizinhas (Gillessen et al. 2017) estão onde as órbitas medidas as põem na data do relógio, e a órbita de Kepler não inclui a precessão. Cada estrela é um ponto de luz: nenhum disco de estrela S foi resolvido. Perto do centro o buraco é desenhado maior que o real, e a sombra inflada esconde as estrelas S que ela cobre na tela.',
-        en: 'S2 and 17 neighbours (Gillessen et al. 2017) sit where the measured orbits put them on the clock’s date, and the Kepler orbit leaves out the precession. Each star is a point of light: no S star’s disc has ever been resolved. Near the centre the hole is drawn larger than real, and the inflated shadow hides the S stars it covers on screen.',
+        pt: 'S2 e 17 vizinhas (Gillessen et al. 2017) estão onde as órbitas medidas as põem na data do relógio, e a órbita de Kepler não inclui a precessão. A vista é do lado do Sol, 3° acima do plano da galáxia — da linha de visada exata o disco do buraco seria só um risco —, e por isso a órbita de S2 sai quase como no céu da Terra, mas não idêntica. Cada estrela é um ponto de luz: nenhum disco de estrela S foi resolvido. Perto do centro o buraco é desenhado maior que o real, e a sombra inflada esconde as estrelas S que ela cobre na tela.',
+        en: 'S2 and 17 neighbours (Gillessen et al. 2017) sit where the measured orbits put them on the clock’s date, and the Kepler orbit leaves out the precession. The view is from the Sun’s side, 3° above the plane of the galaxy — from the exact line of sight the hole’s disc would be a mere streak —, so S2’s orbit looks almost as it does in Earth’s sky, but not identical. Each star is a point of light: no S star’s disc has ever been resolved. Near the centre the hole is drawn larger than real, and the inflated shadow hides the S stars it covers on screen.',
         procedencia: 'derivado',
         fonte: { pt: 'leis de Kepler com os elementos medidos', en: 'Kepler’s laws with the measured elements' },
       },
