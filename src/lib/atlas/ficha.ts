@@ -366,7 +366,14 @@ function secaoAgora(entrada: EntradaDaFicha): LinhaDaFicha[] {
   }
 
   return [
-    linha(t('ficha.campo.distanciaDe', { pai }), distancia, 'medido', registro.modelo),
+    // em torno do Sol a linha diz o mesmo que a do cometa ("distância do Sol");
+    // "Distância — Sol" na linha recolhida do celular lia como lista de campos
+    linha(
+      registro.centro === 'sun' ? t('ficha.cometa.doSol') : t('ficha.campo.distanciaDe', { pai }),
+      distancia,
+      'medido',
+      registro.modelo
+    ),
     linha(
       t('ficha.campo.velocidadeOrbital'),
       velocidade,
@@ -919,7 +926,7 @@ const RSOL_KM = 695_700;
 
 /** Inteiro com separador de milhar da língua de agora (5.600 · 5,600). */
 function inteiroDoIdioma(v: number): string {
-  return Math.round(v).toLocaleString(idiomaAtual() === 'en' ? 'en-US' : 'pt-BR');
+  return numeroDoIdioma(Math.round(v));
 }
 
 /** Três algarismos significativos na língua de agora (0,154 · 24,7 · 764 ·
