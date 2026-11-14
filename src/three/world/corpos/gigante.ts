@@ -311,9 +311,9 @@ ${REGIOES_DO_ANEL.slice(1)
 `;
 
 /**
- * O BRILHO MEDIDO DO ANEL (`?anelb=m`, 14/11/2026) — EM PROVA. Ausente, o
- * anel de sempre, byte a byte: nada disto entra no `ANEL_FRAG`, e o visual
- * aprovado só se troca com a foto na mão.
+ * O BRILHO MEDIDO DO ANEL (14/11/2026) — o padrão desde que o dono o
+ * aprovou pela prancha (`capturas/aneis-brilho-14-11/`). `?anelb=0` devolve
+ * o anel de antes, byte a byte: nada disto entra no `ANEL_FRAG`.
  *
  * O DEFEITO: na chegada o B sai CHAPADO, porque o espalhamento simples
  * satura com o τ dobrado do B e o albedo da tabela é um degrau por região.
@@ -346,7 +346,7 @@ ${REGIOES_DO_ANEL.slice(1)
  */
 export const BRILHO_MEDIDO_DO_ANEL: boolean =
   typeof window !== 'undefined' &&
-  new URLSearchParams(window.location.search).get('anelb') === 'm';
+  new URLSearchParams(window.location.search).get('anelb') !== '0';
 export const BRILHO_DO_ANEL = {
   arquivo: 'data/atlas/anel-saturno-brilho.bin',
   /** a fase do perfil de frente (Voyager 1), em radianos */
@@ -2294,7 +2294,7 @@ export class GiganteResolvido {
           // parados em zero e o programa nem os declara
           uFaseDosRaios: { value: 0 },
           uDafnisLon: { value: 0 },
-          // PROVA `?anelb=m`: só o `ANEL_FRAG` com o brilho medido os lê
+          // só o `ANEL_FRAG` com o brilho medido os lê (`?anelb=0` os dispensa)
           ...(placa && BRILHO_MEDIDO_DO_ANEL
             ? {
                 uMapaBrilho: { value: this.dummyAnel },

@@ -126,7 +126,7 @@ do repositório atlas-orbital não vale aqui.
   `forwardscattered.txt` 7ca46db8590986e17dd5159a559b4d1f58dd147da0442deb844a604d4924da67,
   `unlitside.txt` b8cf5eb1d5d34292f4b1b89d8ae0ea7c3b4d5077ff65c71f766fbb25e883b850.
   Cada perfil vem normalizado 0–1 pela fonte (a razão entre eles não está
-  no dado; o nível sai do shader). Só lido com `?anelb=m`, em prova. MESMA
+  no dado; o nível sai do shader). É o padrão desde 14/11/2026 (`?anelb=0` devolve o anel de antes). MESMA
   PENDÊNCIA DE LICENÇA do perfil acima: o autor credita, não declara
   licença — confirmar antes de publicar.
 
