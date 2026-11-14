@@ -917,6 +917,19 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     ]);
   });
 
+  it('Aldebaran monta a ficha de gigante com raio, idade e rotação selados', () => {
+    const ald = montarFichaDeEstrela('Aldebaran', starsMeta.named.find((s) => s.n === 'Aldebaran'))!;
+    const l = linhasDe(ald);
+    expect(l.get('tipo espectral')!.valor).toBe('K5+ III');
+    expect(l.get('raio')!.valor).toContain('45,1 R☉');
+    expect(l.get('raio')!.fonte).toContain('Hatzes');
+    expect(l.get('idade')!.valor).toBe('6,4 bilhões de anos');
+    expect(l.get('idade')!.fonte).toContain('Farr');
+    expect(l.get('rotação')!.procedencia).toBe('derivado');
+    // L = R² (T/T☉)⁴: 45,1² × (3.900/5.772)⁴ ≈ 424
+    expect(l.get('luminosidade')!.valor).toBe('424 L☉');
+  });
+
   it('as 204 sem Bayer não inventam designação', () => {
     const semBayer = starsMeta.named.filter((s) => !s.b);
     expect(semBayer.length).toBeGreaterThan(0);

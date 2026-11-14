@@ -978,6 +978,13 @@ function linhasDoPiloto(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
     e.rotacaoDias
       ? linhaDoNumero(t('ficha.campo.rotacao'), formatarDuracao(e.rotacaoDias.v), e.rotacaoDias)
       : null,
+    e.idadeGa
+      ? linhaDoNumero(
+          t('ficha.campo.idade'),
+          t('ficha.estrela.idadeEmGa', { v: tresSignificativos(e.idadeGa.v) }),
+          e.idadeGa
+        )
+      : null,
     ...(a
       ? [
           linhaDoNumero(t('ficha.campo.raioPolar'), raioEmTexto(a.raioPolarRsol.v), a.raioPolarRsol),

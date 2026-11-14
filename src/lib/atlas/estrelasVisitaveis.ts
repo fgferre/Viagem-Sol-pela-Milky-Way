@@ -99,6 +99,8 @@ export interface EstrelaVisitavel {
   readonly massaMsol: Numero;
   readonly luminosidadeLsol: Numero;
   readonly rotacaoDias?: Numero;
+  /** idade, em bilhões de anos — só onde há medida (asterossismologia) */
+  readonly idadeGa?: Numero;
   readonly achatamento?: Achatamento;
   readonly superficie: Superficie;
   readonly companheira?: Companheira;
@@ -214,6 +216,37 @@ const BETELGEUSE: EstrelaVisitavel = {
   },
 };
 
+/**
+ * ALDEBARAN (14/11/2026, o Ato 4 do filme estelar): a gigante laranja no
+ * caminho das Híades ao Sol — o que o Sol será. Superfície pela lei de
+ * classe das anfitriãs (`superficiePelaTemperatura`): sem simulação própria
+ * publicada, nem células gigantes nem borda difusa (campo sem fonte fica de
+ * fora). Sem dínamo de tipo solar: gigante fria além da linha de Linsky &
+ * Haisch (log g ≈ 1,2), como Betelgeuse.
+ */
+const ALDEBARAN_R = 45.1;
+const ALDEBARAN_T = 3900;
+const ALDEBARAN_M = 1.16;
+const HATZES_2015 = 'Hatzes et al. 2015, A&A 580, A31';
+const FARR_2018 = 'Farr et al. 2018, ApJL 865, L20';
+const ALDEBARAN: EstrelaVisitavel = {
+  id: 'aldebaran',
+  nomeNoCatalogo: 'Aldebaran',
+  hip: 21421,
+  // o tipo MK do atlas de Perkins (de memória — conferir no catálogo)
+  tipo: { texto: 'K5+ III', v: 0, p: 'medido', fonte: 'Keenan & McNeil 1989, ApJS 71, 245' },
+  teffK: { v: ALDEBARAN_T, p: 'medido', fonte: HATZES_2015 }, // espectro
+  raioRsol: { v: ALDEBARAN_R, p: 'derivado', fonte: HATZES_2015 }, // diâmetro angular + paralaxe
+  massaMsol: { v: ALDEBARAN_M, p: 'derivado', fonte: FARR_2018 }, // asterossismologia (TESS/K2) + modelos
+  // L = R² (T/T☉)⁴ com o raio e a Teff de Hatzes 2015 (`luminosidadeDe`)
+  luminosidadeLsol: { v: luminosidadeDe(ALDEBARAN_R, ALDEBARAN_T), p: 'derivado', fonte: HATZES_2015 },
+  // a modulação de ~520 d da velocidade radial, que os autores atribuem à
+  // rotação (manchas); INCERTO — derivado, não medido direto
+  rotacaoDias: { v: 520, p: 'derivado', fonte: HATZES_2015 },
+  idadeGa: { v: 6.4, p: 'derivado', fonte: FARR_2018 }, // asterossismologia + modelos
+  superficie: superficiePelaTemperatura(ALDEBARAN_T, ALDEBARAN_R, ALDEBARAN_M),
+};
+
 const VEGA: EstrelaVisitavel = {
   id: 'vega',
   nomeNoCatalogo: 'Vega',
@@ -276,13 +309,6 @@ function anfitria(c: {
 }): EstrelaVisitavel {
   const fonte = c.fonte ?? PSCOMP;
   const T = c.teffK;
-  const contraste =
-    T < 3900
-      ? { v: 0.04, p: 'derivado' as const, fonte: 'Beeck et al. 2013, A&A 558, A48 (simulação)' }
-      : T < 7000
-        ? { v: 0.15, p: 'derivado' as const, fonte: 'como o Sol (estrela F/G/K); Tremblay et al. 2013, A&A 557, A7' }
-        : { v: 0.015, p: 'derivado' as const, fonte: 'Tremblay et al. 2013, A&A 557, A7' };
-  const u = T < 3900 ? 0.7 : T < 5300 ? 0.72 : T < 6200 ? 0.62 : T < 7500 ? 0.55 : 0.5;
   return {
     id: c.id,
     nomeNoCatalogo: c.nome,
@@ -293,12 +319,25 @@ function anfitria(c: {
     massaMsol: { v: c.massaMsol, p: 'derivado', fonte },
     luminosidadeLsol: { v: c.lum, p: 'derivado', fonte },
     ...(c.rotacaoDias ? { rotacaoDias: c.rotacaoDias } : {}),
-    superficie: {
-      granuloEmRaios: granulo(T, c.raioRsol, c.massaMsol),
-      contrasteGranulos: contraste,
-      bordaU: { v: u, p: 'derivado', fonte: CLARET },
-      bordaDifusaRaios: { v: 1, p: 'derivado', fonte: 'fotosfera de anã: borda nítida' },
-    },
+    superficie: superficiePelaTemperatura(T, c.raioRsol, c.massaMsol),
+  };
+}
+
+/** A SUPERFÍCIE PELA LEI DE CLASSE (a do comentário acima): o grânulo de
+ *  Tremblay, o contraste e a borda de Claret pela temperatura, borda nítida */
+function superficiePelaTemperatura(T: number, raioRsol: number, massaMsol: number): Superficie {
+  const contraste =
+    T < 3900
+      ? { v: 0.04, p: 'derivado' as const, fonte: 'Beeck et al. 2013, A&A 558, A48 (simulação)' }
+      : T < 7000
+        ? { v: 0.15, p: 'derivado' as const, fonte: 'como o Sol (estrela F/G/K); Tremblay et al. 2013, A&A 557, A7' }
+        : { v: 0.015, p: 'derivado' as const, fonte: 'Tremblay et al. 2013, A&A 557, A7' };
+  const u = T < 3900 ? 0.7 : T < 5300 ? 0.72 : T < 6200 ? 0.62 : T < 7500 ? 0.55 : 0.5;
+  return {
+    granuloEmRaios: granulo(T, raioRsol, massaMsol),
+    contrasteGranulos: contraste,
+    bordaU: { v: u, p: 'derivado', fonte: CLARET },
+    bordaDifusaRaios: { v: 1, p: 'derivado', fonte: 'fotosfera sem atmosfera estendida medida: borda nítida' },
   };
 }
 
@@ -329,7 +368,11 @@ const ANFITRIAS: readonly EstrelaVisitavel[] = [
  * 7,7 pc; Rigel está a 260 ± 20 pc sem paralaxe boa, e a luminosidade
  * dela varia de 61 mil a 363 mil sóis conforme o método.
  */
-export const ESTRELAS_VISITAVEIS: readonly EstrelaVisitavel[] = [PROXIMA, SIRIUS, BETELGEUSE, VEGA, ...ANFITRIAS];
+export const ESTRELAS_VISITAVEIS: readonly EstrelaVisitavel[] = [
+  PROXIMA, SIRIUS, BETELGEUSE, VEGA, ...ANFITRIAS,
+  // no fim, para não mudar a vaga de clarão de quem já estava (`2 × índice`)
+  ALDEBARAN,
+];
 
 export function estrelaVisitavelPorNome(nomeNoCatalogo: string): EstrelaVisitavel | null {
   return ESTRELAS_VISITAVEIS.find((e) => e.nomeNoCatalogo === nomeNoCatalogo) ?? null;
