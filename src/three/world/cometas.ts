@@ -37,7 +37,7 @@ import type { StarLabel } from './labels';
 import { LARGURA_DA_FITA_PX } from './orbitas';
 import { naCena, poseDoSegmento, type PoseDaSonda } from './sondas';
 import { kmParaPc } from '../escala';
-import { ATIVIDADE_DE_HALLEY } from './caudasDosCometas';
+import { raioDaCabecaKm } from './caudasDosCometas';
 
 /** o prefixo da chave do rótulo de um cometa — o clique o reconhece */
 export const CHAVE_DE_COMETA = 'cometa:';
@@ -81,7 +81,6 @@ export function poseDoCometa(id: string, jd: number, raioDoNucleoKm: number | nu
  * Apagado, o cometa é só o núcleo, e o quadro é ele (três raios, o piso
  * do zoom); sem tamanho medido não há o que mostrar de perto (`null`).
  */
-const RAIO_DA_CABECA_DE_HALLEY_KM = 1_000_000;
 export function poseDoCometaDePerto(id: string, jd: number, raioDoNucleoKm: number | null): PoseDaSonda | null {
   const pose = poseDoCometa(id, jd, raioDoNucleoKm);
   const e = estadoDoCometa(id, jd);
@@ -89,7 +88,7 @@ export function poseDoCometaDePerto(id: string, jd: number, raioDoNucleoKm: numb
   if (!pose || !e || !cometa) return null;
   const atividade = brilhoRelativo(cometa, Math.hypot(e[0], e[1], e[2]));
   if (atividade > LIMIAR_DE_ATIVIDADE) {
-    return { ...pose, raio: kmParaPc(RAIO_DA_CABECA_DE_HALLEY_KM * Math.cbrt(atividade / ATIVIDADE_DE_HALLEY)) };
+    return { ...pose, raio: kmParaPc(raioDaCabecaKm(atividade)) };
   }
   return raioDoNucleoKm ? { ...pose, raio: kmParaPc(3 * raioDoNucleoKm) } : null;
 }
