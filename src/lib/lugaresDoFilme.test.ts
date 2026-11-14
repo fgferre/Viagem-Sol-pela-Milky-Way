@@ -119,6 +119,58 @@ describe('os lugares do céu', () => {
     expect(d('nosso-lugar')).toBeUndefined();
   });
 
+  it('S2 chega um pouco acima do disco do buraco e a órbita continua a do céu da Terra', async () => {
+    // a crítica de 13/11: da linha de visada exata (0,04° do plano) o
+    // disco, desenhado no plano da galáxia, se via de perfil — um risco
+    // reto atravessando a sombra. A vista sobe; a elipse de S2 não pode
+    // sair deformada a ponto de deixar de ser a figura dos artigos.
+    (globalThis as { window?: unknown }).window ??= { location: { search: '' } };
+    const THREE = await import('three');
+    const { LUGARES_DA_BUSCA, poseDoLugar } = await import('../three/world/lugaresDoCeu');
+    const { direcaoDeRepouso } = await import('../three/cinematic/enquadramento');
+    const { GAL } = await import('../three/world/baseGalactica');
+    const { ESTRELAS_S, jdDoAno, posicaoDaEstrelaS } = await import('./estrelasS');
+    const deOndeOlha = (id: string) => {
+      const l = LUGARES_DA_BUSCA.find((x) => x.id === id)!;
+      const pose = poseDoLugar(l)!;
+      return { alvo: pose.alvo, dir: direcaoDeRepouso(pose.eixoDe, pose.polo, new THREE.Vector3()) };
+    };
+    // os outros lugares `doSol` seguem na linha de visada exata
+    for (const l of LUGARES_DO_FILME.filter((x) => x.vista === 'doSol' && !x.elevacaoGraus)) {
+      const { alvo, dir } = deOndeOlha(l.id);
+      expect(dir.angleTo(alvo.clone().negate()), l.id).toBeLessThan(1e-6);
+    }
+    const ngp = GAL.NGP.clone().normalize();
+    const { alvo, dir } = deOndeOlha('s2');
+    const daTerra = alvo.clone().negate().normalize();
+    const elevacao = Math.asin(dir.dot(ngp)) / (Math.PI / 180);
+    expect(elevacao).toBeCloseTo(LUGARES_DO_FILME.find((l) => l.id === 's2')!.elevacaoGraus!, 6);
+    // a elipse na tela (projeção perpendicular à vista, norte celeste no
+    // alto) contra a do céu: o eixo maior e a orientação dele
+    const s2 = ESTRELAS_S[0];
+    const pts = Array.from({ length: 720 }, (_, k) => {
+      const ano = s2.orbita.periastroAno + (k / 720) * s2.orbita.periodoAnos;
+      return new THREE.Vector3(...posicaoDaEstrelaS(jdDoAno(ano), s2, [-daTerra.x, -daTerra.y, -daTerra.z]));
+    });
+    const elipse = (d: InstanceType<typeof THREE.Vector3>) => {
+      const alto = new THREE.Vector3(0, 0, 1).projectOnPlane(d).normalize();
+      const lado = new THREE.Vector3().crossVectors(alto, d);
+      const xy = pts.map((p) => [p.dot(lado), p.dot(alto)]);
+      const [cx, cy] = [0, 1].map((i) => xy.reduce((a, q) => a + q[i], 0) / xy.length);
+      let [sxx, syy, sxy] = [0, 0, 0];
+      for (const [x, y] of xy) [sxx, syy, sxy] = [sxx + (x - cx) ** 2, syy + (y - cy) ** 2, sxy + (x - cx) * (y - cy)];
+      const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+      const ao = xy.map(([x, y]) => x * Math.cos(ang) + y * Math.sin(ang));
+      return { maior: Math.max(...ao) - Math.min(...ao), angGraus: ang / (Math.PI / 180) };
+    };
+    const ceu = elipse(daTerra);
+    const tela = elipse(dir);
+    // a 6° a projeção medida muda −4,5 % no eixo maior e gira 5,3° (prancha
+    // `capturas/chegada-s2-13-11/`): o teto é o que a ficha confessa
+    expect(Math.abs(tela.maior / ceu.maior - 1)).toBeLessThan(0.05);
+    expect(Math.abs(tela.angGraus - ceu.angGraus)).toBeLessThan(6);
+  });
+
   it('o foco publicado numa língua é reconhecido na outra', () => {
     expect(chaveDoFoco('Plêiades', indice)).toBe('pleiades');
     expect(chaveDoFoco('Pleiades', indice)).toBe('pleiades');
