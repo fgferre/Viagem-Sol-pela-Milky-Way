@@ -47,15 +47,15 @@
     },
     {
       "nome": "saturnoRasante",
-      "qa": {"rasanteDosAneis": 0.5},
       "camera": {
-        "duracao": 14,
+        "duracao": 6.5,
         "movimento": {
           "tipo": "trajeto",
-          "pontos": ["sobreOAnelA", "rasante", "cruzamento", "alemDoCruzamento", "subida"]
+          "pontos": ["sobreOAnelA", "rasante", "entradaNoAnel"]
         },
         "mira": {"tipo": "fixo", "ponto": "Saturno"},
-        "lente": [58, 58]
+        "lente": [58, 58],
+        "inclinacao": {"tipo": "rampa", "de": 0, "para": "inclinacaoNoAnel", "ritmo": "glide"}
       },
       "fundoSilencioso": true,
       "legendas": [
@@ -67,9 +67,57 @@
             "texto": "Ice: 280,000 km end to end, tens of metres thick",
             "subtexto": "and perhaps young — they may be less than 100 million years old"
           },
-          "duracao": 9
+          "duracao": 6
         }
       ],
+      "olhar": "assunto"
+    },
+    {
+      "nome": "saturnoDentroDoAnel",
+      "qa": {"rasanteDosAneis": 0.5},
+      "camera": {
+        "duracao": 5.5,
+        "movimento": {"tipo": "reta", "de": "entradaNoAnel", "para": "saidaDoAnel"},
+        "mira": {"tipo": "fixo", "ponto": "Saturno"},
+        "lente": [58, 58],
+        "inclinacao": {"tipo": "fixo", "valor": "inclinacaoNoAnel"}
+      },
+      "fundoSilencioso": true,
+      "legendas": [
+        {
+          "em": 0.08,
+          "texto": "Por dentro, o anel é feito de pedaços de gelo",
+          "subtexto": "de grãos de poeira a blocos do tamanho de uma casa",
+          "en": {
+            "texto": "Inside, the ring is made of chunks of ice",
+            "subtexto": "from grains of dust to blocks the size of a house"
+          },
+          "duracao": 5,
+          "ponte": true
+        }
+      ],
+      "olhar": "assunto"
+    },
+    {
+      "nome": "saturnoCruzamento",
+      "camera": {
+        "duracao": 9,
+        "movimento": {
+          "tipo": "trajeto",
+          "pontos": ["saidaDoAnel", "cruzamento", "alemDoCruzamento", "subida"],
+          "progresso": {
+            "tipo": "soma",
+            "curvas": [
+              {"tipo": "rampa", "de": 0, "para": 0.4, "ritmo": "quadratic"},
+              {"tipo": "rampa", "de": 0, "para": 0.6, "ritmo": "launch"}
+            ]
+          }
+        },
+        "mira": {"tipo": "fixo", "ponto": "Saturno"},
+        "lente": [58, 58],
+        "inclinacao": {"tipo": "rampa", "de": "inclinacaoNoAnel", "para": 0, "ritmo": "glide"}
+      },
+      "fundoSilencioso": true,
       "olhar": "assunto"
     },
     {

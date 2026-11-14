@@ -261,6 +261,11 @@
 .filme-transporte .hud-btn.small {
   min-height: 2.75rem;
 }
+/* a forma curta de "Ir à galáxia" só entra no cartão estreito do celular
+   (09-celular.css) */
+.filme-transporte-curto {
+  display: none;
+}
 /* C5, U09 — O ÍCONE DE PAUSAR/RETOMAR ASSENTA UMA VEZ POR TROCA: o MESMO
    `assentaIcone` que já assenta o ícone da régua/alças ao abrir
    (01-base.css) — nunca um giro, que não faria sentido para um

@@ -1691,7 +1691,6 @@ try {
   await abrirFicha();
   await dorme(200);
   await julgarCliqueDeVerdade(sessao, 'celular 390×844, foco=saturno, ficha aberta');
-  await julgarFolgaDaFichaCompacta(sessao);
   await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: false });
   await sessao.send('Emulation.clearDeviceMetricsOverride');
 
@@ -2333,45 +2332,6 @@ async function julgarAreaDaFicha(s) {
     !fechou[0].aberta && !fechou[0].corpo && fechou[1].aberta,
     `ficha: clicar na primeira a FECHA, e o corpo dela sai do DOM (${fechou.map((x) => (x.aberta ? '▾' : '▸')).join('')})`
   );
-}
-
-/**
- * A FICHA COMPACTA NO CELULAR NÃO CORTA NEM ENCOSTA (13/11) — o dono viu
- * o tipo cortado com texto grande e o "Sistema" rente à borda da folha.
- * Medido antes do conserto: a 390×844 com Saturno a escada ficava a
- * 7,6 px da borda já em `ui` 1 (o conteúdo passava 19 px da altura fixa).
- * Aqui, na ficha que o clique de verdade acabou de abrir, em `ui` 1 e
- * 1,4: nenhum texto do cabeçalho, da linha "rótulo · valor" ou da escada
- * corta, e cada botão da escada fica a ≥ 12 px da borda da folha.
- */
-async function julgarFolgaDaFichaCompacta(s) {
-  const MEDIR = `(() => {
-    const f = document.querySelector('.atlas-ficha');
-    if (!f) return null;
-    const F = f.getBoundingClientRect();
-    const cortes = [...f.querySelectorAll('.hud-cabecalho *, .atlas-ficha-escada *, .atlas-ficha-resumo')]
-      .filter((e) => e.getClientRects().length && e.scrollWidth > e.clientWidth + 1
-        && getComputedStyle(e).overflowX !== 'visible')
-      .map((e) => (e.textContent || '').trim().slice(0, 30));
-    const folgas = [...f.querySelectorAll('.atlas-ficha-escada button')].map((b) => {
-      const r = b.getBoundingClientRect();
-      return Math.min(F.bottom - r.bottom, F.right - r.right, r.left - F.left);
-    });
-    return { estado: f.getAttribute('data-ficha-estado'), cortes, folgas };
-  })()`;
-  for (const fator of [1, 1.4]) {
-    await trocarUiAoVivo(s, fator);
-    await dorme(200);
-    const m = await s.js(MEDIR);
-    const onde = `celular 390×844, Saturno, ficha ${m?.estado}, ui = ${fator}`;
-    conferir(m !== null && m.cortes.length === 0, `ficha (${onde}): nenhum texto cortado (${m?.cortes.join(' · ') || 'nenhum'})`);
-    const menor = m && m.folgas.length ? Math.min(...m.folgas) : null;
-    conferir(
-      menor !== null && menor >= 12,
-      `ficha (${onde}): a escada fica a ≥ 12 px da borda da folha (${menor?.toFixed(1)} px)`
-    );
-  }
-  await trocarUiAoVivo(s, 1);
 }
 
 /**

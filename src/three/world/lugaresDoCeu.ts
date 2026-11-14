@@ -152,6 +152,14 @@ export function poseDoLugar(lugar: Pick<LugarBuscavel, 'id' | 'x' | 'y' | 'z'>):
     case 'doSol':
       // do lado do Sol, em cima da linha de visada: a forma do céu
       dir = alvo.clone().negate().normalize();
+      if (linha.elevacaoGraus) {
+        // erguida acima do plano da galáxia, no meridiano galáctico da linha
+        dir
+          .projectOnPlane(ngp)
+          .normalize()
+          .multiplyScalar(Math.cos(linha.elevacaoGraus * GRAU))
+          .addScaledVector(ngp, Math.sin(linha.elevacaoGraus * GRAU));
+      }
       polo = NORTE_CELESTE.clone();
       break;
     case 'deCimaDoDisco':

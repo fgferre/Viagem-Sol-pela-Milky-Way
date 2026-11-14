@@ -7,8 +7,7 @@
 //
 // Custo longe do centro: ZERO — o passe fica enabled=false (o
 // EffectComposer o pula por inteiro) e os shaders só compilam na
-// primeira aproximação (~2,4 kpc, no meio do warp do mergulho —
-// um hitch de um frame escondido pelo movimento).
+// primeira aproximação (~300 pc; ver FADE_LONGE_PC).
 //
 // ESCALA ARTÍSTICA (documentada): o RS real de Sgr A* (4,15e6 M☉)
 // é 4e-7 pc — invisível a qualquer distância de voo. Adotamos
@@ -60,6 +59,16 @@ export interface EntregaDoBuraco {
   fade: number;
 }
 
+// ATÉ ONDE O INFLADO SE MOSTRA (13/11/2026). A lente dobra a cena como se
+// tudo estivesse atrás do buraco, e o aglomerado nuclear (tipo 8 da galáxia,
+// raio ~4 pc) está colado nele: o anel de Einstein dele tem raio √(2·RS/d),
+// ~8 px a 830 pc com o RS inflado — um anel claro com a sombra no meio,
+// visível de dentro do disco na saída do filme (t≈138–143) e na chegada
+// (t≈108–114). O Sgr A✱ verdadeiro não faz anel nenhum a essa distância.
+// O desenho (escala artística) fica só onde o rasante o pede.
+const FADE_PERTO_PC = 100;
+const FADE_LONGE_PC = 300;
+
 /** de onde para dentro o RS desenhado começa a descer ao real, em pc */
 export const INICIO_DA_DESCIDA_PC = 1.4;
 
@@ -95,7 +104,7 @@ function lnEquivalente(x: number): number {
  * acima.
  */
 export function entregaDoBuraco(dGC: number): EntregaDoBuraco {
-  const fade = 1 - THREE.MathUtils.smoothstep(dGC, 1400, 2400);
+  const fade = 1 - THREE.MathUtils.smoothstep(dGC, FADE_PERTO_PC, FADE_LONGE_PC);
   let rsPc = RS_PC;
   if (dGC <= RAIOS_DA_ENTREGA_DO_BURACO * RS_SGR_A_PC) rsPc = RS_SGR_A_PC;
   else if (dGC < INICIO_DA_DESCIDA_PC) rsPc = dGC / Math.exp(lnEquivalente(Math.log(dGC)));

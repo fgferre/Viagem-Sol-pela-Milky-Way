@@ -72,7 +72,7 @@ const DURACAO_DA_TROCA = 1.5;
 const TROCA_PARA: Readonly<Partial<Record<RelogioSolar, { inicio: number; duracao: number }>>> = {
   jupiter: { inicio: -DURACAO_DA_TROCA, duracao: DURACAO_DA_TROCA },
   fora: { inicio: 1, duracao: DURACAO_DA_TROCA },
-  escuro: { inicio: 7, duracao: DURACAO_DA_TROCA },
+  escuro: { inicio: 4.5, duracao: DURACAO_DA_TROCA },
   a: { inicio: 0, duracao: 0 },
 };
 
@@ -113,10 +113,12 @@ export function montarFilmeSolar(): FilmeSolarMontado {
    * tarde: a 2,5 s Saturno, que a câmera mira, ainda é um ponto.
    *
    * JD2 → JD_E (7 h para trás: Saturno gira 237°, Encélado anda 77° na
-   * órbita) cai DENTRO da saída de Saturno, 7 s depois do começo dela:
-   * a câmera já deu a volta por fora do planeta e olha Urano, com Saturno
-   * e as luas atrás dela (atos/afastamento.test.ts confere, a cada 1/30 s
-   * da rampa, que estão a mais de meio quadro mais 10° da visada).
+   * órbita) começa no fim da saída de Saturno, 4,5 s depois do começo
+   * dela, e acaba no meio da chegada a Urano: a câmera já deu a volta
+   * por fora do planeta e olha Urano, ainda um ponto,
+   * com Saturno e as luas atrás dela (atos/afastamento.test.ts confere, a
+   * cada 1/30 s da rampa, que estão a mais de meio quadro mais 10° da
+   * visada).
    *
    * JD_E → JD_A (de volta ao céu do ato I, nove dias e meio adiante) é um
    * DEGRAU, no corte do retrato de família para a Terra: a câmera salta

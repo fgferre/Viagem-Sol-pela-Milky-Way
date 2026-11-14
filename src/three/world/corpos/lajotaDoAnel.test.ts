@@ -167,11 +167,11 @@ describe('2. a ancoragem no mundo — quem segue a câmera é o LADRILHO', () =>
     };
   }
 
-  it('o lado do ladrilho no shader é o dele: 7 000 km', () => {
+  it('o lado do ladrilho no shader é 4 900 km (o dele, 7 000, encolhido em 13/11)', () => {
     const l = lajotaDeTeste();
     // o gerador escreve o número em notação exponencial com 8 casas —
     // por isso a comparação é de 9 dígitos, não de 12
-    expect(contaDoLadrilho(l).lado).toBeCloseTo(7000 / KM_POR_RAIO, 9);
+    expect(contaDoLadrilho(l).lado).toBeCloseTo(4900 / KM_POR_RAIO, 9);
     l.dispose();
   });
 
