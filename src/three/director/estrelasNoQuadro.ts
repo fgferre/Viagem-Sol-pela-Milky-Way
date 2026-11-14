@@ -265,6 +265,8 @@ export class EstrelaPeloMotorDoSol {
     g: number;
     alturaCss: number;
     exposicao: number;
+    /** a exposição com o disco enchendo o quadro (g = 0): o nível da casca */
+    exposicaoPlena: number;
     peso: number;
     jd: number;
     tempoS: number;
@@ -272,7 +274,8 @@ export class EstrelaPeloMotorDoSol {
     this.group.position.copy(q.posPc);
     if (this.group.visible) {
       this.corpo.escreverFiltroSolar(q.g, q.alturaCss);
-      this.corpo.escreverBrilho(radianciaVisivelDeCorpoNegro(this.fotosfera.teffK) * q.exposicao);
+      const rad = radianciaVisivelDeCorpoNegro(this.fotosfera.teffK);
+      this.corpo.escreverBrilho(rad * q.exposicao, rad * q.exposicaoPlena);
       this.corpo.escreverPesoDaLei(q.peso);
     }
     // a fase do ciclo é a do CALENDÁRIO DO SOL (a lei `faseDoCiclo`):
@@ -765,14 +768,13 @@ export class EstrelasNoQuadro {
     const g = lei.overrideExpoente;
     // a exposição da visita entra pela MESMA rampa do filtro, ao contrário:
     // plena com o disco enchendo o quadro (g = 0), nenhuma no ponto (g = 1)
+    const plena = ganhoDaVisita(s.corpo.fotosfera.teffK, this.fios.politicaDeLuz());
     s.corpo.escrever({
       posPc: pos,
       g,
       alturaCss,
-      exposicao: Math.pow(
-        ganhoDaVisita(s.corpo.fotosfera.teffK, this.fios.politicaDeLuz()),
-        1 - Math.min(1, Math.max(0, g))
-      ),
+      exposicao: Math.pow(plena, 1 - Math.min(1, Math.max(0, g))),
+      exposicaoPlena: plena,
       peso: lei.wResolvido * lei.wMalha,
       jd: q.jd,
       tempoS: q.tempoS,
