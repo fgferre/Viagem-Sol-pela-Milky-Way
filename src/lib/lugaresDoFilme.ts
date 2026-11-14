@@ -152,8 +152,8 @@ const CATALOGO_DA_CASA = { pt: 'catálogo da casa (AT-HYG)', en: 'the app’s ca
 const MODELO_DA_CASA = { pt: 'modelo da galáxia da casa', en: 'the app’s galaxy model' };
 const MODELO_DAS_VIZINHAS = { pt: 'modelo de partículas da casa', en: 'the app’s particle model' };
 const MASSA_POR_ESTRELA = {
-  pt: 'massa estelar ÷ massa média de uma estrela (0,3–0,5 M☉)',
-  en: 'stellar mass ÷ the mean mass of a star (0.3–0.5 M☉)',
+  pt: 'massa estelar ÷ massa média de uma estrela (0,3–\u20600,5\u00A0M☉)',
+  en: 'stellar mass ÷ the mean mass of a star (0.3–\u20600.5\u00A0M☉)',
 };
 const TEMPO_DA_LUZ = { pt: 'distância ÷ velocidade da luz', en: 'distance ÷ speed of light' };
 
@@ -258,8 +258,9 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     fatos: [
       {
         campo: 'periodo',
-        pt: 'uma volta a cada 16,05 anos',
-        en: 'one orbit every 16.05 years',
+        // o nome da linha já é "Uma volta": o valor não repete a palavra
+        pt: 'a cada 16,05 anos',
+        en: 'every 16.05 years',
         procedencia: 'medido',
         fonte: 'GRAVITY Collaboration 2020 (A&A 636, L5)',
       },
