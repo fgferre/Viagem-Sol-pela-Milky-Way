@@ -1,0 +1,337 @@
+{
+  "planos": [
+    {
+      "nome": "casaDeFora",
+      "qa": {
+        "casaDeFora": 0.45
+      },
+      "camera": {
+        "duracao": 5,
+        "movimento": {
+          "tipo": "curva",
+          "de": "saidaDeSirius",
+          "controle1": "passagemPelaCasa1",
+          "controle2": "passagemPelaCasa2",
+          "para": "pausaAntesDeProxima",
+          "progresso": {
+            "tipo": "rampa",
+            "de": 0,
+            "para": 1,
+            "ritmo": "launch"
+          }
+        },
+        "ritmo": "linear",
+        "mira": {
+          "tipo": "passagem",
+          "de": "Proxima Centauri",
+          "assunto": "miraDoRumoDaCasa",
+          "rumo": "Proxima Centauri",
+          "entrada": 0.15,
+          "saida": 0.7
+        },
+        "lente": [
+          "lente",
+          "lente"
+        ]
+      },
+      "assuntos": [
+        "SOL"
+      ],
+      "fundoSilencioso": true,
+      "legendas": [
+        {
+          "em": 0.18,
+          "texto": "Casa",
+          "subtexto": "o Sol, visto de fora",
+          "en": {
+            "texto": "Home",
+            "subtexto": "the Sun, seen from outside"
+          },
+          "duracao": 2.4
+        }
+      ]
+    },
+    {
+      "nome": "chegadaAProxima",
+      "qa": {
+        "chegadaAProxima": 0.5
+      },
+      "camera": {
+        "duracao": 3,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "Proxima Centauri",
+          "de": "pausaAntesDeProxima",
+          "para": "chegadaAProxima",
+          "ritmoDaDirecao": "easeOut"
+        },
+        "mira": {
+          "tipo": "fixo",
+          "ponto": "Proxima Centauri"
+        },
+        "lente": [
+          "lente",
+          "lente"
+        ]
+      },
+      "assuntos": [
+        "Proxima Centauri"
+      ],
+      "destino": "Proxima Centauri",
+      "fundoSilencioso": true
+    },
+    {
+      "nome": "aVizinha",
+      "qa": {
+        "aVizinha": 0.5
+      },
+      "camera": {
+        "duracao": 10,
+        "movimento": {
+          "tipo": "arco",
+          "centro": "Proxima Centauri",
+          "direcaoDe": "arcoDeProximaDe",
+          "direcaoPara": "arcoDeProximaPara",
+          "raio": [
+            "raioDoArcoDeProxima",
+            "raioDoArcoDeProxima"
+          ]
+        },
+        "mira": {
+          "tipo": "fixo",
+          "ponto": "Proxima Centauri"
+        },
+        "lente": [
+          "lente",
+          "lente"
+        ]
+      },
+      "olhar": "assunto",
+      "assuntos": [
+        "Rigil Kentaurus"
+      ],
+      "fundoSilencioso": true,
+      "legendas": [
+        {
+          "em": 0.2,
+          "texto": "Próxima Centauri",
+          "subtexto": "A vizinha mais perto: pequena, fria, econômica",
+          "en": {
+            "texto": "Proxima Centauri",
+            "subtexto": "The nearest neighbour: small, cool, thrifty"
+          },
+          "duracao": 6
+        }
+      ]
+    },
+    {
+      "nome": "proximaB",
+      "qa": {
+        "proximaB": 0.85
+      },
+      "camera": {
+        "duracao": 7,
+        "movimento": {
+          "tipo": "aproximacao",
+          "centro": "proximaB",
+          "de": "fimDoArcoDeProxima",
+          "para": "noRostoDeB"
+        },
+        "mira": {
+          "tipo": "pan",
+          "de": "Proxima Centauri",
+          "para": "miraEmB",
+          "ritmo": "glide"
+        },
+        "lente": [
+          "lente",
+          "lenteEmB"
+        ]
+      },
+      "olhar": "assunto",
+      "fundoSilencioso": true,
+      "legendas": [
+        {
+          "em": 0.55,
+          "texto": "Próxima b",
+          "subtexto": "um ano de 11 dias; a superfície é estimada",
+          "en": {
+            "texto": "Proxima b",
+            "subtexto": "a year of 11 days; the surface is an estimate"
+          },
+          "duracao": 3.2
+        }
+      ]
+    },
+    {
+      "nome": "paraTrappist",
+      "qa": {
+        "paraTrappist": 0.7
+      },
+      "camera": {
+        "duracao": 8,
+        "movimento": {
+          "tipo": "sequencia",
+          "trechos": [
+            {
+              "ate": 0.3,
+              "movimento": {
+                "tipo": "aproximacao",
+                "centro": "proximaB",
+                "de": "noRostoDeB",
+                "para": "saidaDeB",
+                "progresso": {
+                  "tipo": "rampa",
+                  "de": 0,
+                  "para": 1,
+                  "ritmo": "quadratic"
+                }
+              }
+            },
+            {
+              "ate": 1,
+              "movimento": {
+                "tipo": "aproximacao",
+                "centro": "TRAPPIST-1",
+                "de": "saidaDeB",
+                "para": "naOrbitaDeG",
+                "ritmoDaDirecao": "easeOut",
+                "progresso": {
+                  "tipo": "rampa",
+                  "de": 0,
+                  "para": 1,
+                  "ritmo": "smooth"
+                }
+              }
+            }
+          ]
+        },
+        "ritmo": "linear",
+        "mira": {
+          "tipo": "pan-direcao",
+          "de": "miraEmB",
+          "para": "TRAPPIST-1",
+          "ate": 0.35
+        },
+        "lente": [
+          "lenteEmB",
+          "lenteEmB"
+        ],
+        "inclinacao": {
+          "tipo": "rampa",
+          "de": 0,
+          "para": "rolagemNaPassagem",
+          "ritmo": "smooth"
+        }
+      },
+      "assuntos": [
+        "TRAPPIST-1"
+      ],
+      "destino": "TRAPPIST-1",
+      "fundoSilencioso": true
+    },
+    {
+      "nome": "passagemDeG",
+      "qa": {
+        "passagemDeG": 0.52
+      },
+      "relogio": {
+        "diasPorSegundo": "relogioLento"
+      },
+      "camera": {
+        "duracao": "duracaoDaPassagem",
+        "movimento": {
+          "tipo": "fixo",
+          "ponto": "naOrbitaDeG"
+        },
+        "mira": {
+          "tipo": "fixo",
+          "ponto": "TRAPPIST-1"
+        },
+        "lente": [
+          "lenteEmB",
+          "lenteEmB"
+        ],
+        "inclinacao": {
+          "tipo": "fixo",
+          "valor": "rolagemNaPassagem"
+        }
+      },
+      "olhar": "assunto",
+      "assuntos": [
+        "TRAPPIST-1 g"
+      ],
+      "fundoSilencioso": true,
+      "legendas": [
+        {
+          "em": 0.12,
+          "texto": "TRAPPIST-1",
+          "subtexto": "sete planetas; todos passam à frente dela",
+          "en": {
+            "texto": "TRAPPIST-1",
+            "subtexto": "seven planets, all passing in front of it"
+          },
+          "duracao": 4
+        }
+      ]
+    },
+    {
+      "nome": "osSeteGirando",
+      "qa": {
+        "osSeteGirando": 0.6
+      },
+      "relogio": {
+        "diasPorSegundo": "relogioRapido"
+      },
+      "camera": {
+        "duracao": 9,
+        "movimento": {
+          "tipo": "curva",
+          "de": "naOrbitaDeG",
+          "controle1": "subida1",
+          "controle2": "subida2",
+          "para": "sistemaAberto"
+        },
+        "mira": {
+          "tipo": "fixo",
+          "ponto": "TRAPPIST-1"
+        },
+        "lente": [
+          "lenteEmB",
+          "lenteAberta"
+        ],
+        "inclinacao": {
+          "tipo": "soma",
+          "curvas": [
+            {"tipo": "rampa", "de": "rolagemNaPassagem", "para": "rolagemAberta", "ritmo": "glide"},
+            {"tipo": "pulso-limitado", "amplitude": "desvioDaSubida", "velocidade": "velocidadeDoPulsoDaSubida"}
+          ]
+        }
+      },
+      "olhar": "assunto",
+      "assuntos": [
+        "TRAPPIST-1 b",
+        "TRAPPIST-1 h"
+      ],
+      "fundoSilencioso": true,
+      "legendas": [
+        {
+          "em": 0.18,
+          "texto": "Um ano dura de 1,5 a 19 dias",
+          "en": {
+            "texto": "A year lasts from 1.5 to 19 days"
+          },
+          "duracao": 3.8
+        },
+        {
+          "em": 0.62,
+          "texto": "Estrelas assim vão brilhar muito depois do Sol",
+          "en": {
+            "texto": "Stars like this will shine long after the Sun"
+          },
+          "duracao": 3.2
+        }
+      ]
+    }
+  ]
+}

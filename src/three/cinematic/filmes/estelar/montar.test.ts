@@ -37,9 +37,10 @@ const plano = (extra: Record<string, unknown>) => ({
 describe('o filme estelar (E0)', () => {
   it('o prólogo: três planos, ~22 s, e todo assunto é algo que o app desenha com nome', () => {
     const m = montarFilmeEstelar();
-    expect(m.shots.map((s) => s.nome)).toEqual(['solNaMetade', 'paraOrion', 'orionDeCasa']);
-    expect(m.duracao).toBe(22);
-    const assuntos = m.shots.flatMap((s) => s.target ?? []);
+    const doPrologo = m.shots.slice(0, m.planosPorAto[0]);
+    expect(doPrologo.map((s) => s.nome)).toEqual(['solNaMetade', 'paraOrion', 'orionDeCasa']);
+    expect(m.starts[3]).toBe(22);
+    const assuntos = doPrologo.flatMap((s) => s.target ?? []);
     expect(assuntos).toEqual(['Betelgeuse', 'Rigel', 'Alnitak', 'Alnilam', 'Mintaka']);
     // contra o catálogo de verdade: tabela da Busca, ou estrela das nomeadas
     for (const nome of assuntos) expect(assuntoDasTabelas(nome) !== null || nomeadas.has(nome), nome).toBe(true);
