@@ -54,7 +54,8 @@
           "pontos": ["sobreOAnelA", "rasante", "entradaNoAnel"]
         },
         "mira": {"tipo": "fixo", "ponto": "Saturno"},
-        "lente": [58, 58]
+        "lente": [58, 58],
+        "inclinacao": {"tipo": "rampa", "de": 0, "para": "inclinacaoNoAnel", "ritmo": "glide"}
       },
       "fundoSilencioso": true,
       "legendas": [
@@ -75,10 +76,11 @@
       "nome": "saturnoDentroDoAnel",
       "qa": {"rasanteDosAneis": 0.5},
       "camera": {
-        "duracao": 4.5,
+        "duracao": 5.5,
         "movimento": {"tipo": "reta", "de": "entradaNoAnel", "para": "saidaDoAnel"},
         "mira": {"tipo": "fixo", "ponto": "Saturno"},
-        "lente": [58, 58]
+        "lente": [58, 58],
+        "inclinacao": {"tipo": "fixo", "valor": "inclinacaoNoAnel"}
       },
       "fundoSilencioso": true,
       "legendas": [
@@ -112,7 +114,8 @@
           }
         },
         "mira": {"tipo": "fixo", "ponto": "Saturno"},
-        "lente": [58, 58]
+        "lente": [58, 58],
+        "inclinacao": {"tipo": "rampa", "de": "inclinacaoNoAnel", "para": 0, "ritmo": "glide"}
       },
       "fundoSilencioso": true,
       "olhar": "assunto"

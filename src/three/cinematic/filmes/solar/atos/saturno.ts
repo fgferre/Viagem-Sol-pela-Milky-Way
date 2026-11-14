@@ -1,11 +1,11 @@
 // O ATO III DO FILME SOLAR — Saturno, os anéis, Encélado, Titã, Jápeto e
 // Hipérion. Pontos e números nomeados de `roteiros/solar/saturno.json`.
 import * as THREE from 'three';
-import { IAU_ORIENTATIONS } from '../../../../../lib/atlas/iauOrientation';
+import { BODY_AXES, IAU_ORIENTATIONS } from '../../../../../lib/atlas/iauOrientation';
 import { baseCorpoEquatorial } from '../../../../../lib/atlas/orientacao';
 import { JD2_SOLAR_TDB } from '../pinos';
 import {
-  ENCELADO, HIPERION, JAPETO, JUPITER, R_ENCELADO, R_HIPERION, R_JAPETO, R_SATURNO, R_TITA, SATURNO, SOL, TITA,
+  CIMA_DA_ECLIPTICA, ENCELADO, HIPERION, JAPETO, JUPITER, R_ENCELADO, R_HIPERION, R_JAPETO, R_SATURNO, R_TITA, SATURNO, SOL, TITA,
   ate, girar, naSuperficie, perpendicular, rad, versor,
 } from './geometria';
 
@@ -40,12 +40,26 @@ export const RAIO_DO_CRUZAMENTO = 1.99;
 const CHEGADA_A_SATURNO = emSaturno(14, az(0), -14 * Math.sin(rad(2)));
 const SOBRE_O_ANEL_A = emSaturno(2.25, az(60), -0.04);
 const RASANTE = emSaturno(2.17, az(65), -0.012);
-/** o voo DENTRO do anel A, pela face acesa: a ~270 e ~240 km do plano a
- *  câmera está na faixa em que a lajota do anel desenha os grãos de gelo
- *  (até 1 600 km do plano, com fade linear: aqui ~85 % da dose), e anda
- *  ~2 500 km — devagar, para os grãos passarem como pedras, não como chuvisco */
-const ENTRADA_NO_ANEL = emSaturno(2.13, az(67.5), -0.0045);
-const SAIDA_DO_ANEL = emSaturno(2.11, az(68.6), -0.004);
+/** o voo DENTRO do anel A, pela face acesa, como na referência do dono:
+ *  RENTE ao plano, a `altura` km dele — logo fora da lajota de ±12 km, onde
+ *  o campo de grãos enche a metade de cima do quadro até o horizonte —,
+ *  olhando ao longo do plano para Saturno e andando `passo` km quase de frente
+ *  para ele, devagar o bastante para os grãos passarem como pedras */
+const VOO_NO_ANEL = { altura: 20, raio: 2.13, passo: 400 };
+const KM_EM_RAIOS = 1 / BODY_AXES.saturn[0]!;
+const ENTRADA_NO_ANEL = emSaturno(VOO_NO_ANEL.raio, az(67.6), -VOO_NO_ANEL.altura * KM_EM_RAIOS);
+const SAIDA_DO_ANEL = emSaturno(
+  VOO_NO_ANEL.raio - VOO_NO_ANEL.passo * KM_EM_RAIOS, az(67.6), -VOO_NO_ANEL.altura * KM_EM_RAIOS
+);
+/** o horizonte do anel DEITADO no quadro, com o anel em cima e Saturno
+ *  embaixo: o roll que leva o "cima" do filme (a eclíptica) ao polo de
+ *  Saturno visto da entrada — a conta do `lookAt` da câmera do rig */
+function rollAtePolo(de: THREE.Vector3, para: THREE.Vector3): number {
+  const z = de.clone().sub(para).normalize();
+  const x = new THREE.Vector3().crossVectors(CIMA_DA_ECLIPTICA, z).normalize();
+  const y = new THREE.Vector3().crossVectors(z, x);
+  return Math.atan2(-POLO_DE_SATURNO.dot(x), POLO_DE_SATURNO.dot(y));
+}
 const CRUZAMENTO = emSaturno(RAIO_DO_CRUZAMENTO, az(76), 0);
 const ALEM_DO_CRUZAMENTO = emSaturno(2.02, az(84), 0.04);
 const SUBIDA = emSaturno(2.8, az(100), 0.6);
@@ -125,4 +139,6 @@ export const NUMEROS_SATURNO: Readonly<Record<string, number>> = {
   raspaoDeEncelado: 3.5 * R_ENCELADO, raspaoDeTita: RASPAO_DE_TITA.raio * R_TITA,
   raspaoDeJapeto: RASPAO_DE_JAPETO.raio * R_JAPETO, raspaoDeHiperion: 3 * R_HIPERION,
   raioDoPostalDe: POSTAL_1.distanceTo(SATURNO), raioDoPostalPara: POSTAL_2.distanceTo(SATURNO),
+  /** em radianos */
+  inclinacaoNoAnel: rollAtePolo(ENTRADA_NO_ANEL, SATURNO),
 };
