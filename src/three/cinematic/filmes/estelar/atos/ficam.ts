@@ -33,9 +33,10 @@ const meiaLargura = (graus: number) => Math.atan(Math.tan(rad(graus / 2)) * 16 /
 // alto); o voo começa devagar (`launch` no JSON), então o Sol fica ~2 s
 // quase parado no terço, cresce e sai pelo alto à esquerda quando a câmera
 // passa por ele (a ~0,7 pc). Com o Sol já fora a mira volta para Próxima,
-// enquanto a curva dobra para ela. No fim o voo chega à PAUSA, a
-// `PAUSA_ANTES` pc de Próxima, onde a travessia exponencial começa do
-// repouso — nada perto está à vista para a troca de ritmo se notar.
+// enquanto a curva dobra para ela. No fim o voo passa pela EMENDA, a
+// `PAUSA_ANTES` pc de Próxima, onde a travessia exponencial (E1b) continua
+// na mesma velocidade — na primeira versão ela recomeçava do repouso, e a
+// câmera parava no vazio (nota do diretor, segunda passada).
 /** onde o Sol fica no quadro, olhando o rumo da saída (frações da meia largura e da meia altura) */
 const SOL_NO_QUADRO = { x: -1 / 3, y: 0.2 };
 const PARA_O_SOL = ate(SAIDA, SOL);
@@ -56,6 +57,13 @@ const DE_PROXIMA_PARA_A_PAUSA = ate(PROXIMA, PASSAGEM);
 const PAUSA = PROXIMA.clone().addScaledVector(DE_PROXIMA_PARA_A_PAUSA, PAUSA_ANTES);
 /** a curva: sai no rumo, segue quase reta pelo Sol e chega à pausa olhando Próxima */
 const CURVA_DA_PASSAGEM = { saida: 2.4, chegada: 0.5 };
+/** as durações de E1a e E1b, em s */
+const DURACAO = { casaDeFora: 5, chegadaAProxima: 3 };
+/** a derivada de `launch` (x^2,6, o avanço de E1a) na ponta, e a de `settle` (1 − (1 − x)^2,2) no começo */
+const LAUNCH_NA_PONTA = 2.6;
+const SETTLE_NO_COMECO = 2.2;
+/** a velocidade (pc/s) com que E1a chega à emenda: a ponta da Bézier, 3·chegada, no avanço `launch` */
+const VELOCIDADE_NA_EMENDA = (3 * CURVA_DA_PASSAGEM.chegada * LAUNCH_NA_PONTA) / DURACAO.casaDeFora;
 
 // ================= E2 — A VIZINHA =================
 // Próxima com o disco a um terço da altura do quadro (o raio do corpo a
@@ -73,6 +81,15 @@ const CIMA_EM_PROXIMA = perpendicular(CIMA_DA_ECLIPTICA, PARA_ALFA);
 const comAlfaA = (graus: number) => girada(PARA_ALFA.clone().negate(), CIMA_EM_PROXIMA, graus);
 const ALFA_NO_ARCO = { de: 26, para: 13 };
 const FIM_DO_ARCO = PROXIMA.clone().addScaledVector(comAlfaA(ALFA_NO_ARCO.para), RAIO_DO_ARCO_DE_PROXIMA);
+/**
+ * O AVANÇO DE E1b sem parar na emenda: a distância a Próxima cai por razão
+ * constante, `d = d0·(d1/d0)^e(u)`, então a velocidade no começo é
+ * `d0·ln(d0/d1)·e'(0)/T`. O avanço é `c·settle + (1 − c)·glide`: começa com
+ * `e'(0) = 2,2·c`, a velocidade de E1a, e pousa no arco de E2 parado.
+ */
+const EMENDA_NA_CHEGADA =
+  (VELOCIDADE_NA_EMENDA * DURACAO.chegadaAProxima) /
+  (PAUSA_ANTES * Math.log(PAUSA_ANTES / RAIO_DO_ARCO_DE_PROXIMA) * SETTLE_NO_COMECO);
 
 // ================= E3 — PRÓXIMA B =================
 // O planeta só tem rosto de perto: a `PERTO_DE_B` raios dele. A câmera sai
@@ -131,9 +148,12 @@ const RELOGIO = { lento: 0.025, rapido: 2 };
 const DURACAO_DA_PASSAGEM = 5;
 /** o instante (s do plano) em que g passa mais perto */
 const G_PASSA_EM = 2.6;
-const PASSAGEM_DE_G = 0.001;
-/** quantos graus abaixo da estrela g passa, visto da câmera */
-const G_ABAIXO = 1.8;
+/** a 0,0008 UA (17 raios de g) e na lente de 40°, o disco toma ~1/6 da
+ *  altura do quadro na passagem; na primeira versão (0,001 UA, 50°), ~1/10 */
+const PASSAGEM_DE_G = 0.0008;
+const LENTE_NA_PASSAGEM = 40;
+/** quantos graus abaixo da estrela g passa, visto da câmera: com o disco de ~3,4° de raio, a estrela fica rente à borda de cima */
+const G_ABAIXO = 3;
 const G_NA_PASSAGEM = posicaoDoExoplanetaNaCena(
   'trappist-1g', JD_DO_FILME_TDB + RELOGIO.lento * G_PASSA_EM, TRAPPIST
 )!;
@@ -216,7 +236,12 @@ export const NUMEROS_FICAM: Readonly<Record<string, number>> = {
   lente: LENTE,
   raioDoArcoDeProxima: RAIO_DO_ARCO_DE_PROXIMA,
   lenteEmB: LENTE_EM_B,
+  lenteNaPassagem: LENTE_NA_PASSAGEM,
   lenteAberta: LENTE_ABERTA,
+  duracaoDaCasaDeFora: DURACAO.casaDeFora,
+  duracaoDaChegadaAProxima: DURACAO.chegadaAProxima,
+  emendaNaChegada: EMENDA_NA_CHEGADA,
+  restoDaChegada: 1 - EMENDA_NA_CHEGADA,
   relogioLento: RELOGIO.lento,
   relogioRapido: RELOGIO.rapido,
   duracaoDaPassagem: DURACAO_DA_PASSAGEM,
@@ -229,5 +254,5 @@ export const NUMEROS_FICAM: Readonly<Record<string, number>> = {
 /** para os testes: o que o ato promete, em números */
 export const FICAM = {
   SOL_NO_QUADRO, DISCO, ALFA_NO_ARCO, meiaLargura, PERTO_DE_B, R_B, FASE_EM_B, G_PASSA_EM, PASSAGEM_DE_G,
-  G_ABAIXO, POLO_DE_G, ELEVACAO_FINAL, RELOGIO,
+  G_ABAIXO, POLO_DE_G, ELEVACAO_FINAL, RELOGIO, VELOCIDADE_NA_EMENDA,
 } as const;

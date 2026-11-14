@@ -70,10 +70,10 @@ const jd = (t: number) => filme.jdDoFilme(t);
 const planetaEm = (id: string, t: number, estrela: THREE.Vector3) => posicaoDoExoplanetaNaCena(id, jd(t), estrela)!;
 
 describe('o Ato 5 — Próxima e TRAPPIST-1', () => {
-  it('sete planos, ~47 s, na ordem do roteiro, e começa na junta de Sírius: parado, mirando Próxima, lente 40°', () => {
+  it('sete planos, ~52 s, na ordem do roteiro, e começa na junta de Sírius: parado, mirando Próxima, lente 40°', () => {
     const { i } = plano(PLANOS[0]);
     expect(filme.shots.slice(i, i + PLANOS.length).map((s) => s.nome)).toEqual(PLANOS);
-    expect(ATO.fim - ATO.inicio).toBe(47);
+    expect(ATO.fim - ATO.inicio).toBe(52);
     const a = journey.at(ATO.inicio);
     expect(a.pos.distanceTo(PONTOS_DAS_JUNTAS.saidaDeSirius)).toBeLessThan(1e-12);
     expect(graus(a.look.clone().sub(a.pos).angleTo(PROXIMA.clone().sub(a.pos)))).toBeLessThan(1e-6);
@@ -95,6 +95,22 @@ describe('o Ato 5 — Próxima e TRAPPIST-1', () => {
       expect(Math.abs(antes.fov - depois.fov), PLANOS[n]).toBeLessThan(1e-6);
       expect(Math.abs(antes.roll - depois.roll), PLANOS[n]).toBeLessThan(1e-6);
     }
+  });
+
+  it('E1: a travessia não para na emenda com a chegada a Próxima — mesma velocidade e mesmo rumo dos dois lados', () => {
+    const t = plano('chegadaAProxima').inicio;
+    const antes = journey.at(t - 1e-4).pos.sub(journey.at(t - 2e-3).pos);
+    const depois = journey.at(t + 2e-3).pos.sub(journey.at(t + 1e-4).pos);
+    expect(antes.length() / 1.9e-3).toBeCloseTo(FICAM.VELOCIDADE_NA_EMENDA, 1);
+    expect(depois.length() / antes.length()).toBeCloseTo(1, 1);
+    expect(graus(antes.angleTo(depois))).toBeLessThan(0.5);
+  });
+
+  it('as camadas: sem a zona habitável nem as órbitas de perto (E3, E4, E5a); a zona volta na vista de cima (E5b)', () => {
+    for (const nome of ['proximaB', 'paraTrappist', 'passagemDeG']) {
+      expect(filme.shots[plano(nome).i].camadas, nome).toEqual({ zonaHabitavel: false, orbitas: false });
+    }
+    expect(filme.shots[plano('osSeteGirando').i].camadas).toBeUndefined();
   });
 
   it('a câmera nunca entra numa estrela nem num planeta: fica a mais de 2 raios de cada um, a cada 1/30 s', () => {
@@ -195,6 +211,11 @@ describe('o Ato 5 — Próxima e TRAPPIST-1', () => {
     }
     expect(cobre).toBeGreaterThan(FICAM.G_PASSA_EM - 0.4);
     expect(cobre).toBeLessThan(FICAM.G_PASSA_EM);
+    // no meio da passagem o disco de g toma pelo menos 1/8 da altura do quadro
+    const meio = journey.at(inicio + FICAM.G_PASSA_EM);
+    const dG = meio.pos.distanceTo(planetaEm('trappist-1g', inicio + FICAM.G_PASSA_EM, TRAPPIST));
+    const altura = Math.tan(Math.asin(rG / dG)) / Math.tan(THREE.MathUtils.degToRad(meio.fov / 2));
+    expect(altura).toBeGreaterThan(1 / 8);
     expect(noQuadro(journey.at(inicio + 0.8), planetaEm('trappist-1g', inicio + 0.8, TRAPPIST)).x).toBeLessThan(-0.9);
     expect(noQuadro(journey.at(fim - 0.8), planetaEm('trappist-1g', fim - 0.8, TRAPPIST)).x).toBeGreaterThan(0.9);
   });
@@ -229,5 +250,12 @@ describe('o Ato 5 — Próxima e TRAPPIST-1', () => {
     expect(texto).toContain(`de ${virgula(periodo('trappist-1b'), 1)} a ${Math.round(periodo('trappist-1h'))} dias`);
     expect(sistemaDaEstrela('TRAPPIST-1')!.planetas.length).toBe(7);
     expect(texto).toContain('sete planetas');
+    // E5b: três legendas, uma depois da outra, sem se sobrepor
+    const { i, dur } = plano('osSeteGirando');
+    const janelas = filme.shots[i].captions!.map((c) => [c.at * dur, c.at * dur + c.dur!]);
+    expect(janelas.length).toBe(3);
+    for (let k = 1; k < janelas.length; k++) expect(janelas[k][0]).toBeGreaterThan(janelas[k - 1][1]);
+    expect(janelas[2][1]).toBeLessThan(dur);
+    expect(texto).toContain('A zona habitável');
   });
 });
