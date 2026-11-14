@@ -468,6 +468,17 @@ const ELEMENTOS: Readonly<Record<string, readonly ConjuntoOsculante[]>> = {
   ],
 };
 
+/**
+ * O NOME PELO QUAL O COMETA É CONHECIDO (crítica de 13/11: busca-se "67P"
+ * e a ficha dizia só "Churyumov–Gerasimenko"). Periódico numerado cuja
+ * designação é o número mais o nome ("67P/Churyumov–Gerasimenko",
+ * "1P/Halley") leva a designação inteira — o número É parte do nome; os
+ * outros ("C/1995 O1 (Hale–Bopp)") ficam com o nome. Sai do dado.
+ */
+export function nomeConhecido(c: Cometa): string {
+  return /^\d+P\/(.+)$/.exec(c.designacao)?.[1] === c.nome ? c.designacao : c.nome;
+}
+
 export function cometaPorId(id: string): Cometa | undefined {
   return COMETAS.find((c) => c.id === id);
 }

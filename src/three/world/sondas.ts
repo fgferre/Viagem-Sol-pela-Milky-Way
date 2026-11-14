@@ -121,9 +121,11 @@ const _pos = new THREE.Vector3();
  * Sol E mais perto dela do que a câmera está do Sol (13/11) — só a
  * primeira metade deixava a Pioneer 10, a 120 UA, escrever o nome no
  * retrato de Urano, que está a 19 UA do Sol e do lado dela. Fora disso
- * sobra o losango, sem
- * texto (com a camada de ícones desligada, nada). Quem a cala quando ela
- * se confunde com o Sol na tela é o produtor (`esmaecerSondasColadasNoSol`).
+ * NÃO APARECE NADA (crítica de 13/11: "dois losangos sem nome flutuando"
+ * no Atlas inicial) — marcador que aparece tem nome, como o cometa, que
+ * longe do Sol também some inteiro. O losango só acompanha o nome, com a
+ * camada de ícones ligada. Quem a cala quando ela se confunde com o Sol
+ * na tela é o produtor (`esmaecerSondasColadasNoSol`).
  */
 export function projetarSondas(
   camera: THREE.PerspectiveCamera,
@@ -137,14 +139,13 @@ export function projetarSondas(
     const emFoco = sonda.id === foco;
     const dist = _pos.distanceTo(camera.position);
     const comNome = emFoco || dist < Math.min(_pos.length(), camera.position.length());
-    if (!comNome && !comMarcador) continue;
+    if (!comNome) continue;
     const l = projectForced(camera, sonda.nome, '', _pos, `${CHAVE_DE_SONDA}${sonda.id}`);
     if (!l) continue;
     l.distPc = dist;
     l.opacity = 0.95;
     l.detalhe = classeEmTexto('sonda');
     l.prioridade = emFoco ? PRIORIDADE_DO_ROTULO.foco : PRIORIDADE_DO_ROTULO.sonda;
-    if (!comNome) l.icone = true;
     if (comMarcador) {
       l.comAnel = true;
       l.formaDoIcone = 'losango';

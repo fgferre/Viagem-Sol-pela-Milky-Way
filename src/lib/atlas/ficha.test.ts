@@ -27,6 +27,7 @@ import { ESTRELAS_VISITAVEIS, estrelaVisitavelPorNome } from './estrelasVisitave
 import {
   formatarDuracao,
   montarFicha,
+  montarFichaDeCometa,
   montarFichaDeEstrela,
   montarFichaDeExoplaneta,
   montarFichaDeLugar,
@@ -34,6 +35,7 @@ import {
 import { temperatureFromBV } from './stellarPhysics';
 import { dateToTDB } from './time';
 import { definirIdioma } from '../idioma';
+import { COMETAS, cometaPorId } from '../cometas';
 
 const DATA_DIR = fileURLToPath(
   new URL('../../../public/data/atlas/', import.meta.url)
@@ -1211,5 +1213,31 @@ describe('a ficha nas duas línguas', () => {
       .linhas.find((l) => l.rotulo === ROTULO)!;
     expect(hiperion.valor).toContain('valid');
     expect(hiperion.valor).toContain('worst case');
+  });
+});
+
+describe('a ficha do cometa diz o nome conhecido e o que o instante mostra (crítica de 13/11)', () => {
+  afterEach(() => definirIdioma('pt-BR'));
+  const p67 = cometaPorId('churyumov-gerasimenko')!;
+  /** 9/2/1986 (5,7 UA, apagado) e 13/8/2015, o periélio da Rosetta */
+  const APAGADO = 2_446_471.0;
+  const ACESO = 2_457_247.5;
+  const naCena = (jd: number) =>
+    montarFichaDeCometa(p67, jd, null).secoes[0].linhas.find((l) => l.procedencia === 'artistico')!.valor;
+
+  it('o periódico numerado leva a designação no nome; o de nome próprio, não', () => {
+    expect(montarFichaDeCometa(p67, APAGADO, null).nome).toBe('67P/Churyumov–Gerasimenko');
+    const nomes = Object.fromEntries(COMETAS.map((c) => [c.id, montarFichaDeCometa(c, null, null).nome]));
+    expect(nomes.halley).toBe('1P/Halley');
+    expect(nomes['hale-bopp']).toBe('Hale–Bopp');
+  });
+
+  it('"o que se vê aqui" segue a atividade, nas duas línguas', () => {
+    for (const idioma of ['pt-BR', 'en'] as const) {
+      definirIdioma(idioma);
+      expect(naCena(APAGADO), idioma).not.toMatch(/caudas são|tails are/);
+      expect(naCena(APAGADO), idioma).toMatch(/núcleo|nucleus/);
+      expect(naCena(ACESO), idioma).toMatch(/caudas são|tails are/);
+    }
   });
 });

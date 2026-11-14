@@ -94,6 +94,7 @@ import {
   brilhoRelativo,
   conjuntoVigente,
   estadoDoCometa,
+  nomeConhecido,
   perieliosEmVolta,
   periodoEmDias,
 } from '../cometas';
@@ -1348,6 +1349,9 @@ export function montarFichaDeCometa(
   const agora: (LinhaDaFicha | null)[] = [];
   const temData = jd !== null && jd !== undefined && Number.isFinite(jd);
   const e = temData ? estadoDoCometa(cometa.id, jd) : null;
+  // sem instante não se sabe se está aceso: vale o texto do cometa aceso,
+  // que descreve tudo o que a cena sabe desenhar
+  let aceso = true;
   if (e && temData) {
     const r = Math.hypot(e[0], e[1], e[2]);
     agora.push(linha(t('ficha.cometa.doSol'), emUa(r), 'derivado', conta));
@@ -1358,7 +1362,7 @@ export function montarFichaDeCometa(
     }
     const v = Math.hypot(e[3], e[4], e[5]) * KM_POR_S_POR_UA_DIA;
     agora.push(linha(t('ficha.cometa.velocidade'), `${numeroDoIdioma(v)} km/s`, 'derivado', conta));
-    const aceso = brilhoRelativo(cometa, r) > LIMIAR_DE_ATIVIDADE;
+    aceso = brilhoRelativo(cometa, r) > LIMIAR_DE_ATIVIDADE;
     agora.push(
       linha(
         t('ficha.cometa.atividade'),
@@ -1368,8 +1372,15 @@ export function montarFichaDeCometa(
       )
     );
   }
+  // O QUE SE VÊ SEGUE A ATIVIDADE (crítica de 13/11): o 67P inativo
+  // descrevia coma e caudas acesas que a cena, pela mesma lei, não desenha
   agora.push(
-    linha(t('ficha.cometa.naCena'), t('ficha.cometa.naCena.valor'), 'artistico', t('ficha.fonte.modeloDasCaudas'))
+    linha(
+      t('ficha.cometa.naCena'),
+      t(aceso ? 'ficha.cometa.naCena.valor' : 'ficha.cometa.naCena.inativo'),
+      'artistico',
+      t('ficha.fonte.modeloDasCaudas')
+    )
   );
 
   const orbita: (LinhaDaFicha | null)[] = [];
@@ -1420,7 +1431,7 @@ export function montarFichaDeCometa(
     ...(orbita.length ? [{ id: 'orbitaDoCometa' as const, titulo: TITULO('orbitaDoCometa'), linhas: so(orbita) }] : []),
     { id: 'oCometa', titulo: TITULO('oCometa'), linhas: so(fatos) },
   ];
-  return { id: `cometa:${cometa.id}`, nome: cometa.nome, classe: classeEmTexto(cometa.classe), secoes };
+  return { id: `cometa:${cometa.id}`, nome: nomeConhecido(cometa), classe: classeEmTexto(cometa.classe), secoes };
 }
 
 // ─── OS EXOPLANETAS (12/11/2026) ─────────────────────────────────────────
