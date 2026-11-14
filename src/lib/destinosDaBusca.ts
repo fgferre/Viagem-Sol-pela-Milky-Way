@@ -89,6 +89,25 @@ const LISTA: readonly {
 ];
 
 /**
+ * A CHEGADA DE UM DESTINO (14/11/2026), pelo id do corpo ou do lugar: a
+ * distância em raios da tabela acima (`0` = o degrau do corpo, sem pino),
+ * ou `undefined` para quem chega no enquadramento de sempre. É a ÚNICA
+ * fonte de "aonde este destino chega": o cartão, a busca digitada e o
+ * duplo clique no céu a consultam, e por isso chegam ao mesmo quadro —
+ * antes só o cartão sabia, e "Sgr A" + Enter parava na galáxia inteira.
+ */
+export function chegadaDoDestino(id: string): number | undefined {
+  return LISTA.find((l) => l.id === id)?.raios;
+}
+
+/** a chegada de uma entrada da busca — uma estrela não tem degrau próprio */
+export function chegadaDaEntrada(entrada: EntradaDaBusca): number | undefined {
+  if (entrada.tipo === 'corpo') return chegadaDoDestino(entrada.corpo.id);
+  if (entrada.tipo === 'lugar') return chegadaDoDestino(entrada.lugar.id);
+  return undefined;
+}
+
+/**
  * Os destinos de UMA categoria, resolvidos contra o índice recebido —
  * o mesmo que a paleta já tem em mãos, nunca um segundo.
  */

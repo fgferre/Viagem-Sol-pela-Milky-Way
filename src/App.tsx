@@ -35,6 +35,7 @@ import type { EstadoDoTempo, SentidoDoTempo } from './three/tempoDoAtlas';
 import { PaletaDeBusca } from './components/PaletaDeBusca';
 import { FichaDoObjeto } from './components/FichaDoObjeto';
 import { construirIndice } from './lib/buscaEstrelas';
+import { chegadaDaEntrada } from './lib/destinosDaBusca';
 import {
   Convite,
 } from './components/Spotlight';
@@ -1534,10 +1535,13 @@ export default function App() {
           onFechar={() => fecharGaveta('busca')}
           indice={indice}
           verbo={phase === 'atlas' ? 'enquadrar' : 'visitar'}
-          onEscolher={(entrada, raios) =>
-            // `raios: 0` é o degrau do corpo SEM pino (`destinosDaBusca.ts`)
-            escolherAlvo(entrada, directorRef.current, raios !== undefined ? 'corpo' : 'orbita', raios)
-          }
+          onEscolher={(entrada) => {
+            // a chegada é do DESTINO, não do caminho: cartão e linha digitada
+            // leem a mesma tabela (`chegadaDaEntrada`); `0` é o degrau do
+            // corpo SEM pino
+            const raios = chegadaDaEntrada(entrada);
+            escolherAlvo(entrada, directorRef.current, raios !== undefined ? 'corpo' : 'orbita', raios);
+          }}
           celular={celular}
         />
       )}
