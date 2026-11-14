@@ -27,7 +27,7 @@
 // nunca por Date/UT cru).
 // ============================================================
 import { tdbToDate } from '../lib/atlas/time';
-import { decimalDoIdioma, t } from '../lib/idioma';
+import { decimalDoIdioma, idiomaAtual, t } from '../lib/idioma';
 import type { ChaveDeTexto } from '../lib/idioma';
 import { PT } from '../lib/idioma/pt';
 
@@ -165,7 +165,9 @@ export function numeroPtBr(v: number): string {
  * `decimalDoIdioma` não pode mexer.
  */
 export function numeroDoIdioma(v: number): string {
-  return decimalDoIdioma(v.toFixed(1).replace(/\.0$/, ''));
+  const [, inteiro, resto] = /^(-?\d+)(.*)$/.exec(decimalDoIdioma(v.toFixed(1).replace(/\.0$/, '')))!;
+  // separador de MILHAR da língua (3.237 · 3,237) a partir de quatro algarismos
+  return inteiro!.replace(/\B(?=(\d{3})+$)/g, idiomaAtual() === 'en' ? ',' : '.') + resto;
 }
 
 const UNIDADES: readonly [number, ChaveDeTexto, ChaveDeTexto][] = [

@@ -77,13 +77,35 @@ const LISTA: readonly {
   { id: 'pleiades', categoria: 'galaxia', consulta: 'pleiades' },
   { id: 'hyades', categoria: 'galaxia', consulta: 'hyades' },
   { id: 'nebulosa-de-orion', categoria: 'galaxia', consulta: 'nebulosa-de-orion' },
-  { id: 'sagittarius-a', categoria: 'galaxia', consulta: 'sagittarius-a' },
+  // SAGITTARIUS A✱ EM `raios: 0` (14/11/2026): a prévia do cartão é o
+  // buraco de perto (`ver: 'corpo'`), e sem isto o clique parava na
+  // galáxia inteira a 6 kpc — a vista da Via Láctea tem cartão próprio
+  { id: 'sagittarius-a', categoria: 'galaxia', consulta: 'sagittarius-a', raios: 0 },
   { id: 'ana-de-sagitario', categoria: 'galaxia', consulta: 'ana-de-sagitario' },
   // AS VIZINHAS (pilar 3, 12/11/2026): além da nossa galáxia, a maior
   // companheira e a grande espiral do lado
   { id: 'grande-nuvem-de-magalhaes', categoria: 'galaxia', consulta: 'grande-nuvem-de-magalhaes' },
   { id: 'andromeda', categoria: 'galaxia', consulta: 'andromeda' },
 ];
+
+/**
+ * A CHEGADA DE UM DESTINO (14/11/2026), pelo id do corpo ou do lugar: a
+ * distância em raios da tabela acima (`0` = o degrau do corpo, sem pino),
+ * ou `undefined` para quem chega no enquadramento de sempre. É a ÚNICA
+ * fonte de "aonde este destino chega": o cartão, a busca digitada e o
+ * duplo clique no céu a consultam, e por isso chegam ao mesmo quadro —
+ * antes só o cartão sabia, e "Sgr A" + Enter parava na galáxia inteira.
+ */
+export function chegadaDoDestino(id: string): number | undefined {
+  return LISTA.find((l) => l.id === id)?.raios;
+}
+
+/** a chegada de uma entrada da busca — uma estrela não tem degrau próprio */
+export function chegadaDaEntrada(entrada: EntradaDaBusca): number | undefined {
+  if (entrada.tipo === 'corpo') return chegadaDoDestino(entrada.corpo.id);
+  if (entrada.tipo === 'lugar') return chegadaDoDestino(entrada.lugar.id);
+  return undefined;
+}
 
 /**
  * Os destinos de UMA categoria, resolvidos contra o índice recebido —

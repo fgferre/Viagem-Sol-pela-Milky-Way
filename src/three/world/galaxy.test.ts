@@ -34,9 +34,9 @@ describe('a captura espera a camada WebGPU só onde ela desenha (13/11/2026)', (
     // dentro do disco: só a faixa local (externalFade 0) — a camada não entra
     galaxia.update(cam, 720, 0.55, 0, 0, 0, 0.76);
     expect(galaxia.desenhoEmVoo).toBe(false);
-    // na borda (externalFade 0,6, o filme em t=148) ela ainda não entra
+    // na subida (externalFade 0,6, o filme em t=148) a lei de longe já é dela: espera
     galaxia.update(cam, 720, 0.55, 0, 0.6, 0, 0.3);
-    expect(galaxia.desenhoEmVoo).toBe(false);
+    expect(galaxia.desenhoEmVoo).toBe(true);
     // de fora (externalFade 1) ela é toda a luz das partículas: espera
     galaxia.update(cam, 720, 0.55, 0, 1, 0, 0);
     expect(galaxia.desenhoEmVoo).toBe(true);

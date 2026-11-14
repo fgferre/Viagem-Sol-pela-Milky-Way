@@ -72,12 +72,9 @@ describe('1. os espelhos batem com a fonte', () => {
 
   // (O espelho do coeficiente `0,08 * lum` saiu daqui no M2, quando o
   // clarão DA LEI passou a medir tamanho em px de tela pela asa Moffat
-  // (estrela.ts). O coeficiente em si está VIVO desde o resgate das 16
-  // em 16/08 — é o tamanho de autor das heroes —, e nada o vigia: a
-  // varredura invertida de heroStars.ts em simbolosProibidos.test.ts
-  // cobra só o que NÃO renasceu com a peça (a espinha da pupila, o
-  // SunStar, o import de lodStellar). Declarado na nota dos espelhos em
-  // escala.ts; quem unifica é o M3.)
+  // (estrela.ts). O coeficiente voltou com o resgate das 16 em 16/08,
+  // como tamanho de autor das heroes, e morreu com elas na luz única de
+  // 13/11 — declarado na nota dos espelhos em escala.ts.)
 
   it('escalas das nuvens — world/observedClouds.ts', () => {
     const fonte = ler('src/three/world/observedClouds.ts');

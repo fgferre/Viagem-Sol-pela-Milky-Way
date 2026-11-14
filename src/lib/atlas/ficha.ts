@@ -97,6 +97,7 @@ import {
   brilhoRelativo,
   conjuntoVigente,
   estadoDoCometa,
+  nomeConhecido,
   perieliosEmVolta,
   periodoEmDias,
 } from '../cometas';
@@ -369,7 +370,14 @@ function secaoAgora(entrada: EntradaDaFicha): LinhaDaFicha[] {
   }
 
   return [
-    linha(t('ficha.campo.distanciaDe', { pai }), distancia, 'medido', registro.modelo),
+    // em torno do Sol a linha diz o mesmo que a do cometa ("distância do Sol");
+    // "Distância — Sol" na linha recolhida do celular lia como lista de campos
+    linha(
+      registro.centro === 'sun' ? t('ficha.cometa.doSol') : t('ficha.campo.distanciaDe', { pai }),
+      distancia,
+      'medido',
+      registro.modelo
+    ),
     linha(
       t('ficha.campo.velocidadeOrbital'),
       velocidade,
@@ -922,7 +930,7 @@ const RSOL_KM = 695_700;
 
 /** Inteiro com separador de milhar da língua de agora (5.600 · 5,600). */
 function inteiroDoIdioma(v: number): string {
-  return Math.round(v).toLocaleString(idiomaAtual() === 'en' ? 'en-US' : 'pt-BR');
+  return numeroDoIdioma(Math.round(v));
 }
 
 /** Três algarismos significativos na língua de agora (0,154 · 24,7 · 764 ·
@@ -1344,6 +1352,9 @@ export function montarFichaDeCometa(
   const agora: (LinhaDaFicha | null)[] = [];
   const temData = jd !== null && jd !== undefined && Number.isFinite(jd);
   const e = temData ? estadoDoCometa(cometa.id, jd) : null;
+  // sem instante não se sabe se está aceso: vale o texto do cometa aceso,
+  // que descreve tudo o que a cena sabe desenhar
+  let aceso = true;
   if (e && temData) {
     const r = Math.hypot(e[0], e[1], e[2]);
     agora.push(linha(t('ficha.cometa.doSol'), emUa(r), 'derivado', conta));
@@ -1354,7 +1365,7 @@ export function montarFichaDeCometa(
     }
     const v = Math.hypot(e[3], e[4], e[5]) * KM_POR_S_POR_UA_DIA;
     agora.push(linha(t('ficha.cometa.velocidade'), `${numeroDoIdioma(v)} km/s`, 'derivado', conta));
-    const aceso = brilhoRelativo(cometa, r) > LIMIAR_DE_ATIVIDADE;
+    aceso = brilhoRelativo(cometa, r) > LIMIAR_DE_ATIVIDADE;
     agora.push(
       linha(
         t('ficha.cometa.atividade'),
@@ -1364,8 +1375,15 @@ export function montarFichaDeCometa(
       )
     );
   }
+  // O QUE SE VÊ SEGUE A ATIVIDADE (crítica de 13/11): o 67P inativo
+  // descrevia coma e caudas acesas que a cena, pela mesma lei, não desenha
   agora.push(
-    linha(t('ficha.cometa.naCena'), t('ficha.cometa.naCena.valor'), 'artistico', t('ficha.fonte.modeloDasCaudas'))
+    linha(
+      t('ficha.cometa.naCena'),
+      t(aceso ? 'ficha.cometa.naCena.valor' : 'ficha.cometa.naCena.inativo'),
+      'artistico',
+      t('ficha.fonte.modeloDasCaudas')
+    )
   );
 
   const orbita: (LinhaDaFicha | null)[] = [];
@@ -1416,7 +1434,7 @@ export function montarFichaDeCometa(
     ...(orbita.length ? [{ id: 'orbitaDoCometa' as const, titulo: TITULO('orbitaDoCometa'), linhas: so(orbita) }] : []),
     { id: 'oCometa', titulo: TITULO('oCometa'), linhas: so(fatos) },
   ];
-  return { id: `cometa:${cometa.id}`, nome: cometa.nome, classe: classeEmTexto(cometa.classe), secoes };
+  return { id: `cometa:${cometa.id}`, nome: nomeConhecido(cometa), classe: classeEmTexto(cometa.classe), secoes };
 }
 
 // ─── OS EXOPLANETAS (12/11/2026) ─────────────────────────────────────────

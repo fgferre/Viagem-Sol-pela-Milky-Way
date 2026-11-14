@@ -191,6 +191,15 @@
     background: none;
     white-space: nowrap;
   }
+  /* A ABA ACESA É O PAINEL ABERTO, E SÓ ELE (crítica de 13/11): o hover
+     da casa pinta fundo e filete — o desenho de uma aba acesa — e no
+     telefone o hover GRUDA onde o dedo tocou por último, então a aba que
+     fechou o painel continuava "acesa" com o painel fechado. Na fileira,
+     quem acende é só o `aria-expanded`. */
+  .atlas-alcas > .hud-btn:hover {
+    background: none;
+    border-top-color: transparent;
+  }
   .atlas-alcas > .hud-btn[aria-expanded='true'] {
     color: var(--acento);
   }
@@ -918,6 +927,45 @@
   :root[data-texto-grande] .hud-root:has(.atlas-alcas) .ajustes-seg--qualidade::after,
   .ajustes-seg--lente::after {
     display: none;
+  }
+
+  /* O CARTÃO DE TRANSPORTE DO FILME GANHA A LARGURA DA COLUNA (13/11).
+     Centrado por `left: 50%` + `translateX`, a caixa só podia usar a
+     metade da tela (195 px a 390): o cartão encolhia e "Ir à galáxia"
+     quebrava em duas linhas ao lado de "Retomar" e "1×" numa linha só.
+     As mesmas bordas da legenda logo acima (`.filme-rodape`, 5vw) e uma
+     linha por botão; a sobra se divide entre os três.
+     QUANDO NEM ASSIM CABE, os rótulos encurtam, nunca quebram — régua
+     em `rem` da raiz viva (a mesma ideia do cabeçalho da ficha, acima):
+     "cabe pouco" por tela estreita ou por letra grande. MEDIDO (largura
+     de dentro do cartão, em rem): os três inteiros pedem 19,7rem em
+     inglês ("Go to the galaxy"), 17,8 em português; com Pausar/Retomar
+     só no ícone (o `aria-label` diz a ação), 16,1rem; abaixo disso
+     "Ir à galáxia" vira "Galáxia". A 390 px com texto normal (20,75rem)
+     nada muda; com texto grande (13,6–16,4rem) as duas formas curtas. */
+  .filme-transporte {
+    left: 5vw;
+    right: 5vw;
+    transform: none;
+    container: transporte-do-filme / inline-size;
+  }
+  .filme-transporte .hud-btn.small {
+    flex: 1 1 auto;
+    justify-content: center;
+    white-space: nowrap;
+  }
+  @container transporte-do-filme (max-width: 20rem) {
+    .filme-transporte .hud-btn.small:first-child > span {
+      display: none;
+    }
+  }
+  @container transporte-do-filme (max-width: 16.5rem) {
+    .filme-transporte .filme-transporte-longo {
+      display: none;
+    }
+    .filme-transporte .filme-transporte-curto {
+      display: inline;
+    }
   }
 }
 

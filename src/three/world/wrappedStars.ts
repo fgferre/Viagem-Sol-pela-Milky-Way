@@ -39,7 +39,13 @@ import {
   GLSL_STAR_PSF,
 } from '../shaders/common';
 import { GLSL_PONTO_NA_BORDA, GLSL_PONTO_NA_BORDA_VARYINGS } from '../shaders/pontoNaBorda';
-import { STAR_FRAG, STAR_FRAG_DA_LENTE, BETA_DA_EMISSAO } from '../shaders/starShaders';
+import {
+  STAR_FRAG,
+  STAR_FRAG_DA_LENTE,
+  BETA_DA_EMISSAO,
+  GLSL_ANEIS_NO_CAMINHO,
+  UNIFORMES_DOS_ANEIS,
+} from '../shaders/starShaders';
 import { UNIFORMES_DA_ASSINATURA, seguirALente } from '../shaders/estrelasDaLente';
 import { EXPO_M0, SIGMA_PX } from '../luzDaCasa';
 import { GALACTIC_MODEL, LUT_DISK } from '../cartography/galacticModel';
@@ -341,6 +347,7 @@ ${GLSL_GALAXY}
 ${GLSL_STAR_COLOR}
 ${GLSL_STAR_PSF}
 ${GLSL_PONTO_NA_BORDA}
+${GLSL_ANEIS_NO_CAMINHO}
 
 // canais B/A do dust map: braços (variante de GÁS uniforme + braço
 // Local, rodada 12) e warp, bakeados a 65 pc/texel
@@ -447,6 +454,8 @@ void main() {
   // ×uPr2: o depósito na régua de referência — a mesma invariância de
   // aparência do catálogo (starShaders), senão as cascas apagam em retina
   vPeak = peak * uFade * uPr2;
+  // o anel com perfil no caminho, pela lei do campo (starShaders.ts)
+  if (uAnelLigado > 0.5) vPeak *= transmitanciaDosAneis(rel);
 
   // projeção com SÓ a rotação do modelView: a posição em view-space de
   // (camPos + rel) É R·rel — nenhuma soma com quilo-parsecs em f32.
@@ -519,6 +528,7 @@ export class WrappedStars {
         uArteDaCruz: { value: 1 },
         uPr2: { value: 1 },
         ...UNIFORMES_DA_ASSINATURA,
+        ...UNIFORMES_DOS_ANEIS,
         uCell: { value: new Float32Array(cells) },
         uProb: { value: new Float32Array(probs) },
         uMagLo: { value: new Float32Array(magLo) },

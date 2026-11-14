@@ -1,5 +1,7 @@
 // Serve: lei — a ficha monta completa, honesta e silenciosa para os 48 alvos, com a efeméride e o corpos.json reais
-// ============================================================
+// =====================================================  });
+});
+
 // A FICHA — a montagem julgada com a efeméride REAL e o `corpos.json` real.
 // O que se cobra aqui é o contrato que a tela depende: completude (todo
 // alvo monta), honestidade (nenhum rótulo de procedência fora do selo) e
@@ -27,6 +29,7 @@ import { ESTRELAS_VISITAVEIS, estrelaVisitavelPorNome } from './estrelasVisitave
 import {
   formatarDuracao,
   montarFicha,
+  montarFichaDeCometa,
   montarFichaDeEstrela,
   montarFichaDeExoplaneta,
   montarFichaDeLugar,
@@ -34,6 +37,7 @@ import {
 import { temperatureFromBV } from './stellarPhysics';
 import { dateToTDB } from './time';
 import { definirIdioma } from '../idioma';
+import { COMETAS, cometaPorId } from '../cometas';
 
 const DATA_DIR = fileURLToPath(
   new URL('../../../public/data/atlas/', import.meta.url)
@@ -727,7 +731,7 @@ describe('a imagem confessa — quatro linhas com selo e o crédito sem selo (R3
     expect(variantes.some((e) => e.larguraPx < maisLarga)).toBe(true);
     const fonte = linhaDe('earth', 'fonte');
     expect(fonte.valor).toContain('Solar System Scope');
-    expect(fonte.valor).toMatch(/· 8192 px de largura$/);
+    expect(fonte.valor).toMatch(/· 8.192 px de largura$/);
   });
 });
 
@@ -835,7 +839,7 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     // três algarismos significativos: Ballesteros não vale mais que isso, e
     // "9927 K" fingiria uma precisão que a fórmula não tem.
     const t = temperatureFromBV(arcturus.ci!);
-    expect(linha.valor).toBe(`${Number(t.toPrecision(3))} K`.replace('.', ','));
+    expect(linha.valor).toBe(`${Number(t.toPrecision(3))} K`.replace(/^(\d)(\d{3}) K$/, '$1.$2 K'));
   });
 
   it('a estrela com a distância do aglomerado diz isso, com o nome dele, e não finge paralaxe', () => {
@@ -956,8 +960,18 @@ describe('as unidades e os selos que o visitante lê', () => {
     expect(lua.linhas[0]!.rotulo).toBe('Distância — Terra');
     expect(lua.linhas[0]!.valor).toMatch(/mil km$/);
     const marte = ficha('mars')!.secoes.find((s) => s.id === 'agora')!;
-    expect(marte.linhas[0]!.rotulo).toBe('Distância — Sol');
+    expect(marte.linhas[0]!.rotulo).toBe('distância do Sol');
     expect(marte.linhas[0]!.valor).toMatch(/ UA$/);
+  });
+
+  it('em inglês a linha do planeta também diz "distance from the Sun"', () => {
+    definirIdioma('en');
+    try {
+      const marte = ficha('mars')!.secoes.find((s) => s.id === 'agora')!;
+      expect(marte.linhas[0]!.rotulo).toBe('distance from the Sun');
+    } finally {
+      definirIdioma('pt-BR');
+    }
   });
 
   it('nenhuma linha da ficha fala em parsec', () => {
@@ -1231,5 +1245,29 @@ describe('a cara dos exoplanetas na ficha, por canal', () => {
     expect(linhas('bet-pic-b').get('giro')).toMatchObject({ procedencia: 'derivado' });
     expect(linhas('eps-eri-b').get('giro')).toMatchObject({ procedencia: 'artistico' });
     expect(linhas('eps-eri-b').get('giro')!.valor).toContain('Júpiter');
+=======
+describe('a ficha do cometa diz o nome conhecido e o que o instante mostra (crítica de 13/11)', () => {
+  afterEach(() => definirIdioma('pt-BR'));
+  const p67 = cometaPorId('churyumov-gerasimenko')!;
+  /** 9/2/1986 (5,7 UA, apagado) e 13/8/2015, o periélio da Rosetta */
+  const APAGADO = 2_446_471.0;
+  const ACESO = 2_457_247.5;
+  const naCena = (jd: number) =>
+    montarFichaDeCometa(p67, jd, null).secoes[0].linhas.find((l) => l.procedencia === 'artistico')!.valor;
+
+  it('o periódico numerado leva a designação no nome; o de nome próprio, não', () => {
+    expect(montarFichaDeCometa(p67, APAGADO, null).nome).toBe('67P/Churyumov–Gerasimenko');
+    const nomes = Object.fromEntries(COMETAS.map((c) => [c.id, montarFichaDeCometa(c, null, null).nome]));
+    expect(nomes.halley).toBe('1P/Halley');
+    expect(nomes['hale-bopp']).toBe('Hale–Bopp');
+  });
+
+  it('"o que se vê aqui" segue a atividade, nas duas línguas', () => {
+    for (const idioma of ['pt-BR', 'en'] as const) {
+      definirIdioma(idioma);
+      expect(naCena(APAGADO), idioma).not.toMatch(/caudas são|tails are/);
+      expect(naCena(APAGADO), idioma).toMatch(/núcleo|nucleus/);
+      expect(naCena(ACESO), idioma).toMatch(/caudas são|tails are/);
+    }
   });
 });

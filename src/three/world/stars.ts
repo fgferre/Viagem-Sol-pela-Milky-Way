@@ -3,7 +3,13 @@
 // Serve tanto para o catálogo HYG quanto para o halo procedural.
 // ============================================================
 import * as THREE from 'three';
-import { STAR_VERT, STAR_FRAG, STAR_FRAG_DA_LENTE, BETA_DA_EMISSAO } from '../shaders/starShaders';
+import {
+  STAR_VERT,
+  STAR_FRAG,
+  STAR_FRAG_DA_LENTE,
+  BETA_DA_EMISSAO,
+  UNIFORMES_DOS_ANEIS,
+} from '../shaders/starShaders';
 import { UNIFORMES_DA_ASSINATURA, seguirALente } from '../shaders/estrelasDaLente';
 import type { StarArrays } from '../config';
 import { FOCUS_OFF, clearFocus, needsAttributeWrite } from './lodStellar';
@@ -127,6 +133,8 @@ export class StarField {
         ...UNIFORMES_DA_ASSINATURA,
         // a nuvem de Órion apaga as estrelas de trás (orionNaCena.ts)
         ...UNIFORMES_DE_ORION,
+        // o anel com perfil no caminho (clarao.ts escreve, todos leem)
+        ...UNIFORMES_DOS_ANEIS,
       },
       blending: THREE.AdditiveBlending,
       depthWrite: false,
@@ -143,8 +151,13 @@ export class StarField {
     // O que ela tem de próprio é o material, por causa de `uLado`; os
     // outros uniforms viajam pelos dois em `update`/`setFade`/`setCavity`.
     this.materialNaFrente = this.material.clone();
-    // o clone copiou os uniformes da assinatura e os de Órion; cada um é um objeto só
-    Object.assign(this.materialNaFrente.uniforms, UNIFORMES_DA_ASSINATURA, UNIFORMES_DE_ORION);
+    // o clone copiou os uniformes da assinatura, os de Órion e os dos anéis; cada um é um objeto só
+    Object.assign(
+      this.materialNaFrente.uniforms,
+      UNIFORMES_DA_ASSINATURA,
+      UNIFORMES_DE_ORION,
+      UNIFORMES_DOS_ANEIS
+    );
     seguirALente(this.materialNaFrente, STAR_FRAG, STAR_FRAG_DA_LENTE);
     this.materialNaFrente.uniforms.uLado.value = 1;
     this.pontosNaFrente = new THREE.Points(geo, this.materialNaFrente);

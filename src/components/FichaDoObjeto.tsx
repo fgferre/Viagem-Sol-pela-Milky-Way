@@ -37,7 +37,7 @@
 // diferentes. Na viagem em degrau rápido ela continua rápida, porque ali a
 // data realmente muda.
 // ============================================================
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
 import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
@@ -386,6 +386,19 @@ export function FichaDoObjeto({
   }, [celular, aberta, fichaExpandida]);
 
   /**
+   * RECOLHER VOLTA A ROLAGEM AO TOPO (13/11, crítica de visitante): a
+   * compacta é `overflow: hidden`, que ainda é um rolo, e a rolagem da
+   * expandida sobrevivia presa no máximo da compacta (8 px a 390 px,
+   * Halley) — o cabeçalho `sticky` ficava parado e a linha "rótulo ·
+   * valor" subia 8 px por baixo do nome, cortada ao meio. Antes da
+   * pintura, para a compacta nascer igual à de quem nunca expandiu.
+   */
+  const { ref: refDaFicha } = dialogo;
+  useLayoutEffect(() => {
+    if (!fichaExpandida && refDaFicha.current) refDaFicha.current.scrollTop = 0;
+  }, [fichaExpandida, refDaFicha]);
+
+  /**
    * A JANELA BAIXA (B2, 09/09) — mesmo limiar que a paisagem baixa já usa
    * (`06-responsivo.css`, "`@media (max-height: 480px) and (orientation:
    * landscape)`"): abaixo dela a ficha CHEIA da mesa (coluna à direita,
@@ -525,7 +538,7 @@ export function FichaDoObjeto({
           de sempre (o mesmo de "⌕ Buscar"/"⧉ Camadas" na barra); o
           `Segmentado` (`components/Segmentado.tsx`) não muda. */}
       <div className="atlas-ficha-escada">
-        {(podeAproximar || (estrelaEmFoco !== null && estrelaVisitavelPorNome(estrelaEmFoco) !== null)) && (
+        {podeAproximar && (
           <button
             type="button"
             className="hud-btn small"

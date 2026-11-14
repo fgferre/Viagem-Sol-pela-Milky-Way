@@ -1,44 +1,30 @@
 // ============================================================
 // O CLARÃO DE ASAS — a camada única da óptica das fontes fortes
-// (M2 da LEI-DA-ESTRELA). Nasceu para substituir as 16 heroes de autor,
-// que voltaram em 16/08 (`heroStars.ts`, o resgate).
+// (M2 da LEI-DA-ESTRELA), e desde 13/11 A LUZ ÚNICA: uma lei de luz para
+// toda estrela, o Sol incluído. As 16 heroes de autor (`heroStars.ts`,
+// exumadas em 16/08) e o remendo da chegada a elas morreram quando o dono
+// aprovou a terceira passada por imagem ("gostei da v3... pode ligar").
 //
 // O QUE ELA É. O clarão é a LENTE (halo + espinhos), não a estrela — a
-// Lei §1 numa frase. Desde o item 44 (16/08) a camada desenha SÓ o Sol,
-// e desenha com A MESMA RECEITA das heroes de 30/07 ("claramente a
-// regra que desenha sirius é totalmente diferente da que desenha o
+// Lei §1 numa frase. Desenha com A RECEITA DO FILME de 30/07 ("claramente
+// a regra que desenha sirius é totalmente diferente da que desenha o
 // sol... o desenho de spikes de sirius é muito superioir" — dono; a
 // resposta é UM desenhista). A LEI manda em presença (filtro/entrega,
-// gatilho de entrada) e em TAMANHO (asa do item 3, com o teto de
-// ocupação por estrela do dono: "nenhuma estrela ocupa a tela toda;
-// chega rápido no máximo e para"); a FORMA e o brilho são os do filme.
-// A cruz Moffat do M2 e a textura assada da R1 morreram aqui dentro —
-// a prancha historia-dos-spikes e a "moeda" foram os atestados.
+// gatilho de entrada) e em TAMANHO (asa do item 3, pisada pela arte
+// declarada `meiaDaArtePx`, com o teto de ocupação por estrela do dono:
+// "nenhuma estrela ocupa a tela toda; chega rápido no máximo e para"); a
+// FORMA e o brilho são os do filme.
 //
-// O ORÇAMENTO, não a lista de nomes. A identidade "as 16" morreu: a
-// camada tem N slots (ORCAMENTO_DO_CLARAO) e quem os ocupa é decidido
-// POR FLUXO, por quadro, entre o Sol e as 1.726 nomeadas do sidecar.
-// A seleção tem HISTERESE (§5.21): entrada só com folga declarada sobre
-// o membro mais fraco (RAZAO_DE_TROCA) e ganho em rampa de 300 ms
+// O ORÇAMENTO, não a lista de nomes. A camada tem N slots
+// (ORCAMENTO_DO_CLARAO) e quem os ocupa é decidido POR FLUXO, por quadro,
+// entre o Sol, as 1.726 nomeadas do sidecar e as estrelas visitadas. A
+// seleção tem HISTERESE (§5.21): entrada só com folga declarada sobre o
+// membro mais fraco (RAZAO_DE_TROCA) e ganho em rampa de 300 ms
 // (stepRampToward) — ranking que troca de posição não pode piscar.
 //
 // PROFUNDIDADE É LEI (§5.15): o clarão nunca é ocluído pelo corpo que o
 // causa — depthTest: false, escrito aqui e não deixado ao acaso do
 // material.
-//
-// A CAPACIDADE É RESERVA DO M3, e está declarada porque hoje ela é
-// maior que o uso. A camada aloca 16 materiais + 16 quads
-// (ORCAMENTO_DO_CLARAO) e os três arrays de candidatos com 1.727
-// entradas (o Sol + as 1.726 nomeadas do sidecar) — mas `atualizar`
-// varre `n = 1`: só o Sol candidata, desde o resgate das heroes em
-// 16/08. Não encolhe, e a razão é dupla: (a) encolher mudaria a
-// CONTAGEM DE OBJETOS da cena, que é mudança de pixel a provar em
-// A/B no navegador, e esta não é uma rodada de pixel; (b) é
-// exatamente a capacidade que o M3 vai querer de volta, quando as
-// nomeadas voltarem a candidatar e a cessão catálogo↔hero for
-// decidida. O custo enquanto isso: 16 quads invisíveis
-// (`visible = false`, sem draw) e 55.264 B nos três arrays
-// (pos 20.724 + mBase 13.816 + cor 20.724).
 //
 // O QUE FICA DE FORA, declarado:
 //  · as 328.749 anônimas do catálogo não são candidatas — o ranking por
@@ -58,7 +44,15 @@ import {
   glslBracosDeDifracao,
   glslNucleoEHalo,
 } from '../shaders/common';
-import { BETA_DA_EMISSAO } from '../shaders/starShaders';
+import {
+  AMOSTRAS_DO_FATOR_TAU,
+  BETA_DA_EMISSAO,
+  LARGURA_DA_TABELA_DO_ANEL,
+  LIMIAR_DO_ANEL,
+  PISO_DA_TRANSMISSAO_DO_ANEL,
+  PISO_DO_MU_DO_ANEL,
+  UNIFORMES_DOS_ANEIS,
+} from '../shaders/starShaders';
 import {
   ESTRELAS_SEGUEM_A_LENTE,
   UNIFORMES_DA_ASSINATURA,
@@ -68,13 +62,20 @@ import {
 import { alcanceDoEspinhoPx, ganhoDeEntradaDoFlare, raioVisivelDaAsaPx } from '../estrela';
 import { M_V_SOL_DO_CAMPO, picoDaPsf, psfPointSizePx, sigmaDaPsfPx } from '../luzDaCasa';
 import { RAMP_DURATION_MS, stepRampToward } from './lodStellar';
-import { ndcNaTela, SondaDeOclusao } from './sondaDeOclusao';
+import { SondaDeOclusao } from './sondaDeOclusao';
+import {
+  U_PERFIL_BASE,
+  U_PERFIL_ESCALA,
+  regiaoDoAnelCpu,
+  type AnelComPerfil,
+} from './corpos/gigante';
 
 // ─── O ORÇAMENTO E A HISTERESE (puros, testados sem three) ───────────────
 
-/** N slots de clarão — o mesmo custo de draw das 16 de antes; quem muda é
- *  o critério de ocupação (fluxo, não nome). */
-export const ORCAMENTO_DO_CLARAO = 16;
+/** N slots de clarão: as fortes do céu de casa passam de 16 (o Sol + as
+ *  16 mais brilhantes já são 17); com 32 o corte do ranking cai em m ≈ 1,7,
+ *  onde a entrada (`ganhoDeEntradaDoFlare`) já deixou o clarão quase apagado */
+export const ORCAMENTO_DO_CLARAO = 32;
 
 /** §5.21/§8.9: um de fora só desloca o membro mais fraco se o supera por
  *  esta razão — entrada e saída com limiares DIFERENTES, senão duas
@@ -219,11 +220,8 @@ export const SOL_BV = 0.653;
  *  mais se vê (Betelgeuse: 1,50 lá contra 1,85 medido). A tabela é a
  *  autoridade; o `ci` cobre o resto das 1.726.
  *
- *  ENDEREÇO ÚNICO desde 21/08: `heroStars.ts` tinha a MESMA tabela
- *  redigitada (`HERO_BV`, diff vazio nas 16 entradas) e agora importa
- *  esta. Fica aqui, e não lá, porque aqui já morava o `SOL_BV`
- *  exportado que `planetas/fotometria` consome — e porque a peça de
- *  autor é a que o M3 pode apagar. */
+ *  ENDEREÇO ÚNICO desde 21/08: `heroStars.ts` (apagado em 13/11) tinha
+ *  a MESMA tabela redigitada (`HERO_BV`, diff vazio nas 16 entradas). */
 export const BV_MEDIDO: Record<string, number> = {
   Sirius: 0.0,
   Canopus: 0.15,
@@ -268,11 +266,9 @@ void main() {
 `;
 
 // A receita do filme (núcleo + halo + braços) é MONTADA do endereço
-// único em `shaders/common.ts`, o mesmo que `heroStars.ts` monta: a
-// igualdade que o comentário lá dentro promete deixou de ser conferida
-// e passou a ser de CONSTRUÇÃO. O texto montado é byte a byte o de
-// antes — é o que o oráculo de conformidade cobra, agora sobre o
-// `fragmentShader` pronto em vez de sobre os dois fontes.
+// único em `shaders/common.ts`. O texto montado é byte a byte o de
+// antes — é o que o oráculo de conformidade cobra, sobre o
+// `fragmentShader` pronto.
 const FRAG = /* glsl */ `
 precision highp float;
 
@@ -292,13 +288,12 @@ void main() {
   float r = length(uv);
   if (r > 1.0) discard;
 
-  // A RECEITA DO FILME, a mesma das heroes ("claramente a regra que
-  // desenha sirius é totalmente diferente da que desenha o sol... o
-  // desenho de spikes de sirius é muito superioir" — dono, 16/08; a
-  // resposta é UM desenhista só). Núcleo + halo + braços com os números
-  // de 30/07, byte a byte com heroStars.ts — o oráculo de conformidade
-  // cobra a igualdade. O brilho é FIXO como nas heroes (é a forma que
-  // lê como estrela); quem varia é presença (uGanho) e tamanho (a lei).
+  // A RECEITA DO FILME ("claramente a regra que desenha sirius é
+  // totalmente diferente da que desenha o sol... o desenho de spikes de
+  // sirius é muito superioir" — dono, 16/08; a resposta é UM desenhista
+  // só). Núcleo + halo + braços com os números de 30/07 — o oráculo de
+  // conformidade cobra o texto. O brilho é FIXO (é a forma que lê como
+  // estrela); quem varia é presença (uGanho) e tamanho (a lei).
   ${glslNucleoEHalo()}
   ${glslBracosDeDifracao()}
 
@@ -317,10 +312,13 @@ void main() {
 /** `FRAG` com os braços trocados pela assinatura da lente de Ajustes (`estrelasDaLente.ts`). */
 const FRAG_DA_LENTE = ESTRELAS_SEGUEM_A_LENTE ? receitaSegueALente(FRAG, '1.0 / max(uMeiaPx, 1e-6)') : FRAG;
 
-// ─── A SONDA DE OCLUSÃO — outro corpo tapou o CENTRO do Sol? ─────────────
-// A §5.15 acima só promete que o clarão nunca é ocluído pelo SOL — nunca
-// disse nada sobre um corpo DIFERENTE (Hipérion, um planeta) na frente,
-// e por isso o clarão atravessava esses corpos. A pergunta pede um
+// ─── A SONDA DE OCLUSÃO — outro corpo tapou o PONTO da estrela? ──────────
+// A §5.15 acima só promete que o clarão nunca é ocluído pela estrela que o
+// causa — nunca disse nada sobre um corpo DIFERENTE (Hipérion, um planeta)
+// na frente, e por isso o clarão atravessava esses corpos. Nasceu para o
+// Sol (23/09) e desde 13/11 é UMA SONDA POR VAGA, a mesma para toda
+// estrela: Aldebaran e Rígel atrás do globo de Saturno, no filme do Sol
+// (t = 236 s), acendiam o clarão em cima do planeta. A pergunta pede um
 // desenhista PRÓPRIO: o `VERT`/`FRAG` acima é o texto que o oráculo de
 // conformidade tranca byte a byte, e a sonda não é a lei do clarão — é
 // um instrumento à parte, que mora no MESMO grupo só para desenhar no
@@ -332,7 +330,8 @@ const FRAG_DA_LENTE = ESTRELAS_SEGUEM_A_LENTE ? receitaSegueALente(FRAG, '1.0 / 
 // quando a sonda desenha o depth só tem as superfícies sólidas — os corpos
 // resolvidos. Brilho, poeira e o que mais vier depois não contam.
 //
-// ONDE ELA FICA (medido em 23/09, Hipérion a 9,5 UA do Sol). Com o near
+// ONDE ELA FICA (medido em 23/09, Hipérion a 9,5 UA do Sol; vale para
+// qualquer estrela, que só fica mais longe). Com o near
 // da câmera em ~1 km, o Sol cai onde o depth de 24 bits já não distingue
 // nada do fundo (1 − 7,6e−10): uma sonda no centro dele empata com o
 // fundo e às vezes é descartada no arredondamento — o clarão sumia com o
@@ -341,8 +340,23 @@ const FRAG_DA_LENTE = ESTRELAS_SEGUEM_A_LENTE ? receitaSegueALente(FRAG, '1.0 / 
 // quatro degraus antes do fundo. Continua atrás de todo corpo capaz de
 // tapar o Sol inteiro — isso exige estar a menos de ~10 % do caminho (é o
 // caso de Júpiter, o maior) — e à frente da fotosfera, então o Sol nunca
-// tapa o próprio clarão (§5.15).
+// tapa o próprio clarão (§5.15). A estrela visitada idem: a sonda só corre
+// com soltura > 0 (disco < 10 px), e aí a câmera está a milhares de raios
+// dela — a metade do caminho fica muito à frente do corpo que ela monta.
+//
+// O QUE A SONDA NÃO VÊ, declarado: anéis, atmosferas, poeira — tudo que é
+// translúcido e não escreve profundidade. O PONTO da estrela também
+// atravessa o anel (as camadas de estrelas desenham depois dele, só com o
+// depth dos sólidos), então o clarão segue o ponto: os dois atravessam.
+//
+// A RESPOSTA É BINÁRIA (a consulta só diz "alguma amostra passou") e a
+// estrela é um ponto: quem dá a passagem suave é a rampa da vaga
+// (`visibilidade`, os MESMOS 300 ms do orçamento), não uma cobertura parcial.
 const MEIA_PX_DA_SONDA = 1;
+
+/** Até onde, fora do quadro, a sonda ainda responde (NDC): o teto do
+ *  clarão é 0,07·H de meia-largura = 0,14 em NDC vertical, com folga. */
+const ALCANCE_DA_SONDA_NDC = 1.15;
 
 /** Quantas consultas de oclusão ficam em voo ao mesmo tempo — o bastante
  *  para NUNCA esperar a GPU (a leitura é sempre não-bloqueante), sabendo
@@ -358,9 +372,20 @@ void main() {
   vec4 c = modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0);
   // metade do caminho até o Sol, na mesma direção: mesmo pixel na tela
   c.xyz *= 0.5;
-  float extent = uMeiaPx * 2.0 * max(-c.z, 1e-6) / (projectionMatrix[1][1] * uScreenH);
-  c.xy += position.xy * extent;
+  // o piso é só guarda de divisão (o mesmo do clarão: 1e-6 pc inflava a
+  // sonda de uma visitada pequena vista a menos de 0,4 UA)
+  float extent = uMeiaPx * 2.0 * max(-c.z, 1e-30) / (projectionMatrix[1][1] * uScreenH);
   gl_Position = projectionMatrix * c;
+  // A ESTRELA LOGO FORA DO QUADRO ainda joga o clarão para dentro dele: a
+  // sonda pergunta então no pixel da BORDA mais perto dela (Sírius 2 px
+  // abaixo do quadro, atrás de Io, acendia os braços em cima da lua —
+  // filme do Sol, t = 165 s). Dentro do quadro o grampo não mexe em nada.
+  if (gl_Position.w > 0.0) {
+    float my = (uMeiaPx * 4.0 + 2.0) / uScreenH;
+    vec2 lim = (1.0 - vec2(my * projectionMatrix[0][0] / projectionMatrix[1][1], my)) * gl_Position.w;
+    gl_Position.xy = clamp(gl_Position.xy, -lim, lim);
+  }
+  gl_Position.xy += position.xy * extent * vec2(projectionMatrix[0][0], projectionMatrix[1][1]);
   // nunca no fundo do depth: z de NDC 1 − 4,8e−7 = depth 1 − 2,4e−7
   gl_Position.z = min(gl_Position.z, gl_Position.w * (1.0 - 4.8e-7));
 }
@@ -415,11 +440,15 @@ export interface QuadroDoClarao {
    * estrela que o motor do Sol monta (`director/estrelasNoQuadro.ts`)
    * candidata PELA MESMA LEI do Sol — magnitude do ponto que ela
    * substitui, cor desse ponto e a soltura da repartição dela. Ausente
-   * ou vazia: só o Sol, bit a bit o de antes.
+   * ou vazia: o Sol e as nomeadas, sem corpo nenhum montado.
    */
   visitadas?: readonly CandidataVisitada[];
-  /** a luz que a lente acendeu (quadro anterior) — só a luz única a lê */
+  /** a luz que a lente acendeu (quadro anterior): o halo do campo cede a ela */
   lente?: LuzDaLenteNoQuadro;
+  /** os anéis desenhados neste quadro (`transmitanciaDosAneis`); ausente = nenhum */
+  aneis?: readonly Readonly<AnelComPerfil>[];
+  /** tan(fov vertical / 2) — a pegada de um pixel no anel; ausente = 0 */
+  tanHalfFov?: number;
 }
 
 /** Quantas vagas de visitada o cadastro reserva (duas por estrela: a
@@ -440,20 +469,8 @@ export interface CandidataVisitada {
   /** a soltura da repartição dela (0..1): veste tamanho e presença, como a do Sol */
   soltura: number;
   /**
-   * a PRESENÇA (0..1) — a cessão à hero de autor da mesma estrela: só o
-   * ganho, nunca o tamanho. As duas desenham a mesma receita no mesmo
-   * tamanho (`pisoPx`), então a troca entre elas é uma mistura sem salto.
-   */
-  presenca: number;
-  /**
-   * o PISO da meia-extensão em px de CSS (0 = só a lei): o tamanho da hero
-   * que se aproxima (`heroStars.ts`), para o clarão nascer do tamanho dela
-   * em vez de um ponto. Nunca encolhe a lei; a soltura o veste por cima.
-   */
-  pisoPx: number;
-  /**
-   * o índice dela na lista de nomeadas (−1 ou ausente = não é nomeada): na
-   * luz única é a MESMA candidata de longe e de perto (`ClaraoDeAsas`)
+   * o índice dela na lista de nomeadas (−1 ou ausente = não é nomeada): é
+   * a MESMA candidata de longe e de perto (`ClaraoDeAsas`)
    */
   nomeada?: number;
 }
@@ -463,7 +480,7 @@ export interface CandidataVisitada {
 const TETO_DO_BILLBOARD_PX = 4096;
 
 /** A ANATOMIA DO FILME no clarão do Sol (brief do dono, 16/08): cartaz
- *  GRANDE (o da asa inteira), com a receita das heroes dentro (brilho
+ *  GRANDE (o da asa inteira), com a receita do filme dentro (brilho
  *  morre sozinho, braços vazam para fora) — e o TETO DE OCUPAÇÃO por
  *  estrela: *"ele só limita para que nao aconteça que uma estrela nunca
  *  ocupe toda a tela, ela sempre chega no máximo que vai ocupar
@@ -521,18 +538,11 @@ export const FATOR_DE_ENCHIMENTO_DO_SOL = 1.0;
  *  Segue sendo limitador POR ESTRELA, nunca exposição de cena. */
 export const OCUPACAO_MAXIMA_DA_TELA = 0.07;
 
-// ─── A LUZ ÚNICA (candidata, `?luzunica=1`, 13/11) ───────────────────────
+// ─── A LUZ ÚNICA (13/11) ─────────────────────────────────────────────────
 // A decisão do dono: nenhum desenho de autor por classe de objeto — UMA lei
-// de luz para toda estrela, o Sol incluído. Com a porta ligada as 16 heroes
-// de autor não desenham (nem o remendo da chegada delas) e esta camada
-// desenha a luz de TODA estrela brilhante, escolhida só por fluxo: o Sol, as
-// 1.726 nomeadas do sidecar e as visitadas, ranqueadas pelo pico na câmera.
-// Desligada, nada aqui roda: a camada é a de sempre, bit a bit.
-
-/** os slots da luz única: as fortes do céu de casa passam de 16 (o Sol + as
- *  16 de antes já são 17); com 32 o corte do ranking cai em m ≈ 1,7, onde a
- *  entrada (`ganhoDeEntradaDoFlare`) já deixou o clarão quase apagado */
-export const ORCAMENTO_DA_LUZ_UNICA = 32;
+// de luz para toda estrela, o Sol incluído. Esta camada desenha a luz de
+// TODA estrela brilhante, escolhida só por fluxo: o Sol, as 1.726 nomeadas
+// do sidecar e as visitadas, ranqueadas pelo pico na câmera.
 
 /**
  * A PONTA FRACA DA LEI É ARTE DECLARADA — "o brilho de autor virou lei".
@@ -544,7 +554,7 @@ export const ORCAMENTO_DA_LUZ_UNICA = 32;
  *   log10(meia_arte / teto) = −INCLINACAO·Δ − CURVATURA·max(0, Δ)²
  *
  * com `teto` = OCUPACAO_MAXIMA_DA_TELA da altura (Sirius de casa nasce no
- * teto). A curva é de GOSTO, escolhida na prancha contra as heroes (13/11),
+ * teto). A curva é de GOSTO, escolhida na prancha contra as heroes de autor (13/11),
  * por duas âncoras: uma estrela de m ≈ 0 (α Centauri, Vega) com 0,4 do teto
  * (~25 px de meia num quadro de 900) e uma de m = 2 com 0,05 (~3 px: ponto).
  * Perto do teto ela anda devagar (≈ fluxo^0,47) — as de primeira grandeza
@@ -565,8 +575,9 @@ export const CURVATURA_DA_ARTE = 0.053;
  * filme que vestia as heroes. O halo e a lente de cinema desenham a MESMA
  * luz em volta da fonte forte: onde a lente acende, o halo cede a ela — e a
  * medida é a da própria lente NESTE quadro (`luzDaLente`: a amplitude que o
- * passe recebeu sobre G, × a força de Ajustes; 0 com a lente desligada ou
- * quando a fonte dela é outra estrela), nunca uma magnitude adivinhada.
+ * passe recebeu sobre G, × a força de Ajustes; 0 com a lente desligada), nunca
+ * uma magnitude adivinhada. As outras estrelas cedem ao VÉU dela (`veuDaLente`:
+ * a mesma luz, pesada por quanto a fonte está no quadro).
  * Sem lente, então, o halo fica inteiro até o corpo (a soltura) tomar a luz;
  * com qualquer receita ele sai enquanto ela entra, e halo + lente é a mesma
  * função crescente da luz da estrela.
@@ -595,11 +606,94 @@ export interface LuzDaLenteNoQuadro {
   fracao: number;
   /** a candidata ao clarão que é a fonte da lente; null = o Sol */
   candidata: CandidataVisitada | null;
+  /**
+   * quanto a fonte da lente está NO QUADRO (0..1): 1 dentro, 0 atrás da
+   * câmera ou além da margem da borda — a mesma margem com que a própria
+   * lente some (`veuDaLenteNaTela`). É o que faz o VÉU valer só quando a
+   * fonte forte está à vista; ausente = 0 (sem véu sobre as outras).
+   */
+  naTela?: number;
 }
 
-/** `?luzunica=1` liga a candidata; qualquer outro valor é a casa de hoje */
-export function lerPortaLuzUnica(bruto: string | null): boolean {
-  return bruto === '1';
+/**
+ * O HALO CRESCE COM A LUZ, DEVAGAR — o regime do meio (m entre ≈ −1,5 e o
+ * Sol de perto). O tamanho para no teto do dono em m = −1,5, então acima
+ * dali só o halo do campo ainda pode ordenar as estrelas pela luz: uma estrela
+ * 10 mag mais brilhante que Sirius de casa tem de ler mais forte que ela.
+ * O ganho do halo é uma potência BAIXA do fluxo, presa em 1:
+ *
+ *   halo(m) = min(1, HALO_NO_TETO · 10^(0,4 · EXPOENTE_DO_HALO · max(0, −1,5 − m)))
+ *
+ * e vale HALO_NO_TETO para tudo de m = −1,5 para baixo (o céu de casa
+ * inteiro: Sirius de casa é a mais brilhante dele). A física pediria o fluxo
+ * inteiro (expoente 1): o Sol a 200 UA, 330 mil vezes Sirius de casa, teria
+ * um halo que engole o sistema solar — o dono já disse não a isso ("essa
+ * estrela spiked desse tamanho (sol) ocupa todo sistema solar na visão
+ * afastada"). O meio-termo é ARTE DECLARADA, com duas âncoras escolhidas nas
+ * pranchas de 13/11 (v3), e o halo é muito sensível ao ganho (o passe do
+ * campo tem limiar: 0,55 já tirava metade do brilho macio, 0,8 era o halo
+ * pleno de antes): Sirius de casa com 0,65 (entre o desenho de autor e a lei
+ * de antes) e o Sol a 200 UA com ~0,85 (as órbitas legíveis através dele).
+ * O halo pleno só chega em m ≈ −24 — o Sol a poucas UA, onde a lente já é
+ * inteira e o halo da fonte cede a ela de qualquer jeito.
+ */
+export const HALO_NO_TETO = 0.65;
+export const EXPOENTE_DO_HALO = 0.021;
+
+export function haloDaLuz(m: number): number {
+  if (!Number.isFinite(m)) return 0;
+  const acima = Math.max(0, MAGNITUDE_DO_TETO_DA_ARTE - m);
+  return Math.min(1, HALO_NO_TETO * Math.pow(10, 0.4 * EXPOENTE_DO_HALO * acima));
+}
+
+/**
+ * A FRONTEIRA DAS VAGAS NÃO CORTA. Com mais estrelas fortes que
+ * vagas, quem entra só entra deslocando o membro mais fraco, e com a folga da
+ * troca (RAZAO_DE_TROCA) — a entrada era um estalo: o entrante nascia com a
+ * presença que já tinha (0,35 medido em Alnitak, 13/11) e o deslocado sumia
+ * na rampa. A presença passa a cair a zero NA fronteira: `corte` é o pico do
+ * primeiro elegível que ficou de fora × a folga da troca, e a presença sobe
+ * de 0 (no corte) a 1 num fator 2 de pico acima dele (0,75 mag). Quem entra
+ * por deslocar nasce em 0 e quem é deslocado já chegou a 0 antes de perder a
+ * vaga. Só as do fim da fila sentem (m ≳ 1 no céu de casa); a régua é o pico,
+ * o mesmo critério do ranking — nenhuma conta por nome. Pura.
+ */
+export function presencaNaFronteira(pico: number, corte: number): number {
+  if (!(corte > 0)) return 1;
+  if (!(pico > corte)) return 0;
+  return Math.min(1, Math.log2(pico / corte));
+}
+
+/**
+ * O VÉU DA LENTE — a luz que a lente acende é o véu da câmera INTEIRA, não só
+ * da fonte: o espalhamento de uma fonte forte à vista levanta o fundo do
+ * quadro e afoga o halo macio de toda estrela mais fraca (o "veiling glare"
+ * das objetivas); o núcleo e os braços, nítidos, continuam. Por isso o halo
+ * de TODA estrela cede à luz da lente, pela mesma lei da fonte (`fatiaDoCampo`),
+ * com a luz pesada por quanto a fonte está no quadro (`naTela`) — fonte fora
+ * da tela não vela nada. Não é exposição: nenhum núcleo nem tamanho muda, e
+ * a conta não lê o quadro, só a lente que já está acesa nele.
+ */
+export function veuDaLente(lente: LuzDaLenteNoQuadro | undefined): number {
+  if (!lente) return 0;
+  const f = Number.isFinite(lente.fracao) ? Math.min(1, Math.max(0, lente.fracao)) : 0;
+  const t = Number.isFinite(lente.naTela) ? Math.min(1, Math.max(0, lente.naTela as number)) : 0;
+  return f * t;
+}
+
+/**
+ * O QUANTO A FONTE DA LENTE ESTÁ NO QUADRO (0..1), pela posição dela em NDC:
+ * 0 atrás da câmera; dentro do quadro 1; fora dele cai suave até zero a
+ * MARGEM_DO_VEU (em alturas de quadro) da borda — a margem da lente
+ * (`presets.ts`, `borda.margem`), para o véu sair junto com ela. Pura.
+ */
+export const MARGEM_DO_VEU = 0.15;
+
+export function veuDaLenteNaTela(ndcX: number, ndcY: number, naFrente: boolean, aspecto: number): number {
+  if (!naFrente || !Number.isFinite(ndcX) || !Number.isFinite(ndcY)) return 0;
+  const db = Math.min(aspecto / 2 - (Math.abs(ndcX) * aspecto) / 2, 0.5 - Math.abs(ndcY) / 2);
+  const t = Math.min(1, Math.max(0, (db + MARGEM_DO_VEU) / MARGEM_DO_VEU));
+  return t * t * (3 - 2 * t);
 }
 
 /** o piso de arte da meia-extensão (px, na régua de `screenH`) — pura */
@@ -612,30 +706,188 @@ export function meiaDaArtePx(m: number, screenH: number): number {
   );
 }
 
+// ─── OS ANÉIS NO CAMINHO — o anel que tapa o ponto tapa o clarão ─────────
+// A sonda só vê o que escreve profundidade, e o anel não escreve: Sírius
+// atrás do anel B acendia o clarão inteiro. O anel é translúcido, então a
+// resposta não é binária — é a TRANSMITÂNCIA, pela lei do PRÓPRIO material
+// (`ANEL_FRAG`, gigante.ts): ele desenha com α = 1 − e^{−τ/μ} em mistura
+// normal, e o que estiver atrás sai × e^{−τ/μ}. Aqui, a mesma conta na CPU:
+//
+//   τ = −ln(max(1 − ā, 10⁻³)) · fatorTau(r),  μ = max(|d·n|, 0,02),
+//   T = e^{−τ/μ}  (T = 1 onde ā < 0,004 — o `discard` do material)
+//
+// com ā o α do perfil medido no raio onde a linha câmera→estrela fura o
+// plano, MÉDIO NA PEGADA DE UM PIXEL ali (o mipmap do material faz o mesmo:
+// de longe o pixel mistura o B com a Cassini). A pegada radial é o
+// gradiente de r por pixel, `px·t·√(1 + (ê_r·d)²/μ²)`, nunca menor que uma
+// caixa (que é o filtro linear de perto). Média de caixa sobre α constante
+// por caixa = soma acumulada: contínua no raio, então o T anda contínuo com
+// a câmera — sem rampa, ele vale no MESMO quadro em que o anel cobre o
+// ponto. Os anéis procedurais (sem perfil) e os véus aditivos não tapam.
+// Os números e o GLSL gêmeo moram em `starShaders.ts`: o ponto de cada
+// estrela atravessa o anel pela mesma conta (`escreverAneisNosPontos`).
+
+interface TabelaDoAnel {
+  /** soma acumulada de α por caixa (n + 1 entradas) */
+  readonly soma: Float64Array;
+  readonly fatorTau: Float32Array;
+  /** as duas tabelas para a GPU: a soma em BYTES (inteiros exatos em
+   *  float32) a partir do texel 0 e o fatorTau a partir de `baseDoTau` */
+  readonly textura: THREE.DataTexture;
+  readonly baseDoTau: number;
+}
+
+const tabelasDosAneis = new WeakMap<Readonly<AnelComPerfil>, TabelaDoAnel>();
+
+function tabelaDoAnel(anel: Readonly<AnelComPerfil>): TabelaDoAnel {
+  let t = tabelasDosAneis.get(anel);
+  if (t) return t;
+  const n = anel.perfil.length >> 2;
+  const soma = new Float64Array(n + 1);
+  for (let i = 0; i < n; i++) soma[i + 1] = soma[i] + anel.perfil[i * 4 + 3] / 255;
+  const fatorTau = new Float32Array(AMOSTRAS_DO_FATOR_TAU);
+  for (let k = 0; k < AMOSTRAS_DO_FATOR_TAU; k++) {
+    const r = anel.rInt + ((anel.rExt - anel.rInt) * k) / (AMOSTRAS_DO_FATOR_TAU - 1);
+    fatorTau[k] = regiaoDoAnelCpu(r * anel.kmPorRaio).fatorTau;
+  }
+  const L = LARGURA_DA_TABELA_DO_ANEL;
+  const baseDoTau = Math.ceil((n + 1) / L) * L;
+  const dados = new Float32Array(baseDoTau + Math.ceil(AMOSTRAS_DO_FATOR_TAU / L) * L);
+  for (let i = 0; i < n; i++) dados[i + 1] = dados[i] + anel.perfil[i * 4 + 3];
+  dados.set(fatorTau, baseDoTau);
+  const textura = new THREE.DataTexture(dados, L, dados.length / L, THREE.RedFormat, THREE.FloatType);
+  textura.needsUpdate = true;
+  t = { soma, fatorTau, textura, baseDoTau };
+  tabelasDosAneis.set(anel, t);
+  return t;
+}
+
+/** ∫₀ˣ α, em caixas, com a borda estendida (o clamp-to-edge da textura) */
+function integralDeAlfa(soma: Float64Array, x: number): number {
+  const n = soma.length - 1;
+  if (x <= 0) return x * soma[1];
+  if (x >= n) return soma[n] + (x - n) * (soma[n] - soma[n - 1]);
+  const i = Math.floor(x);
+  return soma[i] + (x - i) * (soma[i + 1] - soma[i]);
+}
+
+/**
+ * A fração da luz de um ponto em `alvo` que chega à câmera em `cam` depois
+ * de atravessar os anéis (1 = nenhum no caminho). `radPorPx` é o ângulo de
+ * um pixel do buffer (a pegada do mipmap); 0 = só o filtro linear.
+ */
+export function transmitanciaDosAneis(
+  aneis: readonly Readonly<AnelComPerfil>[],
+  cam: { x: number; y: number; z: number },
+  alvo: { x: number; y: number; z: number },
+  radPorPx: number
+): number {
+  let dx = alvo.x - cam.x;
+  let dy = alvo.y - cam.y;
+  let dz = alvo.z - cam.z;
+  const l = Math.hypot(dx, dy, dz);
+  if (!(l > 0)) return 1;
+  dx /= l;
+  dy /= l;
+  dz /= l;
+  let tr = 1;
+  for (const anel of aneis) {
+    const c = anel.centroPc;
+    const p = anel.polo;
+    const dn = dx * p.x + dy * p.y + dz * p.z;
+    if (dn === 0) continue;
+    const t = ((c.x - cam.x) * p.x + (c.y - cam.y) * p.y + (c.z - cam.z) * p.z) / dn;
+    // o anel tem de estar ENTRE a câmera e a estrela
+    if (!(t > 0 && t < l)) continue;
+    const hx = cam.x + dx * t - c.x;
+    const hy = cam.y + dy * t - c.y;
+    const hz = cam.z + dz * t - c.z;
+    const rPc = Math.hypot(hx, hy, hz);
+    const r = rPc / anel.raioPc;
+    // a malha (RingGeometry) vai de rInt a rExt: fora dela, nada desenha
+    if (!(r > anel.rInt && r < anel.rExt)) continue;
+    const mu = Math.max(Math.abs(dn), PISO_DO_MU_DO_ANEL);
+    const tab = tabelaDoAnel(anel);
+    const n = tab.soma.length - 1;
+    const dudr = U_PERFIL_ESCALA / (anel.rExt - anel.rInt);
+    const x = ((r - anel.rInt) * dudr + U_PERFIL_BASE) * n;
+    const erd = (hx * dx + hy * dy + hz * dz) / rPc;
+    const pegadaR = (radPorPx * t * Math.sqrt(1 + (erd / mu) ** 2)) / anel.raioPc;
+    const w = Math.max(pegadaR * dudr * n, 1);
+    const alfa = (integralDeAlfa(tab.soma, x + 0.5 * w) - integralDeAlfa(tab.soma, x - 0.5 * w)) / w;
+    if (alfa < LIMIAR_DO_ANEL) continue;
+    const k = ((r - anel.rInt) / (anel.rExt - anel.rInt)) * (AMOSTRAS_DO_FATOR_TAU - 1);
+    const k0 = Math.min(Math.floor(k), AMOSTRAS_DO_FATOR_TAU - 2);
+    const fz = tab.fatorTau[k0] + (k - k0) * (tab.fatorTau[k0 + 1] - tab.fatorTau[k0]);
+    const tau = -Math.log(Math.max(1 - alfa, PISO_DA_TRANSMISSAO_DO_ANEL)) * fz;
+    tr *= Math.exp(-tau / mu);
+  }
+  return tr;
+}
+
+/**
+ * O MESMO anel para o PONTO de cada estrela: escreve `UNIFORMES_DOS_ANEIS`
+ * (starShaders.ts), que o vértice de todo desenhista de ponto estelar lê
+ * para dar, estrela a estrela, o número de `transmitanciaDosAneis`. Sem
+ * anel com perfil desliga o termo (o ponto sai bit a bit o de antes). Só
+ * um anel tem perfil medido (Saturno): um segundo seria ignorado aqui.
+ */
+export function escreverAneisNosPontos(
+  aneis: readonly Readonly<AnelComPerfil>[],
+  cam: { x: number; y: number; z: number },
+  radPorPx: number
+): void {
+  const u = UNIFORMES_DOS_ANEIS;
+  const anel = aneis[0];
+  if (!anel) {
+    u.uAnelLigado.value = 0;
+    return;
+  }
+  const tab = tabelaDoAnel(anel);
+  const n = tab.soma.length - 1;
+  const caixasPorRaio = (U_PERFIL_ESCALA / (anel.rExt - anel.rInt)) * n;
+  const c = anel.centroPc;
+  u.uAnelLigado.value = 1;
+  u.uAnelCentro.value.set(
+    (c.x - cam.x) / anel.raioPc,
+    (c.y - cam.y) / anel.raioPc,
+    (c.z - cam.z) / anel.raioPc
+  );
+  u.uAnelPolo.value.copy(anel.polo);
+  u.uAnelRaioPc.value = anel.raioPc;
+  u.uAnelRaios.value.set(anel.rInt, anel.rExt);
+  u.uAnelCaixas.value.set(caixasPorRaio, U_PERFIL_BASE * n, n);
+  u.uAnelRadPorPx.value = Number.isFinite(radPorPx) && radPorPx > 0 ? radPorPx : 0;
+  u.uAnelBaseDoTau.value = tab.baseDoTau;
+  u.uAnelTabela.value = tab.textura;
+}
+
 export class ClaraoDeAsas {
   readonly group = new THREE.Group();
   private readonly mats: THREE.ShaderMaterial[] = [];
   private readonly meshes: THREE.Mesh[] = [];
   private readonly slots: SlotDoClarao[];
-  /** a luz única (`?luzunica=1`): toda estrela forte pela lei, sem heroes */
-  private readonly luzUnica: boolean;
-  private readonly elegiveisPorQuadro: number;
-  /** na luz única, o quadro em que a nomeada foi escrita por uma visitada */
+  /** o quadro em que a nomeada foi escrita por uma visitada */
   private readonly marcaDaVisita: Uint32Array;
   private quadro = 0;
   private readonly nNomeadas: number;
-  /** os gêmeos da camada do campo (só na luz única; vazios fora dela) */
+  /** os gêmeos da camada do campo (vazios sem `camadaDoCampo`) */
   private readonly matsDoCampo: THREE.ShaderMaterial[] = [];
   private readonly meshesDoCampo: THREE.Mesh[] = [];
 
-  // ── a sonda de oclusão do Sol (candidato 0) — ver a seção dedicada,
-  // logo antes de `ocupacao()` — mesmo grupo, desenhista à parte
+  // ── a sonda de oclusão, UMA POR VAGA — ver a seção dedicada, logo
+  // antes de `ocupacao()` — mesmo grupo, desenhista à parte
   private readonly sondaMat: THREE.ShaderMaterial;
-  private readonly sondaMesh: THREE.Mesh;
-  private readonly consultas: SondaDeOclusao;
-  /** true quando a ÚLTIMA consulta resolvida achou o Sol tapado por
-   *  OUTRO corpo — nunca pela §5.15 (o próprio Sol não conta aqui) */
-  private solOculto = false;
+  private readonly sondas: THREE.Mesh[] = [];
+  private readonly consultas: SondaDeOclusao[] = [];
+  /** por vaga: a ÚLTIMA consulta resolvida achou o ponto tapado por OUTRO
+   *  corpo — nunca pela §5.15 (a estrela não conta para si mesma) */
+  private readonly oculta: Uint8Array;
+  /** por vaga: a presença pela oclusão, 0..1 — a rampa de 300 ms rumo a
+   *  0 (tapada) ou 1 (à vista); multiplica o clarão e o halo da vaga */
+  private readonly visibilidade: Float64Array;
+  /** por vaga: o candidato a quem as respostas da sonda pertencem */
+  private readonly donoDaSonda: Int32Array;
   private readonly vSonda = new THREE.Vector3();
 
   // o cadastro de candidatos: 0 = Sol (na origem), 1.. = as nomeadas.
@@ -647,9 +899,6 @@ export class ClaraoDeAsas {
   private readonly cor: Float32Array;
   /** a soltura de cada candidato neste quadro (1 = ponto pleno) */
   private readonly soltura: Float64Array;
-  /** a presença (só ganho) e o piso de tamanho de cada candidato (o Sol: 1 e 0) */
-  private readonly presenca: Float64Array;
-  private readonly pisoPx: Float64Array;
   /** o primeiro índice das vagas de visitadas no cadastro */
   private readonly inicioDasVisitadas: number;
   /** quais candidatos entram neste quadro (o Sol + as visitadas) */
@@ -661,24 +910,21 @@ export class ClaraoDeAsas {
   constructor(
     named: readonly NamedStar[],
     opcoes: {
-      luzUnica?: boolean;
       camadaDoCampo?: number;
     } = {}
   ) {
-    this.luzUnica = opcoes.luzUnica === true;
-    const nSlots = this.luzUnica ? ORCAMENTO_DA_LUZ_UNICA : ORCAMENTO_DO_CLARAO;
-    this.slots = criarSlots(nSlots);
-    this.elegiveisPorQuadro = nSlots + (ELEGIVEIS_POR_QUADRO - ORCAMENTO_DO_CLARAO);
+    this.slots = criarSlots();
+    this.oculta = new Uint8Array(this.slots.length);
+    this.visibilidade = new Float64Array(this.slots.length).fill(1);
+    this.donoDaSonda = new Int32Array(this.slots.length).fill(-1);
     this.nNomeadas = named.length;
     const n = named.length + 1 + VAGAS_DE_VISITADAS;
-    this.marcaDaVisita = new Uint32Array(this.luzUnica ? n : 0);
+    this.marcaDaVisita = new Uint32Array(n);
     this.inicioDasVisitadas = named.length + 1;
     this.pos = new Float32Array(n * 3);
     this.mBase = new Float64Array(n);
     this.cor = new Float32Array(n * 3);
     this.soltura = new Float64Array(n).fill(1);
-    this.presenca = new Float64Array(n).fill(1);
-    this.pisoPx = new Float64Array(n);
 
     // candidato 0: o Sol
     this.mBase[0] = M_V_SOL_DO_CAMPO - 5;
@@ -701,6 +947,9 @@ export class ClaraoDeAsas {
       this.cor[j * 3 + 2] = b;
     }
 
+    // UM plano para todos os quads: cada vaga com a sua geometria punha
+    // 65 delas residentes (memoria.mjs, teto de 80 no mundo inteiro)
+    const plano = new THREE.PlaneGeometry(2, 2);
     const novoMaterial = () => {
       const mat = new THREE.ShaderMaterial({
         vertexShader: VERT,
@@ -723,23 +972,23 @@ export class ClaraoDeAsas {
         transparent: true,
       });
       seguirALente(mat, FRAG, FRAG_DA_LENTE);
-      const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat);
+      const quad = new THREE.Mesh(plano, mat);
       quad.visible = false;
       quad.frustumCulled = false;
       quad.renderOrder = 3;
       this.group.add(quad);
       return { mat, quad };
     };
-    for (let k = 0; k < nSlots; k++) {
+    for (let k = 0; k < ORCAMENTO_DO_CLARAO; k++) {
       const { mat, quad } = novoMaterial();
       this.mats.push(mat);
       this.meshes.push(quad);
     }
-    // a luz única: o GÊMEO de cada slot, só na camada do campo (o passe que
-    // veste o campo com o kernel do filme) — nunca na camada 0, então não
-    // desenha imagem direta: só o halo macio que as heroes ganhavam ali
-    if (this.luzUnica && opcoes.camadaDoCampo !== undefined) {
-      for (let k = 0; k < nSlots; k++) {
+    // o GÊMEO de cada slot, só na camada do campo (o passe que veste o
+    // campo com o kernel do filme) — nunca na camada 0, então não desenha
+    // imagem direta: só o halo macio da estrela
+    if (opcoes.camadaDoCampo !== undefined) {
+      for (let k = 0; k < ORCAMENTO_DO_CLARAO; k++) {
         const { mat, quad } = novoMaterial();
         quad.layers.set(opcoes.camadaDoCampo);
         this.matsDoCampo.push(mat);
@@ -747,7 +996,7 @@ export class ClaraoDeAsas {
       }
     }
 
-    // a sonda entra DEPOIS dos ORCAMENTO_DO_CLARAO quads: quem lê
+    // as sondas entram DEPOIS dos ORCAMENTO_DO_CLARAO quads: quem lê
     // `group.children[0..ORCAMENTO_DO_CLARAO-1]` continua vendo só os
     // billboards do clarão (clarao.test.ts)
     this.sondaMat = new THREE.ShaderMaterial({
@@ -762,19 +1011,21 @@ export class ClaraoDeAsas {
       depthTest: true,
       transparent: true,
     });
-    const sonda = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.sondaMat);
-    sonda.position.set(this.pos[0], this.pos[1], this.pos[2]);
-    sonda.visible = false;
-    sonda.frustumCulled = false;
-    sonda.renderOrder = -1; // a PRIMEIRA da fila transparente: só o depth dos sólidos
-    // a mecânica da consulta é a comum (`sondaDeOclusao.ts`); fora da
-    // tela (sem resposta) conta como à vista, ver a seção da mecânica
-    this.consultas = new SondaDeOclusao(TAMANHO_DA_PISCINA_DE_SONDAS, (visivel) =>
-      this.registrarOclusaoDoSol(visivel === false)
-    );
-    this.consultas.ligar(sonda, (camera) => this.centroNaTela(camera));
-    this.group.add(sonda);
-    this.sondaMesh = sonda;
+    for (let k = 0; k < this.slots.length; k++) {
+      const sonda = new THREE.Mesh(plano, this.sondaMat);
+      sonda.visible = false;
+      sonda.frustumCulled = false;
+      sonda.renderOrder = -1; // a PRIMEIRA da fila transparente: só o depth dos sólidos
+      // a mecânica da consulta é a comum (`sondaDeOclusao.ts`); fora da
+      // tela (sem resposta) conta como à vista, ver a seção da mecânica
+      const consultas = new SondaDeOclusao(TAMANHO_DA_PISCINA_DE_SONDAS, (visivel) =>
+        this.registrarOclusao(k, visivel === false)
+      );
+      consultas.ligar(sonda, (camera) => this.centroNaTela(sonda, camera));
+      this.group.add(sonda);
+      this.sondas.push(sonda);
+      this.consultas.push(consultas);
+    }
   }
 
   /**
@@ -786,18 +1037,12 @@ export class ClaraoDeAsas {
    * teto de ocupação do dono dá o LIMITE — nenhuma estrela ocupa a tela
    * toda; aproximando, chega rápido no máximo e estaciona. Dentro do
    * cartaz, a receita do filme faz o resto: brilho apertado, braço
-   * longo. (O piso de presença das nomeadas saiu no resgate das heroes.)
+   * longo. A asa é pisada pela arte declarada (`meiaDaArtePx`).
    */
-  private meiaDaLei(pico: number, sigma: number, screenH: number, pisoPx = 0, m = Infinity): number {
+  private meiaDaLei(pico: number, sigma: number, screenH: number, m: number): number {
     const asa = Math.max(raioVisivelDaAsaPx(pico, sigma), alcanceDoEspinhoPx(pico, sigma));
     const teto = Math.min(OCUPACAO_MAXIMA_DA_TELA * screenH, TETO_DO_BILLBOARD_PX);
-    // a luz única pisa a asa com a arte declarada (`meiaDaArtePx`); fora
-    // dela `m` não chega e a conta é a de sempre
-    const lei = Math.min(
-      FATOR_DE_ENCHIMENTO_DO_SOL * (this.luzUnica ? Math.max(asa, meiaDaArtePx(m, screenH)) : asa),
-      teto
-    );
-    return pisoPx > lei ? Math.min(pisoPx, TETO_DO_BILLBOARD_PX) : lei;
+    return Math.min(FATOR_DE_ENCHIMENTO_DO_SOL * Math.max(asa, meiaDaArtePx(m, screenH)), teto);
   }
 
   /** um candidato do quadro: mede e, se a óptica alcança além do sprite,
@@ -806,11 +1051,7 @@ export class ClaraoDeAsas {
     const el = this.elegiveis;
     const soltura = this.soltura[i];
     // superfície é a dona: com a soltura em zero o clarão nem candidata
-    // (nem quando a hero de autor ainda é a dona inteira da óptica)
-    if (!(soltura > 0) || !(this.presenca[i] > 0)) return;
-    // outro corpo tapa o CENTRO do Sol (a sonda acima): some pela MESMA
-    // rampa de saída do orçamento — nenhum gatilho ou tempo novo
-    if (i === 0 && this.solOculto) return;
+    if (!(soltura > 0)) return;
     const dx = this.pos[i * 3] - q.camPos.x;
     const dy = this.pos[i * 3 + 1] - q.camPos.y;
     const dz = this.pos[i * 3 + 2] - q.camPos.z;
@@ -822,15 +1063,15 @@ export class ClaraoDeAsas {
     // o pico é o PLENO (óptica do ponto, sem filtro) — a entrega
     // ponto↔resolvido é a soltura, aplicada no TAMANHO e no ganho
     const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, cssH);
-    // na luz única, quem não passa do gatilho de entrada (pico ≤ 1, o
+    // quem não passa do gatilho de entrada (pico ≤ 1, o
     // `ganhoDeEntradaDoFlare` zerado) nunca desenharia: sai antes do resto
     // da conta — é o que deixa as 1.726 nomeadas baratas por quadro
-    if (this.luzUnica && !(pico > 1)) return;
+    if (!(pico > 1)) return;
     // elegível quando a óptica alcança além do que o sprite já desenha
     const nucleo = psfPointSizePx(m, q.expoM0, q.sigmaPx, cssH);
-    if (!(2 * this.meiaDaLei(pico, sigma, cssH, this.pisoPx[i], m) * soltura > nucleo)) return;
+    if (!(2 * this.meiaDaLei(pico, sigma, cssH, m) * soltura > nucleo)) return;
     // inserção ordenada (pico DESC, índice ASC no empate), teto K
-    const teto = this.elegiveisPorQuadro;
+    const teto = ELEGIVEIS_POR_QUADRO;
     let p = el.length;
     while (p > 0 && (el[p - 1].pico < pico || (el[p - 1].pico === pico && el[p - 1].indice > i)))
       p--;
@@ -839,11 +1080,18 @@ export class ClaraoDeAsas {
     if (el.length > teto) el.length = teto;
   }
 
+  /** o candidato tem vaga, e a sonda dela o deu por tapado com a rampa já em zero */
+  private tapadaPorInteiro(indice: number): boolean {
+    for (let k = 0; k < this.slots.length; k++) {
+      if (this.slots[k].indice === indice) return this.oculta[k] === 1 && this.visibilidade[k] === 0;
+    }
+    return false;
+  }
+
   /** o índice no cadastro de uma visitada (a mesma regra do laço de `atualizar`); null = o Sol */
   private indiceDaFonte(v: CandidataVisitada | null): number {
     if (!v) return 0;
-    if (this.luzUnica && v.nomeada !== undefined && v.nomeada >= 0 && v.nomeada < this.nNomeadas)
-      return 1 + v.nomeada;
+    if (v.nomeada !== undefined && v.nomeada >= 0 && v.nomeada < this.nNomeadas) return 1 + v.nomeada;
     return v.vaga >= 0 && v.vaga < VAGAS_DE_VISITADAS ? this.inicioDasVisitadas + v.vaga : -1;
   }
 
@@ -864,21 +1112,14 @@ export class ClaraoDeAsas {
         ? q.solturaDoSol
         : 1;
 
-    // A SONDA DE OCLUSÃO corre sempre que o Sol PODERIA ter clarão — a
-    // MESMA condição de entrada do candidato 0, logo abaixo. `solOculto`
-    // (lido ali) só decide ELEGIBILIDADE; a sonda precisa continuar
-    // rodando mesmo tapada, senão nunca veria o Sol reaparecer.
-    const sondaDeveCorrer = q.solVisivel && solturaDoSol > 0;
-    this.sondaMesh.visible = sondaDeveCorrer;
-    if (sondaDeveCorrer) {
-      this.sondaMat.uniforms.uScreenH.value = q.screenH;
-    }
+    this.sondaMat.uniforms.uScreenH.value = q.screenH;
+    const radPorPx =
+      Number.isFinite(q.tanHalfFov) && (q.tanHalfFov as number) > 0
+        ? (2 * (q.tanHalfFov as number)) / q.screenH
+        : 0;
 
-    // RESGATE (16/08, ordem do dono): as nomeadas voltaram às heroes de
-    // autor (world/heroStars.ts) — esta camada fica com o Sol e com as
-    // estrelas VISITADAS (12/11): a que o motor do Sol monta candidata
-    // pela mesma lei, com os números do ponto dela; a cessão à hero de
-    // autor já vem dentro da soltura.
+    // o Sol e as estrelas VISITADAS (12/11): a que o motor do Sol monta
+    // candidata pela mesma lei, com os números do ponto dela
     this.soltura[0] = solturaDoSol;
     const daVez = this.daVez;
     daVez.length = 0;
@@ -886,14 +1127,12 @@ export class ClaraoDeAsas {
     const quadro = ++this.quadro;
     for (const v of q.visitadas ?? []) {
       if (!(v.vaga >= 0 && v.vaga < VAGAS_DE_VISITADAS) || !Number.isFinite(v.mBase)) continue;
-      // na luz única a visitada que É uma nomeada escreve na vaga DELA (a
-      // mesma identidade no orçamento antes e depois de o corpo montar —
-      // trocar de vaga seria uma rampa de saída e outra de entrada no meio
-      // da chegada); a magnitude e a cor ficam as da nomeada
+      // a visitada que É uma nomeada escreve na vaga DELA (a mesma
+      // identidade no orçamento antes e depois de o corpo montar — trocar
+      // de vaga seria uma rampa de saída e outra de entrada no meio da
+      // chegada); a magnitude e a cor ficam as da nomeada
       const nomeada =
-        this.luzUnica && v.nomeada !== undefined && v.nomeada >= 0 && v.nomeada < this.nNomeadas
-          ? 1 + v.nomeada
-          : -1;
+        v.nomeada !== undefined && v.nomeada >= 0 && v.nomeada < this.nNomeadas ? 1 + v.nomeada : -1;
       const i = nomeada >= 0 ? nomeada : this.inicioDasVisitadas + v.vaga;
       this.pos[i * 3] = v.pos.x;
       this.pos[i * 3 + 1] = v.pos.y;
@@ -905,32 +1144,51 @@ export class ClaraoDeAsas {
         this.cor[i * 3 + 2] = v.cor[2];
       } else this.marcaDaVisita[i] = quadro;
       this.soltura[i] = Number.isFinite(v.soltura) && v.soltura >= 0 && v.soltura <= 1 ? v.soltura : 1;
-      this.presenca[i] =
-        Number.isFinite(v.presenca) && v.presenca >= 0 && v.presenca <= 1 ? v.presenca : 1;
-      this.pisoPx[i] = Number.isFinite(v.pisoPx) && v.pisoPx > 0 ? v.pisoPx : 0;
       daVez.push(i);
     }
     for (const i of daVez) this.candidatar(i, q, cssH, sigma);
     // A LUZ ÚNICA: toda nomeada candidata pelo MESMO critério (o pico na
     // câmera) — as visitadas deste quadro já entraram acima, na vaga delas;
-    // as outras voltam a ponto pleno (soltura 1, sem piso)
-    if (this.luzUnica) {
-      for (let i = 1; i <= this.nNomeadas; i++) {
-        if (this.marcaDaVisita[i] === quadro) continue;
-        this.soltura[i] = 1;
-        this.presenca[i] = 1;
-        this.pisoPx[i] = 0;
-        this.candidatar(i, q, cssH, sigma);
+    // as outras voltam a ponto pleno (soltura 1)
+    for (let i = 1; i <= this.nNomeadas; i++) {
+      if (this.marcaDaVisita[i] === quadro) continue;
+      this.soltura[i] = 1;
+      this.candidatar(i, q, cssH, sigma);
+    }
+
+    // A FRONTEIRA DO ORÇAMENTO NÃO CORTA (`presencaNaFronteira`): o corte é
+    // o pico do primeiro elegível que ficou DE FORA × a folga da troca; sem
+    // ninguém de fora, não há fronteira (0). A fila conta só quem se VÊ: a
+    // estrela inteira atrás de um corpo guarda a vaga (a sonda dela precisa
+    // continuar correndo), mas não empurra a fronteira das outras
+    let corte = 0;
+    let naFila = 0;
+    for (const c of el) {
+      if (this.tapadaPorInteiro(c.indice)) continue;
+      if (naFila++ === this.slots.length) {
+        corte = RAZAO_DE_TROCA * c.pico;
+        break;
       }
     }
 
     passoDoOrcamento(this.slots, el, q.dtS);
+    const veu = veuDaLente(q.lente);
 
     for (let k = 0; k < this.slots.length; k++) {
       const s = this.slots[k];
       const mesh = this.meshes[k];
       const gemeo = this.meshesDoCampo[k];
+      const sonda = this.sondas[k];
       if (gemeo) gemeo.visible = false;
+      sonda.visible = false;
+      // a vaga trocou de dono: as respostas em voo eram do anterior, e o
+      // novo começa à vista (a mesma regra de "sem resposta")
+      if (this.donoDaSonda[k] !== s.indice) {
+        this.donoDaSonda[k] = s.indice;
+        this.oculta[k] = 0;
+        this.visibilidade[k] = 1;
+        this.consultas[k].invalidar();
+      }
       if (s.indice < 0 || s.ganho <= 0) {
         mesh.visible = false;
         continue;
@@ -944,37 +1202,63 @@ export class ClaraoDeAsas {
       const soltura = this.soltura[i];
       const pico = picoDaPsf(m, q.expoM0, q.sigmaPx, cssH);
       const nucleoPx = psfPointSizePx(m, q.expoM0, q.sigmaPx, cssH) * soltura;
-      const entrada = ganhoDeEntradaDoFlare(pico) * soltura * this.presenca[i];
+      const entrada =
+        ganhoDeEntradaDoFlare(pico) *
+        (corte > 0 ? presencaNaFronteira(pico, corte) : 1) *
+        soltura;
       // a soltura veste o TAMANHO por fora do teto de ocupação: o clarão
       // desabrocha DO teto estacionado (o espelho do brief do dono —
       // "chega no máximo rapidamente e estaciona"), nunca além dele
-      const meiaPx = this.meiaDaLei(pico, sigma, cssH, this.pisoPx[i], m) * soltura * pr;
+      const meiaPx = this.meiaDaLei(pico, sigma, cssH, m) * soltura * pr;
       if (!(meiaPx > 0) || !(entrada > 0)) {
         mesh.visible = false;
         continue;
       }
+      // A OCLUSÃO, a mesma para toda vaga: a sonda corre sempre que a vaga
+      // PODERIA ter clarão — também tapada, senão nunca veria a estrela
+      // reaparecer —, e a presença anda pela rampa de 300 ms do orçamento
+      sonda.visible = true;
+      sonda.position.set(this.pos[i * 3], this.pos[i * 3 + 1], this.pos[i * 3 + 2]);
+      const vis = (this.visibilidade[k] = stepRampToward(
+        this.visibilidade[k],
+        this.oculta[k] ? 0 : 1,
+        q.dtS,
+        RAMP_DURATION_MS
+      ));
+      if (!(vis > 0)) {
+        mesh.visible = false;
+        continue;
+      }
       mesh.visible = true;
-      mesh.position.set(this.pos[i * 3], this.pos[i * 3 + 1], this.pos[i * 3 + 2]);
+      mesh.position.copy(sonda.position);
       const u = this.mats[k].uniforms;
       (u.uCor.value as THREE.Color).setRGB(
         this.cor[i * 3],
         this.cor[i * 3 + 1],
         this.cor[i * 3 + 2]
       );
-      // presença = rampa do orçamento × entrada × soltura: o brilho da
-      // forma é FIXO como nas heroes — é o desenho superior que o dono
-      // apontou; a lei manda só em presença e tamanho
-      u.uGanho.value = s.ganho * entrada;
+      // presença = rampa do orçamento × entrada × soltura × oclusão × o
+      // que atravessa os anéis: o brilho da forma é FIXO — é o desenho
+      // superior que o dono apontou; a lei manda só em presença e tamanho
+      const aneis = q.aneis;
+      const veuDosAneis =
+        aneis && aneis.length > 0
+          ? transmitanciaDosAneis(aneis, q.camPos, sonda.position, radPorPx)
+          : 1;
+      u.uGanho.value = s.ganho * entrada * vis * veuDosAneis;
       const t = i === 0 ? q.transmitanciaDoSol : undefined;
       (u.uTransmitancia.value as THREE.Vector3).set(t ? t[0] : 1, t ? t[1] : 1, t ? t[2] : 1);
       u.uMeiaPx.value = meiaPx;
       u.uNucleoPx.value = 0.5 * nucleoPx * pr;
       u.uScreenH.value = q.screenH;
-      // a fatia do campo (luz única): o mesmo desenho, no passe do campo
+      // a fatia do campo: o mesmo desenho, no passe do campo
       // ...cedida à lente na medida da luz que ela acendeu nesta estrela
+      // (a fonte cede à luz inteira da lente; as outras, ao véu dela — a
+      // mesma luz pesada por quanto a fonte está no quadro) e cresce devagar
+      // com a luz da estrela (`haloDaLuz`)
       const lente = q.lente;
-      const daLente = lente && this.indiceDaFonte(lente.candidata) === i ? lente.fracao : 0;
-      const fatia = gemeo ? fatiaDoCampo(daLente) : 0;
+      const daLente = lente && this.indiceDaFonte(lente.candidata) === i ? lente.fracao : veu;
+      const fatia = gemeo ? fatiaDoCampo(daLente) * haloDaLuz(m) : 0;
       if (gemeo && fatia > 0) {
         gemeo.visible = true;
         gemeo.position.copy(mesh.position);
@@ -1002,21 +1286,27 @@ export class ClaraoDeAsas {
   // alcança. É esse único draw, com a profundidade dos corpos resolvidos
   // já escrita pela fila opaca, que a consulta mede.
   //
-  // CENTRO DO SOL FORA DA TELA (medido em 23/09: a 2 % acima da borda, a
+  // O PONTO FORA DA TELA (medido no Sol em 23/09: a 2 % acima da borda, a
   // cruz ainda entrava no quadro): a sonda cairia fora da imagem e seria
-  // descartada — "tapado" sem corpo nenhum. Fora da tela a pergunta não
-  // tem resposta: o clarão segue como antes da sonda (não oculto), e as
-  // consultas já em voo, feitas com o Sol ainda dentro, não valem mais.
-  private centroNaTela(camera: THREE.Camera): boolean {
-    return ndcNaTela(this.vSonda.setFromMatrixPosition(this.sondaMesh.matrixWorld).project(camera));
+  // descartada — "tapado" sem corpo nenhum. Até onde o clarão alcança o
+  // quadro (`ALCANCE_DA_SONDA_NDC`) a sonda é grampeada na borda
+  // (`SONDA_VERT`) e responde por ela; além disso a pergunta não tem
+  // resposta: o clarão segue não oculto, e as consultas já em voo não
+  // valem mais.
+  private centroNaTela(sonda: THREE.Object3D, camera: THREE.Camera): boolean {
+    const v = this.vSonda.setFromMatrixPosition(sonda.matrixWorld);
+    // atrás da câmera a projeção espelha o ponto para dentro do quadro
+    if (v.clone().applyMatrix4(camera.matrixWorldInverse).z >= 0) return false;
+    v.project(camera);
+    return Math.abs(v.x) <= ALCANCE_DA_SONDA_NDC && Math.abs(v.y) <= ALCANCE_DA_SONDA_NDC && v.z <= 1;
   }
 
-  /** O ÚNICO lugar que escreve `solOculto` — a consulta de oclusão chama
-   *  daqui de cima (com GPU de verdade); o teste de unidade chama esta
-   *  mesma função por um cast controlado, sem GPU nenhuma, para provar a
-   *  rampa sem depender de um `WebGLRenderer` de verdade. */
-  private registrarOclusaoDoSol(oculto: boolean): void {
-    this.solOculto = oculto;
+  /** O ÚNICO lugar que escreve `oculta` — a consulta de oclusão da vaga
+   *  chama daqui de cima (com GPU de verdade); o teste de unidade chama
+   *  esta mesma função por um cast controlado, sem GPU nenhuma, para
+   *  provar a rampa sem depender de um `WebGLRenderer` de verdade. */
+  private registrarOclusao(vaga: number, oculto: boolean): void {
+    this.oculta[vaga] = oculto ? 1 : 0;
   }
 
   /** leitura para depuração/oráculos: quem ocupa os slots agora */
@@ -1028,7 +1318,7 @@ export class ClaraoDeAsas {
     this.mats.forEach((m) => m.dispose());
     this.matsDoCampo.forEach((m) => m.dispose());
     this.sondaMat.dispose();
-    this.consultas.dispose();
+    this.consultas.forEach((c) => c.dispose());
     this.group.traverse((o) => {
       if (o instanceof THREE.Mesh) o.geometry.dispose();
     });

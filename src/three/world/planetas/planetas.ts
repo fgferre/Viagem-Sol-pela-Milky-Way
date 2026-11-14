@@ -177,7 +177,12 @@ import { GLSL_STAR_PSF } from '../../shaders/common';
 import { GLSL_PONTO_NA_BORDA, GLSL_PONTO_NA_BORDA_VARYINGS } from '../../shaders/pontoNaBorda';
 import { fluxoDeMagnitude, picoDaPsf } from '../../luzDaCasa';
 import type { CalibracaoDaCasa } from '../../estrela';
-import { STAR_FRAG, STAR_FRAG_DA_LENTE } from '../../shaders/starShaders';
+import {
+  GLSL_ANEIS_NO_CAMINHO,
+  STAR_FRAG,
+  STAR_FRAG_DA_LENTE,
+  UNIFORMES_DOS_ANEIS,
+} from '../../shaders/starShaders';
 import { UNIFORMES_DA_ASSINATURA, seguirALente } from '../../shaders/estrelasDaLente';
 import { needsAttributeWrite } from '../lodStellar';
 import { IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
@@ -324,6 +329,7 @@ attribute float aCede;    // cessão sob corpo resolvido (Onda 6, F2a) — ver o
 attribute float aFase;    // Φ MH18 (D10) — CPU; o Sol escreve 1
 attribute float aRaio;    // raio do globo (pc), publicado pelo corpo resolvido; 0 sem globo
 
+${GLSL_ANEIS_NO_CAMINHO}
 uniform vec3 uCamPos;
 uniform float uScreenH;
 uniform float uExpoM0;  // a MESMA exposição do campo (StarField publica)
@@ -374,6 +380,9 @@ void main() {
   // no STAR_FRAG (M2 — o clamp \`sat\` morreu; item 43: a cruz de Vênus
   // vem na dose do brilho DELA, não na dose única da saturação).
   float alpha = 1.0 - aCede;
+  // o anel com perfil no caminho, pela lei do campo (starShaders.ts): o
+  // Sol e os nove vistos através do anel de Saturno apagam como as estrelas
+  if (uAnelLigado > 0.5) alpha *= transmitanciaDosAneis(-paraObs);
 
   vColor = aCor;
   vSigma = sigmaFrac;
@@ -513,6 +522,7 @@ export class Planetas {
       // O MESMO fragment do ponto do catálogo — importado, não copiado.
       fragmentShader: STAR_FRAG,
       uniforms: {
+        ...UNIFORMES_DOS_ANEIS,
         uCamPos: { value: new THREE.Vector3() },
         uScreenH: { value: 1080 },
         // O INSTRUMENTO DA LEI (M4): exposição de referência, largura da
@@ -549,7 +559,7 @@ export class Planetas {
     this.points = new THREE.Points(geo, this.material);
     this.points.frustumCulled = false;
     // slots ocupados hoje: −1…0,5 (sol/*.js), 1 (lâminas), 2 (campo),
-    // 3 (heroes), 4 (poeira), 5 (nuvens CO), 6 (marcador).
+    // 3 (clarão), 4 (poeira), 5 (nuvens CO), 6 (marcador).
     this.points.renderOrder = 7;
   }
 

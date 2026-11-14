@@ -21,7 +21,9 @@
 import * as THREE from 'three';
 import type { Phase } from '../fases';
 import type { StarsMeta } from '../config';
+import { NOME_DE_SGR_A } from '../world/labels';
 import type { StarLabel } from '../world/labels';
+import { chegadaDoDestino } from '../../lib/destinosDaBusca';
 import type { Rotulos } from './rotulos';
 import type { Escada } from './escada';
 import { ORIGEM } from '../cinematic/enquadramento';
@@ -219,15 +221,25 @@ export class Escolha {
     const escolha = this.escolhaDoClique;
     if (!escolha) return;
     if (escolha.id !== null) {
+      // O DESTINO COM CHEGADA PRÓPRIA (14/11) chega onde o cartão dele
+      // chega — a mesma tabela que a busca lê (`chegadaDoDestino`)
+      const raios = chegadaDoDestino(escolha.id);
+      if (raios !== undefined) {
+        this.escada.focarNoCorpo(escolha.id, 'corpo');
+        if (raios) this.escada.pinarEmRaios(raios);
+        return;
+      }
       // o SOL tem os dois degraus e o mergulho pede o de baixo — o corpo
       // dele; `focarNoCorpo('sun')` sem `ver=` é a casa, que é o oposto
       if (escolha.id === 'sun') this.escada.focarNoCorpo('sun', 'corpo');
       else this.escada.focarNoCorpo(escolha.id);
       return;
     }
-    // um lugar do céu: o enquadramento DELE (raio e vista)
+    // um lugar do céu: o enquadramento DELE (raio e vista) e, se o
+    // destino desce ao corpo (Sagittarius A✱), o degrau de perto
     if (escolha.lugar) {
       this.escada.visitarLugar(escolha.lugar);
+      if (chegadaDoDestino(escolha.lugar.id) !== undefined) this.escada.aproximarDoCorpo();
       return;
     }
     // uma estrela ou o centro galáctico: o enquadramento da D5, com
@@ -287,7 +299,12 @@ export class Escolha {
       return;
     }
     if (best.key === 'sgr-a') {
-      this.escolhaDoClique = { id: null, pos: GAL.GC_POS.clone(), nome: best.name };
+      // o rótulo do centro É o lugar Sagittarius A✱ da busca (o mesmo nome
+      // que `chaveDoFoco` reconhece): o mergulho vai pela porta dele, e a
+      // chegada é a do destino. Sem lei própria, `visitarLugar` cai no
+      // mesmo `irAte` de antes.
+      const lugar = LUGARES_DA_BUSCA.find((l) => l.nome === NOME_DE_SGR_A);
+      this.escolhaDoClique = { id: null, pos: GAL.GC_POS.clone(), nome: best.name, lugar };
       // o MESMO raio que o mergulho vai usar (`irAte` → D5): duas
       // réguas para o mesmo alvo fariam o `?d=` mudar de unidade entre
       // escolher e ir
@@ -303,7 +320,7 @@ export class Escolha {
     if (lugar?.raioPc) {
       const pos = new THREE.Vector3(lugar.x, lugar.y, lugar.z);
       this.escolhaDoClique = { id: null, pos, nome: best.name, lugar };
-      this.escada.selecionarPonto(pos, lugar.raioPc, best.name);
+      this.escada.selecionarPonto(pos, lugar.raioPc, best.name, lugar);
       return;
     }
     const star = this.meta.named.find((s) => s.n === best.name);

@@ -16,14 +16,14 @@
 // reprodutível — a identidade A/B da casa não sobrevive a um hash de
 // GPU que mude de fornecedor).
 //
-// OS NÚMEROS SÃO DELE, letra por letra: lajota de 7 000 km de lado,
-// espessura visual de ±12 km, grão de 4 a 14 km, 65 536 grãos no topo,
-// dose 0,30, o lobo para a frente `0,55 + 1,6·cos⁴`, e a ligação pela
-// altura sobre o plano (1 600 km) e pelo raio (55 000 a 160 000 km).
+// OS NÚMEROS SÃO DELE (espessura ±12 km, grão de 4 a 14 km, o lobo para
+// a frente `0,55 + 1,6·cos⁴`, a ligação por altura 1 600 km e raio 55 000 a
+// 160 000 km), menos dois, ajustados contra a foto dele (13/11): ladrilho
+// de 4 900 km (era 7 000) e dose 0,6 (era 0,30) — ver `LADO_DA_LAJOTA_KM`.
 //
 // A ANCORAGEM NO MUNDO é o truque dele e é o que faz a lajota parecer
 // um enxame parado enquanto a câmera anda: cada grão tem um lugar FIXO
-// dentro de um quadrado de 7 000 km, e o quadrado salta de múltiplo em
+// dentro de um quadrado de 4 900 km, e o quadrado salta de múltiplo em
 // múltiplo para o mais próximo da câmera. Ninguém "segue" a câmera —
 // quem segue é o LADRILHO, e o grão que sai por trás reaparece à frente
 // já no lugar onde ele estaria.
@@ -54,8 +54,8 @@ import type { QualityLevel } from '../../core/engine';
 /** 1 raio equatorial de Saturno em km — a régua deste arquivo. */
 const KM_POR_RAIO = BODY_AXES.saturn[0]!;
 
-/** O lado do ladrilho que acompanha a câmera (o `TILE = 7` dele). */
-const LADO_DA_LAJOTA_KM = 7000;
+/** O lado do ladrilho (o `TILE = 7` dele, 7 000 km, encolhido: ver `DOSE`). */
+const LADO_DA_LAJOTA_KM = 4900;
 
 /**
  * A MEIA-ESPESSURA VISUAL (o `THICKNESS = 0.012` dele). O anel de verdade
@@ -94,8 +94,17 @@ export const VOLUME_DA_LAJOTA = {
   meiaEspessura: ESPESSURA_KM / KM_POR_RAIO,
 } as const;
 
-/** O alfa por grão (o `0.30` dele). */
-const DOSE = 0.3;
+/**
+ * O ALFA POR GRÃO, e o LADO acima, ajustados em 13/11 contra a foto do
+ * projeto dele (`capturas/item139-dele-dentro-do-anel.png`): com o `0.30`
+ * e os 7 000 km dele, rente ao plano o campo saía ralo e apagado perto da
+ * câmera. O ladrilho de 4 900 km dobra a densidade com a MESMA contagem
+ * por tier (o horizonte do enxame recua de ~3 400 para ~2 400 km, onde o
+ * grão já é sub-pixel), e a dose dobra o brilho. Custo medido a 400 km
+ * (cinema, relativo ao globo): os passes do anel sobem ~5–10 %; prova em
+ * `capturas/filme-saturno-13-11/graos-prancha-v2.jpg`.
+ */
+const DOSE = 0.6;
 
 /**
  * QUANTOS GRÃOS POR TIER — os degraus dele, com UM corte MEDIDO no topo.

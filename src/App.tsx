@@ -35,6 +35,7 @@ import type { EstadoDoTempo, SentidoDoTempo } from './three/tempoDoAtlas';
 import { PaletaDeBusca } from './components/PaletaDeBusca';
 import { FichaDoObjeto } from './components/FichaDoObjeto';
 import { construirIndice } from './lib/buscaEstrelas';
+import { chegadaDaEntrada } from './lib/destinosDaBusca';
 import {
   Convite,
 } from './components/Spotlight';
@@ -1256,13 +1257,15 @@ export default function App() {
           </div>
         )}
 
-        {/* dica do pausar-e-olhar */}
+        {/* dica do pausar-e-olhar — no toque sem a tecla de espaço (o
+            botão Retomar logo abaixo já é o gesto), com o mesmo "olhar"
+            da dica do voo livre */}
         {inJourney && paused && (
           <div className="free-hint veu-legivel">
             <span className="veu-sombra" aria-hidden="true">
-              {t('dica.pausado')}
+              {t(telaDeToque() ? 'dica.toque.olhar' : 'dica.pausado')}
             </span>
-            <span>{t('dica.pausado')}</span>
+            <span>{t(telaDeToque() ? 'dica.toque.olhar' : 'dica.pausado')}</span>
           </div>
         )}
         </div>
@@ -1532,10 +1535,13 @@ export default function App() {
           onFechar={() => fecharGaveta('busca')}
           indice={indice}
           verbo={phase === 'atlas' ? 'enquadrar' : 'visitar'}
-          onEscolher={(entrada, raios) =>
-            // `raios: 0` é o degrau do corpo SEM pino (`destinosDaBusca.ts`)
-            escolherAlvo(entrada, directorRef.current, raios !== undefined ? 'corpo' : 'orbita', raios)
-          }
+          onEscolher={(entrada) => {
+            // a chegada é do DESTINO, não do caminho: cartão e linha digitada
+            // leem a mesma tabela (`chegadaDaEntrada`); `0` é o degrau do
+            // corpo SEM pino
+            const raios = chegadaDaEntrada(entrada);
+            escolherAlvo(entrada, directorRef.current, raios !== undefined ? 'corpo' : 'orbita', raios);
+          }}
           celular={celular}
         />
       )}

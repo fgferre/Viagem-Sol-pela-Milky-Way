@@ -768,8 +768,8 @@ describe('5. a copy do selo', () => {
     // — DOIS — e a cena desenhava TRÊS. O que faltava eram os spikes de
     // difração em cruz das estrelas, vivos em DOIS shaders
     // independentes: `shaders/starShaders.ts` (o bloco guardado por
-    // `vSat > 0.001`) e `world/heroStars.ts` (o `spikes` entra em `col`
-    // e no alfa). São artifício pelo critério mais duro que existe — a
+    // `vSat > 0.001`) e a receita do filme, hoje em `world/clarao.ts` (o
+    // `spikes` entra em `col` e no alfa). São artifício pelo critério mais duro que existe — a
     // cruz é o padrão que as hastes do secundário de um TELESCÓPIO
     // imprimem na luz, e não há telescópio nesta cena.
     //

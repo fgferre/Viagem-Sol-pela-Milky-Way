@@ -1195,6 +1195,11 @@ export class LabelCanvas {
     // `detalhes[i]`); o empurrão abaixo fica para o nome que nem sozinho
     // cabe.
     const recuo = peso.recuoDoTexto * k;
+    // A BORDA TEM FOLGA (crítica de 13/11): a mesma distância que o nome
+    // guarda de um painel do HUD — os 5 px da caixa mais os 8 da disputa.
+    // Sem ela "SAGITTARIUS A✱" no celular terminava no último pixel da
+    // tela, colado na borda — dentro dela, mas lido como cortado.
+    const margem = 13 * k;
     const larguraCompleta = larguraDoNome + 9 * k + larguraDoDetalhe;
     // E O DETALHE CEDE AO HUD PELA MESMA LEI (crítica de 12/11): o nome do
     // alvo em foco fica no meio da tela e o detalhe dele corria por baixo
@@ -1209,7 +1214,7 @@ export class LabelCanvas {
     };
     const comDetalhe =
       larguraDoDetalhe > 0 &&
-      (ancoraX + recuo + larguraCompleta <= this.width || ancoraX - recuo - larguraCompleta >= 0) &&
+      (ancoraX + recuo + larguraCompleta <= this.width - margem || ancoraX - recuo - larguraCompleta >= margem) &&
       !(naReserva(larguraCompleta) && !naReserva(larguraDoNome));
     if (!comDetalhe) this.detalhes[i] = '';
     // SEM DETALHE, SEM VÃO: desde a F5 o detalhe é vazio na maioria dos
@@ -1223,17 +1228,16 @@ export class LabelCanvas {
     // natural fica quando o texto cabe; senão vale o outro lado, se ali
     // couber; e só quando nenhum dos dois cabe o texto é EMPURRADO para
     // dentro (`desvioDe`), do lado que precisa do menor empurrão. Quem já
-    // cabia não muda de lugar. A conta é sobre o TEXTO, sem a folga da
-    // caixa: um nome que termina a 3 px da borda está inteiro na tela.
+    // cabia não muda de lugar. A conta é sobre o TEXTO mais a `margem`.
     const inicioDoTexto = (esquerda: boolean) =>
       esquerda
         ? ancoraX - peso.recuoDoTexto * k - conteudo
         : ancoraX + peso.recuoDoTexto * k;
     const desvioDe = (esquerda: boolean) => {
       const inicio = inicioDoTexto(esquerda);
-      return Math.min(Math.max(inicio, 0), Math.max(0, this.width - conteudo)) - inicio;
+      return Math.min(Math.max(inicio, margem), Math.max(margem, this.width - conteudo - margem)) - inicio;
     };
-    const ladoPreferido =
+    let ladoPreferido =
       desvioDe(ladoNatural) !== 0 &&
       Math.abs(desvioDe(!ladoNatural)) < Math.abs(desvioDe(ladoNatural))
         ? !ladoNatural
@@ -1252,6 +1256,17 @@ export class LabelCanvas {
     // do texto nasce no CENTRO vertical da âncora e este número só a
     // ajusta.
     const linhaDoTexto = ancoraY + peso.deslocamentoY * k;
+    // O DISCO NA FRENTE TAMBÉM ESCOLHE O LADO (crítica de 13/11): a estrela
+    // rente ao limbo do Sol, à direita da tela, escrevia para a esquerda —
+    // sobre o Sol. Se o outro lado cabe inteiro e está livre, o nome vai
+    // para lá; se nenhum está, ele perde a vaga para o disco (`disputar`).
+    if (
+      this.sobreDisco(label, caixaEm(ladoPreferido, linhaDoTexto)) &&
+      desvioDe(!ladoPreferido) === 0 &&
+      !this.sobreDisco(label, caixaEm(!ladoPreferido, linhaDoTexto))
+    ) {
+      ladoPreferido = !ladoPreferido;
+    }
     let esquerda = ladoPreferido;
     let textoY = linhaDoTexto;
     let caixaDoTexto = caixaEm(ladoPreferido, linhaDoTexto);
@@ -1269,7 +1284,7 @@ export class LabelCanvas {
         for (const passo of label.dirigido ? DESLOCAMENTOS_DIRIGIDOS : MESMA_LINHA) {
           const y = ancoraY + passo * k;
           const tentativa = caixaEm(esq, y);
-          if (this.ocupado(tentativa, 8 * k, label.key)) continue;
+          if (this.ocupado(tentativa, 8 * k, label.key) || this.sobreDisco(label, tentativa)) continue;
           const traco: Rect = {
             left: Math.min(ancoraX, ancoraX + (esq ? -1 : 1) * 10 * k),
             right: Math.max(ancoraX, ancoraX + (esq ? -1 : 1) * 10 * k),
@@ -1371,7 +1386,28 @@ export class LabelCanvas {
     // rótulo, e é ela que disputa.
     const caixa = p.caixaDoTexto ?? p.caixaDoIcone;
     if (caixa === null) return false;
+    // o disco de um corpo na frente é oponente que ninguém vence, como o HUD
+    if (p.caixaDoTexto && this.sobreDisco(label, p.caixaDoTexto)) return true;
     return this.perdePara(label, caixa, p.caixaDoTexto ? 8 * k : 2 * k);
+  }
+
+  /**
+   * A CAIXA ATRAVESSA O DISCO DE UM CORPO NA FRENTE DESTE NOME? (crítica de
+   * 13/11) — o disco do próprio corpo não conta, nem o de quem está atrás
+   * dele (`DiscoNaTela.alem`). Círculo contra retângulo, em px CSS.
+   */
+  private sobreDisco(label: StarLabel, r: Rect): boolean {
+    if (!label.discos) return false;
+    for (const d of label.discos) {
+      if (d.chave === label.key || !(label.distPc > d.alem)) continue;
+      const cx = d.x * this.width;
+      const cy = d.y * this.height;
+      const dx = Math.min(Math.max(cx, r.left), r.right) - cx;
+      const dy = Math.min(Math.max(cy, r.top), r.bottom) - cy;
+      const raio = d.raio * this.height;
+      if (dx * dx + dy * dy < raio * raio) return true;
+    }
+    return false;
   }
 
   private perdePara(label: StarLabel, caixa: Rect, folga: number): boolean {

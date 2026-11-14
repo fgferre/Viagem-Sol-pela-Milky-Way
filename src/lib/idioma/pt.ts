@@ -698,6 +698,8 @@ export const PT = {
   'ficha.cometa.naCena': 'o que se vê aqui',
   'ficha.cometa.naCena.valor':
     'a posição é medida (elementos do JPL); a coma e as caudas são física calculada aqui, partícula por partícula — poeira empurrada pela luz do Sol, íons levados pelo vento solar, gás que se desfaz —, com brilho realçado; de perto, a luz se adapta à distância (como um olho), a coma junto ao núcleo é a mesma lei somada ao longo da visada, e o relevo do núcleo é ilustrativo (o tamanho e o albedo são medidos); de longe, o núcleo é um marcador',
+  'ficha.cometa.naCena.inativo':
+    'a posição é medida (elementos do JPL); longe demais do Sol, ele está apagado: sem coma e sem caudas, só o núcleo — de perto, o relevo do núcleo é ilustrativo (o tamanho e o albedo são medidos); de longe, o núcleo é um marcador',
   'ficha.cometa.ultimo': 'último periélio',
   'ficha.cometa.proximo': 'próximo periélio',
   'ficha.cometa.perielio': 'distância no periélio',

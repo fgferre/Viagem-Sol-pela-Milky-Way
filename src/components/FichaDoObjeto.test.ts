@@ -65,3 +65,14 @@ describe('o cabeçalho da compacta no celular mede o espaço do nome no próprio
     expect(regra).toContain('text-overflow: clip;');
   });
 });
+
+// O "APROXIMAR" TEM UMA REGRA SÓ (crítica de 13/11): em TRAPPIST-1 o botão
+// continuava na ficha depois de usado, porque a ficha somava à regra da
+// escada (`podeAproximar`, que já sabe da estrela com corpo e some no
+// degrau de perto) uma segunda regra própria, "toda estrela visitável".
+describe('o botão "Aproximar" segue só a escada', () => {
+  it('a ficha não soma uma segunda regra à `podeAproximar`', () => {
+    expect(FONTE).toContain('{podeAproximar && (');
+    expect(FONTE).not.toContain('estrelaVisitavelPorNome(estrelaEmFoco)');
+  });
+});
