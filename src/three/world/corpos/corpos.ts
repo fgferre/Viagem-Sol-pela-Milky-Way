@@ -646,6 +646,76 @@ float ruido(vec3 p) {
 `;
 
 /**
+ * A FACE DOS EXOPLANETAS (13/11/2026) — o pedaço COMUM aos dois ramos
+ * procedurais que a desenham (`ROCHOSO_PROC_FRAG` e `GIGANTE_PROC_FRAG`).
+ * Vem DEPOIS de {@link GLSL_RUIDO_DE_VALOR}. Três peças:
+ *
+ *  - `fbm`/`hash33`: o ruído em oitavas e o sorteio de três números por
+ *    célula; a SEMENTE (`uSemente`) é o id do planeta, então o mesmo
+ *    planeta tem sempre a mesma cara.
+ *  - `temperaturaLocal`: o que a estrela aquece em cada ponto, sem
+ *    atmosfera. Travado por maré, o ponto embaixo da estrela não anda:
+ *    T = T_sub·cos(z)^¼. Girando, o dia se espalha pela latitude:
+ *    T = T_sub·(cos(lat)/π)^¼. A noite fica no piso (`uFace.z`).
+ *  - `brilhoTermico`: a luz PRÓPRIA da superfície quente, na unidade da
+ *    luz da estrela que bate de frente (a mesma que o albedo multiplica):
+ *    B_λ(T) / (B_λ(T⋆)·(R⋆/a)²) por canal, com λ = 610, 550 e 465 nm.
+ *  - `brilhoNaTela` (14/11): onde a luz refletida manda, o brilho próprio
+ *    entra na MESMA exposição, e a razão entre os dois é física. Onde o
+ *    brilho próprio manda (a lava, o gigante jovem), a exposição é a dele
+ *    e a intensidade é comprimida (potência 0,4 sobre o canal mais forte,
+ *    a cor intacta): entre 1.300 K e 2.800 K a lei de Planck anda mil
+ *    vezes no visível, e sem a compressão a fenda morna some e a quente
+ *    estoura. A COR de cada temperatura é a de Planck; a intensidade é a
+ *    da visita.
+ */
+export const GLSL_FACE_DO_EXOPLANETA = /* glsl */ `
+uniform vec4 uFace;     // (classe: 0 = sem face; T subestelar K; T piso K; travado 0/1)
+uniform vec3 uSemente;  // o id do planeta em três números de 0 a 100
+uniform vec3 uCorDaLuz; // a cor da estrela que acende o planeta (linear, máximo 1)
+uniform vec2 uEstrela;  // (Teff da estrela K, diluição (R⋆/a)²)
+uniform vec3 uBrilho;   // (escala: 0 = sem brilho próprio; potência; pico)
+vec3 hash33(vec3 p) {
+  return fract(sin(vec3(
+    dot(p, vec3(127.1, 311.7, 74.7)),
+    dot(p, vec3(269.5, 183.3, 246.1)),
+    dot(p, vec3(113.5, 271.9, 124.6))
+  )) * 43758.5453);
+}
+float fbm(vec3 p, int oitavas) {
+  float s = 0.0;
+  float a = 0.5;
+  float total = 0.0;
+  for (int i = 0; i < 6; i++) {
+    if (i >= oitavas) break;
+    s += a * ruido(p);
+    total += a;
+    p = p * 2.03 + vec3(17.1, 9.2, 3.7);
+    a *= 0.5;
+  }
+  return s / total;
+}
+float temperaturaLocal(vec3 n, vec3 dirSol) {
+  float c = uFace.w > 0.5
+    ? max(dot(n, dirSol), 0.0)
+    : sqrt(max(1.0 - n.y * n.y, 0.0)) * 0.3183099;
+  return max(uFace.y * pow(max(c, 1.0e-6), 0.25), uFace.z);
+}
+const vec3 C2_POR_LAMBDA = vec3(23587.0, 26160.0, 30942.0); // c₂/λ (K)
+vec3 brilhoTermico(float T) {
+  if (T < 500.0) return vec3(0.0);
+  vec3 e = exp(-C2_POR_LAMBDA / T);
+  vec3 estrela = exp(C2_POR_LAMBDA / uEstrela.x) - 1.0;
+  return estrela * e / max(1.0 - e, 1.0e-6) / max(uEstrela.y, 1.0e-12);
+}
+vec3 brilhoNaTela(float T) {
+  vec3 e = brilhoTermico(T) * uCorDaLuz * uBrilho.x;
+  float m = max(max(e.r, e.g), max(e.b, 1.0e-20));
+  return e * (uBrilho.z * pow(m, uBrilho.y) / m);
+}
+`;
+
+/**
  * E — O GRÃO DO CLOSE (item 134/S2, a "manchinha de detalhe" dele).
  *
  * ONDE O MOSAICO ACABA a superfície vira borrão: colada na lua, um texel

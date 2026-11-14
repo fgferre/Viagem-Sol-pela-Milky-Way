@@ -18,11 +18,16 @@
 // de instrumento dos rótulos; as órbitas e a zona habitável são
 // instrumento de leitura, como as órbitas do Sistema Solar — nunca luz.
 //
-// A APARÊNCIA: ninguém sabe. A esfera é cinza neutro (albedo 0,3,
-// artístico) acesa pela cor da PRÓPRIA estrela, com a fase que a
-// geometria dá; só HD 189733 b tem a cor medida (`albedo`). O brilho é o
-// da visita (artístico, como os planetas da casa no Atlas): o que é
-// físico é a cor relativa e o lado da noite.
+// A APARÊNCIA: ninguém a viu. A CLASSE sai dos números
+// (`climaDoExoplaneta`) e a FACE é imaginada a partir dela, desenhada
+// pelos dois ramos procedurais da casa — o do `rochoso.ts` para os
+// rochosos e o novo do `gigante.ts` para gigantes e sub-Netunos —, com a
+// semente no id. Físico: a cor da PRÓPRIA estrela, o lado da noite, o
+// terminador parado nos travados por maré, onde a superfície passaria do
+// degelo ou da fusão da rocha e a razão entre o brilho próprio e o
+// refletido. Medida: só a cor de HD 189733 b (`albedo`). O brilho é o da
+// visita (artístico, como os planetas da casa no Atlas: cada mundo é
+// exposto para si).
 // ============================================================
 import * as THREE from 'three';
 import { Line2 } from 'three/addons/lines/Line2.js';
@@ -31,19 +36,29 @@ import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import {
   SISTEMAS_PLANETARIOS,
   baseDaOrbita,
+  FRONTEIRAS_DA_CLASSE,
+  climaDoExoplaneta,
   exoplanetaPorId,
+  giroDoExoplaneta,
   geometriaDoPlaneta,
   pontoDaOrbita,
   posicaoDoExoplaneta,
+  sementeDoExoplaneta,
   zonaHabitavel,
   type BaseDaOrbita,
+  type ClimaDoExoplaneta,
   type Exoplaneta,
   type SistemaPlanetario,
 } from '../../lib/exoplanetas';
 import { estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
 import { AU_PARA_PC } from '../../lib/atlas/frameGalactico';
+import { J2000_JD } from '../../lib/atlas/time';
 import { AU_KM } from '../../lib/atlas/elementosOrbitais';
+import { uniformsDaLuzDaVisita } from '../../lib/atlas/luzDaVisita';
 import { blackbodyLinear } from '../luzDaCasa';
+import { ROCHOSO_PROC_FRAG, ROCHOSO_VERT, linhasDoGelo, uniformsDaFace } from './corpos/rochoso';
+import { GIGANTE_PROC_FRAG, GIGANTE_VERT } from './corpos/gigante';
+import { uniformsDeEclipseNeutros } from './corpos/eclipseNoMaterial';
 import { PRIORIDADE_DO_ROTULO, projectForced } from './labels';
 import type { OclusorDeRotulo, StarLabel } from './labels';
 import { LARGURA_DA_FITA_PX } from './orbitas';
@@ -71,12 +86,32 @@ const ALFA_DA_ZONA = 0.015;
  */
 const LINHAS_SOMEM_RAIOS: readonly [number, number] = [30, 150];
 
-/** o cinza neutro de quem não tem cor medida (o albedo de Bond da Terra) */
-export const ALBEDO_NEUTRO = 0.3;
 /** a exposição da visita — artística: albedo 0,3 sai a ~0,27, abaixo
  *  do joelho da curva de tom (a 2,4 o canal vermelho de uma anã M
  *  saturava e o globo virava um disco chapado, sem a fase) */
 const EXPOSICAO_DA_VISITA = 0.9;
+/** cada mundo exposto para si, mas só pela METADE (raiz quadrada) da
+ *  distância entre o albedo médio dele e 0,3: o basalto continua mais
+ *  escuro que a rocha oxidada e o gelo bem mais claro que os dois — a
+ *  exposição inteira igualava todos, e o gelo saía da cor da rocha */
+const ALBEDO_DA_EXPOSICAO = 0.3;
+/** onde o brilho próprio vence a luz refletida, a exposição é a dele, e o
+ *  pico sai pouco acima do branco na lava (a fenda mais quente amarela, sem
+ *  virar o pêssego estourado de 2) e abaixo dele no gigante jovem (a 2 o
+ *  disco inteiro estourava e virava estrela) */
+const PICO_DO_BRILHO_PROPRIO = { rochoso: 1.1, gas: 0.8 } as const;
+/** a compressão do brilho próprio quando ele manda (potência sobre o canal
+ *  mais forte; ver `brilhoNaTela`) */
+const POTENCIA_DO_BRILHO_PROPRIO = 0.4;
+/**
+ * O OLHO DA VISITA SE ADAPTA EM PARTE à cor da estrela (artístico, 14/11):
+ * a luz que acende o planeta anda esta fração do caminho até o branco. Sem
+ * isso, sob uma anã vermelha (2.566 K: verde a 37 % e azul a 7 % do
+ * vermelho) todo chão saía do mesmo laranja e o gelo não se lia como gelo;
+ * com 40 % o laranja continua lá, e a superfície clara sai mais clara e
+ * menos saturada que a rocha, como para um olho que passou um tempo ali.
+ */
+const ADAPTACAO_DO_OLHO = 0.4;
 const RAIO_TERRA_KM = 6371;
 
 /** a câmera a menos disto (pc) de uma anfitriã liga o sistema dela */
@@ -191,6 +226,11 @@ export function poseDoExoplaneta(id: string, jd: number, posDaEstrela: THREE.Vec
 }
 
 const _pos = new THREE.Vector3();
+const _x = new THREE.Vector3();
+const _y = new THREE.Vector3();
+const _z = new THREE.Vector3();
+const _giro = new THREE.Matrix4();
+const _inv = new THREE.Quaternion();
 
 /**
  * O NOME CURTO DENTRO DO PRÓPRIO SISTEMA (13/11): a letra ("TRAPPIST-1 e"
@@ -233,29 +273,180 @@ export function projetarExoplanetas(
   return out;
 }
 
-const PLANETA_VERT = /* glsl */ `
-varying vec3 vN;
-void main() {
-  vN = normal;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}
-`;
-const PLANETA_FRAG = /* glsl */ `
-precision highp float;
-uniform vec3 uLuz;
-uniform vec3 uCor;
-varying vec3 vN;
-void main() {
-  float l = max(dot(normalize(vN), uLuz), 0.0);
-  gl_FragColor = vec4(uCor * l, 1.0);
-}
-`;
-
-/** a cor da luz da estrela (sRGB linear, máximo 1) */
+/** a cor da luz da estrela (sRGB linear, máximo 1), com o olho adaptado */
 function corDaEstrela(teffK: number): [number, number, number] {
   const c = blackbodyLinear(teffK).map((x) => Math.max(0, x));
-  const m = Math.max(...c) || 1;
-  return [c[0] / m, c[1] / m, c[2] / m];
+  const m = Math.max(c[0], c[1], c[2]) || 1;
+  const a = ADAPTACAO_DO_OLHO;
+  return [c[0] / m + (1 - c[0] / m) * a, c[1] / m + (1 - c[1] / m) * a, c[2] / m + (1 - c[2] / m) * a];
+}
+
+type Rgb = readonly [number, number, number];
+
+/**
+ * AS CORES DAS NUVENS pela classe de Sudarsky et al. 2000 (clara, escura;
+ * albedo linear): I amônia (bege de Júpiter), II água (branco), III sem
+ * nuvens (o azul do espalhamento), IV metais alcalinos (quase preto), V
+ * silicatos (cinza-areia). O tom de cada classe é imaginado a partir do
+ * albedo que o modelo prevê; a cor só anda perto das fronteiras (±15 % da
+ * temperatura), para o meio de cada classe ser a classe.
+ */
+const NUVENS: readonly { clara: Rgb; escura: Rgb }[] = [
+  { clara: [0.8, 0.71, 0.58], escura: [0.55, 0.38, 0.25] },
+  { clara: [0.86, 0.86, 0.84], escura: [0.68, 0.68, 0.7] },
+  { clara: [0.2, 0.3, 0.52], escura: [0.1, 0.15, 0.31] },
+  { clara: [0.12, 0.095, 0.09], escura: [0.05, 0.038, 0.04] },
+  { clara: [0.5, 0.42, 0.36], escura: [0.3, 0.22, 0.18] },
+];
+
+function nuvensEm(tK: number): { clara: Rgb; escura: Rgb } {
+  const lt = Math.log(tK);
+  // a posição contínua entre as classes: inteiro no meio, rampa de ±0,15
+  // em ln T em volta de cada fronteira
+  let pos = 0;
+  FRONTEIRAS_DA_CLASSE.sudarskyK.forEach((t) => {
+    pos += Math.min(1, Math.max(0, (lt - Math.log(t) + 0.15) / 0.3));
+  });
+  const k = Math.min(NUVENS.length - 2, Math.floor(pos));
+  const f = pos - k;
+  const [a, b] = [NUVENS[k]!, NUVENS[k + 1]!];
+  return { clara: misturar(a.clara, b.clara, f), escura: misturar(a.escura, b.escura, f) };
+}
+
+const misturar = (x: Rgb, y: Rgb, f: number): Rgb => [x[0] + (y[0] - x[0]) * f, x[1] + (y[1] - x[1]) * f, x[2] + (y[2] - x[2]) * f];
+const luminancia = (c: Rgb) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+const entre = (a: number, b: number, x: number) => {
+  const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+const limitar = (x: number, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+
+/** o brilho próprio (o `brilhoTermico` do GLSL, na CPU) vezes a luz, no canal mais forte */
+function brilhoTermico(tK: number, teffK: number, diluicao: number, luz: Rgb): number {
+  if (tK < 500) return 0;
+  return Math.max(
+    ...[23587, 26160, 30942].map(
+      (c2, i) => ((Math.expm1(c2 / teffK) * Math.exp(-c2 / tK)) / -Math.expm1(-c2 / tK) / diluicao) * luz[i]!
+    )
+  );
+}
+
+/** a cor do gelo limpo, a mesma do GLSL (para a exposição) */
+const GELO: Rgb = [0.8, 0.84, 0.9];
+/**
+ * A ROCHA pelo que se mede (imaginada a partir disso): fria e morna, a
+ * rocha oxidada, clara e avermelhada (os planaltos de Marte); quente, o
+ * basalto escuro; e quanto mais densa que a rocha com o núcleo da Terra no
+ * mesmo tamanho (ρ ≈ 5,51·R^0,7, suposto), mais ferro e mais cinza. As
+ * planícies de lava velha são o basalto.
+ */
+const ROCHA_OXIDADA: Rgb = [0.34, 0.21, 0.13];
+const BASALTO: Rgb = [0.11, 0.105, 0.1];
+const FERROSA: Rgb = [0.15, 0.15, 0.155];
+
+/**
+ * A FACE DE UM PLANETA: qual ramo o desenha e os uniformes dele. Tudo
+ * aqui é imaginado a partir da classe e dos números medidos (temperatura,
+ * densidade, tamanho) com a semente no id, exceto as temperaturas
+ * (derivadas) e a cor de HD 189733 b (medida).
+ */
+export function faceDoPlaneta(pl: Exoplaneta, c: ClimaDoExoplaneta, teffK: number, luz: Rgb) {
+  const [s0, s1, s2] = sementeDoExoplaneta(pl.id);
+  const rochoso = c.classe === 'lava' || c.classe.startsWith('rochoso') || c.classe === 'gelado';
+  const gigante = c.classe === 'giganteQuente' || c.classe === 'giganteFrio';
+  // o piso da noite: a temperatura medida no espectro, quando ela passa da
+  // irradiada (o gigante jovem que brilha sozinho); senão uma fração da
+  // de equilíbrio — 0,4 sem atmosfera (rochoso), 0,6 com (gás) — suposta
+  const proprio = c.atmosferaK > 1.2 * c.teqK;
+  const piso = proprio ? c.atmosferaK : c.teqK * (rochoso ? 0.4 : 0.6);
+  const tMax = Math.max(c.travado ? c.subestelarK : c.subestelarK * 0.75, piso);
+  let albedoMedio: number;
+  const u: Record<string, THREE.IUniform> = {
+    uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
+    uCamLocal: { value: new THREE.Vector3(0, 0, 4) },
+    uLuzGanho: { value: 1 },
+    uNormalEsc: { value: new THREE.Vector3(1, 1, 1) },
+    uEscalaLocal: { value: new THREE.Vector3(1, 1, 1) },
+    ...uniformsDaLuzDaVisita(),
+    ...uniformsDeEclipseNeutros(),
+    ...uniformsDaFace(),
+  };
+  if (rochoso) {
+    const R = pl.raioTerra.v;
+    // morno → quente: a rocha escurece e a lava velha cobre mais chão
+    const quente = entre(240, 420, c.teqK);
+    const ferro = c.densidade === null ? 0.3 : limitar(0.5 + 2.5 * (c.densidade / (5.51 * R ** 0.7) - 1));
+    const j = [(s0 % 10) / 10 - 0.5, (s1 % 10) / 10 - 0.5, (s2 % 10) / 10 - 0.5];
+    // as planícies: o calor e o tamanho (mais calor guardado, mais vulcão)
+    const mares = limitar(0.15 + 0.55 * quente + 0.25 * limitar((R - 0.8) / 0.4) + 0.2 * j[0]!);
+    // as crateras: onde a lava não cobriu, e mais no planeta pequeno
+    const crateras = limitar(0.85 - 0.6 * mares + 0.3 * limitar((1 - R) / 0.3) + 0.1 * j[1]!, 0.15, 1);
+    const terra = misturar(misturar(ROCHA_OXIDADA, BASALTO, quente), FERROSA, 0.6 * ferro);
+    // o matiz anda um pouco com a semente: do ferroso ao cinza
+    const base: Rgb = [terra[0] * (1 + 0.25 * j[2]!), terra[1], terra[2] * (1 - 0.25 * j[2]!)];
+    const mar = misturar(base.map((x) => x * 0.6) as unknown as Rgb, [0.07, 0.07, 0.075], 0.5);
+    u.uAlbedoBase = { value: new THREE.Vector3(...base) };
+    u.uBumpAlbedo = { value: 1 };
+    u.uAlbedoMar.value.set(...mar);
+    const gelo = linhasDoGelo([s0, s1, s2]);
+    u.uLinhas.value = gelo.linhas;
+    u.uTrechos.value = gelo.trechos;
+    const gelado = c.classe === 'gelado';
+    // o gelado: crateras e sujeira pelo tamanho — o pequeno guarda mais
+    // crateras e fica limpo como Encélado; o grande tem terreno escuro velho
+    // como Ganimedes — e a semente varia os dois
+    (u.uMundo.value as THREE.Vector4).set(
+      mares,
+      gelado ? limitar(0.25 + 0.5 * limitar((1.1 - R) / 0.4) + 0.2 * j[1]!) : crateras,
+      gelado ? limitar(0.3 + 0.6 * limitar((R - 0.8) / 0.4) + 0.4 * j[2]!) : 0.3 + 0.7 * ((s1 * 0.37) % 1),
+      1 + Math.floor(s2 % 3)
+    );
+    // a fração da face de dia abaixo do degelo (travado: cos z < (273/T_sub)⁴)
+    const fracaoDeGelo = c.classe === 'rochosoTemperado' ? limitar((273 / c.subestelarK) ** 4) : 0;
+    const albRocha = luminancia(base) * (1 - 0.4 * mares) + luminancia(mar) * 0.4 * mares;
+    albedoMedio = gelado ? luminancia(GELO) * 0.9 : albRocha + (luminancia(GELO) - albRocha) * fracaoDeGelo;
+    const quenteOuLava = c.classe === 'rochosoQuente' || c.classe === 'lava';
+    (u.uFace.value as THREE.Vector4).set(gelado ? 4 : quenteOuLava ? 2 : 1, c.subestelarK, piso, c.travado ? 1 : 0);
+  } else {
+    const nuvens = pl.albedo
+      ? {
+          clara: pl.albedo.rgb.map((x) => x * 1.3) as unknown as Rgb,
+          escura: pl.albedo.rgb.map((x) => x * 0.7) as unknown as Rgb,
+        }
+      : nuvensEm(c.atmosferaK);
+    u.uCorClara = { value: new THREE.Vector3(...nuvens.clara) };
+    u.uCorEscura = { value: new THREE.Vector3(...nuvens.escura) };
+    // os travados giram devagar: faixas largas e poucas; o sub-Netuno é
+    // nevoento: pouco contraste
+    const faixas = gigante ? (c.travado ? 7 : 16) : 6;
+    const contraste = gigante ? (c.travado ? 0.6 : 0.85) : 0.45;
+    const turbulencia = gigante ? 1 : 0.5;
+    const tempestades = gigante ? 1 + Math.floor((s1 % 10) / 3.4) : s1 % 10 > 5 ? 1 : 0;
+    u.uFaixas = { value: new THREE.Vector4(faixas, contraste, turbulencia, tempestades) };
+    albedoMedio = luminancia(nuvens.clara) * 0.5 + luminancia(nuvens.escura) * 0.5;
+    (u.uFace.value as THREE.Vector4).set(3, c.subestelarK, piso, c.travado ? 1 : 0);
+  }
+  (u.uSemente.value as THREE.Vector3).set(s0, s1, s2);
+  (u.uEstrela.value as THREE.Vector2).set(teffK, c.diluicao);
+  (u.uCorDaLuz.value as THREE.Vector3).set(...luz);
+  let ganho =
+    (EXPOSICAO_DA_VISITA * limitar(Math.sqrt(ALBEDO_DA_EXPOSICAO / albedoMedio), 0.6, 1.7)) / Math.sqrt(luminancia(luz));
+  // o brilho próprio: a faixa escura do gigante e a fenda da lava passam
+  // 10 % da temperatura do lugar
+  const pico = brilhoTermico(tMax * 1.1, teffK, c.diluicao, luz);
+  const brilho = u.uBrilho.value as THREE.Vector3;
+  if (pico > albedoMedio) {
+    ganho = 1 / pico;
+    brilho.set(1 / pico, POTENCIA_DO_BRILHO_PROPRIO, rochoso ? PICO_DO_BRILHO_PROPRIO.rochoso : PICO_DO_BRILHO_PROPRIO.gas);
+  } else if (pico * ganho > 1e-3) {
+    brilho.set(ganho, 1, 1);
+  }
+  u.uLuzGanho.value = ganho;
+  return {
+    vert: rochoso ? ROCHOSO_VERT : GIGANTE_VERT,
+    frag: rochoso ? ROCHOSO_PROC_FRAG : GIGANTE_PROC_FRAG,
+    uniforms: u,
+  };
 }
 
 interface Montagem {
@@ -264,7 +455,8 @@ interface Montagem {
   orbitas: THREE.Group;
   zona: THREE.Mesh | null;
   bases: BaseDaOrbita[];
-  corpos: { planeta: Exoplaneta; malha: THREE.Mesh; raioPc: number }[];
+  /** `giroHoras` = null no travado (a cara para a estrela) */
+  corpos: { planeta: Exoplaneta; malha: THREE.Mesh; raioPc: number; travado: boolean; giroHoras: number | null }[];
   descartaveis: { dispose(): void }[];
 }
 
@@ -356,26 +548,30 @@ export class SistemasPlanetarios {
       zona.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), polo);
       orbitas.add(zona);
     }
-    const [r, g, b] = estrela ? corDaEstrela(estrela.teffK.v) : [1, 1, 1];
-    const esfera = new THREE.SphereGeometry(1, 64, 32);
+    const teff = estrela?.teffK.v ?? 5772;
+    const luz = corDaEstrela(teff);
+    // a malha da casca dos rochosos da casa (128 × 64)
+    const esfera = new THREE.SphereGeometry(1, 128, 64);
     descartaveis.push(esfera);
     const corpos = sistema.planetas.map((pl) => {
-      const alb = pl.albedo?.rgb ?? [ALBEDO_NEUTRO, ALBEDO_NEUTRO, ALBEDO_NEUTRO];
+      const clima = climaDoExoplaneta(pl, {
+        teffK: teff,
+        raioRsol: estrela?.raioRsol.v ?? 1,
+        massaMsol: estrela?.massaMsol.v ?? 1,
+        luminosidadeLsol: estrela?.luminosidadeLsol.v ?? 1,
+      });
+      const face = faceDoPlaneta(pl, clima, teff, luz);
       const mat = new THREE.ShaderMaterial({
-        vertexShader: PLANETA_VERT,
-        fragmentShader: PLANETA_FRAG,
-        uniforms: {
-          uLuz: { value: new THREE.Vector3(1, 0, 0) },
-          uCor: {
-            value: new THREE.Vector3(r * alb[0], g * alb[1], b * alb[2]).multiplyScalar(EXPOSICAO_DA_VISITA),
-          },
-        },
+        vertexShader: face.vert,
+        fragmentShader: face.frag,
+        uniforms: face.uniforms,
       });
       descartaveis.push(mat);
       const malha = new THREE.Mesh(esfera, mat);
       malha.scale.setScalar(raioDoPlanetaUa(pl));
       grupo.add(malha);
-      return { planeta: pl, malha, raioPc: raioDoPlanetaUa(pl) * AU_PARA_PC };
+      const giro = giroDoExoplaneta(pl, clima);
+      return { planeta: pl, malha, raioPc: raioDoPlanetaUa(pl) * AU_PARA_PC, travado: clima.travado, giroHoras: giro?.horas ?? null };
     });
     const m = { sistema, grupo, orbitas, zona, bases, corpos, descartaveis };
     this.group.add(grupo);
@@ -426,8 +622,23 @@ export class SistemasPlanetarios {
       const r = posicaoDoExoplaneta(c.planeta, m.bases[k], q.jd);
       c.malha.position.set(r[0], r[1], r[2]);
       const n = Math.hypot(r[0], r[1], r[2]) || 1;
-      (c.malha.material as THREE.ShaderMaterial).uniforms.uLuz.value.set(-r[0] / n, -r[1] / n, -r[2] / n);
+      // O GIRO: o polo do planeta é o da órbita; o travado olha a estrela
+      // com o mesmo lado (+x local), o outro gira no dia medido ou suposto
+      // (`giroDoExoplaneta`), no sentido da órbita, com o relógio da cena
+      const base = m.bases[k]!;
+      _y.set(base.polo[0], base.polo[1], base.polo[2]);
+      if (c.travado || c.giroHoras === null) _x.set(-r[0] / n, -r[1] / n, -r[2] / n).addScaledVector(_y, -_x.dot(_y)).normalize();
+      else {
+        const voltas = ((q.jd - J2000_JD) * 24) / c.giroHoras;
+        _x.set(base.u[0], base.u[1], base.u[2]).applyAxisAngle(_y, 2 * Math.PI * (voltas - Math.floor(voltas)));
+      }
+      _z.crossVectors(_x, _y);
+      c.malha.quaternion.setFromRotationMatrix(_giro.makeBasis(_x, _y, _z));
+      _inv.copy(c.malha.quaternion).invert();
+      const u = (c.malha.material as THREE.ShaderMaterial).uniforms;
+      (u.uDirSolLocal.value as THREE.Vector3).set(-r[0] / n, -r[1] / n, -r[2] / n).applyQuaternion(_inv);
       _pos.set(r[0], r[1], r[2]).multiplyScalar(AU_PARA_PC).add(escolhido.pos);
+      (u.uCamLocal.value as THREE.Vector3).copy(q.camPos).sub(_pos).divideScalar(c.raioPc).applyQuaternion(_inv);
       q.palco.registrar(`exoplaneta:${c.planeta.id}`, c.raioPc, _pos);
       pertoEmRaios = Math.min(pertoEmRaios, q.camPos.distanceTo(_pos) / c.raioPc);
     });

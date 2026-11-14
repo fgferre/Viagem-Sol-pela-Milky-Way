@@ -276,9 +276,13 @@
      DUPLICATA — o painel de Ajustes tem a mesma seção, a uma alça de
      distância.
      Vale só onde a fileira existe: no filme e no voo livre a barra fica
-     exatamente onde a fatia 6 a deixou. */
+     exatamente onde a fatia 6 a deixou.
+     A ÁREA SEGURA DE CIMA entra como a de baixo entra na fileira:
+     encostada no alto, a barra cairia sob a barra de status de um
+     aparelho com entalhe. Onde não há área segura (mesa, Chrome
+     emulado) a soma é 0 e nada sai do lugar. */
   .hud-root:has(.atlas-alcas) .controls-bar {
-    top: 0.4vh;
+    top: calc(0.4vh + env(safe-area-inset-top));
     /* CONSERTO 2 (Lote 4, 07/09, PLAN-UI.md §2 item 1): 40 px — era
        44 px (item 6: "uma linha de 44 px"), mas o "céu a 320×568" media
        67,1% livre contra a meta de 70%; o alvo de toque de 44 px segue

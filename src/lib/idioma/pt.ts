@@ -184,11 +184,12 @@ export const PT = {
   // lado do "?" sem quebrar — o "de bordas" já está na dica.
   'ajustes.msaa': 'Anti-aliasing',
   'ajustes.msaaNota':
-    'Suaviza as beiras dos corpos e das linhas, e custa quadros. Troque aqui e compare com os quadros/s logo acima — a troca é na hora, sem recarregar. "Do preset" devolve a escolha à qualidade.',
-  // "Preset" é o primeiro segmento dos CINCO controles da gaveta —
-  // o estado sem escolha à mão. Era "Do preset"; o redesenho do painel
-  // (05/09) o encurta para caber no segmento junto dos outros.
-  'ajustes.preset': 'Preset',
+    'Suaviza as beiras dos corpos e das linhas, e custa quadros. Troque aqui e compare com os quadros/s logo acima — a troca é na hora, sem recarregar. "Automático" devolve a escolha à qualidade.',
+  // "Automático" é o primeiro segmento dos controles da gaveta — o estado
+  // sem escolha à mão: segue o que o nível de qualidade manda. Era "Preset",
+  // em inglês na interface em português (crítica de 13/11; o dono escolheu
+  // a palavra em 14/11). Em inglês continua "Preset".
+  'ajustes.preset': 'Automático',
   'ajustes.msaaDesligada': 'Off',
   // ROTULO CURTO (polimento 06/09): "(raymarch)" era jargão de motor,
   // não de gosto — some do rótulo e continua na dica de quem quiser.
@@ -243,7 +244,7 @@ export const PT = {
   'ajustes.particulas.quarto': '¼',
   'ajustes.galaxiaControle': 'Galáxia',
   'ajustes.galaxiaNota':
-    'Como a galáxia vista de fora é desenhada. WebGPU: dezenas de milhões de partículas. WebGL: as mesmas partículas, em menor número (a reserva de quem não tem WebGPU). Clássica: a de antes, com camadas pintadas. Em Preset o app tenta nessa ordem e marca a que está desenhando.',
+    'Como a galáxia vista de fora é desenhada. WebGPU: dezenas de milhões de partículas. WebGL: as mesmas partículas, em menor número (a reserva de quem não tem WebGPU). Clássica: a de antes, com camadas pintadas. Em Automático o app tenta nessa ordem e marca a que está desenhando.',
   'ajustes.galaxia.webgpu': 'WebGPU',
   'ajustes.galaxia.particulas': 'WebGL',
   'ajustes.galaxia.classica': 'Clássica',
@@ -652,9 +653,43 @@ export const PT = {
   'ficha.exo.aparencia': 'aparência',
   'ficha.exo.aparencia.medida':
     'cor medida: azul-escuro (albedo 0,40 no azul, menos de 0,12 no verde); o vermelho não foi medido',
-  'ficha.exo.aparencia.desconhecida':
-    'desconhecida: uma esfera cinza do tamanho da ficha, acesa pela cor da estrela, com brilho realçado para a visita',
-  'ficha.exo.fonte.semImagem': 'nenhum telescópio resolveu o disco deste planeta',
+  'ficha.exo.classe': 'classe',
+  'ficha.exo.classe.lava': 'mundo de lava',
+  'ficha.exo.classe.rochosoQuente': 'rochoso quente',
+  'ficha.exo.classe.rochosoTemperado': 'rochoso temperado',
+  'ficha.exo.classe.gelado': 'mundo gelado',
+  'ficha.exo.classe.subnetuno': 'sub-Netuno',
+  'ficha.exo.classe.giganteQuente': 'gigante gasoso quente',
+  'ficha.exo.classe.giganteFrio': 'gigante gasoso',
+  'ficha.exo.nuvens.1': 'nuvens de amônia',
+  'ficha.exo.nuvens.2': 'nuvens de água',
+  'ficha.exo.nuvens.3': 'sem nuvens, azul do espalhamento',
+  'ficha.exo.nuvens.4': 'metais alcalinos, quase sem nuvens',
+  'ficha.exo.nuvens.5': 'nuvens de silicato',
+  'ficha.exo.travado': 'travado por maré: o mesmo lado sempre voltado para a estrela',
+  'ficha.exo.fonte.classe': 'decidida pelo raio, a massa, a densidade e a temperatura: {fontes}',
+  'ficha.exo.fonte.equilibrioCalculada':
+    'calculada aqui, porque o arquivo não a traz: Teff·√(R⋆/2a), da temperatura e do raio da estrela e da distância, sem atmosfera e com albedo zero',
+  'ficha.exo.giro': 'giro',
+  'ficha.exo.giro.medido': 'uma volta a cada {h} h, do alargamento das linhas do espectro',
+  'ficha.exo.giro.terra': 'suposto: uma volta a cada {h} h, o dia da Terra',
+  'ficha.exo.giro.netuno': 'suposto: uma volta a cada {h} h, o dia de Netuno',
+  'ficha.exo.giro.jupiter': 'suposto: uma volta a cada {h} h, o dia de Júpiter',
+  'ficha.exo.fonte.giro': 'o giro deste planeta não foi medido; a cena usa o de um planeta parecido do Sistema Solar',
+  'ficha.exo.superficie': 'superfície',
+  'ficha.exo.superficie.rochoso':
+    'imaginada a partir da classe: planaltos de rocha oxidada, planícies de lava velha, crateras e gelo onde o chão sem atmosfera ficaria abaixo do degelo; brilho realçado para a visita',
+  'ficha.exo.superficie.quente':
+    'imaginada a partir da classe: rocha nua e escura, de basalto, com planícies de lava velha e crateras, sem gelo (dentro da zona habitável a água se perde); brilho realçado para a visita',
+  'ficha.exo.superficie.gelado':
+    'imaginada a partir da classe: gelo claro e liso riscado por fraturas como as de Europa, poucas crateras e geada nos polos; brilho realçado para a visita',
+  'ficha.exo.superficie.lava':
+    'imaginada a partir da classe: crosta escura rachada por fendas de lava onde o chão passaria da fusão da rocha; a cor de cada fenda é a da temperatura dela pela lei de Planck, e o brilho é comprimido para a visita',
+  'ficha.exo.superficie.gas':
+    'imaginada a partir da classe: faixas, fios e tempestades nas cores da classe de nuvens; brilho realçado para a visita',
+  'ficha.exo.superficie.gasMedida': 'imaginada: faixas, fios e tempestades; só a cor é medida',
+  'ficha.exo.fonte.imaginada':
+    'desenho da casa a partir da classe; nenhum telescópio resolveu o disco. A luz é a da estrela, com o olho meio adaptado à cor dela',
   'ficha.cometa.doSol': 'distância do Sol',
   'ficha.cometa.daTerra': 'distância da Terra',
   'ficha.cometa.velocidade': 'velocidade em relação ao Sol',

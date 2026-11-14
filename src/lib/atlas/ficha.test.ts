@@ -16,7 +16,7 @@ import {
   LUAS_DO_SISTEMA,
 } from '../../three/atlasConfig';
 import { PROCEDENCIA } from '../../three/selo';
-import { SISTEMAS_PLANETARIOS, comAnfitrias, sistemaDaEstrela } from '../exoplanetas';
+import { SISTEMAS_PLANETARIOS, comAnfitrias, exoplanetaPorId, sistemaDaEstrela } from '../exoplanetas';
 import { LUGARES_DO_FILME } from '../lugaresDoFilme';
 import type { MetaEfemerides } from './efemerides';
 import { decodeEfemerides, MotorEfemerides } from './efemerides';
@@ -1213,6 +1213,36 @@ describe('a ficha nas duas línguas', () => {
       .linhas.find((l) => l.rotulo === ROTULO)!;
     expect(hiperion.valor).toContain('valid');
     expect(hiperion.valor).toContain('worst case');
+  });
+});
+
+describe('a cara dos exoplanetas na ficha, por canal', () => {
+  const linhas = (id: string) => {
+    const { planeta, sistema } = exoplanetaPorId(id)!;
+    const f = montarFichaDeExoplaneta(planeta, sistema, estrelaVisitavelPorNome(sistema.estrela));
+    return new Map(f.secoes.flatMap((s) => s.linhas).map((l) => [l.rotulo, l]));
+  };
+
+  it('a classe é derivada, a superfície é artística, o giro é medido ou suposto, e só HD 189733 b tem cor medida', () => {
+    const proxima = linhas('proxima-b');
+    expect(proxima.get('classe')).toMatchObject({ procedencia: 'derivado' });
+    expect(proxima.get('classe')!.valor).toContain('rochoso temperado');
+    expect(proxima.get('classe')!.valor).toContain('travado por maré');
+    // uma temperatura só: a do arquivo (218 K, albedo suposto), não a da cena
+    expect(proxima.has('calor na cena')).toBe(false);
+    expect(proxima.get('temperatura de equilíbrio')!.valor).toMatch(/^218 K/);
+    expect(proxima.has('giro')).toBe(false);
+    expect(proxima.get('superfície')).toMatchObject({ procedencia: 'artistico' });
+    expect(proxima.get('superfície')!.valor).toMatch(/^imaginada/);
+    expect(proxima.has('aparência')).toBe(false);
+    const hd = linhas('hd-189733b');
+    expect(hd.get('aparência')).toMatchObject({ procedencia: 'medido' });
+    expect(hd.get('superfície')).toMatchObject({ procedencia: 'artistico' });
+    expect(hd.get('classe')!.valor).toContain('gigante gasoso quente');
+    // quem gira: o medido de β Pic b (derivado do espectro), o suposto dos outros
+    expect(linhas('bet-pic-b').get('giro')).toMatchObject({ procedencia: 'derivado' });
+    expect(linhas('eps-eri-b').get('giro')).toMatchObject({ procedencia: 'artistico' });
+    expect(linhas('eps-eri-b').get('giro')!.valor).toContain('Júpiter');
   });
 });
 
