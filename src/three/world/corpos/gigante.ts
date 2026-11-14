@@ -826,10 +826,10 @@ void main() {
  * (`uCorClara`, `uCorEscura`) vêm da classe de nuvens pela temperatura
  * (`world/exoplanetas.ts`). `uFaixas` = (número de faixas, contraste,
  * turbulência, tempestades). Onde a atmosfera é quente o bastante, o
- * brilho próprio entra pela lei de Planck do chunk comum — mais forte nas
- * faixas escuras, onde a nuvem é mais rala e se vê mais fundo, como as
- * manchas quentes de Júpiter em 5 µm. É tudo imaginado a partir da
- * classe, menos a cor de HD 189733 b, que é medida.
+ * brilho próprio entra pela lei de Planck do chunk comum (`brilhoNaTela`),
+ * com a temperatura desenhada pelas faixas, pelas tempestades e pelo
+ * limbo. É tudo imaginado a partir da classe, menos a cor de HD 189733 b,
+ * que é medida.
  */
 export const GIGANTE_PROC_FRAG = /* glsl */ `
 uniform vec3 uDirSolLocal;
@@ -867,29 +867,55 @@ void main() {
   faixa = clamp(faixa + fios * 0.45 * uFaixas.z, 0.0, 1.0);
   float k = mix(0.5, faixa, uFaixas.y);
   vec3 albedo = mix(uCorEscura, uCorClara, k);
-  // as tempestades: ovais com redemoinho, claras ou escuras pela semente
+  // as tempestades: ovais com redemoinho, claras ou escuras pela semente,
+  // três vezes mais longas que largas (o vento das faixas as estica), com
+  // a borda rasgada pelo ruído e sem anel duro. Ficam nas latitudes médias
+  // e, no travado, a menos de ~40° do meridiano embaixo da estrela (+x): é
+  // onde a fase cheia as mostra de frente — no limbo uma oval encurtada
+  // virava um furo redondo. E perto da beira do disco a visada rasante
+  // atravessa mais névoa por cima das nuvens: o contraste de tudo cai, e a
+  // tempestade some antes de ficar redonda
+  vec3 dirCam = normSeguro(uCamLocal - pElip);
+  float mu = clamp(dot(n, dirCam), 0.0, 1.0);
+  float nevoa = 1.0 - smoothstep(0.15, 0.5, mu);
+  float nuvemAlta = 0.0;
   for (int i = 0; i < 4; i++) {
     if (float(i) >= uFaixas.w) break;
     vec3 h = hash33(uSemente + float(i) * 13.17);
-    float latT = (h.x - 0.5) * 1.3;
-    float dl = mod(lon - h.y * 2.0 * PI + PI, 2.0 * PI) - PI;
-    vec2 d = vec2(dl * cos(latT) / (0.08 + 0.1 * h.z), (lat - latT) / (0.04 + 0.04 * h.z));
-    float r = length(d);
-    float giro = (1.0 - smoothstep(0.0, 1.4, r)) * 4.0;
+    float latT = (h.x < 0.5 ? -1.0 : 1.0) * mix(0.15, 0.55, fract(h.x * 2.0));
+    float lonT = uFace.w > 0.5 ? (h.y - 0.5) * 1.4 : h.y * 2.0 * PI;
+    float dl = mod(lon - lonT + PI, 2.0 * PI) - PI;
+    float a = 0.1 + 0.1 * h.z;
+    vec2 d = vec2(dl * cos(latT) / a, (lat - latT) * 3.0 / a);
+    if (dot(d, d) > 3.0) continue;
+    float r = length(d) + 0.35 * (ruido(vec3(d * 1.6, float(i) * 3.1) + uSemente) - 0.5);
+    float giro = (1.0 - smoothstep(0.0, 1.2, r)) * 3.0;
     vec2 dr = vec2(cos(giro) * d.x - sin(giro) * d.y, sin(giro) * d.x + cos(giro) * d.y);
-    float miolo = 1.0 - smoothstep(0.55, 1.0, r);
-    float halo = (1.0 - smoothstep(1.0, 1.35, r)) - miolo;
-    float textura = 0.75 + 0.5 * ruido(vec3(dr * 3.0, float(i) * 7.0) + uSemente);
-    vec3 cor = h.z > 0.45 ? uCorClara * 1.15 : mix(uCorEscura, uCorClara, 0.15) * vec3(1.15, 0.85, 0.75);
+    float miolo = 1.0 - smoothstep(0.35, 1.0, r);
+    float colar = (1.0 - smoothstep(0.8, 1.4, r)) - miolo;
+    float textura = 0.85 + 0.3 * ruido(vec3(dr * vec2(2.0, 4.0), float(i) * 7.0) + uSemente);
+    vec3 cor = h.z > 0.45 ? mix(uCorClara, vec3(1.0), 0.15) : mix(uCorEscura, uCorClara, 0.1) * vec3(1.1, 0.85, 0.75);
+    miolo *= 1.0 - nevoa;
     albedo = mix(albedo, cor * textura, miolo * 0.85);
-    albedo = mix(albedo, uCorClara * 1.1, halo * 0.5);
+    albedo = mix(albedo, uCorClara, colar * 0.25 * (1.0 - nevoa));
+    nuvemAlta = max(nuvemAlta, miolo);
   }
+  albedo = mix(albedo, mix(uCorEscura, uCorClara, 0.5), 0.5 * nevoa);
   float ndotlGeo = dot(n, uDirSolLocal);
   vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);
   vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;
-  vec3 fill = lanternaDeLeitura(n, normSeguro(uCamLocal - pElip), sombras);
-  float T = temperaturaLocal(p, uDirSolLocal);
-  vec3 brilho = brilhoTermico(T) * mix(1.5, 0.6, k) * uLuzGanho * uCorDaLuz;
+  vec3 fill = lanternaDeLeitura(n, dirCam, sombras);
+  // o brilho próprio: onde a nuvem é rala (faixa escura) se vê mais fundo e
+  // mais quente, como as manchas de Júpiter em 5 µm; a tempestade é nuvem
+  // alta, mais fria; e a visada rasante da beira do disco só alcança as
+  // camadas de cima, mais frias (o escurecimento do limbo). Pela lei de
+  // Planck, ±10 % de temperatura são cinco vezes o brilho no visível: é
+  // isso que desenha as faixas por cima do brilho do gigante jovem
+  vec3 brilho = vec3(0.0);
+  if (uBrilho.x > 0.0) {
+    float T = temperaturaLocal(p, uDirSolLocal) * (1.0 + 0.2 * (0.5 - k) - 0.08 * nuvemAlta);
+    brilho = brilhoNaTela(T * pow(0.55 + 0.45 * mu, 0.25));
+  }
   gl_FragColor = vec4(albedo * luzDoGlobo(luzSol, fill) * uCorDaLuz + brilho, 1.0);
 }
 `;
