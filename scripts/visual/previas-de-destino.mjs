@@ -68,6 +68,13 @@ const DESTINOS = [
   { id: 'voyager-1', foco: 'voyager-1' },
   // O PRIMEIRO COMETA (pilar 4, 12/11/2026): Halley no quadro de chegada
   { id: 'halley', foco: 'halley' },
+  // A ESTRELA S2 (13/11/2026): a chegada da órbita, o buraco com as
+  // estrelas S azuladas e as órbitas em volta
+  { id: 's2', foco: 's2' },
+  // A NEBULOSA DE ÓRION (13/11/2026): de dentro do gás, com θ¹ Ori C
+  // acesa — a chegada pelo `?foco=` deixa a nuvem pequena demais no
+  // cartão; o clique leva ao lugar dela, que a mostra inteira de fora
+  { id: 'nebulosa-de-orion', consulta: `pos=44.055,406.77,-38.60&look=44.378,409.74,-38.884&${CINEMA}` },
 ];
 
 function urlDoDestino({ foco, ver, d, consulta }) {
