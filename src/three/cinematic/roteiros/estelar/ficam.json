@@ -303,8 +303,17 @@
         "inclinacao": {
           "tipo": "soma",
           "curvas": [
-            {"tipo": "rampa", "de": "rolagemNaPassagem", "para": "rolagemAberta", "ritmo": "glide"},
-            {"tipo": "pulso-limitado", "amplitude": "desvioDaSubida", "velocidade": "velocidadeDoPulsoDaSubida"}
+            {
+              "tipo": "rampa",
+              "de": "rolagemNaPassagem",
+              "para": "rolagemAberta",
+              "ritmo": "glide"
+            },
+            {
+              "tipo": "pulso-limitado",
+              "amplitude": "desvioDaSubida",
+              "velocidade": "velocidadeDoPulsoDaSubida"
+            }
           ]
         }
       },
@@ -317,17 +326,21 @@
       "legendas": [
         {
           "em": 0.18,
-          "texto": "Um ano dura de 1,5 a 19 dias",
+          "texto": "Anos de dias",
+          "subtexto": "aqui um ano dura de 1,5 a 19 dias",
           "en": {
-            "texto": "A year lasts from 1.5 to 19 days"
+            "texto": "Years of days",
+            "subtexto": "here a year lasts from 1.5 to 19 days"
           },
           "duracao": 3.8
         },
         {
           "em": 0.62,
-          "texto": "Estrelas assim vão brilhar muito depois do Sol",
+          "texto": "Sem pressa",
+          "subtexto": "estrelas assim vão brilhar muito depois do Sol",
           "en": {
-            "texto": "Stars like this will shine long after the Sun"
+            "texto": "No hurry",
+            "subtexto": "stars like this will shine long after the Sun"
           },
           "duracao": 3.2
         }
