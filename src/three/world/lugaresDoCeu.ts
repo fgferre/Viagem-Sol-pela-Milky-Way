@@ -237,8 +237,16 @@ const _centro = new THREE.Vector3();
  * Sagittarius A✱ — eles entram na mesma faixa em que o dele sai. Dentro
  * do bojo a anã de Sagitário, dezoito mil parsecs atrás do buraco, não
  * é objeto que se veja, e o nome dela lia como o nome do buraco.
+ *
+ * O LUGAR EM FOCO (`idEmFoco`) NÃO CEDE DE PERTO e tem o peso do foco
+ * (crítica de 13/11): depois do "Aproximar" na Grande Nuvem o raio de
+ * enquadramento dela passava dos 27° e o nome sumia, enquanto o da anã de
+ * Sagitário ficava em destaque. A régua de perto mede o raio da TABELA,
+ * que é o da chegada; o degrau de perto enquadra o lugar inteiro num raio
+ * menor, e o assunto escolhido não perde o nome para um vizinho — a mesma
+ * isenção de Sagittarius A✱ em foco (`projectLabels`).
  */
-export function projetarLugares(camera: THREE.PerspectiveCamera): StarLabel[] {
+export function projetarLugares(camera: THREE.PerspectiveCamera, idEmFoco?: string): StarLabel[] {
   const out: StarLabel[] = [];
   const dHome = camera.position.length();
   if (dHome < FORA_DO_SISTEMA_PC) return out;
@@ -251,9 +259,10 @@ export function projetarLugares(camera: THREE.PerspectiveCamera): StarLabel[] {
     _centro.set(lugar.x, lugar.y, lugar.z);
     const dist = _centro.distanceTo(camera.position);
     const raioAparente = Math.atan(linha.raioPc / Math.max(dist, 1e-9)) / GRAU;
+    const emFoco = lugar.id === idEmFoco;
     const opacidade =
       THREE.MathUtils.smoothstep(raioAparente, 0.3, 0.6) *
-      (1 - THREE.MathUtils.smoothstep(raioAparente, 22, 27)) *
+      (emFoco ? 1 : 1 - THREE.MathUtils.smoothstep(raioAparente, 22, 27)) *
       0.95 *
       (linha.categoria === 'galaxia' ? foraDoCentro : 1);
     if (opacidade < 0.02) continue;
@@ -262,7 +271,7 @@ export function projetarLugares(camera: THREE.PerspectiveCamera): StarLabel[] {
     l.distPc = dist;
     l.opacity = opacidade;
     if (linha.classe) l.detalhe = classeEmTexto(linha.classe);
-    l.prioridade = PRIORIDADE_DO_ROTULO.lugar;
+    l.prioridade = emFoco ? PRIORIDADE_DO_ROTULO.foco : PRIORIDADE_DO_ROTULO.lugar;
     out.push(l);
   }
   return out;

@@ -1162,7 +1162,7 @@ export class Rotulos {
         // A ESTRELA S2 (13/11): o nome na estrela viva, só no Atlas
         const estrelaS2 = fase === 'atlas' ? projetarS2(cam, quadro.jd ?? Number.NaN) : [];
         const lista = [
-          ...corpos, ...luas, ...estrelas, ...projetarLugares(cam), ...companheiras, ...sondas, ...cometas, ...exoplanetas,
+          ...corpos, ...luas, ...estrelas, ...projetarLugares(cam, lugarEmFoco?.id), ...companheiras, ...sondas, ...cometas, ...exoplanetas,
           ...estrelaS2,
         ];
         if (lugarEmFoco) abrirVagaNoGrupo(lugarEmFoco.id, lista);

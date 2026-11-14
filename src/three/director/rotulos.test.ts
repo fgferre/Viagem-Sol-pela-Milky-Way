@@ -1500,6 +1500,21 @@ describe('os nomes dentro de um lugar em foco (13/11)', () => {
     expect(companheiras.every((l) => l.outroLado)).toBe(true);
   });
 
+  it('o lugar em foco não perde o nome de perto, e tem o peso do foco (13/11, Grande Nuvem)', () => {
+    const nuvem = lugares.LUGARES_DA_BUSCA.find((l) => l.id === 'grande-nuvem-de-magalhaes')!;
+    const centro = new THREE.Vector3(nuvem.x, nuvem.y, nuvem.z);
+    const cam = new THREE.PerspectiveCamera(58, 1.6, 1, 1e8);
+    // a sete kpc, onde o "Aproximar" deixa a câmera: o raio da tabela passa dos 27°
+    cam.position.copy(centro).add(new THREE.Vector3(0, 0, 7000));
+    cam.lookAt(centro);
+    cam.updateMatrixWorld(true);
+    const chave = 'lugar:grande-nuvem-de-magalhaes';
+    expect(lugares.projetarLugares(cam).some((l) => l.key === chave)).toBe(false);
+    const emFoco = lugares.projetarLugares(cam, nuvem.id).find((l) => l.key === chave)!;
+    expect(emFoco.opacity).toBeGreaterThan(0.9);
+    expect(emFoco.prioridade).toBe(PRIORIDADE_DO_ROTULO.foco);
+  });
+
   it('as estrelas-membro abrem a vaga; outro nome na linha de cima manda o do lugar para baixo', () => {
     const lugar = (x: number, y: number): StarLabel => ({
       name: 'Plêiades', spect: '', distPc: 1, x, y, opacity: 0.95, key: 'lugar:pleiades',
