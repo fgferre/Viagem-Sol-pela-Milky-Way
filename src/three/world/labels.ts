@@ -174,6 +174,12 @@ export interface StarLabel {
    */
   dirigido?: boolean;
   /**
+   * OS DISCOS RESOLVIDOS DO QUADRO (crítica de 13/11) — a lista é a mesma
+   * para todos os nomes; o `LabelCanvas` só conta os que estão NA FRENTE
+   * deste (`DiscoNaTela.alem`). Ver `discosNaTela`.
+   */
+  discos?: readonly DiscoNaTela[];
+  /**
    * PODE ESCREVER DO OUTRO LADO da âncora quando o lado natural está
    * ocupado (13/11) — só o lado, na mesma linha, sem o peso nem o
    * holofote do `dirigido`. É dos planetas do sistema em quadro, irmãos
@@ -877,6 +883,59 @@ function escondidaPorDisco(
     if (cos > cosMeioAngulo) return true;
   }
   return false;
+}
+
+/**
+ * UM DISCO DE CORPO NA TELA (crítica de 13/11) — centro na unidade dos
+ * rótulos (fração da largura e da altura), raio em fração da ALTURA.
+ */
+export interface DiscoNaTela {
+  x: number;
+  y: number;
+  raio: number;
+  /** a distância da câmera ao FUNDO do corpo (pc): só o nome de um objeto
+   *  mais longe que isto está atrás do disco */
+  alem: number;
+  /** a chave do rótulo do próprio corpo — ele não se esconde */
+  chave?: string;
+}
+
+/**
+ * O CONE ESCONDE A ÂNCORA (`escondidaPorDisco`); O DISCO NA TELA ESCONDE O
+ * TEXTO. Com a âncora fora do disco, o nome de uma estrela atrás do Sol
+ * ainda era escrito sobre ele ("Betelgeuse" no limbo, no voo livre;
+ * "Fomalhaut" sobre o núcleo do 67P). Estes são os mesmos oclusores, na
+ * tela, para o `LabelCanvas` julgar a CAIXA do texto contra eles.
+ *
+ * SÓ O DISCO RESOLVIDO entra: o que mede mais que `RAIO_NDC_DE_CESSAO`, o
+ * tamanho em que o corpo deixa de ser ponto com nome e passa a ser disco
+ * (é onde o nome do próprio corpo começa a ceder). Abaixo disso o corpo é
+ * a marca do rótulo dele, que já disputa como oponente.
+ */
+export function discosNaTela(
+  camera: THREE.PerspectiveCamera,
+  oclusores: readonly OclusorDeRotulo[],
+  out: DiscoNaTela[] = []
+): DiscoNaTela[] {
+  out.length = 0;
+  const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(camera.fov) * 0.5);
+  for (const o of oclusores) {
+    _aoCorpo.set(o.x, o.y, o.z);
+    const dist = _aoCorpo.distanceTo(camera.position);
+    if (!(o.raio > 0) || dist <= o.raio) continue;
+    const raioNdc = raioAparenteNdc(o.raio, dist, tanHalfFov);
+    if (!(raioNdc > RAIO_NDC_DE_CESSAO)) continue;
+    _aoCorpo.project(camera);
+    if (_aoCorpo.z > 1 || _aoCorpo.z < -1) continue;
+    out.push({
+      x: (_aoCorpo.x + 1) / 2,
+      y: (1 - _aoCorpo.y) / 2,
+      raio: raioNdc / 2,
+      alem: dist + o.raio,
+      ...(o.chave !== undefined ? { chave: o.chave } : {}),
+    });
+  }
+  return out;
 }
 
 /** o nome do centro galáctico — o rótulo `sgr-a` e o foco dele na escada */

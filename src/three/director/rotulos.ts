@@ -23,6 +23,7 @@ import {
   aplicarReguaDeRelevancia,
   alvoDoCanalDeTexto,
   classeDeSgrA,
+  discosNaTela,
   nomeDoSolEmCaixaAlta,
   prioridadeDeEstrela,
   projectCorpos,
@@ -32,7 +33,7 @@ import {
   raioAparenteNdc,
   sobreOAssunto,
 } from '../world/labels';
-import type { CorpoRotulavel, OclusorDeRotulo, StarLabel } from '../world/labels';
+import type { CorpoRotulavel, DiscoNaTela, OclusorDeRotulo, StarLabel } from '../world/labels';
 import { raioDoAssuntoPc } from '../world/corpos/gigante';
 import { GAL } from '../world/galaxy';
 import { numeroDoIdioma } from '../tempoDoAtlas';
@@ -242,6 +243,9 @@ export class Rotulos {
   ];
   /** os oclusores de corpo, reusados quadro a quadro (ver acima) */
   private readonly poolDeOclusores: OclusorDeRotulo[] = [];
+  /** os mesmos discos NA TELA, os resolvidos — o texto não os atravessa
+   *  (`discosNaTela`); a lista é reescrita por quadro */
+  private readonly discos: DiscoNaTela[] = [];
   /** raio físico por id — não muda em sessão, e o fio é da escada */
   private readonly raiosDeCorpo = new Map<string, number | null>();
   /**
@@ -637,6 +641,8 @@ export class Rotulos {
     for (let i = labels.length - 1; i >= 0; i--) {
       const l = labels[i];
       if (l.causaDoSumico === 'oclusao' && (semRampa || !(l.opacity > 0))) labels.splice(i, 1);
+      // o texto não atravessa disco na frente dele — a lei é do desenho
+      else if (this.discos.length > 0) l.discos = this.discos;
     }
     this.fios.onLabels(labels);
   }
@@ -871,6 +877,7 @@ export class Rotulos {
     // OS DISCOS DO QUADRO, antes de qualquer projeção: eles valem para
     // as estrelas e para os corpos, e a lista é a mesma nos dois ramos.
     this.montarOclusores(planetas, quadro.oclusoresDeEstrelas);
+    discosNaTela(cam, this.oclusoresDeRotulo, this.discos);
     // A ISENÇÃO DO ALVO SEGUIDO (item 125, F4 · O11): o corpo em foco não
     // é escondido por globo nenhum — o `setCanBeOccluded(false)` deles,
     // que o `unfollow` desfaz. Aqui o "desfazer" é de graça: a chave sai

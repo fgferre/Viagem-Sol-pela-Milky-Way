@@ -1236,7 +1236,7 @@ export class LabelCanvas {
       const inicio = inicioDoTexto(esquerda);
       return Math.min(Math.max(inicio, margem), Math.max(margem, this.width - conteudo - margem)) - inicio;
     };
-    const ladoPreferido =
+    let ladoPreferido =
       desvioDe(ladoNatural) !== 0 &&
       Math.abs(desvioDe(!ladoNatural)) < Math.abs(desvioDe(ladoNatural))
         ? !ladoNatural
@@ -1255,6 +1255,17 @@ export class LabelCanvas {
     // do texto nasce no CENTRO vertical da âncora e este número só a
     // ajusta.
     const linhaDoTexto = ancoraY + peso.deslocamentoY * k;
+    // O DISCO NA FRENTE TAMBÉM ESCOLHE O LADO (crítica de 13/11): a estrela
+    // rente ao limbo do Sol, à direita da tela, escrevia para a esquerda —
+    // sobre o Sol. Se o outro lado cabe inteiro e está livre, o nome vai
+    // para lá; se nenhum está, ele perde a vaga para o disco (`disputar`).
+    if (
+      this.sobreDisco(label, caixaEm(ladoPreferido, linhaDoTexto)) &&
+      desvioDe(!ladoPreferido) === 0 &&
+      !this.sobreDisco(label, caixaEm(!ladoPreferido, linhaDoTexto))
+    ) {
+      ladoPreferido = !ladoPreferido;
+    }
     let esquerda = ladoPreferido;
     let textoY = linhaDoTexto;
     let caixaDoTexto = caixaEm(ladoPreferido, linhaDoTexto);
@@ -1272,7 +1283,7 @@ export class LabelCanvas {
         for (const passo of label.dirigido ? DESLOCAMENTOS_DIRIGIDOS : MESMA_LINHA) {
           const y = ancoraY + passo * k;
           const tentativa = caixaEm(esq, y);
-          if (this.ocupado(tentativa, 8 * k, label.key)) continue;
+          if (this.ocupado(tentativa, 8 * k, label.key) || this.sobreDisco(label, tentativa)) continue;
           const traco: Rect = {
             left: Math.min(ancoraX, ancoraX + (esq ? -1 : 1) * 10 * k),
             right: Math.max(ancoraX, ancoraX + (esq ? -1 : 1) * 10 * k),
@@ -1374,7 +1385,28 @@ export class LabelCanvas {
     // rótulo, e é ela que disputa.
     const caixa = p.caixaDoTexto ?? p.caixaDoIcone;
     if (caixa === null) return false;
+    // o disco de um corpo na frente é oponente que ninguém vence, como o HUD
+    if (p.caixaDoTexto && this.sobreDisco(label, p.caixaDoTexto)) return true;
     return this.perdePara(label, caixa, p.caixaDoTexto ? 8 * k : 2 * k);
+  }
+
+  /**
+   * A CAIXA ATRAVESSA O DISCO DE UM CORPO NA FRENTE DESTE NOME? (crítica de
+   * 13/11) — o disco do próprio corpo não conta, nem o de quem está atrás
+   * dele (`DiscoNaTela.alem`). Círculo contra retângulo, em px CSS.
+   */
+  private sobreDisco(label: StarLabel, r: Rect): boolean {
+    if (!label.discos) return false;
+    for (const d of label.discos) {
+      if (d.chave === label.key || !(label.distPc > d.alem)) continue;
+      const cx = d.x * this.width;
+      const cy = d.y * this.height;
+      const dx = Math.min(Math.max(cx, r.left), r.right) - cx;
+      const dy = Math.min(Math.max(cy, r.top), r.bottom) - cy;
+      const raio = d.raio * this.height;
+      if (dx * dx + dy * dy < raio * raio) return true;
+    }
+    return false;
   }
 
   private perdePara(label: StarLabel, caixa: Rect, folga: number): boolean {

@@ -1209,11 +1209,13 @@ describe('o corpo da casa como assunto do beat (viagem solar)', () => {
       cam, LUAS_DO_SISTEMA.filter((l) => l.id === 'moon'), Float32Array.of(perto.x, perto.y, perto.z)
     );
     // nada copiado à mão: o que o Atlas projeta, mais o que faz dele assunto
+    // (e os discos do quadro, que a publicação dá a todo nome)
     expect(lua).toEqual({
       ...doAtlas,
       dirigido: true,
       alfaDoTexto: ALFA_DO_TEXTO_APONTADO,
       alfaDoIcone: ALFA_DO_TEXTO_APONTADO,
+      discos: lua.discos,
     });
     expect(lua.opacity).toBe(0.95);
     // classe, prioridade e canal ficam — lua no secundário, planeta no primário

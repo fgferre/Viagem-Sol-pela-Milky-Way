@@ -614,6 +614,33 @@ describe('um lugar por nome — ou cabe ali, ou some', () => {
     expect(ctx.pintadas.some((p) => p.texto.includes('buraco'))).toBe(false);
   });
 
+  it('o texto não atravessa o disco de um corpo NA FRENTE: vira de lado, ou perde a vaga (13/11)', () => {
+    // o Sol enche o meio da tela; Betelgeuse rente ao limbo, à direita
+    // (âncora além dos 72 %): o lado natural escreveria sobre o Sol
+    const sol = { x: 0.5, y: 0.5, raio: 0.3, alem: 1e-7, chave: 'corpo:sun' };
+    const estrela = (x: number, y: number): StarLabel => ({
+      ...rotulo('Betelgeuse', 'Betelgeuse', x, y, 10), detalhe: '', distPc: 150, discos: [sol],
+    });
+    const rente = estrela(0.8, 0.5);
+    bancada(1200, 1200).rotulos.draw([rente]);
+    expect([rente.desenhado, (rente as RotuloComVaga).ladoEsquerdo]).toEqual([true, false]);
+    // sem disco, o mesmo nome escreve para a esquerda — é o disco que vira
+    const semDisco = { ...estrela(0.8, 0.5), discos: undefined };
+    bancada(1200, 1200).rotulos.draw([semDisco]);
+    expect((semDisco as RotuloComVaga).ladoEsquerdo).toBe(true);
+    // na borda, o outro lado não cabe: o nome perde a vaga para o disco
+    const naBorda = { ...estrela(0.97, 0.5), discos: [{ ...sol, x: 0.69 }] };
+    bancada(1200, 1200).rotulos.draw([naBorda]);
+    expect(naBorda.desenhado).toBe(false);
+    // o disco do PRÓPRIO corpo, ou de um corpo atrás do nome, não conta
+    const proprio = { ...estrela(0.8, 0.5), key: 'corpo:sun' };
+    const atras = { ...estrela(0.8, 0.5), distPc: 1e-8 };
+    for (const l of [proprio, atras]) {
+      bancada(1200, 1200).rotulos.draw([l]);
+      expect([l.desenhado, (l as RotuloComVaga).ladoEsquerdo], l.key).toEqual([true, true]);
+    }
+  });
+
   it('o HUD ocupa PRIMEIRO, e não há segundo lugar para furá-lo', () => {
     const { rotulos } = bancada(1200, 900);
     // um painel no meio da tela: até 23/08 o nome procurava outra vaga
