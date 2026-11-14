@@ -47,9 +47,9 @@ import type { Planetas } from '../world/planetas/planetas';
 import type { FreeRoam } from '../cinematic/cameraRig';
 import type { CorpoBuscavel, LugarBuscavel } from '../../lib/buscaEstrelas';
 import { nomeDoLugar } from '../../lib/buscaEstrelas';
-import { poseDoLugar } from '../world/lugaresDoCeu';
+import { poseDoLugar, type PoseDoLugar } from '../world/lugaresDoCeu';
 import { poseDaSonda } from '../world/sondas';
-import { poseDoCometa } from '../world/cometas';
+import { poseDoCometa, poseDoCometaDePerto } from '../world/cometas';
 import { poseDoExoplaneta, poseDoSistema } from '../world/exoplanetas';
 import { SISTEMAS_PLANETARIOS, exoplanetaPorId, sistemaDaEstrela } from '../../lib/exoplanetas';
 import { UA_POR_PC } from '../../lib/unidades';
@@ -242,6 +242,9 @@ export class Escada {
   private focoEstrela = false;
   /** QUAL estrela, quando `focoEstrela` — nome e posição do último foco */
   private estrelaFocada: { nome: string | null; pos: THREE.Vector3 } | null = null;
+  /** o LUGAR DO CÉU da última visita — vale só enquanto o alvo do rig
+   *  ainda é o dele (`lugarDePerto`), então nenhum outro foco precisa zerá-lo */
+  private lugarFocado: PoseDoLugar | null = null;
   /** o OBJETO PEQUENO em foco — uma sonda ou um cometa (pilar 4,
    *  12/11/2026): os dois moram num campo só, então toda escrita do foco
    *  que zera `focoSonda` zera também o cometa */
@@ -595,6 +598,7 @@ export class Escada {
       pisoRaio: pose.pisoRaio ?? raioDeEnquadramentoEstelar(pose.alvo.length()),
     });
     this.enquadrarAgora();
+    this.lugarFocado = pose;
     this.focoCorpoId = null;
     this.focoEstrela = true;
     this.focoSonda = null;
@@ -956,6 +960,12 @@ export class Escada {
       podeAproximar:
         (degrau === 'estrela' && this.focoNoCentro && this.ver !== 'corpo') ||
         (degrau === 'estrela' && this.ver === 'orbita' && this.pilotoEmFoco() !== null) ||
+        // o lugar do céu que tem vista de perto (`raioDePertoPc` na tabela)
+        // e o cometa (núcleo, coma e caudas): o mesmo degrau, pelo mesmo botão
+        (degrau === 'estrela' && this.ver === 'orbita' && this.lugarDePerto() !== null) ||
+        (degrau === 'cometa' &&
+          this.ver === 'orbita' &&
+          this.poseDePertoDoCometa(this.pequeno?.id ?? '', this.maquinaDoTempo.jdVivo) !== null) ||
         (degrau === 'orbita' &&
         (this.focoCorpoId === 'earth' ||
           this.rochosos.some((r) => r.corpo.planeta && r.corpo.id === this.focoCorpoId) ||
@@ -1005,6 +1015,13 @@ export class Escada {
    *  dela antes da câmera chegar (`estrelasNoQuadro.ts`) lê daqui */
   get nomeDaEstrelaEmFoco(): string | null {
     return this.phase === 'atlas' && this.focoEstrela ? (this.estrelaFocada?.nome ?? null) : null;
+  }
+
+  /** o lugar em foco, se ele tem degrau de perto e o rig ainda mira nele */
+  private lugarDePerto(): (PoseDoLugar & { raioDePerto: number }) | null {
+    const l = this.lugarFocado;
+    if (!this.focoEstrela || !l?.raioDePerto || this.atlas.alvo.distanceToSquared(l.alvo) > 1e-18) return null;
+    return { ...l, raioDePerto: l.raioDePerto };
   }
 
   /** a estrela em foco, se ela é do piloto e o piloto está ligado */
@@ -1067,6 +1084,7 @@ export class Escada {
     // tratam como alvo do sistema), mas o enquadramento é o dela
     if (sondaPorId(id) || cometaPorId(id) || exoplanetaPorId(id)) {
       this.visitarSonda(id);
+      if (ver === 'corpo' && this.escada.podeAproximar) this.aproximarDoCorpo();
       return;
     }
     if (id === 'sun') {
@@ -1208,7 +1226,12 @@ export class Escada {
       return;
     }
     if (this.focoEstrela) {
-      this.aproximarDaEstrela();
+      if (this.lugarDePerto()) this.aproximarDoLugar();
+      else this.aproximarDaEstrela();
+      return;
+    }
+    if (this.pequeno?.tipo === 'cometa') {
+      this.aproximarDoCometa(this.pequeno.id);
       return;
     }
     const id = this.focoCorpoId ?? 'earth';
@@ -1273,6 +1296,50 @@ export class Escada {
     this.events.onFoco(nomeDoCorpo(id));
     this.emitirEscada();
     this.teletransportou();
+  }
+
+  /**
+   * O DEGRAU DE PERTO DE UM LUGAR DO CÉU (13/11/2026): o mesmo alvo, a
+   * mesma vista e o mesmo polo da chegada, só a esfera menor — um dolly
+   * puro, como o do Sol. O raio é o da linha da tabela (`raioDePertoPc`).
+   */
+  private aproximarDoLugar() {
+    const l = this.lugarDePerto();
+    if (!l) return;
+    this.atlas.focar(l.alvo, l.raioDePerto, l.eixoDe, {
+      rampa: this.rampaDaEscada(),
+      polo: l.polo,
+      pisoRaio: l.pisoRaio ?? raioDeEnquadramentoEstelar(l.alvo.length()),
+    });
+    this.enquadrarAgora();
+    this.ver = 'corpo';
+    this.emitirEscada();
+    this.teletransportou();
+  }
+
+  /**
+   * O DEGRAU DE PERTO DE UM COMETA (13/11/2026): a cabeça — o núcleo no
+   * centro, a coma e o começo das caudas em quadro (`poseDoCometaDePerto`),
+   * pela mesma direção da chegada. O relógio a recompõe (`enquadreVivo`).
+   */
+  private aproximarDoCometa(id: string) {
+    const pose = this.poseDePertoDoCometa(id, this.maquinaDoTempo.jdVivo);
+    if (!pose) return;
+    this.atlas.focar(pose.alvo, pose.raio, pose.eixoDe, {
+      rampa: this.rampaDaEscada(),
+      polo: pose.polo,
+      pisoRaio: pose.pisoRaio,
+    });
+    this.enquadrarAgora();
+    this.ver = 'corpo';
+    this.emitirEscada();
+    this.teletransportou();
+  }
+
+  /** a pose de perto do cometa no instante `jd` (o raio do núcleo é o medido) */
+  private poseDePertoDoCometa(id: string, jd: number) {
+    const cometa = cometaPorId(id);
+    return cometa ? poseDoCometaDePerto(id, jd, cometa.nucleo.km ? cometa.nucleo.km / 2 : null) : null;
   }
 
   /**
@@ -1434,7 +1501,11 @@ export class Escada {
     // A SONDA ANDA COM O RELÓGIO: a mesma pose da chegada, no instante
     // vivo — fora da tabela (antes do lançamento) não há o que recompor
     if (degrau === 'sonda' || degrau === 'cometa' || degrau === 'exoplaneta') {
-      const pose = this.pequeno ? (this.objetoPequeno(this.pequeno.id)?.pose(jd) ?? null) : null;
+      const pose = !this.pequeno
+        ? null
+        : degrau === 'cometa' && this.ver === 'corpo'
+          ? this.poseDePertoDoCometa(this.pequeno.id, jd)
+          : (this.objetoPequeno(this.pequeno.id)?.pose(jd) ?? null);
       return pose ? { alvo: pose.alvo, raio: pose.raio, eixoDe: pose.eixoDe, pai: null, polo: pose.polo } : null;
     }
     if (degrau === 'lua') {

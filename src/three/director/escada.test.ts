@@ -42,7 +42,9 @@ import { RAIO_EQ_TERRA_PC, posicaoDaTerraUA } from '../world/corpos/terra';
 import { ANEL_SATURNO, posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
 import { AtlasRig, K_MIN_RAIOS, K_PISO_DO_CORPO } from '../cinematic/atlasRig';
 import { IDS_ESCULPIDOS, criaGeometriaEsculpida } from '../world/corpos/esculpido';
-import { LUGARES_DA_BUSCA } from '../world/lugaresDoCeu';
+import { LUGARES_DA_BUSCA, poseDoLugar } from '../world/lugaresDoCeu';
+import { posicaoDoCometaNaCena, poseDoCometaDePerto } from '../world/cometas';
+import { M31 } from '../world/geradorDasVizinhas';
 import { GAL } from '../world/baseGalactica';
 import { ENTREGA_DO_BURACO_PC } from '../escala';
 import { RS_SGR_A_PC } from '../../lib/buracoNegro';
@@ -618,5 +620,41 @@ describe('a vista de perto de Sgr A✱ é escala real em qualquer tela (13/11)',
     const { d, pela } = dePerto(200, 800);
     expect(d / pela(3 * RS_SGR_A_PC)).toBeCloseTo(1, 6);
     expect(d).toBeGreaterThan(ENTREGA_DO_BURACO_PC);
+  });
+});
+
+describe('o "Aproximar" de cometas e de lugares do céu (13/11)', () => {
+  it('um cometa desce à cabeça pelo mesmo botão, e o relógio a acompanha', () => {
+    const { escada, atlas, maquinaDoTempo } = bancada();
+    maquinaDoTempo.jdVivo = 2446471.0;
+    escada.visitarSonda('halley');
+    expect(escada.escadaViva).toMatchObject({ degrau: 'cometa', podeAproximar: true });
+    escada.aproximarDoCorpo();
+    const nucleo = posicaoDoCometaNaCena('halley', 2446471.0)!;
+    expect(escada.escadaViva).toMatchObject({ degrau: 'cometa', podeAproximar: false });
+    expect(atlas.alvo.distanceTo(nucleo)).toBe(0);
+    expect(atlas.raioDoAlvo).toBe(poseDoCometaDePerto('halley', 2446471.0, 5.5)!.raio);
+    maquinaDoTempo.jdVivo = 2446472.0;
+    escada.recomporAlvo();
+    expect(atlas.alvo.distanceTo(posicaoDoCometaNaCena('halley', 2446472.0)!)).toBe(0);
+    expect(atlas.raioDoAlvo).toBe(poseDoCometaDePerto('halley', 2446472.0, 5.5)!.raio);
+  });
+
+  it('só o lugar com vista de perto ganha o botão; Andrômeda enche o quadro sem a câmera entrar nela', () => {
+    for (const l of LUGARES_DA_BUSCA.filter((x) => x.raioPc)) {
+      const { escada } = bancada();
+      escada.visitarLugar(l);
+      const noCentro = new THREE.Vector3(l.x, l.y, l.z).distanceToSquared(GAL.GC_POS) < 1e-18;
+      expect(escada.escadaViva.podeAproximar, l.id).toBe(noCentro || poseDoLugar(l)?.raioDePerto !== undefined);
+    }
+    const { escada, atlas, camera, aplicar } = bancada();
+    const andromeda = LUGARES_DA_BUSCA.find((l) => l.id === 'andromeda')!;
+    escada.visitarLugar(andromeda);
+    escada.aproximarDoCorpo();
+    aplicar();
+    expect(escada.escadaViva).toMatchObject({ degrau: 'estrela', podeAproximar: false });
+    expect(atlas.raioDoAlvo).toBe(poseDoLugar(andromeda)!.raioDePerto);
+    // o disco de estrelas do modelo vai até 26 kpc do centro
+    expect(camera.position.distanceTo(M31.centro)).toBeGreaterThan(26_000);
   });
 });
