@@ -1195,10 +1195,11 @@ export class LabelCanvas {
     // `detalhes[i]`); o empurrão abaixo fica para o nome que nem sozinho
     // cabe.
     const recuo = peso.recuoDoTexto * k;
-    // A BORDA TEM FOLGA (crítica de 13/11): a folga da própria caixa. Sem
-    // ela "SAGITTARIUS A✱" no celular terminava no último pixel da tela,
-    // colado na borda — dentro dela, mas lido como cortado.
-    const margem = 5 * k;
+    // A BORDA TEM FOLGA (crítica de 13/11): a mesma distância que o nome
+    // guarda de um painel do HUD — os 5 px da caixa mais os 8 da disputa.
+    // Sem ela "SAGITTARIUS A✱" no celular terminava no último pixel da
+    // tela, colado na borda — dentro dela, mas lido como cortado.
+    const margem = 13 * k;
     const larguraCompleta = larguraDoNome + 9 * k + larguraDoDetalhe;
     // E O DETALHE CEDE AO HUD PELA MESMA LEI (crítica de 12/11): o nome do
     // alvo em foco fica no meio da tela e o detalhe dele corria por baixo
