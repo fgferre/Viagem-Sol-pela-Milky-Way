@@ -40,8 +40,9 @@ EPÍLOGO (20 s) — F1 9 s volta, o Sol nasce ponto amarelo. F2 11 s arco no Sol
       (b) Aldebaran estrela com corpo (K5+ III; 45,1 R☉ e ~520 d Hatzes et al. 2015 A&A 580 A31; 3900 K; 1,16 M☉ e 6,4 Ga Farr et al. 2018 ApJL 865 L20; HIP 21421);
       (c) filme `estelar` registrado (montagem no molde do solar: JSON por ato + pontos/números por ato; `jdDoFilme` por partes que pode ANDAR num plano), textos pt/en, prólogo escrito;
       (d) prova: fotos por `?filme=estelar&t=` dos 3 planos do prólogo, um rótulo de lugar no filme, e TRAPPIST-1 em dois instantes com os planetas em lugares diferentes.
-- [ ] E1 ATOS 1–2, E2 ATOS 3–4, E3 ATO 5 + EPÍLOGO (um opus por etapa, em paralelo depois da E0; cada um nos seus arquivos; entrega uma folha com uma foto por plano).
-- [ ] E4 Costura: olhar as folhas, ajustar juntas entre atos, teste de ciência das legendas, conferência completa, mostrar ao dono (fotos por plano; vídeo só se ele pedir).
+- [x] E1 ATOS 1–2, E2 ATOS 3–4, E3 ATO 5 + EPÍLOGO (um opus por etapa, em paralelo depois da E0; cada um nos seus arquivos; entrega uma folha com uma foto por plano).
+- [x] E4 Costura e segunda passada (14/11): 32 planos, 4 min 34 s; exoplanetas viram ponto de luz; o plano desliga camadas; menu para N filmes; conferência completa verde; folha em `capturas/filme-estelar-14-11/filme-estelar-folha.jpg`.
+- [ ] E5 O dono assiste no app e diz o que muda. Fracos conhecidos: Híades ralas; travessias vazias no meio; a faixa da Via Láctea repetida no Ato 4; a passagem de g é o lado da noite; a bola branca em Betelgeuse some com o ramo `claude/estrelas-lugar-33a90d` (b987b7f0), que espera a palavra dele.
 
 ## Decisões já tomadas
 - Não gravar o filme inteiro para conferir; fotos por plano e leitura. Vídeo curto só a pedido.
