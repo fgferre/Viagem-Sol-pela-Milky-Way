@@ -51,7 +51,7 @@
 // à integral da mesma lei (a coma de perto, `COMA_FRAG`), os borrões que
 // cobririam mais de ~6° saem (os íons junto ao núcleo também viram
 // integral), e a exposição se adapta pela distância e pela atividade de
-// cada cometa (`exposicaoDePerto`, `correcaoPelaAtividade`).
+// cada cometa (`exposicaoDePerto`).
 // ============================================================
 import * as THREE from 'three';
 import type { QualityLevel } from '../core/engine';
@@ -296,8 +296,10 @@ void main() {
   i *= corte * corte;
   // de perto, o borrão muito maior que o teto sai de vez (é a câmera
   // dentro dele: a luz que ele carregava é da coma de perto ou é a
-  // névoa junto da câmera, que de dentro não se vê como bola)
-  i *= 1.0 - uPerto * smoothstep(0.1 * uFoco, 0.25 * uFoco, px);
+  // névoa junto da câmera, que de dentro não se vê como bola); sai já no
+  // primeiro quarto da entrada: pesado por uPerto, no meio da troca (67P
+  // ativo no telefone, a 2·10⁵ km) ele ficava pela metade, em bolhas de 48 px
+  i *= 1.0 - min(1.0, 4.0 * uPerto) * smoothstep(0.1 * uFoco, 0.25 * uFoco, px);
   i *= aTipo > 0.5 && aTipo < 1.5 ? uExpoIon : uExpo;
   // a guarda do NaN (a armadilha da casa: um pixel NaN + bloom = tela
   // branca) e da meia-precisão do alvo HDR: nunca acima de 8 por borrão
@@ -472,66 +474,67 @@ const PERTO_KM: readonly [number, number] = [150_000, 300_000];
 const RAIO_DE_PERTO = 3;
 const RAIO_DE_PERTO_MAX_KM = 100_000;
 /**
- * A EXPOSIÇÃO DE PERTO — ARTÍSTICA. O ganho de longe (`GANHO`) deixa a
- * cabeça do cometa centenas de vezes acima do branco: de longe ela é um
- * ponto branco e está certo, mas o brilho de superfície se conserva, e
- * de dentro a coma 1/r² brilha ∝ 1/D a D km do núcleo — a tela inteira
- * estoura, e o estouro é que desenhava cada borrão como bola. Como um olho
- * que se adapta, a luz do cometa é exposta pela distância: 1 a partir de
- * 2,5 milhões de km (as vistas de longe não mudam), caindo como uma
- * potência até 10⁵ km e, daí para dentro, ∝ D — a coma de perto fica com
- * o mesmo desenho em toda a descida (o halo lateral a ~3 % do branco em
- * Halley no periélio), corrigida pela atividade de cada cometa
- * (`correcaoPelaAtividade`). Os íons escurecem menos (a exposição deles
- * para em 3·10⁵ km e só cai de novo dentro de 3·10⁴ km, ∝ D^1,5): de dentro
- * da coma a cauda azul ainda sai, presa ao núcleo.
+ * A EXPOSIÇÃO DE PERTO — ARTÍSTICA na escala, física na forma. O ganho de
+ * longe (`GANHO`) deixa a cabeça do cometa centenas de vezes acima do
+ * branco: de longe ela é um ponto branco e está certo, mas o brilho de
+ * superfície se conserva, e de perto a mesma cabeça vira uma massa branca
+ * chapada do tamanho dela (a coma 1/r² brilha ∝ atividade/ρ: com o branco
+ * a 1 milhão de km do núcleo, o gradiente fica todo fora da tela).
+ *
+ * A REGRA (13/11/2026): como um olho que se adapta ao que tem diante de si,
+ * a luz do cometa é exposta pela LUZ DA CABEÇA que a câmera vê, e a cabeça
+ * tem o raio que o "Aproximar" enquadra (`raioDaCabecaKm`: 10⁶ km em Halley
+ * no periélio, ∝ atividade^⅓). Até Dc = `FRACAO_DA_CABECA` desse raio a
+ * cabeça enche o campo, e o brilho dela na tela cai ∝ atividade/D (a coma
+ * 1/ρ vista de perto):
+ * a exposição é D/(10⁹ km · a), com a = atividade/atividade de Halley no
+ * periélio (a régua de 12/11, que deixa o halo lateral a ~3 % do branco em
+ * Halley). Fora, a cabeça encolhe na tela e o olho deixa de se adaptar a
+ * ela: a sobre-exposição cresce com a área que ela perde, (D/Dc)², e a
+ * exposição sobe ∝ D³, contínua, até 1 — Halley em 1,6·10⁷ km, Hale–Bopp
+ * em 2·10⁸ km —, e de longe nada muda. Uma lei só,
+ * do objeto (atividade NAQUELA data, a mesma grandeza que acende os
+ * borrões) e da distância da câmera: não olha a tela, o foco nem o modo.
+ * Os íons escurecem menos (a exposição deles para em 9·10⁵ km — o mesmo
+ * valor de 12/11 em Halley e em Hale–Bopp — e só cai de novo dentro de
+ * 3·10⁴ km, ∝ D^1,5): de dentro da coma a cauda azul ainda sai, presa ao
+ * núcleo.
  */
 const D_EXPO_KM = 1e9;
-/** os nós da curva (km, exposição), em log–log; abaixo do primeiro, ∝ D */
-const NOS_DA_EXPOSICAO: readonly (readonly [number, number])[] = [
-  [1e5, 1e5 / D_EXPO_KM],
-  [1e6, 1e-2],
-  [2.5e6, 1],
-];
-const ESCURO_DOS_IONS_KM = 3e5;
+/** Dc em raios da cabeça: o "Aproximar" fica em 3–4 raios, a ~3–5× a
+ *  exposição de dentro — o miolo branco pequeno e a queda à vista */
+const FRACAO_DA_CABECA = 2;
+const ESCURO_DOS_IONS_KM = 9e5;
 const PERTO_DOS_IONS_KM = 3e4;
 
-/**
- * A RÉGUA DE CADA COMETA (12/11/2026): a curva acima foi acertada em
- * Halley no periélio de 1986; Hale–Bopp, cem vezes mais ativo, estourava a
- * tela inteira em creme. De perto a exposição se divide pela atividade do
- * cometa NAQUELA data relativa à de Halley no periélio — a mesma grandeza
- * que acende os borrões (`brilhoRelativo`: M1, produção e 1/r²) —, pesada
- * pela mesma curva da distância (em log): a correção é 1 exata a partir
- * de 2,5 milhões de km e inteira dentro de 10⁵ km. Lei fixa do objeto e
- * da distância da câmera: não olha a tela, o foco nem o modo.
- */
+/** a atividade de Halley no periélio de 1986 — a régua das cabeças */
 export const ATIVIDADE_DE_HALLEY = brilhoRelativo(cometaPorId('halley') as Cometa, 0.5871);
 
-/** a correção da exposição de perto pela atividade (1 de longe) */
-export function correcaoPelaAtividade(dKm: number, atividade: number): number {
-  const peso = Math.min(Math.log(exposicaoDePerto(dKm)) / Math.log(exposicaoDePerto(NOS_DA_EXPOSICAO[0][0])), 1);
-  if (peso <= 0) return 1;
-  return (ATIVIDADE_DE_HALLEY / Math.max(atividade, 1e-12)) ** peso;
+/** O RAIO DA CABEÇA: a de Halley no periélio de 1986 cabe em 10⁶ km; a dos
+ *  outros cresce com a raiz cúbica da atividade naquela data (o volume da
+ *  coma segue a produção) */
+export function raioDaCabecaKm(atividade: number): number {
+  return 1e6 * Math.cbrt(Math.max(atividade, 1e-12) / ATIVIDADE_DE_HALLEY);
 }
 
-/** a exposição dos íons: a dos borrões parada em 3·10⁵ km e, dentro de
+/** a exposição dos íons: a dos borrões parada em 9·10⁵ km e, dentro de
  *  3·10⁴ km, ∝ D^1,5 — o brilho do feixe visto de dentro cresce ∝ D^−0,5
  *  (λ ∝ s^−½ sobre a largura ∝ s), e assim o desenho fica o mesmo */
-export function exposicaoDosIons(dKm: number): number {
-  return exposicaoDePerto(Math.max(dKm, ESCURO_DOS_IONS_KM)) * Math.min(1, Math.max(dKm, 0) / PERTO_DOS_IONS_KM) ** 1.5;
+export function exposicaoDosIons(dKm: number, atividade: number): number {
+  return (
+    exposicaoDePerto(Math.max(dKm, ESCURO_DOS_IONS_KM), atividade) *
+    Math.min(1, Math.max(dKm, 0) / PERTO_DOS_IONS_KM) ** 1.5
+  );
 }
 
-/** a exposição da luz do cometa a `dKm` do núcleo (1 de longe) */
-export function exposicaoDePerto(dKm: number): number {
-  const d0 = NOS_DA_EXPOSICAO[0][0];
-  if (dKm <= d0) return Math.max(dKm, 0) / D_EXPO_KM;
-  for (let k = 1; k < NOS_DA_EXPOSICAO.length; k++) {
-    const [da, ea] = NOS_DA_EXPOSICAO[k - 1];
-    const [db, eb] = NOS_DA_EXPOSICAO[k];
-    if (dKm < db) return ea * Math.exp((Math.log(eb / ea) * Math.log(dKm / da)) / Math.log(db / da));
-  }
-  return 1;
+/** a exposição da luz do cometa de `atividade` (`brilhoRelativo`) a `dKm`
+ *  do núcleo (1 de longe) */
+export function exposicaoDePerto(dKm: number, atividade: number): number {
+  const a = Math.max(atividade, 1e-12) / ATIVIDADE_DE_HALLEY;
+  const dt = FRACAO_DA_CABECA * raioDaCabecaKm(atividade);
+  const d = Math.max(dKm, 0);
+  const e = d <= dt ? d / (D_EXPO_KM * a) : (dt / (D_EXPO_KM * a)) * (d / dt) ** 3;
+  return Math.min(e, 1);
 }
 
 /**
@@ -853,9 +856,9 @@ export class CaudasDosCometas {
     u.uPerto.value = n > 0 ? perto : 0;
     u.uRin.value = Math.max(raioKm, 1) / AU_KM;
     const rr = Math.hypot(s[0], s[1], s[2]);
-    const correcao = correcaoPelaAtividade(dKm, brilhoRelativo(v.cometa, rr));
-    u.uExpo.value = exposicaoDePerto(dKm) * correcao;
-    u.uExpoIon.value = exposicaoDosIons(dKm) * correcao;
+    const atividade = brilhoRelativo(v.cometa, rr);
+    u.uExpo.value = exposicaoDePerto(dKm, atividade);
+    u.uExpoIon.value = exposicaoDosIons(dKm, atividade);
     v.coma.visible = n > 0 && perto > 0;
     if (!v.coma.visible) return;
     const cu = (v.coma.material as THREE.ShaderMaterial).uniforms;
