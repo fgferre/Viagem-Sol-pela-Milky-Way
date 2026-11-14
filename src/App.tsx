@@ -1256,13 +1256,15 @@ export default function App() {
           </div>
         )}
 
-        {/* dica do pausar-e-olhar */}
+        {/* dica do pausar-e-olhar — no toque sem a tecla de espaço (o
+            botão Retomar logo abaixo já é o gesto), com o mesmo "olhar"
+            da dica do voo livre */}
         {inJourney && paused && (
           <div className="free-hint veu-legivel">
             <span className="veu-sombra" aria-hidden="true">
-              {t('dica.pausado')}
+              {t(telaDeToque() ? 'dica.toque.olhar' : 'dica.pausado')}
             </span>
-            <span>{t('dica.pausado')}</span>
+            <span>{t(telaDeToque() ? 'dica.toque.olhar' : 'dica.pausado')}</span>
           </div>
         )}
         </div>
