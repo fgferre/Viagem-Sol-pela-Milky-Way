@@ -1,7 +1,5 @@
 // Serve: lei — a ficha monta completa, honesta e silenciosa para os 48 alvos, com a efeméride e o corpos.json reais
-// =====================================================  });
-});
-
+// ============================================================
 // A FICHA — a montagem julgada com a efeméride REAL e o `corpos.json` real.
 // O que se cobra aqui é o contrato que a tela depende: completude (todo
 // alvo monta), honestidade (nenhum rótulo de procedência fora do selo) e
@@ -1245,7 +1243,9 @@ describe('a cara dos exoplanetas na ficha, por canal', () => {
     expect(linhas('bet-pic-b').get('giro')).toMatchObject({ procedencia: 'derivado' });
     expect(linhas('eps-eri-b').get('giro')).toMatchObject({ procedencia: 'artistico' });
     expect(linhas('eps-eri-b').get('giro')!.valor).toContain('Júpiter');
-=======
+  });
+});
+
 describe('a ficha do cometa diz o nome conhecido e o que o instante mostra (crítica de 13/11)', () => {
   afterEach(() => definirIdioma('pt-BR'));
   const p67 = cometaPorId('churyumov-gerasimenko')!;

@@ -184,11 +184,12 @@ export const PT = {
   // lado do "?" sem quebrar — o "de bordas" já está na dica.
   'ajustes.msaa': 'Anti-aliasing',
   'ajustes.msaaNota':
-    'Suaviza as beiras dos corpos e das linhas, e custa quadros. Troque aqui e compare com os quadros/s logo acima — a troca é na hora, sem recarregar. "Do preset" devolve a escolha à qualidade.',
-  // "Preset" é o primeiro segmento dos CINCO controles da gaveta —
-  // o estado sem escolha à mão. Era "Do preset"; o redesenho do painel
-  // (05/09) o encurta para caber no segmento junto dos outros.
-  'ajustes.preset': 'Preset',
+    'Suaviza as beiras dos corpos e das linhas, e custa quadros. Troque aqui e compare com os quadros/s logo acima — a troca é na hora, sem recarregar. "Automático" devolve a escolha à qualidade.',
+  // "Automático" é o primeiro segmento dos controles da gaveta — o estado
+  // sem escolha à mão: segue o que o nível de qualidade manda. Era "Preset",
+  // em inglês na interface em português (crítica de 13/11; o dono escolheu
+  // a palavra em 14/11). Em inglês continua "Preset".
+  'ajustes.preset': 'Automático',
   'ajustes.msaaDesligada': 'Off',
   // ROTULO CURTO (polimento 06/09): "(raymarch)" era jargão de motor,
   // não de gosto — some do rótulo e continua na dica de quem quiser.
@@ -243,7 +244,7 @@ export const PT = {
   'ajustes.particulas.quarto': '¼',
   'ajustes.galaxiaControle': 'Galáxia',
   'ajustes.galaxiaNota':
-    'Como a galáxia vista de fora é desenhada. WebGPU: dezenas de milhões de partículas. WebGL: as mesmas partículas, em menor número (a reserva de quem não tem WebGPU). Clássica: a de antes, com camadas pintadas. Em Preset o app tenta nessa ordem e marca a que está desenhando.',
+    'Como a galáxia vista de fora é desenhada. WebGPU: dezenas de milhões de partículas. WebGL: as mesmas partículas, em menor número (a reserva de quem não tem WebGPU). Clássica: a de antes, com camadas pintadas. Em Automático o app tenta nessa ordem e marca a que está desenhando.',
   'ajustes.galaxia.webgpu': 'WebGPU',
   'ajustes.galaxia.particulas': 'WebGL',
   'ajustes.galaxia.classica': 'Clássica',
