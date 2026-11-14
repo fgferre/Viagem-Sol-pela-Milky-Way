@@ -51,7 +51,8 @@
 // à integral da mesma lei (a coma de perto, `COMA_FRAG`), os borrões que
 // cobririam mais de ~6° saem (os íons junto ao núcleo também viram
 // integral), e a exposição se adapta pela distância e pela atividade de
-// cada cometa (`exposicaoDePerto`).
+// cada cometa (`exposicaoDePerto`, `correcaoPelaAtividade`). Perto da
+// cabeça, só a luz que se acumula nela é comprimida (`OMBRO`).
 // ============================================================
 import * as THREE from 'three';
 import type { QualityLevel } from '../core/engine';
@@ -107,6 +108,39 @@ export const PASSOS_DA_COMA: Readonly<Record<QualityLevel, number>> = {
 };
 const PASSOS_MAX = PASSOS_DA_COMA.cinema;
 
+/**
+ * O OMBRO DA CABEÇA (13/11/2026) — ARTÍSTICO. De perto da cabeça (o
+ * "Aproximar", a 3–4 raios dela) a luz somada dos borrões junto ao núcleo
+ * passa centenas de vezes do branco numa área grande: a cabeça vira uma
+ * chapa branca, e na borda dela cada borrão ralo vira uma bolha. Baixar a
+ * exposição do cometa inteiro apaga as caudas (a 1ª tentativa); aqui só a
+ * luz que se acumula é comprimida.
+ *   A poeira e o gás de cada partícula são multiplicados por 1/(1 + B/`OMBRO`),
+ * com B o brilho de coluna ESPERADO no ρ dela (a distância do núcleo à
+ * linha de visada): B = uColuna·hg/ρ, a lei da coma de perto (∫ds/r² = π/ρ,
+ * direções na média). Todas as partículas da mesma linha de visada têm o
+ * mesmo ρ, e o fator vale para a soma. A luz de verdade cai mais depressa
+ * que 1/ρ (medido em Halley: ~ρ^−1,9), então a cabeça comprimida ainda
+ * desce de um miolo quase branco para o creme da poeira; onde B < `OMBRO`
+ * (as caudas longe da cabeça) quase nada muda. Os íons não passam pelo
+ * ombro: o feixe é fino e a cauda azul fica inteira.
+ *   O ombro é do olhar de perto da cabeça: a `OMBRO_KC` raios da cabeça
+ * (`raioDaCabecaKm`) ele começa a sair, ∝ (D/D₀)^−3, e as vistas de longe
+ * (a chegada, Hale–Bopp em 1997) não mudam.
+ *   O PISO: perto da cabeça, poeira e íons não ficam menores que
+ * `PISO_DA_CABECA` da distância da câmera (com a mesma saída de longe) —
+ * a frente da cabeça, rala, era um granulado de borrões de 3 px; maiores,
+ * eles se fundem, e a luz se conserva (dividida pela área).
+ */
+const OMBRO = 5;
+const OMBRO_KC = 10;
+const PISO_DA_CABECA = 0.02;
+const OMBRO_GLSL = /* glsl */ `
+float ombro(float b) {
+  return 1.0 / (1.0 + max(b, 0.0) / ${OMBRO.toFixed(4)});
+}
+`;
+
 const VERT = /* glsl */ `
 #define K ${AMOSTRAS}
 attribute vec2 aMais;
@@ -131,10 +165,12 @@ uniform float uPerto;
 uniform float uRin;
 uniform float uExpo;
 uniform float uExpoIon;
+uniform float uColuna;
+uniform float uPiso;
 
 varying vec3 vCor;
 varying float vI;
-
+${OMBRO_GLSL}
 const float CORTE1 = ${Math.pow(1 + Math.pow(1 / 2.808, 5.093), -4.6142).toFixed(9)};
 
 float producao(float r) {
@@ -230,7 +266,7 @@ void main() {
     float cosT = dot(P / rAgora, paraCam);
     float hg = 0.84 / pow(1.16 - 0.8 * cosT, 1.5) / 0.6672;
     w = producao(rr) * sqrt(beta) * uTauMax * 3.0 * hg / (rAgora * rAgora);
-    h = 0.2 * length(d) + 7e-6;
+    h = max(0.2 * length(d) + 7e-6, uPiso);
     vCor = vec3(1.0, 0.86, 0.68);
   } else if (aTipo < 1.5) {
     // ÍONS (CO+)
@@ -252,7 +288,7 @@ void main() {
     // de perto o piso de 2250 km vira 5 % da distância da câmera ao
     // núcleo: de dentro da coma o feixe é visto de lado a poucos milhares
     // de km, e o piso fixo o fazia em bolas azuis
-    h = 0.03 * s + mix(1.5e-5, 0.05 * length(uCam), uPerto);
+    h = max(0.03 * s + mix(1.5e-5, 0.05 * length(uCam), uPerto), uPiso);
     vCor = vec3(0.32, 0.55, 1.0);
   } else {
     // A COMA DE GÁS (C2, Haser)
@@ -301,6 +337,15 @@ void main() {
   // ativo no telefone, a 2·10⁵ km) ele ficava pela metade, em bolhas de 48 px
   i *= 1.0 - min(1.0, 4.0 * uPerto) * smoothstep(0.1 * uFoco, 0.25 * uFoco, px);
   i *= aTipo > 0.5 && aTipo < 1.5 ? uExpoIon : uExpo;
+  // o ombro da cabeça (poeira e gás; ver OMBRO): ρ = a distância do núcleo à
+  // linha de visada desta partícula, hg pela fase do núcleo visto da câmera
+  if (aTipo < 0.5 || aTipo > 1.5) {
+    vec3 rv = d - uCam;
+    float rho = length(cross(uCam, rv)) / max(length(rv), 1e-30);
+    float cosN = dot(normalize(uPos), normalize(uCam));
+    float hgN = 0.84 / pow(1.16 - 0.8 * cosN, 1.5) / 0.6672;
+    i *= ombro(uColuna * hgN / max(rho, 1e-12));
+  }
   // a guarda do NaN (a armadilha da casa: um pixel NaN + bloom = tela
   // branca) e da meia-precisão do alvo HDR: nunca acima de 8 por borrão
   bool ruim = isnan(i) || isinf(i) || any(isnan(d)) || any(isinf(d));
@@ -373,10 +418,11 @@ uniform vec3 uEixoIon;
 uniform float uKi;
 uniform float uAIonKm;
 uniform float uS0Km;
+uniform float uColuna;
 varying vec3 vL;
 
 #define PASSOS_MAX ${PASSOS_MAX}
-
+${OMBRO_GLSL}
 // o feixe de íons ao longo do raio entre ta e tb (km a partir da câmera)
 float feixe(vec3 u, float ta, float tb, float R) {
   float b = dot(u, uEixoIon);
@@ -454,8 +500,10 @@ void main() {
   }
   // 1/p em UA (p em km)
   float base = df * ${AU_KM.toFixed(1)} / p;
-  float id = uKd * hg * sd * base;
-  float ig = uKg * sg * base;
+  // o mesmo ombro dos borrões, no mesmo ρ (aqui, p)
+  float om = ombro(uColuna * hg * ${AU_KM.toFixed(1)} / p);
+  float id = uKd * hg * sd * base * om;
+  float ig = uKg * sg * base * om;
   float ii = uKi > 0.0 ? uKi * feixe(u, s0, s1, R) : 0.0;
   vec3 c = id * vec3(1.0, 0.86, 0.68) + ig * vec3(0.3, 1.0, 0.42) + ii * vec3(0.32, 0.55, 1.0);
   // a mesma guarda dos borrões: NaN nunca, e o alvo HDR em meia precisão
@@ -474,41 +522,48 @@ const PERTO_KM: readonly [number, number] = [150_000, 300_000];
 const RAIO_DE_PERTO = 3;
 const RAIO_DE_PERTO_MAX_KM = 100_000;
 /**
- * A EXPOSIÇÃO DE PERTO — ARTÍSTICA na escala, física na forma. O ganho de
- * longe (`GANHO`) deixa a cabeça do cometa centenas de vezes acima do
- * branco: de longe ela é um ponto branco e está certo, mas o brilho de
- * superfície se conserva, e de perto a mesma cabeça vira uma massa branca
- * chapada do tamanho dela (a coma 1/r² brilha ∝ atividade/ρ: com o branco
- * a 1 milhão de km do núcleo, o gradiente fica todo fora da tela).
- *
- * A REGRA (13/11/2026): como um olho que se adapta ao que tem diante de si,
- * a luz do cometa é exposta pela LUZ DA CABEÇA que a câmera vê, e a cabeça
- * tem o raio que o "Aproximar" enquadra (`raioDaCabecaKm`: 10⁶ km em Halley
- * no periélio, ∝ atividade^⅓). Até Dc = `FRACAO_DA_CABECA` desse raio a
- * cabeça enche o campo, e o brilho dela na tela cai ∝ atividade/D (a coma
- * 1/ρ vista de perto):
- * a exposição é D/(10⁹ km · a), com a = atividade/atividade de Halley no
- * periélio (a régua de 12/11, que deixa o halo lateral a ~3 % do branco em
- * Halley). Fora, a cabeça encolhe na tela e o olho deixa de se adaptar a
- * ela: a sobre-exposição cresce com a área que ela perde, (D/Dc)², e a
- * exposição sobe ∝ D³, contínua, até 1 — Halley em 1,6·10⁷ km, Hale–Bopp
- * em 2·10⁸ km —, e de longe nada muda. Uma lei só,
- * do objeto (atividade NAQUELA data, a mesma grandeza que acende os
- * borrões) e da distância da câmera: não olha a tela, o foco nem o modo.
- * Os íons escurecem menos (a exposição deles para em 9·10⁵ km — o mesmo
- * valor de 12/11 em Halley e em Hale–Bopp — e só cai de novo dentro de
- * 3·10⁴ km, ∝ D^1,5): de dentro da coma a cauda azul ainda sai, presa ao
- * núcleo.
+ * A EXPOSIÇÃO DE PERTO — ARTÍSTICA. O ganho de longe (`GANHO`) deixa a
+ * cabeça do cometa centenas de vezes acima do branco: de longe ela é um
+ * ponto branco e está certo, mas o brilho de superfície se conserva, e
+ * de dentro a coma 1/r² brilha ∝ 1/D a D km do núcleo — a tela inteira
+ * estoura, e o estouro é que desenhava cada borrão como bola. Como um olho
+ * que se adapta, a luz do cometa é exposta pela distância: 1 a partir de
+ * 2,5 milhões de km (as vistas de longe não mudam), caindo como uma
+ * potência até 10⁵ km e, daí para dentro, ∝ D — a coma de perto fica com
+ * o mesmo desenho em toda a descida (o halo lateral a ~3 % do branco em
+ * Halley no periélio), corrigida pela atividade de cada cometa
+ * (`correcaoPelaAtividade`). Os íons escurecem menos (a exposição deles
+ * para em 3·10⁵ km e só cai de novo dentro de 3·10⁴ km, ∝ D^1,5): de dentro
+ * da coma a cauda azul ainda sai, presa ao núcleo.
  */
 const D_EXPO_KM = 1e9;
-/** Dc em raios da cabeça: o "Aproximar" fica em 3–4 raios, a ~3–5× a
- *  exposição de dentro — o miolo branco pequeno e a queda à vista */
-const FRACAO_DA_CABECA = 2;
-const ESCURO_DOS_IONS_KM = 9e5;
+/** os nós da curva (km, exposição), em log–log; abaixo do primeiro, ∝ D */
+const NOS_DA_EXPOSICAO: readonly (readonly [number, number])[] = [
+  [1e5, 1e5 / D_EXPO_KM],
+  [1e6, 1e-2],
+  [2.5e6, 1],
+];
+const ESCURO_DOS_IONS_KM = 3e5;
 const PERTO_DOS_IONS_KM = 3e4;
 
-/** a atividade de Halley no periélio de 1986 — a régua das cabeças */
+/**
+ * A RÉGUA DE CADA COMETA (12/11/2026): a curva acima foi acertada em
+ * Halley no periélio de 1986; Hale–Bopp, cem vezes mais ativo, estourava a
+ * tela inteira em creme. De perto a exposição se divide pela atividade do
+ * cometa NAQUELA data relativa à de Halley no periélio — a mesma grandeza
+ * que acende os borrões (`brilhoRelativo`: M1, produção e 1/r²) —, pesada
+ * pela mesma curva da distância (em log): a correção é 1 exata a partir
+ * de 2,5 milhões de km e inteira dentro de 10⁵ km. Lei fixa do objeto e
+ * da distância da câmera: não olha a tela, o foco nem o modo.
+ */
 export const ATIVIDADE_DE_HALLEY = brilhoRelativo(cometaPorId('halley') as Cometa, 0.5871);
+
+/** a correção da exposição de perto pela atividade (1 de longe) */
+export function correcaoPelaAtividade(dKm: number, atividade: number): number {
+  const peso = Math.min(Math.log(exposicaoDePerto(dKm)) / Math.log(exposicaoDePerto(NOS_DA_EXPOSICAO[0][0])), 1);
+  if (peso <= 0) return 1;
+  return (ATIVIDADE_DE_HALLEY / Math.max(atividade, 1e-12)) ** peso;
+}
 
 /** O RAIO DA CABEÇA: a de Halley no periélio de 1986 cabe em 10⁶ km; a dos
  *  outros cresce com a raiz cúbica da atividade naquela data (o volume da
@@ -517,24 +572,23 @@ export function raioDaCabecaKm(atividade: number): number {
   return 1e6 * Math.cbrt(Math.max(atividade, 1e-12) / ATIVIDADE_DE_HALLEY);
 }
 
-/** a exposição dos íons: a dos borrões parada em 9·10⁵ km e, dentro de
+/** a exposição dos íons: a dos borrões parada em 3·10⁵ km e, dentro de
  *  3·10⁴ km, ∝ D^1,5 — o brilho do feixe visto de dentro cresce ∝ D^−0,5
  *  (λ ∝ s^−½ sobre a largura ∝ s), e assim o desenho fica o mesmo */
-export function exposicaoDosIons(dKm: number, atividade: number): number {
-  return (
-    exposicaoDePerto(Math.max(dKm, ESCURO_DOS_IONS_KM), atividade) *
-    Math.min(1, Math.max(dKm, 0) / PERTO_DOS_IONS_KM) ** 1.5
-  );
+export function exposicaoDosIons(dKm: number): number {
+  return exposicaoDePerto(Math.max(dKm, ESCURO_DOS_IONS_KM)) * Math.min(1, Math.max(dKm, 0) / PERTO_DOS_IONS_KM) ** 1.5;
 }
 
-/** a exposição da luz do cometa de `atividade` (`brilhoRelativo`) a `dKm`
- *  do núcleo (1 de longe) */
-export function exposicaoDePerto(dKm: number, atividade: number): number {
-  const a = Math.max(atividade, 1e-12) / ATIVIDADE_DE_HALLEY;
-  const dt = FRACAO_DA_CABECA * raioDaCabecaKm(atividade);
-  const d = Math.max(dKm, 0);
-  const e = d <= dt ? d / (D_EXPO_KM * a) : (dt / (D_EXPO_KM * a)) * (d / dt) ** 3;
-  return Math.min(e, 1);
+/** a exposição da luz do cometa a `dKm` do núcleo (1 de longe) */
+export function exposicaoDePerto(dKm: number): number {
+  const d0 = NOS_DA_EXPOSICAO[0][0];
+  if (dKm <= d0) return Math.max(dKm, 0) / D_EXPO_KM;
+  for (let k = 1; k < NOS_DA_EXPOSICAO.length; k++) {
+    const [da, ea] = NOS_DA_EXPOSICAO[k - 1];
+    const [db, eb] = NOS_DA_EXPOSICAO[k];
+    if (dKm < db) return ea * Math.exp((Math.log(eb / ea) * Math.log(dKm / da)) / Math.log(db / da));
+  }
+  return 1;
 }
 
 /**
@@ -703,6 +757,8 @@ export class CaudasDosCometas {
         uRin: { value: 1 },
         uExpo: { value: 1 },
         uExpoIon: { value: 1 },
+        uColuna: { value: 0 },
+        uPiso: { value: 0 },
       },
       blending: THREE.CustomBlending,
       blendSrc: THREE.OneFactor,
@@ -756,6 +812,7 @@ export class CaudasDosCometas {
           uKi: { value: 0 },
           uAIonKm: { value: 1 },
           uS0Km: { value: 1 },
+          uColuna: { value: 0 },
         },
         side: THREE.BackSide,
         blending: THREE.CustomBlending,
@@ -857,17 +914,29 @@ export class CaudasDosCometas {
     u.uRin.value = Math.max(raioKm, 1) / AU_KM;
     const rr = Math.hypot(s[0], s[1], s[2]);
     const atividade = brilhoRelativo(v.cometa, rr);
-    u.uExpo.value = exposicaoDePerto(dKm, atividade);
-    u.uExpoIon.value = exposicaoDosIons(dKm, atividade);
+    const correcao = correcaoPelaAtividade(dKm, atividade);
+    u.uExpo.value = exposicaoDePerto(dKm) * correcao;
+    u.uExpoIon.value = exposicaoDosIons(dKm) * correcao;
+    const prod = producaoRelativa(rr, v.cometa.brilho.K1);
+    // o brilho de coluna esperado da poeira (o ombro): a integral da coma
+    // de perto sem o peso da troca, ∫ f ds ≈ ¼ (f médio 1/4π, π/ρ)
+    const v0 = KM_S_EM_UA_DIA;
+    const coluna =
+      ((u.uDose.value as number) * 1e-6 * KAPPA * (u.uExpo.value as number) * n * 5) / 8 *
+      ((3 * prod * Math.sqrt(rr)) / (v0 * rr * rr)) / 4;
+    // o ombro e o piso saem de longe da cabeça, ∝ (D/D₀)^−3
+    const longe = Math.max(1, dKm / (OMBRO_KC * raioDaCabecaKm(atividade))) ** 3;
+    u.uColuna.value = coluna / longe;
+    u.uPiso.value = (PISO_DA_CABECA * cam.length()) / longe;
     v.coma.visible = n > 0 && perto > 0;
     if (!v.coma.visible) return;
     const cu = (v.coma.material as THREE.ShaderMaterial).uniforms;
+    cu.uColuna.value = u.uColuna.value;
     v.coma.scale.setScalar(Math.max(raioKm, 1) / AU_KM);
     (cu.uCamKm.value as THREE.Vector3).copy(cam).multiplyScalar(AU_KM);
     cu.uRinKm.value = Math.max(raioKm, 1);
     cu.uPassos.value = PASSOS_DA_COMA[tier];
     (cu.uRhat.value as THREE.Vector3).set(s[0] / rr, s[1] / rr, s[2] / rr);
-    const prod = producaoRelativa(rr, v.cometa.brilho.K1);
     // o feixe de íons: a mesma lei do sorteio (ver `COMA_FRAG`), 2/8 das
     // partículas, a = 60·μ/r² (UA/dia²)
     const aUa = (ACELERACAO_DOS_IONS * MU) / (rr * rr);
@@ -877,7 +946,6 @@ export class CaudasDosCometas {
     cu.uKi.value = ((doseIon * n * 2) / 8) * ((2 * prod) / (rr * rr * aUa)) * AU_KM;
     // uDose já traz MAXIMO/n: a dose vezes as partículas do tipo não depende do tier
     const dose = (u.uDose.value as number) * 1e-6 * KAPPA * perto * (u.uExpo.value as number);
-    const v0 = KM_S_EM_UA_DIA;
     cu.uKd.value = ((dose * n * 5) / 8) * ((3 * prod * Math.sqrt(rr)) / (v0 * rr * rr));
     const vg = (0.85 * KM_S_EM_UA_DIA) / Math.sqrt(rr);
     cu.uKg.value = (dose * n) / 8 * ((0.3 * prod) / (vg * rr * rr));
