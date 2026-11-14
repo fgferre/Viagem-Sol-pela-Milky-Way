@@ -35,7 +35,9 @@
 //
 // O QUE NÃO SE SABE: a aparência. Nenhum destes planetas foi resolvido
 // em disco; a única cor medida é a de HD 189733 b (albedo azul, Evans
-// et al. 2013). Os outros são esferas neutras do tamanho medido.
+// et al. 2013). A CLASSE de cada um sai dos números (`climaDoExoplaneta`)
+// e a superfície que a cena desenha é IMAGINADA a partir dela — a ficha
+// diz qual é qual.
 // ============================================================
 import type { NamedStar } from '../three/config';
 import type { Numero } from './atlas/estrelasVisitaveis';

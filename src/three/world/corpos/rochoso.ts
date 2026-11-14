@@ -73,6 +73,7 @@ import {
   GLSL_ALTURA_DO_ALBEDO,
   GLSL_AMOSTRA_EQUIRETANGULAR,
   GLSL_BUMP_DO_ALBEDO,
+  GLSL_FACE_DO_EXOPLANETA,
   GLSL_GRAO_DO_CLOSE,
   GLSL_NORMAL_DO_MAPA,
   GLSL_RUIDO_DE_VALOR,
@@ -81,6 +82,7 @@ import {
   escalaDoBumpDoAlbedo,
 } from './corpos';
 import { LS_NORMALIZACAO_GLSL } from './lua';
+import { FRONTEIRAS_DA_CLASSE } from '../../../lib/exoplanetas';
 import { LIMIAR_DO_GATE_PX, cessaoAlvo, gateBinario, saltoGuardado } from './terra';
 import {
   CANAL_ALTURA,
@@ -476,7 +478,7 @@ export function posicaoDoRochosoUA(
 // GLSL — os dois BRDFs, shaders próprios no padrão da casa.
 // ------------------------------------------------------------
 
-const ROCHOSO_VERT = /* glsl */ `
+export const ROCHOSO_VERT = /* glsl */ `
 varying vec3 vLocal; // posição na ESFERA UNITÁRIA (a figura mora na matriz)
 varying vec2 vUv;
 void main() {
@@ -650,7 +652,100 @@ void main() {
  * — e, no item 93, a MESMA logística e a MESMA lanterna do Lambert
  * texturado: o que separa este shader do outro é de onde vem o albedo,
  * nunca o modelo de luz.
+ *
+ * A FACE DOS EXOPLANETAS ROCHOSOS (13/11/2026) mora neste mesmo ramo, que
+ * estava sem consumidor desde o item 151: com `uFace.x` = 1 o albedo, o
+ * relevo e o brilho próprio saem de {@link GLSL_FACE_ROCHOSA}; com 0 (o
+ * padrão de `uniformsDaFace`) é o −3 de sempre, letra por letra. A luz é
+ * a mesma nos dois — só a cor da estrela (`uCorDaLuz`) entra a mais.
  */
+const GLSL_FACE_ROCHOSA = /* glsl */ `
+// as crateras: uma por célula sorteada, perfil de bacia com borda, em
+// unidades da célula; as 8 células vizinhas bastam porque o centro fica no
+// miolo da célula e o raio não passa de meia célula. A profundidade varia
+// (as velhas estão gastas) e o perfil é o de uma cratera simples: ~1/5 do
+// diâmetro de fundo, borda de ~1/25
+float crateras(vec3 p, float densidade) {
+  vec3 i = floor(p);
+  vec3 f = fract(p);
+  vec3 lado = step(0.5, f) * 2.0 - 1.0;
+  float h = 0.0;
+  for (int k = 0; k < 8; k++) {
+    float fk = float(k);
+    vec3 c = vec3(mod(fk, 2.0), mod(floor(fk * 0.5), 2.0), floor(fk * 0.25)) * lado;
+    vec3 cel = i + c;
+    vec3 s = hash33(cel);
+    if (s.x > densidade) continue;
+    vec3 centro = c + 0.3 + 0.4 * hash33(cel + 7.31);
+    float r = 0.12 + 0.2 * s.y;
+    float d = length(f - centro) / r;
+    float x = (d - 1.0) / 0.3;
+    float borda = 0.08 * exp(-x * x);
+    float bacia = d < 1.0 ? 0.4 * max(d * d - 1.0, -0.8) : 0.0;
+    h += (bacia + borda) * r * (0.3 + 0.7 * s.z);
+  }
+  return h;
+}
+// as células de convecção da lava: a distância à borda mais perto
+float bordaDaCelula(vec3 p) {
+  vec3 i = floor(p);
+  vec3 f = fract(p);
+  float d1 = 9.0;
+  float d2 = 9.0;
+  for (int k = 0; k < 27; k++) {
+    float fk = float(k);
+    vec3 c = vec3(mod(fk, 3.0), mod(floor(fk / 3.0), 3.0), floor(fk / 9.0)) - 1.0;
+    float d = length(c + hash33(i + c) - f);
+    if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) { d2 = d; }
+  }
+  return d2 - d1;
+}
+// albedo, altura (fração do raio) e brilho próprio de um rochoso
+void faceRochosa(vec3 p, vec3 dirSol, out vec3 albedo, out float altura, out vec3 brilho) {
+  vec3 q = p + uSemente;
+  float terras = fbm(q * 1.7, 5);
+  float planaltos = smoothstep(0.42, 0.62, terras);
+  // quatro tamanhos de cratera, os grandes raros (altura em raios)
+  float c = crateras(q * 3.0, 0.3) / 3.0 + crateras(q * 7.0, 0.45) / 7.0
+    + crateras(q * 17.0, 0.6) / 17.0 + 0.5 * crateras(q * 41.0, 0.7) / 41.0;
+  float grao = fbm(q * 24.0, 3);
+  float T = temperaturaLocal(p, dirSol);
+  vec3 rocha = uAlbedoBase * mix(0.65, 1.45, planaltos) * (0.8 + 0.4 * grao);
+  rocha *= 1.0 + clamp(c * 40.0, -0.3, 0.3);
+  albedo = rocha;
+  altura = 0.01 * terras + c;
+  brilho = vec3(0.0);
+  // o gelo: onde a superfície sem atmosfera fica abaixo do degelo, e só
+  // onde a água não se perdeu (uFace.x = 1: além da borda de dentro). Os
+  // dois ramos abaixo são por planeta (uniforme): quem não tem gelo nem
+  // lava não paga por eles
+  if (uFace.x < 1.5) {
+    float frio = smoothstep(300.0, 245.0, T + 90.0 * (fbm(q * 3.1, 4) - 0.5) + 30.0 * (grao - 0.5));
+    float linhas = pow(1.0 - abs(2.0 * fbm(q * 4.3, 4) - 1.0), 18.0) * smoothstep(0.35, 0.6, fbm(q * 2.2 + 3.3, 3));
+    vec3 gelo = mix(vec3(0.62, 0.66, 0.7), vec3(0.42, 0.33, 0.27), linhas * 0.8) * (0.9 + 0.2 * grao);
+    albedo = mix(rocha, gelo, frio);
+    altura = 0.01 * terras + c * mix(1.0, 0.3, frio) - 0.0015 * linhas * frio;
+  }
+  // a lava: onde passa da fusão do basalto. A crosta resfriada boia em
+  // placas rachadas pelas células de convecção — muitas perto da borda da
+  // fusão, poucas onde é mais quente — e as rachaduras mostram o líquido
+  if (uFace.y > ${FRONTEIRAS_DA_CLASSE.lavaSubestelarK.toFixed(1)}) {
+    vec3 qw = q * 7.0 + 1.5 * vec3(fbm(q * 3.0, 3), fbm(q * 3.0 + 5.2, 3), fbm(q * 3.0 + 9.7, 3));
+    float Tv = T * (0.94 + 0.12 * fbm(q * 2.3, 4));
+    float fundido = smoothstep(1350.0, 1450.0, Tv);
+    // perto do ponto embaixo da estrela a crosta não se forma: um mar aberto
+    float largura = mix(0.015, 0.06, smoothstep(1500.0, 2400.0, Tv));
+    float crosta = smoothstep(largura, largura + 0.04, bordaDaCelula(qw)) * (1.0 - smoothstep(2350.0, 2650.0, Tv));
+    albedo = mix(albedo, vec3(0.02, 0.018, 0.017), fundido);
+    // a rocha some sob a lava devagar, por uns 20° de arco: um degrau aqui
+    // viraria uma escarpa de frente para a estrela, um fio de luz
+    altura *= 1.0 - smoothstep(0.35, 0.75, T / uFace.y);
+    float Tsup = Tv * mix(1.0, 0.75, crosta) * (0.94 + 0.12 * grao);
+    brilho = brilhoTermico(Tsup) * fundido;
+  }
+}
+`;
+
 export const ROCHOSO_PROC_FRAG = /* glsl */ `
 uniform vec3 uAlbedoBase;
 uniform vec3 uDirSolLocal;
@@ -665,18 +760,45 @@ ${GLSL_NORMAL_ELIPSOIDE}
 ${GLSL_SOMBRA_ECLIPSE}
 ${GLSL_LUZ_DA_VISITA}
 ${GLSL_RUIDO_DE_VALOR}
+${GLSL_BUMP_DO_ALBEDO}
+${GLSL_FACE_DO_EXOPLANETA}
+${GLSL_FACE_ROCHOSA}
 void main() {
   vec3 n = normalDoCorpo(vLocal, uNormalEsc);
   vec3 pElip = vLocal * uEscalaLocal;
+  vec3 albedo;
+  vec3 brilho = vec3(0.0);
+  if (uFace.x > 0.5) {
+    float altura;
+    faceRochosa(normSeguro(vLocal), uDirSolLocal, albedo, altura, brilho);
+    n = normalComBumpDoAlbedo(n, pElip, altura);
+  } else {
+    float g = 0.5 * ruido(vLocal * 3.0) + 0.3 * ruido(vLocal * 7.0) + 0.2 * ruido(vLocal * 15.0);
+    albedo = uAlbedoBase * (0.72 + 0.56 * g);
+  }
   float ndotlGeo = dot(n, uDirSolLocal);
-  float g = 0.5 * ruido(vLocal * 3.0) + 0.3 * ruido(vLocal * 7.0) + 0.2 * ruido(vLocal * 15.0);
-  vec3 albedo = uAlbedoBase * (0.72 + 0.56 * g);
   vec3 sombras = fatorDeEclipse(pElip, n, ndotlGeo);
   vec3 luzSol = vec3(terminadorSuave(ndotlGeo)) * uLuzGanho * sombras;
   vec3 fill = lanternaDeLeitura(n, normSeguro(uCamLocal - pElip), sombras);
-  gl_FragColor = vec4(albedo * luzDoGlobo(luzSol, fill), 1.0);
+  vec3 luz = uLuzGanho * uCorDaLuz;
+  gl_FragColor = vec4(albedo * luzDoGlobo(luzSol, fill) * uCorDaLuz + brilho * luz, 1.0);
 }
 `;
+
+/**
+ * OS UNIFORMES DA FACE — o padrão é "sem face" (o −3 de sempre, luz
+ * branca), e só o exoplaneta escreve outra coisa (`world/exoplanetas.ts`).
+ * O `uBumpAlbedo` é o do chunk do relevo fingido, aqui a escala do relevo
+ * imaginado.
+ */
+export function uniformsDaFace(): Record<string, THREE.IUniform> {
+  return {
+    uFace: { value: new THREE.Vector4(0, 0, 0, 0) },
+    uSemente: { value: new THREE.Vector3() },
+    uCorDaLuz: { value: new THREE.Vector3(1, 1, 1) },
+    uEstrela: { value: new THREE.Vector2(5772, 1) },
+  };
+}
 
 /**
  * PROCEDURAL + LS (F7) — o mesmo −3, com o C = 4/3 importado da
@@ -1219,6 +1341,7 @@ export class RochosoResolvido {
         uEscalaLocal: { value: new THREE.Vector3(1, this.razaoC, this.razaoB) },
         ...uniformsDaLuzDaVisita(),
         ...uniformsDeEclipseNeutros(),
+        ...(procedural ? uniformsDaFace() : {}),
       },
       // corpo resolvido OPACO: escreve e testa o depth do palco (F0)
       depthWrite: true,

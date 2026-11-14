@@ -18,11 +18,16 @@
 // de instrumento dos rótulos; as órbitas e a zona habitável são
 // instrumento de leitura, como as órbitas do Sistema Solar — nunca luz.
 //
-// A APARÊNCIA: ninguém sabe. A esfera é cinza neutro (albedo 0,3,
-// artístico) acesa pela cor da PRÓPRIA estrela, com a fase que a
-// geometria dá; só HD 189733 b tem a cor medida (`albedo`). O brilho é o
-// da visita (artístico, como os planetas da casa no Atlas): o que é
-// físico é a cor relativa e o lado da noite.
+// A APARÊNCIA: ninguém a viu. A CLASSE sai dos números
+// (`climaDoExoplaneta`) e a FACE é imaginada a partir dela, desenhada
+// pelos dois ramos procedurais da casa — o do `rochoso.ts` para os
+// rochosos e o novo do `gigante.ts` para gigantes e sub-Netunos —, com a
+// semente no id. Físico: a cor da PRÓPRIA estrela, o lado da noite, o
+// terminador parado nos travados por maré, onde a superfície passaria do
+// degelo ou da fusão da rocha e a razão entre o brilho próprio e o
+// refletido. Medida: só a cor de HD 189733 b (`albedo`). O brilho é o da
+// visita (artístico, como os planetas da casa no Atlas: cada mundo é
+// exposto para si).
 // ============================================================
 import * as THREE from 'three';
 import { Line2 } from 'three/addons/lines/Line2.js';
@@ -31,19 +36,27 @@ import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import {
   SISTEMAS_PLANETARIOS,
   baseDaOrbita,
+  FRONTEIRAS_DA_CLASSE,
+  climaDoExoplaneta,
   exoplanetaPorId,
   geometriaDoPlaneta,
   pontoDaOrbita,
   posicaoDoExoplaneta,
+  sementeDoExoplaneta,
   zonaHabitavel,
   type BaseDaOrbita,
+  type ClimaDoExoplaneta,
   type Exoplaneta,
   type SistemaPlanetario,
 } from '../../lib/exoplanetas';
 import { estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
 import { AU_PARA_PC } from '../../lib/atlas/frameGalactico';
 import { AU_KM } from '../../lib/atlas/elementosOrbitais';
+import { uniformsDaLuzDaVisita } from '../../lib/atlas/luzDaVisita';
 import { blackbodyLinear } from '../luzDaCasa';
+import { ROCHOSO_PROC_FRAG, ROCHOSO_VERT, uniformsDaFace } from './corpos/rochoso';
+import { GIGANTE_PROC_FRAG, GIGANTE_VERT } from './corpos/gigante';
+import { uniformsDeEclipseNeutros } from './corpos/eclipseNoMaterial';
 import { PRIORIDADE_DO_ROTULO, projectForced } from './labels';
 import type { OclusorDeRotulo, StarLabel } from './labels';
 import { LARGURA_DA_FITA_PX } from './orbitas';
@@ -71,12 +84,17 @@ const ALFA_DA_ZONA = 0.015;
  */
 const LINHAS_SOMEM_RAIOS: readonly [number, number] = [30, 150];
 
-/** o cinza neutro de quem não tem cor medida (o albedo de Bond da Terra) */
-export const ALBEDO_NEUTRO = 0.3;
 /** a exposição da visita — artística: albedo 0,3 sai a ~0,27, abaixo
  *  do joelho da curva de tom (a 2,4 o canal vermelho de uma anã M
  *  saturava e o globo virava um disco chapado, sem a fase) */
 const EXPOSICAO_DA_VISITA = 0.9;
+/** cada mundo exposto para si: o albedo médio sai como se fosse 0,3,
+ *  dentro de meia a uma vez e meia — o gigante quente escuro continua
+ *  escuro, e o mundo de gelo não estoura */
+const ALBEDO_DA_EXPOSICAO = 0.3;
+/** onde o brilho próprio vence a luz refletida, a exposição é a dele, e
+ *  o pico sai a duas vezes o branco: a lava queima, como numa foto */
+const PICO_DO_BRILHO_PROPRIO = 2;
 const RAIO_TERRA_KM = 6371;
 
 /** a câmera a menos disto (pc) de uma anfitriã liga o sistema dela */
@@ -191,6 +209,11 @@ export function poseDoExoplaneta(id: string, jd: number, posDaEstrela: THREE.Vec
 }
 
 const _pos = new THREE.Vector3();
+const _x = new THREE.Vector3();
+const _y = new THREE.Vector3();
+const _z = new THREE.Vector3();
+const _giro = new THREE.Matrix4();
+const _inv = new THREE.Quaternion();
 
 /**
  * O NOME CURTO DENTRO DO PRÓPRIO SISTEMA (13/11): a letra ("TRAPPIST-1 e"
@@ -233,29 +256,121 @@ export function projetarExoplanetas(
   return out;
 }
 
-const PLANETA_VERT = /* glsl */ `
-varying vec3 vN;
-void main() {
-  vN = normal;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}
-`;
-const PLANETA_FRAG = /* glsl */ `
-precision highp float;
-uniform vec3 uLuz;
-uniform vec3 uCor;
-varying vec3 vN;
-void main() {
-  float l = max(dot(normalize(vN), uLuz), 0.0);
-  gl_FragColor = vec4(uCor * l, 1.0);
-}
-`;
-
 /** a cor da luz da estrela (sRGB linear, máximo 1) */
 function corDaEstrela(teffK: number): [number, number, number] {
   const c = blackbodyLinear(teffK).map((x) => Math.max(0, x));
   const m = Math.max(...c) || 1;
   return [c[0] / m, c[1] / m, c[2] / m];
+}
+
+type Rgb = readonly [number, number, number];
+
+/**
+ * AS CORES DAS NUVENS pela classe de Sudarsky et al. 2000 (clara, escura;
+ * albedo linear): I amônia (bege de Júpiter), II água (branco), III sem
+ * nuvens (o azul do espalhamento), IV metais alcalinos (quase preto), V
+ * silicatos (cinza-areia). O tom de cada classe é imaginado a partir do
+ * albedo que o modelo prevê; a cor só anda perto das fronteiras (±15 % da
+ * temperatura), para o meio de cada classe ser a classe.
+ */
+const NUVENS: readonly { clara: Rgb; escura: Rgb }[] = [
+  { clara: [0.8, 0.71, 0.58], escura: [0.55, 0.38, 0.25] },
+  { clara: [0.86, 0.86, 0.84], escura: [0.68, 0.68, 0.7] },
+  { clara: [0.2, 0.3, 0.52], escura: [0.1, 0.15, 0.31] },
+  { clara: [0.12, 0.095, 0.09], escura: [0.05, 0.038, 0.04] },
+  { clara: [0.5, 0.42, 0.36], escura: [0.3, 0.22, 0.18] },
+];
+
+function nuvensEm(tK: number): { clara: Rgb; escura: Rgb } {
+  const lt = Math.log(tK);
+  // a posição contínua entre as classes: inteiro no meio, rampa de ±0,15
+  // em ln T em volta de cada fronteira
+  let pos = 0;
+  FRONTEIRAS_DA_CLASSE.sudarskyK.forEach((t) => {
+    pos += Math.min(1, Math.max(0, (lt - Math.log(t) + 0.15) / 0.3));
+  });
+  const k = Math.min(NUVENS.length - 2, Math.floor(pos));
+  const f = pos - k;
+  const [a, b] = [NUVENS[k]!, NUVENS[k + 1]!];
+  const mix = (x: Rgb, y: Rgb): Rgb => [x[0] + (y[0] - x[0]) * f, x[1] + (y[1] - x[1]) * f, x[2] + (y[2] - x[2]) * f];
+  return { clara: mix(a.clara, b.clara), escura: mix(a.escura, b.escura) };
+}
+
+const luminancia = (c: Rgb) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+
+/** o brilho próprio (o `brilhoTermico` do GLSL, na CPU) — para a exposição */
+function brilhoTermico(tK: number, teffK: number, diluicao: number): number {
+  if (tK < 500) return 0;
+  return Math.max(
+    ...[23587, 26160, 30942].map((c2) => (Math.expm1(c2 / teffK) * Math.exp(-c2 / tK)) / -Math.expm1(-c2 / tK) / diluicao)
+  );
+}
+
+/**
+ * A FACE DE UM PLANETA: qual ramo o desenha e os uniformes dele. Tudo
+ * aqui é imaginado a partir da classe, exceto as temperaturas (derivadas)
+ * e a cor de HD 189733 b (medida).
+ */
+function faceDoPlaneta(pl: Exoplaneta, c: ClimaDoExoplaneta, teffK: number) {
+  const [s0, s1, s2] = sementeDoExoplaneta(pl.id);
+  const rochoso = c.classe === 'lava' || c.classe.startsWith('rochoso') || c.classe === 'gelado';
+  const gigante = c.classe === 'giganteQuente' || c.classe === 'giganteFrio';
+  // o piso da noite: a temperatura medida no espectro, quando ela passa da
+  // irradiada (o gigante jovem que brilha sozinho); senão uma fração da
+  // de equilíbrio — 0,4 sem atmosfera (rochoso), 0,6 com (gás) — suposta
+  const proprio = c.atmosferaK > 1.2 * c.teqK;
+  const piso = proprio ? c.atmosferaK : c.teqK * (rochoso ? 0.4 : 0.6);
+  const tMax = Math.max(c.travado ? c.subestelarK : c.subestelarK * 0.75, piso);
+  let albedoMedio: number;
+  const u: Record<string, THREE.IUniform> = {
+    uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
+    uCamLocal: { value: new THREE.Vector3(0, 0, 4) },
+    uLuzGanho: { value: 1 },
+    uNormalEsc: { value: new THREE.Vector3(1, 1, 1) },
+    uEscalaLocal: { value: new THREE.Vector3(1, 1, 1) },
+    ...uniformsDaLuzDaVisita(),
+    ...uniformsDeEclipseNeutros(),
+    ...uniformsDaFace(),
+  };
+  if (rochoso) {
+    const quente = c.classe === 'rochosoQuente' || c.classe === 'lava';
+    const base: Rgb = c.classe === 'lava' ? [0.07, 0.065, 0.06] : quente ? [0.11, 0.1, 0.095] : [0.16, 0.135, 0.11];
+    // o matiz da rocha anda um pouco com a semente: do ferroso ao cinza
+    const m = (s0 % 10) / 10 - 0.5;
+    u.uAlbedoBase = { value: new THREE.Vector3(base[0] * (1 + 0.25 * m), base[1], base[2] * (1 - 0.25 * m)) };
+    u.uBumpAlbedo = { value: 1 };
+    albedoMedio = c.classe === 'gelado' ? 0.7 : luminancia(base);
+    (u.uFace.value as THREE.Vector4).set(quente ? 2 : 1, c.subestelarK, piso, c.travado ? 1 : 0);
+  } else {
+    const nuvens = pl.albedo
+      ? {
+          clara: pl.albedo.rgb.map((x) => x * 1.3) as unknown as Rgb,
+          escura: pl.albedo.rgb.map((x) => x * 0.7) as unknown as Rgb,
+        }
+      : nuvensEm(c.atmosferaK);
+    u.uCorClara = { value: new THREE.Vector3(...nuvens.clara) };
+    u.uCorEscura = { value: new THREE.Vector3(...nuvens.escura) };
+    // os travados giram devagar: faixas largas e poucas; o sub-Netuno é
+    // nevoento: pouco contraste
+    const faixas = gigante ? (c.travado ? 7 : 16) : 6;
+    const contraste = gigante ? (c.travado ? 0.6 : 0.85) : 0.45;
+    const turbulencia = gigante ? 1 : 0.5;
+    const tempestades = gigante ? 1 + Math.floor((s1 % 10) / 3.4) : s1 % 10 > 5 ? 1 : 0;
+    u.uFaixas = { value: new THREE.Vector4(faixas, contraste, turbulencia, tempestades) };
+    albedoMedio = luminancia(nuvens.clara) * 0.5 + luminancia(nuvens.escura) * 0.5;
+    (u.uFace.value as THREE.Vector4).set(3, c.subestelarK, piso, c.travado ? 1 : 0);
+  }
+  (u.uSemente.value as THREE.Vector3).set(s0, s1, s2);
+  (u.uEstrela.value as THREE.Vector2).set(teffK, c.diluicao);
+  let ganho = EXPOSICAO_DA_VISITA * Math.min(1.5, Math.max(0.5, ALBEDO_DA_EXPOSICAO / albedoMedio));
+  const pico = brilhoTermico(tMax, teffK, c.diluicao);
+  if (pico > albedoMedio) ganho = PICO_DO_BRILHO_PROPRIO / pico;
+  u.uLuzGanho.value = ganho;
+  return {
+    vert: rochoso ? ROCHOSO_VERT : GIGANTE_VERT,
+    frag: rochoso ? ROCHOSO_PROC_FRAG : GIGANTE_PROC_FRAG,
+    uniforms: u,
+  };
 }
 
 interface Montagem {
@@ -264,7 +379,7 @@ interface Montagem {
   orbitas: THREE.Group;
   zona: THREE.Mesh | null;
   bases: BaseDaOrbita[];
-  corpos: { planeta: Exoplaneta; malha: THREE.Mesh; raioPc: number }[];
+  corpos: { planeta: Exoplaneta; malha: THREE.Mesh; raioPc: number; travado: boolean }[];
   descartaveis: { dispose(): void }[];
 }
 
@@ -356,26 +471,30 @@ export class SistemasPlanetarios {
       zona.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), polo);
       orbitas.add(zona);
     }
-    const [r, g, b] = estrela ? corDaEstrela(estrela.teffK.v) : [1, 1, 1];
-    const esfera = new THREE.SphereGeometry(1, 64, 32);
+    const teff = estrela?.teffK.v ?? 5772;
+    const [r, g, b] = corDaEstrela(teff);
+    // a malha da casca dos rochosos da casa (128 × 64)
+    const esfera = new THREE.SphereGeometry(1, 128, 64);
     descartaveis.push(esfera);
     const corpos = sistema.planetas.map((pl) => {
-      const alb = pl.albedo?.rgb ?? [ALBEDO_NEUTRO, ALBEDO_NEUTRO, ALBEDO_NEUTRO];
+      const clima = climaDoExoplaneta(pl, {
+        teffK: teff,
+        raioRsol: estrela?.raioRsol.v ?? 1,
+        massaMsol: estrela?.massaMsol.v ?? 1,
+        luminosidadeLsol: estrela?.luminosidadeLsol.v ?? 1,
+      });
+      const face = faceDoPlaneta(pl, clima, teff);
+      (face.uniforms.uCorDaLuz.value as THREE.Vector3).set(r, g, b);
       const mat = new THREE.ShaderMaterial({
-        vertexShader: PLANETA_VERT,
-        fragmentShader: PLANETA_FRAG,
-        uniforms: {
-          uLuz: { value: new THREE.Vector3(1, 0, 0) },
-          uCor: {
-            value: new THREE.Vector3(r * alb[0], g * alb[1], b * alb[2]).multiplyScalar(EXPOSICAO_DA_VISITA),
-          },
-        },
+        vertexShader: face.vert,
+        fragmentShader: face.frag,
+        uniforms: face.uniforms,
       });
       descartaveis.push(mat);
       const malha = new THREE.Mesh(esfera, mat);
       malha.scale.setScalar(raioDoPlanetaUa(pl));
       grupo.add(malha);
-      return { planeta: pl, malha, raioPc: raioDoPlanetaUa(pl) * AU_PARA_PC };
+      return { planeta: pl, malha, raioPc: raioDoPlanetaUa(pl) * AU_PARA_PC, travado: clima.travado };
     });
     const m = { sistema, grupo, orbitas, zona, bases, corpos, descartaveis };
     this.group.add(grupo);
@@ -426,8 +545,19 @@ export class SistemasPlanetarios {
       const r = posicaoDoExoplaneta(c.planeta, m.bases[k], q.jd);
       c.malha.position.set(r[0], r[1], r[2]);
       const n = Math.hypot(r[0], r[1], r[2]) || 1;
-      (c.malha.material as THREE.ShaderMaterial).uniforms.uLuz.value.set(-r[0] / n, -r[1] / n, -r[2] / n);
+      // O GIRO: o polo do planeta é o da órbita; o travado olha a estrela
+      // com o mesmo lado (+x local), o outro fica parado (giro desconhecido)
+      const base = m.bases[k]!;
+      _y.set(base.polo[0], base.polo[1], base.polo[2]);
+      if (c.travado) _x.set(-r[0] / n, -r[1] / n, -r[2] / n).addScaledVector(_y, -_x.dot(_y)).normalize();
+      else _x.set(base.u[0], base.u[1], base.u[2]);
+      _z.crossVectors(_x, _y);
+      c.malha.quaternion.setFromRotationMatrix(_giro.makeBasis(_x, _y, _z));
+      _inv.copy(c.malha.quaternion).invert();
+      const u = (c.malha.material as THREE.ShaderMaterial).uniforms;
+      (u.uDirSolLocal.value as THREE.Vector3).set(-r[0] / n, -r[1] / n, -r[2] / n).applyQuaternion(_inv);
       _pos.set(r[0], r[1], r[2]).multiplyScalar(AU_PARA_PC).add(escolhido.pos);
+      (u.uCamLocal.value as THREE.Vector3).copy(q.camPos).sub(_pos).divideScalar(c.raioPc).applyQuaternion(_inv);
       q.palco.registrar(`exoplaneta:${c.planeta.id}`, c.raioPc, _pos);
       pertoEmRaios = Math.min(pertoEmRaios, q.camPos.distanceTo(_pos) / c.raioPc);
     });
