@@ -28,7 +28,13 @@
           "trechos": [
             {
               "ate": "fracaoDaRetaNasPleiades",
-              "movimento": {"tipo": "reta", "de": "entradaNasPleiades", "para": "fimDaRetaNasPleiades"}
+              "movimento": {
+                "tipo": "reta", "de": "entradaNasPleiades", "para": "fimDaRetaNasPleiades",
+                "progresso": {"tipo": "soma", "curvas": [
+                  {"tipo": "rampa", "de": 0, "para": "avancoNaRetaNasPleiades"},
+                  {"tipo": "rampa", "de": 0, "para": "freioNaRetaNasPleiades", "ritmo": "smooth"}
+                ]}
+              }
             },
             {
               "ate": 1,
@@ -46,7 +52,7 @@
           "tipo": "passagem",
           "de": "adianteNaEntrada",
           "assunto": "adianteNaEntrada",
-          "rumo": "hyades",
+          "rumo": "mioloDasHiades",
           "entrada": 0.01,
           "saida": "fracaoDaRetaNasPleiades"
         },
@@ -72,13 +78,13 @@
         "duracao": 9,
         "movimento": {
           "tipo": "aproximacao",
-          "centro": "hyades",
+          "centro": "mioloDasHiades",
           "de": "saidaDasPleiades",
           "para": "chegadaNasHiades",
           "ritmoDaDirecao": "linear"
         },
-        "mira": {"tipo": "fixo", "ponto": "hyades"},
-        "lente": [58, 50],
+        "mira": {"tipo": "fixo", "ponto": "mioloDasHiades"},
+        "lente": [58, 40],
         "ritmo": "glide"
       },
       "assuntos": ["Híades"],
@@ -91,13 +97,14 @@
         "duracao": 8,
         "movimento": {
           "tipo": "arco",
-          "centro": "hyades",
+          "centro": "mioloDasHiades",
           "direcaoDe": "chegadaNasHiadesDirecao",
           "direcaoPara": "atrasDasHiades",
-          "raio": ["raioDoArcoDasHiadesDe", "raioDoArcoDasHiadesPara"]
+          "raio": ["raioDoArcoDasHiadesDe", "raioDoArcoDasHiadesPara"],
+          "progresso": {"tipo": "rampa", "de": 0, "para": 1, "ritmo": "launch"}
         },
-        "mira": {"tipo": "pan", "de": "hyades", "para": "Aldebaran", "ritmo": "launch"},
-        "lente": [50, 45],
+        "mira": {"tipo": "pan", "de": "mioloDasHiades", "para": "Aldebaran", "ritmo": "launch"},
+        "lente": [40, 38],
         "ritmo": "smooth"
       },
       "fundoSilencioso": true,
@@ -119,7 +126,7 @@
         "duracao": 6,
         "movimento": {"tipo": "fixo", "ponto": "miranteDasHiades"},
         "mira": {"tipo": "fixo", "ponto": "Aldebaran"},
-        "lente": [45, 36],
+        "lente": [38, 36],
         "ritmoDaLente": "glide"
       },
       "assuntos": ["Aldebaran"],

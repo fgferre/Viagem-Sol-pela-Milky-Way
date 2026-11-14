@@ -17,6 +17,7 @@ const { JD_DO_FILME_ESTELAR_TDB, montarFilmeEstelar } = await import('../montar'
 const { Journey } = await import('../../../journey');
 const { ESTRELAS_DO_FILME } = await import('../estrelas');
 const { PONTOS_DAS_JUNTAS } = await import('./juntas');
+const { PONTOS_CRESCER } = await import('./crescer');
 
 const filme = montarFilmeEstelar();
 const journey = new Journey(filme.shots, filme.starts);
@@ -92,10 +93,10 @@ describe('as travessias olham para onde vão', () => {
     expect(maiorDesvio(nome)).toBeLessThan(limite);
   });
 
-  it('a chegada às Híades mira o centro delas o plano inteiro', () => {
+  it('a chegada às Híades mira o miolo delas o plano inteiro', () => {
     for (const t of instantes('rumoAsHiades')) {
       const a = journey.at(t);
-      expect(graus(frente(t).angleTo(HIADES.clone().sub(a.pos)))).toBeLessThan(1e-4);
+      expect(graus(frente(t).angleTo(PONTOS_CRESCER.mioloDasHiades.clone().sub(a.pos)))).toBeLessThan(1e-4);
     }
   });
 });
@@ -106,10 +107,46 @@ describe('por dentro das Plêiades', () => {
   const bruto = readFileSync(new URL('stars.bin', DADOS));
   const campo = decodeStars(bruto.buffer.slice(bruto.byteOffset, bruto.byteOffset + bruto.byteLength), meta);
   const perto: THREE.Vector3[] = [];
+  const brilhantes: THREE.Vector3[] = [];
   for (let k = 0; k < campo.position.length / 3; k++) {
     const p = new THREE.Vector3(...campo.position.subarray(3 * k, 3 * k + 3));
     if (p.distanceTo(PLEIADES) < 8) perto.push(p);
+    if (p.distanceTo(PLEIADES) < 4 && campo.logLum[k] > 1.5) brilhantes.push(p);
   }
+
+  it('as brilhantes passam pelo quadro, a menos de 2,5 pc, pelo menos 7 dos 12 s (nota do diretor)', () => {
+    let segundos = 0;
+    for (const t of instantes('dentroDasPleiades')) {
+      const a = journey.at(t);
+      const f = frente(t);
+      const direita = new THREE.Vector3().crossVectors(f, filme.cima).normalize();
+      const cima = new THREE.Vector3().crossVectors(direita, f);
+      const meia = Math.tan(THREE.MathUtils.degToRad(a.fov / 2));
+      const passando = brilhantes.some((p) => {
+        const d = p.clone().sub(a.pos);
+        const z = d.dot(f);
+        return z > 0 && d.length() < 2.5 &&
+          Math.abs(d.dot(direita) / z) <= meia * 16 / 9 && Math.abs(d.dot(cima) / z) <= meia;
+      });
+      if (passando) segundos += 1 / 30;
+    }
+    expect(brilhantes.length).toBeGreaterThan(10);
+    expect(segundos).toBeGreaterThan(7); // na primeira versão ~6,7 s, e céu vazio dos 6,5 s em diante
+  });
+
+  it('o miolo das Híades é o centro das que brilham no catálogo (mais de 10 sóis, a menos de 4 pc)', () => {
+    const centro = new THREE.Vector3();
+    let n = 0;
+    for (let k = 0; k < campo.position.length / 3; k++) {
+      const p = new THREE.Vector3(...campo.position.subarray(3 * k, 3 * k + 3));
+      if (p.distanceTo(HIADES) < 4 && campo.logLum[k] >= 1) {
+        centro.add(p);
+        n++;
+      }
+    }
+    expect(n).toBe(18);
+    expect(centro.divideScalar(n).distanceTo(PONTOS_CRESCER.mioloDasHiades)).toBeLessThan(0.01);
+  });
 
   it('nenhuma estrela do catálogo a menos de 0,3 pc da câmera', () => {
     let menor = Infinity;

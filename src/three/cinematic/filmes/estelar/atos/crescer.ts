@@ -7,6 +7,7 @@
 // mirando as Plêiades (`juntas.ts`). Daí em diante a câmera viaja olhando
 // para onde vai: cada travessia mira o destino, que nasce ponto e cresce.
 import * as THREE from 'three';
+import { galacticaParaEquatorial } from '../../../../../lib/atlas/frameGalactico';
 import { LUGARES_DA_BUSCA } from '../../../../world/lugaresDoCeu';
 import { CIMA_DA_ECLIPTICA, ate, girar, perpendicular, versor } from '../../solar/atos/geometria';
 import { PONTOS_DAS_JUNTAS } from './juntas';
@@ -36,31 +37,49 @@ const DIREITA_NA_ENTRADA = new THREE.Vector3().crossVectors(RUMO_DE_ENTRADA, CIM
 const PASSAGEM = PLEIADES.clone().addScaledVector(DIREITA_NA_ENTRADA, 0.7).addScaledVector(CIMA_NA_ENTRADA, -0.4);
 /** a reta pelo miolo, em pc ao longo do rumo de chegada: começa na borda
  *  (a primeira com nome, Pleione, está 1,4 pc antes do centro) e acaba
- *  depois da última (Taígeta, 1,2 pc depois): 4,8 pc em ~9 s, no máximo
- *  0,8 pc/s no miolo; as brilhantes passam entre 4 e 7,5 s do plano */
-const RETA_NO_MIOLO = { de: -3.2, ate: 1.6 };
+ *  quando a última brilhante sai do quadro; a curva para as Híades vem só
+ *  depois, ainda passando por Taígeta (1,2 pc depois do centro) */
+const RETA_NO_MIOLO = { de: -3.2, ate: 1.0 };
 /** a fração do plano que a reta ocupa; o resto é a curva */
-const FRACAO_DA_RETA = 0.75;
+const FRACAO_DA_RETA = 0.85;
+/**
+ * O FREIO NO MIOLO (nota do diretor, segunda passada): na primeira versão a
+ * passagem pelas brilhantes durava ~2 s e o resto era céu vazio. O avanço
+ * na reta é `(1 + c)·r − c·smooth(r)`: a velocidade cai a `1 − 0,875·c`
+ * no meio, onde as brilhantes cruzam o quadro, e sobe a `1 + c` nas pontas
+ */
+const FREIO_NO_MIOLO = 0.8;
 const ENTRADA = PASSAGEM.clone().addScaledVector(RUMO_DE_ENTRADA, RETA_NO_MIOLO.de);
 const FIM_DA_RETA = PASSAGEM.clone().addScaledVector(RUMO_DE_ENTRADA, RETA_NO_MIOLO.ate);
 const SAIDA = FIM_DA_RETA.clone().addScaledVector(RUMO_DE_ENTRADA, 1.2).addScaledVector(RUMO_DE_SAIDA, 2.4);
-/** a curva começa com a velocidade da reta: 3·c/(1 − f) = L/f (Bézier na ponta) */
-const CONTROLE_DA_CURVA = ((RETA_NO_MIOLO.ate - RETA_NO_MIOLO.de) * (1 - FRACAO_DA_RETA)) / (3 * FRACAO_DA_RETA);
+/** a curva começa com a velocidade da reta: 3·c/(1 − f) = L·(1 + freio)/f (Bézier na ponta) */
+const CONTROLE_DA_CURVA =
+  ((RETA_NO_MIOLO.ate - RETA_NO_MIOLO.de) * (1 + FREIO_NO_MIOLO) * (1 - FRACAO_DA_RETA)) / (3 * FRACAO_DA_RETA);
 /** a mira adiante na reta: longe, no rumo da chegada */
 const ADIANTE_NA_ENTRADA = PASSAGEM.clone().addScaledVector(RUMO_DE_ENTRADA, 30);
 
-// ================= C3, C4 e C5 — AS HÍADES DE CIMA, E A LARANJA À FRENTE =================
-// As Híades estão quase na reta Plêiades→Sol (16°): a câmera chega por trás
-// delas, subindo (`CHEGADA_NAS_HIADES`, 35° acima do rumo de quem vem), e
-// desce num arco por cima até ficar atrás do grupo, na reta Híades→Sol, um
-// pouco acima dela: dali o grupo está no quadro e Aldebaran — a 44 % do
+// ================= C3, C4 e C5 — AS HÍADES DE PERTO, E A LARANJA À FRENTE =================
+// As Híades estão quase na reta Plêiades→Sol (16°). Na primeira versão a
+// câmera parava a 10–12 pc do centro e o grupo saía pontinhos sobre a faixa
+// da Via Láctea (a visada passava a 1° do plano da galáxia). Agora a câmera
+// chega por baixo do grupo — `DESCIDA_NA_CHEGADA` graus para o polo SUL da
+// galáxia a partir do rumo de quem vem —, então olha para o norte galáctico,
+// longe da faixa, e passa rente ao miolo (o núcleo tem ~3 pc) com a lente
+// mais fechada; o arco a leva para trás do grupo, na reta Híades→Sol, um
+// pouco acima dela: dali o grupo está em volta e Aldebaran — a 44 % do
 // caminho entre as Híades e o Sol, a 2,4° dessa reta — logo à frente.
+/** O MIOLO: o centro das 18 que brilham (mais de 10 sóis, a menos de 4 pc
+ *  do centro da Busca), medido no catálogo (`crescer.test.ts` o confere) —
+ *  1,1 pc fora do centro da Busca, e é nele que o olho acha o grupo */
+const MIOLO_DAS_HIADES = new THREE.Vector3(17.701, 40.828, 13.725);
 const DE_CASA = versor(HIADES);
 const DE_ONDE_VEM = ate(HIADES, SAIDA);
-const CHEGADA_NAS_HIADES = girar(DE_ONDE_VEM, perpendicular(CIMA_DA_ECLIPTICA, DE_ONDE_VEM), 35);
+const SUL_GALACTICO = new THREE.Vector3(...galacticaParaEquatorial([0, 0, -1]));
+const DESCIDA_NA_CHEGADA = 25;
+const CHEGADA_NAS_HIADES = girar(DE_ONDE_VEM, perpendicular(SUL_GALACTICO, DE_ONDE_VEM), DESCIDA_NA_CHEGADA);
 const ATRAS_DAS_HIADES = girar(DE_CASA, perpendicular(CIMA_DA_ECLIPTICA, DE_CASA), 8);
-const RAIO_DO_ARCO_DAS_HIADES = { de: 12, para: 10 };
-const MIRANTE_DAS_HIADES = HIADES.clone().addScaledVector(ATRAS_DAS_HIADES, RAIO_DO_ARCO_DAS_HIADES.para);
+const RAIO_DO_ARCO_DAS_HIADES = { de: 7, para: 7.5 };
+const MIRANTE_DAS_HIADES = MIOLO_DAS_HIADES.clone().addScaledVector(ATRAS_DAS_HIADES, RAIO_DO_ARCO_DAS_HIADES.para);
 
 /** os pontos nomeados do Ato 3, em pc */
 export const PONTOS_CRESCER: Readonly<Record<string, THREE.Vector3>> = {
@@ -71,7 +90,8 @@ export const PONTOS_CRESCER: Readonly<Record<string, THREE.Vector3>> = {
   controleDaCurvaDe: FIM_DA_RETA.clone().addScaledVector(RUMO_DE_ENTRADA, CONTROLE_DA_CURVA),
   controleDaCurvaPara: SAIDA.clone().addScaledVector(RUMO_DE_SAIDA, -1),
   saidaDasPleiades: SAIDA,
-  chegadaNasHiades: HIADES.clone().addScaledVector(CHEGADA_NAS_HIADES, RAIO_DO_ARCO_DAS_HIADES.de),
+  mioloDasHiades: MIOLO_DAS_HIADES,
+  chegadaNasHiades: MIOLO_DAS_HIADES.clone().addScaledVector(CHEGADA_NAS_HIADES, RAIO_DO_ARCO_DAS_HIADES.de),
   chegadaNasHiadesDirecao: CHEGADA_NAS_HIADES,
   atrasDasHiades: ATRAS_DAS_HIADES,
   miranteDasHiades: MIRANTE_DAS_HIADES,
@@ -80,6 +100,8 @@ export const PONTOS_CRESCER: Readonly<Record<string, THREE.Vector3>> = {
 /** os números nomeados do Ato 3: distâncias em pc */
 export const NUMEROS_CRESCER: Readonly<Record<string, number>> = {
   fracaoDaRetaNasPleiades: FRACAO_DA_RETA,
+  avancoNaRetaNasPleiades: 1 + FREIO_NO_MIOLO,
+  freioNaRetaNasPleiades: -FREIO_NO_MIOLO,
   raioDoArcoDasHiadesDe: RAIO_DO_ARCO_DAS_HIADES.de,
   raioDoArcoDasHiadesPara: RAIO_DO_ARCO_DAS_HIADES.para,
 };
