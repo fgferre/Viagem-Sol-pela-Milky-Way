@@ -1299,24 +1299,23 @@ describe('os nomes na escala da galáxia (crítica de 12/11)', () => {
     return cam;
   }
 
-  it('de onde o sistema solar é um pixel, o nome ali é o do Sol — a sonda colada nele cala', () => {
-    const lista = noAtlas(olhandoOSol(8000));
+  it('de onde o sistema solar é um pixel, o nome ali é o do Sol — a sonda em foco colada nele cala', () => {
+    const lista = noAtlas(olhandoOSol(8000), { focoSonda: 'voyager-1' });
     const sol = lista.find((l) => l.key === 'sol-home')!;
     expect(sol.prioridade).toBe(PRIORIDADE_DO_ROTULO.sol);
     const sondas = lista.filter((l) => l.key.startsWith('sonda:'));
-    expect(sondas.length).toBe(5);
-    for (const s of sondas) expect(s.opacity).toBe(0);
+    expect(sondas.map((s) => [s.key, s.opacity])).toEqual([['sonda:voyager-1', 0]]);
   });
 
-  it('no sistema solar, a sonda fora de foco é só o losango; em foco, tem nome', () => {
+  it('no sistema solar, a sonda fora de foco não deixa marcador sem nome; em foco, tem nome e losango', () => {
     const cam = olhandoOSol(0.004);
-    const quietas = noAtlas(cam).filter((l) => l.key.startsWith('sonda:'));
-    expect(quietas.length).toBeGreaterThan(0);
-    for (const s of quietas) expect([s.icone, s.prioridade]).toEqual([true, PRIORIDADE_DO_ROTULO.sonda]);
+    expect(noAtlas(cam).some((l) => l.key.startsWith('sonda:'))).toBe(false);
     const emFoco = noAtlas(cam, { focoSonda: 'voyager-1' }).find((l) => l.key === 'sonda:voyager-1');
-    expect([emFoco?.icone, emFoco?.prioridade]).toEqual([undefined, PRIORIDADE_DO_ROTULO.foco]);
-    // sem a camada de ícones, a sonda quieta não deixa nada na tela
-    expect(noAtlas(cam, { iconesEscondidos: true }).some((l) => l.key.startsWith('sonda:') && l.icone)).toBe(false);
+    expect([emFoco?.icone, emFoco?.formaDoIcone, emFoco?.prioridade]).toEqual([
+      undefined,
+      'losango',
+      PRIORIDADE_DO_ROTULO.foco,
+    ]);
   });
 
   it('a sonda só tem nome com a câmera perto DELA, não só do lado dela (13/11, Urano e a Pioneer 10)', () => {
@@ -1326,12 +1325,12 @@ describe('os nomes na escala da galáxia (crítica de 12/11)', () => {
     const cam = new THREE.PerspectiveCamera(50, 1.6, 1e-12, 1e7);
     cam.position.copy(p).setLength(19 / 206_265);
     cam.lookAt(p);
-    const pioneer = noAtlas(cam).find((l) => l.key === 'sonda:pioneer-10')!;
-    expect(pioneer.icone).toBe(true);
+    expect(noAtlas(cam).some((l) => l.key === 'sonda:pioneer-10')).toBe(false);
     // a meio caminho entre ela e o Sol, sim: ali ela é o objeto do quadro
     cam.position.copy(p).multiplyScalar(0.7);
     cam.lookAt(p);
-    expect(noAtlas(cam).find((l) => l.key === 'sonda:pioneer-10')?.icone).toBeUndefined();
+    const pioneer = noAtlas(cam).find((l) => l.key === 'sonda:pioneer-10');
+    expect(pioneer && !pioneer.icone).toBe(true);
   });
 
   it('Sagittarius A✱ em foco tem nome a qualquer distância; fora de foco, só na vizinhança dele', () => {
