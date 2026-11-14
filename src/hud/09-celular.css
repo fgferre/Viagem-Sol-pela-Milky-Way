@@ -191,6 +191,15 @@
     background: none;
     white-space: nowrap;
   }
+  /* A ABA ACESA É O PAINEL ABERTO, E SÓ ELE (crítica de 13/11): o hover
+     da casa pinta fundo e filete — o desenho de uma aba acesa — e no
+     telefone o hover GRUDA onde o dedo tocou por último, então a aba que
+     fechou o painel continuava "acesa" com o painel fechado. Na fileira,
+     quem acende é só o `aria-expanded`. */
+  .atlas-alcas > .hud-btn:hover {
+    background: none;
+    border-top-color: transparent;
+  }
   .atlas-alcas > .hud-btn[aria-expanded='true'] {
     color: var(--acento);
   }
