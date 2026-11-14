@@ -15,7 +15,7 @@ import {
   ladoDaChave,
   tauDasNuvensEmMeia,
 } from '../geradorDaGalaxia';
-import { BYTES_DOS_UNIFORMES, WGSL_DEPOSITO, WGSL_EXTINCAO, WGSL_TOM } from './motorWgsl';
+import { BYTES_DOS_UNIFORMES, NIVEIS, WGSL_DEPOSITO, WGSL_DOBRA, WGSL_EXTINCAO, WGSL_TOM } from './motorWgsl';
 
 const ESCALA = 65536; // ponto fixo do acumulador: 1 unidade de cena = 2^16
 const BYTES_DA_PARTICULA = 20;
@@ -64,10 +64,13 @@ function rgb9e5(r: number, g: number, b: number): number {
   return (q(r) | (q(g) << 9) | (q(b) << 18) | (e << 27)) >>> 0;
 }
 
-/** um sorteio no formato da GPU: `m` partículas de 20 bytes e o espaçamento de cada uma */
+/**
+ * um sorteio no formato da GPU: `m` partículas de 20 bytes e, de cada uma,
+ * o espaçamento e a razão de espessura da célula (dois f16 num u32)
+ */
 export interface SorteioEmpacotado {
   dados: ArrayBuffer;
-  esp: Float32Array;
+  esp: Uint32Array;
   m: number;
 }
 
@@ -83,10 +86,22 @@ export function empacotarSorteio(bright: Float32Array, n: number, primeiro: bool
   const dados = new ArrayBuffer(n * BYTES_DA_PARTICULA);
   const f = new Float32Array(dados);
   const u = new Uint32Array(dados);
-  const esp = new Float32Array(n);
+  const esp = new Uint32Array(n);
   const chaves = new Uint16Array(n);
   const porChave = new Uint32Array(65536);
-  for (let i = 0; i < n; i++) porChave[(chaves[i] = celulaDaParticula(bright, i))]++;
+  // a altura (z galáctico) média e quadrática por célula: o desvio σz dá a
+  // espessura que entra na área projetada (a mesma de galaxy.ts, celulasDoBuffer)
+  const somaZ = new Float64Array(65536);
+  const somaZ2 = new Float64Array(65536);
+  for (let i = 0; i < n; i++) {
+    const c = (chaves[i] = celulaDaParticula(bright, i));
+    const o = i * 8;
+    const z = (bright[o] - GAL.GC_POS.x) * EZ.x + (bright[o + 1] - GAL.GC_POS.y) * EZ.y +
+      (bright[o + 2] - GAL.GC_POS.z) * EZ.z;
+    porChave[c]++;
+    somaZ[c] += z;
+    somaZ2[c] += z * z;
+  }
   let m = 0;
   for (let i = 0; i < n; i++) {
     const individuo = chaves[i] === CELULAS_DA_GRADE;
@@ -99,8 +114,16 @@ export function empacotarSorteio(bright: Float32Array, n: number, primeiro: bool
     f[d + 3] = bright[o + 6];
     const a = bright[o + 7];
     u[d + 4] = rgb9e5(bright[o + 3] * a, bright[o + 4] * a, bright[o + 5] * a);
-    // espaçamento local (pc) para as filhas: 1/√Σ da célula; 0 = indivíduo
-    esp[m] = individuo ? 0 : ladoDaChave(chaves[i]) / Math.sqrt(porChave[chaves[i]]);
+    // espaçamento local (pc), 1/√Σ da célula, para as filhas e a pegada; e
+    // a razão de espessura 2,5·σz/lado da célula. 0 = indivíduo
+    if (!individuo) {
+      const c = chaves[i];
+      const lado = ladoDaChave(c);
+      const mz = somaZ[c] / porChave[c];
+      const sz = Math.sqrt(Math.max(somaZ2[c] / porChave[c] - mz * mz, 0));
+      esp[m] = (THREE.DataUtils.toHalfFloat(lado / Math.sqrt(porChave[c])) |
+        (THREE.DataUtils.toHalfFloat((2.5 * sz) / lado) << 16)) >>> 0;
+    }
     m++;
   }
   return { dados, esp, m };
@@ -130,6 +153,10 @@ export class MotorDaGalaxia {
   private readonly pExt: GPUPipeline;
   private readonly pDep: GPUPipeline;
   private readonly pTom: GPUPipeline;
+  private readonly pDobra: GPUPipeline;
+  /** o nível alvo de cada despacho da dobra (1 … NIVEIS − 1) */
+  private readonly bufAlvos: GPUBuffer[];
+  private gDobra: GPUBindGroup[] = [];
   private readonly gExt: GPUBindGroup;
   private gDep: GPUBindGroup | null = null;
   private gTom: GPUBindGroup | null = null;
@@ -145,7 +172,7 @@ export class MotorDaGalaxia {
 
   private constructor(
     gpu: GPUDevice, tela: HTMLCanvasElement | OffscreenCanvas, capacidade: number,
-    pipelines: { ext: GPUPipeline; dep: GPUPipeline; tom: GPUPipeline }, formato: string,
+    pipelines: { ext: GPUPipeline; dep: GPUPipeline; tom: GPUPipeline; dobra: GPUPipeline }, formato: string,
     meio: Uint16Array
   ) {
     this.linear = formato === 'rgba16float';
@@ -173,6 +200,12 @@ export class MotorDaGalaxia {
     this.pExt = pipelines.ext;
     this.pDep = pipelines.dep;
     this.pTom = pipelines.tom;
+    this.pDobra = pipelines.dobra;
+    this.bufAlvos = Array.from({ length: NIVEIS - 1 }, (_, i) => {
+      const b = gpu.createBuffer({ size: 16, usage: USO.uniform | USO.copyDst });
+      gpu.queue.writeBuffer(b, 0, new Uint32Array([i + 1, 0, 0, 0]));
+      return b;
+    });
     this.gExt = this.liga(this.pExt, [
       { buffer: this.bufU }, { buffer: this.bufP }, { buffer: this.bufExt },
       texTau.createView(), gpu.createSampler({ magFilter: 'linear', minFilter: 'linear' }),
@@ -212,7 +245,7 @@ export class MotorDaGalaxia {
     const mTom = await modulo(WGSL_TOM, 'tom');
     // as versões ASSÍNCRONAS (13/11/2026): as síncronas compilavam na
     // thread e a seguravam ~0,5 s logo no começo da carga
-    const [ext, dep, tom] = await Promise.all([
+    const [ext, dep, tom, dobra] = await Promise.all([
       gpu.createComputePipelineAsync({
         layout: 'auto', compute: { module: await modulo(WGSL_EXTINCAO, 'extinção'), entryPoint: 'main' },
       }),
@@ -225,8 +258,11 @@ export class MotorDaGalaxia {
         fragment: { module: mTom, entryPoint: 'fs', targets: [{ format: formato }] },
         primitive: { topology: 'triangle-list' },
       }),
+      gpu.createComputePipelineAsync({
+        layout: 'auto', compute: { module: await modulo(WGSL_DOBRA, 'dobra'), entryPoint: 'main' },
+      }),
     ]);
-    const pipelines = { ext, dep, tom };
+    const pipelines = { ext, dep, tom, dobra };
     return new MotorDaGalaxia(gpu, tela, capacidade, pipelines, formato, (await nuvens) ?? tauDasNuvensEmMeia());
   }
 
@@ -264,12 +300,18 @@ export class MotorDaGalaxia {
       ...(this.linear ? { toneMapping: { mode: 'extended' } } : {}),
     });
     this.bufAcc?.destroy();
-    this.bufAcc = this.gpu.createBuffer({ size: w * h * 16, usage: USO.storage | USO.copyDst });
+    // o quadro e, depois dele, os níveis da pegada (motorWgsl.ts, nivel)
+    let pixels = w * h;
+    for (let L = 1; L <= NIVEIS; L++) pixels += ((w >> L) + 2) * ((h >> L) + 2);
+    this.bufAcc = this.gpu.createBuffer({ size: pixels * 16, usage: USO.storage | USO.copyDst });
     this.gDep = this.liga(this.pDep, [
       { buffer: this.bufU }, { buffer: this.bufP }, { buffer: this.bufExt },
       { buffer: this.bufEsp }, { buffer: this.bufAcc },
     ]);
     this.gTom = this.liga(this.pTom, [{ buffer: this.bufU }, { buffer: this.bufAcc }]);
+    this.gDobra = this.bufAlvos.map((alvo) =>
+      this.liga(this.pDobra, [{ buffer: this.bufU }, { buffer: this.bufAcc }, { buffer: alvo }])
+    );
   }
 
   /** codifica e envia um quadro; com `medir`, resolve o relógio no fim */
@@ -320,6 +362,8 @@ export class MotorDaGalaxia {
     uI[51] = this.total;
     uF[52] = op.pesoFixo ?? 1;
     uF[53] = op.pesoPerto ?? 0;
+    // o alvo de partículas por pixel que a pegada do espaçamento persegue
+    uF[54] = op.lod > 0 ? op.lod : 1;
     this.nQuadro++;
     this.usadas = usados;
     this.gpu.queue.writeBuffer(this.bufU, 0, this.dadosU);
@@ -339,6 +383,12 @@ export class MotorDaGalaxia {
     p.setPipeline(this.pDep);
     p.setBindGroup(0, this.gDep as GPUBindGroup);
     p.dispatchWorkgroups(...despacho(usados));
+    // a dobra dos níveis da pegada, do mais grosso ao nível 1 (motorWgsl.ts)
+    p.setPipeline(this.pDobra);
+    for (let L = NIVEIS - 1; L >= 1; L--) {
+      p.setBindGroup(0, this.gDobra[L - 1]);
+      p.dispatchWorkgroups(Math.ceil(((w >> L) + 2) / 16), Math.ceil(((h >> L) + 2) / 16));
+    }
     p.end();
     p = enc.beginRenderPass({
       colorAttachments: [

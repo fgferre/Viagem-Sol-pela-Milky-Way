@@ -140,6 +140,9 @@ export class Galaxy {
   aoMudarCaminho: (() => void) | null = null;
   private descartada = false;
   private static readonly GANHO_DAS_LAMINAS = 6.99;
+  /** a luz da lei de longe que o WebGL entregava na saída do filme, sob o
+   *  teto de instâncias, em fração da que a camada WebGPU entrega (A CESSÃO) */
+  private static readonly LUZ_DO_WEBGL_NA_SAIDA = 0.85;
   /**
    * Largura do núcleo das partículas de FUNDO em ESPAÇAMENTOS médios
    * entre partículas (ver GALAXY_VERT): o mínimo para as vizinhas se
@@ -1114,12 +1117,23 @@ export class Galaxy {
         // O GANHO DA LEI DE LONGE com a rampa adiantada. A luz das lâminas
         // (6,99·externalFade) entra pela lei de longe; com a rampa de sempre
         // a partícula distante levava (1 − e)·bF + e·(bF + 6,99·e) =
-        // bF + 6,99·e². Com a rampa `longe` adiantada, o ganho que dá a
-        // MESMA luz é bF + 6,99·e²/longe: a galáxia não clareia por a camada
-        // entrar mais cedo, e com longe = e ele é o de sempre.
+        // bF + 6,99·e². Com a rampa `longe` adiantada, o ganho divide essa
+        // luz por `longe`: a galáxia não clareia por a camada entrar mais cedo.
+        // A REFERÊNCIA É O QUE O WebGL ENTREGAVA: com a rampa de sempre ele
+        // desenhava as partículas distantes até externalFade 0,8 (a fração
+        // `perto`), e ali, sob o teto de instâncias, entregava só
+        // ~LUZ_DO_WEBGL_NA_SAIDA da luz que a camada entrega das mesmas
+        // partículas (medido 13/11 nos quadros t=144–147: sem isto a saída
+        // ficava 14–24 % mais clara em luz linear, +4–9 % na média do quadro).
+        // O ganho leva essa luz, e não a cheia; em e = 1 (perto = 0) é o de sempre.
         longe = longeW;
+        const e = externalFade;
         const ganhoLonge =
-          longe > 0 ? brightFade + (Galaxy.GANHO_DAS_LAMINAS * externalFade * externalFade) / longe : brightFade;
+          longe > 0
+            ? ((e * Galaxy.GANHO_DAS_LAMINAS * e + longe * brightFade) *
+                (1 - (1 - Galaxy.LUZ_DO_WEBGL_NA_SAIDA) * perto)) /
+              longe
+            : brightFade;
         ganhoPerto = (perto * brightFade) / ganhoLonge;
         u.uFade.value = ganhoLonge / this.fracaoDeParticulas;
         // A camada leva, de cada partícula, a lei de longe (longe ×
