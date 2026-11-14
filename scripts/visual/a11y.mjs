@@ -347,9 +347,12 @@ async function julgarAbertura(s) {
       };
     });
   })()`);
+  // o cartaz manda (`FILMES_EM_CARTAZ`): Atlas + um botão por filme
+  // (`porta-filme-<id>`) + Voo livre. Com três filmes (14/11) são cinco.
+  const nFilmes = (portas || []).filter((p) => (p.descrito || '').startsWith('porta-filme-')).length;
   conferir(
-    Array.isArray(portas) && portas.length === 4,
-    `abertura: ${portas ? portas.length : 0} porta(s) — ${(portas || []).map((p) => `"${p.botao}"`).join(' · ')}`
+    Array.isArray(portas) && nFilmes >= 2 && portas.length === nFilmes + 2,
+    `abertura: ${portas ? portas.length : 0} porta(s), ${nFilmes} filme(s) — ${(portas || []).map((p) => `"${p.botao}"`).join(' · ')}`
   );
   for (const p of portas || []) {
     conferir(
@@ -360,7 +363,7 @@ async function julgarAbertura(s) {
   }
   // LOTE 8 (PLAN-UI.md §3.1, maquete M1 aprovada em 07/09): UMA porta é a
   // principal — a do Atlas, na tinta do acento — e as secundárias (desde
-  // 05/10 os DOIS filmes lado a lado e o Voo livre sozinho, três portas)
+  // 05/10 os filmes lado a lado e o Voo livre sozinho)
   // vestem a MESMA tinta entre si. Até o Lote 8 a régua era "as três com a
   // mesma tinta"; a decisão do dono ("Explorar o Atlas é o botão principal")
   // inverteu a prova.
@@ -368,16 +371,16 @@ async function julgarAbertura(s) {
   const principal = (portas || []).find((p) => p.descrito === 'porta-atlas');
   const secundarias = (portas || []).filter((p) => p.descrito !== 'porta-atlas');
   conferir(
-    tintas.length === 2 && Boolean(principal) && secundarias.length === 3
+    tintas.length === 2 && Boolean(principal) && secundarias.length === nFilmes + 1
       && secundarias.every((p) => p.tinta === secundarias[0].tinta) && principal.tinta !== secundarias[0].tinta,
-    `abertura: só a porta do Atlas é destacada em cor e as três secundárias têm a mesma tinta`
+    `abertura: só a porta do Atlas é destacada em cor e as ${secundarias.length} secundárias têm a mesma tinta`
       + ` — ${tintas.length} tintas: ${tintas.join(' vs ')}`
   );
 
-  // o Tab passa nas quatro, na ordem da tela
+  // o Tab passa em todas, na ordem da tela
   await s.js("document.querySelector('.veil-intro').focus?.(); document.body.focus?.()");
   const andados = [];
-  for (let i = 0; i < 12 && andados.length < 4; i++) {
+  for (let i = 0; i < 12 && andados.length < nFilmes + 2; i++) {
     await s.teclar('Tab');
     const foco = await s.js(
       "(document.activeElement && document.activeElement.tagName === 'BUTTON')"
@@ -388,10 +391,10 @@ async function julgarAbertura(s) {
   const esperada = (portas || []).map((p) => p.botao);
   conferir(
     JSON.stringify(andados) === JSON.stringify(esperada),
-    `abertura: o Tab passa nas quatro, na ordem da tela (${andados.join(' → ')})`
+    `abertura: o Tab passa nas ${nFilmes + 2}, na ordem da tela (${andados.join(' → ')})`
   );
 
-  // o MESMO retângulo nas três, e nada sai da tela — nos dois degraus
+  // o MESMO retângulo nos filmes, e nada sai da tela — nos dois degraus
   for (const fator of [1, 1.4]) {
     await s.ir(`ui=${fator}&${PIN}`);
 
@@ -410,23 +413,25 @@ async function julgarAbertura(s) {
       }
       return out;
     })()`);
-    // LOTE 8 (05/10: os dois filmes lado a lado, o Voo livre sozinho): os
-    // DOIS filmes medem o mesmo retângulo entre si, e a principal (a
+    // LOTE 8 (05/10: os filmes lado a lado, o Voo livre sozinho): TODOS
+    // os filmes medem o mesmo retângulo entre si, e a principal (a
     // primeira da coluna) e o Voo livre (a última) são mais LARGOS que
-    // cada filme — a coluna inteira contra metade dela (maquete M1).
+    // cada filme — a coluna inteira contra uma fração dela (maquete M1).
     const [principalCx, ...secundariasCx] = caixas;
+    const vooCx = secundariasCx[secundariasCx.length - 1];
+    const filmesCx = secundariasCx.slice(0, -1);
     const larguraDe = (c) => Number(c.caixa.split('×')[0]);
     const alturaDe = (c) => Number(c.caixa.split('×')[1]);
     // "mesmo retângulo" a menos de meio pixel: o flex reparte a coluna em
     // duas e a metade pode cair em subpixel diferente (383,59 × 383,61 a
     // ui=1,4) — isso é aritmética do navegador, não desigualdade de desenho
-    const iguais = secundariasCx.length === 3
-      && Math.abs(larguraDe(secundariasCx[0]) - larguraDe(secundariasCx[1])) <= 0.5
-      && Math.abs(alturaDe(secundariasCx[0]) - alturaDe(secundariasCx[1])) <= 0.5;
+    const iguais = filmesCx.length === nFilmes && nFilmes >= 2
+      && filmesCx.every((c) => Math.abs(larguraDe(c) - larguraDe(filmesCx[0])) <= 0.5
+        && Math.abs(alturaDe(c) - alturaDe(filmesCx[0])) <= 0.5);
     conferir(
-      iguais && larguraDe(principalCx) > larguraDe(secundariasCx[0])
-        && larguraDe(secundariasCx[2]) > larguraDe(secundariasCx[0]),
-      `abertura com ui=${fator}: os dois filmes medem o MESMO retângulo e a principal e o Voo livre são mais largos`
+      iguais && larguraDe(principalCx) > larguraDe(filmesCx[0])
+        && larguraDe(vooCx) > larguraDe(filmesCx[0]),
+      `abertura com ui=${fator}: os ${nFilmes} filmes medem o MESMO retângulo e a principal e o Voo livre são mais largos`
         + ` — ${caixas.map((c) => `"${c.nome}" ${c.caixa}`).join(' vs ')}`
     );
 
