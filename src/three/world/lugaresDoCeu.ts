@@ -13,6 +13,7 @@
 import * as THREE from 'three';
 import type { LugarBuscavel } from '../../lib/buscaEstrelas';
 import { nomeDoLugar } from '../../lib/buscaEstrelas';
+import { ESTRELAS_S, posicaoDaEstrelaS } from '../../lib/estrelasS';
 import { LUGARES_DO_FILME } from '../../lib/lugaresDoFilme';
 import type { LugarDoCeu } from '../../lib/lugaresDoFilme';
 import { classeEmTexto } from '../atlasConfig';
@@ -133,6 +134,8 @@ export interface PoseDoLugar {
   pisoRaio?: number;
   /** a esfera do degrau de perto (`raioDePertoPc`); ausente = não há */
   raioDePerto?: number;
+  /** a estrela S do degrau de perto (`estrelaDePerto`); ausente = não há */
+  estrelaDePerto?: string;
 }
 
 /**
@@ -208,6 +211,51 @@ export function poseDoLugar(lugar: Pick<LugarBuscavel, 'id' | 'x' | 'y' | 'z'>):
     polo,
     ...(linha.pisoPc ? { pisoRaio: linha.pisoPc } : {}),
     ...(linha.raioDePertoPc ? { raioDePerto: linha.raioDePertoPc } : {}),
+    ...(linha.estrelaDePerto ? { estrelaDePerto: linha.estrelaDePerto } : {}),
+  };
+}
+
+/** a esfera de perto de uma estrela S, em frações da distância dela ao buraco */
+const ESFERA_DA_ESTRELA_S = 0.13;
+/** o quanto a câmera sai da reta buraco→estrela, rumo ao polo galáctico */
+const DESVIO_DA_ESTRELA_S_GRAUS = 18;
+
+/**
+ * O DEGRAU DE PERTO DE UMA ESTRELA S (14/11): a estrela no meio do quadro
+ * e o buraco ao fundo, logo acima dela. A câmera fica do lado de FORA da
+ * estrela, na reta que vem do buraco, desviada `DESVIO_DA_ESTRELA_S_GRAUS`
+ * rumo ao norte galáctico: o buraco cai 11–14° acima da estrela (fora da
+ * sombra desenhada, ~5,5° — a regra da sombra apagaria a estrela), e o
+ * disco, que mora no plano da galáxia, se vê de cima. A esfera é uma
+ * fração da distância estrela–buraco, então o quadro é o mesmo do
+ * periastro (120 UA) ao apoastro (1.944 UA) — o buraco desenhado de longe
+ * tem tamanho aparente fixo. Nada se desenha diferente: só a pose muda.
+ */
+export function poseDePertoDaEstrelaS(nome: string, jd: number, pisoRaio?: number): PoseDoLugar | null {
+  const estrela = ESTRELAS_S.find((s) => s.nome === nome);
+  if (!estrela || !Number.isFinite(jd)) return null;
+  const direcao = GAL.GC_POS.clone().normalize();
+  const [x, y, z] = posicaoDaEstrelaS(jd, estrela, [direcao.x, direcao.y, direcao.z]);
+  const deslocamento = new THREE.Vector3(x, y, z);
+  const r = deslocamento.length();
+  if (!(r > 0)) return null;
+  const u = deslocamento.clone().divideScalar(r);
+  const ngp = GAL.NGP.clone().normalize();
+  const w = ngp.clone().addScaledVector(u, -ngp.dot(u));
+  // a estrela exatamente sobre o polo galáctico: qualquer perpendicular serve
+  if (w.lengthSq() < 1e-12) w.crossVectors(u, EX);
+  w.normalize();
+  const c = Math.cos(DESVIO_DA_ESTRELA_S_GRAUS * GRAU);
+  const s = Math.sin(DESVIO_DA_ESTRELA_S_GRAUS * GRAU);
+  const dir = u.clone().multiplyScalar(c).addScaledVector(w, s);
+  // o alto da tela aponta da estrela para o buraco, que aparece acima dela
+  const polo = w.clone().multiplyScalar(c).addScaledVector(u, -s);
+  return {
+    alvo: GAL.GC_POS.clone().add(deslocamento),
+    raio: ESFERA_DA_ESTRELA_S * r,
+    eixoDe: eixoQuePousaEm(dir, polo),
+    polo,
+    ...(pisoRaio ? { pisoRaio } : {}),
   };
 }
 

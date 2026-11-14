@@ -60,6 +60,9 @@ export function escolherAlvo(
   if (entrada.tipo === 'lugar') {
     if (entrada.lugar.raioPc) {
       alvo.visitarLugar(entrada.lugar);
+      // `?ver=corpo` é o degrau de perto do lugar (o "Aproximar" da ficha),
+      // onde ele existe — o link reproduz a vista de quem o copiou
+      if (ver === 'corpo') alvo.aproximarDoCorpo();
       return;
     }
     const { nome, x, y, z } = entrada.lugar;

@@ -42,7 +42,7 @@ import { RAIO_EQ_TERRA_PC, posicaoDaTerraUA } from '../world/corpos/terra';
 import { ANEL_SATURNO, posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
 import { AtlasRig, K_MIN_RAIOS, K_PISO_DO_CORPO } from '../cinematic/atlasRig';
 import { IDS_ESCULPIDOS, criaGeometriaEsculpida } from '../world/corpos/esculpido';
-import { LUGARES_DA_BUSCA, poseDoLugar } from '../world/lugaresDoCeu';
+import { LUGARES_DA_BUSCA, poseDePertoDaEstrelaS, poseDoLugar } from '../world/lugaresDoCeu';
 import { posicaoDoCometaNaCena, poseDoCometaDePerto } from '../world/cometas';
 import { M31 } from '../world/geradorDasVizinhas';
 import { GAL } from '../world/baseGalactica';
@@ -658,6 +658,25 @@ describe('o "Aproximar" de cometas e de lugares do céu (13/11)', () => {
     expect(atlas.raioDoAlvo).toBe(poseDoLugar(andromeda)!.raioDePerto);
     // o disco de estrelas do modelo vai até 26 kpc do centro
     expect(camera.position.distanceTo(M31.centro)).toBeGreaterThan(26_000);
+  });
+
+  it('S2 aproxima da estrela, não do buraco, e o relógio a acompanha (14/11)', () => {
+    const s2 = LUGARES_DA_BUSCA.find((l) => l.id === 's2')!;
+    const { escada, atlas, camera, aplicar, maquinaDoTempo } = bancada();
+    escada.visitarLugar(s2);
+    escada.aproximarDoCorpo();
+    aplicar();
+    const pose = poseDePertoDaEstrelaS('S2', maquinaDoTempo.jdVivo)!;
+    expect(escada.escadaViva).toMatchObject({ degrau: 'estrela', podeAproximar: false });
+    expect(atlas.alvo.distanceTo(pose.alvo)).toBe(0);
+    // o buraco em quadro, fora da sombra desenhada (~5,5°) que apagaria a estrela
+    const paraEstrela = pose.alvo.clone().sub(camera.position);
+    const angulo = paraEstrela.angleTo(GAL.GC_POS.clone().sub(camera.position)) / (Math.PI / 180);
+    expect(angulo).toBeGreaterThan(8);
+    expect(angulo).toBeLessThan(20);
+    maquinaDoTempo.jdVivo += 365;
+    escada.recomporAlvo();
+    expect(atlas.alvo.distanceTo(poseDePertoDaEstrelaS('S2', maquinaDoTempo.jdVivo)!.alvo)).toBe(0);
   });
 
   it('a estrela com corpo: o botão some depois de usado, como nos outros destinos (13/11, TRAPPIST-1)', () => {

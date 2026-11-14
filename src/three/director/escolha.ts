@@ -303,7 +303,7 @@ export class Escolha {
     if (lugar?.raioPc) {
       const pos = new THREE.Vector3(lugar.x, lugar.y, lugar.z);
       this.escolhaDoClique = { id: null, pos, nome: best.name, lugar };
-      this.escada.selecionarPonto(pos, lugar.raioPc, best.name);
+      this.escada.selecionarPonto(pos, lugar.raioPc, best.name, lugar);
       return;
     }
     const star = this.meta.named.find((s) => s.n === best.name);

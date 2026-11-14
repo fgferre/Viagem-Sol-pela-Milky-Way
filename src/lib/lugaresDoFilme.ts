@@ -110,6 +110,10 @@ export interface LugarDoCeu {
    *  ficha), em pc, pela mesma vista — ausente = o lugar não tem o que
    *  mostrar mais de perto do que a chegada já mostra, e o botão não existe */
   raioDePertoPc?: number;
+  /** o degrau de PERTO enquadra esta ESTRELA S (`lib/estrelasS.ts`) e não
+   *  o centro do lugar: ela no meio, o buraco ao fundo, e a câmera anda com
+   *  ela no relógio (`poseDePertoDaEstrelaS`) */
+  estrelaDePerto?: string;
   vista?: VistaDoLugar;
   /** só para a vista `doSol`: a câmera sobe estes graus acima do plano da
    *  galáxia, girando em volta do lugar — ausente = 0, a linha de visada
@@ -242,6 +246,9 @@ export const LUGARES_DO_FILME: ReadonlyArray<LugarDoCeu> = [
     // o disco já é faixa e não risco; a elipse de S2 sai 2,4 % menor no
     // eixo maior e girada 2,8° em relação à do céu (o teste da linha cobra)
     elevacaoGraus: 6,
+    // o "Aproximar" vai à estrela: era o mesmo degrau do buraco (o alvo do
+    // lugar É o centro) e dava o mesmo quadro de Sagittarius A✱ (14/11)
+    estrelaDePerto: 'S2',
     semRotulo: true,
     distanciaPc: { valor: 8150, fonte: 'Reid et al. 2019 (VLBI)' },
     oQueE: {
