@@ -50,7 +50,10 @@ export function TitleVeil({
       aria-hidden={!visible}
     >
       {mode === 'intro' && (
-        <div className="abertura-coluna">
+        <div
+          className="abertura-coluna"
+          style={{ '--filmes': FILMES_EM_CARTAZ.length } as CSSProperties}
+        >
           <div className="title-kicker">{t('hud.kicker')}</div>
           <div className="title-big">{t('hud.nome')}</div>
           <div className="title-rule" />
@@ -86,10 +89,12 @@ export function TitleVeil({
           {/* OS FILMES, LADO A LADO (escolha visível, item 210/F1; maquete
               B de 05/10, aprovada por ele): um botão por filme do cartaz
               (`FILMES_EM_CARTAZ`, nunca os ids escritos aqui), com o nome,
-              a duração DO FILME e a nota dele embaixo. O "Voo livre" desce
-              para uma segunda fileira, sozinho e na largura inteira — a
-              mesma `.abertura-portas`, sem regra nova: um botão só estica,
-              e no celular tudo empilha como antes. Em `<span>` (C2): a
+              a duração DO FILME e a nota dele embaixo. Todos numa fileira
+              só e do mesmo tamanho, ou todos empilhados — nunca dois em
+              cima e um embaixo; o `--filmes` acima alarga a coluna para
+              caber a fileira (02-filme.css). O "Voo livre" desce para uma
+              fileira própria, sozinho e na largura inteira — a mesma
+              `.abertura-portas`: um botão só estica. Em `<span>` (C2): a
               pressão afunda o filho, não um nó de texto solto. */}
           <div className="abertura-portas">
             {FILMES_EM_CARTAZ.map((id) => {

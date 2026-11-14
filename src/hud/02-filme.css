@@ -633,9 +633,16 @@
    duas SECUNDÁRIAS lado a lado ("Ver o filme", "Voo livre") — troca a
    antiga fileira de três botões iguais (item 60/61) pela hierarquia da
    maquete M1. `.abertura-coluna` é a caixa que centraliza tudo (kicker,
-   marca, filete, subtítulo e portas) numa largura de leitura. */
+   marca, filete, subtítulo e portas) numa largura de leitura.
+   A COLUNA CABE A FILEIRA DOS FILMES (três filmes, 14/11): `--filmes` vem
+   do cartaz (Hud.tsx) e `--fileira` é a largura de todos lado a lado, a
+   16rem cada — o maior rótulo de hoje, "Viagem galáctica · 3 min 13 s",
+   mede 15,7rem com ícone e margens (medido em pt e en, ui=1 e 1,4). A
+   coluna alarga até ela em vez de quebrar a fileira; o teto continua
+   sendo a tela menos a margem. */
 .abertura-coluna {
-  width: 35rem;
+  --fileira: calc(var(--filmes, 2) * 16rem + (var(--filmes, 2) - 1) * 0.75rem);
+  width: max(35rem, var(--fileira));
   max-width: calc(100% - 3rem);
   margin: 0 auto;
   text-align: center;
@@ -652,10 +659,9 @@
 .abertura-porta .veil-btn {
   width: 100%;
 }
-/* a fileira das duas secundárias: `flex: 1 1 0` as iguala, e a largura
-   mínima em `rem` (que cresce com `?ui=`) é o que dispara o
-   `flex-wrap` — com texto ampliado ou tela estreita elas não cabem mais
-   lado a lado e empilham sem precisar de um segundo ponto de quebra. */
+/* a fileira das secundárias: TODAS numa linha, iguais, ou TODAS
+   empilhadas — nunca dois em cima e um embaixo (gosto do dono: fileira
+   não quebra nem fica desigual). */
 .abertura-portas {
   display: flex;
   flex-wrap: wrap;
@@ -663,10 +669,12 @@
   margin-top: 0.75rem;
 }
 .abertura-portas .abertura-porta {
-  /* base de 12rem: a coluna de 35rem leva as duas lado a lado; com
-     `?ui=` grande ou tela estreita a base não cabe e cada uma vira uma
-     linha — sem media query (uiScale.test.ts: só 760 é quebra de HUD). */
-  flex: 1 1 12rem;
+  /* a base é zero enquanto a fileira cabe (a coluna mede `--fileira` ou
+     mais) e enorme quando não cabe: aí cada porta vira uma linha, todas
+     da largura da coluna — sem media query (uiScale.test.ts: só 760 é
+     quebra de HUD), e o `rem` cresce com `?ui=`. O "Voo livre", sozinho
+     na sua fileira, estica nos dois casos. */
+  flex: 1 1 calc((var(--fileira) - 100%) * 999);
 }
 
 /* ---- botões da abertura e do encerramento (mesma anatomia) ---------- */
