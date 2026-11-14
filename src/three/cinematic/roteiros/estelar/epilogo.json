@@ -21,7 +21,7 @@
                   "tipo": "rampa",
                   "de": 0,
                   "para": 1,
-                  "ritmo": "quadratic"
+                  "ritmo": "smooth"
                 }
               }
             },
