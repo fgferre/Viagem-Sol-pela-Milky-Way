@@ -311,6 +311,151 @@ ${REGIOES_DO_ANEL.slice(1)
 `;
 
 /**
+ * O BRILHO MEDIDO DO ANEL (`?anelb=m`, 14/11/2026) — EM PROVA. Ausente, o
+ * anel de sempre, byte a byte: nada disto entra no `ANEL_FRAG`, e o visual
+ * aprovado só se troca com a foto na mão.
+ *
+ * O DEFEITO: na chegada o B sai CHAPADO, porque o espalhamento simples
+ * satura com o τ dobrado do B e o albedo da tabela é um degrau por região.
+ * O DADO NOVO (`anel-saturno-brilho.bin`, `scripts/data/atlas/anel-brilho.mjs`):
+ * os três perfis de BRILHO do mesmo modelo do Björn Jónsson — retro (lado
+ * iluminado, fase baixa, Voyager 2), frente (fase 139°, Voyager 1) e lado
+ * sem luz —, na grade do {@link PERFIL_DO_ANEL}.
+ *
+ * A ÂNCORA. Cada perfil foi normalizado 0–1 pela fonte: a razão entre eles
+ * e o nível absoluto NÃO estão no dado. O nível fica com o shader de hoje,
+ * que já foi calibrado contra as fotos: em cada região de
+ * {@link REGIOES_DO_ANEL}, a MÉDIA (pesada pela área) do brilho novo é a do
+ * de hoje, NA GEOMETRIA DO PIXEL; só a distribuição dentro da região passa a
+ * ser a medida. A média de hoje sai de {@link QUANTIS_DO_TAU} fatias de área
+ * igual da região ordenada pelo τ (o mesmo τ do shader: opacidade ×
+ * `fatorTau`), o τ médio de cada uma passado pela mesma camada de
+ * partículas — a média de oito, e não a camada no τ
+ * médio, porque a transmissão do lado sem luz é muito não linear (o B1
+ * translúcido carrega quase toda a luz do B por trás). A forma é o perfil
+ * dividido pela própria média na região. O resultado por pixel:
+ *
+ *   I/F = ⟨camada(τ_q)⟩_região · perfil(r) / ⟨perfil⟩_região
+ *
+ * A FASE: no lado iluminado o perfil é `mix(retro, frente, w)`, cada um já
+ * dividido pela própria média, com w = α/139° (α o ângulo de fase), preso
+ * a [0, 1] — retro puro em oposição, frente pura de 139° para cima. No lado
+ * sem luz, o perfil do lado sem luz. A curva de fase, o lobo da poeira, o
+ * surto, a cor, os raios do B, a cobertura (o alfa) e o planetshine ficam
+ * os de hoje.
+ */
+export const BRILHO_MEDIDO_DO_ANEL: boolean =
+  typeof window !== 'undefined' &&
+  new URLSearchParams(window.location.search).get('anelb') === 'm';
+export const BRILHO_DO_ANEL = {
+  arquivo: 'data/atlas/anel-saturno-brilho.bin',
+  /** a fase do perfil de frente (Voyager 1), em radianos */
+  faseDaFrenteRad: (139 * Math.PI) / 180,
+} as const;
+export const QUANTIS_DO_TAU = 8;
+
+/**
+ * A fronteira ativa num raio, na CPU — o gêmeo do `if (km > …)` do GLSL de
+ * {@link BRILHO_MEDIDO_DO_ANEL}: o I/F é `mix(região a, região b, s)`. As
+ * faixas de {@link REGIOES_DO_ANEL} não se sobrepõem, então há no máximo uma.
+ */
+export function fronteiraDoAnelCpu(km: number): { a: number; b: number; s: number } {
+  let a = 0;
+  let b = 0;
+  let s = 0;
+  REGIOES_DO_ANEL.forEach((r, j) => {
+    if (j > 0 && km > r.km - r.meia) {
+      a = j - 1;
+      b = j;
+      s = suaveCpu(r.km - r.meia, r.km + r.meia, km);
+    }
+  });
+  return { a, b, s };
+}
+
+/**
+ * A âncora de {@link BRILHO_MEDIDO_DO_ANEL}, por região: `quantis` =
+ * {@link QUANTIS_DO_TAU} τ por região (o τ médio de cada fatia de área
+ * igual, do mais ralo ao mais denso),
+ * `medias` = a média de retro, frente e lado sem luz. Só caixas com dado
+ * contam; região sem dado (o D) copia a vizinha, senão a borda do C
+ * herdaria uma média zero.
+ *
+ * QUEM CONTA EM CADA REGIÃO é o mesmo peso com que o shader mistura os I/F
+ * na fronteira ({@link fronteiraDoAnelCpu}): a caixa na faixa de transição
+ * entra nas duas regiões, com 1 − s numa e s na outra. Assim cada região
+ * devolve, no total, a mesma luz que o shader de hoje dá às caixas que ela
+ * pinta.
+ */
+export function ancoraDoBrilhoDoAnel(
+  perfil: Uint8Array,
+  brilho: Uint16Array
+): { quantis: Float32Array; medias: Float32Array } {
+  const { caixas, kmInterno, kmExterno } = PERFIL_DO_ANEL;
+  const n = REGIOES_DO_ANEL.length;
+  const quantis = new Float32Array(n * QUANTIS_DO_TAU);
+  const medias = new Float32Array(n * 3);
+  const vazias: number[] = [];
+  const porRegiao = REGIOES_DO_ANEL.map(() => ({
+    amostras: [] as { tau: number; peso: number }[],
+    soma: [0, 0, 0],
+  }));
+  for (let i = 0; i < caixas; i++) {
+    const km = kmInterno + ((i + 0.5) * (kmExterno - kmInterno)) / caixas;
+    if (brilho[i * 4 + 3]! === 0) continue;
+    const alfa = perfil[i * 4 + 3]! / 255;
+    const tau = -Math.log(Math.max(1 - alfa, 1e-3)) * regiaoDoAnelCpu(km).fatorTau;
+    const { a, b, s } = fronteiraDoAnelCpu(km);
+    for (const [j, parte] of [
+      [a, 1 - s],
+      [b, s],
+    ] as const) {
+      if (parte <= 0) continue;
+      const r = porRegiao[j]!;
+      r.amostras.push({ tau, peso: km * parte });
+      for (let c = 0; c < 3; c++) r.soma[c]! += (km * parte * brilho[i * 4 + c]!) / 65535;
+    }
+  }
+  porRegiao.forEach(({ amostras, soma }, j) => {
+    const total = amostras.reduce((s, a) => s + a.peso, 0);
+    if (total === 0) {
+      vazias.push(j);
+      return;
+    }
+    for (let c = 0; c < 3; c++) medias[j * 3 + c] = soma[c]! / total;
+    // a MÉDIA do τ em cada fatia de área, e não o τ do meio dela: uma faixa
+    // estreita e densa (o F na última região) cabe na fatia de cima e não
+    // some, como sumiria com o do meio
+    amostras.sort((a, b) => a.tau - b.tau);
+    const fatia = total / QUANTIS_DO_TAU;
+    let q = 0;
+    let livre = fatia;
+    for (const a of amostras) {
+      let resta = a.peso;
+      while (resta > 0) {
+        const parte = q === QUANTIS_DO_TAU - 1 ? resta : Math.min(resta, livre);
+        quantis[j * QUANTIS_DO_TAU + q]! += (a.tau * parte) / fatia;
+        resta -= parte;
+        livre -= parte;
+        if (livre <= 0 && q < QUANTIS_DO_TAU - 1) {
+          q++;
+          livre = fatia;
+        }
+      }
+    }
+  });
+  for (const j of vazias) {
+    const vizinha = [...REGIOES_DO_ANEL.keys()]
+      .sort((a, b) => Math.abs(a - j) - Math.abs(b - j))
+      .find((k) => !vazias.includes(k));
+    if (vizinha === undefined) continue;
+    quantis.copyWithin(j * QUANTIS_DO_TAU, vizinha * QUANTIS_DO_TAU, (vizinha + 1) * QUANTIS_DO_TAU);
+    medias.copyWithin(j * 3, vizinha * 3, vizinha * 3 + 3);
+  }
+  return { quantis, medias };
+}
+
+/**
  * Anéis U/N/Q/H — raios CITADOS de DADOS-ANEIS-F6.md, em unidades do
  * raio equatorial BODY_AXES. Urano: anel 6 → ε (French24 / PDS-U).
  * Netuno: Le Verrier → Adams (dePater18). Quaoar: Q2R → Q1R (Pereira23)
@@ -743,8 +888,72 @@ class RingshineDoAnel {
  * Saturno e não é descartado com o corpo: o corpo renasce, o dado não
  * muda, e 8 KB não são dose de VRAM.
  */
-let perfilDoAnelVivo: { textura: THREE.DataTexture; bytes: Uint8Array } | null = null;
+let perfilDoAnelVivo: {
+  textura: THREE.DataTexture;
+  bytes: Uint8Array;
+  /** só com {@link BRILHO_MEDIDO_DO_ANEL}; null se o arquivo não veio */
+  brilho: { textura: THREE.DataTexture; dados: Uint16Array } | null;
+} | null = null;
 let perfilDoAnelPedido: Promise<void> | null = null;
+
+/**
+ * O BRILHO MEDIDO, pelo mesmo `fetchBinary` do perfil. Arquivo ausente ou
+ * de tamanho errado (ainda não assado; o dev devolve a página no lugar)
+ * vira `null` e o anel fica o de hoje. Sobe em MEIA-PRECISÃO (RGBA16F, que
+ * o WebGL2 filtra sem extensão) com os mipmaps feitos aqui: gerá-los na GPU
+ * pediria formato renderizável, que meia-precisão não é sem extensão.
+ */
+async function pedirBrilhoDoAnel(
+  base: string
+): Promise<{ textura: THREE.DataTexture; dados: Uint16Array } | null> {
+  try {
+    const cru = await fetchBinary(`${base}${BRILHO_DO_ANEL.arquivo}`);
+    const esperado = PERFIL_DO_ANEL.caixas * 4 * 2;
+    if (cru.byteLength !== esperado) {
+      throw new Error(`${cru.byteLength} B, esperado ${esperado}`);
+    }
+    const vista = new DataView(cru);
+    const dados = Uint16Array.from({ length: cru.byteLength / 2 }, (_, k) =>
+      vista.getUint16(k * 2, true)
+    );
+    const mipmaps: { data: Uint16Array; width: number; height: number }[] = [];
+    let nivel = Float32Array.from(dados, (v) => v / 65535);
+    for (let largura: number = PERFIL_DO_ANEL.caixas; ; largura /= 2) {
+      mipmaps.push({
+        data: Uint16Array.from(nivel, (v) => THREE.DataUtils.toHalfFloat(v)),
+        width: largura,
+        height: 1,
+      });
+      if (largura === 1) break;
+      const metade = new Float32Array(largura * 2);
+      for (let k = 0; k < metade.length; k++) {
+        const i = Math.floor(k / 4);
+        const c = k % 4;
+        metade[k] = (nivel[i * 8 + c]! + nivel[i * 8 + 4 + c]!) / 2;
+      }
+      nivel = metade;
+    }
+    const textura = new THREE.DataTexture(
+      mipmaps[0]!.data,
+      PERFIL_DO_ANEL.caixas,
+      1,
+      THREE.RGBAFormat,
+      THREE.HalfFloatType
+    );
+    textura.mipmaps = mipmaps;
+    textura.generateMipmaps = false;
+    textura.minFilter = THREE.LinearMipmapLinearFilter;
+    textura.magFilter = THREE.LinearFilter;
+    textura.anisotropy = 4;
+    textura.wrapS = THREE.ClampToEdgeWrapping;
+    textura.wrapT = THREE.ClampToEdgeWrapping;
+    textura.needsUpdate = true;
+    return { textura, dados };
+  } catch (erro) {
+    console.warn('[gigante] brilho medido do anel não veio; fica o anel de hoje', erro);
+    return null;
+  }
+}
 
 async function pedirPerfilDoAnel(base: string): Promise<void> {
   perfilDoAnelPedido ??= (async () => {
@@ -767,7 +976,8 @@ async function pedirPerfilDoAnel(base: string): Promise<void> {
     textura.wrapS = THREE.ClampToEdgeWrapping;
     textura.wrapT = THREE.ClampToEdgeWrapping;
     textura.needsUpdate = true;
-    perfilDoAnelVivo = { textura, bytes };
+    const brilho = BRILHO_MEDIDO_DO_ANEL ? await pedirBrilhoDoAnel(base) : null;
+    perfilDoAnelVivo = { textura, bytes, brilho };
   })();
   return perfilDoAnelPedido;
 }
@@ -1269,6 +1479,69 @@ const float U_ESCALA = ${U_PERFIL_ESCALA};
 const float U_BASE = ${U_PERFIL_BASE};`;
 
 /**
+ * {@link BRILHO_MEDIDO_DO_ANEL} em GLSL. NA FRONTEIRA ENTRE DUAS REGIÕES
+ * (as mesmas faixas suaves de `regiaoDoAnel`, geradas da mesma tabela) cada
+ * região dá o SEU I/F inteiro — a camada dela × perfil ÷ a média do perfil
+ * nela — e o que se mistura com o peso da faixa são os dois resultados. A
+ * primeira versão misturava a camada e a média separadamente e multiplicava
+ * as misturas: na rampa de dentro do A, a camada quase toda da divisão
+ * (rala, que transmite bem) vezes o perfil ÷ uma média já meio do A punha
+ * por trás uma linha 3× acima das duas regiões. Mistura de dois resultados
+ * nunca passa do maior deles. As faixas não se sobrepõem, então em cada
+ * raio há no máximo uma fronteira ativa (`a`, `b`, peso `s`).
+ *
+ * Sem NaN: o perfil sai de `rgb / a` (o filtro dilui o dado na borda dele,
+ * e a divisão desfaz), as médias têm piso, a forma tem teto, o `acos` tem
+ * argumento preso; sem dado (`a` ≈ 0, o D ou o arquivo ainda não assado,
+ * que deixa o dummy α = 0 no lugar) a camada de hoje passa intacta.
+ */
+const GLSL_BRILHO_MEDIDO_DO_ANEL = /* glsl */ `
+uniform sampler2D uMapaBrilho;
+uniform vec4 uQuantisDoTau[${REGIOES_DO_ANEL.length * 2}];
+uniform vec3 uMediasDoBrilho[${REGIOES_DO_ANEL.length}];
+const float FASE_DA_FRENTE = ${glslNum(BRILHO_DO_ANEL.faseDaFrenteRad)};
+float iFDaCamada(float tau, float mu0, float mu, float fase, float mesmoLado) {
+  vec2 c = camadaDeParticulas(tau, mu0, mu, fase, mesmoLado);
+  return c.x * max(c.y, 1.0e-4);
+}
+// o I/F da região j sozinha: a média da camada nas fatias de τ dela × a
+// forma do perfil dividida pela média do perfil nela
+float iFDaRegiao(int j, vec3 perfil, float mu0, float mu, float fase, float mesmoLado, float w) {
+  vec4 qa = uQuantisDoTau[2 * j];
+  vec4 qb = uQuantisDoTau[2 * j + 1];
+  float nivel = (
+    iFDaCamada(qa.x, mu0, mu, fase, mesmoLado) + iFDaCamada(qa.y, mu0, mu, fase, mesmoLado)
+    + iFDaCamada(qa.z, mu0, mu, fase, mesmoLado) + iFDaCamada(qa.w, mu0, mu, fase, mesmoLado)
+    + iFDaCamada(qb.x, mu0, mu, fase, mesmoLado) + iFDaCamada(qb.y, mu0, mu, fase, mesmoLado)
+    + iFDaCamada(qb.z, mu0, mu, fase, mesmoLado) + iFDaCamada(qb.w, mu0, mu, fase, mesmoLado)
+  ) / 8.0;
+  vec3 forma3 = perfil / max(uMediasDoBrilho[j], vec3(1.0e-3));
+  return nivel * min(mesmoLado > 0.0 ? mix(forma3.x, forma3.y, w) : forma3.z, 8.0);
+}
+vec2 camadaMedida(
+  vec2 hoje, float u, float km, float mu0, float mu, float fase, float mesmoLado, float cosTheta
+) {
+  vec4 dado = texture2D(uMapaBrilho, vec2(u, 0.5));
+  if (dado.a < 0.002) return hoje;
+  vec3 perfil = dado.rgb / dado.a;
+  float w = clamp(acos(clamp(-cosTheta, -1.0, 1.0)) / FASE_DA_FRENTE, 0.0, 1.0);
+  int a = 0;
+  int b = 0;
+  float s = 0.0;
+${REGIOES_DO_ANEL.slice(1)
+  .map(
+    (r, i) =>
+      `  if (km > ${glslNum(r.km - r.meia)}) { a = ${i}; b = ${i + 1}; ` +
+      `s = smoothstep(${glslNum(r.km - r.meia)}, ${glslNum(r.km + r.meia)}, km); }`
+  )
+  .join('\n')}
+  float iF = iFDaRegiao(b, perfil, mu0, mu, fase, mesmoLado, w);
+  if (s < 1.0) iF = mix(iFDaRegiao(a, perfil, mu0, mu, fase, mesmoLado, w), iF, s);
+  return vec2(mix(hoje.x, iF / max(hoje.y, 1.0e-4), dado.a), hoje.y);
+}
+`;
+
+/**
  * Anel de Saturno: perfil radial medido + camada de partículas +
  * planetshine + sombra do planeta elipsoide. vPos está no frame da
  * RingGeometry (plano XY); o mesh aplica Rx(−π/2), então +Z deste frame
@@ -1293,7 +1566,7 @@ ${GLSL_SOMBRA_DO_PLANETA_NO_ANEL}
 ${GLSL_CAMADA_DO_ANEL}
 ${GLSL_PLANETSHINE_NO_ANEL}
 ${GLSL_RUIDO_DE_VALOR}
-${GLSL_ESPETACULO_DO_ANEL}
+${GLSL_ESPETACULO_DO_ANEL}${BRILHO_MEDIDO_DO_ANEL ? GLSL_BRILHO_MEDIDO_DO_ANEL : ''}
 void main() {
   float r = length(vPos.xy);
   float uBase = ((r - uAnelRaios.x) / max(uAnelRaios.y - uAnelRaios.x, 1.0e-6))
@@ -1318,7 +1591,13 @@ void main() {
   float tau = tauDaOpacidade(alfa) * regiao.z;
   vec2 camada = camadaDeParticulas(
     tau, mu0, mu, faseDoAnel(cosTheta, regiao.y, SURTO_DE_OPOSICAO), mesmoLado
-  );
+  );${
+    BRILHO_MEDIDO_DO_ANEL
+      ? `
+  camada = camadaMedida(camada, u, r * KM_POR_RAIO, mu0, mu,
+    faseDoAnel(cosTheta, regiao.y, SURTO_DE_OPOSICAO), mesmoLado, cosTheta);`
+      : ''
+  }
   // a croma do dado é RELATIVA (cada canal normalizado ao próprio
   // máximo pela fonte, e saturado em 255 em 1.052 texels): dividir pela
   // cor do anel B e renormalizar a luminância 1 deixa passar só o
@@ -2015,6 +2294,14 @@ export class GiganteResolvido {
           // parados em zero e o programa nem os declara
           uFaseDosRaios: { value: 0 },
           uDafnisLon: { value: 0 },
+          // PROVA `?anelb=m`: só o `ANEL_FRAG` com o brilho medido os lê
+          ...(placa && BRILHO_MEDIDO_DO_ANEL
+            ? {
+                uMapaBrilho: { value: this.dummyAnel },
+                uQuantisDoTau: { value: new Float32Array(REGIOES_DO_ANEL.length * QUANTIS_DO_TAU) },
+                uMediasDoBrilho: { value: new Float32Array(REGIOES_DO_ANEL.length * 3).fill(1) },
+              }
+            : {}),
         },
         transparent: true,
         depthWrite: false,
@@ -2082,8 +2369,16 @@ export class GiganteResolvido {
       return;
     }
     if (this.disposto || !perfilDoAnelVivo) return;
-    const { textura, bytes } = perfilDoAnelVivo;
-    if (this.matAnel) this.matAnel.uniforms.uMapaAnel.value = textura;
+    const { textura, bytes, brilho } = perfilDoAnelVivo;
+    if (this.matAnel) {
+      this.matAnel.uniforms.uMapaAnel.value = textura;
+      if (brilho) {
+        const { quantis, medias } = ancoraDoBrilhoDoAnel(bytes, brilho.dados);
+        this.matAnel.uniforms.uMapaBrilho!.value = brilho.textura;
+        this.matAnel.uniforms.uQuantisDoTau!.value = quantis;
+        this.matAnel.uniforms.uMediasDoBrilho!.value = medias;
+      }
+    }
     this.lajota?.ligarPerfil(textura);
     if (this.matSuperficie) {
       this.matSuperficie.uniforms.uMapaAnel.value = textura;

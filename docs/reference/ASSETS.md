@@ -117,6 +117,18 @@ do repositório atlas-orbital não vale aqui.
   razão entre as faces se perdeu na assadura. Com ele, o canal `ring` da
   placa deixou de ser pedido por Saturno; o item 137 (04/09/2026) apagou
   o canal e os 8 arquivos de `public/textures/atlas/saturn/ring*`.
+- `public/data/atlas/anel-saturno-brilho.bin` (16.384 B, 2048 × RGBA16 LE:
+  retro, frente, lado sem luz; A = há dado) — os três perfis de BRILHO do
+  mesmo modelo de Björn Jónsson ("A model of Saturn's rings",
+  https://bjj.mmedia.is/data/s_rings/index.html), na grade do perfil acima,
+  assados por `scripts/data/atlas/anel-brilho.mjs`. Fontes (sha256):
+  `backscattered.txt` b7fd2a735626019565195f2107e2dc38d08c839123efe82a46e6f1ef62e2e47f,
+  `forwardscattered.txt` 7ca46db8590986e17dd5159a559b4d1f58dd147da0442deb844a604d4924da67,
+  `unlitside.txt` b8cf5eb1d5d34292f4b1b89d8ae0ea7c3b4d5077ff65c71f766fbb25e883b850.
+  Cada perfil vem normalizado 0–1 pela fonte (a razão entre eles não está
+  no dado; o nível sai do shader). Só lido com `?anelb=m`, em prova. MESMA
+  PENDÊNCIA DE LICENÇA do perfil acima: o autor credita, não declara
+  licença — confirmar antes de publicar.
 
 ## Os mosaicos das seis luas de Saturno (item 138)
 

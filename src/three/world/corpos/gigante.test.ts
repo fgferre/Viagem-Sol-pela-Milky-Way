@@ -51,7 +51,12 @@ import {
   GIGANTES,
   GiganteResolvido,
   K_DIFRACAO,
+  PERFIL_DO_ANEL,
+  QUANTIS_DO_TAU,
+  ancoraDoBrilhoDoAnel,
+  fronteiraDoAnelCpu,
   posicaoDoGiganteUA,
+  regiaoDoAnelCpu,
   raiosDoGigantePc,
 } from './gigante';
 
@@ -434,6 +439,31 @@ describe('4. o anel de Saturno (D6 / W5-B)', () => {
     expect(ANEIS_CITADOS.haumea.rInt).toBeCloseTo((2287 - 35) / a, 12);
     expect(ANEIS_CITADOS.haumea.rExt).toBeCloseTo((2287 + 35) / a, 12);
     expect((ANEIS_CITADOS.haumea.rExt - ANEIS_CITADOS.haumea.rInt) * a).toBeCloseTo(70, 9);
+  });
+
+  it('âncora do brilho medido: cada região pesa as caixas com o peso da fronteira do shader; as fatias guardam o τ médio, o D sem dado copia o C', () => {
+    const { caixas, kmInterno, kmExterno } = PERFIL_DO_ANEL;
+    const km = (i: number) => kmInterno + ((i + 0.5) * (kmExterno - kmInterno)) / caixas;
+    const perfil = Uint8Array.from({ length: caixas * 4 }, (_, k) => (k % 4 === 3 ? (k * 7) % 250 : 0));
+    const brilho = Uint16Array.from({ length: caixas * 4 }, (_, k) =>
+      km(Math.floor(k / 4)) < 80000 ? 0 : k % 4 === 3 ? 65535 : 32768
+    );
+    const { quantis, medias } = ancoraDoBrilhoDoAnel(perfil, brilho);
+    // o B é a região 2: conta 1 − s onde ela é `a`, s onde é `b`
+    let soma = 0;
+    let peso = 0;
+    for (let i = 0; i < caixas; i++) {
+      if (km(i) < 80000) continue;
+      const { a, b, s } = fronteiraDoAnelCpu(km(i));
+      const parte = (a === 2 ? 1 - s : 0) + (b === 2 ? s : 0);
+      soma += km(i) * parte * -Math.log(1 - perfil[i * 4 + 3]! / 255) * regiaoDoAnelCpu(km(i)).fatorTau;
+      peso += km(i) * parte;
+    }
+    const doB = Array.from(quantis.slice(2 * QUANTIS_DO_TAU, 3 * QUANTIS_DO_TAU));
+    expect(doB.reduce((s, t) => s + t, 0) / QUANTIS_DO_TAU).toBeCloseTo(soma / peso, 4);
+    expect(doB).toEqual([...doB].sort((x, y) => x - y));
+    expect(medias[2 * 3]).toBeCloseTo(32768 / 65535, 6);
+    expect(quantis.slice(0, QUANTIS_DO_TAU)).toEqual(quantis.slice(QUANTIS_DO_TAU, 2 * QUANTIS_DO_TAU));
   });
 
   it('Saturno NÃO é receptor de eclipse — o contrato CORPOS_COM_ANEL', () => {
