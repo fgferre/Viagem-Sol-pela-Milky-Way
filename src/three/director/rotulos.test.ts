@@ -1349,6 +1349,26 @@ describe('os nomes na escala da galáxia (crítica de 12/11)', () => {
     definirIdioma('pt-BR');
   });
 
+  it('o cometa de perto é retrato: o nome dele cede, e estrela nenhuma é escrita sobre a cabeça (13/11)', async () => {
+    const { posicaoDoCometaNaCena, poseDoCometaDePerto } = await import('../world/cometas');
+    const jd = 2446471.0;
+    const nucleo = posicaoDoCometaNaCena('halley', jd)!;
+    const pose = poseDoCometaDePerto('halley', jd, 5.5)!;
+    // a câmera a 2,5 cabeças do núcleo, olhando para ele; uma estrela atrás
+    // da coma, a meio raio aparente do centro
+    const cam = new THREE.PerspectiveCamera(58, 1.6, 1e-14, 1e7);
+    const eixo = nucleo.clone().normalize();
+    cam.position.copy(nucleo).addScaledVector(eixo, -2.5 * pose.raio);
+    cam.lookAt(nucleo);
+    cam.updateMatrixWorld(true);
+    const lado = new THREE.Vector3(0, 1, 0).cross(eixo).normalize();
+    const atras = nucleo.clone().addScaledVector(eixo, 10).addScaledVector(lado, 0.4 * (10 / 2.5));
+    const estrela: NamedStar = { n: 'Atrás', x: atras.x, y: atras.y, z: atras.z, m: -1, s: 'A0V', d: 1, t: 0 };
+    const alvos = noAtlas(cam, { named: [estrela], focoCometa: 'halley', jd });
+    expect(alvos.find((l) => l.key === 'cometa:halley')!.causaDoSumico).toBe('tamanho');
+    expect(alvos.find((l) => l.key === 'Atrás')?.opacity ?? 0).toBe(0);
+  });
+
   it('o nome do lugar fica NO objeto, e a anã de Sagitário cala dentro do bojo', () => {
     const anaNoCentro = (dGC: number) => {
       const cam = new THREE.PerspectiveCamera(50, 1.6, 1e-9, 1e7);

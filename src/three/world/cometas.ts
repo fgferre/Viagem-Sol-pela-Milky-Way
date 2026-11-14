@@ -32,7 +32,7 @@ import {
   type ConjuntoOsculante,
 } from '../../lib/cometas';
 import { classeEmTexto } from '../atlasConfig';
-import { PRIORIDADE_DO_ROTULO, projectForced } from './labels';
+import { PRIORIDADE_DO_ROTULO, cessaoPorTamanhoAparente, projectForced, raioAparenteNdc } from './labels';
 import type { StarLabel } from './labels';
 import { LARGURA_DA_FITA_PX } from './orbitas';
 import { naCena, poseDoSegmento, type PoseDaSonda } from './sondas';
@@ -83,14 +83,33 @@ export function poseDoCometa(id: string, jd: number, raioDoNucleoKm: number | nu
  */
 export function poseDoCometaDePerto(id: string, jd: number, raioDoNucleoKm: number | null): PoseDaSonda | null {
   const pose = poseDoCometa(id, jd, raioDoNucleoKm);
+  const cabeca = raioDaCabecaAcesaKm(id, jd);
+  if (!pose || cabeca === undefined) return null;
+  if (cabeca !== null) return { ...pose, raio: kmParaPc(cabeca) };
+  return raioDoNucleoKm ? { ...pose, raio: kmParaPc(3 * raioDoNucleoKm) } : null;
+}
+
+/** o raio da cabeça no instante `jd` (km); `null` = apagado, `undefined` = sem estado */
+function raioDaCabecaAcesaKm(id: string, jd: number): number | null | undefined {
   const e = estadoDoCometa(id, jd);
   const cometa = COMETAS.find((c) => c.id === id);
-  if (!pose || !e || !cometa) return null;
+  if (!e || !cometa) return undefined;
   const atividade = brilhoRelativo(cometa, Math.hypot(e[0], e[1], e[2]));
-  if (atividade > LIMIAR_DE_ATIVIDADE) {
-    return { ...pose, raio: kmParaPc(raioDaCabecaKm(atividade)) };
-  }
-  return raioDoNucleoKm ? { ...pose, raio: kmParaPc(3 * raioDoNucleoKm) } : null;
+  return atividade > LIMIAR_DE_ATIVIDADE ? raioDaCabecaKm(atividade) : null;
+}
+
+/**
+ * O QUE ENCHE O QUADRO DE UM COMETA (pc) — a cabeça acesa, ou o núcleo
+ * medido quando apagado: a mesma esfera que o "Aproximar" enquadra. É a
+ * régua da cessão por tamanho do nome dele, como o raio de um planeta
+ * (crítica de 13/11: "Halley" era escrito branco sobre a própria cabeça).
+ * `null` sem núcleo medido e apagado.
+ */
+export function raioDoCorpoDoCometaPc(id: string, jd: number): number | null {
+  const cabeca = raioDaCabecaAcesaKm(id, jd);
+  if (cabeca) return kmParaPc(cabeca);
+  const km = COMETAS.find((c) => c.id === id)?.nucleo.km;
+  return cabeca === null && km ? kmParaPc(km / 2) : null;
 }
 
 const _pos = new THREE.Vector3();
@@ -104,13 +123,19 @@ export function projetarCometas(
   comMarcador: boolean
 ): StarLabel[] {
   const out: StarLabel[] = [];
+  const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(camera.fov) * 0.5);
   for (const c of COMETAS) {
     if (!posicaoDoCometaNaCena(c.id, jd, _pos)) continue;
     if (c.id !== foco && _pos.length() > NOME_ATE_UA * AU_PC) continue;
     const l = projectForced(camera, c.nome, '', _pos, `${CHAVE_DE_COMETA}${c.id}`);
     if (!l) continue;
     l.distPc = _pos.distanceTo(camera.position);
-    l.opacity = 0.95;
+    // A LEI DOS PLANETAS (`projectCorpos`): o nome sai quando o corpo enche
+    // a tela — e o corpo de um cometa aceso é a cabeça
+    const raio = raioDoCorpoDoCometaPc(c.id, jd);
+    const cessao = raio === null ? 1 : cessaoPorTamanhoAparente(raioAparenteNdc(raio, l.distPc, tanHalfFov));
+    l.opacity = 0.95 * cessao;
+    if (cessao <= 0) l.causaDoSumico = 'tamanho';
     l.detalhe = classeEmTexto(c.classe);
     l.prioridade = c.id === foco ? PRIORIDADE_DO_ROTULO.foco : PRIORIDADE_DO_ROTULO.cometa;
     if (comMarcador) {
