@@ -55,6 +55,12 @@ import { alcanceDoEspinhoPx, ganhoDeEntradaDoFlare, raioVisivelDaAsaPx } from '.
 import { M_V_SOL_DO_CAMPO, picoDaPsf, psfPointSizePx, sigmaDaPsfPx } from '../luzDaCasa';
 import { RAMP_DURATION_MS, stepRampToward } from './lodStellar';
 import { ndcNaTela, SondaDeOclusao } from './sondaDeOclusao';
+import {
+  U_PERFIL_BASE,
+  U_PERFIL_ESCALA,
+  regiaoDoAnelCpu,
+  type AnelComPerfil,
+} from './corpos/gigante';
 
 // ─── O ORÇAMENTO E A HISTERESE (puros, testados sem three) ───────────────
 
@@ -418,6 +424,10 @@ export interface QuadroDoClarao {
   visitadas?: readonly CandidataVisitada[];
   /** a luz que a lente acendeu (quadro anterior): o halo do campo cede a ela */
   lente?: LuzDaLenteNoQuadro;
+  /** os anéis desenhados neste quadro (`transmitanciaDosAneis`); ausente = nenhum */
+  aneis?: readonly Readonly<AnelComPerfil>[];
+  /** tan(fov vertical / 2) — a pegada de um pixel no anel; ausente = 0 */
+  tanHalfFov?: number;
 }
 
 /** Quantas vagas de visitada o cadastro reserva (duas por estrela: a
@@ -675,6 +685,116 @@ export function meiaDaArtePx(m: number, screenH: number): number {
   );
 }
 
+// ─── OS ANÉIS NO CAMINHO — o anel que tapa o ponto tapa o clarão ─────────
+// A sonda só vê o que escreve profundidade, e o anel não escreve: Sírius
+// atrás do anel B acendia o clarão inteiro. O anel é translúcido, então a
+// resposta não é binária — é a TRANSMITÂNCIA, pela lei do PRÓPRIO material
+// (`ANEL_FRAG`, gigante.ts): ele desenha com α = 1 − e^{−τ/μ} em mistura
+// normal, e o que estiver atrás sai × e^{−τ/μ}. Aqui, a mesma conta na CPU:
+//
+//   τ = −ln(max(1 − ā, 10⁻³)) · fatorTau(r),  μ = max(|d·n|, 0,02),
+//   T = e^{−τ/μ}  (T = 1 onde ā < 0,004 — o `discard` do material)
+//
+// com ā o α do perfil medido no raio onde a linha câmera→estrela fura o
+// plano, MÉDIO NA PEGADA DE UM PIXEL ali (o mipmap do material faz o mesmo:
+// de longe o pixel mistura o B com a Cassini). A pegada radial é o
+// gradiente de r por pixel, `px·t·√(1 + (ê_r·d)²/μ²)`, nunca menor que uma
+// caixa (que é o filtro linear de perto). Média de caixa sobre α constante
+// por caixa = soma acumulada: contínua no raio, então o T anda contínuo com
+// a câmera — sem rampa, ele vale no MESMO quadro em que o anel cobre o
+// ponto. Os anéis procedurais (sem perfil) e os véus aditivos não tapam.
+
+/** o lado da tabela do fatorTau, amostrado em [rInt, rExt]: ~9 km por
+ *  amostra contra a transição mais curta (Cassini, 120 km) */
+const AMOSTRAS_DO_FATOR_TAU = 8192;
+
+interface TabelaDoAnel {
+  /** soma acumulada de α por caixa (n + 1 entradas) */
+  readonly soma: Float64Array;
+  readonly fatorTau: Float32Array;
+}
+
+const tabelasDosAneis = new WeakMap<Readonly<AnelComPerfil>, TabelaDoAnel>();
+
+function tabelaDoAnel(anel: Readonly<AnelComPerfil>): TabelaDoAnel {
+  let t = tabelasDosAneis.get(anel);
+  if (t) return t;
+  const n = anel.perfil.length >> 2;
+  const soma = new Float64Array(n + 1);
+  for (let i = 0; i < n; i++) soma[i + 1] = soma[i] + anel.perfil[i * 4 + 3] / 255;
+  const fatorTau = new Float32Array(AMOSTRAS_DO_FATOR_TAU);
+  for (let k = 0; k < AMOSTRAS_DO_FATOR_TAU; k++) {
+    const r = anel.rInt + ((anel.rExt - anel.rInt) * k) / (AMOSTRAS_DO_FATOR_TAU - 1);
+    fatorTau[k] = regiaoDoAnelCpu(r * anel.kmPorRaio).fatorTau;
+  }
+  t = { soma, fatorTau };
+  tabelasDosAneis.set(anel, t);
+  return t;
+}
+
+/** ∫₀ˣ α, em caixas, com a borda estendida (o clamp-to-edge da textura) */
+function integralDeAlfa(soma: Float64Array, x: number): number {
+  const n = soma.length - 1;
+  if (x <= 0) return x * soma[1];
+  if (x >= n) return soma[n] + (x - n) * (soma[n] - soma[n - 1]);
+  const i = Math.floor(x);
+  return soma[i] + (x - i) * (soma[i + 1] - soma[i]);
+}
+
+/**
+ * A fração da luz de um ponto em `alvo` que chega à câmera em `cam` depois
+ * de atravessar os anéis (1 = nenhum no caminho). `radPorPx` é o ângulo de
+ * um pixel do buffer (a pegada do mipmap); 0 = só o filtro linear.
+ */
+export function transmitanciaDosAneis(
+  aneis: readonly Readonly<AnelComPerfil>[],
+  cam: { x: number; y: number; z: number },
+  alvo: { x: number; y: number; z: number },
+  radPorPx: number
+): number {
+  let dx = alvo.x - cam.x;
+  let dy = alvo.y - cam.y;
+  let dz = alvo.z - cam.z;
+  const l = Math.hypot(dx, dy, dz);
+  if (!(l > 0)) return 1;
+  dx /= l;
+  dy /= l;
+  dz /= l;
+  let tr = 1;
+  for (const anel of aneis) {
+    const c = anel.centroPc;
+    const p = anel.polo;
+    const dn = dx * p.x + dy * p.y + dz * p.z;
+    if (dn === 0) continue;
+    const t = ((c.x - cam.x) * p.x + (c.y - cam.y) * p.y + (c.z - cam.z) * p.z) / dn;
+    // o anel tem de estar ENTRE a câmera e a estrela
+    if (!(t > 0 && t < l)) continue;
+    const hx = cam.x + dx * t - c.x;
+    const hy = cam.y + dy * t - c.y;
+    const hz = cam.z + dz * t - c.z;
+    const rPc = Math.hypot(hx, hy, hz);
+    const r = rPc / anel.raioPc;
+    // a malha (RingGeometry) vai de rInt a rExt: fora dela, nada desenha
+    if (!(r > anel.rInt && r < anel.rExt)) continue;
+    const mu = Math.max(Math.abs(dn), 0.02);
+    const tab = tabelaDoAnel(anel);
+    const n = tab.soma.length - 1;
+    const dudr = U_PERFIL_ESCALA / (anel.rExt - anel.rInt);
+    const x = ((r - anel.rInt) * dudr + U_PERFIL_BASE) * n;
+    const erd = (hx * dx + hy * dy + hz * dz) / rPc;
+    const pegadaR = (radPorPx * t * Math.sqrt(1 + (erd / mu) ** 2)) / anel.raioPc;
+    const w = Math.max(pegadaR * dudr * n, 1);
+    const alfa = (integralDeAlfa(tab.soma, x + 0.5 * w) - integralDeAlfa(tab.soma, x - 0.5 * w)) / w;
+    if (alfa < 0.004) continue;
+    const k = ((r - anel.rInt) / (anel.rExt - anel.rInt)) * (AMOSTRAS_DO_FATOR_TAU - 1);
+    const k0 = Math.min(Math.floor(k), AMOSTRAS_DO_FATOR_TAU - 2);
+    const fz = tab.fatorTau[k0] + (k - k0) * (tab.fatorTau[k0 + 1] - tab.fatorTau[k0]);
+    const tau = -Math.log(Math.max(1 - alfa, 1e-3)) * fz;
+    tr *= Math.exp(-tau / mu);
+  }
+  return tr;
+}
+
 export class ClaraoDeAsas {
   readonly group = new THREE.Group();
   private readonly mats: THREE.ShaderMaterial[] = [];
@@ -926,6 +1046,10 @@ export class ClaraoDeAsas {
         : 1;
 
     this.sondaMat.uniforms.uScreenH.value = q.screenH;
+    const radPorPx =
+      Number.isFinite(q.tanHalfFov) && (q.tanHalfFov as number) > 0
+        ? (2 * (q.tanHalfFov as number)) / q.screenH
+        : 0;
 
     // o Sol e as estrelas VISITADAS (12/11): a que o motor do Sol monta
     // candidata pela mesma lei, com os números do ponto dela
@@ -1046,10 +1170,15 @@ export class ClaraoDeAsas {
         this.cor[i * 3 + 1],
         this.cor[i * 3 + 2]
       );
-      // presença = rampa do orçamento × entrada × soltura × oclusão: o
-      // brilho da forma é FIXO — é o desenho superior que o dono apontou;
-      // a lei manda só em presença e tamanho
-      u.uGanho.value = s.ganho * entrada * vis;
+      // presença = rampa do orçamento × entrada × soltura × oclusão × o
+      // que atravessa os anéis: o brilho da forma é FIXO — é o desenho
+      // superior que o dono apontou; a lei manda só em presença e tamanho
+      const aneis = q.aneis;
+      const veuDosAneis =
+        aneis && aneis.length > 0
+          ? transmitanciaDosAneis(aneis, q.camPos, sonda.position, radPorPx)
+          : 1;
+      u.uGanho.value = s.ganho * entrada * vis * veuDosAneis;
       const t = i === 0 ? q.transmitanciaDoSol : undefined;
       (u.uTransmitancia.value as THREE.Vector3).set(t ? t[0] : 1, t ? t[1] : 1, t ? t[2] : 1);
       u.uMeiaPx.value = meiaPx;

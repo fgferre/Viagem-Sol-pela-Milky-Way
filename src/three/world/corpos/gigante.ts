@@ -1394,6 +1394,24 @@ export interface EstadoDoGigante {
   superficieDoAnel: { raioPc: number; centroPc: THREE.Vector3 } | null;
 }
 
+/**
+ * Um anel desenhado com o PERFIL MEDIDO, como está neste quadro (só leitura):
+ * o plano (centro + polo, cena em pc), a régua (raio equatorial em pc e os
+ * raios da malha em unidades dele) e os bytes do perfil que o material lê.
+ */
+export interface AnelComPerfil {
+  readonly centroPc: THREE.Vector3;
+  /** a normal do plano do anel (unitária) */
+  readonly polo: THREE.Vector3;
+  readonly raioPc: number;
+  readonly rInt: number;
+  readonly rExt: number;
+  /** o `KM_POR_RAIO` do `ANEL_FRAG` — a régua de `regiaoDoAnelCpu` */
+  readonly kmPorRaio: number;
+  /** `PERFIL_DO_ANEL.caixas` × RGBA8; A = 1 − e^{−τ} visto de cima */
+  readonly perfil: Uint8Array;
+}
+
 /** O bloco comum de textura (`OpcoesDeTextura`) mais o id do gigante —
  *  a classe serve aos quatro. */
 export interface OpcoesDoGigante extends OpcoesDeTextura {
@@ -1477,6 +1495,34 @@ export class GiganteResolvido {
 
   get estadoVivo(): Readonly<EstadoDoGigante> {
     return this.estado;
+  }
+
+  /** a descrição do anel lida por `anelComPerfil`, REUSADA (aponta para o
+   *  centro e o polo vivos — zero alocação por tick) */
+  private descricaoDoAnel: AnelComPerfil | null = null;
+
+  /**
+   * LEITURA, sem efeito: o anel que está sendo DESENHADO neste quadro com o
+   * perfil medido no material (`uMapaAnel`) — o que o clarão das estrelas
+   * consulta para atravessá-lo pela mesma opacidade. `null` sem anel, sem
+   * perfil (o dummy α = 0 não tapa nada) ou com o anel fora do desenho.
+   */
+  get anelComPerfil(): Readonly<AnelComPerfil> | null {
+    const vivo = perfilDoAnelVivo;
+    if (!this.anel || !this.matAnel || !vivo) return null;
+    if (this.matAnel.uniforms.uMapaAnel.value !== vivo.textura) return null;
+    for (let o: THREE.Object3D | null = this.anel; o; o = o.parent) if (!o.visible) return null;
+    const raios = this.matAnel.uniforms.uAnelRaios.value as THREE.Vector2;
+    this.descricaoDoAnel ??= {
+      centroPc: this.centro,
+      polo: this.vAnelY,
+      raioPc: this.raioA,
+      rInt: raios.x,
+      rExt: raios.y,
+      kmPorRaio: BODY_AXES.saturn[0]!,
+      perfil: vivo.bytes,
+    };
+    return this.descricaoDoAnel;
   }
 
   get id(): string {

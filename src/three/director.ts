@@ -75,7 +75,7 @@ import { ehTelefone, meioConeDaTela, tetoDoAparelho } from './world/corpos/textu
 import { LuaResolvida } from './world/corpos/lua';
 import type { TerraResolvida } from './world/corpos/terra';
 import { RochosoResolvido } from './world/corpos/rochoso';
-import { GiganteResolvido } from './world/corpos/gigante';
+import { GiganteResolvido, type AnelComPerfil } from './world/corpos/gigante';
 import { Planetas, UA_POR_PC } from './world/planetas/planetas';
 import { Orbitas, type QuadroEmPx } from './world/orbitas';
 import { TrajetoriasDasSondas } from './world/sondas';
@@ -707,6 +707,8 @@ export class Director {
    *  de `noPalco`: uma lista, duas leituras. */
   private rochosos: readonly PostoNoPalco<RochosoResolvido>[] = [];
   private gigantes: readonly PostoNoPalco<GiganteResolvido>[] = [];
+  /** os anéis que o clarão atravessa neste quadro, REUSADO (solNoQuadro) */
+  private readonly aneisDoQuadro: Readonly<AnelComPerfil>[] = [];
   /** o quadro dos doze, montado UMA vez e reusado — doze objetos por
    *  tick era alocação que o M4 da casa não deixa passar. */
   private readonly quadroDoPalco = quadroDoPalcoVazio();
@@ -1242,6 +1244,15 @@ export class Director {
     janelaDoQuadro: lerPortaSolQuadro(this.debug.get('solquadro')),
     visitadas: () => this.estrelasNoQuadro?.candidatasAoClarao() ?? [],
     lente: () => this.luzDaLente,
+    aneis: () => {
+      const l = this.aneisDoQuadro;
+      l.length = 0;
+      for (const g of this.gigantes) {
+        const a = g.corpo.anelComPerfil;
+        if (a) l.push(a);
+      }
+      return l;
+    },
   });
   /** a escada do Atlas — corte 9 da Parte 1 (director/escada.ts): o
    *  clique, a busca, os degraus, o religador do relógio e o trio do

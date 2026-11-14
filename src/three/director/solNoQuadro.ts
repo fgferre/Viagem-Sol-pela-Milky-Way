@@ -23,6 +23,7 @@ import {
 import { repartir } from '../estrela';
 import type { JanelaDoQuadro, Reparticao } from '../estrela';
 import { ClaraoDeAsas, type CandidataVisitada, type LuzDaLenteNoQuadro } from '../world/clarao';
+import type { AnelComPerfil } from '../world/corpos/gigante';
 import type { StellarBody } from '../world/stellarBody';
 import type { Planetas } from '../world/planetas/planetas';
 import type { StarField } from '../world/stars';
@@ -101,6 +102,8 @@ export class SolNoQuadro {
     visitadas: () => readonly CandidataVisitada[];
     /** a luz que a lente acendeu e de quem (o halo do campo cede a ela) */
     lente: () => LuzDaLenteNoQuadro;
+    /** os anéis desenhados neste quadro — o clarão os atravessa pela opacidade deles */
+    aneis: () => readonly Readonly<AnelComPerfil>[];
   };
 
   constructor(fios: SolNoQuadro['fios']) {
@@ -262,6 +265,8 @@ export class SolNoQuadro {
         transmitanciaDoSol: this.transmitanciaDoSolVisto,
         visitadas: this.fios.visitadas(),
         lente: this.fios.lente(),
+        aneis: this.fios.aneis(),
+        tanHalfFov: q.tanHalfFov,
       });
     }
   }

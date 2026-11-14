@@ -38,6 +38,7 @@ import {
   meiaDaArtePx,
   passoDoOrcamento,
   presencaNaFronteira,
+  transmitanciaDosAneis,
   veuDaLente,
   veuDaLenteNaTela,
 } from './clarao';
@@ -50,6 +51,7 @@ import {
 } from '../estrela';
 import { EXPO_M0, SIGMA_PX, picoDaPsf, sigmaDaPsfPx } from '../luzDaCasa';
 import { RAMP_DURATION_MS } from './lodStellar';
+import { U_PERFIL_BASE, U_PERFIL_ESCALA, regiaoDoAnelCpu } from './corpos/gigante';
 
 const META = JSON.parse(
   readFileSync(new URL('../../../public/data/stars_meta.json', import.meta.url), 'utf8')
@@ -371,6 +373,60 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     c.dispose();
   });
 
+  it('um anel no caminho apaga clarão e halo pela opacidade DELE, no mesmo quadro: e^(−τ/μ)', () => {
+    // perfil sintético: α = 1 no meio da régua, 0,5 nas bordas — a lei do
+    // `ANEL_FRAG` (τ = −ln(1 − α)·fatorTau, μ = |d·n|) e nada inventado
+    const caixas = 2048;
+    const perfil = new Uint8Array(caixas * 4);
+    for (let i = 0; i < caixas; i++) perfil[i * 4 + 3] = i >= 900 && i < 1100 ? 255 : 128;
+    const c = new ClaraoDeAsas(META.named, { camadaDoCampo: 1 });
+    const interna = c as unknown as {
+      slots: { indice: number }[];
+      mats: THREE.ShaderMaterial[];
+      matsDoCampo: THREE.ShaderMaterial[];
+    };
+    const q = quadroEmCasa(true);
+    const s = META.named.find((x) => x.n === 'Sirius')!;
+    const u = new THREE.Vector3(s.x, s.y, s.z).sub(q.camPos).normalize();
+    const e = new THREE.Vector3(0, 0, 1).cross(u).normalize();
+    const raioPc = 1e-6;
+    const kmPorRaio = 60268;
+    // o anel inclinado 60° da linha de visada (μ = 0,5), furado a r raios
+    const polo = u.clone().multiplyScalar(0.5).addScaledVector(e, Math.sqrt(0.75));
+    const anelEm = (r: number, dist = 1e-4) => ({
+      centroPc: q.camPos.clone().addScaledVector(u, dist).addScaledVector(new THREE.Vector3().crossVectors(polo, e).normalize(), -r * raioPc),
+      polo, raioPc, rInt: 1.11, rExt: 2.326, kmPorRaio, perfil,
+    });
+    const esperado = (r: number, alfa: number) =>
+      Math.exp(-(-Math.log(Math.max(1 - alfa, 1e-3)) * regiaoDoAnelCpu(r * kmPorRaio).fatorTau) / 0.5);
+    const sirius = new THREE.Vector3(s.x, s.y, s.z);
+    // no centro de uma caixa longe das bordas da faixa, a pegada de uma
+    // caixa é o próprio α
+    const rMeio = 1.11 + ((1000.5 / caixas - U_PERFIL_BASE) / U_PERFIL_ESCALA) * (2.326 - 1.11);
+    const rBorda = 1.11 + ((300.5 / caixas - U_PERFIL_BASE) / U_PERFIL_ESCALA) * (2.326 - 1.11);
+    expect(transmitanciaDosAneis([anelEm(rMeio)], q.camPos, sirius, 0)).toBeCloseTo(esperado(rMeio, 1), 9);
+    expect(transmitanciaDosAneis([anelEm(rBorda)], q.camPos, sirius, 0)).toBeCloseTo(esperado(rBorda, 128 / 255), 6);
+    // fora da malha, ou ATRÁS da estrela, não tapa
+    expect(transmitanciaDosAneis([anelEm(2.5)], q.camPos, sirius, 0)).toBe(1);
+    expect(transmitanciaDosAneis([anelEm(rBorda, 10)], q.camPos, sirius, 0)).toBe(1);
+    // de longe o pixel mistura as caixas, como o mipmap: a pegada larga
+    // leva a faixa opaca para a média
+    const rVizinho = 1.11 + ((880.5 / caixas - U_PERFIL_BASE) / U_PERFIL_ESCALA) * (2.326 - 1.11);
+    const fino = transmitanciaDosAneis([anelEm(rVizinho)], q.camPos, sirius, 0);
+    expect(fino).toBeCloseTo(esperado(rVizinho, 128 / 255), 6);
+    expect(transmitanciaDosAneis([anelEm(rVizinho)], q.camPos, sirius, 1e-3)).toBeLessThan(0.5 * fino);
+
+    for (let i = 0; i < 30; i++) c.atualizar(q);
+    const k = interna.slots.findIndex((x) => x.indice === 1 + META.named.indexOf(s));
+    const pleno = interna.mats[k].uniforms.uGanho.value as number;
+    const halo = interna.matsDoCampo[k].uniforms.uGanho.value as number;
+    c.atualizar({ ...q, aneis: [anelEm(rBorda)], tanHalfFov: 0 });
+    const t = esperado(rBorda, 128 / 255);
+    expect((interna.mats[k].uniforms.uGanho.value as number) / pleno).toBeCloseTo(t, 6);
+    expect((interna.matsDoCampo[k].uniforms.uGanho.value as number) / halo).toBeCloseTo(t, 6);
+    c.dispose();
+  });
+
   it('a receita montada é BYTE A BYTE a de antes', () => {
     // "claramente a regra que desenha sirius é totalmente diferente da
     // que desenha o sol... o desenho de spikes de sirius é muito
@@ -644,9 +700,12 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     //     (13/11: `lente` entrou por decisão — a luz que a lente de cinema
     //     acendeu, só lida pela luz única: ela só TIRA do halo do campo
     //     (`fatiaDoCampo` ≤ 1), nunca toca tamanho, teto nem a camada 0.)
+    //     (13/11: `aneis` e `tanHalfFov` entraram por decisão — o anel no
+    //     caminho multiplica a presença por uma transmitância ≤ 1; tamanho
+    //     e teto não passam por eles.)
     expect(camposDaInterface(CLARAO, 'QuadroDoClarao')).toEqual([
       'camPos', 'screenH', 'dtS', 'solVisivel', 'solturaDoSol', 'expoM0', 'sigmaPx', 'pr',
-      'transmitanciaDoSol', 'visitadas', 'lente',
+      'transmitanciaDoSol', 'visitadas', 'lente', 'aneis', 'tanHalfFov',
     ]);
     //     ...e o módulo do Sol no quadro não recebe MODO nenhum para
     //     repassar: o `fase: Phase` que sobrava no parâmetro (sem leitor,
