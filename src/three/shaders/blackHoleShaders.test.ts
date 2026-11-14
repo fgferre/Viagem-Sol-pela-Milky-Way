@@ -1,10 +1,12 @@
-// Serve: lei — o disco de Sgr A✱ é uma fatia fina: inclinado sai igual ao plano de sempre, de lado vira faixa e não risco; a borda rala não tapa o fundo
+// Serve: lei — o disco de Sgr A✱ é uma fatia fina: inclinado sai igual ao plano de sempre, de lado vira faixa e não risco; a borda rala não tapa o fundo; a lente não estica a borda da tela em riscos
 import { describe, expect, it } from 'vitest';
 import {
+  BH_COMPOSITE_FRAG,
   BH_MARCH_FRAG,
   ESPESSURA_DO_DISCO,
   RAIO_DENSO_RS,
   densidadeDoDisco,
+  espelhoNaTela,
   fatiaDoDisco,
 } from './blackHoleShaders';
 
@@ -63,5 +65,21 @@ describe('a fatia do disco', () => {
     // o brilho segue com alpha; só o que tapa (trans) leva a densidade
     expect(BH_MARCH_FRAG).toContain('col += trans * alpha * dcol;');
     expect(BH_MARCH_FRAG).toContain('trans *= 1.0 - tapa;');
+  });
+});
+
+describe('a lente perto da borda da tela', () => {
+  it('dentro da tela lê o próprio uv; um pouco fora lê o espelho, não a borda', () => {
+    for (const u of [0, 0.03, 0.5, 0.97, 1]) expect(espelhoNaTela(u)).toBeCloseTo(u, 12);
+    expect(espelhoNaTela(1.1)).toBeCloseTo(0.9, 12);
+    expect(espelhoNaTela(1.15)).toBeCloseTo(0.85, 12);
+    expect(espelhoNaTela(-0.1)).toBeCloseTo(0.1, 12);
+  });
+
+  it('nenhum passe lê a cena no uv grudado na borda', () => {
+    for (const frag of [BH_MARCH_FRAG, BH_COMPOSITE_FRAG]) {
+      expect(frag).not.toMatch(/texture2D\(tScene, cuv\)/);
+      expect(frag).toContain('texture2D(tScene, naTela(pv.xy))');
+    }
   });
 });
