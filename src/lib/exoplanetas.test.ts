@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   SISTEMAS_PLANETARIOS,
   baseDaOrbita,
+  climaDoExoplaneta,
   comAnfitrias,
   exoplanetaPorId,
   posicaoDoExoplaneta,
+  sementeDoExoplaneta,
   zonaHabitavel,
 } from './exoplanetas';
 import { estrelaVisitavelPorNome } from './atlas/estrelasVisitaveis';
@@ -45,5 +47,63 @@ describe('os primeiros exoplanetas', () => {
     expect(lista.map((s) => s.n)).toEqual(['TRAPPIST-1', 'Kepler-186', 'HD 189733']);
     expect(Math.hypot(lista[0].x, lista[0].y, lista[0].z)).toBeCloseTo(12.43, 2);
     expect(comAnfitrias(lista)).toHaveLength(3);
+  });
+
+  const clima = (id: string) => {
+    const { planeta, sistema } = exoplanetaPorId(id)!;
+    const e = estrelaVisitavelPorNome(sistema.estrela)!;
+    return climaDoExoplaneta(planeta, {
+      teffK: e.teffK.v,
+      raioRsol: e.raioRsol.v,
+      massaMsol: e.massaMsol.v,
+      luminosidadeLsol: e.luminosidadeLsol.v,
+    });
+  };
+
+  it('a classe sai dos números: um planeta de cada classe', () => {
+    expect(clima('55-cnc-e').classe).toBe('lava');
+    expect(clima('trappist-1b').classe).toBe('rochosoQuente');
+    expect(clima('proxima-b').classe).toBe('rochosoTemperado');
+    // a 0,432 UA, Kepler-186 f fica logo além da borda de fora (0,401 UA
+    // pela luminosidade da tabela) — a ficha já dizia "além da borda"
+    expect(clima('kepler-186f').classe).toBe('gelado');
+    expect(clima('trappist-1h').classe).toBe('gelado');
+    expect(clima('55-cnc-c').classe).toBe('subnetuno');
+    expect(clima('hd-189733b').classe).toBe('giganteQuente');
+    expect(clima('51-peg-b').classe).toBe('giganteQuente');
+    expect(clima('eps-eri-b').classe).toBe('giganteFrio');
+    // a zona habitável decide os sete de TRAPPIST-1 como decide a ficha
+    expect(['b', 'c', 'd', 'e', 'f', 'g', 'h'].map((l) => clima(`trappist-1${l}`).classe)).toEqual([
+      'rochosoQuente', 'rochosoQuente', 'rochosoQuente',
+      'rochosoTemperado', 'rochosoTemperado', 'rochosoTemperado', 'gelado',
+    ]);
+  });
+
+  it('a temperatura calculada de a, Teff e R⋆ fecha com a do arquivo onde o trânsito a mediu', () => {
+    // TRAPPIST-1 b: o arquivo (Agol 2021) diz 397,6 K, com albedo 0
+    expect(clima('trappist-1b').teqK).toBeCloseTo(397.6, -1);
+    expect(clima('55-cnc-e').subestelarK / clima('55-cnc-e').teqK).toBeCloseTo(Math.SQRT2, 6);
+    // β Pic b brilha do calor da formação: a atmosfera é a do espectro
+    expect(clima('bet-pic-b').teqK).toBeLessThan(300);
+    expect(clima('bet-pic-b').atmosferaK).toBe(1612);
+    expect(clima('bet-pic-b').classe).toBe('giganteQuente');
+  });
+
+  it('travados por maré: os perto das anãs vermelhas e os Júpiteres quentes; não os de órbita larga', () => {
+    for (const id of ['proxima-b', 'trappist-1e', 'trappist-1h', '55-cnc-e', '51-peg-b', 'hd-189733b']) {
+      expect(clima(id).travado, id).toBe(true);
+    }
+    for (const id of ['kepler-186f', 'eps-eri-b', 'bet-pic-b', 'tau-cet-f']) expect(clima(id).travado, id).toBe(false);
+  });
+
+  it('a densidade só existe com raio e massa verdadeira medidos', () => {
+    expect(clima('55-cnc-e').densidade).toBeCloseTo(6.7, 1);
+    expect(clima('proxima-b').densidade).toBeNull();
+  });
+
+  it('a semente é o id: o mesmo planeta, a mesma cara; planetas diferentes, caras diferentes', () => {
+    expect(sementeDoExoplaneta('trappist-1e')).toEqual(sementeDoExoplaneta('trappist-1e'));
+    expect(sementeDoExoplaneta('trappist-1e')).not.toEqual(sementeDoExoplaneta('trappist-1f'));
+    for (const v of sementeDoExoplaneta('proxima-b')) expect(v >= 0 && v < 100).toBe(true);
   });
 });

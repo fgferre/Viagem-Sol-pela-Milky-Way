@@ -494,6 +494,161 @@ export function zonaHabitavel(teffK: number, lumLsol: number): { dentroUA: numbe
   };
 }
 
+// ─── A CLASSE: o que se mede decide que tipo de mundo é (13/11/2026) ─────
+
+/**
+ * As sete classes. A CLASSE é derivada dos números do arquivo; a
+ * SUPERFÍCIE que a cena desenha a partir dela é imaginada (a ficha diz).
+ */
+export type ClasseDoExoplaneta =
+  | 'lava'
+  | 'rochosoQuente'
+  | 'rochosoTemperado'
+  | 'gelado'
+  | 'subnetuno'
+  | 'giganteQuente'
+  | 'giganteFrio';
+
+/** a estrela que a classe precisa — os números da ficha física dela */
+export interface EstrelaDoClima {
+  readonly teffK: number;
+  readonly raioRsol: number;
+  readonly massaMsol: number;
+  readonly luminosidadeLsol: number;
+}
+
+export interface ClimaDoExoplaneta {
+  readonly classe: ClasseDoExoplaneta;
+  /** a temperatura de equilíbrio CALCULADA aqui: Teff·√(R⋆/2a), albedo 0, calor espalhado pelo globo */
+  readonly teqK: number;
+  /** o ponto embaixo da estrela sem atmosfera: Teff·√(R⋆/a) = √2·Teq */
+  readonly subestelarK: number;
+  /** a temperatura da atmosfera: a maior entre a irradiada e a do arquivo
+   *  (nos gigantes jovens de β Pic o arquivo traz a temperatura MEDIDA no
+   *  espectro, de quem ainda brilha do calor da formação) */
+  readonly atmosferaK: number;
+  /** (R⋆/a)² — quanto a luz da estrela se dilui até o planeta */
+  readonly diluicao: number;
+  /** o tempo de travar por maré é menor que 1 bilhão de anos */
+  readonly travado: boolean;
+  /** g/cm³, só onde raio e massa verdadeira são medidos */
+  readonly densidade: number | null;
+  /** a classe de nuvens de Sudarsky (1 a 5) pela temperatura da atmosfera */
+  readonly sudarsky: 1 | 2 | 3 | 4 | 5;
+}
+
+/**
+ * AS FRONTEIRAS, uma por linha, com a fonte (as de memória dizem):
+ *  - GIGANTE: massa ≥ 0,3 M♃ (95 M⊕), a quebra da relação massa–densidade
+ *    dos gigantes (Hatzes & Rauer 2015, ApJL 810, L25). A massa mínima da
+ *    velocidade radial vale: se o mínimo passa, a verdadeira também passa.
+ *  - ROCHOSO: raio ≤ 1,6 R⊕, acima do qual a maioria tem envelope de gás
+ *    (Rogers 2015, ApJ 801, 41) — ou, com raio e massa verdadeira medidos,
+ *    densidade ≥ 5,5 g/cm³, a da Terra: 1 % da massa em gás já a derruba
+ *    (Lopez & Fortney 2014, ApJ 792, 1). É o caso de 55 Cnc e.
+ *  - SUB-NETUNO / GIGANTE DE GELO: o que sobra entre os dois.
+ *  - LAVA: o ponto embaixo da estrela passa de 1.400 K, a fusão do basalto
+ *    (Léger et al. 2011, Icarus 213, 1 — de memória).
+ *  - QUENTE / TEMPERADO / GELADO: dentro, entre ou além das bordas da zona
+ *    habitável conservadora (Kopparapu et al. 2014, a mesma da ficha) —
+ *    dentro da borda o efeito estufa dispara e a água se perde.
+ *  - GIGANTE QUENTE: atmosfera ≥ 900 K, as classes IV e V de nuvens
+ *    (Sudarsky, Burrows & Pinto 2000, ApJ 538, 885); abaixo, I a III.
+ *  - TRAVADO: o tempo de despin de Gladman et al. 1996 (Icarus 122, 166)
+ *    com Q = 100, k₂ = 0,3, momento de inércia 0,33·MR² e dia inicial de
+ *    24 h, abaixo de 1 bilhão de anos. Os parâmetros são suposições
+ *    comuns; o resultado é derivado, não medido.
+ */
+export const FRONTEIRAS_DA_CLASSE = {
+  giganteMassaTerra: 95,
+  rochosoRaioTerra: 1.6,
+  rochosoDensidade: 5.5,
+  lavaSubestelarK: 1400,
+  giganteQuenteK: 900,
+  sudarskyK: [150, 350, 900, 1500] as const,
+  travaAnos: 1e9,
+} as const;
+
+export const FONTES_DA_CLASSE =
+  'Hatzes & Rauer 2015, ApJL 810, L25; Rogers 2015, ApJ 801, 41; Lopez & Fortney 2014, ApJ 792, 1; ' +
+  'Léger et al. 2011, Icarus 213, 1; Kopparapu et al. 2014, ApJL 787, L29; ' +
+  'Sudarsky, Burrows & Pinto 2000, ApJ 538, 885; Gladman et al. 1996, Icarus 122, 166';
+
+const RSOL_UA = 0.00465047;
+const ANO_S = 3.156e7;
+
+/** o tempo (anos) de Gladman et al. 1996 para o giro cair no síncrono */
+export function anosParaTravar(planeta: Exoplaneta, massaEstrelaMsol: number): number {
+  const G = 6.674e-11;
+  const a = planeta.aUA * 1.496e11;
+  const mp = planeta.massaTerra.v * 5.972e24;
+  const r = planeta.raioTerra.v * 6.371e6;
+  const ms = massaEstrelaMsol * 1.989e30;
+  const omega = (2 * Math.PI) / 86400;
+  return (omega * a ** 6 * 0.33 * mp * 100) / (3 * G * ms * ms * 0.3 * r ** 3) / ANO_S;
+}
+
+/** a classe de nuvens de Sudarsky pela temperatura da atmosfera */
+function classeDeSudarsky(tK: number): 1 | 2 | 3 | 4 | 5 {
+  const [a, b, c, d] = FRONTEIRAS_DA_CLASSE.sudarskyK;
+  return tK < a ? 1 : tK < b ? 2 : tK < c ? 3 : tK < d ? 4 : 5;
+}
+
+/** O CLIMA E A CLASSE de um planeta, só dos números (função pura). */
+export function climaDoExoplaneta(planeta: Exoplaneta, estrela: EstrelaDoClima): ClimaDoExoplaneta {
+  const F = FRONTEIRAS_DA_CLASSE;
+  const raioUA = estrela.raioRsol * RSOL_UA;
+  const subestelarK = estrela.teffK * Math.sqrt(raioUA / planeta.aUA);
+  const teqK = subestelarK / Math.SQRT2;
+  const atmosferaK = Math.max(teqK, planeta.teqK ?? 0);
+  const R = planeta.raioTerra;
+  const M = planeta.massaTerra;
+  const densidade = R.p === 'medido' && M.p === 'medido' && !M.minima ? (5.513 * M.v) / R.v ** 3 : null;
+  const hz = zonaHabitavel(estrela.teffK, estrela.luminosidadeLsol);
+  let classe: ClasseDoExoplaneta;
+  if (M.v >= F.giganteMassaTerra) {
+    classe = atmosferaK >= F.giganteQuenteK ? 'giganteQuente' : 'giganteFrio';
+  } else if (R.v <= F.rochosoRaioTerra || (densidade !== null && densidade >= F.rochosoDensidade)) {
+    classe =
+      subestelarK >= F.lavaSubestelarK
+        ? 'lava'
+        : planeta.aUA < hz.dentroUA
+          ? 'rochosoQuente'
+          : planeta.aUA > hz.foraUA
+            ? 'gelado'
+            : 'rochosoTemperado';
+  } else {
+    classe = 'subnetuno';
+  }
+  return {
+    classe,
+    teqK,
+    subestelarK,
+    atmosferaK,
+    diluicao: (raioUA / planeta.aUA) ** 2,
+    travado: anosParaTravar(planeta, estrela.massaMsol) < F.travaAnos,
+    densidade,
+    sudarsky: classeDeSudarsky(atmosferaK),
+  };
+}
+
+/**
+ * A SEMENTE de um planeta: o id em FNV-1a, três números em [0, 100) —
+ * o mesmo planeta tem sempre a mesma cara.
+ */
+export function sementeDoExoplaneta(id: string): [number, number, number] {
+  let h = 0x811c9dc5;
+  const out: number[] = [];
+  for (let k = 0; k < 3; k++) {
+    for (const ch of `${id}#${k}`) {
+      h ^= ch.charCodeAt(0);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    out.push((h % 100000) / 1000);
+  }
+  return [out[0]!, out[1]!, out[2]!];
+}
+
 // ─── A ÓRBITA NO ESPAÇO ──────────────────────────────────────────────────
 
 /** inclinação convencional quando ela não foi medida (mediana isotrópica) */
