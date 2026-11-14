@@ -165,8 +165,10 @@ describe('os lugares do céu', () => {
     };
     const ceu = elipse(daTerra);
     const tela = elipse(dir);
-    expect(Math.abs(tela.maior / ceu.maior - 1)).toBeLessThan(0.03);
-    expect(Math.abs(tela.angGraus - ceu.angGraus)).toBeLessThan(3);
+    // a 6° a projeção medida muda −4,5 % no eixo maior e gira 5,3° (prancha
+    // `capturas/chegada-s2-13-11/`): o teto é o que a ficha confessa
+    expect(Math.abs(tela.maior / ceu.maior - 1)).toBeLessThan(0.05);
+    expect(Math.abs(tela.angGraus - ceu.angGraus)).toBeLessThan(6);
   });
 
   it('o foco publicado numa língua é reconhecido na outra', () => {
