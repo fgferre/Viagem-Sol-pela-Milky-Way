@@ -13,7 +13,6 @@ import {
 import {
   ALCANCE_DA_NEVOA_KM,
   A_MAX_KM,
-  CELULA_DA_ESTEIRA_KM,
   FRACAO_NAO_RESOLVIDA,
   FRACAO_POR_OITAVA,
   K_JANELA,
@@ -25,6 +24,7 @@ import {
   REGIOES_DAS_PEDRAS,
   TABELA_DE_OITAVAS,
   TAU_TETO,
+  TEXEL_DA_ESTEIRA_KM,
   VARIANTES,
   X_PLENO,
   aceitaPedra,
@@ -220,9 +220,9 @@ describe('pedras 3D do anel', () => {
     ds.sort((x, y) => x - y);
     expect(ds[Math.floor(0.95 * ds.length)]! / ds[Math.floor(0.05 * ds.length)]!).toBeGreaterThan(4);
     expect(menor).toBeGreaterThan(0.02);
-    // sem fronteira de célula: contínua onde o ponto troca de 2×2 células
+    // sem fronteira de texel: contínua onde a leitura bilinear troca de 2×2 texels
     for (let m = 0; m < 20; m++) {
-      const rho = (Math.floor(128_000 / CELULA_DA_ESTEIRA_KM) + m + 0.5) * CELULA_DA_ESTEIRA_KM;
+      const rho = (Math.floor(128_000 / TEXEL_DA_ESTEIRA_KM) + m + 0.5) * TEXEL_DA_ESTEIRA_KM;
       const s = 4_321 + 0.137 * m;
       expect(Math.abs(densidadeDaEsteira(s, rho - 1e-7) - densidadeDaEsteira(s, rho + 1e-7))).toBeLessThan(1e-3);
     }

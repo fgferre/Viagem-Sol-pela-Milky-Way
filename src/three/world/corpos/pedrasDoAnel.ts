@@ -204,13 +204,15 @@ export function aceitaPedra(tau: number, rhoKm: number, sorteio: number): boolea
  * o teste cobra a igualdade): a ESPESSURA TOTAL da camada, km — A ~6–10 m
  * (Colwell et al. 2006; Hedman et al. 2007): 8 m; C 1,9–5,6 m (Baillié et
  * al. 2011): 4 m; divisão de Cassini 2–20 m (Tiscareno et al. 2007): 10 m;
- * o B não foi medido: 8 m, o do A, adotado — e a FORÇA DAS ESTEIRAS, 1 só
- * no A e no B (ausentes no C e na divisão: Colwell 2006, Hedman 2007).
+ * o B não foi medido: 8 m, o do A, adotado — e a FORÇA DAS ESTEIRAS, só
+ * no A e no B (ausentes no C e na divisão: Colwell 2006, Hedman 2007): 1 no
+ * A e 1,05 no B, o que dá ao campo do ladrilho as razões pico:vale do campo
+ * de antes (o B era mais contrastado).
  */
 export const REGIOES_DAS_PEDRAS: readonly { km: number; meia: number; espessura: number; esteira: number }[] = [
   { km: 0, meia: 0, espessura: 0.004, esteira: 0 },
   { km: 74490, meia: 150, espessura: 0.004, esteira: 0 },
-  { km: 91980, meia: 300, espessura: 0.008, esteira: 1 },
+  { km: 91980, meia: 300, espessura: 0.008, esteira: 1.05 },
   { km: 117580, meia: 60, espessura: 0.01, esteira: 0 },
   { km: 121450, meia: 650, espessura: 0.008, esteira: 1 },
   { km: 136775, meia: 60, espessura: 0.008, esteira: 0 },
@@ -245,36 +247,55 @@ export function alturaNaCamada(z0: number, aKm: number, hKm: number): number {
  * et al. 2007) e das simulações de N corpos (Salo et al. 2004; Michikoshi
  * et al. 2015). Espaçamento `LAMBDA_DA_ESTEIRA_KM` ~60 m; ARRASTADAS
  * (trailing: quem está mais para fora fica para trás no sentido orbital,
- * +s), inclinadas `anguloDaEsteira` da direção orbital; filamentos
- * irregulares e grumosos de poucas vezes o espaçamento, com vãos quase
- * vazios entre eles; razão altura/largura 0,1–0,37 — da ordem da própria
- * camada, e por isso a esteira não ganha altura própria aqui.
+ * +s), inclinadas ~21° da direção orbital (18–24° no A, 18–26° no B
+ * medidos); filamentos irregulares e grumosos de poucas vezes o
+ * espaçamento, com vãos quase vazios entre eles; razão altura/largura
+ * 0,1–0,37 — da ordem da própria camada, e por isso a esteira não ganha
+ * altura própria aqui.
  *
- * A CONSTRUÇÃO: um RUÍDO DE GABOR — a soma de `NUCLEOS_POR_CELULA` núcleos
- * por célula, cada um um trem de cristas de comprimento λ ao longo da
- * normal n = (cos φ, sen φ), sob um envelope compacto alongado nas cristas
- * (`ENVELOPE_XI_KM` × `ENVELOPE_ETA_KM`), num lugar e numa fase sorteados.
- * O ponto lê as 2×2 células mais perto: o envelope cabe em meia célula,
- * então nenhuma fronteira de célula aparece. Da soma complexa Z = Σ e·e^{iψ}
- * = |Z|·e^{iΦ} sai o deslocamento ao longo de n, δ = (λ/π)·arg 1/(1 − w),
- * w = γ·Z·|Z|/(|Z|² + E0) (a forma da onda em `GAMA_DA_ESTEIRA`): uma onda de
- * fase e amplitude que vagueiam (os filamentos se formam, se fundem e se
- * desfazem; onde |Z| é pequeno o campo acalma). A densidade é
- * 1/(1 + ∂δ/∂n) com a derivada analítica — média 1 (a massa só anda), e o
- * mapa é inversível porque ∂δ/∂n > −1 (o teste cobra). O disco lê a MESMA
- * densidade (`densidadeDaEsteira`) no ponto final.
+ * A CONSTRUÇÃO: um campo complexo Z = A·e^{iψ} — a portadora de
+ * comprimento λ ao longo da normal n sob um envelope A, ruído complexo
+ * filtrado (o espectro gaussiano de um núcleo alongado nas cristas,
+ * `ENVELOPE_XI_KM` × `ENVELOPE_ETA_KM`). Dele sai o deslocamento ao longo de
+ * n, δ = (λ/π)·arg 1/(1 − w), w = γ·Z·|Z|/(|Z|² + E0) (a forma da onda em
+ * `GAMA_DA_ESTEIRA`): uma onda de fase e amplitude que vagueiam (os
+ * filamentos se formam, se fundem e se desfazem; onde |Z| é pequeno o campo
+ * acalma). A densidade é 1/(1 + ∂δ/∂n) com a derivada analítica — média 1
+ * (a massa só anda), e o mapa é inversível porque ∂δ/∂n > −1 (o teste
+ * cobra).
+ *
+ * O CAMPO MORA NUM LADRILHO PERIÓDICO (`campoDaEsteira`), feito aqui uma vez:
+ * (δ, ∂δ/∂n) em `TEXELS_DA_ESTEIRA`² texels de `TEXEL_DA_ESTEIRA_KM`, lidos
+ * pela mesma leitura bilinear na CPU, no vértice dos pedaços e na folha do
+ * disco — uma fonte só, e o lugar de cada pedaço é o mesmo nos três. O
+ * ladrilho fica nas coordenadas do anel: ρ e o arco s·ρref/R0, com ρref o
+ * raio de referência de cada anel (`VOLTAS_DA_ESTEIRA`: um número inteiro de
+ * ladrilhos por volta, então o campo fecha na volta). Num ρ longe de ρref o
+ * arco do ladrilho estica (±12 % no B): o espaçamento e o ângulo andam pouco.
  */
-export const LAMBDA_DA_ESTEIRA_KM = 0.06;
-export const CELULA_DA_ESTEIRA_KM = 0.3;
-/** a célula no arco, em s = R0·θ: a física (s·ρ/R0) passa de 0,29 km no B interno */
-const CELULA_NO_ARCO_ALVO_KM = 0.45;
-const CELULAS_NA_VOLTA = Math.round((2 * Math.PI * R0_KM) / CELULA_NO_ARCO_ALVO_KM);
-const CELULA_NO_ARCO_KM = (2 * Math.PI * R0_KM) / CELULAS_NA_VOLTA;
-/** os núcleos de Gabor por célula e o envelope (meio-eixos, km): cruzando e ao longo das cristas */
-const NUCLEOS_POR_CELULA = 10;
+/** o lado do ladrilho (km) e os texels por lado */
+const LADO_DA_ESTEIRA_KM = 8.192;
+const TEXELS_DA_ESTEIRA = 2048;
+export const TEXEL_DA_ESTEIRA_KM = LADO_DA_ESTEIRA_KM / TEXELS_DA_ESTEIRA;
+/** a portadora numa frequência inteira do ladrilho: (128, 49) ondas por lado, ~60 m a 20,9° */
+const ONDAS_DA_ESTEIRA = [128, 49] as const;
+const ONDAS_NA_NORMAL = Math.hypot(ONDAS_DA_ESTEIRA[0], ONDAS_DA_ESTEIRA[1]);
+export const LAMBDA_DA_ESTEIRA_KM = LADO_DA_ESTEIRA_KM / ONDAS_NA_NORMAL;
+/** a normal das cristas no ladrilho, (radial, arco) */
+const NORMAL_DA_ESTEIRA = [ONDAS_DA_ESTEIRA[0] / ONDAS_NA_NORMAL, ONDAS_DA_ESTEIRA[1] / ONDAS_NA_NORMAL] as const;
+/** os ladrilhos por volta no B e no A (ρref ≈ 105 000 e 129 000 km); a troca fica na divisão de Cassini, onde não há esteira */
+const VOLTAS_DA_ESTEIRA = [
+  Math.round((2 * Math.PI * 105_000) / LADO_DA_ESTEIRA_KM),
+  Math.round((2 * Math.PI * 129_000) / LADO_DA_ESTEIRA_KM),
+] as const;
+const TROCA_DA_ESTEIRA_KM = 119_000;
+/** km do ladrilho por km de s = R0·θ (ρref/R0), no B e no A */
+const ARCO_DA_ESTEIRA = VOLTAS_DA_ESTEIRA.map((n) => (n * LADO_DA_ESTEIRA_KM) / (2 * Math.PI * R0_KM));
+/** os meio-eixos do núcleo (km): cruzando e ao longo das cristas */
 const ENVELOPE_XI_KM = 0.12;
 const ENVELOPE_ETA_KM = 0.15;
-/** o piso E0 da amplitude (|Z|² médio ~0,7 no A): abaixo dele o campo acalma */
+/** o |Z|² médio, e o piso E0 da amplitude: abaixo dele o campo acalma */
+const Z2_MEDIO = 0.75;
 const PISO_DA_AMPLITUDE = 0.3;
 /**
  * A FORMA DA ONDA: o mapa do círculo de Möbius, Φ → Φ + 2·arg 1/(1 − γ·e^{iΦ})
@@ -285,18 +306,11 @@ const PISO_DA_AMPLITUDE = 0.3;
  * (o deslocamento fica liso nos nós da fase, e o mapa não dobra).
  */
 const GAMA_DA_ESTEIRA = 0.66;
+/** a maior força das esteiras (a do B) */
+const FORCA_MAXIMA_DA_ESTEIRA = Math.max(...REGIOES_DAS_PEDRAS.map((r) => r.esteira));
 /** o deslocamento máximo de um pedaço pela esteira, km (|arg 1/(1 − w)| ≤ asen γ) */
-const DESLOCAMENTO_MAXIMO_KM = (2 * Math.asin(GAMA_DA_ESTEIRA) * LAMBDA_DA_ESTEIRA_KM) / (2 * Math.PI) + 0.0005;
-const GRAU = Math.PI / 180;
-
-/**
- * O ÂNGULO DAS ESTEIRAS com a direção orbital, rad: ~18° no A médio subindo
- * a ~24° no A externo (Hedman et al. 2007; Ferrari et al. 2009). No B,
- * 22° — o meio da faixa medida de 18° a 26°, adotado.
- */
-export function anguloDaEsteira(km: number): number {
-  return (22 - 4 * suave(117580, 121450, km) + 6 * suave(128000, 134000, km)) * GRAU;
-}
+const DESLOCAMENTO_MAXIMO_KM =
+  (FORCA_MAXIMA_DA_ESTEIRA * 2 * Math.asin(GAMA_DA_ESTEIRA) * LAMBDA_DA_ESTEIRA_KM) / (2 * Math.PI) + 0.0005;
 
 /** o sorteio inteiro do vértice (`misturar` no GLSL), bit a bit */
 function misturar(x: number): number {
@@ -307,70 +321,209 @@ function misturar(x: number): number {
   return (x ^ (x >>> 16)) >>> 0;
 }
 
-/**
- * (δ, ∂δ/∂n) da esteira no ponto (ρ, s = R0·θ), km — o gêmeo de `esteira` no
- * GLSL (lá relativo à câmera, aqui absoluto: a mesma conta).
- */
-function esteiraEm(rhoKm: number, sKm: number): [number, number] {
-  const amp = regiaoDasPedras(rhoKm).esteira;
-  if (amp <= 0) return [0, 0];
-  const ang = anguloDaEsteira(rhoKm);
-  const nr = Math.cos(ang);
-  const ns = Math.sin(ang);
-  const uR = rhoKm / CELULA_DA_ESTEIRA_KM;
-  const uS = sKm / CELULA_NO_ARCO_KM;
-  const r0 = Math.floor(uR - 0.5);
-  const s0 = Math.floor(uS - 0.5);
-  const tr = uR - r0;
-  const ts = uS - s0;
-  const escS = (CELULA_NO_ARCO_KM * rhoKm) / R0_KM;
-  const k = (2 * Math.PI) / LAMBDA_DA_ESTEIRA_KM;
-  const ix2 = 1 / (ENVELOPE_XI_KM * ENVELOPE_XI_KM);
-  const ie2 = 1 / (ENVELOPE_ETA_KM * ENVELOPE_ETA_KM);
-  // Z = Σ e·e^{iψ} (zc, zs) e a derivada ao longo de n (dc, ds)
-  let zc = 0;
-  let zs = 0;
-  let dc = 0;
-  let ds = 0;
-  for (let a = 0; a < 2; a++) {
-    for (let b = 0; b < 2; b++) {
-      const iR = r0 + a;
-      const iS = (((s0 + b) % CELULAS_NA_VOLTA) + CELULAS_NA_VOLTA) % CELULAS_NA_VOLTA;
-      const hc = misturar((Math.imul(iR, 0x8da6b343) ^ misturar((iS + 0x68e31da4) >>> 0)) >>> 0);
-      for (let j = 0; j < NUCLEOS_POR_CELULA; j++) {
-        const h = misturar((hc ^ Math.imul(j + 1, 0x9e3779b9)) >>> 0);
-        const xr = (tr - a - (h & 0x3ff) / 1024) * CELULA_DA_ESTEIRA_KM;
-        const xs = (ts - b - ((h >>> 10) & 0x3ff) / 1024) * escS;
-        const xi = xr * nr + xs * ns;
-        const eta = xs * nr - xr * ns;
-        const q = xi * xi * ix2 + eta * eta * ie2;
-        if (q >= 1) continue;
-        const m = 1 - q;
-        const e = m * m * m;
-        const eXi = -6 * m * m * xi * ix2;
-        const psi = k * xi + (2 * Math.PI * (h >>> 20)) / 4096;
-        const c = Math.cos(psi);
-        const sn = Math.sin(psi);
-        zc += e * c;
-        zs += e * sn;
-        dc += eXi * c - e * k * sn;
-        ds += eXi * sn + e * k * c;
+/** a FFT complexa inversa (sinal +), no lugar, de `n` números em re/im[off + k·passo] */
+function fftInversa(re: Float64Array, im: Float64Array, off: number, passo: number, n: number) {
+  for (let i = 1, j = 0; i < n; i++) {
+    let bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) {
+      const a = off + i * passo;
+      const b = off + j * passo;
+      const tr = re[a]!;
+      const ti = im[a]!;
+      re[a] = re[b]!;
+      im[a] = im[b]!;
+      re[b] = tr;
+      im[b] = ti;
+    }
+  }
+  for (let len = 2; len <= n; len <<= 1) {
+    const wr = Math.cos((2 * Math.PI) / len);
+    const wi = Math.sin((2 * Math.PI) / len);
+    for (let i = 0; i < n; i += len) {
+      let cr = 1;
+      let ci = 0;
+      for (let j = 0; j < len / 2; j++) {
+        const a = off + (i + j) * passo;
+        const b = a + (len / 2) * passo;
+        const xr = re[b]! * cr - im[b]! * ci;
+        const xi = re[b]! * ci + im[b]! * cr;
+        re[b] = re[a]! - xr;
+        im[b] = im[a]! - xi;
+        re[a] = re[a]! + xr;
+        im[a] = im[a]! + xi;
+        const t = cr * wr - ci * wi;
+        ci = cr * wi + ci * wr;
+        cr = t;
       }
     }
   }
-  // w = γ·Z·|Z|/(|Z|² + E0) e a derivada dela ao longo de n; δ = (2/k)·arg 1/(1 − w)
-  const z2 = zc * zc + zs * zs;
-  const A = z2 + PISO_DA_AMPLITUDE;
-  const r = Math.max(Math.sqrt(z2), 1e-9);
-  const dr = (zc * dc + zs * ds) / r;
-  const g = (amp * GAMA_DA_ESTEIRA) / A;
-  const f = dr / r - (2 * r * dr) / A;
-  const wr = g * r * zc;
-  const wi = g * r * zs;
-  const dwr = g * r * (dc + zc * f);
-  const dwi = g * r * (ds + zs * f);
-  const um = 1 - wr;
-  return [(2 / k) * Math.atan2(wi, um), ((2 / k) * (dwi * um + dwr * wi)) / (um * um + wi * wi)];
+}
+
+/**
+ * O LADRILHO DAS ESTEIRAS, uma vez: (δ/λ, ∂δ/∂n) em meia precisão, RG. O
+ * envelope A e ∂A/∂n saem de uma FFT de `M`² (o espectro do núcleo em volta
+ * de zero, ruído complexo sorteado por `misturar`), lidos em bilinear no
+ * texel (o envelope tem 6+ amostras na menor onda); a portadora, exata.
+ */
+let campo: Uint16Array | null = null;
+function campoDaEsteira(): Uint16Array {
+  if (campo) return campo;
+  const N = TEXELS_DA_ESTEIRA;
+  const M = 512;
+  const L = LADO_DA_ESTEIRA_KM;
+  const [nx, ny] = NORMAL_DA_ESTEIRA;
+  const sXi = ENVELOPE_XI_KM / Math.sqrt(6);
+  const sEta = ENVELOPE_ETA_KM / Math.sqrt(6);
+  const ar = new Float64Array(M * M);
+  const ai = new Float64Array(M * M);
+  const br = new Float64Array(M * M);
+  const bi = new Float64Array(M * M);
+  for (let b = 0; b < M; b++) {
+    for (let a = 0; a < M; a++) {
+      const fa = (a < M / 2 ? a : a - M) / L;
+      const fb = (b < M / 2 ? b : b - M) / L;
+      const fn = fa * nx + fb * ny;
+      const ft = fb * nx - fa * ny;
+      const h = Math.exp(-2 * Math.PI * Math.PI * (sXi * sXi * fn * fn + sEta * sEta * ft * ft));
+      if (h < 1e-6) continue;
+      const s1 = misturar((Math.imul(a, 0x8da6b343) ^ misturar((b + 0x68e31da4) >>> 0)) >>> 0);
+      const s2 = misturar((s1 ^ 0x9e3779b9) >>> 0);
+      const r = Math.sqrt(-2 * Math.log(((s1 >>> 8) + 1) / 16777217)) * h;
+      const fase = (2 * Math.PI * (s2 >>> 8)) / 16777216;
+      const k = b * M + a;
+      ar[k] = r * Math.cos(fase);
+      ai[k] = r * Math.sin(fase);
+      // ∂/∂n: × 2πi·fn
+      br[k] = -2 * Math.PI * fn * ai[k]!;
+      bi[k] = 2 * Math.PI * fn * ar[k]!;
+    }
+  }
+  for (const [re, im] of [[ar, ai], [br, bi]] as const) {
+    for (let y = 0; y < M; y++) fftInversa(re, im, y * M, 1, M);
+    for (let x = 0; x < M; x++) fftInversa(re, im, x, M, M);
+  }
+  let soma = 0;
+  for (let k = 0; k < M * M; k++) soma += ar[k]! * ar[k]! + ai[k]! * ai[k]!;
+  const esc = Math.sqrt((Z2_MEDIO * M * M) / soma);
+  const kOnda = (2 * Math.PI) / LAMBDA_DA_ESTEIRA_KM;
+  // a portadora, separável: e^{2πi(m·i + p·j)/N}
+  const pr = new Float64Array(2 * N);
+  const pi = new Float64Array(2 * N);
+  for (let i = 0; i < N; i++) {
+    for (let e = 0; e < 2; e++) {
+      const ang = (2 * Math.PI * ONDAS_DA_ESTEIRA[e]! * i) / N;
+      pr[e * N + i] = Math.cos(ang);
+      pi[e * N + i] = Math.sin(ang);
+    }
+  }
+  const dado = new Uint16Array(N * N * 2);
+  const passo = N / M;
+  for (let j = 0; j < N; j++) {
+    const y0 = Math.floor(j / passo);
+    const fy = j / passo - y0;
+    const y1 = (y0 + 1) % M;
+    for (let i = 0; i < N; i++) {
+      const x0 = Math.floor(i / passo);
+      const fx = i / passo - x0;
+      const x1 = (x0 + 1) % M;
+      const k00 = y0 * M + x0;
+      const k10 = y0 * M + x1;
+      const k01 = y1 * M + x0;
+      const k11 = y1 * M + x1;
+      const w00 = (1 - fx) * (1 - fy);
+      const w10 = fx * (1 - fy);
+      const w01 = (1 - fx) * fy;
+      const w11 = fx * fy;
+      const lin = (v: Float64Array) => esc * (v[k00]! * w00 + v[k10]! * w10 + v[k01]! * w01 + v[k11]! * w11);
+      const Ar = lin(ar);
+      const Ai = lin(ai);
+      const Br = lin(br) - kOnda * Ai;
+      const Bi = lin(bi) + kOnda * Ar;
+      const cr = pr[i]! * pr[N + j]! - pi[i]! * pi[N + j]!;
+      const ci = pr[i]! * pi[N + j]! + pi[i]! * pr[N + j]!;
+      // Z e a derivada dele ao longo de n (dc, ds)
+      const zc = Ar * cr - Ai * ci;
+      const zs = Ar * ci + Ai * cr;
+      const dc = Br * cr - Bi * ci;
+      const ds = Br * ci + Bi * cr;
+      // w = γ·Z·|Z|/(|Z|² + E0) e a derivada dela ao longo de n; δ = (2/k)·arg 1/(1 − w)
+      const z2 = zc * zc + zs * zs;
+      const A = z2 + PISO_DA_AMPLITUDE;
+      const r = Math.max(Math.sqrt(z2), 1e-9);
+      const dr = (zc * dc + zs * ds) / r;
+      const g = GAMA_DA_ESTEIRA / A;
+      const f = dr / r - (2 * r * dr) / A;
+      const wr = g * r * zc;
+      const wi = g * r * zs;
+      const dwr = g * r * (dc + zc * f);
+      const dwi = g * r * (ds + zs * f);
+      const um = 1 - wr;
+      const o = 2 * (j * N + i);
+      dado[o] = THREE.DataUtils.toHalfFloat(((2 / kOnda) * Math.atan2(wi, um)) / LAMBDA_DA_ESTEIRA_KM);
+      dado[o + 1] = THREE.DataUtils.toHalfFloat(((2 / kOnda) * (dwi * um + dwr * wi)) / (um * um + wi * wi));
+    }
+  }
+  campo = dado;
+  return dado;
+}
+
+/** a textura do ladrilho (a GPU lê os mesmos números da CPU) */
+function texturaDaEsteira(): THREE.DataTexture {
+  const N = TEXELS_DA_ESTEIRA;
+  const tex = new THREE.DataTexture(campoDaEsteira(), N, N, THREE.RGFormat, THREE.HalfFloatType);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.magFilter = THREE.LinearFilter;
+  tex.minFilter = THREE.LinearFilter;
+  tex.generateMipmaps = false;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+/** o ponto (ρ, s = R0·θ) no ladrilho, em ladrilhos (radial, arco) */
+function noLadrilho(rhoKm: number, sKm: number): [number, number] {
+  const anel = rhoKm < TROCA_DA_ESTEIRA_KM ? 0 : 1;
+  return [rhoKm / LADO_DA_ESTEIRA_KM, (sKm * ARCO_DA_ESTEIRA[anel]!) / LADO_DA_ESTEIRA_KM];
+}
+
+/**
+ * (δ km, ∂δ/∂n) no ponto do ladrilho (em ladrilhos), sem a força: a leitura
+ * bilinear dos texels — o gêmeo de `deslocamentoNoLadrilho` no GLSL (que só
+ * lê o δ, com `texelFetch`)
+ */
+function lerLadrilho(u: number, v: number): [number, number] {
+  const N = TEXELS_DA_ESTEIRA;
+  const dado = campoDaEsteira();
+  const px = (u - Math.floor(u)) * N - 0.5;
+  const py = (v - Math.floor(v)) * N - 0.5;
+  const i0 = Math.floor(px);
+  const j0 = Math.floor(py);
+  const fx = px - i0;
+  const fy = py - j0;
+  const i1 = (i0 + 1 + N) % N;
+  const j1 = (j0 + 1 + N) % N;
+  const ia = (i0 + N) % N;
+  const ja = (j0 + N) % N;
+  const h = THREE.DataUtils.fromHalfFloat;
+  const t = (i: number, j: number, c: number) => h(dado[2 * (j * N + i) + c]!);
+  const lin = (c: number) =>
+    (t(ia, ja, c) * (1 - fx) + t(i1, ja, c) * fx) * (1 - fy) + (t(ia, j1, c) * (1 - fx) + t(i1, j1, c) * fx) * fy;
+  return [lin(0) * LAMBDA_DA_ESTEIRA_KM, lin(1)];
+}
+
+/** (δ, ∂δ/∂n) da esteira no ponto (ρ, s = R0·θ), km, com a força da região */
+function esteiraEm(rhoKm: number, sKm: number): [number, number] {
+  const amp = regiaoDasPedras(rhoKm).esteira;
+  if (amp <= 0) return [0, 0];
+  const [u, v] = noLadrilho(rhoKm, sKm);
+  const [d, dn] = lerLadrilho(u, v);
+  return [amp * d, amp * dn];
+}
+
+/** o passo em s de 1 km do ladrilho ao longo de n (o arco do ladrilho → R0·θ) */
+function arcoDaNormal(rhoKm: number): number {
+  return NORMAL_DA_ESTEIRA[1] / ARCO_DA_ESTEIRA[rhoKm < TROCA_DA_ESTEIRA_KM ? 0 : 1]!;
 }
 
 /** o ESTIRAMENTO do mapa da esteira no lugar sorteado (ρ, s): 1 + ∂δ/∂n — o mapa é inversível se for > 0 */
@@ -381,31 +534,26 @@ export function estiramentoDaEsteira(sKm: number, rhoKm: number): number {
 /** O DESLOCAMENTO de um pedaço cujo lugar sorteado é (ρ, s): (Δρ, Δs em R0·θ), km */
 export function deslocamentoDaEsteira(sKm: number, rhoKm: number): [number, number] {
   const [d] = esteiraEm(rhoKm, sKm);
-  const ang = anguloDaEsteira(rhoKm);
-  return [d * Math.cos(ang), (d * Math.sin(ang) * R0_KM) / rhoKm];
+  return [d * NORMAL_DA_ESTEIRA[0], d * arcoDaNormal(rhoKm)];
 }
 
 /**
  * A DENSIDADE DAS ESTEIRAS no ponto (s = R0·θ, ρ), de média 1: o ponto de
  * origem pelo inverso do deslocamento (Newton ao longo de n — o mapa é
- * monotônico, 1 + ∂δ/∂n ≥ 0,1), e a densidade 1/(1 + ∂δ/∂n) lá. Vale 1 fora
+ * monotônico, 1 + ∂δ/∂n > 0), e a densidade 1/(1 + ∂δ/∂n) lá. Vale 1 fora
  * do A e do B.
  */
 export function densidadeDaEsteira(sKm: number, rhoKm: number): number {
   if (regiaoDasPedras(rhoKm).esteira <= 0) return 1;
-  const ang = anguloDaEsteira(rhoKm);
-  const nr = Math.cos(ang);
-  const ns = (Math.sin(ang) * R0_KM) / rhoKm;
+  const nr = NORMAL_DA_ESTEIRA[0];
+  const ns = arcoDaNormal(rhoKm);
   let u = 0;
-  let dn = 0;
   for (let k = 0; k < 8; k++) {
     const [d, dnk] = esteiraEm(rhoKm - u * nr, sKm - u * ns);
-    dn = dnk;
     u -= (u - d) / (1 + dnk);
     u = Math.max(-DESLOCAMENTO_MAXIMO_KM, Math.min(DESLOCAMENTO_MAXIMO_KM, u));
   }
-  dn = esteiraEm(rhoKm - u * nr, sKm - u * ns)[1];
-  return 1 / (1 + dn);
+  return 1 / (1 + esteiraEm(rhoKm - u * nr, sKm - u * ns)[1]);
 }
 
 /** Ω kepleriano a `rhoKm` do centro, rad/s */
@@ -739,9 +887,8 @@ const glslRegioes = (campo: 'espessura' | 'esteira') =>
     .join(' + ');
 
 /**
- * AS CONTAS PURAS DOS PEDAÇOS EM GLSL (sem uniforme): a região, o ângulo das
- * esteiras, a cessão pela distância, o peso e a profundidade óptica da
- * névoa. Entram nas pedras e, com `?pedras=3d`, no `ANEL_FRAG`.
+ * AS CONTAS PURAS DOS PEDAÇOS EM GLSL (sem uniforme): a região, a cessão
+ * pela distância, o peso e a profundidade óptica da névoa. Entram nas pedras e, com `?pedras=3d`, no `ANEL_FRAG`.
  */
 const GLSL_PURO_DAS_PEDRAS = /* glsl */ `
 const float P_R0 = ${glslF(R0_KM)};
@@ -754,10 +901,6 @@ const float P_TAU_TETO = ${glslF(TAU_TETO)};
 vec2 regiaoDasPedras(float km) {
   return vec2(${glslF(REGIOES_DAS_PEDRAS[0]!.espessura)} + ${glslRegioes('espessura')},
     ${glslF(REGIOES_DAS_PEDRAS[0]!.esteira)} + ${glslRegioes('esteira')});
-}
-// \`anguloDaEsteira\` na CPU
-float anguloDaEsteira(float km) {
-  return (22.0 - 4.0 * smoothstep(117580.0, 121450.0, km) + 6.0 * smoothstep(128000.0, 134000.0, km)) * ${glslF(GRAU)};
 }
 // \`cessaoDoDisco\` na CPU: a parte de τ das oitavas resolvidas a d km
 float cessaoDasPedras(float d) {
@@ -801,149 +944,55 @@ float tauDaNevoa(float h, float dz, float L, float esp, float tau, float teto) {
 `;
 
 /**
- * AS ESTEIRAS EM GLSL, relativas à câmera: `uCelCam` = (fração da câmera na
- * célula radial, idem no arco, índice da célula radial, idem no arco), da
- * CPU em dupla precisão. (δ, ∂δ/∂n) em (dRho, dS) km da câmera — o gêmeo de
- * `esteiraEm`.
+ * AS ESTEIRAS EM GLSL, relativas à câmera: `uEstCam` = (a câmera no
+ * ladrilho: radial, arco no B, arco no A — as frações, da CPU em dupla
+ * precisão). O vértice dos pedaços lê o δ pela mesma leitura bilinear da CPU
+ * (`texelFetch` nos quatro texels: o lugar do pedaço é o da CPU); a folha
+ * lê (δ, ∂δ/∂n) pelo filtro da placa.
  */
 const GLSL_ESTEIRA = /* glsl */ `
-uniform vec4 uCelCam;
+uniform highp sampler2D uEsteira;
+uniform vec4 uEstCam;
 const float LAMBDA = ${glslF(LAMBDA_DA_ESTEIRA_KM)};
-const float CEL_R = ${glslF(CELULA_DA_ESTEIRA_KM)};
-const float CEL_S = ${glslF(CELULA_NO_ARCO_KM)};
-const float N_CEL = ${glslF(CELULAS_NA_VOLTA)};
-// de Z = Σ e·e^{iψ} e da derivada dele ao longo de n, (δ, ∂δ/∂n)
-vec2 ondaDaEsteira(vec4 z, float amp) {
-  const float K_ONDA = 2.0 * PI / LAMBDA;
-  float z2 = dot(z.xy, z.xy);
-  float A = z2 + ${glslF(PISO_DA_AMPLITUDE)};
-  float r = max(sqrt(z2), 1.0e-9);
-  float dr = dot(z.xy, z.zw) / r;
-  float g = amp * ${glslF(GAMA_DA_ESTEIRA)} * r / A;
-  vec2 w = g * z.xy;
-  vec2 dw = g * (z.zw + z.xy * (dr / r - 2.0 * r * dr / A));
-  float um = 1.0 - w.x;
-  return 2.0 / K_ONDA * vec2(atan(w.y, um), (dw.y * um + dw.x * w.y) / (um * um + w.y * w.y));
+const float EST_LADO = ${glslF(LADO_DA_ESTEIRA_KM)};
+const int EST_N = ${TEXELS_DA_ESTEIRA};
+const vec2 EST_NORMAL = vec2(${glslF(NORMAL_DA_ESTEIRA[0])}, ${glslF(NORMAL_DA_ESTEIRA[1])});
+const float EST_TROCA = ${glslF(TROCA_DA_ESTEIRA_KM)};
+const vec2 EST_ARCO = vec2(${glslF(ARCO_DA_ESTEIRA[0]!)}, ${glslF(ARCO_DA_ESTEIRA[1]!)});
+// km do ladrilho por km de s = R0·θ no raio rhoKm (\`ARCO_DA_ESTEIRA\`)
+float arcoDaEsteira(float rhoKm) {
+  return rhoKm < EST_TROCA ? EST_ARCO.x : EST_ARCO.y;
 }
-vec2 esteira(float dRho, float dS, float rhoKm, vec2 n, float amp) {
-  if (amp <= 0.0) return vec2(0.0);
-  float uR = uCelCam.x + dRho / CEL_R;
-  float uS = uCelCam.y + dS / CEL_S;
-  float r0 = floor(uR - 0.5);
-  float s0 = floor(uS - 0.5);
-  float tr = uR - r0;
-  float ts = uS - s0;
-  float escS = CEL_S * rhoKm / P_R0;
-  const float K_ONDA = 2.0 * PI / LAMBDA;
-  const float IX2 = ${glslF(1 / (ENVELOPE_XI_KM * ENVELOPE_XI_KM))};
-  const float IE2 = ${glslF(1 / (ENVELOPE_ETA_KM * ENVELOPE_ETA_KM))};
-  vec4 z = vec4(0.0);
-  for (int a = 0; a < 2; a++) {
-    for (int b = 0; b < 2; b++) {
-      uint iR = uint(uCelCam.z + r0 + float(a));
-      uint iS = uint(mod(uCelCam.w + s0 + float(b), N_CEL));
-      uint hc = misturar((iR * 0x8da6b343u) ^ misturar(iS + 0x68e31da4u));
-      for (int j = 0; j < ${NUCLEOS_POR_CELULA}; j++) {
-        uint h = misturar(hc ^ (uint(j + 1) * 0x9e3779b9u));
-        float xr = (tr - float(a) - float(h & 0x3ffu) / 1024.0) * CEL_R;
-        float xs = (ts - float(b) - float((h >> 10) & 0x3ffu) / 1024.0) * escS;
-        float xi = xr * n.x + xs * n.y;
-        float eta = xs * n.x - xr * n.y;
-        float q = xi * xi * IX2 + eta * eta * IE2;
-        if (q >= 1.0) continue;
-        float m = 1.0 - q;
-        float e = m * m * m;
-        float eXi = -6.0 * m * m * xi * IX2;
-        float psi = K_ONDA * xi + 2.0 * PI * float(h >> 20) / 4096.0;
-        float c = cos(psi);
-        float sn = sin(psi);
-        z += vec4(e * c, e * sn, eXi * c - e * K_ONDA * sn, eXi * sn + e * K_ONDA * c);
-      }
-    }
-  }
-  return ondaDaEsteira(z, amp);
+// (dRho, dS) km da câmera no ladrilho, em ladrilhos (\`noLadrilho\` na CPU)
+vec2 noLadrilho(float dRho, float dS, float rhoKm) {
+  bool b = rhoKm < EST_TROCA;
+  return vec2(uEstCam.x + dRho / EST_LADO, (b ? uEstCam.y : uEstCam.z) + dS * (b ? EST_ARCO.x : EST_ARCO.y) / EST_LADO);
 }
-// A MESMA SOMA só com os núcleos que alcançam o ponto de partida, com o
-// ponto andado u ao longo de n: o ξ de cada núcleo cai de u, o η fica, e a
-// fase gira K·u (\`cand\`: ξ0, η0²/E², cos e sen da fase em u = 0)
-const int CAND = 10;
-vec4 cand[CAND];
-int nCand;
-vec2 esteiraDosEscolhidos(float u, float amp) {
-  const float K_ONDA = 2.0 * PI / LAMBDA;
-  const float IX2 = ${glslF(1 / (ENVELOPE_XI_KM * ENVELOPE_XI_KM))};
-  float cu = cos(K_ONDA * u);
-  float su = sin(K_ONDA * u);
-  vec4 z = vec4(0.0);
-  for (int c = 0; c < CAND; c++) {
-    if (c >= nCand) break;
-    float xi = cand[c].x - u;
-    float q = xi * xi * IX2 + cand[c].y;
-    if (q >= 1.0) continue;
-    float m = 1.0 - q;
-    float e = m * m * m;
-    float eXi = -6.0 * m * m * xi * IX2;
-    float cs = cand[c].z * cu + cand[c].w * su;
-    float sn = cand[c].w * cu - cand[c].z * su;
-    z += vec4(e * cs, e * sn, eXi * cs - e * K_ONDA * sn, eXi * sn + e * K_ONDA * cs);
-  }
-  return ondaDaEsteira(z, amp);
+// o δ km no ponto do ladrilho, sem a força (\`lerLadrilho\` na CPU)
+float deslocamentoNoLadrilho(vec2 t) {
+  vec2 p = fract(t) * float(EST_N) - 0.5;
+  vec2 c = floor(p);
+  vec2 f = p - c;
+  ivec2 i0 = (ivec2(c) + EST_N) & (EST_N - 1);
+  ivec2 i1 = (i0 + 1) & (EST_N - 1);
+  float a = mix(texelFetch(uEsteira, i0, 0).r, texelFetch(uEsteira, ivec2(i1.x, i0.y), 0).r, f.x);
+  float b = mix(texelFetch(uEsteira, ivec2(i0.x, i1.y), 0).r, texelFetch(uEsteira, i1, 0).r, f.x);
+  return mix(a, b, f.y) * LAMBDA;
 }
-// \`densidadeDaEsteira\` na CPU: Newton ao longo de n até o ponto de origem.
-// O ponto anda no máximo \`DESLOCAMENTO_MAXIMO_KM\` ao longo de n, então só
-// os núcleos das 2×2 células do ponto de partida que o alcançam com essa
-// folga entram nas somas (os de fora delas ficam a mais de meia célula, além
-// do envelope); com mais de \`CAND\` deles, a soma inteira. O Newton para
-// quando o passo some.
-float densidadeDaEsteira(float dRho, float dS, float rhoKm, vec2 n, float amp) {
+// \`densidadeDaEsteira\` na CPU: Newton ao longo de n até o ponto de origem,
+// com (δ, ∂δ/∂n) pelo filtro da placa; para quando o passo some
+float densidadeDaEsteira(vec2 t, float amp) {
   if (amp <= 0.0) return 1.0;
-  float ns = n.y * P_R0 / rhoKm;
-  float uR = uCelCam.x + dRho / CEL_R;
-  float uS = uCelCam.y + dS / CEL_S;
-  float r0 = floor(uR - 0.5);
-  float s0 = floor(uS - 0.5);
-  float tr = uR - r0;
-  float ts = uS - s0;
-  float escS = CEL_S * rhoKm / P_R0;
-  // (1 + d/0,12)², d o deslocamento máximo: o alcance do envelope com a folga
-  const float Q_FOLGA = ${glslF((1 + DESLOCAMENTO_MAXIMO_KM / Math.min(ENVELOPE_XI_KM, ENVELOPE_ETA_KM)) ** 2 * 1.01)};
-  const float IX2 = ${glslF(1 / (ENVELOPE_XI_KM * ENVELOPE_XI_KM))};
-  const float IE2 = ${glslF(1 / (ENVELOPE_ETA_KM * ENVELOPE_ETA_KM))};
-  const float K_ONDA = 2.0 * PI / LAMBDA;
-  nCand = 0;
-  bool cheio = false;
-  for (int a = 0; a < 2; a++) {
-    for (int b = 0; b < 2; b++) {
-      uint iR = uint(uCelCam.z + r0 + float(a));
-      uint iS = uint(mod(uCelCam.w + s0 + float(b), N_CEL));
-      uint hc = misturar((iR * 0x8da6b343u) ^ misturar(iS + 0x68e31da4u));
-      for (int j = 0; j < ${NUCLEOS_POR_CELULA}; j++) {
-        uint h = misturar(hc ^ (uint(j + 1) * 0x9e3779b9u));
-        float xr = (tr - float(a) - float(h & 0x3ffu) / 1024.0) * CEL_R;
-        float xs = (ts - float(b) - float((h >> 10) & 0x3ffu) / 1024.0) * escS;
-        float xi = xr * n.x + xs * n.y;
-        float eta = xs * n.x - xr * n.y;
-        float qe = eta * eta * IE2;
-        if (xi * xi * IX2 + qe >= Q_FOLGA) continue;
-        if (nCand == CAND) cheio = true;
-        else {
-          float psi = K_ONDA * xi + 2.0 * PI * float(h >> 20) / 4096.0;
-          vec4 c4 = vec4(xi, qe, cos(psi), sin(psi));
-          for (int c = 0; c < CAND; c++) if (c == nCand) cand[c] = c4;
-          nCand++;
-        }
-      }
-    }
-  }
+  vec2 nT = EST_NORMAL / EST_LADO;
   float u = 0.0;
   vec2 e;
   for (int k = 0; k < 6; k++) {
-    e = cheio ? esteira(dRho - u * n.x, dS - u * ns, rhoKm, n, amp) : esteiraDosEscolhidos(u, amp);
-    float u2 = clamp(u - (u - e.x) / (1.0 + e.y), ${glslF(-DESLOCAMENTO_MAXIMO_KM)}, ${glslF(DESLOCAMENTO_MAXIMO_KM)});
-    if (u2 == u) break;
+    e = amp * textureLod(uEsteira, t - u * nT, 0.0).rg * vec2(LAMBDA, 1.0);
+    float u2 = clamp(u - (u - e.x) / max(1.0 + e.y, 0.05), ${glslF(-DESLOCAMENTO_MAXIMO_KM)}, ${glslF(DESLOCAMENTO_MAXIMO_KM)});
+    if (abs(u2 - u) < 1.0e-6) break;
     u = u2;
   }
-  e = cheio ? esteira(dRho - u * n.x, dS - u * ns, rhoKm, n, amp) : esteiraDosEscolhidos(u, amp);
+  e = amp * textureLod(uEsteira, t - u * nT, 0.0).rg;
   return 1.0 / max(1.0 + e.y, 0.05);
 }
 `;
@@ -1147,12 +1196,13 @@ bool lugar(int o, int i) {
   if (float(misturar(base ^ 0x1b873593u) & 0xffffu) / 65536.0 * TAU_TETO * R0 >= gTau * rhoKm) return false;
 
   // A ESTEIRA: o pedaço anda ao longo da normal das cristas
-  float ang = anguloDaEsteira(rhoKm);
-  vec2 n = vec2(cos(ang), sin(ang));
-  float del = esteira(dRho, dS, rhoKm, n, reg.y).x;
-  dRho += del * n.x;
-  dS += del * n.y * R0 / rhoKm;
-  rhoKm = uRhoCamKm + dRho;
+  if (reg.y > 0.0) {
+    float del = reg.y * deslocamentoNoLadrilho(noLadrilho(dRho, dS, rhoKm));
+    float arco = arcoDaEsteira(rhoKm);
+    dRho += del * EST_NORMAL.x;
+    dS += del * EST_NORMAL.y / arco;
+    rhoKm = uRhoCamKm + dRho;
+  }
 
   // o lugar, RELATIVO À CÂMERA, sem nenhuma soma de número grande
   // em SÉRIE, não em sin/cos: |θ| < 3e-3 rad, e o sin da GPU (Metal, via
@@ -1870,16 +1920,14 @@ ${GLSL_ESTEIRA}
 void main() {
   float rhoKm = uRhoCamKm + vGrao.x;
   vec2 reg = regiaoDasPedras(rhoKm);
-  float ang = anguloDaEsteira(rhoKm);
-  vec2 n = vec2(cos(ang), sin(ang));
   // A PEGADA do pixel atravessando as cristas, nos dois eixos da tela
-  float xi = vGrao.x * n.x + vGrao.y * (rhoKm / P_R0) * n.y;
+  float xi = vGrao.x * EST_NORMAL.x + vGrao.y * arcoDaEsteira(rhoKm) * EST_NORMAL.y;
   float pegada = abs(dFdx(xi)) + abs(dFdy(xi));
   float amp = reg.y * uForcaEsteira * (1.0 - smoothstep(0.125, 0.25, pegada / LAMBDA));
   float u = ((rhoKm / KM_POR_RAIO - R_INT) / (R_EXT - R_INT)) * U_ESCALA + U_BASE;
   vec4 perfil = (u < 0.0 || u > 1.0) ? vec4(0.0) : textureLod(uMapaAnel, vec2(u, 0.5), 0.0);
   if (amp <= 0.0 || perfil.a < 0.004) discard;
-  float D = densidadeDaEsteira(vGrao.x, vGrao.y, rhoKm, n, amp);
+  float D = densidadeDaEsteira(noLadrilho(vGrao.x, vGrao.y, rhoKm), amp);
   float tau = tauDaOpacidade(perfil.a) * regiaoDoAnel(rhoKm).z;
   float d = sqrt(vGrao.x * vGrao.x + vGrao.y * vGrao.y + uZCamKm * uZCamKm);
   float td = tau * (1.0 - cessaoDasPedras(d) * tetoDoCampo(rhoKm, tau, uFracaoDoTier));
@@ -2970,7 +3018,8 @@ const float R_EXT = ${opcoes.rExt};`;
       uGi: { value: this.gi },
       uGf: { value: this.gf },
       uGiro: { value: 0 },
-      uCelCam: { value: new THREE.Vector4() },
+      uEsteira: { value: texturaDaEsteira() },
+      uEstCam: { value: new THREE.Vector4() },
       uForcaEsteira: { value: 0 },
       uRaioFolha: { value: 40 },
       uFundoFolha: { value: -0.02 },
@@ -3203,17 +3252,15 @@ const float R_EXT = ${opcoes.rExt};`;
     u.uAtivas!.value = ativas;
     u.uGiro!.value = this.giro;
     this.cessao.set(rhoKm, theta, zKm, ativas > 0 ? fracao : 0);
-    // a câmera na célula das esteiras, em dupla precisão
-    const uR = rhoKm / CELULA_DA_ESTEIRA_KM;
-    const uS = (theta / (2 * Math.PI)) * CELULAS_NA_VOLTA;
-    (u.uCelCam!.value as THREE.Vector4).set(uR - Math.floor(uR), uS - Math.floor(uS), Math.floor(uR), Math.floor(uS));
+    // a câmera no ladrilho das esteiras (radial, arco no B, no A), em dupla precisão
+    const fr = (x: number) => x - Math.floor(x);
+    const [vB, vA] = ARCO_DA_ESTEIRA.map((a) => fr((R0_KM * theta * a) / LADO_DA_ESTEIRA_KM));
+    (u.uEstCam!.value as THREE.Vector4).set(fr(rhoKm / LADO_DA_ESTEIRA_KM), vB, vA, 0);
     u.uForcaEsteira!.value = forca;
     u.uRaioFolha!.value = raioDaFolhaKm(zKm);
     // do outro lado da camada, além do maior pedaço (o eixo maior passa de a)
     u.uFundoFolha!.value = -(Math.sign(zKm) || 1) * (0.5 * espessura + 2 * A_MAX_KM);
-    // no telefone as esteiras ficam só nos pedaços: a folha do disco (a
-    // conta mais cara por pixel) não é desenhada, e o disco fica na média
-    this.folha.visible = forca > 0 && q.tier !== 'performance';
+    this.folha.visible = forca > 0;
     this.nevoa.visible = peso > 0;
     this.prePasso();
   }
@@ -3250,6 +3297,7 @@ const float R_EXT = ${opcoes.rExt};`;
     this.faixa.dispose();
     this.alvoPre?.dispose();
     (this.uniforms.uRelevo!.value as THREE.Texture).dispose();
+    (this.uniforms.uEsteira!.value as THREE.Texture).dispose();
     for (const m of [this.folha, this.nevoa]) {
       m.geometry.dispose();
       (m.material as THREE.ShaderMaterial).dispose();
