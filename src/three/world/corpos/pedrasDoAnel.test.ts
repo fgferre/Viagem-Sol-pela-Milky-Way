@@ -40,7 +40,10 @@ import {
   pedacosPorArea,
   presencaDaOitava,
   regiaoDasPedras,
+  solAberto,
   tauDaNevoa,
+  ESCALA_DO_MONTE,
+  ENVOLVE,
 } from './pedrasDoAnel';
 import { REGIOES_DO_ANEL } from './gigante';
 
@@ -287,6 +290,61 @@ describe('pedras 3D do anel', () => {
     expect(luzDaFace(-1, 0, 1, 0)).toBeLessThan(0.15 * luzDaFace(1, 0, 1, 0));
   });
 
+  it('na fresta do agregado o Sol não entra, a luz do anel sim: a face voltada ao Sol no fundo dela fica como a da noite', () => {
+    // aberta (o céu inteiro), o Sol bate pela normal da envoltória
+    expect(solAberto(1, 1)).toBe(1);
+    // no fundo de uma fresta que vê 30 % do céu, o Sol a 60° da envoltória não chega
+    const sol = solAberto(0.5, 0.3);
+    expect(sol).toBe(0);
+    expect(luzDaFace(0.8, 0, 1, 0, 0, 0.05, sol)).toBeCloseTo(luzDaFace(-1, 0, 1, 0, 0, 0.05), 10);
+  });
+
+  it('a fresta só redistribui o Sol: com o Sol em qualquer direção, o agregado inteiro e cada elevação dele recebem o de sem fresta', () => {
+    const { geo, tex } = assarFormas(3);
+    const n = geo.getAttribute('position').count;
+    const d = tex.image.data as Float32Array;
+    const norma = tex.userData.normaDoSol as number[];
+    const env = (c: number) => Math.max((c + ENVOLVE) / (1 + ENVOLVE), 0);
+    const em = (linha: number, i: number) => [0, 1, 2].map((q) => d[(linha * n + i) * 4 + q]!);
+    // três direções do Sol no mapa octaédrico de 8² (texel i, j); as faixas de c de −0,1 em 0,05, 23
+    for (const [ti, tj] of [[3, 3], [0, 4], [7, 7]] as const) {
+      let x = ((ti + 0.5) / 8) * 2 - 1;
+      let y = ((tj + 0.5) / 8) * 2 - 1;
+      const z = 1 - Math.abs(x) - Math.abs(y);
+      if (z < 0) [x, y] = [(1 - Math.abs(y)) * Math.sign(x), (1 - Math.abs(x)) * Math.sign(y)];
+      const l = Math.hypot(x, y, z);
+      const s = [x / l, y / l, z / l];
+      const dot = (a: number[]) => a[0]! * s[0]! + a[1]! * s[1]! + a[2]! * s[2]!;
+      for (let v = 0; v < VARIANTES; v++) {
+        const l0 = (2 * VARIANTES + v) * 5;
+        let com = 0;
+        let sem = 0;
+        let rasanteCom = 0;
+        let rasanteSem = 0;
+        for (let i = 0; i < n; i++) {
+          const u = em(l0 + 1, i);
+          const w = (u[0]! ** 2 + u[1]! ** 2 + u[2]! ** 2) * env(dot(em(l0 + 3, i)));
+          const c = dot(em(l0 + 2, i));
+          const so = solAberto(c, d[((l0 + 4) * n + i) * 4 + 2]!);
+          // N interpolado nas faixas, como a GPU
+          const xf = Math.min(Math.max((c + 0.1) / 0.05, 0), 22);
+          const k = Math.min(Math.floor(xf), 21);
+          const f = xf - k;
+          const at = (kk: number) => norma[((VARIANTES + v) * 23 + kk) * 64 + tj * 8 + ti]!;
+          com += (w * so) / Math.max((1 - f) * at(k) + f * at(k + 1), 0.05);
+          sem += w;
+          if (c >= 0 && c < 0.15) {
+            rasanteCom += (w * so) / Math.max((1 - f) * at(k) + f * at(k + 1), 0.05);
+            rasanteSem += w;
+          }
+        }
+        expect(Math.abs(com / sem - 1)).toBeLessThan(0.01);
+        // as faces rasantes também (a média de todas as direções as deixava com menos da metade)
+        if (rasanteSem > 0.02 * sem) expect(Math.abs(rasanteCom / rasanteSem - 1)).toBeLessThan(0.15);
+      }
+    }
+  });
+
   it('o Sol na camada: e^(−τF/μ0) dividido pela média em F — média 1, o de cima claro, o do fundo na penumbra', () => {
     for (const [tau, mu0] of [[0, 0.4], [0.5, 0.42], [1.2, 0.42], [2, 0.1]] as const) {
       const n = 4000;
@@ -324,6 +382,25 @@ describe('pedras 3D do anel', () => {
           // o bloco de longe é o poliedro dentro da esfera unitária: nada passa do raio 1
           if (t === 0) expect(Math.hypot(...v(l0, i))).toBeLessThanOrEqual(1 + 1e-6);
         }
+      }
+    }
+  });
+
+  it('na troca do ponto para a malha o agregado não muda de tamanho: a forma de longe é a de perto filtrada', () => {
+    const { geo, tex } = assarFormas(7);
+    const n = geo.getAttribute('position').count;
+    const d = tex.image.data as Float32Array;
+    const r2 = (linha: number) => {
+      let s = 0;
+      for (let i = 0; i < n; i++) s += d[(linha * n + i) * 4]! ** 2 + d[(linha * n + i) * 4 + 1]! ** 2 + d[(linha * n + i) * 4 + 2]! ** 2;
+      return s / n;
+    };
+    for (let t = 1; t < 3; t++) {
+      for (let k = 0; k < VARIANTES; k++) {
+        const l0 = (t * VARIANTES + k) * 5;
+        const longe = Math.sqrt(r2(l0)) * ESCALA_DO_MONTE[0];
+        const perto = Math.sqrt(r2(l0 + 1)) * ESCALA_DO_MONTE[1];
+        expect(Math.abs(longe / perto - 1)).toBeLessThan(0.03);
       }
     }
   });

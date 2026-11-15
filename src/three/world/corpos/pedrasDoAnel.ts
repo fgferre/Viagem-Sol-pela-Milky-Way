@@ -736,7 +736,7 @@ const ABAULADO = 0.05;
 const LINHAS_DA_FORMA = 5;
 const BASE_DO_BLOCO = 0x2545f491;
 const BASE_DO_MONTE = 0x9e3779b9;
-/** as bolas do monte de longe (o miolo e as três grandes) */
+/** as bolas da régua do tamanho (o miolo e as três grandes: a forma de longe até a décima quinta volta) */
 const BOLAS_A_VALER = 4;
 /** os membros de cada variante do agregado pequeno, de 2 a 12 (`osAgregados`), e o raio do menor (o maior é 1) */
 const MEMBROS_DO_AGREGADO = [2, 3, 4, 5, 6, 8, 10, 12] as const;
@@ -754,72 +754,86 @@ let agregados: { membros: number[][][]; escala: number[]; r2Perto: number[] } | 
  * de 2× isto: nada estala.
  */
 export const PX_CORTE = 12;
-/** os grãos por lado da textura do grão (`texturaDoRelevo`) */
-const CELULAS_DO_RELEVO = 16;
+/** as direções por lado do mapa da forma de longe (`formasDeLonge`) */
+const LADO_DE_LONGE = 24;
+/** os grãos por lado do ladrilho do grão (`texturaDoRelevo`) e os voxels por lado dele */
+const CELULAS_DO_RELEVO = 8;
+const VOXELS_DO_RELEVO = 64;
 /**
  * O GRÃO: a lei dos tamanhos medida segue até o centímetro, então a
  * superfície de um pedaço é a dos pedaços menores que o compõem — grãos
- * meio enterrados, com frestas entre eles (a superfície de pilha de entulho
- * de Bennu, Ryugu e Itokawa, de gelo). Três escalas em grãos por raio do
- * pedaço (os maiores que isso a malha já desenha, como membros): no de
- * 1 m, grãos de ~17, 6 e 2 cm; no monte de 20 m, de ~1,7 m, 55 e 20 cm. A
- * altura do grão é 1/5 do tamanho dele.
+ * meio enterrados, cobertos de geada (o regolito de gelo, fosco), com
+ * frestas entre eles. Três escalas em grãos por raio do pedaço (os maiores
+ * que isso a malha já desenha, como membros): no de 1 m, grãos de ~17, 6 e
+ * 2 cm; no monte de 20 m, de ~1,7 m, 55 e 20 cm.
+ * (Décima sexta volta) O grão era um Voronoi em 2D projetado em três
+ * planos: a altura f2 − f1 tem cristas retas DENTRO de cada célula (onde o
+ * segundo vizinho troca) — o "papel amassado" — e a projeção esticava nas
+ * faces que a mistura dos três planos não cobria por igual. Agora o grão é
+ * SÓLIDO, em 3D, sem projeção: um grão por célula, sacudido, e a altura em
+ * cada ponto é a da cúpula mais alta ali, R·(1 − d²/R²)^1,5 — redonda no
+ * topo, sem quina na borda; onde duas se encontram fica a fresta (um vale,
+ * não uma crista). O mesmo em qualquer orientação da face.
  */
 const ESCALAS_DO_GRAO = [6, 18, 54] as const;
-const ALTURA_DO_GRAO = 0.2;
-/** a inclinação na textura vai até ± isto (altura por grão) */
-const INCLINACAO_DO_GRAO = 6;
+/** a altura da cúpula sobre o raio dela (meio enterrada e coberta de geada): salvaguarda minha, não medida */
+const ALTURA_DO_GRAO = 0.4;
+/** a inclinação na textura vai até ± isto (a cúpula chega a 1,5) */
+const INCLINACAO_DO_GRAO = 1.6;
+/** a régua da fresta (`normaDoSol`): as direções do Sol por lado do mapa octaédrico, e as faixas do cosseno do Sol na envoltória (de C0 em PASSO), por variante */
+const LADO_DA_NORMA = 8;
+const FAIXAS_DA_NORMA = 23;
+const C0_DA_NORMA = -0.1;
+const PASSO_DA_NORMA = 0.05;
 /** o escuro da fresta: o albedo cai isto por unidade de altura abaixo da média (a fresta vê menos céu) */
 const ESCURO_DA_FRESTA = 0.35;
 /** a textura do grão (`texturaDoRelevo`) e a altura média dela */
 let grao: { dado: Uint8Array; n: number; media: number } | null = null;
 function dadoDoGrao() {
   if (grao) return grao;
-  const n = 256;
+  const n = VOXELS_DO_RELEVO;
   const C = CELULAS_DO_RELEVO;
   const c = n / C;
-  // um ponto por célula, sacudido dentro dela (Voronoi periódico)
-  const ponto = (i: number, j: number) => {
-    const h = misturar((Math.imul(((i % C) + C) % C, 0x8da6b343) ^ Math.imul(((j % C) + C) % C, 0xd8163841) ^ 0x51ed27) >>> 0);
-    return [i + 0.05 + 0.9 * ((h & 0xffff) / 65535), j + 0.05 + 0.9 * ((h >>> 16) / 65535)];
-  };
-  const alt = new Float64Array(n * n);
-  for (let y = 0; y < n; y++) {
-    for (let x = 0; x < n; x++) {
-      const gx = (x + 0.5) / c, gy = (y + 0.5) / c;
-      const i0 = Math.floor(gx), j0 = Math.floor(gy);
-      let f1 = 9, f2 = 9;
-      for (let dj = -1; dj <= 1; dj++)
-        for (let di = -1; di <= 1; di++) {
-          const p = ponto(i0 + di, j0 + dj);
-          const d = Math.hypot(p[0]! - gx, p[1]! - gy);
-          if (d < f1) { f2 = f1; f1 = d; } else if (d < f2) f2 = d;
-        }
-      // o grão é uma cúpula arredondada até o meio: zero na fresta (a meia
-      // distância de dois pontos), sem platô (o topo plano lia como ladrilho)
-      const t = Math.min((f2 - f1) / 0.9, 1);
-      alt[y * n + x] = t * t * (3 - 2 * t);
-    }
+  const alt = new Float32Array(n * n * n);
+  const inc = new Float32Array(n * n * n * 3);
+  for (let k = 0; k < C; k++)
+    for (let j = 0; j < C; j++)
+      for (let i = 0; i < C; i++) {
+        const h = misturar((Math.imul(i, 0x8da6b343) ^ Math.imul(j, 0xd8163841) ^ Math.imul(k, 0xcb1ab31f) ^ 0x51ed27) >>> 0);
+        const r = quatro(h);
+        const centro = [i + 0.15 + 0.7 * r[0], j + 0.15 + 0.7 * r[1], k + 0.15 + 0.7 * r[2]];
+        // o raio da cúpula, em células: de 0,55 a 0,9 (as vizinhas se tocam)
+        const R = 0.55 + 0.35 * r[3];
+        const lo = centro.map((x) => Math.floor((x - R) * c));
+        const hi = centro.map((x) => Math.ceil((x + R) * c));
+        for (let z = lo[2]!; z <= hi[2]!; z++)
+          for (let y = lo[1]!; y <= hi[1]!; y++)
+            for (let x = lo[0]!; x <= hi[0]!; x++) {
+              const d = [(x + 0.5) / c - centro[0]!, (y + 0.5) / c - centro[1]!, (z + 0.5) / c - centro[2]!];
+              const u2 = (d[0]! * d[0]! + d[1]! * d[1]! + d[2]! * d[2]!) / (R * R);
+              if (u2 >= 1) continue;
+              const a = R * (1 - u2) ** 1.5;
+              const o = (((z + n) % n) * n + ((y + n) % n)) * n + ((x + n) % n);
+              if (a <= alt[o]!) continue;
+              alt[o] = a;
+              // a inclinação da cúpula: −3·√(1 − u²)·d/R
+              const g = (-3 * Math.sqrt(1 - u2)) / R;
+              for (let e = 0; e < 3; e++) inc[o * 3 + e] = g * d[e]!;
+            }
+      }
+  const dado = new Uint8Array(n * n * n * 4);
+  let soma = 0;
+  for (let o = 0; o < n * n * n; o++) {
+    // a altura sobre a da maior cúpula (0,9)
+    const v = Math.min(alt[o]! / 0.9, 1);
+    soma += Math.round(255 * v) / 255;
+    dado[o * 4] = Math.round(255 * v);
+    for (let e = 0; e < 3; e++)
+      dado[o * 4 + 1 + e] = Math.round(255 * Math.min(Math.max(inc[o * 3 + e]! / (2 * INCLINACAO_DO_GRAO) + 0.5, 0), 1));
   }
-  const dado = new Uint8Array(n * n * 4);
-  const em = (x: number, y: number) => alt[(((y + n) % n) * n) + ((x + n) % n)]!;
-  for (let y = 0; y < n; y++) {
-    for (let x = 0; x < n; x++) {
-      const dx = ((em(x + 1, y) - em(x - 1, y)) / 2) * c;
-      const dy = ((em(x, y + 1) - em(x, y - 1)) / 2) * c;
-      const o = (y * n + x) * 4;
-      dado[o] = Math.round(255 * em(x, y));
-      dado[o + 1] = Math.round(255 * Math.min(Math.max(dx / INCLINACAO_DO_GRAO + 0.5, 0), 1));
-      dado[o + 2] = Math.round(255 * Math.min(Math.max(dy / INCLINACAO_DO_GRAO + 0.5, 0), 1));
-      dado[o + 3] = 255;
-    }
-  }
-  let somaR = 0;
-  for (let k = 0; k < n * n; k++) somaR += dado[k * 4]! / 255;
-  grao = { dado, n, media: somaR / (n * n) };
+  grao = { dado, n, media: soma / (n * n * n) };
   return grao;
 }
-const ALTURA_MEDIA_DO_GRAO = dadoDoGrao().media;
 /**
  * A ÁREA DE CADA TIPO: a seção do elipsoide é 0,61 do disco de raio 1; as
  * faces do bloco e o vão entre as bolas do monte tiram área. Cada tipo
@@ -830,21 +844,28 @@ const ALTURA_MEDIA_DO_GRAO = dadoDoGrao().media;
  * do mesmo tamanho.
  */
 const ESCALA_DO_BLOCO = [1.711, 1.739] as const;
-const ESCALA_DO_MONTE = [1.212, 1.15] as const;
-/** a cor do brilho de Saturno sobre as pedras: o bege do globo, luminância 1 (escolha declarada) */
-const COR_DE_SATURNO = [1.05, 0.99, 0.9] as const;
+export const ESCALA_DO_MONTE = [1.212, 1.15] as const;
+/**
+ * a cor do brilho de Saturno sobre as pedras, luminância 1: o azul pela cor
+ * do globo, B−V ≈ 1,04 (valor de tabela, referência a conferir) contra 0,65
+ * do Sol — o azul refletido cai 10^(−0,4·0,39) ≈ 0,70 do verde; o vermelho
+ * sobre o verde fica o de antes (1,06, escolha declarada, sem medida aqui)
+ */
+const COR_DE_SATURNO = [1.07, 1.009, 0.704] as const;
 
 /**
  * A LUZ QUE UMA FACE RECEBE, por unidade do albedo: Sol embrulhado com a
  * sombra do globo, a luz do anel em volta (`lamina`: o I/F do próprio
  * disco naquele ponto, ver `luzDaPedra`) só onde o Sol não chega, o globo
- * e o ambiente. É a mesma conta do fragmento (sem fase, brilho e relevo).
+ * e o ambiente; `sol` é o que a fresta do agregado deixa entrar
+ * (`solAberto`). É a mesma conta do fragmento (sem fase, brilho e relevo).
  */
-export function luzDaFace(cosSol: number, cosGlobo: number, sombra: number, irrGlobo: number, poloAbs = 0, lamina = 0): number {
+export function luzDaFace(cosSol: number, cosGlobo: number, sombra: number, irrGlobo: number, poloAbs = 0, lamina = 0, sol = 1): number {
   const envolve = (c: number) => Math.max((c + ENVOLVE) / (1 + ENVOLVE), 0);
+  const direto = envolve(cosSol) * sol;
   return (
-    envolve(cosSol) * sombra +
-    lamina * (1 - 0.6 * poloAbs) * (1 - Math.min(envolve(cosSol), 1)) +
+    direto * sombra +
+    lamina * (1 - 0.6 * poloAbs) * (1 - Math.min(direto, 1)) +
     envolve(cosGlobo) * irrGlobo +
     AMBIENTE_DO_ANEL * (0.25 + 0.75 * sombra) +
     PISO_DA_NOITE
@@ -943,20 +964,6 @@ vec3 direcao(float z01, float a01) {
   float a = 2.0 * PI * a01;
   return vec3(sqrt(max(1.0 - z * z, 0.0)) * vec2(cos(a), sin(a)), z);
 }
-// 0: o miolo; 1–3: as grandes, que dominam; 4–7: as médias; 8–11: as
-// miúdas, meio enterradas no miolo (moram nos vãos entre as grandes)
-vec4 membro(uint base, int k) {
-  uint h = misturar(base ^ (0x632be5abu + uint(k) * 0x9e3779b9u));
-  vec4 r = quatro(h);
-  float dist;
-  float raio;
-  if (k == 0) { dist = 0.1 * r.z; raio = 0.5 + 0.06 * r.w; }
-  else if (k < 4) { dist = 0.42 + 0.12 * r.z; raio = 0.36 + 0.14 * r.w; }
-  else if (k < 8) { dist = 0.55 + 0.1 * r.z; raio = 0.2 + 0.1 * r.w; }
-  else { raio = 0.09 + 0.07 * r.w; dist = 0.5 + 0.6 * raio + 0.05 * r.z; }
-  // ×1,12: a área média do monte é a do elipsoide do ponto (a luz fecha)
-  return vec4(direcao(r.x, r.y) * dist, raio) * 1.12;
-}
 // a variante da forma desta pedra (\`baseDaVariante\` na CPU): os
 // agregados pequenos são as variantes de monte \`VARIANTES\` em diante
 int gVar;
@@ -964,12 +971,7 @@ uint baseDaForma(bool bloco, bool pequeno, uint base) {
   gVar = int(misturar(base ^ 0x5bd1e995u) % ${VARIANTES}u) + (pequeno && !bloco ? ${VARIANTES} : 0);
   return misturar(uint(gVar) + (bloco ? ${BASE_DO_BLOCO >>> 0}u : ${BASE_DO_MONTE >>> 0}u));
 }
-// as quatro maiores bolas de cada agregado pequeno (\`bolasDoAgregado\`)
-const vec4 BOLAS_DO_AGREGADO[${VARIANTES * 4}] = vec4[](${bolasDoAgregado()
-  .map((b) => `vec4(${b.map(glslF).join(', ')})`)
-  .join(', ')});
-// a área do agregado sobre a do monte, por variante (\`osAgregados\`)
-const float ESCALA_DO_AGREGADO[${VARIANTES}] = float[](${osAgregados().escala.map(glslF).join(', ')});
+ASSADOS_DAS_PEDRAS
 `;
 
 const glslRegioes = (campo: 'espessura' | 'esteira') =>
@@ -1355,11 +1357,9 @@ bool lugar(int o, int i) {
 #endif
 }
 
-// A FORMA: o BLOCO é o elipsoide alongado ou achatado com quatro faces de
-// fratura planas e, só na malha, mais três faces e lóbulos fracos; o MONTE
-// é, de longe, o miolo e as três grandes e, na malha, as médias e as miúdas
-// brotando do miolo. Aqui, os parâmetros deste pedaço.
-vec4 cortes[4];
+// A FORMA: o BLOCO é o poliedro da variante; o MONTE e o AGREGADO são, de
+// longe, a forma de perto filtrada e, na malha, a de perto inteira. Aqui,
+// os parâmetros deste pedaço.
 vec3 eixosF;
 float bloco;
 // a escala da área do tipo (\`ESCALA_DO_BLOCO\`, \`ESCALA_DO_MONTE\`), de longe (0) a perto (1)
@@ -1382,15 +1382,10 @@ void parametrosDaForma() {
   // agregados de poucos membros abaixo; o bloco é minoria entre os pequenos
   bool pequeno = 2.0 * gRaio <= ${glslF(DIAMETRO_DOS_MONTES_KM)};
   bloco = r6.z < (pequeno ? ${glslF(BLOCOS_ENTRE_OS_PEQUENOS)} : ${glslF(BLOCOS_ENTRE_OS_GRANDES)}) ? 1.0 : 0.0;
-  // A FORMA é a da variante: no monte, o miolo e as três grandes (centro,
-  // raio) — o que o ponto desenha de longe, e a forma \`A\` da malha
-  // assada; no agregado, as quatro maiores (\`BOLAS_DO_AGREGADO\`); no
-  // bloco, as faces da variante (\`PLANOS\`, no fragmento)
-  uint vb = baseDaForma(bloco > 0.5, pequeno, base);
-#ifndef MALHA
-  for (int k = 0; k < 4; k++) cortes[k] = bloco > 0.5 ? vec4(0.0)
-    : gVar >= ${VARIANTES} ? BOLAS_DO_AGREGADO[(gVar - ${VARIANTES}) * 4 + k] : membro(vb, k);
-#endif
+  // A FORMA é a da variante: no monte e no agregado, a de perto filtrada
+  // (\`formasDeLonge\`, no fragmento do ponto, e a forma \`A\` da malha
+  // assada); no bloco, as faces da variante (\`PLANOS\`, no fragmento)
+  baseDaForma(bloco > 0.5, pequeno, base);
   // o bloco vai do alongado ao achatado; o monte é mais redondo
   eixosF = bloco > 0.5
     ? vec3(1.0, 0.5 + 0.45 * r6.x, 0.32 + 0.4 * r6.y)
@@ -1407,7 +1402,8 @@ void parametrosDaForma() {
   gCosGiro = cos(angGiro);
   gSenGiro = sin(angGiro);
   uint hs = misturar(base ^ 0xd3a2646cu);
-  vSemente = vec4(vec3(float(hs & 0x3ffu), float((hs >> 10) & 0x3ffu), float(hs >> 20)) * (37.0 / 1023.0), bloco > 0.5 ? 1.0 + float(gVar) : 0.0);
+  // w: 1 + a variante no bloco; −(1 + a variante) no monte e no agregado
+  vSemente = vec4(vec3(float(hs & 0x3ffu), float((hs >> 10) & 0x3ffu), float(hs >> 20)) * (37.0 / 1023.0), (1.0 + float(gVar)) * (bloco > 0.5 ? 1.0 : -1.0));
 }
 // do quadro da pedra para o do anel (giro inicial e giro próprio)
 vec3 girar(vec3 v) {
@@ -1597,12 +1593,14 @@ attribute float aId;
 varying vec3 vVista;
 varying vec3 vLocal;
 varying vec3 vNLocal;
-// (oclusão das vizinhas ÷ a média, sujeira do membro)
-varying vec2 vMonte;
+// (oclusão das vizinhas ÷ a média, sujeira do membro, o Sol que a fresta deixa entrar)
+varying vec3 vMonte;
 // 1 no triângulo com os três vértices no plano de uma face do bloco
 varying float vPlano;
 ${GLSL_PEDRA_COMUM}
 uniform int uBase;
+// a régua da fresta desta malha (\`normaDoSol\`)
+uniform highp sampler3D uNormaDaMalha;
 void main() {
   int id = int(aId + 0.5);
   int k = id / uPorOitava;
@@ -1614,7 +1612,7 @@ void main() {
   bool pronto = uPrePronto != 0;
 #endif
   if (pronto ? !lugarPronto(k, id - k * uPorOitava, j) : !lugar(k, id - k * uPorOitava)) {
-    foraComum(); vVista = vec3(0.0); vNoAnel = vec3(0.0); vLocal = vec3(0.0); vNLocal = vec3(0.0, 0.0, 1.0); vGiroM = mat3(1.0); vMonte = vec2(1.0, 0.5); vPlano = 0.0;
+    foraComum(); vVista = vec3(0.0); vNoAnel = vec3(0.0); vLocal = vec3(0.0); vNLocal = vec3(0.0, 0.0, 1.0); vGiroM = mat3(1.0); vMonte = vec3(1.0, 0.5, 1.0); vPlano = 0.0;
 #if defined(PRE_FRAG)
     vFase = 1.0;
 #endif
@@ -1639,7 +1637,10 @@ void main() {
   // vista, e o deslocamento já é relativo a ela
   vVista = gR * pKm;
   vNoAnel = pKm;
-  vMonte = bloco > 0.5 ? vec2(1.0, 0.5) : vec2(mix(1.0, extra.x, lobos), mix(0.5, extra.y, lobos));
+  // a oclusão vai da do ponto (\`formasDeLonge\`, o céu aberto em extra.w)
+  // à desta malha (extra.x), com a forma: na troca o pedaço é o mesmo
+  vMonte = bloco > 0.5 ? vec3(1.0, 0.5, 1.0)
+    : vec3(mix((0.4 + 0.6 * extra.w) / AO_DE_LONGE[gVar / ${VARIANTES}], extra.x, lobos), mix(0.5, extra.y, lobos), 1.0);
   vPlano = bloco < 0.5 ? 0.0 : lobos >= 1.0 ? extra.z : lobos <= 0.0 ? extra.w : extra.z * extra.w;
   gl_Position = comProfundidade(projectionMatrix * vec4(vVista * (gRaioMundo / KM_POR_RAIO), 1.0));
 #if defined(PRE_FRAG)
@@ -1649,6 +1650,15 @@ void main() {
   if (pronto) luzPronta(vVista, j);
   else luzDaPedra(vVista);
 #endif
+  // a fresta do agregado: a normal da forma de longe (a envoltória) faz as
+  // vezes da direção aberta ao céu; o céu aberto vai do do ponto (extra.w)
+  // ao desta malha (extra.z), cada um pela sua régua
+  if (bloco < 0.5) {
+    float cs = dot(normalize(giro * (nA / eixosF)), vSol);
+    // o Sol no quadro da forma (o achatamento desfeito)
+    vec3 s = normalize((transpose(giro) * vSol) / eixosF);
+    vMonte.z = mix(solDaFresta(uNormaDeLonge, gVar, s, cs, extra.w), solDaFresta(uNormaDaMalha, gVar, s, cs, extra.z), lobos);
+  }
 }
 `;
 
@@ -1713,6 +1723,29 @@ const PRE_W = 256;
 const PRE_BANDAS = 7;
 
 /**
+ * O ponto é desenhado CRU (\`RawShaderMaterial\`): no fragmento, a diretiva
+ * da profundidade que só cresce (\`EXT_conservative_depth\`) tem de vir antes
+ * de qualquer declaração, e o prefixo do three começa por elas. Este é o
+ * prefixo dele, o que os shaders do ponto usam.
+ */
+const PREFIXO_CRU = /* glsl */ `
+precision highp float;
+precision highp int;
+${['sampler2D', 'samplerCube', 'sampler3D', 'sampler2DArray', 'sampler2DShadow', 'samplerCubeShadow', 'sampler2DArrayShadow']
+  .concat(['isampler', 'usampler'].flatMap((s) => ['2D', '3D', 'Cube', '2DArray'].map((d) => s + d)))
+  .map((s) => `precision highp ${s};`)
+  .join('\n')}
+#define texture2D texture
+`;
+const PREFIXO_DO_VERTICE_CRU = /* glsl */ `${PREFIXO_CRU}
+#define attribute in
+#define varying out
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+in vec3 position;
+`;
+
+/**
  * O PONTO: um pedaço por vértice, o quadrado do tamanho dele na tela — o
  * desenho barato de todos os que ficam além de x = `X_CORTE`. As oitavas vêm
  * da mais FINA para a mais grossa (as finas moram mais perto). O fragmento
@@ -1720,12 +1753,13 @@ const PRE_BANDAS = 7;
  * nele o raio de visada. Com `ESMAECE`, só os que estão entrando (opacidade
  * < 1), misturados por cima do disco.
  */
-const VERT_DO_PONTO = /* glsl */ `
+const VERT_DO_PONTO = /* glsl */ `${PREFIXO_DO_VERTICE_CRU}
 flat varying vec3 vCentro;
 flat varying mat3 vGiro;
 flat varying vec3 vEixos;
-flat varying vec4 vCortes[4];
 flat varying vec4 vProj;
+// do km da vista para a unidade do mundo
+flat varying float vMundo;
 ${GLSL_PEDRA_COMUM}
 void main() {
   int id = gl_VertexID;
@@ -1741,12 +1775,27 @@ void main() {
   // o giro inteiro, do quadro da pedra para a vista
   vGiro = gR * mat3(girar(vec3(1.0, 0.0, 0.0)), girar(vec3(0.0, 1.0, 0.0)), girar(vec3(0.0, 0.0, 1.0)));
   vEixos = eixosF;
-  for (int j = 0; j < 4; j++) vCortes[j] = cortes[j];
   vProj = vec4(projectionMatrix[0][0], projectionMatrix[1][1], projectionMatrix[2][0], projectionMatrix[2][1]);
-  gl_Position = comProfundidade(projectionMatrix * vec4(gCV * (gRaioMundo / KM_POR_RAIO), 1.0));
-  // o teto de 48 px da casa (POINTS acima de 64 trava o Mac); o ponto mais
-  // largo que o corte de PX_CORTE deixa passar fica em ~43 px
-  gl_PointSize = min(2.0 * raioI * uPxPorRad / max(-gCV.z, raioI) + 1.5, 48.0);
+  vMundo = gRaioMundo / KM_POR_RAIO;
+  // o quadrado cobre a forma de longe inteira (\`RAIO_DE_LONGE\`)
+  float raioQ = raioI * RAIO_DE_LONGE;
+  // a posição é a do centro; a profundidade, a da FRENTE da esfera que
+  // envolve o corpo (a mesma conta do fragmento): nenhum pixel acertado fica
+  // mais perto que ela, e é o que deixa a GPU descartar antes de sombrear
+  // (\`depth_greater\`); o fragmento escreve a do ponto acertado
+  gl_Position = projectionMatrix * vec4(gCV * vMundo, 1.0);
+  float p22 = projectionMatrix[2][2];
+  float p32 = projectionMatrix[3][2];
+  float pn = p32 / (p22 - 1.0);
+  float pMin = ${glslF(PERTO_MINIMO_KM)} * vMundo;
+  // (a meia espessura dela ao longo da visada: a esfera achatada e girada)
+  float frente = raioQ * length(vEixos * vec3(vGiro[0][2], vGiro[1][2], vGiro[2][2]));
+  float pd = max((-gCV.z - ${glslF(1.02)} * frente) * vMundo, 0.5 * pMin);
+  if (pd < 2.0 * pn && 2.0 * pn > pMin)
+    pd = mix(${glslF(1 + FOLGA_DO_RECORTE)} * pn, 2.0 * pn, clamp((pd - pMin) / (2.0 * pn - pMin), 0.0, 1.0));
+  gl_Position.z = max(p32 / pd - p22, -1.0) * gl_Position.w;
+  // o teto de 48 px da casa (POINTS acima de 64 trava o Mac)
+  gl_PointSize = min(2.0 * raioQ * uPxPorRad / max(-gCV.z, raioQ) + 1.5, 48.0);
   luzDaPedra(gCV);
   vFica.w = raioI;
 }
@@ -1762,41 +1811,31 @@ const float PISO_DA_NOITE = ${glslF(PISO_DA_NOITE)};
 // o polo do anel na vista (a luz do anel em volta chega pelo plano dele)
 uniform vec3 uPoloVista;
 const vec3 COR_DE_SATURNO = vec3(${COR_DE_SATURNO.join(', ')});
-uniform sampler2D uRelevo;
+uniform highp sampler3D uRelevo;
 CAMADA_DO_ANEL
+ASSADOS_DAS_PEDRAS
 float envolver(float c) { return max((c + ENVOLVE) / (1.0 + ENVOLVE), 0.0); }
 
-// O GRÃO POR TEXTURA (\`texturaDoRelevo\`): o empedrado de grãos e a
-// inclinação dele, em três planos no quadro da pedra (pesos |n|⁴); \`esc\`
-// em grãos por raio, \`amp\` a altura do grão em raios. Devolve a
-// inclinação (xyz) e a fresta (w: a altura menos a média, pela força —
-// negativa na fresta). O grão de 8 a 4 px se apaga pela PEGADA dele na tela.
-vec4 relevo(vec3 p, vec3 w, float esc, float amp) {
+// O GRÃO SÓLIDO (\`texturaDoRelevo\`): as cúpulas de grão e a inclinação
+// delas, lidas em 3D no quadro da pedra (sem projeção: nada estica);
+// \`esc\` em grãos por raio. Devolve a inclinação (xyz) e a fresta (w: a
+// altura menos a média, pela força — negativa na fresta). O grão de 8 a
+// 4 px se apaga pela PEGADA dele na tela.
+vec4 relevo(vec3 p, float esc, float amp) {
   vec3 c = p * esc;
   float pegada = max(length(dFdx(c)), length(dFdy(c)));
   float forca = 1.0 - smoothstep(${glslF(1 / 8)}, ${glslF(1 / 4)}, pegada);
-  amp *= forca;
-  vec4 tx = texture(uRelevo, c.yz / ${glslF(CELULAS_DO_RELEVO)});
-  vec4 ty = texture(uRelevo, c.zx / ${glslF(CELULAS_DO_RELEVO)});
-  vec4 tz = texture(uRelevo, c.xy / ${glslF(CELULAS_DO_RELEVO)});
-  vec2 gx = (tx.gb - 0.5) * ${glslF(INCLINACAO_DO_GRAO)};
-  vec2 gy = (ty.gb - 0.5) * ${glslF(INCLINACAO_DO_GRAO)};
-  vec2 gz = (tz.gb - 0.5) * ${glslF(INCLINACAO_DO_GRAO)};
-  float h = w.x * tx.r + w.y * ty.r + w.z * tz.r;
-  return vec4((amp * esc) * (w.x * vec3(0.0, gx.x, gx.y) + w.y * vec3(gy.y, 0.0, gy.x) + w.z * vec3(gz.x, gz.y, 0.0)),
-    forca * (h - ${glslF(ALTURA_MEDIA_DO_GRAO)}));
+  vec4 t = texture(uRelevo, c / ${glslF(CELULAS_DO_RELEVO)});
+  return vec4((amp * forca * ${glslF(2 * INCLINACAO_DO_GRAO)}) * (t.gba - 0.5), forca * (t.r - ALTURA_MEDIA_DO_GRAO));
 }
 
 // A COR DE UM PIXEL DO PEDAÇO: \`vista\` o ponto em km na vista, \`p\` o ponto
 // no quadro da pedra (raio ~1), \`nl0\` a normal lisa nesse quadro, \`giro\`
 // do quadro da pedra para a vista, \`ao\` a oclusão das vizinhas (já
 // dividida pela média), \`sujo\` o gelo do membro.
-vec3 sombrear(vec3 vista, vec3 p, vec3 nl0, mat3 giro, float ao, float sujo) {
+vec3 sombrear(vec3 vista, vec3 p, vec3 nl0, mat3 giro, float ao, float sujo, float sol) {
   vec3 v = -vista / max(length(vista), 1.0e-30);
   bool bloco = vSemente.w > 0.5;
-  vec3 w = nl0 * nl0;
-  w *= w;
-  w /= w.x + w.y + w.z;
   vec3 q = p + vSemente.xyz;
   vec3 nb = nl0;
   // O GRÃO: o pedaço é feito de pedaços menores, até o centímetro (a lei
@@ -1804,24 +1843,35 @@ vec3 sombrear(vec3 vista, vec3 p, vec3 nl0, mat3 giro, float ao, float sujo) {
   // em três escalas presas ao tamanho do pedaço (\`ESCALAS_DO_GRAO\` grãos
   // por raio), na normal e no escuro das frestas. O bloco, gelo único, tem
   // só a geada fina (as duas escalas menores, rasas). O pedaço de poucos px
-  // (\`vFica.z\`, o raio na tela) não paga grão.
+  // (\`vFica.z\`, o raio na tela) não paga grão: cada escala só entra a
+  // partir de 2× os grãos por raio, em px — abaixo disso a pegada dela passa
+  // de 1/4 e a força já é zero (com folga de 2× para a perspectiva)
   float fresta = 0.0;
-  if (vFica.z > 4.0) {
+  if (vFica.z > (bloco ? ${glslF(2 * ESCALAS_DO_GRAO[1])} : ${glslF(2 * ESCALAS_DO_GRAO[0])})) {
     vec4 g = bloco ? vec4(0.0)
-      : relevo(q, w, ${glslF(ESCALAS_DO_GRAO[0])}, ${glslF(ALTURA_DO_GRAO / ESCALAS_DO_GRAO[0])});
-    if (vFica.z > 12.0) g += relevo(q.zxy + vSemente.zxy, w.zxy, ${glslF(ESCALAS_DO_GRAO[1])},
-      (bloco ? 0.25 : 1.0) * ${glslF(ALTURA_DO_GRAO / ESCALAS_DO_GRAO[1])}).yzxw;
-    if (vFica.z > 40.0) g += relevo(q.yzx + vSemente.yzx, w.yzx, ${glslF(ESCALAS_DO_GRAO[2])},
-      (bloco ? 0.25 : 1.0) * ${glslF(ALTURA_DO_GRAO / ESCALAS_DO_GRAO[2])}).zxyw;
+      : relevo(q, ${glslF(ESCALAS_DO_GRAO[0])}, ${glslF(ALTURA_DO_GRAO)});
+    if (vFica.z > ${glslF(2 * ESCALAS_DO_GRAO[1])}) g += relevo(q.zxy + vSemente.zxy, ${glslF(ESCALAS_DO_GRAO[1])},
+      (bloco ? 0.25 : 1.0) * ${glslF(ALTURA_DO_GRAO)}).yzxw;
+    if (vFica.z > ${glslF(2 * ESCALAS_DO_GRAO[2])}) g += relevo(q.yzx + vSemente.yzx, ${glslF(ESCALAS_DO_GRAO[2])},
+      (bloco ? 0.25 : 1.0) * ${glslF(ALTURA_DO_GRAO)}).zxyw;
+    // DE RASPÃO o relevo da normal mente (sem o grão esconder o de trás, a
+    // cúpula vista de lado vira risco): ele cede abaixo de ~20° da face
+    // (salvaguarda minha, não medida)
+    g *= smoothstep(0.08, 0.35, abs(dot(normalize(giro * nl0), v)));
     nb -= g.xyz - dot(g.xyz, nl0) * nl0;
     fresta = (bloco ? 0.25 : 1.0) * g.w;
   }
-  vec3 n = normalize(giro * nb);
+  // A LUZ pela normal com grão SEM normalizar: o comprimento dela é a área
+  // da encosta do grão sobre a da face (lei da área projetada), e a média
+  // de dot(nU, s) na face é a de dot(nl0, s) — o grão redistribui a luz,
+  // não tira (normalizada, ela escurecia o pedaço ~10 % com o Sol de frente)
+  vec3 nU = giro * nb;
+  vec3 n = normalize(nU);
   // o gelo de cada membro (±8 %, a média de antes) e o escuro das frestas
   // (média 1: a altura do grão menos a média dela)
   vec3 tintaM = vec3((bloco ? 1.0 : 0.985 * (0.92 + 0.16 * sujo)) * max(1.0 + ${glslF(ESCURO_DA_FRESTA)} * fresta, 0.3));
 
-  float nl = dot(n, vSol);
+  float nl = dot(nU, vSol);
   // retroespalhamento: a fase do próprio anel (1 em retro), com o surto
   // de oposição do gelo
   float cosV = clamp(dot(vSol, v), -1.0, 1.0);
@@ -1830,12 +1880,14 @@ vec3 sombrear(vec3 vista, vec3 p, vec3 nl0, mat3 giro, float ao, float sujo) {
   float dif = envolver(nl);
   vec3 tom = mix(vec3(0.82, 0.93, 1.1), vec3(1.0), smoothstep(-0.05, 0.25, nl));
   vec3 albedo = vTinta * tintaM * ao;
-  // o Sol na camada (vLuz.z, \`atenuacaoDoSol\`) pesa só no Sol direto
+  // o Sol na camada (vLuz.z, \`atenuacaoDoSol\`) e o que a fresta do
+  // próprio agregado deixa entrar (\`sol\`, \`solAberto\`) pesam só no Sol direto
+  dif *= sol;
   vec3 cor = albedo * tom * (dif * fase * vLuz.x * vLuz.z);
   // (sem brilho especular: o gelo do anel é fosco, coberto de grão — o
   // surto de oposição acima é o brilho que ele tem)
   // o globo (cor quente) e o ambiente do anel
-  cor += albedo * COR_DE_SATURNO * (envolver(dot(n, vGlobo)) * vLuz.y);
+  cor += albedo * COR_DE_SATURNO * (envolver(dot(nU, vGlobo)) * vLuz.y);
   cor += albedo * (AMBIENTE_DO_ANEL * (0.25 + 0.75 * vLuz.x) + PISO_DA_NOITE);
   // a luz do anel em volta onde o Sol não chega — no lado da noite e na
   // penumbra do fundo da camada (\`vLamina\`, o I/F do disco ali)
@@ -1856,7 +1908,7 @@ uniform float uZCamKm;
 varying vec3 vVista;
 varying vec3 vLocal;
 varying vec3 vNLocal;
-varying vec2 vMonte;
+varying vec3 vMonte;
 varying float vPlano;
 ${GLSL_PURO_DAS_PEDRAS}
 ${GLSL_LUZ_DA_NEVOA.slice(GLSL_LUZ_DA_NEVOA.indexOf('// a luz da multidão'))}
@@ -1919,7 +1971,7 @@ void main() {
     nPlano = normalize(nPlano);
     nl0 = dot(nPlano, nl0) < 0.0 ? -nPlano : nPlano;
   }
-  vec3 cor = sombrear(vVista, vLocal, nl0, vGiroM, vMonte.x, vMonte.y);
+  vec3 cor = sombrear(vVista, vLocal, nl0, vGiroM, vMonte.x, vMonte.y, vMonte.z);
   // A NÉVOA entre a lente e ESTE ponto do pedaço, pelo raio de visada dele
   // (\`tauDaNevoa\`, a mesma conta da casca): macia com a elevação
   if (vNevoaCam.w > 0.0) {
@@ -1933,22 +1985,30 @@ void main() {
 `;
 
 const FRAG_DO_PONTO = /* glsl */ `
+PROFUNDIDADE_SO_CRESCE
+${PREFIXO_CRU}
+#define varying in
+layout(location = 0) out highp vec4 pc_fragColor;
+#define gl_FragColor pc_fragColor
 ${FRAG_COMUM}
 uniform vec4 uTela;
+uniform mat4 projectionMatrix;
 flat varying vec3 vCentro;
 flat varying mat3 vGiro;
 flat varying vec3 vEixos;
-flat varying vec4 vCortes[4];
 flat varying vec4 vProj;
-// as faces dos blocos, \`PLANOS_DO_BLOCO[1]\` por variante (as que sobram, longe)
-const vec4 PLANOS[${VARIANTES * PLANOS_DO_BLOCO[1]}] = vec4[](${Array.from(
-  { length: VARIANTES },
-  (_, v) => {
-    const p = planosDoBloco(baseDaVariante(true, v));
-    while (p.length < PLANOS_DO_BLOCO[1]) p.push([0, 0, 1, 1e3]);
-    return p.map((c) => `vec4(${c.map(glslF).join(', ')})`).join(', ');
-  },
-).join(', ')});
+// do km da vista para a unidade do mundo
+flat varying float vMundo;
+uniform sampler2D uLonge;
+// A FORMA DE LONGE (\`formasDeLonge\`) na direção d, da linha da variante:
+// (a normal, o raio); a linha + ${2 * VARIANTES} traz o céu aberto (x)
+vec4 deLonge(int linha, vec3 d) {
+  vec2 p = d.xy / (abs(d.x) + abs(d.y) + abs(d.z));
+  if (d.z < 0.0) p = (1.0 - abs(p.yx)) * vec2(p.x >= 0.0 ? 1.0 : -1.0, p.y >= 0.0 ? 1.0 : -1.0);
+  const float N = ${glslF(LADO_DE_LONGE)};
+  vec2 s = clamp((p * 0.5 + 0.5) * N - 0.5, 0.0, N - 1.0);
+  return texture(uLonge, vec2((s.x + 0.5) / N, (float(linha) * N + s.y + 0.5) / ${glslF(4 * VARIANTES * LADO_DE_LONGE)}));
+}
 void main() {
   // o RAIO DE VISADA deste pixel, na vista (a câmera na origem)
   vec2 ndc = (gl_FragCoord.xy - uTela.xy) / uTela.zw * 2.0 - 1.0;
@@ -1962,11 +2022,13 @@ void main() {
   float b = dot(qo, qd);
   float disc = b * b - a * (dot(qo, qo) - 1.0);
   // longe do corpo (o canto do quadrado), nada a sombrear
-  if (dot(qo, qo) - b * b / a > 1.6) discard;
+  if (dot(qo, qo) - b * b / a > 1.6 * RAIO_DE_LONGE * RAIO_DE_LONGE) discard;
   float t0 = (-b - sqrt(max(disc, 0.0))) / a;
   float t1 = (-b + sqrt(max(disc, 0.0))) / a;
   vec3 nq = qo + t0 * qd;
   bool acerta;
+  float ao = 1.0;
+  float sol = 1.0;
   if (vSemente.w > 0.5) {
     // o BLOCO de longe: o poliedro da variante (\`planosDoBloco\`), dentro
     // da esfera unitária
@@ -1981,26 +2043,58 @@ void main() {
     }
     acerta = disc >= 0.0 && t0 <= t1;
   } else {
-    // o MONTE de longe: a bola mais próxima entre o miolo e as três grandes
-    t0 = 1.0e30;
-    for (int k = 0; k < 4; k++) {
-      vec4 m = vCortes[k];
-      vec3 oc = qo - m.xyz;
-      float bm = dot(oc, qd);
-      float dm = bm * bm - a * (dot(oc, oc) - m.w * m.w);
-      if (dm < 0.0) continue;
-      float tm = (-bm - sqrt(dm)) / a;
-      if (tm < t0) { t0 = tm; nq = (qo + tm * qd - m.xyz) / m.w; }
+    // o MONTE e o AGREGADO de longe: o corpo estrelado do mapa da forma de
+    // longe. O raio de visada anda da entrada na esfera que o envolve até
+    // o ponto mais perto do centro, em seis passos, e o primeiro ponto
+    // dentro do corpo é refinado por três bissecções
+    int linha = int(-vSemente.w + 0.5) - 1;
+    float dR = b * b - a * (dot(qo, qo) - RAIO_DE_LONGE * RAIO_DE_LONGE);
+    float tIn = (-b - sqrt(max(dR, 0.0))) / a;
+    float tA = tIn;
+    float tB = -b / a;
+    vec4 m = vec4(0.0, 0.0, 1.0, 1.0);
+    acerta = false;
+    for (int k = 1; k <= 6 && dR >= 0.0; k++) {
+      float tk = mix(tIn, -b / a, float(k) / 6.0);
+      m = deLonge(linha, qo + tk * qd);
+      if (length(qo + tk * qd) <= m.w) { acerta = true; tB = tk; break; }
+      tA = tk;
     }
-    acerta = t0 < 1.0e29;
+    for (int k = 0; k < 3 && acerta; k++) {
+      float tm = 0.5 * (tA + tB);
+      vec4 mm = deLonge(linha, qo + tm * qd);
+      if (length(qo + tm * qd) <= mm.w) { tB = tm; m = mm; } else tA = tm;
+    }
+    t0 = tB;
+    nq = normalize(m.xyz);
+    float vis = clamp(deLonge(linha + ${2 * VARIANTES}, qo + tB * qd).x, 0.0, 1.0);
+    // a oclusão das vizinhas pela fração de céu aberto (a mesma conta das
+    // malhas, ÷ a média do tipo) e o Sol que a fresta deixa entrar
+    ao = (0.4 + 0.6 * vis) / AO_DE_LONGE[linha / ${VARIANTES}];
+    sol = solDaFresta(uNormaDeLonge, linha, normalize((Mt * vSol) / vEixos), dot(normalize(vGiro * (nq / vEixos)), vSol), vis);
   }
   // fora do corpo, o ponto mais perto do raio: a textura do relevo segue
   // lisa no quadrado de pixels da borda (o descarte vem depois)
+  // sem grão (\`sombrear\`) ninguém pede derivada ao vizinho: quem não
+  // acerta sai já
+  if (!acerta && vFica.z <= ${glslF(2 * ESCALAS_DO_GRAO[0])}) discard;
   float t = acerta ? t0 : -b / a;
   vec3 q = qo + t * qd;
   if (!acerta) nq = q;
-  vec3 c = sombrear(d * t, q * vEixos, normalize(nq / vEixos), vGiro, 1.0, 0.5);
+  vec3 c = sombrear(d * t, q * vEixos, normalize(nq / vEixos), vGiro, ao, 0.5, sol);
   if (!acerta) discard;
+  // A PROFUNDIDADE DO PONTO ACERTADO, não a do centro (\`comProfundidade\`):
+  // com a do centro, o vizinho menor cujo centro está mais perto da lente
+  // se pintava por cima do pedaço inteiro — as manchas mais escuras do
+  // ponto que a malha não tinha
+  float pd = -d.z * t * vMundo;
+  float p22 = projectionMatrix[2][2];
+  float p32 = projectionMatrix[3][2];
+  float pn = p32 / (p22 - 1.0);
+  float pMin = ${glslF(PERTO_MINIMO_KM)} * vMundo;
+  if (pd > 0.0 && pd < 2.0 * pn && 2.0 * pn > pMin)
+    pd = mix(${glslF(1 + FOLGA_DO_RECORTE)} * pn, 2.0 * pn, clamp((pd - pMin) / (2.0 * pn - pMin), 0.0, 1.0));
+  gl_FragDepth = 0.5 * (p32 / max(pd, 1.0e-30) - p22) + 0.5;
   // a opacidade da entrada (1 no ponto opaco; o que esmaece mistura)
   gl_FragColor = vec4(c, vFica.x);
 }
@@ -2641,9 +2735,9 @@ function membrosDoMonte(vb: number): number[][] {
  * número por variante, de 2 a 12), com os tamanhos pela lei dos próprios
  * pedaços (n(s) ∝ s⁻³, de `MENOR_DO_AGREGADO` ao maior) e cada membro colado
  * ao que já há, numa direção sorteada, com 55 % do raio para dentro (eles se
- * juntam a ~1 mm/s e se achatam no contato). O tamanho: o ponto acerta as
- * quatro maiores bolas dentro do raio 1 (`bolasDoAgregado`), e a área média
- * vem de `ESCALA_DO_AGREGADO` sobre a do monte.
+ * juntam a ~1 mm/s e se achatam no contato). O tamanho: as quatro maiores
+ * bolas dentro do raio 1 (a régua de antes), e a área média vem de
+ * `ESCALA_DO_AGREGADO` sobre a do monte.
  */
 function r2Medio(f: (d: number[]) => number): number {
   let s = 0;
@@ -2710,11 +2804,291 @@ function osAgregados() {
   agregados = { membros, escala, r2Perto };
   return agregados;
 }
-/** as quatro maiores bolas de cada agregado (centro, raio), as que o ponto acerta */
-function bolasDoAgregado(): number[][] {
-  return osAgregados().membros.flatMap((ms) =>
-    Array.from({ length: BOLAS_A_VALER }, (_, k) => (ms[k] ? ms[k].slice(0, 4) : [0, 0, 0, 0])),
-  );
+/**
+ * A FORMA DE LONGE (décima sexta volta): de longe o monte era as quatro
+ * maiores bolas e lia como pipoca, e na troca para a malha virava outro
+ * corpo. Agora é a forma DE PERTO, filtrada: os membros irregulares, sem
+ * os submembros (`S_MIN_DE_LONGE`), num mapa octaédrico de
+ * `LADO_DE_LONGE`² direções por variante (16 linhas: os montes, depois os
+ * agregados). O ponto acerta esse corpo estrelado e a forma `A` das malhas
+ * é ele mesmo, lido no mapa como a GPU lê: ponto → malha não estala. O
+ * tamanho é o da de perto (o quadrado médio do raio da de doze bolas) na
+ * escala de perto: × `ESCALA_DO_MONTE[1] / [0]`, porque a malha e o ponto
+ * aplicam a escala de longe. Cada texel: a normal e o raio; o céu aberto
+ * vis (a oclusão das vizinhas, a mesma conta das malhas) vai num segundo
+ * bloco de linhas — dentro do comprimento da normal, a média bilinear de
+ * normais tortas o encurtava e o ponto escurecia, manchado, nas juntas dos
+ * membros. A normal vai inteira, não em octaedro: a média bilinear de
+ * dois lados da dobra do octaedro apontava para dentro.
+ */
+/** o menor submembro da forma de longe: o da malha de 162 vértices (`assarFormas`) — nenhum; com os de 642 o mapa de 24² saía ruidoso */
+const S_MIN_DE_LONGE = 1.25 * Math.sqrt(((4 * Math.PI) / (2 * 162 - 4)) * (4 / Math.sqrt(3)));
+function octaedro(d: number[]): [number, number] {
+  const s = Math.abs(d[0]!) + Math.abs(d[1]!) + Math.abs(d[2]!);
+  const x = d[0]! / s;
+  const y = d[1]! / s;
+  if (d[2]! >= 0) return [x, y];
+  return [(1 - Math.abs(y)) * (x >= 0 ? 1 : -1), (1 - Math.abs(x)) * (y >= 0 ? 1 : -1)];
+}
+function doOctaedro(x: number, y: number): number[] {
+  const z = 1 - Math.abs(x) - Math.abs(y);
+  if (z >= 0) return unir([x, y, z]);
+  return unir([(1 - Math.abs(y)) * (x >= 0 ? 1 : -1), (1 - Math.abs(x)) * (y >= 0 ? 1 : -1), z]);
+}
+/** a fração de céu aberto num ponto u da forma, de normal n, pela oclusão das vizinhas (`assarFormas`) */
+function ceuAberto(u: number[], n: number[], tudo: number[][]): number {
+  let occ = 0;
+  for (const m of tudo) {
+    const w = [m[0]! - u[0]!, m[1]! - u[1]!, m[2]! - u[2]!];
+    const l2 = Math.max(dot3(w, w), 1e-4);
+    occ += (((m[3]! * m[3]!) / l2) * Math.max(dot3(n, w), 0)) / Math.sqrt(l2);
+  }
+  return Math.min(Math.max(1 - occ, 0), 1);
+}
+let longe: {
+  dado: Float32Array;
+  raioMaximo: number;
+  aoMedio: [number, number];
+  normaDoSol: number[];
+  texNorma: THREE.Data3DTexture | null;
+  tex: THREE.DataTexture | null;
+} | null = null;
+function formasDeLonge() {
+  if (longe) return longe;
+  const N = LADO_DE_LONGE;
+  // duas vezes as linhas: (normal, raio), depois (céu aberto, -, -, -)
+  const dado = new Float32Array(2 * 2 * VARIANTES * N * N * 4);
+  const ceu = 2 * VARIANTES * N * N * 4;
+  const ag = osAgregados();
+  let raioMaximo = 1;
+  const somaAo = [0, 0];
+  const somaP = [0, 0];
+  const normas: number[] = [];
+  for (let t = 1; t < 3; t++) {
+    for (let v = 0; v < VARIANTES; v++) {
+      const monte = t === 1;
+      const vb = baseDaVariante(false, monte ? v : VARIANTES + v);
+      const todos = monte ? membrosDoMonte(vb) : ag.membros[v]!;
+      const sub = monte ? subMembros(vb, todos, S_MIN_DE_LONGE) : [];
+      const tudo = [...todos, ...sub];
+      const P: number[][] = [];
+      let r2 = 0;
+      for (let j = 0; j < N; j++)
+        for (let i = 0; i < N; i++) {
+          const d = doOctaedro(((i + 0.5) / N) * 2 - 1, ((j + 0.5) / N) * 2 - 1);
+          const r = raioDoMonteDePerto(d, todos, sub).r;
+          r2 += r * r;
+          P.push(d.map((x) => x * r));
+        }
+      const r2Antes = monte ? r2Medio((d) => raioDoMonte(d, todos).r) : ag.r2Perto[v]!;
+      // o mapa octaédrico tem a mesma área por texel só perto disso: a média
+      // pesa cada texel por igual (a diferença fica abaixo de 1 % no tamanho)
+      const k = Math.sqrt(r2Antes / (r2 / (N * N))) * (ESCALA_DO_MONTE[1] / ESCALA_DO_MONTE[0]);
+      const linha = (t - 1) * VARIANTES + v;
+      const pontos: number[][] = [];
+      for (let j = 0; j < N; j++)
+        for (let i = 0; i < N; i++) {
+          // a normal pelas vizinhas no mapa (de um lado só na borda), para fora
+          const em = (a: number, b: number) => P[Math.min(Math.max(b, 0), N - 1) * N + Math.min(Math.max(a, 0), N - 1)]!;
+          const u = em(i, j);
+          const ex = [0, 1, 2].map((q) => em(i + 1, j)[q]! - em(i - 1, j)[q]!);
+          const ey = [0, 1, 2].map((q) => em(i, j + 1)[q]! - em(i, j - 1)[q]!);
+          let n = unir([ex[1]! * ey[2]! - ex[2]! * ey[1]!, ex[2]! * ey[0]! - ex[0]! * ey[2]!, ex[0]! * ey[1]! - ex[1]! * ey[0]!]);
+          const d = unir(u);
+          if (dot3(n, d) < 0) n = n.map((x) => -x);
+          if (dot3(n, d) < 0.05) n = d;
+          const vis = ceuAberto(u, n, tudo);
+          const r = Math.hypot(u[0]!, u[1]!, u[2]!) * k;
+          raioMaximo = Math.max(raioMaximo, r);
+          somaAo[t - 1]! += (0.4 + 0.6 * vis) * r * r;
+          somaP[t - 1]! += r * r;
+          pontos.push([...n, ...n, vis, r * r]);
+          const o = ((linha * N + j) * N + i) * 4;
+          for (let q = 0; q < 3; q++) dado[o + q] = n[q]!;
+          dado[o + 3] = r;
+          dado[ceu + o] = vis;
+        }
+      normas.push(...normaDoSol(pontos));
+    }
+  }
+  longe = {
+    dado,
+    raioMaximo,
+    aoMedio: [somaAo[0]! / somaP[0]!, somaAo[1]! / somaP[1]!],
+    normaDoSol: normas,
+    texNorma: null,
+    tex: null,
+  };
+  return longe;
+}
+/** a forma de longe na direção d, lida no mapa como a GPU lê (bilinear, presa na linha): a direção × raio, a normal e o céu aberto */
+function lerDeLonge(linha: number, d: number[]): { u: number[]; n: number[]; vis: number } {
+  const { dado } = formasDeLonge();
+  const N = LADO_DE_LONGE;
+  const p = octaedro(d);
+  const sx = Math.min(Math.max((p[0] * 0.5 + 0.5) * N - 0.5, 0), N - 1);
+  const sy = Math.min(Math.max((p[1] * 0.5 + 0.5) * N - 0.5, 0), N - 1);
+  const i0 = Math.min(Math.floor(sx), N - 2);
+  const j0 = Math.min(Math.floor(sy), N - 2);
+  const fx = sx - i0;
+  const fy = sy - j0;
+  const c = [0, 0, 0, 0];
+  let vis = 0;
+  for (const [di, dj, w] of [[0, 0, (1 - fx) * (1 - fy)], [1, 0, fx * (1 - fy)], [0, 1, (1 - fx) * fy], [1, 1, fx * fy]] as const) {
+    const o = ((linha * N + j0 + dj) * N + i0 + di) * 4;
+    for (let q = 0; q < 4; q++) c[q]! += w * dado[o + q]!;
+    vis += w * dado[2 * VARIANTES * N * N * 4 + o]!;
+  }
+  const l = Math.hypot(c[0]!, c[1]!, c[2]!);
+  return { u: d.map((x) => x * c[3]!), n: [c[0]! / l, c[1]! / l, c[2]! / l], vis };
+}
+function texturaDeLonge(): THREE.DataTexture {
+  const l = formasDeLonge();
+  if (l.tex) return l.tex;
+  const meio = new Uint16Array(l.dado.length);
+  for (let k = 0; k < l.dado.length; k++) meio[k] = THREE.DataUtils.toHalfFloat(l.dado[k]!);
+  const tex = new THREE.DataTexture(meio, LADO_DE_LONGE, 4 * VARIANTES * LADO_DE_LONGE, THREE.RGBAFormat, THREE.HalfFloatType);
+  tex.magFilter = tex.minFilter = THREE.LinearFilter;
+  tex.needsUpdate = true;
+  l.tex = tex;
+  return tex;
+}
+
+/**
+ * A FRESTA DO AGREGADO (décima sexta volta): a oclusão das vizinhas
+ * escurecia toda a luz por igual, e o Sol, duro, chegava ao fundo de toda
+ * fresta. Um ponto que vê a fração `vis` do céu vê um cone de mesmo ângulo
+ * sólido, cos θ = 1 − vis, em torno da direção aberta — a normal da forma
+ * de longe (a envoltória). O Sol direto passa só dentro do cone; a borda
+ * de ±0,15 em cosseno é salvaguarda minha (o cone é uma aproximação, não
+ * medida). Em ponto aberto (vis = 1) fica o terminador da envoltória.
+ * Ele é dividido pela régua do pedaço (`normaDoSol`): o pedaço inteiro
+ * reflete o mesmo de antes com qualquer Sol — o brilho
+ * do campo foi casado com o I/F medido do disco, que já traz a sombra
+ * das partículas sobre si —, só que com o contraste das frestas.
+ */
+export function solAberto(cosEnvoltoria: number, vis: number): number {
+  const c = 1 - vis;
+  return suave(c - 0.15, c + 0.15, cosEnvoltoria);
+}
+/**
+ * A RÉGUA DA FRESTA (décima sétima volta): dividir pela média de todas as
+ * direções do Sol (0,98) falhava com o Sol BAIXO sobre a face: com o Sol a
+ * cos c da envoltória, só passa quem vê mais que 1 − c do céu — em c = 0,
+ * uns 40 % da área —, e a face rasante perdia até 60 % do Sol, que a média
+ * não devolvia (com o Sol alto ela devolvia demais); e quem vê o pedaço de
+ * lado ou de baixo vê justamente as faces rasantes. Agora a divisão é por
+ * N, por VARIANTE, pela direção s do Sol no quadro dela e pela faixa de c:
+ * o Sol direto que os pontos daquela faixa recebem com fresta sobre o de
+ * sem fresta, Σ w·env(n·s)·`solAberto`(c) ÷ Σ w·env(n·s) (n a normal, w a
+ * área). A fresta só tira de um ponto o que dá a outro da mesma elevação
+ * do Sol no mesmo pedaço, e o pedaço reflete o de antes de qualquer lado.
+ * `pontos` = (n, e — a normal da envoltória —, céu aberto, área); devolve
+ * `FAIXAS_DA_NORMA` mapas octaédricos de `LADO_DA_NORMA`² direções.
+ */
+export function normaDoSol(pontos: readonly (readonly number[])[]): number[] {
+  const L = LADO_DA_NORMA;
+  const F = FAIXAS_DA_NORMA;
+  const env = (c: number) => Math.max((c + ENVOLVE) / (1 + ENVOLVE), 0);
+  const t = new Array<number>(F * L * L).fill(1);
+  for (let j = 0; j < L; j++)
+    for (let i = 0; i < L; i++) {
+      const sd = doOctaedro(((i + 0.5) / L) * 2 - 1, ((j + 0.5) / L) * 2 - 1);
+      const com = new Float64Array(F);
+      const sem = new Float64Array(F);
+      for (const q of pontos) {
+        const d = q[7]! * env(q[0]! * sd[0]! + q[1]! * sd[1]! + q[2]! * sd[2]!);
+        if (d <= 0) continue;
+        const c = q[3]! * sd[0]! + q[4]! * sd[1]! + q[5]! * sd[2]!;
+        const so = solAberto(c, q[6]!);
+        // nas duas faixas vizinhas, pela distância (a GPU interpola igual)
+        const x = Math.min(Math.max((c - C0_DA_NORMA) / PASSO_DA_NORMA, 0), F - 1);
+        const k = Math.min(Math.floor(x), F - 2);
+        const f = x - k;
+        sem[k]! += (1 - f) * d;
+        com[k]! += (1 - f) * d * so;
+        sem[k + 1]! += f * d;
+        com[k + 1]! += f * d * so;
+      }
+      for (let k = 0; k < F; k++) if (sem[k]! > 0) t[(k * L + j) * L + i] = com[k]! / sem[k]!;
+      // o que nenhuma faixa devolve (a face voltada ao Sol com a envoltória
+      // de costas: ali ninguém recebe Sol) volta ao pedaço inteiro
+      let total = 0;
+      let deveria = 0;
+      for (const q of pontos) {
+        const d = q[7]! * env(q[0]! * sd[0]! + q[1]! * sd[1]! + q[2]! * sd[2]!);
+        if (d <= 0) continue;
+        const c = q[3]! * sd[0]! + q[4]! * sd[1]! + q[5]! * sd[2]!;
+        const x = Math.min(Math.max((c - C0_DA_NORMA) / PASSO_DA_NORMA, 0), F - 1);
+        const k = Math.min(Math.floor(x), F - 2);
+        const f = x - k;
+        const n = (1 - f) * t[(k * L + j) * L + i]! + f * t[((k + 1) * L + j) * L + i]!;
+        total += (d * solAberto(c, q[6]!)) / Math.max(n, 0.05);
+        deveria += d;
+      }
+      if (total > 0) for (let k = 0; k < F; k++) t[(k * L + j) * L + i]! *= total / deveria;
+    }
+  return t;
+}
+/** a régua em textura 3D (meia precisão, filtrada): x, y a direção do Sol; z a faixa do cosseno, as 16 variantes uma depois da outra */
+function texturaDaNorma(t: readonly number[]): THREE.Data3DTexture {
+  const meio = new Uint16Array(t.length);
+  for (let k = 0; k < t.length; k++) meio[k] = THREE.DataUtils.toHalfFloat(t[k]!);
+  const tex = new THREE.Data3DTexture(meio, LADO_DA_NORMA, LADO_DA_NORMA, t.length / (LADO_DA_NORMA * LADO_DA_NORMA));
+  tex.format = THREE.RedFormat;
+  tex.type = THREE.HalfFloatType;
+  tex.magFilter = tex.minFilter = THREE.LinearFilter;
+  tex.needsUpdate = true;
+  return tex;
+}
+const GLSL_SOL_ABERTO = /* glsl */ `
+float solAberto(float cosEnvoltoria, float vis) {
+  float c = 1.0 - vis;
+  return smoothstep(c - 0.15, c + 0.15, cosEnvoltoria);
+}
+// a régua da fresta da forma de longe (\`normaDoSol\`)
+uniform highp sampler3D uNormaDeLonge;
+// o Sol que a fresta deixa (\`solAberto\`, c o cosseno do Sol na envoltória)
+// ÷ N da variante \`linha\` (0 a ${2 * VARIANTES - 1}) na régua \`t\`, com o Sol em s (no quadro da forma)
+float solDaFresta(highp sampler3D t, int linha, vec3 s, float c, float vis) {
+  vec2 p = s.xy / (abs(s.x) + abs(s.y) + abs(s.z));
+  if (s.z < 0.0) p = (1.0 - abs(p.yx)) * vec2(p.x >= 0.0 ? 1.0 : -1.0, p.y >= 0.0 ? 1.0 : -1.0);
+  const float L = ${glslF(LADO_DA_NORMA)};
+  const float F = ${glslF(FAIXAS_DA_NORMA)};
+  vec2 q = clamp((p * 0.5 + 0.5) * L - 0.5, 0.0, L - 1.0) + 0.5;
+  float z = clamp((c - ${glslF(C0_DA_NORMA)}) / ${glslF(PASSO_DA_NORMA)}, 0.0, F - 1.0) + 0.5;
+  float n = texture(t, vec3(q / L, (float(linha) * F + z) / ${glslF(2 * VARIANTES * FAIXAS_DA_NORMA)})).r;
+  return solAberto(c, vis) / max(n, 0.05);
+}
+`;
+
+/**
+ * O QUE SÓ SE ASSA COM `?pedras=3d`: as constantes do GLSL que saem de
+ * contas (a escala dos agregados, a altura média do grão, as faces dos
+ * blocos, o raio e a oclusão média da forma de longe) entram no lugar de
+ * `ASSADOS_DAS_PEDRAS` quando os materiais são montados — a carga do módulo
+ * não assa nada.
+ */
+let assados: string | null = null;
+function glslAssado(): string {
+  if (assados) return assados;
+  const l = formasDeLonge();
+  assados = `
+// a área do agregado sobre a do monte, por variante (\`osAgregados\`)
+const float ESCALA_DO_AGREGADO[${VARIANTES}] = float[](${osAgregados().escala.map(glslF).join(', ')});
+// a altura média do grão (\`dadoDoGrao\`)
+const float ALTURA_MEDIA_DO_GRAO = ${glslF(dadoDoGrao().media)};
+// as faces dos blocos, \`PLANOS_DO_BLOCO[1]\` por variante (as que sobram, longe)
+const vec4 PLANOS[${VARIANTES * PLANOS_DO_BLOCO[1]}] = vec4[](${Array.from({ length: VARIANTES }, (_, v) => {
+    const p = planosDoBloco(baseDaVariante(true, v));
+    while (p.length < PLANOS_DO_BLOCO[1]) p.push([0, 0, 1, 1e3]);
+    return p.map((c) => `vec4(${c.map(glslF).join(', ')})`).join(', ');
+  }).join(', ')});
+// o maior raio da forma de longe e a oclusão média dela, monte e agregado (\`formasDeLonge\`)
+const float RAIO_DE_LONGE = ${glslF(l.raioMaximo)};
+const float AO_DE_LONGE[2] = float[](${l.aoMedio.map(glslF).join(', ')});
+${GLSL_SOL_ABERTO}`;
+  return assados;
 }
 
 /**
@@ -2854,6 +3228,7 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
   const sMin =
     1.25 * Math.sqrt(((4 * Math.PI) / (2 * n - 4)) * (4 / Math.sqrt(3)));
   const ag = osAgregados();
+  const normas: number[] = [];
   for (let t = 0; t < 3; t++) {
     const aoDoTipo: number[][] = [];
     for (let v = 0; v < VARIANTES; v++) {
@@ -2921,19 +3296,22 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
         const monte = t === 1;
         const vb = baseDaVariante(false, monte ? v : VARIANTES + v);
         const todos = monte ? membrosDoMonte(vb) : ag.membros[v]!;
-        const poucos = todos.map((m, k) =>
-          k < BOLAS_A_VALER ? m : [0, 0, 0, 0, 0.5],
-        );
         const sub = monte ? subMembros(vb, todos, sMin) : [];
         const tudo = [...todos, ...sub];
         const uB: number[][] = [];
         const donos: number[] = [];
+        const visDeLonge: number[] = [];
+        const nDeLonge: number[][] = [];
+        const pontos: number[][] = [];
         let r2Antes = 0;
         let r2 = 0;
         ds.forEach((d, i) => {
-          const a = raioDoMonte(d, poucos);
-          por(l0, i, d.map((x) => x * a.r));
+          // de longe, a forma do ponto (\`formasDeLonge\`), lida no mapa
+          const a = lerDeLonge((t - 1) * VARIANTES + v, d);
+          por(l0, i, a.u);
           por(l0 + 2, i, a.n);
+          visDeLonge.push(a.vis);
+          nDeLonge.push(a.n);
           if (monte) r2Antes += raioDoMonte(d, todos).r ** 2;
           const b = raioDoMonteDePerto(d, todos, sub);
           r2 += b.r * b.r;
@@ -2957,10 +3335,15 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
           }
           const ao = Math.min(Math.max(1 - 0.6 * occ, 0.35), 1);
           aoDoTipo.push([l0 + 4, i, ao, dot3(u, u)]);
-          por(l0 + 4, i, [ao, tudo[donos[i]!]![4]!, 0]);
+          // (ao, sujo, a fração de céu aberto — \`solAberto\` —, a do ponto)
+          const vis = Math.min(Math.max(1 - occ, 0), 1);
+          por(l0 + 4, i, [ao, tudo[donos[i]!]![4]!, vis]);
+          dado[((l0 + 4) * n + i) * 4 + 3] = visDeLonge[i]!;
+          pontos.push([...nn, ...nDeLonge[i]!, vis, dot3(u, u)]);
         });
         // o tamanho é o de antes: o quadrado médio do raio, o da forma de doze
         const k = Math.sqrt(r2Antes / r2);
+        normas.push(...normaDoSol(pontos));
         ds.forEach((_, i) => {
           por(
             l0 + 1,
@@ -2990,19 +3373,23 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
     THREE.FloatType,
   );
   tex.needsUpdate = true;
+  tex.userData.normaDoSol = normas;
+  tex.userData.texNorma = texturaDaNorma(tex.userData.normaDoSol as number[]);
   return { geo, tex };
 }
 
 /**
- * O GRÃO DO FRAGMENTO: o empedrado periódico de `CELULAS_DO_RELEVO` grãos
- * por lado (`dadoDoGrao`), com mipmaps — o mipmap apaga o que fica menor
- * que o pixel (sem cintilar de longe). R = altura; G, B = a inclinação dela,
- * por grão (÷ `INCLINACAO_DO_GRAO`, + 0,5).
+ * O GRÃO DO FRAGMENTO: o bloco periódico de `CELULAS_DO_RELEVO`³ grãos
+ * (`dadoDoGrao`), em 3D, com mipmaps — o mipmap apaga o que fica menor que
+ * o pixel (sem cintilar de longe). R = altura; G, B, A = a inclinação dela
+ * em x, y, z (÷ 2·`INCLINACAO_DO_GRAO`, + 0,5).
  */
-function texturaDoRelevo(): THREE.DataTexture {
+function texturaDoRelevo(): THREE.Data3DTexture {
   const { dado, n } = dadoDoGrao();
-  const tex = new THREE.DataTexture(dado, n, n, THREE.RGBAFormat, THREE.UnsignedByteType);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  const tex = new THREE.Data3DTexture(dado, n, n, n);
+  tex.format = THREE.RGBAFormat;
+  tex.type = THREE.UnsignedByteType;
+  tex.wrapS = tex.wrapT = tex.wrapR = THREE.RepeatWrapping;
   tex.magFilter = THREE.LinearFilter;
   tex.minFilter = THREE.LinearMipmapLinearFilter;
   tex.generateMipmaps = true;
@@ -3298,6 +3685,7 @@ class Faixa {
     for (const f of FORMAS.values()) {
       f.geo.dispose();
       f.tex.dispose();
+      (f.tex.userData.texNorma as THREE.Texture).dispose();
     }
     FORMAS.clear();
   }
@@ -3348,9 +3736,10 @@ const float R_EXT = ${opcoes.rExt};`;
     const vertice = (v: string) =>
       v
         .replace('CONSTANTES_DO_ANEL', constantes)
-        .replace('SOMBRA_DO_PLANETA', opcoes.glslSombraDoPlaneta);
+        .replace('SOMBRA_DO_PLANETA', opcoes.glslSombraDoPlaneta)
+        .replace('ASSADOS_DAS_PEDRAS', glslAssado());
     const fragmento = (f: string) =>
-      f.replace('CAMADA_DO_ANEL', opcoes.glslCamadaDoAnel);
+      f.replace('CAMADA_DO_ANEL', opcoes.glslCamadaDoAnel).replace('ASSADOS_DAS_PEDRAS', glslAssado());
 
     // UM objeto de uniformes, dividido por todos os desenhos
     this.uniforms = {
@@ -3379,6 +3768,8 @@ const float R_EXT = ${opcoes.rExt};`;
       uRaioFolha: { value: 40 },
       uFundoFolha: { value: -0.02 },
       uRelevo: { value: texturaDoRelevo() },
+      uLonge: { value: texturaDeLonge() },
+      uNormaDeLonge: { value: (formasDeLonge().texNorma ??= texturaDaNorma(formasDeLonge().normaDoSol)) },
       uPoloVista: { value: new THREE.Vector3(0, 0, 1) },
       uPre: { value: null },
       uPrePronto: { value: 0 },
@@ -3399,7 +3790,8 @@ const float R_EXT = ${opcoes.rExt};`;
           toneMapped: false,
         });
       }
-      return new THREE.ShaderMaterial({
+      const m = new (malha ? THREE.ShaderMaterial : THREE.RawShaderMaterial)({
+        ...(malha ? {} : { glslVersion: THREE.GLSL3 }),
         vertexShader: vertice(malha ? VERT_DA_MALHA : VERT_DO_PONTO),
         fragmentShader: fragmento(malha ? FRAG_DA_MALHA : FRAG_DO_PONTO),
         defines: {
@@ -3409,13 +3801,28 @@ const float R_EXT = ${opcoes.rExt};`;
           ...(esmaece ? { ESMAECE: 1 } : {}),
         },
         // os uniformes divididos, mais a forma assada desta malha
-        uniforms: formas ? { ...this.uniforms, uFormas: { value: formas }, uBase: { value: 0 } } : this.uniforms,
+        uniforms: formas
+          ? { ...this.uniforms, uFormas: { value: formas }, uBase: { value: 0 }, uNormaDaMalha: { value: formas.userData.texNorma as THREE.Data3DTexture } }
+          : this.uniforms,
         // os que estão entrando misturam por cima do disco, sem escrever
         // profundidade; o resto é opaco
         transparent: esmaece,
         depthWrite: !esmaece,
         depthTest: true,
       });
+      // a profundidade do ponto acertado nunca fica mais perto que a do
+      // vértice (a frente do corpo): com a extensão, a GPU descarta antes de
+      // sombrear o que está atrás; sem ela, a mesma imagem, mais cara
+      if (!malha)
+        m.onBeforeCompile = (s, r) => {
+          s.fragmentShader = s.fragmentShader.replace(
+            'PROFUNDIDADE_SO_CRESCE',
+            r.extensions.has('EXT_conservative_depth')
+              ? '#extension GL_EXT_conservative_depth : enable\nlayout (depth_greater) out highp float gl_FragDepth;'
+              : ''
+          );
+        };
+      return m;
     };
     this.faixa = new Faixa(material);
     // DA FRENTE PARA TRÁS: as malhas de perto; os pontos (que descartam) por
@@ -3655,6 +4062,9 @@ const float R_EXT = ${opcoes.rExt};`;
     this.faixa.dispose();
     this.alvoPre?.dispose();
     (this.uniforms.uRelevo!.value as THREE.Texture).dispose();
+    (this.uniforms.uLonge!.value as THREE.Texture).dispose();
+    (this.uniforms.uNormaDeLonge!.value as THREE.Texture).dispose();
+    if (longe) longe.tex = longe.texNorma = null;
     (this.uniforms.uEsteira!.value as THREE.Texture).dispose();
     for (const m of [this.folha, this.nevoa]) {
       m.geometry.dispose();
