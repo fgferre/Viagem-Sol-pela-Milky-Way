@@ -1337,7 +1337,9 @@ void main() {
   for (int j = 0; j < 4; j++) vCortes[j] = cortes[j];
   vProj = vec4(projectionMatrix[0][0], projectionMatrix[1][1], projectionMatrix[2][0], projectionMatrix[2][1]);
   gl_Position = comProfundidade(projectionMatrix * vec4(gCV * (gRaioMundo / KM_POR_RAIO), 1.0));
-  gl_PointSize = 2.0 * raioI * uPxPorRad / max(-gCV.z, raioI) + 1.5;
+  // o teto de 48 px da casa (POINTS acima de 64 trava o Mac); o ponto mais
+  // largo que o corte de PX_CORTE deixa passar fica em ~43 px
+  gl_PointSize = min(2.0 * raioI * uPxPorRad / max(-gCV.z, raioI) + 1.5, 48.0);
   luzDaPedra(gCV);
   vFica.w = raioI;
 }

@@ -490,6 +490,25 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
       'escrita, o mesmo molde das plumas',
   },
   {
+    // a prova `?pedras=3d`: os pedaços do anel no tamanho e no lugar medidos
+    id: 'pedras-do-anel-de-saturno',
+    nome: 'os pedaços de gelo do anel de Saturno vistos de perto (pontos de longe, malhas de perto)',
+    arquivos: ['src/three/world/corpos/pedrasDoAnel.ts'],
+    consomeL1: false,
+    leiVelhaApagada: false,
+    fatorDeBrilho: null,
+    destino: 'fora-da-lei',
+    migracao: null,
+    emiteGlPointSize: true,
+    razao:
+      'não é fonte estelar: cada pedaço é um corpo opaco de gelo iluminado pelo ' +
+      'SOL, pelo globo e pelo próprio anel, com o nível ancorado no I/F do disco ' +
+      'que ele substitui. O tamanho do ponto é geométrico — o raio medido do ' +
+      'pedaço pela lente, nunca uma lei de brilho — e só vale abaixo do corte de ' +
+      '12 px de raio (acima disso o pedaço é malha), com o teto de 48 px da casa ' +
+      'declarado no shader',
+  },
+  {
     // C6 do plano de motion (docs/PLANO-MOTION-UI.md), adotado: o halo
     // de contorno liga por padrão, `?contorno=css` desliga
     id: 'halo-do-contorno-da-ui',
