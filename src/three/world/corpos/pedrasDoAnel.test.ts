@@ -11,7 +11,9 @@ import {
   GLSL_SOMBRA_DO_PLANETA_NO_ANEL,
 } from './gigante';
 import {
+  ALCANCE_DA_NEVOA_KM,
   A_MAX_KM,
+  CELULA_DA_ESTEIRA_KM,
   FRACAO_NAO_RESOLVIDA,
   FRACAO_POR_OITAVA,
   K_JANELA,
@@ -30,12 +32,15 @@ import {
   alfaCedido,
   cessaoDoDisco,
   densidadeDaEsteira,
+  distanciaDaProfundidade,
+  estiramentoDaEsteira,
   lugarDaPedra,
   luzDaFace,
   pedacosPorArea,
   presencaDaOitava,
   regiaoDasPedras,
   sombraMutua,
+  tauDaNevoa,
 } from './pedrasDoAnel';
 import { REGIOES_DO_ANEL } from './gigante';
 
@@ -152,10 +157,11 @@ describe('pedras 3D do anel', () => {
         for (const [g, e] of [[0, 0], [3.7, -91.2]] as const) {
           const a = lugarDaPedra(o, i, camA, g, e);
           const b = lugarDaPedra(o, i, camB, g, e);
-          // só onde as duas câmeras escolhem a mesma imagem do ladrilho
+          // só onde as duas câmeras escolhem a mesma imagem do ladrilho (com
+          // folga para o deslocamento da esteira, até ~7 m)
           const t = TABELA_DE_OITAVAS[o]!;
           const dS = a.sKm - R0_KM * camA.theta;
-          if (Math.abs(a.rhoKm - camA.rhoKm) > 0.4 * t.ladoRadial || Math.abs(dS) > 0.4 * t.ladoNoArco) continue;
+          if (Math.abs(a.rhoKm - camA.rhoKm) > 0.4 * t.ladoRadial - 0.008 || Math.abs(dS) > 0.4 * t.ladoNoArco - 0.008) continue;
           expect(b.rhoKm).toBeCloseTo(a.rhoKm, 9);
           expect(b.sKm).toBeCloseTo(a.sKm, 9);
           expect(b.zKm).toBe(a.zKm);
@@ -202,6 +208,24 @@ describe('pedras 3D do anel', () => {
     }
     expect(Math.abs(soma / n - 1)).toBeLessThan(0.02);
     expect(max / min).toBeGreaterThan(5);
+    // pico:vale (percentis 95 e 5) ≥ 4, e o mapa nunca dobra (inversível)
+    const ds: number[] = [];
+    let menor = Infinity;
+    for (let a = 0; a < 200; a++) {
+      for (let b = 0; b < 200; b++) {
+        ds.push(densidadeDaEsteira(9_000 + b * 0.0047, 101_000 + a * 0.0053));
+        menor = Math.min(menor, estiramentoDaEsteira(9_000 + b * 0.0047, 101_000 + a * 0.0053));
+      }
+    }
+    ds.sort((x, y) => x - y);
+    expect(ds[Math.floor(0.95 * ds.length)]! / ds[Math.floor(0.05 * ds.length)]!).toBeGreaterThan(4);
+    expect(menor).toBeGreaterThan(0.02);
+    // sem fronteira de célula: contínua onde o ponto troca de 2×2 células
+    for (let m = 0; m < 20; m++) {
+      const rho = (Math.floor(128_000 / CELULA_DA_ESTEIRA_KM) + m + 0.5) * CELULA_DA_ESTEIRA_KM;
+      const s = 4_321 + 0.137 * m;
+      expect(Math.abs(densidadeDaEsteira(s, rho - 1e-7) - densidadeDaEsteira(s, rho + 1e-7))).toBeLessThan(1e-3);
+    }
     for (const rho of [80_000, 85_000, 118_500, 119_500]) {
       for (const s of [0, 1234.5, 777_000]) expect(densidadeDaEsteira(s, rho)).toBe(1);
     }
@@ -296,5 +320,40 @@ describe('pedras 3D do anel', () => {
         }
       }
     }
+  });
+  it('a profundidade só dos pedaços: nada cortado perto da lente, a ordem fica, e de 2n para longe é a da lente', () => {
+    const n = 0.012;
+    expect(distanciaDaProfundidade(0.03, n)).toBe(0.03);
+    expect(distanciaDaProfundidade(2 * n, n)).toBe(2 * n);
+    let antes = 0;
+    for (let d = 1e-5; d < 0.05; d *= 1.05) {
+      const g = distanciaDaProfundidade(d, n);
+      expect(g).toBeGreaterThan(n);
+      expect(g).toBeGreaterThanOrEqual(antes);
+      antes = g;
+    }
+    // um pedaço a 1 m fica na frente de um a 3 m
+    expect(distanciaDaProfundidade(0.001, n)).toBeLessThan(distanciaDaProfundidade(0.003, n));
+  });
+
+  it('de dentro da camada o horizonte fecha: névoa e pedaços somam a transmissão da camada', () => {
+    // a câmera no meio da camada do A: τ = 0,5, espessura 8 m, campo cheio
+    const tau = 0.5;
+    const esp = 0.008;
+    const esperada = (graus: number) => Math.exp(-tau / (2 * Math.sin((graus * Math.PI) / 180)));
+    for (const graus of [0, 5, 20]) {
+      const dz = Math.sin((graus * Math.PI) / 180);
+      const nevoa = Math.exp(-tauDaNevoa(0, dz, ALCANCE_DA_NEVOA_KM, esp, tau, 1));
+      // o que as oitavas desenhadas carregam no mesmo raio: τ/esp por km de cada uma até onde ela se resolve
+      const caminho = graus === 0 ? ALCANCE_DA_NEVOA_KM : (0.5 * esp) / dz;
+      let resolvido = 0;
+      for (const o of TABELA_DE_OITAVAS) resolvido += FRACAO_POR_OITAVA * Math.min(caminho, o.s * 2 ** (X_PLENO + 0.25));
+      const pedacos = Math.exp(-(tau / esp) * resolvido);
+      expect(nevoa * pedacos).toBeCloseTo(graus === 0 ? 0 : esperada(graus), 6);
+    }
+    // a 0° a névoa sozinha já tapa; a 5° tapa mais da metade do que sobra; a 20° quase nada
+    expect(Math.exp(-tauDaNevoa(0, 0, ALCANCE_DA_NEVOA_KM, esp, tau, 1))).toBeLessThan(1e-6);
+    expect(Math.exp(-tauDaNevoa(0, Math.sin((5 * Math.PI) / 180), ALCANCE_DA_NEVOA_KM, esp, tau, 1))).toBeCloseTo(0.39, 1);
+    expect(Math.exp(-tauDaNevoa(0, Math.sin((20 * Math.PI) / 180), ALCANCE_DA_NEVOA_KM, esp, tau, 1))).toBeCloseTo(0.85, 1);
   });
 });

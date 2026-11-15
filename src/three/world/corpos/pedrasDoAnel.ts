@@ -242,28 +242,51 @@ export function alturaNaCamada(z0: number, aKm: number, hKm: number): number {
 /**
  * AS ESTEIRAS DE AUTOGRAVIDADE (self-gravity wakes), só nos anéis A e B —
  * nunca fotografadas: vêm de ocultações (Colwell et al. 2006, 2007; Hedman
- * et al. 2007). Espaçamento `LAMBDA_DA_ESTEIRA_KM` ~60 m; ARRASTADAS
- * (trailing: quem está mais para fora fica para trás no sentido orbital, +s),
- * inclinadas `anguloDaEsteira` da direção orbital; esteira quase opaca, vão
- * ralo (pico:vale ~6:1); razão altura/largura 0,1–0,37 — da ordem da
- * própria camada, e por isso a esteira não ganha altura própria aqui.
+ * et al. 2007) e das simulações de N corpos (Salo et al. 2004; Michikoshi
+ * et al. 2015). Espaçamento `LAMBDA_DA_ESTEIRA_KM` ~60 m; ARRASTADAS
+ * (trailing: quem está mais para fora fica para trás no sentido orbital,
+ * +s), inclinadas `anguloDaEsteira` da direção orbital; filamentos
+ * irregulares e grumosos de poucas vezes o espaçamento, com vãos quase
+ * vazios entre eles; razão altura/largura 0,1–0,37 — da ordem da própria
+ * camada, e por isso a esteira não ganha altura própria aqui.
  *
- * A CONSTRUÇÃO: a fase cruza as cristas pela normal n = (cos φ, sen φ) em
- * (ρ, arco físico). O anel é cortado em células de `CELULA_DA_ESTEIRA_KM`
- * (5 esteiras); cada célula sorteia a fase e o contraste c ∈ [0,6; 0,8], e as
- * quatro vizinhas se misturam por pesos suaves que somam 1: a esteira fica
- * irregular, coerente por poucas cristas. O pedaço é DESLOCADO ao longo de n
- * por δ = −(c·λ/2π)·sen(2π(ξ/λ + fase)) — um mapa compressivo contínuo: a
- * densidade que ele produz é 1/(1 + ∂δ/∂n), com média 1 (a massa só anda),
- * e com o cisalhamento os pedaços atravessam o padrão sem estalar. O disco
- * lê a MESMA densidade (`densidadeDaEsteira`) no ponto final.
+ * A CONSTRUÇÃO: um RUÍDO DE GABOR — a soma de `NUCLEOS_POR_CELULA` núcleos
+ * por célula, cada um um trem de cristas de comprimento λ ao longo da
+ * normal n = (cos φ, sen φ), sob um envelope compacto alongado nas cristas
+ * (`ENVELOPE_XI_KM` × `ENVELOPE_ETA_KM`), num lugar e numa fase sorteados.
+ * O ponto lê as 2×2 células mais perto: o envelope cabe em meia célula,
+ * então nenhuma fronteira de célula aparece. Da soma complexa Z = Σ e·e^{iψ}
+ * = |Z|·e^{iΦ} sai o deslocamento ao longo de n, δ = (λ/π)·arg 1/(1 − w),
+ * w = γ·Z·|Z|/(|Z|² + E0) (a forma da onda em `GAMA_DA_ESTEIRA`): uma onda de
+ * fase e amplitude que vagueiam (os filamentos se formam, se fundem e se
+ * desfazem; onde |Z| é pequeno o campo acalma). A densidade é
+ * 1/(1 + ∂δ/∂n) com a derivada analítica — média 1 (a massa só anda), e o
+ * mapa é inversível porque ∂δ/∂n > −1 (o teste cobra). O disco lê a MESMA
+ * densidade (`densidadeDaEsteira`) no ponto final.
  */
 export const LAMBDA_DA_ESTEIRA_KM = 0.06;
-const CELULA_DA_ESTEIRA_KM = 0.3;
-const CELULAS_NA_VOLTA = Math.round((2 * Math.PI * R0_KM) / CELULA_DA_ESTEIRA_KM);
+export const CELULA_DA_ESTEIRA_KM = 0.3;
+/** a célula no arco, em s = R0·θ: a física (s·ρ/R0) passa de 0,29 km no B interno */
+const CELULA_NO_ARCO_ALVO_KM = 0.45;
+const CELULAS_NA_VOLTA = Math.round((2 * Math.PI * R0_KM) / CELULA_NO_ARCO_ALVO_KM);
 const CELULA_NO_ARCO_KM = (2 * Math.PI * R0_KM) / CELULAS_NA_VOLTA;
-/** o deslocamento máximo de um pedaço pela esteira, km (c ≤ 0,8 mais a folga da mistura) */
-const DESLOCAMENTO_MAXIMO_KM = (0.8 * LAMBDA_DA_ESTEIRA_KM) / (2 * Math.PI) + 0.0005;
+/** os núcleos de Gabor por célula e o envelope (meio-eixos, km): cruzando e ao longo das cristas */
+const NUCLEOS_POR_CELULA = 10;
+const ENVELOPE_XI_KM = 0.12;
+const ENVELOPE_ETA_KM = 0.15;
+/** o piso E0 da amplitude (|Z|² médio ~0,7 no A): abaixo dele o campo acalma */
+const PISO_DA_AMPLITUDE = 0.3;
+/**
+ * A FORMA DA ONDA: o mapa do círculo de Möbius, Φ → Φ + 2·arg 1/(1 − γ·e^{iΦ})
+ * — o estiramento ao longo de n vai de β = (1 + γ)/(1 − γ) num trecho
+ * estreito (o vão, densidade 1/β) a 1/β em quase toda a volta (a esteira
+ * larga e densa) e nunca chega a zero: pico:vale até β² onde a onda está
+ * cheia. Aqui γ = `GAMA_DA_ESTEIRA`·|Z|²/(|Z|² + E0): zero onde |Z| se anula
+ * (o deslocamento fica liso nos nós da fase, e o mapa não dobra).
+ */
+const GAMA_DA_ESTEIRA = 0.66;
+/** o deslocamento máximo de um pedaço pela esteira, km (|arg 1/(1 − w)| ≤ asen γ) */
+const DESLOCAMENTO_MAXIMO_KM = (2 * Math.asin(GAMA_DA_ESTEIRA) * LAMBDA_DA_ESTEIRA_KM) / (2 * Math.PI) + 0.0005;
 const GRAU = Math.PI / 180;
 
 /**
@@ -298,30 +321,61 @@ function esteiraEm(rhoKm: number, sKm: number): [number, number] {
   const uS = sKm / CELULA_NO_ARCO_KM;
   const r0 = Math.floor(uR - 0.5);
   const s0 = Math.floor(uS - 0.5);
-  const tr = uR - 0.5 - r0;
-  const ts = uS - 0.5 - s0;
-  const sr = tr * tr * (3 - 2 * tr);
-  const ss = ts * ts * (3 - 2 * ts);
-  const dr = (6 * tr * (1 - tr) * nr) / CELULA_DA_ESTEIRA_KM;
-  const dsw = (6 * ts * (1 - ts) * ns * R0_KM) / (rhoKm * CELULA_NO_ARCO_KM);
+  const tr = uR - r0;
+  const ts = uS - s0;
   const escS = (CELULA_NO_ARCO_KM * rhoKm) / R0_KM;
-  let d = 0;
-  let dn = 0;
+  const k = (2 * Math.PI) / LAMBDA_DA_ESTEIRA_KM;
+  const ix2 = 1 / (ENVELOPE_XI_KM * ENVELOPE_XI_KM);
+  const ie2 = 1 / (ENVELOPE_ETA_KM * ENVELOPE_ETA_KM);
+  // Z = Σ e·e^{iψ} (zc, zs) e a derivada ao longo de n (dc, ds)
+  let zc = 0;
+  let zs = 0;
+  let dc = 0;
+  let ds = 0;
   for (let a = 0; a < 2; a++) {
     for (let b = 0; b < 2; b++) {
       const iR = r0 + a;
       const iS = (((s0 + b) % CELULAS_NA_VOLTA) + CELULAS_NA_VOLTA) % CELULAS_NA_VOLTA;
-      const h = misturar((Math.imul(iR, 0x8da6b343) ^ misturar((iS + 0x68e31da4) >>> 0)) >>> 0);
-      const fase = (h & 0xffff) / 65536;
-      const c = 0.6 + (0.2 * (h >>> 16)) / 65536;
-      const arg = 2 * Math.PI * ((((tr - a) * CELULA_DA_ESTEIRA_KM) * nr + (ts - b) * escS * ns) / LAMBDA_DA_ESTEIRA_KM + fase);
-      const dj = ((-c * LAMBDA_DA_ESTEIRA_KM) / (2 * Math.PI)) * Math.sin(arg);
-      const w = (a ? sr : 1 - sr) * (b ? ss : 1 - ss);
-      d += w * dj;
-      dn += ((a ? dr : -dr) * (b ? ss : 1 - ss) + (a ? sr : 1 - sr) * (b ? dsw : -dsw)) * dj + w * -c * Math.cos(arg);
+      const hc = misturar((Math.imul(iR, 0x8da6b343) ^ misturar((iS + 0x68e31da4) >>> 0)) >>> 0);
+      for (let j = 0; j < NUCLEOS_POR_CELULA; j++) {
+        const h = misturar((hc ^ Math.imul(j + 1, 0x9e3779b9)) >>> 0);
+        const xr = (tr - a - (h & 0x3ff) / 1024) * CELULA_DA_ESTEIRA_KM;
+        const xs = (ts - b - ((h >>> 10) & 0x3ff) / 1024) * escS;
+        const xi = xr * nr + xs * ns;
+        const eta = xs * nr - xr * ns;
+        const q = xi * xi * ix2 + eta * eta * ie2;
+        if (q >= 1) continue;
+        const m = 1 - q;
+        const e = m * m * m;
+        const eXi = -6 * m * m * xi * ix2;
+        const psi = k * xi + (2 * Math.PI * (h >>> 20)) / 4096;
+        const c = Math.cos(psi);
+        const sn = Math.sin(psi);
+        zc += e * c;
+        zs += e * sn;
+        dc += eXi * c - e * k * sn;
+        ds += eXi * sn + e * k * c;
+      }
     }
   }
-  return [amp * d, amp * dn];
+  // w = γ·Z·|Z|/(|Z|² + E0) e a derivada dela ao longo de n; δ = (2/k)·arg 1/(1 − w)
+  const z2 = zc * zc + zs * zs;
+  const A = z2 + PISO_DA_AMPLITUDE;
+  const r = Math.max(Math.sqrt(z2), 1e-9);
+  const dr = (zc * dc + zs * ds) / r;
+  const g = (amp * GAMA_DA_ESTEIRA) / A;
+  const f = dr / r - (2 * r * dr) / A;
+  const wr = g * r * zc;
+  const wi = g * r * zs;
+  const dwr = g * r * (dc + zc * f);
+  const dwi = g * r * (ds + zs * f);
+  const um = 1 - wr;
+  return [(2 / k) * Math.atan2(wi, um), ((2 / k) * (dwi * um + dwr * wi)) / (um * um + wi * wi)];
+}
+
+/** o ESTIRAMENTO do mapa da esteira no lugar sorteado (ρ, s): 1 + ∂δ/∂n — o mapa é inversível se for > 0 */
+export function estiramentoDaEsteira(sKm: number, rhoKm: number): number {
+  return 1 + esteiraEm(rhoKm, sKm)[1];
 }
 
 /** O DESLOCAMENTO de um pedaço cujo lugar sorteado é (ρ, s): (Δρ, Δs em R0·θ), km */
@@ -556,7 +610,37 @@ export function pesoDaNevoa(alturaKm: number, espessuraKm: number): number {
 /** o raio da casca da névoa, km — além de todos os pedaços desenhados (a janela maior tem 2,56 km) */
 const RAIO_DA_NEVOA_KM = 3;
 /** até onde a névoa integra um raio de visada, km */
-const ALCANCE_DA_NEVOA_KM = 1000;
+export const ALCANCE_DA_NEVOA_KM = 1000;
+
+/**
+ * A PROFUNDIDADE ÓPTICA DA NÉVOA num raio de visada que sai da altura `h`
+ * com componente vertical `dz` (unitário), até `L` km: só o trecho dentro da
+ * fatia |z| < esp/2, com τ/esp por km, menos a parte das oitavas que já
+ * estão desenhadas até onde cada uma se resolve (o meio da rampa de
+ * entrada), na fração `teto` que o campo carrega. O gêmeo de `tauDaNevoa`
+ * no GLSL.
+ */
+export function tauDaNevoa(h: number, dz: number, L: number, esp: number, tau: number, teto: number): number {
+  let lo: number;
+  let hi: number;
+  if (Math.abs(dz) < 1e-6) {
+    if (Math.abs(h) >= 0.5 * esp) return 0;
+    lo = 0;
+    hi = L;
+  } else {
+    const t1 = (-0.5 * esp - h) / dz;
+    const t2 = (0.5 * esp - h) / dz;
+    lo = Math.max(Math.min(t1, t2), 0);
+    hi = Math.min(Math.max(t1, t2), L);
+  }
+  if (hi <= lo) return 0;
+  let soma = hi - lo;
+  for (let o = 0; o < OITAVAS; o++) {
+    const lo2 = S_MAX_KM * 2 ** (X_ENTRA - 0.5 * (X_ENTRA - X_PLENO) - o);
+    soma -= FRACAO_POR_OITAVA * teto * Math.max(Math.min(hi, lo2) - lo, 0);
+  }
+  return (tau / esp) * Math.max(soma, 0);
+}
 
 /**
  * AS ESTEIRAS NO DISCO aparecem abaixo de `H_ESTEIRA_KM` (de 25 a 20 km) —
@@ -566,6 +650,22 @@ const ALCANCE_DA_NEVOA_KM = 1000;
 export const H_ESTEIRA_KM = 25;
 export function forcaDaEsteiraNoDisco(alturaKm: number, espessuraKm: number): number {
   return (1 - suave(0.8 * H_ESTEIRA_KM, H_ESTEIRA_KM, Math.abs(alturaKm))) * (1 - pesoDaNevoa(alturaKm, espessuraKm));
+}
+
+/**
+ * A PROFUNDIDADE DOS PEDAÇOS: a distância `d` ao plano da lente que entra na
+ * função de profundidade da projeção (near `n`). Identidade de 2n para
+ * longe; de `PERTO_MINIMO_KM` a 2n comprime linear em [n·(1 + folga), 2n] —
+ * monótona, então a ordem entre pedaços fica e nenhum é cortado pelo near
+ * do app (12–32 m, que segue intocado). A folga tira o pedaço da beira
+ * exata do recorte. O gêmeo de `comProfundidade` no vértice.
+ */
+export const PERTO_MINIMO_KM = 5e-5;
+const FOLGA_DO_RECORTE = 1e-3;
+export function distanciaDaProfundidade(d: number, n: number, dMin = PERTO_MINIMO_KM): number {
+  if (d <= 0 || d >= 2 * n || 2 * n <= dMin) return d;
+  const t = grampo((d - dMin) / (2 * n - dMin));
+  return (1 + FOLGA_DO_RECORTE) * n + t * (2 * n - (1 + FOLGA_DO_RECORTE) * n);
 }
 
 /** O SORTEIO, no vértice e no fragmento: INTEIRO (exato em qualquer GPU, e o mesmo da CPU em `misturar`). */
@@ -697,31 +797,45 @@ vec2 esteira(float dRho, float dS, float rhoKm, vec2 n, float amp) {
   float uS = uCelCam.y + dS / CEL_S;
   float r0 = floor(uR - 0.5);
   float s0 = floor(uS - 0.5);
-  float tr = uR - 0.5 - r0;
-  float ts = uS - 0.5 - s0;
-  float sr = tr * tr * (3.0 - 2.0 * tr);
-  float ss = ts * ts * (3.0 - 2.0 * ts);
-  float dr = 6.0 * tr * (1.0 - tr) * n.x / CEL_R;
-  float dsw = 6.0 * ts * (1.0 - ts) * n.y * P_R0 / (rhoKm * CEL_S);
+  float tr = uR - r0;
+  float ts = uS - s0;
   float escS = CEL_S * rhoKm / P_R0;
-  float d = 0.0;
-  float dn = 0.0;
+  const float K_ONDA = 2.0 * PI / LAMBDA;
+  const float IX2 = ${glslF(1 / (ENVELOPE_XI_KM * ENVELOPE_XI_KM))};
+  const float IE2 = ${glslF(1 / (ENVELOPE_ETA_KM * ENVELOPE_ETA_KM))};
+  vec4 z = vec4(0.0);
   for (int a = 0; a < 2; a++) {
     for (int b = 0; b < 2; b++) {
       uint iR = uint(uCelCam.z + r0 + float(a));
       uint iS = uint(mod(uCelCam.w + s0 + float(b), N_CEL));
-      uint h = misturar((iR * 0x8da6b343u) ^ misturar(iS + 0x68e31da4u));
-      float fase = float(h & 0xffffu) / 65536.0;
-      float c = 0.6 + 0.2 * float(h >> 16) / 65536.0;
-      float arg = 2.0 * PI * (((tr - float(a)) * CEL_R * n.x + (ts - float(b)) * escS * n.y) / LAMBDA + fase);
-      float dj = -c * LAMBDA / (2.0 * PI) * sin(arg);
-      float wr = a == 1 ? sr : 1.0 - sr;
-      float ws = b == 1 ? ss : 1.0 - ss;
-      d += wr * ws * dj;
-      dn += ((a == 1 ? dr : -dr) * ws + wr * (b == 1 ? dsw : -dsw)) * dj - wr * ws * c * cos(arg);
+      uint hc = misturar((iR * 0x8da6b343u) ^ misturar(iS + 0x68e31da4u));
+      for (int j = 0; j < ${NUCLEOS_POR_CELULA}; j++) {
+        uint h = misturar(hc ^ (uint(j + 1) * 0x9e3779b9u));
+        float xr = (tr - float(a) - float(h & 0x3ffu) / 1024.0) * CEL_R;
+        float xs = (ts - float(b) - float((h >> 10) & 0x3ffu) / 1024.0) * escS;
+        float xi = xr * n.x + xs * n.y;
+        float eta = xs * n.x - xr * n.y;
+        float q = xi * xi * IX2 + eta * eta * IE2;
+        if (q >= 1.0) continue;
+        float m = 1.0 - q;
+        float e = m * m * m;
+        float eXi = -6.0 * m * m * xi * IX2;
+        float psi = K_ONDA * xi + 2.0 * PI * float(h >> 20) / 4096.0;
+        float c = cos(psi);
+        float sn = sin(psi);
+        z += vec4(e * c, e * sn, eXi * c - e * K_ONDA * sn, eXi * sn + e * K_ONDA * c);
+      }
     }
   }
-  return amp * vec2(d, dn);
+  float z2 = dot(z.xy, z.xy);
+  float A = z2 + ${glslF(PISO_DA_AMPLITUDE)};
+  float r = max(sqrt(z2), 1.0e-9);
+  float dr = dot(z.xy, z.zw) / r;
+  float g = amp * ${glslF(GAMA_DA_ESTEIRA)} * r / A;
+  vec2 w = g * z.xy;
+  vec2 dw = g * (z.zw + z.xy * (dr / r - 2.0 * r * dr / A));
+  float um = 1.0 - w.x;
+  return 2.0 / K_ONDA * vec2(atan(w.y, um), (dw.y * um + dw.x * w.y) / (um * um + w.y * w.y));
 }
 // \`densidadeDaEsteira\` na CPU: Newton ao longo de n até o ponto de origem
 float densidadeDaEsteira(float dRho, float dS, float rhoKm, vec2 n, float amp) {
@@ -1078,6 +1192,24 @@ void luzDaPedra(vec3 vistaKm) {
   vLuz = vec4(sombra, irrGlobo, mutua, nevoa);
 }
 
+// A PROFUNDIDADE SÓ DOS PEDAÇOS (\`distanciaDaProfundidade\`): o recorte do
+// app fica em 12–32 m (a precisão é para o globo), e o pedaço de
+// centímetros só se resolve a poucos metros. A posição na tela é a da
+// projeção; o z é escrito à mão pela própria função de profundidade da
+// lente com a distância comprimida de [5 cm, 2n] para [n, 2n] — nada é
+// cortado, a ordem entre os pedaços fica, e o resto da cena não muda.
+vec4 comProfundidade(vec4 pos) {
+  float p22 = projectionMatrix[2][2];
+  float p32 = projectionMatrix[3][2];
+  float n = p32 / (p22 - 1.0);
+  float d = pos.w;
+  float dMin = ${glslF(PERTO_MINIMO_KM)} * gRaioMundo / KM_POR_RAIO;
+  if (d <= 0.0 || d >= 2.0 * n || 2.0 * n <= dMin) return pos;
+  float g = mix(${glslF(1 + FOLGA_DO_RECORTE)} * n, 2.0 * n, clamp((d - dMin) / (2.0 * n - dMin), 0.0, 1.0));
+  pos.z = (-p22 + p32 / g) * d;
+  return pos;
+}
+
 void foraComum() {
   vSol = vec3(0.0); vGlobo = vec3(0.0); vTinta = vec3(0.0); vNevoaCor = vec3(0.0);
   vLuz = vec4(0.0); vFica = vec4(0.0); vSemente = vec4(0.0); vLamina = 0.0;
@@ -1128,7 +1260,7 @@ void main() {
   // vista, e o deslocamento já é relativo a ela
   vVista = gR * pKm;
   vMonte = bloco > 0.5 ? vec2(1.0, 0.5) : vec2(mix(1.0, extra.x, lobos), mix(0.5, extra.y, lobos));
-  gl_Position = projectionMatrix * vec4(vVista * (gRaioMundo / KM_POR_RAIO), 1.0);
+  gl_Position = comProfundidade(projectionMatrix * vec4(vVista * (gRaioMundo / KM_POR_RAIO), 1.0));
   luzDaPedra(vVista);
 }
 `;
@@ -1164,7 +1296,7 @@ void main() {
   vEixos = eixosF;
   for (int j = 0; j < 4; j++) vCortes[j] = cortes[j];
   vProj = vec4(projectionMatrix[0][0], projectionMatrix[1][1], projectionMatrix[2][0], projectionMatrix[2][1]);
-  gl_Position = projectionMatrix * vec4(gCV * (gRaioMundo / KM_POR_RAIO), 1.0);
+  gl_Position = comProfundidade(projectionMatrix * vec4(gCV * (gRaioMundo / KM_POR_RAIO), 1.0));
   gl_PointSize = 2.0 * raioI * uPxPorRad / max(-gCV.z, raioI) + 1.5;
   luzDaPedra(gCV);
   vFica.w = raioI;
@@ -1342,19 +1474,42 @@ void main() {
  */
 export const GLSL_CESSAO_DAS_PEDRAS = /* glsl */ `
 uniform vec4 uCamDasPedras;
+varying vec3 vRelDasPedras;
 ${GLSL_PURO_DAS_PEDRAS}
-float cederAsPedras(float alfa, vec3 p, float tau) {
+float cederAsPedras(float alfa, float tau) {
   if (uCamDasPedras.w <= 0.0) return alfa;
-  float rKm = length(p.xy) * KM_POR_RAIO;
-  float dRho = rKm - uCamDasPedras.x;
-  // o ângulo envolvido sem sin/cos (ver o vértice das pedras)
-  float dTh = atan(p.y, p.x) - uCamDasPedras.y;
-  dTh -= 6.28318530718 * floor((dTh + 3.14159265359) / 6.28318530718);
-  float dS = dTh * P_R0;
+  // o ponto RELATIVO À CÂMERA (\`ANEL_VERT_DAS_PEDRAS\`), nos eixos dela:
+  // o vPos do disco só tem ~15 m de precisão a 2 raios, e a 20 m de altura
+  // isso desenhava a cessão em blocos
+  vec2 er = vec2(cos(uCamDasPedras.y), sin(uCamDasPedras.y));
+  float x = dot(vRelDasPedras.xy, er);
+  float y = dot(vRelDasPedras.xy, vec2(-er.y, er.x));
+  float rhoC = uCamDasPedras.x;
+  float rKm = length(vec2(rhoC + x, y));
+  float dRho = (x * (2.0 * rhoC + x) + y * y) / (rKm + rhoC);
+  float dS = P_R0 * atan(y, rhoC + x);
   float d = sqrt(dRho * dRho + dS * dS + uCamDasPedras.z * uCamDasPedras.z);
   float f = cessaoDasPedras(d) * tetoDoCampo(rKm, tau, uCamDasPedras.w);
   float a = f <= 0.0 ? alfa : 1.0 - pow(max(1.0 - alfa, 1.0e-4), 1.0 - f);
   return a * (1.0 - pesoDaNevoa(uCamDasPedras.z, regiaoDasPedras(uCamDasPedras.x).x));
+}
+`;
+
+/**
+ * O VÉRTICE DO DISCO com `?pedras=3d`: o de sempre (`ANEL_VERT`) mais o
+ * ponto relativo à câmera em km, com a câmera em duas partes (a parte
+ * float32 e o resto, da CPU em dupla precisão) — a cessão lê a distância
+ * à câmera sem os ~15 m de grão do vPos.
+ */
+export const ANEL_VERT_DAS_PEDRAS = /* glsl */ `
+uniform vec3 uCamAltaDasPedras;
+uniform vec3 uCamRestoDasPedras;
+varying vec3 vPos;
+varying vec3 vRelDasPedras;
+void main() {
+  vPos = position;
+  vRelDasPedras = (position - uCamAltaDasPedras) * ${glslF(KM_POR_RAIO)} - uCamRestoDasPedras;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
 }
 `;
 
@@ -2155,6 +2310,9 @@ export class PedrasDoAnel {
   private readonly gf = new Float32Array(OITAVAS);
   /** (ρ km, θ, altura km, fração do campo que o tier desenha) — o que o disco lê para ceder */
   readonly cessao = new THREE.Vector4(0, 0, 0, 0);
+  /** a câmera no frame do anel em duas partes: a float32 (raios) e o resto (km) — o disco lê */
+  readonly camAlta = new THREE.Vector3();
+  readonly camResto = new THREE.Vector3();
   /** a folha das esteiras do disco e a casca da névoa */
   private readonly folha: THREE.Mesh;
   private readonly nevoa: THREE.Mesh;
@@ -2383,6 +2541,9 @@ const float R_EXT = ${opcoes.rExt};`;
     u.uAtivas!.value = ativas;
     u.uGiro!.value = this.giro;
     this.cessao.set(rhoKm, theta, zKm, ativas > 0 ? fracao : 0);
+    const [ax, ay, az] = [Math.fround(c.x), Math.fround(c.y), Math.fround(c.z)];
+    this.camAlta.set(ax, ay, az);
+    this.camResto.set((c.x - ax) * KM_POR_RAIO, (c.y - ay) * KM_POR_RAIO, (c.z - az) * KM_POR_RAIO);
     // a câmera na célula das esteiras, em dupla precisão
     const uR = rhoKm / CELULA_DA_ESTEIRA_KM;
     const uS = (theta / (2 * Math.PI)) * CELULAS_NA_VOLTA;

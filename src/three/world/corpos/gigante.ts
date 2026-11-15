@@ -84,7 +84,7 @@ import { AneisTenuesDeSaturno } from './aneisTenues';
 import type { QuadroDosAneisTenues } from './aneisTenues';
 import { LajotaDoAnel, VOLUME_DA_LAJOTA } from './lajotaDoAnel';
 import type { QuadroDaLajota } from './lajotaDoAnel';
-import { GLSL_CESSAO_DAS_PEDRAS, PEDRAS_3D, PedrasDoAnel } from './pedrasDoAnel';
+import { ANEL_VERT_DAS_PEDRAS, GLSL_CESSAO_DAS_PEDRAS, PEDRAS_3D, PedrasDoAnel } from './pedrasDoAnel';
 import { posicaoKepler } from '../../../lib/atlas/kepler';
 import { cessaoAlvo, gateBinario, saltoGuardado } from './terra';
 import { CANAL_MAP, type Seguradores, TexturasDoCorpo, diametroPedidoPelaTela } from './texturas';
@@ -1622,7 +1622,7 @@ void main() {
   vec3 doGlobo = (tinta * IF_RETRO)
     * (planetshineNoAnel(vPos, r, view, mu, tau, nDotV) * uLuzGanho);
   gl_FragColor = vec4(direta + doGlobo, ${
-    PEDRAS_3D ? 'cederAsPedras(clamp(camada.y, 0.0, 1.0), vPos, tau)' : 'clamp(camada.y, 0.0, 1.0)'
+    PEDRAS_3D ? 'cederAsPedras(clamp(camada.y, 0.0, 1.0), tau)' : 'clamp(camada.y, 0.0, 1.0)'
   });
 }
 `;
@@ -2202,6 +2202,8 @@ export class GiganteResolvido {
           this.pedras.fixarNoAnel(this.anel.matrix);
           this.pedras.atualizar({ ...l, jd: this.jdEscrito });
           (ua.uCamDasPedras!.value as THREE.Vector4).copy(this.pedras.cessao);
+          (ua.uCamAltaDasPedras!.value as THREE.Vector3).copy(this.pedras.camAlta);
+          (ua.uCamRestoDasPedras!.value as THREE.Vector3).copy(this.pedras.camResto);
         } else if (this.lajota) {
           this.lajota.fixarNoAnel(this.anel.matrix);
           this.lajota.atualizar(l);
@@ -2290,7 +2292,7 @@ export class GiganteResolvido {
       const modo = this.idCorpo === 'neptune' ? 1 : this.idCorpo === 'quaoar' ? 2 : 0;
       this.geoAnel = new THREE.RingGeometry(anel.rInt, anel.rExt, 192);
       this.matAnel = new THREE.ShaderMaterial({
-        vertexShader: ANEL_VERT,
+        vertexShader: placa && PEDRAS_3D ? ANEL_VERT_DAS_PEDRAS : ANEL_VERT,
         fragmentShader: placa ? ANEL_FRAG : ANEL_PROC_FRAG,
         uniforms: {
           uMapaAnel: { value: this.dummyAnel },
@@ -2314,7 +2316,13 @@ export class GiganteResolvido {
               }
             : {}),
           // só com `?pedras=3d`: a cessão do disco às pedras
-          ...(placa && PEDRAS_3D ? { uCamDasPedras: { value: new THREE.Vector4() } } : {}),
+          ...(placa && PEDRAS_3D
+            ? {
+                uCamDasPedras: { value: new THREE.Vector4() },
+                uCamAltaDasPedras: { value: new THREE.Vector3() },
+                uCamRestoDasPedras: { value: new THREE.Vector3() },
+              }
+            : {}),
         },
         transparent: true,
         depthWrite: false,
