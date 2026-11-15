@@ -15,7 +15,9 @@ import {
   A_MAX_KM,
   FRACAO_NAO_RESOLVIDA,
   FRACAO_POR_OITAVA,
+  IMAGENS,
   K_JANELA,
+  K_LADRILHO,
   OITAVAS,
   PEDRAS_3D,
   PEDRAS_POR_TIER,
@@ -26,6 +28,7 @@ import {
   TAU_TETO,
   TEXEL_DA_ESTEIRA_KM,
   VARIANTES,
+  X_ENTRA,
   X_PLENO,
   aceitaPedra,
   assarFormas,
@@ -35,6 +38,7 @@ import {
   densidadeDaEsteira,
   distanciaDaProfundidade,
   estiramentoDaEsteira,
+  imagensDaJanela,
   lugarDaPedra,
   luzDaFace,
   pedacosPorArea,
@@ -80,7 +84,7 @@ describe('pedras 3D do anel', () => {
     expect(ANEL_FRAG).toContain('gl_FragColor = vec4(direta + doGlobo, clamp(camada.y, 0.0, 1.0));');
   });
 
-  it('cada pedaço entra com opacidade zero na borda da janela, opaco meia oitava dentro, e não sai de perto', () => {
+  it('cada pedaço entra com opacidade zero na borda da janela, opaco uma oitava dentro, e não sai de perto', () => {
     for (let o = 0; o < OITAVAS; o++) {
       const { s: tam, janela } = TABELA_DE_OITAVAS[o]!;
       expect(janela).toBe(K_JANELA * tam);
@@ -146,7 +150,7 @@ describe('pedras 3D do anel', () => {
     }
     // do alto nenhum pedaço se resolve: o disco é o de hoje
     expect(cessaoDoDisco(TABELA_DE_OITAVAS[0]!.janela)).toBe(0);
-    expect(cessaoDoDisco(6)).toBe(0);
+    expect(cessaoDoDisco(8)).toBe(0);
     for (const a of [0, 0.2, 0.7, 1]) expect(alfaCedido(a, 0)).toBe(a);
     expect(alfaCedido(0.6, 1)).toBe(0);
   });
@@ -174,6 +178,47 @@ describe('pedras 3D do anel', () => {
       }
     }
     expect(comparados).toBeGreaterThan(1000);
+  });
+
+  it('a janela passa do ladrilho: a imagem vizinha é o mesmo mundo, um ladrilho adiante, e as oito vizinhas bastam', () => {
+    // a janela (512 tamanhos) passa do meio ladrilho (256) e fica aquém de 1,5 ladrilho (768)
+    expect(K_JANELA).toBeGreaterThan(K_LADRILHO);
+    expect(K_JANELA).toBeLessThan(3 * K_LADRILHO);
+    expect(IMAGENS[0]).toEqual([0, 0]);
+    const camA = { rhoKm: 128_000, theta: 0.3, zKm: 0.003 };
+    for (let o = 0; o < OITAVAS; o++) {
+      const t = TABELA_DE_OITAVAS[o]!;
+      // a câmera um ladrilho para fora vê na imagem dela o que A vê na vizinha de fora
+      const camB = { ...camA, rhoKm: camA.rhoKm + t.ladoRadial };
+      for (let i = 0; i < 20; i++) {
+        const a = lugarDaPedra(o, i, camA, 3.7, -91.2, [1, 0]);
+        const b = lugarDaPedra(o, i, camB, 3.7, -91.2);
+        expect(a.rhoKm).toBeCloseTo(b.rhoKm, 6);
+        expect(Math.abs(a.sKm - b.sKm)).toBeLessThan(1e-6);
+        expect(a.zKm).toBe(b.zKm);
+        // e a vizinha no arco é a mesma pedra, um ladrilho de arco adiante
+        const c = lugarDaPedra(o, i, camA, 3.7, -91.2, [0, 1]);
+        const d0 = lugarDaPedra(o, i, camA, 3.7, -91.2);
+        expect(c.raioKm).toBe(d0.raioKm);
+        expect(Math.abs(c.sKm - d0.sKm - t.ladoNoArco)).toBeLessThan(2 * TEXEL_DA_ESTEIRA_KM + 0.02);
+      }
+    }
+  }, 120_000);
+
+  it('as imagens vizinhas só entram onde a janela as alcança: a da câmera sempre, nenhuma do alto', () => {
+    const saida = new Int32Array(2 * IMAGENS.length);
+    // na camada: toda oitava ativa pede as nove
+    imagensDaJanela(OITAVAS, 130_000, 0, 0.008, null, saida);
+    for (let m = 0; m < IMAGENS.length; m++) expect([saida[2 * m], saida[2 * m + 1]]).toEqual([0, OITAVAS - 1]);
+    // a 4,3 km só a maior oitava alcança, e só as vizinhas de lado (os cantos ficam a ≥ 362 tamanhos no plano)
+    const ativas = PedrasDoAnel.oitavasAtivas(4.3);
+    expect(ativas).toBe(1);
+    imagensDaJanela(ativas, 130_000, 4.3, 0.008, null, saida);
+    expect([saida[0], saida[1]]).toEqual([0, 0]);
+    expect([saida[2], saida[3]]).toEqual([0, 0]);
+    expect(saida[2 * 5]).toBe(-1);
+    imagensDaJanela(0, 130_000, 20, 0.008, null, saida);
+    expect([...saida].every((v) => v === -1)).toBe(true);
   });
 
   it('nenhum pedaço passa de 10 m de raio, e nenhum centro sai da camada', () => {
@@ -430,13 +475,14 @@ describe('pedras 3D do anel', () => {
       // o que as oitavas desenhadas carregam no mesmo raio: τ/esp por km de cada uma até onde ela se resolve
       const caminho = graus === 0 ? ALCANCE_DA_NEVOA_KM : (0.5 * esp) / dz;
       let resolvido = 0;
-      for (const o of TABELA_DE_OITAVAS) resolvido += FRACAO_POR_OITAVA * Math.min(caminho, o.s * 2 ** (X_PLENO + 0.25));
+      for (const o of TABELA_DE_OITAVAS) resolvido += FRACAO_POR_OITAVA * Math.min(caminho, o.s * 2 ** ((X_PLENO + X_ENTRA) / 2));
       const pedacos = Math.exp(-(tau / esp) * resolvido);
       expect(nevoa * pedacos).toBeCloseTo(graus === 0 ? 0 : esperada(graus), 6);
     }
-    // a 0° a névoa sozinha já tapa; a 5° tapa mais da metade do que sobra; a 20° quase nada
+    // a 0° a névoa sozinha já tapa; a 5° tapa cerca de metade do que sobra (com a janela de r20 os
+    // pedaços desenhados carregam mais do raio); a 20° quase nada
     expect(Math.exp(-tauDaNevoa(0, 0, ALCANCE_DA_NEVOA_KM, esp, tau, 1))).toBeLessThan(1e-6);
-    expect(Math.exp(-tauDaNevoa(0, Math.sin((5 * Math.PI) / 180), ALCANCE_DA_NEVOA_KM, esp, tau, 1))).toBeCloseTo(0.39, 1);
-    expect(Math.exp(-tauDaNevoa(0, Math.sin((20 * Math.PI) / 180), ALCANCE_DA_NEVOA_KM, esp, tau, 1))).toBeCloseTo(0.85, 1);
+    expect(Math.exp(-tauDaNevoa(0, Math.sin((5 * Math.PI) / 180), ALCANCE_DA_NEVOA_KM, esp, tau, 1))).toBeCloseTo(0.47, 1);
+    expect(Math.exp(-tauDaNevoa(0, Math.sin((20 * Math.PI) / 180), ALCANCE_DA_NEVOA_KM, esp, tau, 1))).toBeCloseTo(0.91, 1);
   });
 });

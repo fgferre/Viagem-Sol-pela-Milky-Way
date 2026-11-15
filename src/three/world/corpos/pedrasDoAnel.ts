@@ -28,9 +28,10 @@
 //     divide a volta — de `PEDRAS_POR_TIER` pedaços e lado 2·K·s. Tudo o que
 //     a GPU soma é relativo à câmera (a fração dela no ladrilho sai da CPU
 //     em dupla precisão): o pedaço de 2 cm a 1 m da lente não treme. Na
-//     borda da janela (K = 256 tamanhos, ~3 px) o pedaço entra como PONTO
-//     com a opacidade subindo de 0 a 1 em meia oitava; ele é sempre do
-//     tamanho verdadeiro.
+//     borda da janela (K = 512 tamanhos, ~1–2 px de raio) o pedaço entra como
+//     PONTO com a opacidade subindo de 0 a 1 numa oitava; ele é sempre do
+//     tamanho verdadeiro. A janela passa do ladrilho: além dele, as imagens
+//     vizinhas do mesmo ladrilho (`IMAGENS`).
 //
 //  3. A CAMADA E AS ESTEIRAS. A espessura total é a medida em cada região
 //     (`REGIOES_DAS_PEDRAS`); nos anéis A e B os pedaços se juntam nas
@@ -94,14 +95,29 @@ export function pedacosPorArea(tau: number, aKm: number): number {
 }
 
 /**
- * A JANELA, em oitavas de distância (x = log2(d/s)): o pedaço entra em x = 8
- * (d = 256·s, onde ele mede 1/256 rad, ~3 px na lente de 58° em 800 px) com
- * opacidade 0 e fica opaco em x = 7,5. Ele não muda de tamanho, e não sai
- * mais de perto.
+ * A JANELA, em oitavas de distância (x = log2(d/s)): o pedaço entra em
+ * x = 9 (d = 512·s, onde o raio equivalente dele mede ~0,9–1,8 px na lente
+ * de 58° em 800 px: nasce como grão) com opacidade 0 e fica opaco uma oitava
+ * dentro, em x = 8. Ele não muda de tamanho, e não sai mais de perto. (O
+ * alvo era 9,5, ~1 px; o custo dos vértices não coube — volta r20.)
  */
-export const X_ENTRA = 8;
-export const X_PLENO = 7.5;
+export const X_ENTRA = 9;
+export const X_PLENO = 8;
 export const K_JANELA = 2 ** X_ENTRA;
+/**
+ * O LADRILHO (meio lado, em tamanhos): o mundo de cada oitava é periódico,
+ * de lado 2·K_LADRILHO·s. Era a janela de antes (x = 8); a janela maior não
+ * muda o mundo — desenha mais imagens do MESMO ladrilho (`IMAGENS`).
+ */
+export const K_LADRILHO = 256;
+/**
+ * AS IMAGENS DO LADRILHO que a janela alcança (radial, arco), a da câmera
+ * primeiro: o raio da janela (512·s) passa do meio lado (256·s) mas fica
+ * aquém de 1,5 lado (768·s), então as oito vizinhas bastam.
+ */
+export const IMAGENS: readonly (readonly [number, number])[] = [
+  [0, 0], [1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1],
+];
 
 /**
  * QUANTOS PEDAÇOS POR OITAVA, por tier. O tier de baixo é um PREFIXO do de
@@ -131,14 +147,14 @@ const ESCALA_EQUIVALENTE = 1 / Math.sqrt(AREA_MEDIA_DO_CORPO);
  * a_min)/(6K²) ≈ 1. Onde o perfil pede mais (o B), o campo satura e o resto
  * fica no disco: é o TETO declarado.
  */
-export const TAU_TETO = (PEDRAS_POR_TIER.cinema * Math.PI * LN_FAIXA) / (6 * K_JANELA * K_JANELA);
+export const TAU_TETO = (PEDRAS_POR_TIER.cinema * Math.PI * LN_FAIXA) / (6 * K_LADRILHO * K_LADRILHO);
 
 export interface Oitava {
   /** diâmetro mínimo, km */
   s: number;
   /** raio da janela, km (= K·s) */
   janela: number;
-  /** lado radial do ladrilho, km (= 2·janela) */
+  /** lado radial do ladrilho, km (= 2·K_LADRILHO·s) */
   ladoRadial: number;
   /** lado do ladrilho no arco, km — divide 2π·R0 exato */
   ladoNoArco: number;
@@ -149,7 +165,7 @@ export interface Oitava {
 export const TABELA_DE_OITAVAS: readonly Oitava[] = Array.from({ length: OITAVAS }, (_, o) => {
   const s = S_MAX_KM / 2 ** o;
   const janela = K_JANELA * s;
-  const ladoRadial = 2 * janela;
+  const ladoRadial = 2 * K_LADRILHO * s;
   const voltas = Math.round((2 * Math.PI * R0_KM) / ladoRadial);
   return { s, janela, ladoRadial, ladoNoArco: (2 * Math.PI * R0_KM) / voltas, voltas };
 });
@@ -563,11 +579,11 @@ function omega(rhoKm: number): number {
 
 /**
  * O TETO DO PASSO DO RELÓGIO (s de app por quadro): o pedaço na borda da
- * janela anda no arco 1,5·Ω·R0/ρ · K·s por segundo; um quinto do tamanho
- * por quadro é o limite. É o mesmo número em toda oitava.
+ * borda do ladrilho anda no arco 1,5·Ω·R0/ρ · K·s por segundo; um quinto do
+ * tamanho por quadro é o limite. É o mesmo número em toda oitava.
  */
 export function tetoDoPasso(rhoKm: number): number {
-  return 0.2 / (1.5 * omega(rhoKm) * (R0_KM / rhoKm) * K_JANELA);
+  return 0.2 / (1.5 * omega(rhoKm) * (R0_KM / rhoKm) * K_LADRILHO);
 }
 
 /**
@@ -604,14 +620,16 @@ export function fasesDoLadrilho(
  * O LUGAR DE UM PEDAÇO, na CPU e em dupla precisão — a mesma conta do
  * vértice (`lugar`), sem a escolha: (ρ, s = R0·θ em [0, 2πR0), z) do centro,
  * com a esteira, e o raio a. Nenhum termo lê a posição da câmera além da
- * escolha da imagem do ladrilho mais perto dela.
+ * escolha da imagem do ladrilho: a mais perto dela, deslocada de `img`
+ * ladrilhos (radial, arco).
  */
 export function lugarDaPedra(
   o: number,
   i: number,
   cam: { rhoKm: number; theta: number; zKm: number },
   g = 0,
-  e = 0
+  e = 0,
+  img: readonly [number, number] = [0, 0]
 ): { rhoKm: number; sKm: number; zKm: number; raioKm: number } {
   const fr = new Float64Array(OITAVAS);
   const fs = new Float64Array(OITAVAS);
@@ -625,11 +643,12 @@ export function lugarDaPedra(
   const h2 = misturar((base ^ 0x7a3f91c5) >>> 0);
   const q = h0 & 0xffff;
   const a = q / 65536;
-  const dk = Math.floor(fr[o]! - a + 0.5);
+  const dk = Math.floor(fr[o]! - a + 0.5) + img[0];
   const dRho = (dk + a - fr[o]!) * t.ladoRadial;
   const cis = ((gi[o]! * q) % 65536) / 65536 + gf[o]! * (dk + a);
   let sig = (h1 >>> 8) / 16777216 + cis + fs[o]!;
   sig -= Math.floor(sig + 0.5);
+  sig += img[1];
   const raioKm = (0.5 * t.s) / Math.sqrt(1 - (0.75 * (h0 >>> 16)) / 65536);
   const rhoKm = cam.rhoKm + dRho;
   const z0 = ((h2 & 0xffff) + (h2 >>> 16) + 1) / 65536 - 1;
@@ -754,6 +773,13 @@ let agregados: { membros: number[][][]; escala: number[]; r2Perto: number[] } | 
  * de 2× isto: nada estala.
  */
 export const PX_CORTE = 12;
+/**
+ * abaixo deste raio na tela (px) o ponto é a esfera de mesma seção média,
+ * sem a marcha até a forma: o grão que a janela maior traz custava a marcha
+ * em cada pixel dele (salvaguarda minha, não medida: a forma de longe não
+ * se resolve abaixo de ~2–3 px)
+ */
+export const PX_DA_ESFERA = 2.5;
 /** as direções por lado do mapa da forma de longe (`formasDeLonge`) */
 const LADO_DE_LONGE = 24;
 /** os grãos por lado do ladrilho do grão (`texturaDoRelevo`) e os voxels por lado dele */
@@ -882,8 +908,8 @@ export function luzDaFace(cosSol: number, cosGlobo: number, sombra: number, irrG
 export function pesoDaNevoa(alturaKm: number, espessuraKm: number): number {
   return 1 - suave(espessuraKm, 4 * espessuraKm, Math.abs(alturaKm));
 }
-/** o raio da casca da névoa, km — além de todos os pedaços desenhados (a janela maior tem 2,56 km) */
-const RAIO_DA_NEVOA_KM = 3;
+/** o raio da casca da névoa, km — além de todos os pedaços desenhados (a janela maior tem 5,12 km) */
+const RAIO_DA_NEVOA_KM = 8;
 /** até onde a névoa integra um raio de visada, km */
 export const ALCANCE_DA_NEVOA_KM = 1000;
 
@@ -919,7 +945,7 @@ export function tauDaNevoa(h: number, dz: number, L: number, esp: number, tau: n
 
 /**
  * AS ESTEIRAS NO DISCO aparecem abaixo de `H_ESTEIRA_KM` (de 25 a 20 km) —
- * antes de qualquer pedaço se resolver (a janela maior tem 2,56 km) —, e
+ * antes de qualquer pedaço se resolver (a janela maior tem 5,12 km) —, e
  * somem quando o espaçamento cai de 8 para 4 px: o filamento é fino (tem
  * harmônicos bem acima do espaçamento), e no limite de 2 px de antes ele
  * saía como pontilhado e tracinhos regulares (a 16 km, 2,7 px).
@@ -1207,7 +1233,7 @@ uniform float uGiro;
 ${GLSL_VARYINGS_DO_PEDACO}
 
 const float R0 = ${glslF(R0_KM)};
-const float K_JANELA = ${glslF(K_JANELA)};
+const float K_LADRILHO = ${glslF(K_LADRILHO)};
 const float S_MAX = ${glslF(S_MAX_KM)};
 const float X_ENTRA = ${glslF(X_ENTRA)};
 const float X_PLENO = ${glslF(X_PLENO)};
@@ -1267,33 +1293,38 @@ bool noQuadro(float raio, float p, float xo) {
 }
 
 // QUEM É, ONDE ESTÁ E SE APARECE. Falso = nada a desenhar.
-bool lugar(int o, int i) {
+bool lugar(int o, int i, ivec2 img) {
   gO = o;
   uint base = misturar(uint(i) ^ (uint(o) << 24));
   gBase = base;
   float s = S_MAX * exp2(-float(o));
-  float lado = 2.0 * K_JANELA * s;
+  float lado = 2.0 * K_LADRILHO * s;
   // os sorteios do lugar, juntos: h0 = (raio, tamanho), h1 = arco,
   // h2 = altura na camada, e um da densidade
   uint h0 = misturar(base ^ 0x51ed27u);
-  uint h1 = misturar(base ^ 0x2c1b3c6du);
-  uint h2 = misturar(base ^ 0x7a3f91c5u);
 
-  // O RAIO: a imagem do pedaço mais perto da câmera. O sorteio radial é
-  // quantizado em 1/65 536 do ladrilho para o cisalhamento fechar em
-  // inteiros (ver o arco).
+  // O RAIO: a imagem do pedaço mais perto da câmera, deslocada de \`img\`
+  // ladrilhos. O sorteio radial é quantizado em 1/65 536 do ladrilho para o
+  // cisalhamento fechar em inteiros (ver o arco).
   uint q = h0 & 0xffffu;
   float a = float(q) / 65536.0;
   float f = uFr[o];
-  float dk = floor(f - a + 0.5);
+  float dk = floor(f - a + 0.5) + float(img.x);
   float dRho = (dk + a - f) * lado;
+  // o alcance da janela no plano (a altura só soma distância): quem fica
+  // além dele já no raio sai antes dos outros sorteios
+  float alcance2 = exp2(2.0 * X_ENTRA) * s * s;
+  if (dRho * dRho >= alcance2) return false;
+  uint h1 = misturar(base ^ 0x2c1b3c6du);
 
   // O ARCO, com o cisalhamento: g·(dk + a) mod 1, com g = gi + gf e a
   // parte inteira de g já reduzida a 65 536 — gi·q em uint é exato.
   float cis = float((uint(uGi[o]) * q) & 0xffffu) / 65536.0 + uGf[o] * (dk + a);
   float dSig = float(h1 >> 8) / 16777216.0 + cis + uFs[o];
   dSig -= floor(dSig + 0.5);
-  float dS = dSig * LADO_NO_ARCO[o];
+  float dS = (dSig + float(img.y)) * LADO_NO_ARCO[o];
+  if (dRho * dRho + dS * dS >= alcance2) return false;
+  uint h2 = misturar(base ^ 0x7a3f91c5u);
 
   // o TAMANHO: o raio a, lei a⁻³ dentro da oitava (inversa da acumulada)
   float raio = 0.5 * s / sqrt(1.0 - 0.75 * float(h0 >> 16) / 65536.0);
@@ -1310,6 +1341,23 @@ bool lugar(int o, int i) {
   gXo = xo;
   float p = clamp((X_ENTRA - xo) / (X_ENTRA - X_PLENO), 0.0, 1.0);
   if (p <= 0.0) return false;
+#if !defined(PRE_PASSO)
+  // FORA DO QUADRO, JÁ AQUI: o cone da lente antes do perfil, da esteira e
+  // da luz, no lugar sem a esteira — a folga cobre o empurrão máximo dela,
+  // a curvatura do arco (s²/2R0) e o maior corpo, então só sai quem
+  // \`noQuadro\` também tiraria
+  {
+    float rmc = length((modelViewMatrix * vec4(1.0, 0.0, 0.0, 0.0)).xyz);
+    vec3 cv = (mat3(modelViewMatrix) / rmc) * (vec3(uEixo, 0.0) * dRho
+      + vec3(-uEixo.y, uEixo.x, 0.0) * (dS * (uRhoCamKm + dRho) / R0) + vec3(0.0, 0.0, dz));
+    float d2c = dRho * dRho + dS * dS;
+    float rF = 2.5 * raio + ${glslF(1.5 * DESLOCAMENTO_MAXIMO_KM)} + 4.0e-6 * d2c + 1.0e-4;
+    float c00 = projectionMatrix[0][0];
+    float c11 = projectionMatrix[1][1];
+    if (-cv.z < -rF || abs(cv.x) * c00 + cv.z > rF * sqrt(c00 * c00 + 1.0)
+        || abs(cv.y) * c11 + cv.z > rF * sqrt(c11 * c11 + 1.0)) return false;
+  }
+#endif
   // o PONTO opaco, o que ESMAECE e a MALHA são complementares exatos
 #if defined(MALHA)
   if (xo >= X_CORTE) return false;
@@ -1611,7 +1659,7 @@ void main() {
 #else
   bool pronto = uPrePronto != 0;
 #endif
-  if (pronto ? !lugarPronto(k, id - k * uPorOitava, j) : !lugar(k, id - k * uPorOitava)) {
+  if (pronto ? !lugarPronto(k, id - k * uPorOitava, j) : !lugar(k, id - k * uPorOitava, ivec2(0))) {
     foraComum(); vVista = vec3(0.0); vNoAnel = vec3(0.0); vLocal = vec3(0.0); vNLocal = vec3(0.0, 0.0, 1.0); vGiroM = mat3(1.0); vMonte = vec3(1.0, 0.5, 1.0); vPlano = 0.0;
 #if defined(PRE_FRAG)
     vFase = 1.0;
@@ -1693,7 +1741,7 @@ void main() {
   }
   int id = int(position.x + 0.5);
   int k = id / uPorOitava;
-  if (!lugar(k, id - k * uPorOitava)) return;
+  if (!lugar(k, id - k * uPorOitava, ivec2(0))) return;
   parametrosDaForma();
   luzDaPedra(vec3(0.0));
   if (banda == 0) vSaida = vec4(gOff, vFica.x);
@@ -1761,11 +1809,14 @@ flat varying vec4 vProj;
 // do km da vista para a unidade do mundo
 flat varying float vMundo;
 ${GLSL_PEDRA_COMUM}
+const ivec2 IMAGENS[${IMAGENS.length}] = ivec2[${IMAGENS.length}](${IMAGENS.map(([r, a]) => `ivec2(${r}, ${a})`).join(', ')});
 void main() {
-  int id = gl_VertexID;
+  // o vértice é (imagem, oitava, pedaço): cada imagem num bloco do tamanho do tier cheio
+  int img = gl_VertexID / ${OITAVAS * PEDRAS_POR_TIER.cinema};
+  int id = gl_VertexID - img * ${OITAVAS * PEDRAS_POR_TIER.cinema};
   int k = id / uPorOitava;
   int o = clamp(uAtivas, 1, ${OITAVAS}) - 1 - k;
-  if (!lugar(o, id - k * uPorOitava)) {
+  if (!lugar(o, id - k * uPorOitava, IMAGENS[img])) {
     foraComum(); gl_PointSize = 0.0;
     return;
   }
@@ -2013,9 +2064,23 @@ void main() {
   // o RAIO DE VISADA deste pixel, na vista (a câmera na origem)
   vec2 ndc = (gl_FragCoord.xy - uTela.xy) / uTela.zw * 2.0 - 1.0;
   vec3 d = normalize(vec3((ndc.x + vProj.z) / vProj.x, (ndc.y + vProj.w) / vProj.y, -1.0));
+  mat3 Mt = transpose(vGiro);
+  float t;
+  vec3 c;
+  if (vFica.z < ${glslF(PX_DA_ESFERA)}) {
+    // O GRÃO DE POUCOS PX: a esfera de raio a, a de MESMA seção média do
+    // corpo (\`ESCALA_EQUIVALENTE\`), sem a marcha até a forma; a oclusão e a
+    // fresta pela média (1) — o mesmo brilho médio, sem o desenho da forma,
+    // que a essa escala não se resolve
+    float bs = dot(vCentro, d);
+    float ds = bs * bs - dot(vCentro, vCentro) + vFica.y * vFica.y;
+    if (ds < 0.0) discard;
+    t = bs - sqrt(ds);
+    vec3 nv = (d * t - vCentro) / vFica.y;
+    c = sombrear(d * t, (Mt * nv) * (vFica.y / vFica.w), Mt * nv, vGiro, 1.0, 0.5, 1.0);
+  } else {
   // no quadro da pedra, com o achatamento desfeito: a esfera unitária
   // (o envelope; o bloco é o poliedro dentro dela)
-  mat3 Mt = transpose(vGiro);
   vec3 qo = (Mt * -vCentro) / vFica.w / vEixos;
   vec3 qd = (Mt * d) / vFica.w / vEixos;
   float a = dot(qd, qd);
@@ -2078,11 +2143,12 @@ void main() {
   // sem grão (\`sombrear\`) ninguém pede derivada ao vizinho: quem não
   // acerta sai já
   if (!acerta && vFica.z <= ${glslF(2 * ESCALAS_DO_GRAO[0])}) discard;
-  float t = acerta ? t0 : -b / a;
+  t = acerta ? t0 : -b / a;
   vec3 q = qo + t * qd;
   if (!acerta) nq = q;
-  vec3 c = sombrear(d * t, q * vEixos, normalize(nq / vEixos), vGiro, ao, 0.5, sol);
+  c = sombrear(d * t, q * vEixos, normalize(nq / vEixos), vGiro, ao, 0.5, sol);
   if (!acerta) discard;
+  }
   // A PROFUNDIDADE DO PONTO ACERTADO, não a do centro (\`comProfundidade\`):
   // com a do centro, o vizinho menor cujo centro está mais perto da lente
   // se pintava por cima do pedaço inteiro — as manchas mais escuras do
@@ -3435,7 +3501,7 @@ type Desenho = 'ponto' | 'esmaece' | 'malha' | 'reserva' | 'pre';
 
 /** a capacidade de cada malha de perto: o dobro da conta média da janela de perto, por oitava */
 function capacidadeDePerto(): number {
-  const r = (2 ** X_CORTE * FOLGA_DA_ESCOLHA) / K_JANELA;
+  const r = (2 ** X_CORTE * FOLGA_DA_ESCOLHA) / K_LADRILHO;
   return OITAVAS * (Math.ceil(PEDRAS_POR_TIER.cinema * Math.min(1, 2 * r * r)) + 256);
 }
 /** as linhas de cada faixa da textura do pré-passo (o texel 0 e as três malhas cheias) */
@@ -3443,10 +3509,81 @@ function linhasDoPrePasso(): number {
   return Math.ceil((1 + MALHAS.length * capacidadeDePerto()) / PRE_W);
 }
 
+/**
+ * AS IMAGENS QUE O QUADRO PAGA: para cada imagem do ladrilho (`IMAGENS`), o
+ * trecho de oitavas, na ordem do desenho (k = ativas − 1 − o), em que alguma
+ * parte dela fica dentro da janela (a presença lê a distância antes da
+ * esteira, então a caixa da imagem é exata) e dentro do cone da lente (com
+ * a esteira, o maior pedaço e a folga da câmera de folga). `saida[2m]` e
+ * `saida[2m + 1]` = primeiro e último k, ou −1. A imagem da câmera paga
+ * todas as ativas, como antes. `xMax` é o alcance de quem se pede: a janela
+ * inteira (`X_ENTRA`, os que esmaecem) ou só a parte opaca (`X_PLENO`).
+ */
+export function imagensDaJanela(
+  ativas: number,
+  rhoKm: number,
+  zKm: number,
+  espessuraKm: number,
+  lente: Lente | null,
+  saida: Int32Array,
+  xMax = X_ENTRA
+) {
+  const nOit = Math.min(Math.max(ativas, 0), OITAVAS);
+  saida.fill(-1);
+  if (nOit === 0) return;
+  saida[0] = 0;
+  saida[1] = nOit - 1;
+  // a menor distância vertical de um centro à câmera
+  const dzMin = Math.max(Math.abs(zKm) - 0.5 * espessuraKm, 0);
+  const s00 = lente ? Math.sqrt(lente.p00 * lente.p00 + 1) : 1;
+  const s11 = lente ? Math.sqrt(lente.p11 * lente.p11 + 1) : 1;
+  const zs = [0.5 * espessuraKm - zKm, -0.5 * espessuraKm - zKm];
+  for (let m = 1; m < IMAGENS.length; m++) {
+    const [jr, ja] = IMAGENS[m]!;
+    for (let k = 0; k < nOit; k++) {
+      const t = TABELA_DE_OITAVAS[nOit - 1 - k]!;
+      const r0 = (jr - 0.5) * t.ladoRadial;
+      const r1 = (jr + 0.5) * t.ladoRadial;
+      const a0 = (ja - 0.5) * t.ladoNoArco;
+      const a1 = (ja + 0.5) * t.ladoNoArco;
+      const pr = Math.max(r0, 0, -r1);
+      const pa = Math.max(a0, 0, -a1);
+      const alcance = 2 ** xMax * t.s;
+      if (pr * pr + pa * pa + dzMin * dzMin >= alcance * alcance) continue;
+      if (lente?.ok) {
+        // os oito cantos da caixa contra os quatro planos e o de trás: fora
+        // se todos ficam do lado de fora de um deles
+        const m9 = lente.m;
+        const longe = Math.hypot(Math.max(Math.abs(r0), Math.abs(r1)), Math.max(Math.abs(a0), Math.abs(a1)), Math.abs(zKm) + espessuraKm);
+        const folga = 2.5 * t.s + DESLOCAMENTO_MAXIMO_KM + FOLGA_DO_CONE * longe;
+        let fora = 0b11111;
+        // no arco, o lado em R0 encolhe para ρ/R0 (`y = ρ·sen θ` do vértice)
+        const ya = (a0 * rhoKm) / R0_KM;
+        const yb = (a1 * rhoKm) / R0_KM;
+        for (const x of [r0, r1])
+          for (const y of [ya, yb])
+            for (const z of zs) {
+              const vx = m9[0]! * x + m9[1]! * y + m9[2]! * z;
+              const vy = m9[3]! * x + m9[4]! * y + m9[5]! * z;
+              const fz = -(m9[6]! * x + m9[7]! * y + m9[8]! * z);
+              if (fz >= -folga) fora &= ~1;
+              if (vx * lente.p00 - fz <= folga * s00) fora &= ~2;
+              if (-vx * lente.p00 - fz <= folga * s00) fora &= ~4;
+              if (vy * lente.p11 - fz <= folga * s11) fora &= ~8;
+              if (-vy * lente.p11 - fz <= folga * s11) fora &= ~16;
+            }
+        if (fora) continue;
+      }
+      if (saida[2 * m]! < 0) saida[2 * m] = k;
+      saida[2 * m + 1] = k;
+    }
+  }
+}
+
 class Faixa {
-  /** os pontos opacos e os que estão entrando (a mesma geometria) */
-  readonly pontos: THREE.Points;
-  readonly esmaece: THREE.Points;
+  /** os pontos opacos e os que estão entrando (a mesma geometria), um par por imagem do ladrilho */
+  readonly pontos: THREE.Points[];
+  readonly esmaece: THREE.Points[];
   /** as de perto, da frente para trás em x */
   readonly malhas: THREE.Mesh[];
   /** o desenho de cada malha com o pré-passo e o de reserva, sem ele */
@@ -3465,20 +3602,32 @@ class Faixa {
 
   constructor(material: (desenho: Desenho, formas?: THREE.DataTexture) => THREE.ShaderMaterial) {
     this.ordens = Array.from({ length: OITAVAS }, (_, o) => ordemDaOitava(o));
-    const g = new THREE.BufferGeometry();
-    // só a contagem importa: o vértice é o pedaço (gl_VertexID)
-    g.setAttribute('position', new THREE.BufferAttribute(new Uint8Array(OITAVAS * PEDRAS_POR_TIER.cinema), 1));
-    g.setDrawRange(0, 0);
-    // A ESFERA ENVOLVENTE À MÃO: sem ela o three a calcula ao ordenar a cena
-    // lendo y e z do atributo de um componente — o último vértice lê
-    // `undefined`, que vai parar num Vector3 do próprio three, e a partir
-    // daí TODO Vector3 da página passa a guardar os campos sem o atalho de
-    // número (o planejador da galáxia dobrava de ~4 para ~9 ms por quadro).
-    // Ninguém a usa: os pontos não são recortados e a ordem é a de `renderOrder`.
-    g.boundingSphere = new THREE.Sphere();
-    this.pontos = new THREE.Points(g, material('ponto'));
-    this.esmaece = new THREE.Points(g, material('esmaece'));
-    for (const p of [this.pontos, this.esmaece]) {
+    // só a contagem importa: o vértice é (imagem, pedaço) (gl_VertexID); um
+    // atributo para todas as imagens, uma geometria (o trecho) por imagem
+    const contagem = new THREE.BufferAttribute(new Uint8Array(IMAGENS.length * OITAVAS * PEDRAS_POR_TIER.cinema), 1);
+    const ponto = material('ponto');
+    const esmaece = material('esmaece');
+    this.pontos = [];
+    this.esmaece = [];
+    for (let m = 0; m < IMAGENS.length; m++) {
+      // uma geometria por desenho: o trecho dos opacos e o dos que esmaecem diferem
+      const g = new THREE.BufferGeometry();
+      const ge = new THREE.BufferGeometry();
+      for (const x of [g, ge]) {
+        x.setAttribute('position', contagem);
+        x.setDrawRange(0, 0);
+        // A ESFERA ENVOLVENTE À MÃO: sem ela o three a calcula ao ordenar a cena
+        // lendo y e z do atributo de um componente — o último vértice lê
+        // `undefined`, que vai parar num Vector3 do próprio three, e a partir
+        // daí TODO Vector3 da página passa a guardar os campos sem o atalho de
+        // número (o planejador da galáxia dobrava de ~4 para ~9 ms por quadro).
+        // Ninguém a usa: os pontos não são recortados e a ordem é a de `renderOrder`.
+        x.boundingSphere = new THREE.Sphere();
+      }
+      this.pontos.push(new THREE.Points(g, ponto));
+      this.esmaece.push(new THREE.Points(ge, esmaece));
+    }
+    for (const p of [...this.pontos, ...this.esmaece]) {
       p.frustumCulled = false;
       p.visible = false;
     }
@@ -3526,12 +3675,18 @@ class Faixa {
     });
   }
 
-  /** os pontos: todos os pedaços das oitavas ativas */
-  acenderPontos(ativas: number, porOitava: number) {
-    const n = Math.min(Math.max(ativas, 0), OITAVAS);
-    this.pontos.geometry.setDrawRange(0, n * porOitava);
-    this.pontos.visible = n > 0;
-    this.esmaece.visible = n > 0;
+  /** os pontos: em cada imagem, o trecho de oitavas que `imagensDaJanela` escolheu */
+  acenderPontos(porOitava: number, opacos: Int32Array, trechos: Int32Array) {
+    const bloco = OITAVAS * PEDRAS_POR_TIER.cinema;
+    for (let m = 0; m < IMAGENS.length; m++) {
+      // os opacos (x < `X_PLENO`) moram mais perto: menos imagens que os que esmaecem
+      for (const [p, t] of [[this.pontos[m]!, opacos], [this.esmaece[m]!, trechos]] as const) {
+        const k0 = t[2 * m]!;
+        const k1 = t[2 * m + 1]!;
+        p.visible = k0 >= 0;
+        if (k0 >= 0) p.geometry.setDrawRange(m * bloco + k0 * porOitava, (k1 - k0 + 1) * porOitava);
+      }
+    }
   }
 
   /**
@@ -3679,8 +3834,8 @@ class Faixa {
   }
 
   dispose() {
-    for (const m of [this.pontos, ...this.malhas, this.pre]) m.geometry.dispose();
-    for (const m of [this.pontos, this.esmaece, this.pre]) (m.material as THREE.ShaderMaterial).dispose();
+    for (const m of [...this.pontos, ...this.esmaece, ...this.malhas, this.pre]) m.geometry.dispose();
+    for (const m of [this.pontos[0]!, this.esmaece[0]!, this.pre]) (m.material as THREE.ShaderMaterial).dispose();
     for (const m of [...this.leves, ...this.reservas]) m.dispose();
     for (const f of FORMAS.values()) {
       f.geo.dispose();
@@ -3716,6 +3871,9 @@ export class PedrasDoAnel {
   private readonly nevoa: THREE.Mesh;
   /** a última câmera que desenhou os pedaços — a escolha de perto lê o cone dela */
   private camera: THREE.Camera | null = null;
+  /** o trecho de oitavas de cada imagem do ladrilho neste quadro (`imagensDaJanela`) */
+  private readonly trechos = new Int32Array(2 * IMAGENS.length);
+  private readonly opacos = new Int32Array(2 * IMAGENS.length);
   private readonly lente: Lente = { m: new Float64Array(9), p00: 1, p11: 1, pxPorRad: 400, ok: false };
   private readonly m4 = new THREE.Matrix4();
   private readonly tela = new THREE.Vector4();
@@ -3827,7 +3985,7 @@ const float R_EXT = ${opcoes.rExt};`;
     this.faixa = new Faixa(material);
     // DA FRENTE PARA TRÁS: as malhas de perto; os pontos (que descartam) por
     // último, depois das que a GPU sabe esconder
-    const ordem: THREE.Object3D[] = [...this.faixa.malhas, this.faixa.pontos];
+    const ordem: THREE.Object3D[] = [...this.faixa.malhas, ...this.faixa.pontos];
     const lerTela = (renderer: THREE.WebGLRenderer, camera: THREE.Camera) => {
       // o raio na tela (px por radiano) e a janela saem do alvo em que o
       // quadro é desenhado; a câmera fica para a escolha do próximo quadro
@@ -3841,7 +3999,7 @@ const float R_EXT = ${opcoes.rExt};`;
       m.onBeforeRender = (renderer, _cena, camera) => lerTela(renderer, camera);
       this.malha.add(m);
     });
-    this.faixa.esmaece.onBeforeRender = (renderer, _cena, camera) => lerTela(renderer, camera);
+    for (const p of this.faixa.esmaece) p.onBeforeRender = (renderer, _cena, camera) => lerTela(renderer, camera);
     this.folha = new THREE.Mesh(
       geometriaDaFolha(),
       new THREE.ShaderMaterial({
@@ -3878,12 +4036,12 @@ const float R_EXT = ${opcoes.rExt};`;
     // de todos os pedaços) e os que estão entrando (na frente dela)
     this.folha.renderOrder = 10;
     this.nevoa.renderOrder = 11;
-    this.faixa.esmaece.renderOrder = 12;
+    for (const p of this.faixa.esmaece) p.renderOrder = 12;
     for (const m of [this.folha, this.nevoa]) {
       m.frustumCulled = false;
       m.visible = false;
     }
-    this.malha.add(this.folha, this.nevoa, this.faixa.esmaece);
+    this.malha.add(this.folha, this.nevoa, ...this.faixa.esmaece);
     this.cenaPre.add(this.faixa.pre);
     this.malha.matrixAutoUpdate = false;
     this.malha.visible = false;
@@ -3999,7 +4157,9 @@ const float R_EXT = ${opcoes.rExt};`;
 
     const porOitava = PEDRAS_POR_TIER[q.tier];
     this.lerLente(theta);
-    this.faixa.acenderPontos(ativas, porOitava);
+    imagensDaJanela(ativas, rhoKm, zKm, espessura, this.lente, this.opacos, X_PLENO);
+    imagensDaJanela(ativas, rhoKm, zKm, espessura, this.lente, this.trechos);
+    this.faixa.acenderPontos(porOitava, this.opacos, this.trechos);
     this.faixa.escolherDePerto(ativas, porOitava, rhoKm, R0_KM * theta, zKm, espessura, this.lente, this.fr, this.fs, this.gi, this.gf, this.tauMaximo, q.tier === 'performance' ? 1 : 0);
     const u = this.uniforms;
     (u.uDirSolLocal!.value as THREE.Vector3).copy(q.dirSolLocal);
