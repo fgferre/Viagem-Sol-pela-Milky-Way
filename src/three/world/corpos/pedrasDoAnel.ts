@@ -669,15 +669,22 @@ export const AMBIENTE_DO_ANEL = 0.03;
 export const PISO_DA_NOITE = 0.006;
 
 /**
- * A SOMBRA MÚTUA, estatística: o pedaço mais fundo na camada, do lado
- * oposto ao Sol, recebe menos Sol que o de cima. Com F a fração da camada
- * entre ele e a face do Sol (uniforme sobre os pedaços), o Sol direto vale
- * 1 + `SOMBRA_MUTUA`·w·(1 − 2F): média 1 exata e limites [0,5; 1,5]. O
- * peso w sobe com τ/sen(elevação do Sol) e satura em 1.
+ * O SOL NA CAMADA: o Sol que chega a um pedaço passa pelos pedaços entre
+ * ele e a face do Sol. Com F a fração da camada acima dele nessa direção
+ * (uniforme sobre os pedaços) e μ0 o seno da elevação do Sol, a fração que
+ * passa é e^(−τ·F/μ0) — a mesma lei da névoa (`nevoaDaCamera`). Os pedaços
+ * desenhados são vistos sem os não resolvidos à frente (esses estão no
+ * disco e na névoa), então o quadro soma TODOS por igual: a lei é dividida
+ * pela média dela em F, μ0/τ·(1 − e^(−τ/μ0)), e a média do conjunto fica 1,
+ * a do disco que ele substitui (sem degrau na cessão). O de cima fica claro,
+ * o fundo, na penumbra. x = τ/μ0 tem teto em `X_DO_SOL`: além dele o de
+ * cima teria de brilhar mais que 3× a face ao Sol só para pagar a média.
  */
-export const SOMBRA_MUTUA = 0.5;
-export function sombraMutua(fracaoAcima: number, peso: number): number {
-  return 1 + SOMBRA_MUTUA * grampo(peso) * (1 - 2 * grampo(fracaoAcima));
+export const X_DO_SOL = 3;
+export function atenuacaoDoSol(fracaoAcima: number, tau: number, mu0: number): number {
+  const x = Math.min(Math.max(tau, 0) / Math.max(mu0, 1e-3), X_DO_SOL);
+  if (x < 1e-4) return 1;
+  return (Math.exp(-x * grampo(fracaoAcima)) * x) / -Math.expm1(-x);
 }
 
 /**
@@ -689,18 +696,20 @@ export const X_CORTE = 5.5;
 
 /**
  * AS FORMAS: a de cada pedaço não foi medida. O modelo aceito é que os
- * grandes são AGREGADOS efêmeros de pedaços menores (Davis et al. 1984):
- * acima de `DIAMETRO_DOS_MONTES_KM` (~2,5 m) todo pedaço é MONTE — doze bolas
- * de tamanhos bem diferentes, unidas por um máximo suave, e de perto dezenas
- * de submembros pela lei dos tamanhos (`subMembros`); abaixo, a maioria é
- * BLOCO — gelo único e anguloso, de perto um poliedro de 8 a 14 faces
- * (`planosDoBloco`).
+ * pedaços são AGREGADOS efêmeros de pedaços menores (Davis et al. 1984):
+ * eles se tocam a ~1 mm/s, colam e se soltam, e não se fraturam. Acima de
+ * `DIAMETRO_DOS_MONTES_KM` (~2,5 m) todo pedaço é MONTE — doze membros de
+ * tamanhos bem diferentes e, de perto, dezenas de submembros pela lei dos
+ * tamanhos (`subMembros`); abaixo, a maioria é AGREGADO PEQUENO — de 2 a 12
+ * membros pela mesma lei (`membrosDoAgregado`). O BLOCO (gelo único, de
+ * perto um poliedro de cantos gastos, `planosDoBloco`) fica minoria entre
+ * os pequenos: nada no modelo pede um estilhaço de arestas vivas.
  * Nenhum bloco entre os grandes: um monólito de 20 m com faces planas lia
  * como uma tábua na frente de Saturno, e o modelo não o sustenta.
  */
 export const DIAMETRO_DOS_MONTES_KM = 0.0025;
 const BLOCOS_ENTRE_OS_GRANDES = 0;
-const BLOCOS_ENTRE_OS_PEQUENOS = 0.8;
+export const BLOCOS_ENTRE_OS_PEQUENOS = 0.15;
 /** o piso da fração acesa do disco de uma pedra na correção de fase (`luzDaPedra`) */
 export const FASE_PISO = 0.5;
 export const MEMBROS = 12;
@@ -713,26 +722,104 @@ export const VARIANTES = 8;
  * normais saem de uma rede de Fibonacci girada ao acaso e sacudida (elas
  * cobrem a esfera, e o poliedro fecha), a distância de cada face, sorteada;
  * o canto mais longe toca a esfera unitária (o ponto desenha dentro dela).
- * De longe o poliedro é o de quinas vivas; de perto, as arestas
- * arredondam. O alongado e o achatado vêm dos eixos da pedra, como antes.
+ * De longe o poliedro é o de quinas vivas; de perto, os cantos são GASTOS
+ * (as colisões lentas lascam e recobrem o canto, não o afiam) e as faces
+ * abaulam de leve (`ABAULADO`). O alongado e o achatado vêm dos eixos da
+ * pedra, como antes.
  */
 const PLANOS_DO_BLOCO = [8, 14] as const;
-/** o expoente do mínimo suave das faces: a aresta arredonda ~2 % do raio */
-const P_DA_ARESTA = 40;
+/** o expoente do mínimo suave das faces: a aresta recua ~7 % do raio, o canto ~10 % */
+const P_DA_ARESTA = 10;
+/** o abaulado da face no meio dela, em fração do raio (zero na aresta) */
+const ABAULADO = 0.05;
 /** as linhas de cada variante na textura das formas: uA, uB, nA, nB, (oclusão, sujeira) */
 const LINHAS_DA_FORMA = 5;
 const BASE_DO_BLOCO = 0x2545f491;
 const BASE_DO_MONTE = 0x9e3779b9;
 /** as bolas do monte de longe (o miolo e as três grandes) */
 const BOLAS_A_VALER = 4;
+/** os membros de cada variante do agregado pequeno, de 2 a 12 (`osAgregados`), e o raio do menor (o maior é 1) */
+const MEMBROS_DO_AGREGADO = [2, 3, 4, 5, 6, 8, 10, 12] as const;
+const MENOR_DO_AGREGADO = 0.3;
+/** as direções da conta das áreas (uma rede de Fibonacci) */
+const DIRECOES_DA_AREA = Array.from({ length: 400 }, (_, k) => {
+  const z = 1 - (2 * (k + 0.5)) / 400;
+  const s = Math.sqrt(1 - z * z);
+  return [s * Math.cos(k * 2.399963), s * Math.sin(k * 2.399963), z];
+});
+let agregados: { membros: number[][][]; escala: number[]; r2Perto: number[] } | null = null;
 /**
  * O TETO DAS MALHAS PELO TAMANHO NA TELA: abaixo deste raio em px o pedaço
  * é ponto, mesmo dentro de x < `X_CORTE`. A forma de perto acende só acima
  * de 2× isto: nada estala.
  */
 export const PX_CORTE = 12;
-/** as células do ruído de relevo por lado da textura (`texturaDoRelevo`) */
+/** os grãos por lado da textura do grão (`texturaDoRelevo`) */
 const CELULAS_DO_RELEVO = 16;
+/**
+ * O GRÃO: a lei dos tamanhos medida segue até o centímetro, então a
+ * superfície de um pedaço é a dos pedaços menores que o compõem — grãos
+ * meio enterrados, com frestas entre eles (a superfície de pilha de entulho
+ * de Bennu, Ryugu e Itokawa, de gelo). Três escalas em grãos por raio do
+ * pedaço (os maiores que isso a malha já desenha, como membros): no de
+ * 1 m, grãos de ~17, 6 e 2 cm; no monte de 20 m, de ~1,7 m, 55 e 20 cm. A
+ * altura do grão é 1/5 do tamanho dele.
+ */
+const ESCALAS_DO_GRAO = [6, 18, 54] as const;
+const ALTURA_DO_GRAO = 0.2;
+/** a inclinação na textura vai até ± isto (altura por grão) */
+const INCLINACAO_DO_GRAO = 6;
+/** o escuro da fresta: o albedo cai isto por unidade de altura abaixo da média (a fresta vê menos céu) */
+const ESCURO_DA_FRESTA = 0.35;
+/** a textura do grão (`texturaDoRelevo`) e a altura média dela */
+let grao: { dado: Uint8Array; n: number; media: number } | null = null;
+function dadoDoGrao() {
+  if (grao) return grao;
+  const n = 256;
+  const C = CELULAS_DO_RELEVO;
+  const c = n / C;
+  // um ponto por célula, sacudido dentro dela (Voronoi periódico)
+  const ponto = (i: number, j: number) => {
+    const h = misturar((Math.imul(((i % C) + C) % C, 0x8da6b343) ^ Math.imul(((j % C) + C) % C, 0xd8163841) ^ 0x51ed27) >>> 0);
+    return [i + 0.05 + 0.9 * ((h & 0xffff) / 65535), j + 0.05 + 0.9 * ((h >>> 16) / 65535)];
+  };
+  const alt = new Float64Array(n * n);
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const gx = (x + 0.5) / c, gy = (y + 0.5) / c;
+      const i0 = Math.floor(gx), j0 = Math.floor(gy);
+      let f1 = 9, f2 = 9;
+      for (let dj = -1; dj <= 1; dj++)
+        for (let di = -1; di <= 1; di++) {
+          const p = ponto(i0 + di, j0 + dj);
+          const d = Math.hypot(p[0]! - gx, p[1]! - gy);
+          if (d < f1) { f2 = f1; f1 = d; } else if (d < f2) f2 = d;
+        }
+      // o grão é uma cúpula arredondada até o meio: zero na fresta (a meia
+      // distância de dois pontos), sem platô (o topo plano lia como ladrilho)
+      const t = Math.min((f2 - f1) / 0.9, 1);
+      alt[y * n + x] = t * t * (3 - 2 * t);
+    }
+  }
+  const dado = new Uint8Array(n * n * 4);
+  const em = (x: number, y: number) => alt[(((y + n) % n) * n) + ((x + n) % n)]!;
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      const dx = ((em(x + 1, y) - em(x - 1, y)) / 2) * c;
+      const dy = ((em(x, y + 1) - em(x, y - 1)) / 2) * c;
+      const o = (y * n + x) * 4;
+      dado[o] = Math.round(255 * em(x, y));
+      dado[o + 1] = Math.round(255 * Math.min(Math.max(dx / INCLINACAO_DO_GRAO + 0.5, 0), 1));
+      dado[o + 2] = Math.round(255 * Math.min(Math.max(dy / INCLINACAO_DO_GRAO + 0.5, 0), 1));
+      dado[o + 3] = 255;
+    }
+  }
+  let somaR = 0;
+  for (let k = 0; k < n * n; k++) somaR += dado[k * 4]! / 255;
+  grao = { dado, n, media: somaR / (n * n) };
+  return grao;
+}
+const ALTURA_MEDIA_DO_GRAO = dadoDoGrao().media;
 /**
  * A ÁREA DE CADA TIPO: a seção do elipsoide é 0,61 do disco de raio 1; as
  * faces do bloco e o vão entre as bolas do monte tiram área. Cada tipo
@@ -870,12 +957,19 @@ vec4 membro(uint base, int k) {
   // ×1,12: a área média do monte é a do elipsoide do ponto (a luz fecha)
   return vec4(direcao(r.x, r.y) * dist, raio) * 1.12;
 }
-// a variante da forma desta pedra (\`baseDaVariante\` na CPU)
+// a variante da forma desta pedra (\`baseDaVariante\` na CPU): os
+// agregados pequenos são as variantes de monte \`VARIANTES\` em diante
 int gVar;
-uint baseDaForma(bool bloco, uint base) {
-  gVar = int(misturar(base ^ 0x5bd1e995u) % ${VARIANTES}u);
+uint baseDaForma(bool bloco, bool pequeno, uint base) {
+  gVar = int(misturar(base ^ 0x5bd1e995u) % ${VARIANTES}u) + (pequeno && !bloco ? ${VARIANTES} : 0);
   return misturar(uint(gVar) + (bloco ? ${BASE_DO_BLOCO >>> 0}u : ${BASE_DO_MONTE >>> 0}u));
 }
+// as quatro maiores bolas de cada agregado pequeno (\`bolasDoAgregado\`)
+const vec4 BOLAS_DO_AGREGADO[${VARIANTES * 4}] = vec4[](${bolasDoAgregado()
+  .map((b) => `vec4(${b.map(glslF).join(', ')})`)
+  .join(', ')});
+// a área do agregado sobre a do monte, por variante (\`osAgregados\`)
+const float ESCALA_DO_AGREGADO[${VARIANTES}] = float[](${osAgregados().escala.map(glslF).join(', ')});
 `;
 
 const glslRegioes = (campo: 'espessura' | 'esteira') =>
@@ -1117,7 +1211,7 @@ const float X_ENTRA = ${glslF(X_ENTRA)};
 const float X_PLENO = ${glslF(X_PLENO)};
 const float TAU_TETO = ${glslF(TAU_TETO)};
 const float ESCALA_EQ = ${glslF(ESCALA_EQUIVALENTE)};
-const float SOMBRA_MUTUA = ${glslF(SOMBRA_MUTUA)};
+const float X_DO_SOL = ${glslF(X_DO_SOL)};
 const float LADO_NO_ARCO[${OITAVAS}] = float[${OITAVAS}](${TABELA_DE_OITAVAS.map((o) => glslF(o.ladoNoArco)).join(', ')});
 CONSTANTES_DO_ANEL
 SOMBRA_DO_PLANETA
@@ -1272,7 +1366,8 @@ float bloco;
 float escalaDoTipo(float perto) {
   return ESCALA_EQ * (bloco > 0.5
     ? mix(${glslF(ESCALA_DO_BLOCO[0])}, ${glslF(ESCALA_DO_BLOCO[1])}, perto)
-    : mix(${glslF(ESCALA_DO_MONTE[0])}, ${glslF(ESCALA_DO_MONTE[1])}, perto));
+    : mix(${glslF(ESCALA_DO_MONTE[0])}, ${glslF(ESCALA_DO_MONTE[1])}, perto)
+      * (gVar >= ${VARIANTES} ? ESCALA_DO_AGREGADO[gVar - ${VARIANTES}] : 1.0));
 }
 vec4 qGiro;
 vec3 eixoGiro;
@@ -1283,14 +1378,18 @@ void parametrosDaForma() {
   vec4 r4 = quatro(misturar(base ^ 0x68e31da4u)); // giro inicial (3)
   vec4 r5 = quatro(misturar(base ^ 0xb5297a4du)); // eixo do giro (2), fase
   vec4 r6 = quatro(misturar(base ^ 0x1b56c4e9u)); // eixos (2), tipo
-  // os grandes são na maioria montes (agregados, Davis et al. 1984)
-  bloco = r6.z < (2.0 * gRaio > ${glslF(DIAMETRO_DOS_MONTES_KM)} ? ${glslF(BLOCOS_ENTRE_OS_GRANDES)} : ${glslF(BLOCOS_ENTRE_OS_PEQUENOS)}) ? 1.0 : 0.0;
+  // quase todos são agregados (Davis et al. 1984): montes acima de ~2,5 m,
+  // agregados de poucos membros abaixo; o bloco é minoria entre os pequenos
+  bool pequeno = 2.0 * gRaio <= ${glslF(DIAMETRO_DOS_MONTES_KM)};
+  bloco = r6.z < (pequeno ? ${glslF(BLOCOS_ENTRE_OS_PEQUENOS)} : ${glslF(BLOCOS_ENTRE_OS_GRANDES)}) ? 1.0 : 0.0;
   // A FORMA é a da variante: no monte, o miolo e as três grandes (centro,
   // raio) — o que o ponto desenha de longe, e a forma \`A\` da malha
-  // assada; no bloco, as faces da variante (\`PLANOS\`, no fragmento)
-  uint vb = baseDaForma(bloco > 0.5, base);
+  // assada; no agregado, as quatro maiores (\`BOLAS_DO_AGREGADO\`); no
+  // bloco, as faces da variante (\`PLANOS\`, no fragmento)
+  uint vb = baseDaForma(bloco > 0.5, pequeno, base);
 #ifndef MALHA
-  for (int k = 0; k < 4; k++) cortes[k] = bloco > 0.5 ? vec4(0.0) : membro(vb, k);
+  for (int k = 0; k < 4; k++) cortes[k] = bloco > 0.5 ? vec4(0.0)
+    : gVar >= ${VARIANTES} ? BOLAS_DO_AGREGADO[(gVar - ${VARIANTES}) * 4 + k] : membro(vb, k);
 #endif
   // o bloco vai do alongado ao achatado; o monte é mais redondo
   eixosF = bloco > 0.5
@@ -1340,15 +1439,12 @@ void luzDaPedra(vec3 vistaKm) {
     * (razao / max(dot(razao, vec3(0.2126, 0.7152, 0.0722)), 1.0e-4));
   if (dot(tinta, tinta) < 1.0e-6) tinta = COR_DO_GELO;
   tinta *= gRegiao.x;
-  // O ALBEDO POR PEDAÇO: do gelo limpo (claro, levemente azulado) ao gelo
-  // sujo (bege mais escuro e mais saturado), com a média na cor medida. O
-  // 1,5 = 1 / (2/3): o disco de uma esfera de Lambert em oposição tem
-  // média 2/3 do brilho de face — o campo em retro bate com o I/F do disco
+  // O ALBEDO POR PEDAÇO: a cor medida do anel ali, com ±8 % de brilho de
+  // um pedaço a outro (mais ou menos poeira no gelo; a média é a de antes,
+  // 0,975). O 1,5 = 1 / (2/3): o disco de uma esfera de Lambert em oposição
+  // tem média 2/3 do brilho de face — o campo em retro bate com o I/F do disco
   float sujo = float(misturar(gBase ^ 0x3c6ef372u) & 0xffffu) / 65536.0;
-  float lumT = max(dot(tinta, vec3(0.2126, 0.7152, 0.0722)), 1.0e-4);
-  vec3 limpo = mix(tinta, vec3(lumT), 0.8) * vec3(0.97, 1.0, 1.05) * 1.15;
-  vec3 encardido = tinta * vec3(1.03, 0.98, 0.9) * 0.8;
-  vTinta = mix(limpo, encardido, sujo) * (IF_RETRO * 1.5 * uLuzGanho * 0.88);
+  vTinta = tinta * ((1.08 - 0.16 * sujo) * 0.975 * IF_RETRO * 1.5 * uLuzGanho * 0.88);
 #if !defined(PRE_PASSO)
   faseDoCorpo(vistaKm);
 #endif
@@ -1367,13 +1463,13 @@ void luzDaPedra(vec3 vistaKm) {
   vec2 cB = camadaDeParticulas(gTau, mu0, 0.5, hgDoAnel(0.0), -1.0);
   vLamina = IF_RETRO * 0.5 * (cA.x * cA.y + cB.x * cB.y) * sombra;
 
-  // A SOMBRA MÚTUA, estatística (\`sombraMutua\`)
+  // O SOL NA CAMADA (\`atenuacaoDoSol\`): e^(−τF/μ0) ÷ a média dela em F
   float z0 = gZ0;
   float cdf = z0 < 0.0 ? 0.5 * (1.0 + z0) * (1.0 + z0) : 1.0 - 0.5 * (1.0 - z0) * (1.0 - z0);
   float F = uDirSolLocal.z >= 0.0 ? 1.0 - cdf : cdf;
   float senE = abs(uDirSolLocal.z) / max(length(uDirSolLocal), 1.0e-9);
-  float forca = clamp(0.6 * min(gTau, 1.5) / max(senE, 0.05), 0.0, 1.0);
-  float mutua = 1.0 + SOMBRA_MUTUA * forca * (1.0 - 2.0 * F);
+  float xSol = min(max(gTau, 0.0) / max(senE, 1.0e-3), X_DO_SOL);
+  float mutua = xSol < 1.0e-4 ? 1.0 : exp(-xSol * clamp(F, 0.0, 1.0)) * xSol / (1.0 - exp(-xSol));
 
   // A NÉVOA entre o pedaço e a lente: os não resolvidos no trecho do raio
   // que corre dentro da camada (\`tauDaNevoa\`), com o peso da névoa
@@ -1432,8 +1528,8 @@ bool lugarPronto(int o, int i, int j) {
   gSenGiro = b3.x;
   eixosF = lerPre(j, 4).xyz;
   int codigo = int(b3.w + 0.5);
-  gVar = codigo % ${VARIANTES};
-  bloco = codigo >= ${VARIANTES} ? 1.0 : 0.0;
+  gVar = codigo % ${2 * VARIANTES};
+  bloco = codigo >= ${2 * VARIANTES} ? 1.0 : 0.0;
   gBase = misturar(uint(i) ^ (uint(o) << 24));
   uint hs = misturar(gBase ^ 0xd3a2646cu);
   vSemente = vec4(vec3(float(hs & 0x3ffu), float((hs >> 10) & 0x3ffu), float(hs >> 20)) * (37.0 / 1023.0), bloco > 0.5 ? 1.0 + float(gVar) : 0.0);
@@ -1593,7 +1689,7 @@ void main() {
   if (banda == 0) vSaida = vec4(gOff, vFica.x);
   else if (banda == 1) vSaida = qGiro;
   else if (banda == 2) vSaida = vec4(eixoGiro, gCosGiro);
-  else if (banda == 3) vSaida = vec4(gSenGiro, gRaio, gXo, float(gVar) + ${glslF(VARIANTES)} * bloco);
+  else if (banda == 3) vSaida = vec4(gSenGiro, gRaio, gXo, float(gVar) + ${glslF(2 * VARIANTES)} * bloco);
   else if (banda == 4) vSaida = vec4(eixosF, vLamina);
   else if (banda == 5) vSaida = vec4(vTinta, vLuz.x);
   else {
@@ -1670,22 +1766,25 @@ uniform sampler2D uRelevo;
 CAMADA_DO_ANEL
 float envolver(float c) { return max((c + ENVOLVE) / (1.0 + ENVOLVE), 0.0); }
 
-// O RELEVO POR TEXTURA: a altura e a inclinação dela, em três planos no
-// quadro da pedra (pesos |n|⁴); \`esc\` em células por raio. A célula
-// de 8 a 4 px se apaga pela PEGADA dela na tela — o desvio de +2 no
-// mipmap que fazia isso lia, no pedaço grande, um nível de 2 texels por
-// célula, e o relevo saía em degraus.
-vec3 relevo(vec3 p, vec3 w, float esc, float amp) {
+// O GRÃO POR TEXTURA (\`texturaDoRelevo\`): o empedrado de grãos e a
+// inclinação dele, em três planos no quadro da pedra (pesos |n|⁴); \`esc\`
+// em grãos por raio, \`amp\` a altura do grão em raios. Devolve a
+// inclinação (xyz) e a fresta (w: a altura menos a média, pela força —
+// negativa na fresta). O grão de 8 a 4 px se apaga pela PEGADA dele na tela.
+vec4 relevo(vec3 p, vec3 w, float esc, float amp) {
   vec3 c = p * esc;
   float pegada = max(length(dFdx(c)), length(dFdy(c)));
-  amp *= 1.0 - smoothstep(${glslF(1 / 8)}, ${glslF(1 / 4)}, pegada);
+  float forca = 1.0 - smoothstep(${glslF(1 / 8)}, ${glslF(1 / 4)}, pegada);
+  amp *= forca;
   vec4 tx = texture(uRelevo, c.yz / ${glslF(CELULAS_DO_RELEVO)});
   vec4 ty = texture(uRelevo, c.zx / ${glslF(CELULAS_DO_RELEVO)});
   vec4 tz = texture(uRelevo, c.xy / ${glslF(CELULAS_DO_RELEVO)});
-  vec2 gx = (tx.gb - 0.5) * 3.0;
-  vec2 gy = (ty.gb - 0.5) * 3.0;
-  vec2 gz = (tz.gb - 0.5) * 3.0;
-  return (amp * esc) * (w.x * vec3(0.0, gx.x, gx.y) + w.y * vec3(gy.y, 0.0, gy.x) + w.z * vec3(gz.x, gz.y, 0.0));
+  vec2 gx = (tx.gb - 0.5) * ${glslF(INCLINACAO_DO_GRAO)};
+  vec2 gy = (ty.gb - 0.5) * ${glslF(INCLINACAO_DO_GRAO)};
+  vec2 gz = (tz.gb - 0.5) * ${glslF(INCLINACAO_DO_GRAO)};
+  float h = w.x * tx.r + w.y * ty.r + w.z * tz.r;
+  return vec4((amp * esc) * (w.x * vec3(0.0, gx.x, gx.y) + w.y * vec3(gy.y, 0.0, gy.x) + w.z * vec3(gz.x, gz.y, 0.0)),
+    forca * (h - ${glslF(ALTURA_MEDIA_DO_GRAO)}));
 }
 
 // A COR DE UM PIXEL DO PEDAÇO: \`vista\` o ponto em km na vista, \`p\` o ponto
@@ -1700,21 +1799,27 @@ vec3 sombrear(vec3 vista, vec3 p, vec3 nl0, mat3 giro, float ao, float sujo) {
   w /= w.x + w.y + w.z;
   vec3 q = p + vSemente.xyz;
   vec3 nb = nl0;
-  // o pedaço de poucos px (\`vFica.z\`, o raio na tela) não paga relevo
+  // O GRÃO: o pedaço é feito de pedaços menores, até o centímetro (a lei
+  // dos tamanhos medida segue abaixo do que a malha resolve) — o empedrado
+  // em três escalas presas ao tamanho do pedaço (\`ESCALAS_DO_GRAO\` grãos
+  // por raio), na normal e no escuro das frestas. O bloco, gelo único, tem
+  // só a geada fina (as duas escalas menores, rasas). O pedaço de poucos px
+  // (\`vFica.z\`, o raio na tela) não paga grão.
+  float fresta = 0.0;
   if (vFica.z > 4.0) {
-    // (décima volta: a forma de perto já tem os caroços e as faces; o
-    // relevo largo, que neles lia como cera e gesso batido, afina)
-    vec3 g = relevo(q, w, bloco ? 3.0 : 2.2, bloco ? 0.03 : mix(0.26, 0.12, clamp(vFica.z / ${glslF(PX_CORTE)} - 1.0, 0.0, 1.0)));
-    // o monte grande é de mais pedaços: o relevo fino é mais fundo nele,
-    // e ganha uma oitava a mais (0 a 2,5 m de diâmetro, 1 a 20 m)
-    float grande = bloco ? 0.0 : clamp(log2(2.0 * vFica.y / ${glslF(DIAMETRO_DOS_MONTES_KM)}) / 3.0, 0.0, 1.0);
-    if (vFica.z > 12.0) g += relevo(q.zxy + vSemente.zxy, w.zxy, 13.0, bloco ? 0.022 : 0.04 * (1.0 + grande)).yzx;
-    if (vFica.z > 40.0 && grande > 0.0) g += relevo(q.yzx + vSemente.yzx, w.yzx, 41.0, 0.016 * grande).zxy;
-    nb -= g - dot(g, nl0) * nl0;
+    vec4 g = bloco ? vec4(0.0)
+      : relevo(q, w, ${glslF(ESCALAS_DO_GRAO[0])}, ${glslF(ALTURA_DO_GRAO / ESCALAS_DO_GRAO[0])});
+    if (vFica.z > 12.0) g += relevo(q.zxy + vSemente.zxy, w.zxy, ${glslF(ESCALAS_DO_GRAO[1])},
+      (bloco ? 0.25 : 1.0) * ${glslF(ALTURA_DO_GRAO / ESCALAS_DO_GRAO[1])}).yzxw;
+    if (vFica.z > 40.0) g += relevo(q.yzx + vSemente.yzx, w.yzx, ${glslF(ESCALAS_DO_GRAO[2])},
+      (bloco ? 0.25 : 1.0) * ${glslF(ALTURA_DO_GRAO / ESCALAS_DO_GRAO[2])}).zxyw;
+    nb -= g.xyz - dot(g.xyz, nl0) * nl0;
+    fresta = (bloco ? 0.25 : 1.0) * g.w;
   }
   vec3 n = normalize(giro * nb);
-  // gelo limpo ou sujo por membro; o bloco já sorteou o dele inteiro
-  vec3 tintaM = bloco ? vec3(1.0) : mix(vec3(1.04, 0.99, 0.9) * 0.82, vec3(0.98, 1.0, 1.04) * 1.16, sujo);
+  // o gelo de cada membro (±8 %, a média de antes) e o escuro das frestas
+  // (média 1: a altura do grão menos a média dela)
+  vec3 tintaM = vec3((bloco ? 1.0 : 0.985 * (0.92 + 0.16 * sujo)) * max(1.0 + ${glslF(ESCURO_DA_FRESTA)} * fresta, 0.3));
 
   float nl = dot(n, vSol);
   // retroespalhamento: a fase do próprio anel (1 em retro), com o surto
@@ -1725,17 +1830,16 @@ vec3 sombrear(vec3 vista, vec3 p, vec3 nl0, mat3 giro, float ao, float sujo) {
   float dif = envolver(nl);
   vec3 tom = mix(vec3(0.82, 0.93, 1.1), vec3(1.0), smoothstep(-0.05, 0.25, nl));
   vec3 albedo = vTinta * tintaM * ao;
-  // a sombra mútua (vLuz.z) pesa só no Sol direto
+  // o Sol na camada (vLuz.z, \`atenuacaoDoSol\`) pesa só no Sol direto
   vec3 cor = albedo * tom * (dif * fase * vLuz.x * vLuz.z);
-  // o brilho especular: pequeno, só nas faces viradas para o Sol
-  vec3 meio = normalize(vSol + v);
-  float brilho = pow(max(dot(n, meio), 0.0), 60.0) * step(0.0, nl);
-  cor += vec3(dot(vTinta, vec3(0.2126, 0.7152, 0.0722))) * (0.35 * brilho * vLuz.x * vLuz.z * min(ao, 1.0));
+  // (sem brilho especular: o gelo do anel é fosco, coberto de grão — o
+  // surto de oposição acima é o brilho que ele tem)
   // o globo (cor quente) e o ambiente do anel
   cor += albedo * COR_DE_SATURNO * (envolver(dot(n, vGlobo)) * vLuz.y);
   cor += albedo * (AMBIENTE_DO_ANEL * (0.25 + 0.75 * vLuz.x) + PISO_DA_NOITE);
-  // a luz do anel em volta no lado da noite (\`vLamina\`, o I/F do disco ali)
-  cor += albedo * (vLamina * (1.0 - 0.6 * abs(dot(n, uPoloVista))) * (1.0 - min(dif, 1.0)));
+  // a luz do anel em volta onde o Sol não chega — no lado da noite e na
+  // penumbra do fundo da camada (\`vLamina\`, o I/F do disco ali)
+  cor += albedo * (vLamina * (1.0 - 0.6 * abs(dot(n, uPoloVista))) * (1.0 - min(dif * min(vLuz.z, 1.0), 1.0)));
   // de dentro da camada, a multidão entre o pedaço e a lente
   return mix(cor, vNevoaCor, vLuz.w);
 }
@@ -1788,7 +1892,7 @@ void lerOPedaco() {
   vLuz = vec4(b5.w, b6.x, b6.y, 0.0);
   int codigo = int(b3.w + 0.5);
   uint hs = uint(b6.z) | (uint(b6.w) << 20);
-  vSemente = vec4(vec3(float(hs & 0x3ffu), float((hs >> 10) & 0x3ffu), float(hs >> 20)) * (37.0 / 1023.0), codigo >= ${VARIANTES} ? 1.0 + float(codigo % ${VARIANTES}) : 0.0);
+  vSemente = vec4(vec3(float(hs & 0x3ffu), float((hs >> 10) & 0x3ffu), float(hs >> 20)) * (37.0 / 1023.0), codigo >= ${2 * VARIANTES} ? 1.0 + float(codigo % ${2 * VARIANTES}) : 0.0);
   vec4 n0 = lerPre(0, 0);
   if (n0.w > 0.0) {
     vNevoaCor0 = n0.xyz;
@@ -2354,10 +2458,11 @@ function raioDoPoliedro(d: number[], planos: number[][], p = P_DA_ARESTA) {
         dono = k;
       }
     });
-    return { r, n: planos[dono]!.slice(0, 3), dono };
+    return { r, n: planos[dono]!.slice(0, 3), dono, abaulado: 0 };
   }
   let s = 0;
   let melhor = 0;
+  let segunda = 0;
   let dono = -1;
   const g = [0, 0, 0];
   planos.forEach((c, k) => {
@@ -2367,11 +2472,15 @@ function raioDoPoliedro(d: number[], planos: number[][], p = P_DA_ARESTA) {
     s += tp * t;
     for (let j = 0; j < 3; j++) g[j]! += (tp * c[j]!) / c[3]!;
     if (t > melhor) {
+      segunda = melhor;
       melhor = t;
       dono = k;
-    }
+    } else if (t > segunda) segunda = t;
   });
-  return { r: s ** (-1 / p), n: unir(g), dono };
+  // o abaulado: zero na aresta (as duas faces mais perto empatam), cheio
+  // no meio da face
+  const meio = Math.min(Math.max((1 - segunda / melhor) / 0.3, 0), 1);
+  return { r: s ** (-1 / p), n: unir(g), dono, abaulado: meio * meio * (3 - 2 * meio) };
 }
 /** o ruído de valor da CPU (o relevo da silhueta do bloco), em [0, 1] */
 function ruidoCPU(x: number, y: number, z: number): number {
@@ -2387,8 +2496,9 @@ function ruidoCPU(x: number, y: number, z: number): number {
     fz
   );
 }
-const dot3 = (a: ArrayLike<number>, b: ArrayLike<number>) =>
-  a[0]! * b[0]! + a[1]! * b[1]! + a[2]! * b[2]!;
+function dot3(a: ArrayLike<number>, b: ArrayLike<number>): number {
+  return a[0]! * b[0]! + a[1]! * b[1]! + a[2]! * b[2]!;
+}
 function unir(v: number[]): number[] {
   const l = Math.hypot(v[0]!, v[1]!, v[2]!) || 1;
   return [v[0]! / l, v[1]! / l, v[2]! / l];
@@ -2474,15 +2584,149 @@ function arestasNasLinhas(ds: number[][], idx: ArrayLike<number>, rotulo: (d: nu
 }
 
 /**
+ * OS MEMBROS IRREGULARES (décima quinta volta): um membro liso lia como
+ * bolha de cera. Cada membro do monte, do agregado e cada submembro que não
+ * é bloco é um elipsoide (eixos de 0,6 a 1) deformado por um ruído de baixa
+ * frequência (±`RUIDO_DO_MEMBRO`) — uma pedra de pilha de entulho, não uma
+ * gota. Os campos de um membro: centro (0–2), raio (3), sujeira (4), tipo
+ * (5: −1 irregular, ≥ 0 a variante do bloco), espelho (6–8), eixos (9–11) e
+ * a semente do ruído (12–14).
+ */
+const RUIDO_DO_MEMBRO = 0.3;
+function irregularidade(h: number): number[] {
+  const r = quatro(misturar((h ^ 0x27d4eb2f) >>> 0));
+  const r2 = quatro(misturar((h ^ 0x165667b1) >>> 0));
+  const e = [1, 0.7 + 0.3 * r[0]!, 0.6 + 0.3 * r[1]!];
+  // qual eixo é o longo, o médio e o curto
+  const giro = Math.min(Math.floor(r[2]! * 3), 2);
+  return [e[giro]!, e[(giro + 1) % 3]!, e[(giro + 2) % 3]!, 37 * r2[0]!, 37 * r2[1]!, 37 * r2[2]!];
+}
+/** o raio do membro na direção l (do centro dele), em unidades do raio */
+function formaDoMembro(l: number[], m: number[]): number {
+  const e =
+    1 /
+    Math.sqrt((l[0]! / m[9]!) ** 2 + (l[1]! / m[10]!) ** 2 + (l[2]! / m[11]!) ** 2);
+  const ruido = ruidoCPU(1.7 * l[0]! + m[12]!, 1.7 * l[1]! + m[13]!, 1.7 * l[2]! + m[14]!);
+  return e * (1 + 2 * RUIDO_DO_MEMBRO * (ruido - 0.5));
+}
+/** a saída do raio d (da origem) pelo membro irregular m (contínua fora dele, como a da bola) */
+function saidaIrregular(d: number[], m: number[]): number {
+  const lc2 = dot3(m, m);
+  const b = dot3(d, m);
+  let raio = m[3]!;
+  let t = 0;
+  for (let it = 0; it < 3; it++) {
+    const disc = b * b - lc2 + raio * raio;
+    t = b + Math.sign(disc) * Math.sqrt(Math.abs(disc));
+    const p = [t * d[0]! - m[0]!, t * d[1]! - m[1]!, t * d[2]! - m[2]!];
+    const lp = Math.hypot(p[0]!, p[1]!, p[2]!);
+    if (lp < 1e-9) break;
+    raio = m[3]! * formaDoMembro([p[0]! / lp, p[1]! / lp, p[2]! / lp], m);
+  }
+  const disc = b * b - lc2 + raio * raio;
+  return b + Math.sign(disc) * Math.sqrt(Math.abs(disc));
+}
+/** os doze membros do monte (`membro`), irregulares */
+function membrosDoMonte(vb: number): number[][] {
+  return Array.from({ length: MEMBROS }, (_, k) => [
+    ...membro(vb, k),
+    -1, 1, 1, 1,
+    ...irregularidade((vb + Math.imul(k, 0x9e3779b9)) >>> 0),
+  ]);
+}
+
+/**
+ * OS AGREGADOS PEQUENOS (décima quinta volta): abaixo de ~2,5 m o pedaço é,
+ * na maioria, um agregado de poucos membros (`MEMBROS_DO_AGREGADO`, um
+ * número por variante, de 2 a 12), com os tamanhos pela lei dos próprios
+ * pedaços (n(s) ∝ s⁻³, de `MENOR_DO_AGREGADO` ao maior) e cada membro colado
+ * ao que já há, numa direção sorteada, com 55 % do raio para dentro (eles se
+ * juntam a ~1 mm/s e se achatam no contato). O tamanho: o ponto acerta as
+ * quatro maiores bolas dentro do raio 1 (`bolasDoAgregado`), e a área média
+ * vem de `ESCALA_DO_AGREGADO` sobre a do monte.
+ */
+function r2Medio(f: (d: number[]) => number): number {
+  let s = 0;
+  for (const d of DIRECOES_DA_AREA) s += f(d) ** 2;
+  return s / DIRECOES_DA_AREA.length;
+}
+function osAgregados() {
+  if (agregados) return agregados;
+  // o monte: o quadrado médio do raio da forma de longe (quatro bolas) e o
+  // da de perto (as doze), na média das variantes
+  let r2LongeMonte = 0;
+  let r2PertoMonte = 0;
+  for (let v = 0; v < VARIANTES; v++) {
+    const todos = Array.from({ length: MEMBROS }, (_, k) => membro(baseDaVariante(false, v), k));
+    r2LongeMonte += r2Medio((d) => raioDoMonte(d, todos.slice(0, BOLAS_A_VALER)).r) / VARIANTES;
+    r2PertoMonte += r2Medio((d) => raioDoMonte(d, todos).r) / VARIANTES;
+  }
+  const membros: number[][][] = [];
+  const escala: number[] = [];
+  const r2Perto: number[] = [];
+  const [a2, b2] = [MENOR_DO_AGREGADO ** -2, 1];
+  for (let v = 0; v < VARIANTES; v++) {
+    const vb = baseDaVariante(false, VARIANTES + v);
+    const n = MEMBROS_DO_AGREGADO[v]!;
+    const sorteios = Array.from({ length: n }, (_, k) =>
+      misturar((vb ^ ((0x3c6ef372 + Math.imul(k, 0x9e3779b9)) >>> 0)) >>> 0),
+    );
+    const tamanho = (h: number) => (b2 + quatro(h)[2]! * (a2 - b2)) ** -0.5;
+    sorteios.sort((x, y) => tamanho(y) - tamanho(x));
+    const ms: number[][] = [];
+    for (const h of sorteios) {
+      const r = quatro(h);
+      const s = tamanho(h);
+      let c = [0, 0, 0];
+      if (ms.length > 0) {
+        const d = direcao(r[0]!, r[1]!);
+        let fora = 0;
+        for (const m of ms) {
+          const b = dot3(d, m);
+          const disc = b * b - dot3(m, m) + m[3]! * m[3]!;
+          if (disc > 0) fora = Math.max(fora, b + Math.sqrt(disc));
+        }
+        c = d.map((x) => x * (fora + 0.45 * s));
+      }
+      ms.push([...c, s, r[3]!, -1, 1, 1, 1, ...irregularidade(h)]);
+    }
+    // o centro de massa na origem, e as quatro maiores dentro do raio 1
+    let vol = 0;
+    const cm = [0, 0, 0];
+    for (const m of ms) {
+      const w = m[3]! ** 3;
+      vol += w;
+      for (let j = 0; j < 3; j++) cm[j]! += w * m[j]!;
+    }
+    for (const m of ms) for (let j = 0; j < 3; j++) m[j]! -= cm[j]! / vol;
+    let ext = 0;
+    for (const m of ms.slice(0, BOLAS_A_VALER)) ext = Math.max(ext, Math.hypot(m[0]!, m[1]!, m[2]!) + m[3]!);
+    for (const m of ms) for (let j = 0; j < 4; j++) m[j]! /= ext;
+    const longe = r2Medio((d) => raioDoMonte(d, ms.slice(0, BOLAS_A_VALER)).r);
+    membros.push(ms);
+    escala.push(Math.sqrt(r2LongeMonte / longe));
+    r2Perto.push((longe * r2PertoMonte) / r2LongeMonte);
+  }
+  agregados = { membros, escala, r2Perto };
+  return agregados;
+}
+/** as quatro maiores bolas de cada agregado (centro, raio), as que o ponto acerta */
+function bolasDoAgregado(): number[][] {
+  return osAgregados().membros.flatMap((ms) =>
+    Array.from({ length: BOLAS_A_VALER }, (_, k) => (ms[k] ? ms[k].slice(0, 4) : [0, 0, 0, 0])),
+  );
+}
+
+/**
  * OS SUBMEMBROS DO MONTE (décima volta): um agregado de 20 m é um monte de
- * milhares de pedaços menores, e doze bolas lisas fundidas liam como cera
- * derretida. Sobre os doze membros, `SUBMEMBROS` sorteados com a lei dos
- * próprios pedaços (n(s) ∝ s⁻³, raio de `S_SUB` em unidades do monte),
- * cada um meio enterrado na superfície que os doze fazem; como os
- * pedaços soltos, a maioria (`BLOCOS_ENTRE_OS_PEQUENOS`) é bloco — um dos
- * poliedros das variantes, espelhado ao acaso —, o resto é bola. A malha
- * fica só com os que ela resolve (`sMin`): os mesmos sorteios em toda
- * malha, as menores com os maiores deles.
+ * milhares de pedaços menores. Sobre os doze membros, `SUBMEMBROS`
+ * sorteados com a lei dos próprios pedaços (n(s) ∝ s⁻³, raio de `S_SUB` em
+ * unidades do monte), cada um meio enterrado na superfície que os doze
+ * fazem; como os pedaços soltos, uma minoria (`BLOCOS_ENTRE_OS_PEQUENOS`) é
+ * bloco — um dos poliedros das variantes, espelhado ao acaso —, o resto é
+ * membro irregular (`formaDoMembro`). A malha fica só com os que ela
+ * resolve (`sMin`): os mesmos sorteios em toda malha, as menores com os
+ * maiores deles.
  */
 const SUBMEMBROS = 320;
 const S_SUB = [0.055, 0.34] as const;
@@ -2507,13 +2751,13 @@ function subMembros(vb: number, todos: number[][], sMin: number): number[][] {
     // o gelo dele: o do membro onde ele pousa, com um pouco de sorteio
     const h2 = misturar(h);
     const sujo = 0.6 * todos[base.dono]![4]! + 0.4 * ((h2 >>> 16) / 65535);
-    // bloco (a variante e o espelho de cada eixo) ou bola (−1)
+    // bloco (a variante e o espelho de cada eixo) ou irregular (−1)
     const tipo =
       (h2 & 0xff) / 256 < BLOCOS_ENTRE_OS_PEQUENOS
         ? (h2 >>> 8) % VARIANTES
         : -1;
     const esp = [0, 1, 2].map((j) => ((h2 >>> (12 + j)) & 1 ? -1 : 1));
-    out.push([d[0] * fundo, d[1] * fundo, d[2] * fundo, s, sujo, tipo, ...esp]);
+    out.push([d[0] * fundo, d[1] * fundo, d[2] * fundo, s, sujo, tipo, ...esp, ...irregularidade(h2)]);
   }
   return out;
 }
@@ -2524,10 +2768,7 @@ function saidaDoSub(d: number[], m: number[]): number | null {
   const bloco = m[5]! >= 0;
   const alcance = (1.3 * m[3]! * (bloco ? BLOCO_NO_MONTE : 1)) / lc;
   if (alcance < 1 && b < lc * Math.sqrt(1 - alcance * alcance)) return null;
-  if (!bloco) {
-    const disc = b * b - lc * lc + m[3]! * m[3]!;
-    return b + Math.sign(disc) * Math.sqrt(Math.abs(disc));
-  }
+  if (!bloco) return saidaIrregular(d, m);
   planosDasVariantes ??= Array.from({ length: VARIANTES }, (_, v) =>
     planosDoBloco(baseDaVariante(true, v)),
   );
@@ -2546,11 +2787,11 @@ function saidaDoSub(d: number[], m: number[]): number | null {
   return te <= tx ? tx : 2 * tx - te;
 }
 /**
- * O MONTE DE PERTO na direção d: o máximo suave (`P_DO_MONTE`) das saídas
- * pelos doze membros e pelos submembros (a normal sai da malha: as faces
- * dos blocos não têm a conta fechada das bolas).
+ * O MONTE (ou o agregado) DE PERTO na direção d: o máximo suave
+ * (`P_DO_MONTE`) das saídas pelos membros irregulares e pelos submembros
+ * (a normal sai da malha).
  */
-function raioDoMonteDePerto(u: number[], doze: number[][], sub: number[][]) {
+function raioDoMonteDePerto(u: number[], membros: number[][], sub: number[][]) {
   let s = 0;
   let melhor = -1;
   let dono = 0;
@@ -2562,27 +2803,45 @@ function raioDoMonteDePerto(u: number[], doze: number[][], sub: number[][]) {
       dono = k;
     }
   };
-  doze.forEach((m, k) => {
-    const b = dot3(u, m);
-    const disc = b * b - dot3(m, m) + m[3]! * m[3]!;
-    soma(b + Math.sign(disc) * Math.sqrt(Math.abs(disc)), k);
-  });
-  sub.forEach((m, k) => soma(saidaDoSub(u, m), doze.length + k));
+  membros.forEach((m, k) => soma(saidaIrregular(u, m), k));
+  sub.forEach((m, k) => soma(saidaDoSub(u, m), membros.length + k));
   return { r: Math.max(s, 1e-30) ** (1 / P_DO_MONTE), dono };
 }
+/** a normal de cada vértice da malha u (a soma das faces em volta), para fora */
+function normaisDaMalha(u: number[][], idx: ArrayLike<number>, ds: number[][]): number[][] {
+  const nB = u.map(() => [0, 0, 0]);
+  for (let j = 0; j < idx.length; j += 3) {
+    const [a, b, c] = [u[idx[j]!]!, u[idx[j + 1]!]!, u[idx[j + 2]!]!];
+    const e1 = [0, 1, 2].map((q) => b[q]! - a[q]!);
+    const e2 = [0, 1, 2].map((q) => c[q]! - a[q]!);
+    const cr = [
+      e1[1]! * e2[2]! - e1[2]! * e2[1]!,
+      e1[2]! * e2[0]! - e1[0]! * e2[2]!,
+      e1[0]! * e2[1]! - e1[1]! * e2[0]!,
+    ];
+    for (const q of [idx[j]!, idx[j + 1]!, idx[j + 2]!])
+      for (let e = 0; e < 3; e++) nB[q]![e]! += cr[e]!;
+  }
+  return nB.map((v, i) => {
+    const nn = unir(v);
+    return dot3(nn, ds[i]!) < 0.05 ? ds[i]! : nn;
+  });
+}
+/** o expoente das arestas do bloco de antes (vivas): o tamanho do bloco de perto fica o dele */
+const P_DA_ARESTA_VIVA = 40;
 
 /**
- * Assa as `2 × VARIANTES` formas sobre o molde de `detalhe` numa textura
- * (largura = vértices, `LINHAS_DA_FORMA` linhas por variante; os blocos
- * primeiro). Na face de fratura a normal é a do plano: a face sai lisa e a
- * aresta, dura, sem derivada de tela.
+ * Assa as `3 × VARIANTES` formas sobre o molde de `detalhe` numa textura
+ * (largura = vértices, `LINHAS_DA_FORMA` linhas por variante): os blocos,
+ * os montes e os agregados pequenos. Na forma de longe do bloco a normal é
+ * a do plano (quinas vivas, sem derivada de tela); nas de perto, a da malha.
  */
 export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: THREE.DataTexture } {
   const geo = molde(detalhe);
   const pos = geo.getAttribute('position');
   const idx = geo.index!.array;
   const n = pos.count;
-  const altura = 2 * VARIANTES * LINHAS_DA_FORMA;
+  const altura = 3 * VARIANTES * LINHAS_DA_FORMA;
   const dado = new Float32Array(n * altura * 4);
   const por = (linha: number, i: number, v: ArrayLike<number>) => {
     const o = (linha * n + i) * 4;
@@ -2594,13 +2853,13 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
   // o menor submembro que a malha desenha: 1,25 lado de triângulo
   const sMin =
     1.25 * Math.sqrt(((4 * Math.PI) / (2 * n - 4)) * (4 / Math.sqrt(3)));
-  const aoMonte: number[][] = [];
-  for (let t = 0; t < 2; t++) {
-    const bloco = t === 0;
+  const ag = osAgregados();
+  for (let t = 0; t < 3; t++) {
+    const aoDoTipo: number[][] = [];
     for (let v = 0; v < VARIANTES; v++) {
-      const vb = baseDaVariante(bloco, v);
       const l0 = (t * VARIANTES + v) * LINHAS_DA_FORMA;
-      if (bloco) {
+      if (t === 0) {
+        const vb = baseDaVariante(true, v);
         const planos = planosDoBloco(vb);
         const semente = quatro(misturar((vb ^ 0xd3a2646c) >>> 0)).map(
           (x) => 37 * x,
@@ -2616,6 +2875,9 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
           idx,
           (d) => raioDoPoliedro(d, planos).dono,
         );
+        const uB: number[][] = [];
+        let r2Viva = 0;
+        let r2 = 0;
         ds.forEach((_, i) => {
           // de longe, o poliedro de quinas vivas: todo vértice numa face
           const dA = linA.dirs[i]!;
@@ -2626,36 +2888,43 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
             dA.map((x) => x * a.r),
           );
           por(l0 + 2, i, a.n);
-          // de perto, as arestas arredondadas e um relevo fino (±1 %) nas
-          // faces: a fratura não é um plano de vidro
+          // de perto, os cantos gastos, as faces abauladas e um relevo
+          // fino (±1 %): a face não é um plano de vidro
           const d = linB.dirs[i]!;
           const b = raioDoPoliedro(d, planos);
           const rel =
-            1 +
-            0.02 *
-              (ruidoCPU(
-                d[0]! * b.r * 5 + semente[0]!,
-                d[1]! * b.r * 5 + semente[1]!,
-                d[2]! * b.r * 5 + semente[2]!,
-              ) -
-                0.5);
-          por(
-            l0 + 1,
-            i,
-            d.map((x) => x * b.r * rel),
-          );
-          por(l0 + 3, i, b.n);
-          // (ao, sujo, no plano na forma de perto — nenhum: a aresta é
-          // arredondada —, idem na de longe — todos)
+            (1 + ABAULADO * b.abaulado) *
+            (1 +
+              0.02 *
+                (ruidoCPU(
+                  d[0]! * b.r * 5 + semente[0]!,
+                  d[1]! * b.r * 5 + semente[1]!,
+                  d[2]! * b.r * 5 + semente[2]!,
+                ) -
+                  0.5));
+          uB.push(d.map((x) => x * b.r * rel));
+          r2 += (b.r * rel) ** 2;
+          r2Viva += raioDoPoliedro(d, planos, P_DA_ARESTA_VIVA).r ** 2;
+          // (ao, sujo, no plano na forma de perto — nenhum —, idem na de
+          // longe — todos)
           por(l0 + 4, i, [1, 0.5, 0]);
           dado[((l0 + 4) * n + i) * 4 + 3] = 1;
         });
+        // o tamanho é o do bloco de arestas vivas (a área da escala do tipo)
+        const k = Math.sqrt(r2Viva / r2);
+        const nB = normaisDaMalha(uB, idx, ds);
+        ds.forEach((_, i) => {
+          por(l0 + 1, i, uB[i]!.map((x) => x * k));
+          por(l0 + 3, i, nB[i]!);
+        });
       } else {
-        const todos = Array.from({ length: MEMBROS }, (_, k) => membro(vb, k));
+        const monte = t === 1;
+        const vb = baseDaVariante(false, monte ? v : VARIANTES + v);
+        const todos = monte ? membrosDoMonte(vb) : ag.membros[v]!;
         const poucos = todos.map((m, k) =>
           k < BOLAS_A_VALER ? m : [0, 0, 0, 0, 0.5],
         );
-        const sub = subMembros(vb, todos, sMin);
+        const sub = monte ? subMembros(vb, todos, sMin) : [];
         const tudo = [...todos, ...sub];
         const uB: number[][] = [];
         const donos: number[] = [];
@@ -2665,33 +2934,19 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
           const a = raioDoMonte(d, poucos);
           por(l0, i, d.map((x) => x * a.r));
           por(l0 + 2, i, a.n);
-          r2Antes += raioDoMonte(d, todos).r ** 2;
+          if (monte) r2Antes += raioDoMonte(d, todos).r ** 2;
           const b = raioDoMonteDePerto(d, todos, sub);
           r2 += b.r * b.r;
           uB.push(d.map((x) => x * b.r));
           donos.push(b.dono);
         });
-        // a normal da malha (a soma das faces em volta de cada vértice)
-        const nB = ds.map(() => [0, 0, 0]);
-        for (let j = 0; j < idx.length; j += 3) {
-          const [a, b, c] = [uB[idx[j]!]!, uB[idx[j + 1]!]!, uB[idx[j + 2]!]!];
-          const e1 = [0, 1, 2].map((q) => b[q]! - a[q]!);
-          const e2 = [0, 1, 2].map((q) => c[q]! - a[q]!);
-          const cr = [
-            e1[1]! * e2[2]! - e1[2]! * e2[1]!,
-            e1[2]! * e2[0]! - e1[0]! * e2[2]!,
-            e1[0]! * e2[1]! - e1[1]! * e2[0]!,
-          ];
-          for (const q of [idx[j]!, idx[j + 1]!, idx[j + 2]!])
-            for (let e = 0; e < 3; e++) nB[q]![e]! += cr[e]!;
-        }
-        ds.forEach((d, i) => {
+        if (!monte) r2Antes = ag.r2Perto[v]! * n;
+        const nB = normaisDaMalha(uB, idx, ds);
+        ds.forEach((_, i) => {
           const u = uB[i]!;
-          let nn = unir(nB[i]!);
-          if (dot3(nn, d) < 0.05) nn = d;
-          nB[i] = nn;
+          const nn = nB[i]!;
           // a oclusão das vizinhas (a de uma esfera vista de um ponto): os
-          // vales entre os submembros ficam em sombra
+          // vales entre os membros ficam em sombra
           let occ = 0;
           for (const m of tudo) {
             const w = [m[0]! - u[0]!, m[1]! - u[1]!, m[2]! - u[2]!];
@@ -2701,7 +2956,7 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
               Math.sqrt(l2);
           }
           const ao = Math.min(Math.max(1 - 0.6 * occ, 0.35), 1);
-          aoMonte.push([l0 + 4, i, ao, dot3(u, u)]);
+          aoDoTipo.push([l0 + 4, i, ao, dot3(u, u)]);
           por(l0 + 4, i, [ao, tudo[donos[i]!]![4]!, 0]);
         });
         // o tamanho é o de antes: o quadrado médio do raio, o da forma de doze
@@ -2716,17 +2971,17 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
         });
       }
     }
+    // a oclusão dividida pela média dela pesada pela área (r²), por tipo:
+    // o albedo médio fica o mesmo, com ou sem os membros desta malha
+    let somaAo = 0;
+    let somaP = 0;
+    for (const [, , ao, w] of aoDoTipo) {
+      somaAo += ao! * w!;
+      somaP += w!;
+    }
+    for (const [l, i, ao] of aoDoTipo)
+      dado[(l! * n + i!) * 4] = ao! / (somaAo / somaP);
   }
-  // a oclusão dividida pela média dela pesada pela área (r²): o albedo médio
-  // do monte fica o mesmo, com ou sem os submembros desta malha
-  let somaAo = 0;
-  let somaP = 0;
-  for (const [, , ao, w] of aoMonte) {
-    somaAo += ao! * w!;
-    somaP += w!;
-  }
-  for (const [l, i, ao] of aoMonte)
-    dado[(l! * n + i!) * 4] = ao! / (somaAo / somaP);
   const tex = new THREE.DataTexture(
     dado,
     n,
@@ -2739,36 +2994,14 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
 }
 
 /**
- * O RELEVO DO FRAGMENTO (quinta volta): um ruído de valor periódico de
- * `CELULAS_DO_RELEVO` células por lado, nascido aqui, com mipmaps — o
- * mipmap apaga o que fica menor que o pixel (sem cintilar de longe, sem o
- * quadriculado 2×2 da derivada de tela). R = altura; G, B = a inclinação
- * analítica dela, por célula (÷ 3, + 0,5).
+ * O GRÃO DO FRAGMENTO: o empedrado periódico de `CELULAS_DO_RELEVO` grãos
+ * por lado (`dadoDoGrao`), com mipmaps — o mipmap apaga o que fica menor
+ * que o pixel (sem cintilar de longe). R = altura; G, B = a inclinação dela,
+ * por grão (÷ `INCLINACAO_DO_GRAO`, + 0,5).
  */
 function texturaDoRelevo(): THREE.DataTexture {
-  const N = 128;
-  const c = N / CELULAS_DO_RELEVO;
-  const no = (i: number, j: number) =>
-    misturar((Math.imul(i % CELULAS_DO_RELEVO, 0x8da6b343) ^ Math.imul(j % CELULAS_DO_RELEVO, 0xd8163841) ^ 0x51ed27) >>> 0) / 4294967296;
-  const dado = new Uint8Array(N * N * 4);
-  for (let y = 0; y < N; y++) {
-    for (let x = 0; x < N; x++) {
-      const gx = (x + 0.5) / c, gy = (y + 0.5) / c;
-      const i = Math.floor(gx), j = Math.floor(gy);
-      const fx = gx - i, fy = gy - j;
-      const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
-      const n00 = no(i, j), n10 = no(i + 1, j), n01 = no(i, j + 1), n11 = no(i + 1, j + 1);
-      const h = (n00 + (n10 - n00) * sx) * (1 - sy) + (n01 + (n11 - n01) * sx) * sy;
-      const dx = 6 * fx * (1 - fx) * ((n10 - n00) * (1 - sy) + (n11 - n01) * sy);
-      const dy = 6 * fy * (1 - fy) * ((n01 - n00) * (1 - sx) + (n11 - n10) * sx);
-      const o = (y * N + x) * 4;
-      dado[o] = Math.round(255 * h);
-      dado[o + 1] = Math.round(255 * Math.min(Math.max(dx / 3 + 0.5, 0), 1));
-      dado[o + 2] = Math.round(255 * Math.min(Math.max(dy / 3 + 0.5, 0), 1));
-      dado[o + 3] = 255;
-    }
-  }
-  const tex = new THREE.DataTexture(dado, N, N, THREE.RGBAFormat, THREE.UnsignedByteType);
+  const { dado, n } = dadoDoGrao();
+  const tex = new THREE.DataTexture(dado, n, n, THREE.RGBAFormat, THREE.UnsignedByteType);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.magFilter = THREE.LinearFilter;
   tex.minFilter = THREE.LinearMipmapLinearFilter;

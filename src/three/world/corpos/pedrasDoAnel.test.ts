@@ -29,6 +29,7 @@ import {
   X_PLENO,
   aceitaPedra,
   assarFormas,
+  atenuacaoDoSol,
   alfaCedido,
   cessaoDoDisco,
   densidadeDaEsteira,
@@ -39,7 +40,6 @@ import {
   pedacosPorArea,
   presencaDaOitava,
   regiaoDasPedras,
-  sombraMutua,
   tauDaNevoa,
 } from './pedrasDoAnel';
 import { REGIOES_DO_ANEL } from './gigante';
@@ -287,19 +287,25 @@ describe('pedras 3D do anel', () => {
     expect(luzDaFace(-1, 0, 1, 0)).toBeLessThan(0.15 * luzDaFace(1, 0, 1, 0));
   });
 
-  it('a sombra mútua tira da pedra funda o que dá à de cima: média 1, entre 0,5 e 1,5', () => {
-    for (const peso of [0, 0.4, 1, 3]) {
+  it('o Sol na camada: e^(−τF/μ0) dividido pela média em F — média 1, o de cima claro, o do fundo na penumbra', () => {
+    for (const [tau, mu0] of [[0, 0.4], [0.5, 0.42], [1.2, 0.42], [2, 0.1]] as const) {
+      const n = 4000;
       let soma = 0;
-      const n = 1000;
+      let antes = Infinity;
       for (let k = 0; k < n; k++) {
-        const m = sombraMutua((k + 0.5) / n, peso);
-        expect(m).toBeGreaterThanOrEqual(0.5);
-        expect(m).toBeLessThanOrEqual(1.5);
+        const m = atenuacaoDoSol((k + 0.5) / n, tau, mu0);
+        expect(m).toBeLessThanOrEqual(antes);
+        antes = m;
         soma += m;
       }
-      expect(soma / n).toBeCloseTo(1, 9);
+      expect(soma / n).toBeCloseTo(1, 5);
+      const x = Math.min(tau / mu0, 3);
+      // a razão entre o topo e o fundo é a do Sol atravessando a camada inteira
+      expect(atenuacaoDoSol(1, tau, mu0) / atenuacaoDoSol(0, tau, mu0)).toBeCloseTo(Math.exp(-x), 9);
     }
-    expect(sombraMutua(0, 1)).toBeGreaterThan(sombraMutua(1, 1));
+    // sem pedaços entre ele e o Sol, Sol inteiro; o teto de x segura o de cima
+    expect(atenuacaoDoSol(0.3, 0, 0.4)).toBe(1);
+    expect(atenuacaoDoSol(0, 5, 0.05)).toBeLessThan(3.2);
   });
 
   it('as formas assadas: a de longe é o corpo que o ponto acerta, e toda normal aponta para fora', () => {
@@ -307,7 +313,7 @@ describe('pedras 3D do anel', () => {
     const n = geo.getAttribute('position').count;
     const d = tex.image.data as Float32Array;
     const v = (linha: number, i: number) => Array.from(d.subarray((linha * n + i) * 4, (linha * n + i) * 4 + 3));
-    for (let t = 0; t < 2; t++) {
+    for (let t = 0; t < 3; t++) {
       for (let k = 0; k < VARIANTES; k++) {
         const l0 = (t * VARIANTES + k) * 5;
         for (let i = 0; i < n; i++) {
