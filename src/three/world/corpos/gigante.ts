@@ -1579,7 +1579,11 @@ void main() {
   float alfa = perfil.a;
   if (alfa < 0.004) discard;
   vec3 n = vec3(0.0, 0.0, 1.0);
-  vec3 view = normSeguro(uCamLocal - vPos);
+  vec3 view = normSeguro(${
+    // com as pedras a câmera chega a metros do disco, e o vPos (~15 m de
+    // grão, que a GPU interpola por ladrilho de tela) desenhava um xadrez
+    PEDRAS_3D ? '-vRelDasPedras' : 'uCamLocal - vPos'
+  });
   float nDotL = dot(n, uDirSolLocal);
   float nDotV = dot(n, view);
   float mu0 = max(abs(nDotL), 0.02);

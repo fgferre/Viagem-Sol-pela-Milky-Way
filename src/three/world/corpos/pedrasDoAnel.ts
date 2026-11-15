@@ -542,12 +542,14 @@ export const X_CORTE = 5.5;
 /**
  * AS FORMAS: a de cada pedaço não foi medida. O modelo aceito é que os
  * grandes são AGREGADOS efêmeros de pedaços menores (Davis et al. 1984):
- * acima de `DIAMETRO_DOS_MONTES_KM` (~2,5 m) a maioria é MONTE — doze bolas
+ * acima de `DIAMETRO_DOS_MONTES_KM` (~2,5 m) todo pedaço é MONTE — doze bolas
  * de tamanhos bem diferentes, unidas por um máximo suave; abaixo, a maioria
  * é BLOCO — gelo único e anguloso, o elipsoide com faces de fratura planas.
+ * Nenhum bloco entre os grandes: um monólito de 20 m com faces planas lia
+ * como uma tábua na frente de Saturno, e o modelo não o sustenta.
  */
 export const DIAMETRO_DOS_MONTES_KM = 0.0025;
-const BLOCOS_ENTRE_OS_GRANDES = 0.2;
+const BLOCOS_ENTRE_OS_GRANDES = 0;
 const BLOCOS_ENTRE_OS_PEQUENOS = 0.8;
 /** o piso da fração acesa do disco de uma pedra na correção de fase (`luzDaPedra`) */
 export const FASE_PISO = 0.5;
@@ -645,7 +647,9 @@ export function tauDaNevoa(h: number, dz: number, L: number, esp: number, tau: n
 /**
  * AS ESTEIRAS NO DISCO aparecem abaixo de `H_ESTEIRA_KM` (de 25 a 20 km) —
  * antes de qualquer pedaço se resolver (a janela maior tem 2,56 km) —, e
- * somem quando o pixel passa de meio espaçamento.
+ * somem quando o espaçamento cai de 8 para 4 px: o filamento é fino (tem
+ * harmônicos bem acima do espaçamento), e no limite de 2 px de antes ele
+ * saía como pontilhado e tracinhos regulares (a 16 km, 2,7 px).
  */
 export const H_ESTEIRA_KM = 25;
 export function forcaDaEsteiraNoDisco(alturaKm: number, espessuraKm: number): number {
@@ -920,6 +924,13 @@ varying vec4 vLuz;
 varying vec4 vFica;
 varying float vLamina;
 flat varying vec4 vSemente;
+#if defined(MALHA)
+// a névoa da câmera (cor, (τ, espessura, teto, peso), luz): o fragmento
+// da malha integra a dele pelo próprio raio de visada
+flat varying vec3 vNevoaCor0;
+flat varying vec4 vNevoaCam;
+flat varying vec2 vNevoaLuz;
+#endif
 
 const float R0 = ${glslF(R0_KM)};
 const float K_JANELA = ${glslF(K_JANELA)};
@@ -1185,10 +1196,21 @@ void luzDaPedra(vec3 vistaKm) {
   float peso = pesoDaNevoa(uZCamKm, hc);
   if (peso > 0.0) {
     nevoaDaCamera(cor0, cam3, luzN);
+#if defined(MALHA)
+    // o pedaço grande atravessa muitos graus de elevação: a névoa medida
+    // no centro dele o pintava inteiro de uma cor só, de borda dura
+    vNevoaCor0 = cor0;
+    vNevoaCam = vec4(cam3, peso);
+    vNevoaLuz = luzN;
+#else
     vec3 dir = gOff / max(gDist, 1.0e-12);
     nevoa = peso * (1.0 - exp(-tauDaNevoa(uZCamKm, dir.z, gDist, cam3.y, cam3.x, cam3.z)));
     vNevoaCor = corDaNevoa(cor0, luzN, dir);
+#endif
   }
+#if defined(MALHA)
+  else vNevoaCam = vec4(0.0);
+#endif
   vLuz = vec4(sombra, irrGlobo, mutua, nevoa);
 }
 
@@ -1213,6 +1235,9 @@ vec4 comProfundidade(vec4 pos) {
 void foraComum() {
   vSol = vec3(0.0); vGlobo = vec3(0.0); vTinta = vec3(0.0); vNevoaCor = vec3(0.0);
   vLuz = vec4(0.0); vFica = vec4(0.0); vSemente = vec4(0.0); vLamina = 0.0;
+#if defined(MALHA)
+  vNevoaCor0 = vec3(0.0); vNevoaCam = vec4(0.0); vNevoaLuz = vec2(0.0);
+#endif
   gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 }
 `;
@@ -1228,17 +1253,20 @@ const VERT_DA_MALHA = /* glsl */ `
 uniform highp sampler2D uFormas;
 attribute float aId;
 varying vec3 vVista;
+varying vec3 vNoAnel;
 varying vec3 vLocal;
 varying vec3 vNLocal;
 flat varying mat3 vGiroM;
 // (oclusão das vizinhas ÷ a média, sujeira do membro)
 varying vec2 vMonte;
+// 1 no triângulo com os três vértices no plano de uma face do bloco
+varying float vPlano;
 ${GLSL_PEDRA_COMUM}
 void main() {
   int id = int(aId + 0.5);
   int k = id / uPorOitava;
   if (!lugar(k, id - k * uPorOitava)) {
-    foraComum(); vVista = vec3(0.0); vLocal = vec3(0.0); vNLocal = vec3(0.0, 0.0, 1.0); vGiroM = mat3(1.0); vMonte = vec2(1.0, 0.5);
+    foraComum(); vVista = vec3(0.0); vNoAnel = vec3(0.0); vLocal = vec3(0.0); vNLocal = vec3(0.0, 0.0, 1.0); vGiroM = mat3(1.0); vMonte = vec2(1.0, 0.5); vPlano = 0.0;
     return;
   }
   parametrosDaForma();
@@ -1248,7 +1276,7 @@ void main() {
   vec3 uB = texelFetch(uFormas, ivec2(gl_VertexID, linha + 1), 0).xyz;
   vec3 nA = texelFetch(uFormas, ivec2(gl_VertexID, linha + 2), 0).xyz;
   vec3 nB = texelFetch(uFormas, ivec2(gl_VertexID, linha + 3), 0).xyz;
-  vec2 extra = texelFetch(uFormas, ivec2(gl_VertexID, linha + 4), 0).xy;
+  vec4 extra = texelFetch(uFormas, ivec2(gl_VertexID, linha + 4), 0);
   vec3 local = mix(uA, uB, lobos) * eixosF;
   vec3 nLocal = normalize(mix(nA, nB, lobos) / eixosF);
   vLocal = local;
@@ -1259,7 +1287,9 @@ void main() {
   // PARA A TELA: só a parte LINEAR da matriz — a câmera é a origem da
   // vista, e o deslocamento já é relativo a ela
   vVista = gR * pKm;
+  vNoAnel = pKm;
   vMonte = bloco > 0.5 ? vec2(1.0, 0.5) : vec2(mix(1.0, extra.x, lobos), mix(0.5, extra.y, lobos));
+  vPlano = bloco < 0.5 ? 0.0 : lobos >= 1.0 ? extra.z : lobos <= 0.0 ? extra.w : extra.z * extra.w;
   gl_Position = comProfundidade(projectionMatrix * vec4(vVista * (gRaioMundo / KM_POR_RAIO), 1.0));
   luzDaPedra(vVista);
 }
@@ -1325,13 +1355,17 @@ CAMADA_DO_ANEL
 float envolver(float c) { return max((c + ENVOLVE) / (1.0 + ENVOLVE), 0.0); }
 
 // O RELEVO POR TEXTURA: a altura e a inclinação dela, em três planos no
-// quadro da pedra (pesos |n|⁴); \`esc\` em células por raio. O mipmap apaga
-// o que fica menor que o pixel.
+// quadro da pedra (pesos |n|⁴); \`esc\` em células por raio. A célula
+// de 8 a 4 px se apaga pela PEGADA dela na tela — o desvio de +2 no
+// mipmap que fazia isso lia, no pedaço grande, um nível de 2 texels por
+// célula, e o relevo saía em degraus.
 vec3 relevo(vec3 p, vec3 w, float esc, float amp) {
   vec3 c = p * esc;
-  vec4 tx = texture(uRelevo, c.yz / ${glslF(CELULAS_DO_RELEVO)}, 2.0);
-  vec4 ty = texture(uRelevo, c.zx / ${glslF(CELULAS_DO_RELEVO)}, 2.0);
-  vec4 tz = texture(uRelevo, c.xy / ${glslF(CELULAS_DO_RELEVO)}, 2.0);
+  float pegada = max(length(dFdx(c)), length(dFdy(c)));
+  amp *= 1.0 - smoothstep(${glslF(1 / 8)}, ${glslF(1 / 4)}, pegada);
+  vec4 tx = texture(uRelevo, c.yz / ${glslF(CELULAS_DO_RELEVO)});
+  vec4 ty = texture(uRelevo, c.zx / ${glslF(CELULAS_DO_RELEVO)});
+  vec4 tz = texture(uRelevo, c.xy / ${glslF(CELULAS_DO_RELEVO)});
   vec2 gx = (tx.gb - 0.5) * 3.0;
   vec2 gy = (ty.gb - 0.5) * 3.0;
   vec2 gz = (tz.gb - 0.5) * 3.0;
@@ -1391,13 +1425,40 @@ vec3 sombrear(vec3 vista, vec3 p, vec3 nl0, mat3 giro, float ao, float sujo) {
  */
 const FRAG_DA_MALHA = /* glsl */ `
 ${FRAG_COMUM}
+uniform vec3 uDirSolLocal;
+uniform float uZCamKm;
 varying vec3 vVista;
+varying vec3 vNoAnel;
 varying vec3 vLocal;
 varying vec3 vNLocal;
 flat varying mat3 vGiroM;
 varying vec2 vMonte;
+varying float vPlano;
+flat varying vec3 vNevoaCor0;
+flat varying vec4 vNevoaCam;
+flat varying vec2 vNevoaLuz;
+${GLSL_PURO_DAS_PEDRAS}
+${GLSL_LUZ_DA_NEVOA.slice(GLSL_LUZ_DA_NEVOA.indexOf('// a luz da multidão'))}
 void main() {
-  gl_FragColor = vec4(sombrear(vVista, vLocal, normalize(vNLocal), vGiroM, vMonte.x, vMonte.y), 1.0);
+  // NA FACE de fratura, a normal é a do plano dos três vértices: a beira
+  // da face segue a linha dos vértices levados à aresta, sem os dentes que
+  // a normal interpolada de um triângulo meio dentro, meio fora fazia
+  vec3 nl0 = normalize(vNLocal);
+  vec3 nPlano = cross(dFdx(vLocal), dFdy(vLocal));
+  if (vPlano > 0.999 && dot(nPlano, nPlano) > 0.0) {
+    nPlano = normalize(nPlano);
+    nl0 = dot(nPlano, nl0) < 0.0 ? -nPlano : nPlano;
+  }
+  vec3 cor = sombrear(vVista, vLocal, nl0, vGiroM, vMonte.x, vMonte.y);
+  // A NÉVOA entre a lente e ESTE ponto do pedaço, pelo raio de visada dele
+  // (\`tauDaNevoa\`, a mesma conta da casca): macia com a elevação
+  if (vNevoaCam.w > 0.0) {
+    float L = length(vNoAnel);
+    vec3 dir = vNoAnel / max(L, 1.0e-30);
+    float a = vNevoaCam.w * (1.0 - exp(-tauDaNevoa(uZCamKm, dir.z, L, vNevoaCam.y, vNevoaCam.x, vNevoaCam.z)));
+    cor = mix(cor, corDaNevoa(vNevoaCor0, vNevoaLuz, dir), a);
+  }
+  gl_FragColor = vec4(cor, 1.0);
 }
 `;
 
@@ -1521,7 +1582,7 @@ void main() {
  * coordenadas relativas a ela: a folha MULTIPLICA a luz que o disco já pôs
  * no quadro pela razão entre o brilho da camada com τ·D e com τ (τ o que o
  * disco guarda ali depois da cessão, D a densidade da esteira), apagada
- * quando o pixel passa de meio espaçamento nos dois eixos. Ela mora do
+ * quando o espaçamento cai de 8 para 4 px nos dois eixos. Ela mora do
  * OUTRO lado da camada (`uFundoFolha`, além do maior pedaço), sobre o mesmo
  * raio de visada: todo pedaço fica na frente dela, e só o disco é tocado.
  */
@@ -1575,7 +1636,7 @@ void main() {
   // A PEGADA do pixel atravessando as cristas, nos dois eixos da tela
   float xi = vGrao.x * n.x + vGrao.y * (rhoKm / P_R0) * n.y;
   float pegada = abs(dFdx(xi)) + abs(dFdy(xi));
-  float amp = reg.y * uForcaEsteira * (1.0 - smoothstep(0.25, 0.5, pegada / LAMBDA));
+  float amp = reg.y * uForcaEsteira * (1.0 - smoothstep(0.125, 0.25, pegada / LAMBDA));
   float u = ((rhoKm / KM_POR_RAIO - R_INT) / (R_EXT - R_INT)) * U_ESCALA + U_BASE;
   vec4 perfil = (u < 0.0 || u > 1.0) ? vec4(0.0) : textureLod(uMapaAnel, vec2(u, 0.5), 0.0);
   if (amp <= 0.0 || perfil.a < 0.004) discard;
@@ -1710,15 +1771,19 @@ const RAIO_MIN_KM = 55_000;
 const RAIO_MAX_KM = 160_000;
 
 /**
- * AS MALHAS DE PERTO, pelo `detail` do icosaedro do three (1 → 42
- * vértices, 3 → 162, 7 → 642), cada uma até o seu x (a CPU escolhe a
- * primeira que serve). O custo do quadro é o número de vértices que a GPU
- * invoca, então só os ids que a CPU escolheu ganham malha.
+ * AS MALHAS DE PERTO, pelo `detail` do icosaedro do three (3 → 162
+ * vértices, 7 → 642, 19 → 4002), cada uma a partir do seu raio NA TELA, em
+ * px (a CPU escolhe a primeira que serve): a volta do pedaço fica em
+ * ~20, 40 e 100 lados, e o lado do triângulo não passa de ~6 px até 100 px
+ * de raio. Pela distância em tamanhos (x) o pedaço de 100 px saía com 40
+ * lados, e a aresta das faces e o contorno saíam em degraus. O custo do
+ * quadro é o número de vértices que a GPU invoca, então só os ids que a
+ * CPU escolheu ganham malha.
  */
-const MALHAS: readonly { detalhe: number; ate: number }[] = [
-  { detalhe: 7, ate: 3.5 },
-  { detalhe: 3, ate: 4.5 },
-  { detalhe: 1, ate: X_CORTE },
+const MALHAS: readonly { detalhe: number; px: number }[] = [
+  { detalhe: 19, px: 40 },
+  { detalhe: 7, px: 14 },
+  { detalhe: 3, px: 0 },
 ];
 /** a folga da escolha da CPU sobre o corte (a GPU faz a conta em float32) */
 const FOLGA_DA_ESCOLHA = 1.03;
@@ -1944,7 +2009,10 @@ function arestasNasLinhas(ds: number[][], idx: ArrayLike<number>, rotulo: (d: nu
         else hi = m;
       }
       const t = 0.5 * (lo + hi);
-      const q = t < 0.5 ? a : b;
+      // o mais perto vai à linha; se ele já foi, o outro (toda aresta que
+      // cruza a linha ganha um vértice nela)
+      let q = t < 0.5 ? a : b;
+      if (movido[q]) q = q === a ? b : a;
       if (movido[q]) continue;
       dirs[q] = em(t);
       movido[q] = true;
@@ -1991,17 +2059,35 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
         // as arestas nas linhas, em cada forma (`arestasNasLinhas`)
         const linA = arestasNasLinhas(ds, idx, (d) => raioDoBloco(d, cortes, false, am, lP).face);
         const linB = arestasNasLinhas(ds, idx, (d) => raioDoBloco(d, cortes, true, am, lP).face);
+        // o vértice NO PLANO de alguma face (dentro dela ou levado à aresta)
+        const noPlano = (d: number[], r: number, nc: number) => {
+          let m = 1;
+          for (let k = 0; k < nc; k++) {
+            const kc = dot3(d, cortes[k]!);
+            if (kc > 0.05) m = Math.min(m, cortes[k]![3]! - r * kc);
+          }
+          return m;
+        };
+        const planoA: number[] = [];
+        const planoB: number[] = [];
         ds.forEach((_, i) => {
           const dA = linA.dirs[i]!;
           const a = raioDoBloco(dA, cortes, false, am, lP);
+          planoA.push(noPlano(dA, a.r, 4) < 1e-5 ? 1 : 0);
           por(l0, i, dA.map((x) => x * a.r));
           por(l0 + 2, i, a.n);
           const d = linB.dirs[i]!;
           const b = raioDoBloco(d, cortes, true, am, lP);
           const u = d.map((x) => x * b.r);
           // a silhueta: um relevo fraco fora das faces (o de antes, sobre o
-          // casco); no vértice levado à aresta, nenhum — ele fica na linha
-          const desl = b.face < 0 && !linB.movido[i] ? 0.07 * (ruidoCPU(u[0]! * 1.8 + semente[0]!, u[1]! * 1.8 + semente[1]!, u[2]! * 1.8 + semente[2]!) - 0.5) : 0;
+          // casco); no vértice levado à aresta, nenhum — ele fica na linha —,
+          // e ele some chegando a ela: o vizinho da aresta, empurrado para
+          // fora do plano, fazia dentes na beira da face
+          const margem = noPlano(d, b.r, 7);
+          planoB.push(margem < 1e-5 ? 1 : 0);
+          const desl = b.face < 0 && !linB.movido[i]
+            ? 0.07 * (ruidoCPU(u[0]! * 1.8 + semente[0]!, u[1]! * 1.8 + semente[1]!, u[2]! * 1.8 + semente[2]!) - 0.5) * Math.min(Math.max(margem / 0.06, 0), 1)
+            : 0;
           uB.push(u.map((x) => x * (1 + desl)));
           faces.push(b.face);
           nB.push(b.n);
@@ -2020,7 +2106,9 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
           let nn = faces[i]! >= 0 ? nB[i]! : unir(acc[i]!);
           if (dot3(nn, linB.dirs[i]!) < 0) nn = nB[i]!;
           por(l0 + 3, i, nn);
-          por(l0 + 4, i, [1, 0.5, 0]);
+          // (ao, sujo, no plano na forma de perto, idem na de longe)
+          por(l0 + 4, i, [1, 0.5, planoB[i]!]);
+          dado[((l0 + 4) * n + i) * 4 + 3] = planoA[i]!;
         });
       } else {
         const todos = Array.from({ length: MEMBROS }, (_, k) => membro(vb, k));
@@ -2131,7 +2219,7 @@ class Faixa {
   readonly esmaece: THREE.Points;
   /** as de perto, da frente para trás em x */
   readonly malhas: THREE.Mesh[];
-  private readonly ates: number[];
+  private readonly pxs: number[];
   private readonly ordens: OrdemDaOitava[];
   private readonly ids: THREE.InstancedBufferAttribute[];
   /** as chaves da ordem da frente para trás: log da distância e o id */
@@ -2152,7 +2240,7 @@ class Faixa {
     // a capacidade: o dobro da conta média da janela de perto, por oitava
     const r = (2 ** X_CORTE * FOLGA_DA_ESCOLHA) / K_JANELA;
     const cap = OITAVAS * (Math.ceil(PEDRAS_POR_TIER.cinema * Math.min(1, 2 * r * r)) + 256);
-    this.ates = MALHAS.map((m) => m.ate);
+    this.pxs = MALHAS.map((m) => m.px);
     this.ids = MALHAS.map(() => {
       const a = new THREE.InstancedBufferAttribute(new Float32Array(cap), 1, false, 1);
       a.setUsage(THREE.DynamicDrawUsage);
@@ -2238,6 +2326,9 @@ class Faixa {
           if (h2 >= raio2) continue;
           const rc = ord.raio[j]! * t.s;
           const dz = alturaNaCamada(ord.z0[j]!, rc, espessuraKm) - zKm;
+          // o raio na tela, px: decide a malha (sem a lente, pela distância)
+          const rq = rc * ESCALA_EQUIVALENTE;
+          let px = (rq * lente.pxPorRad) / Math.max(Math.sqrt(h2 + dz * dz), rq);
           if (lente.ok) {
             const th = dS / R0_KM;
             const x = (rhoKm + dRho) * Math.cos(th) - rhoKm;
@@ -2251,14 +2342,13 @@ class Faixa {
             }
             // o teto de \`PX_CORTE\` (o raio na tela, por cima): o de poucos px
             // fica no ponto e a malha não paga os vértices dele
-            const rq = rc * ESCALA_EQUIVALENTE;
             const fzC = fz - DESLOCAMENTO_MAXIMO_KM - FOLGA_DO_CONE * Math.sqrt(h2 + dz * dz);
             if ((rq * lente.pxPorRad) / Math.max(fzC, rq) < PX_CORTE) continue;
+            px = (rq * lente.pxPorRad) / Math.max(fz, rq);
           }
           const logD = 0.5 * Math.log2(h2 + dz * dz);
-          const xo = logD - Math.log2(t.s);
           let qual = 0;
-          while (qual < this.ates.length - 1 && xo >= this.ates[qual]!) qual++;
+          while (qual < this.pxs.length - 1 && px < this.pxs[qual]!) qual++;
           const ch = this.chaves[qual]!;
           if (ns[qual]! < ch.length) ch[ns[qual]!++] = Math.floor((logD + 40) * 256) * CHAVE + o * porOitava + i;
         }
