@@ -273,6 +273,18 @@ function misturar(x: number): number {
 export const ENVOLVE = 0.05;
 export const AMBIENTE_DO_ANEL = 0.03;
 export const PISO_DA_NOITE = 0.006;
+/**
+ * A LUZ DA LÂMINA (sexta volta): os FUROS escuros das pedras de perto eram
+ * blocos achatados vistos de frente com a face toda no lado da noite — a
+ * face saía quase preta e lisa (só o ambiente constante), e diante de uma
+ * pedra acesa lia como um buraco com a borda acesa por dentro. De dentro da
+ * lâmina o lado da noite vê o anel aceso em volta: esta luz chega pelo
+ * plano do anel (máxima na face que olha o horizonte da lâmina, `1 −
+ * 0,6·|n·z|`), só onde o Sol direto não chega (`1 − envolve`), e apaga com
+ * a sombra do globo como o ambiente. Dá forma e relevo à face da noite; a
+ * noite segue abaixo de 15 % do dia (a luz dura fica).
+ */
+export const LUZ_DA_LAMINA = 0.11;
 
 /**
  * A SOMBRA MÚTUA, estatística: a pedra mais funda na lâmina, do lado
@@ -387,10 +399,11 @@ const COR_DE_SATURNO = [1.05, 0.99, 0.9] as const;
  * do fragmento (sem fase, brilho especular e relevo), e o teste cobra dela
  * que o lado da noite nunca é zero.
  */
-export function luzDaFace(cosSol: number, cosGlobo: number, sombra: number, irrGlobo: number): number {
+export function luzDaFace(cosSol: number, cosGlobo: number, sombra: number, irrGlobo: number, poloAbs = 0): number {
   const envolve = (c: number) => Math.max((c + ENVOLVE) / (1 + ENVOLVE), 0);
   return (
     envolve(cosSol) * sombra +
+    LUZ_DA_LAMINA * (1 - 0.6 * poloAbs) * (1 - Math.min(envolve(cosSol), 1)) * (0.25 + 0.75 * sombra) +
     envolve(cosGlobo) * irrGlobo +
     AMBIENTE_DO_ANEL * (0.25 + 0.75 * sombra) +
     PISO_DA_NOITE
@@ -942,6 +955,9 @@ flat varying vec4 vSemente;
 const float ENVOLVE = ${glslF(ENVOLVE)};
 const float AMBIENTE_DO_ANEL = ${glslF(AMBIENTE_DO_ANEL)};
 const float PISO_DA_NOITE = ${glslF(PISO_DA_NOITE)};
+const float LUZ_DA_LAMINA = ${glslF(LUZ_DA_LAMINA)};
+// o polo do anel na vista (a luz da lâmina chega pelo plano dele)
+uniform vec3 uPoloVista;
 const vec3 COR_DE_SATURNO = vec3(${COR_DE_SATURNO.join(', ')});
 uniform sampler2D uRelevo;
 CAMADA_DO_ANEL
@@ -1009,6 +1025,8 @@ vec3 sombrear(vec3 vista, vec3 p, vec3 nl0, mat3 giro, float ao, float sujo) {
   // preto, aquecido só pelo globo
   cor += albedo * COR_DE_SATURNO * (envolver(dot(n, vGlobo)) * vLuz.y);
   cor += albedo * (AMBIENTE_DO_ANEL * (0.25 + 0.75 * vLuz.x) + PISO_DA_NOITE);
+  // a luz da lâmina no lado da noite (\`LUZ_DA_LAMINA\`): é ela que tira o furo
+  cor += albedo * (LUZ_DA_LAMINA * (1.0 - 0.6 * abs(dot(n, uPoloVista))) * (1.0 - min(dif, 1.0)) * (0.25 + 0.75 * vLuz.x));
   // de dentro da lâmina, a multidão entre a pedra e a lente
   return mix(cor, vNevoaCor, vLuz.w);
 }
@@ -1322,8 +1340,6 @@ export interface OpcoesDasPedras {
   glslRegiaoDoAnel: string;
   /** `GLSL_CAMADA_DO_ANEL` (`tauDaOpacidade`, `hgDoAnel`) */
   glslCamadaDoAnel: string;
-  /** `GLSL_RUIDO_DE_VALOR` — os caroços das pedras de verdade */
-  glslRuido: string;
   rInt: number;
   rExt: number;
 }
@@ -1555,6 +1571,51 @@ function raioDoMonte(d: number[], mm: number[][]) {
 }
 
 /**
+ * AS ARESTAS NAS LINHAS (sexta volta): os vértices do icosaedro não caem
+ * onde dois planos de fratura se encontram (nem onde o plano encontra o
+ * casco), e a aresta saía em DEGRAUS, de vértice em vértice. Em cada aresta
+ * da malha cujas pontas caem em partes diferentes da forma, a fronteira é
+ * achada por bissecção no arco entre elas, e a ponta mais perto dela vai
+ * para lá (cada vértice anda uma vez só). A aresta da pedra passa a correr
+ * por vértices. Só na hora de assar: nenhum custo por quadro.
+ */
+function arestasNasLinhas(ds: number[][], idx: ArrayLike<number>, rotulo: (d: number[]) => number): {
+  dirs: number[][];
+  movido: boolean[];
+} {
+  const dirs = ds.map((d) => d.slice());
+  const movido = ds.map(() => false);
+  const rot = ds.map(rotulo);
+  const vistas = new Set<number>();
+  const n = ds.length;
+  for (let j = 0; j < idx.length; j += 3) {
+    for (let e = 0; e < 3; e++) {
+      const a = idx[j + e]!;
+      const b = idx[j + ((e + 1) % 3)]!;
+      const chave = Math.min(a, b) * n + Math.max(a, b);
+      if (vistas.has(chave) || rot[a] === rot[b]) continue;
+      vistas.add(chave);
+      const da = ds[a]!;
+      const db = ds[b]!;
+      const em = (t: number) => unir([0, 1, 2].map((k) => da[k]! + (db[k]! - da[k]!) * t));
+      let lo = 0;
+      let hi = 1;
+      for (let it = 0; it < 24; it++) {
+        const m = 0.5 * (lo + hi);
+        if (rotulo(em(m)) === rot[a]) lo = m;
+        else hi = m;
+      }
+      const t = 0.5 * (lo + hi);
+      const q = t < 0.5 ? a : b;
+      if (movido[q]) continue;
+      dirs[q] = em(t);
+      movido[q] = true;
+    }
+  }
+  return { dirs, movido };
+}
+
+/**
  * Assa as `2 × VARIANTES` formas sobre o molde de `detalhe` numa textura
  * (largura = vértices, `LINHAS_DA_FORMA` linhas por variante; os blocos
  * primeiro). Na face de fratura a normal é a do plano: a face sai lisa e a
@@ -1589,14 +1650,20 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
         const uB: number[][] = [];
         const faces: number[] = [];
         const nB: number[][] = [];
-        ds.forEach((d, i) => {
-          const a = raioDoBloco(d, cortes, false, am, lP);
-          por(l0, i, d.map((x) => x * a.r));
+        // as arestas nas linhas, em cada forma (`arestasNasLinhas`)
+        const linA = arestasNasLinhas(ds, idx, (d) => raioDoBloco(d, cortes, false, am, lP).face);
+        const linB = arestasNasLinhas(ds, idx, (d) => raioDoBloco(d, cortes, true, am, lP).face);
+        ds.forEach((_, i) => {
+          const dA = linA.dirs[i]!;
+          const a = raioDoBloco(dA, cortes, false, am, lP);
+          por(l0, i, dA.map((x) => x * a.r));
           por(l0 + 2, i, a.n);
+          const d = linB.dirs[i]!;
           const b = raioDoBloco(d, cortes, true, am, lP);
           const u = d.map((x) => x * b.r);
-          // a silhueta: um relevo fraco fora das faces (o de antes, sobre o casco)
-          const desl = b.face < 0 ? 0.07 * (ruidoCPU(u[0]! * 1.8 + semente[0]!, u[1]! * 1.8 + semente[1]!, u[2]! * 1.8 + semente[2]!) - 0.5) : 0;
+          // a silhueta: um relevo fraco fora das faces (o de antes, sobre o
+          // casco); no vértice levado à aresta, nenhum — ele fica na linha
+          const desl = b.face < 0 && !linB.movido[i] ? 0.07 * (ruidoCPU(u[0]! * 1.8 + semente[0]!, u[1]! * 1.8 + semente[1]!, u[2]! * 1.8 + semente[2]!) - 0.5) : 0;
           uB.push(u.map((x) => x * (1 + desl)));
           faces.push(b.face);
           nB.push(b.n);
@@ -1613,7 +1680,7 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
         ds.forEach((d, i) => {
           por(l0 + 1, i, uB[i]!);
           let nn = faces[i]! >= 0 ? nB[i]! : unir(acc[i]!);
-          if (dot3(nn, d) < 0) nn = nB[i]!;
+          if (dot3(nn, linB.dirs[i]!) < 0) nn = nB[i]!;
           por(l0 + 3, i, nn);
           por(l0 + 4, i, [1, 0.5, 0]);
         });
@@ -1986,6 +2053,7 @@ const float R_EXT = ${opcoes.rExt};`;
       uRaioFolha: { value: 40 },
       uGraoCam: { value: this.graoCam },
       uRelevo: { value: texturaDoRelevo() },
+      uPoloVista: { value: new THREE.Vector3(0, 0, 1) },
     };
     const material = (primeira: number, quantas: number, tipo: Tipo) => (desenho: Desenho, formas?: THREE.DataTexture) => {
       const m = MATERIAIS[tipo];
@@ -2096,6 +2164,7 @@ const float R_EXT = ${opcoes.rExt};`;
       this.lente.m[lin * 3 + 1] = -x * s + y * c;
       this.lente.m[lin * 3 + 2] = z;
     }
+    (this.uniforms.uPoloVista!.value as THREE.Vector3).set(e[8]! / esc, e[9]! / esc, e[10]! / esc).normalize();
     this.lente.p00 = cam.projectionMatrix.elements[0]!;
     this.lente.p11 = cam.projectionMatrix.elements[5]!;
     this.lente.pxPorRad = this.uniforms.uPxPorRad!.value as number;

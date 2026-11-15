@@ -10,7 +10,6 @@ import {
   GLSL_REGIAO_DO_ANEL,
   GLSL_SOMBRA_DO_PLANETA_NO_ANEL,
 } from './gigante';
-import { GLSL_RUIDO_DE_VALOR } from './corpos';
 import {
   CESSAO_PLENA,
   K_JANELA,
@@ -41,7 +40,6 @@ function pedrasDeTeste() {
     glslConstantesDoAnel: GLSL_CONSTANTES_DO_ANEL,
     glslRegiaoDoAnel: GLSL_REGIAO_DO_ANEL,
     glslCamadaDoAnel: GLSL_CAMADA_DO_ANEL,
-    glslRuido: GLSL_RUIDO_DE_VALOR,
     rInt: ANEL_SATURNO.rInt,
     rExt: ANEL_SATURNO.rExt,
   });

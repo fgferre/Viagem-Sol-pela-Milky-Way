@@ -2348,7 +2348,6 @@ export class GiganteResolvido {
             glslConstantesDoAnel: GLSL_CONSTANTES_DO_ANEL,
             glslRegiaoDoAnel: GLSL_REGIAO_DO_ANEL,
             glslCamadaDoAnel: GLSL_CAMADA_DO_ANEL,
-            glslRuido: GLSL_RUIDO_DE_VALOR,
             rInt: anel.rInt,
             rExt: anel.rExt,
           });
