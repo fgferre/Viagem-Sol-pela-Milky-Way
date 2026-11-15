@@ -22,6 +22,8 @@ import {
   aceitaPedra,
   alfaCedido,
   cessaoDoDisco,
+  luzDaFace,
+  parcelaDasPedras,
   presencaDaOitava,
 } from './pedrasDoAnel';
 
@@ -104,7 +106,9 @@ describe('pedras 3D do anel', () => {
     expect(p.malha.visible).toBe(true);
     let n = 0;
     p.malha.traverse((m) => {
-      if (m instanceof THREE.Mesh) n += (m.geometry as THREE.InstancedBufferGeometry).instanceCount;
+      if (m instanceof THREE.Mesh && m.geometry instanceof THREE.InstancedBufferGeometry) {
+        n += m.geometry.instanceCount;
+      }
     });
     expect(n % PEDRAS_POR_TIER.cinema).toBe(0);
     expect(n / PEDRAS_POR_TIER.cinema).toBe(PedrasDoAnel.oitavasAtivas(20));
@@ -124,5 +128,31 @@ describe('pedras 3D do anel', () => {
     p.atualizar(quadro(128_500, 25, 2446471 + 1));
     expect(Array.from(u.uGf.value as Float32Array)).not.toEqual(gf);
     p.dispose();
+  });
+
+  it('a parcela que as pedras assumem é contínua e monotônica com a altura', () => {
+    let antes = parcelaDasPedras(5000);
+    expect(antes).toBeGreaterThan(0);
+    for (let h = 5000; h >= 1e-4; h /= 1.002) {
+      const p = parcelaDasPedras(h);
+      expect(p).toBeGreaterThanOrEqual(antes);
+      expect(p - antes).toBeLessThan(0.002);
+      expect(p).toBeLessThanOrEqual(1);
+      antes = p;
+    }
+    expect(parcelaDasPedras(1e-4)).toBe(1);
+    expect(parcelaDasPedras(-20)).toBe(parcelaDasPedras(20));
+  });
+
+  it('o lado da noite nunca é zero, nem na sombra do globo', () => {
+    for (const cosSol of [-1, -0.5, 0]) {
+      for (const cosGlobo of [-1, 0, 1]) {
+        for (const sombra of [0, 1]) {
+          expect(luzDaFace(cosSol, cosGlobo, sombra, 0)).toBeGreaterThan(0);
+        }
+      }
+    }
+    // e o terminador é macio: a face de lado ainda recebe Sol
+    expect(luzDaFace(0, -1, 1, 0)).toBeGreaterThan(luzDaFace(0, -1, 0, 0));
   });
 });
