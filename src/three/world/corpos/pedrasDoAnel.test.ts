@@ -22,6 +22,8 @@ import {
   aceitaPedra,
   alfaCedido,
   cessaoDoDisco,
+  forcaDoGrao,
+  H_GRAO_KM,
   luzDaFace,
   parcelaDasPedras,
   presencaDaOitava,
@@ -114,6 +116,24 @@ describe('pedras 3D do anel', () => {
     expect(n / PEDRAS_POR_TIER.cinema).toBe(PedrasDoAnel.oitavasAtivas(20));
     expect(PedrasDoAnel.oitavasAtivas(20)).toBeLessThan(OITAVAS);
     expect(PedrasDoAnel.oitavasAtivas(0.003)).toBe(OITAVAS);
+    p.dispose();
+  });
+
+  it('o grão do disco entra contínuo abaixo de 1.600 km, antes das pedras', () => {
+    expect(forcaDoGrao(H_GRAO_KM)).toBe(0);
+    expect(forcaDoGrao(H_GRAO_KM / 2)).toBe(1);
+    for (let h = 3000; h > 1; h /= 1.002) {
+      expect(Math.abs(forcaDoGrao(h) - forcaDoGrao(h * 1.002))).toBeLessThan(0.005);
+    }
+    const p = pedrasDeTeste();
+    p.atualizar(quadro(128_000, 1000));
+    expect(p.malha.visible).toBe(true);
+    expect(p.cessao.w).toBe(0);
+    let pedras = 0;
+    p.malha.traverse((m) => {
+      if (m.visible && m !== p.malha && m.renderOrder < 0) pedras++;
+    });
+    expect(pedras).toBe(0);
     p.dispose();
   });
 
