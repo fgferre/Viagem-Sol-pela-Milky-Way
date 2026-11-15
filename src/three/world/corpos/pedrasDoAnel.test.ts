@@ -25,6 +25,7 @@ import {
   luzDaFace,
   parcelaDasPedras,
   presencaDaOitava,
+  sombraMutua,
 } from './pedrasDoAnel';
 
 const KM_POR_RAIO = BODY_AXES.saturn[0]!;
@@ -104,11 +105,10 @@ describe('pedras 3D do anel', () => {
     expect(p.malha.visible).toBe(false);
     p.atualizar(quadro(128_000, 20));
     expect(p.malha.visible).toBe(true);
+    // um ponto por pedra de cada oitava ativa (as malhas de perto são escolhidas a mais)
     let n = 0;
     p.malha.traverse((m) => {
-      if (m instanceof THREE.Mesh && m.geometry instanceof THREE.InstancedBufferGeometry) {
-        n += m.geometry.instanceCount;
-      }
+      if (m instanceof THREE.Points) n += m.geometry.drawRange.count;
     });
     expect(n % PEDRAS_POR_TIER.cinema).toBe(0);
     expect(n / PEDRAS_POR_TIER.cinema).toBe(PedrasDoAnel.oitavasAtivas(20));
@@ -152,7 +152,22 @@ describe('pedras 3D do anel', () => {
         }
       }
     }
-    // e o terminador é macio: a face de lado ainda recebe Sol
-    expect(luzDaFace(0, -1, 1, 0)).toBeGreaterThan(luzDaFace(0, -1, 0, 0));
+    // e a luz é dura: sem o globo, a noite fica abaixo de 15 % do dia
+    expect(luzDaFace(-1, 0, 1, 0)).toBeLessThan(0.15 * luzDaFace(1, 0, 1, 0));
+  });
+
+  it('a sombra mútua tira da pedra funda o que dá à de cima: média 1, entre 0,5 e 1,5', () => {
+    for (const peso of [0, 0.4, 1, 3]) {
+      let soma = 0;
+      const n = 1000;
+      for (let k = 0; k < n; k++) {
+        const m = sombraMutua((k + 0.5) / n, peso);
+        expect(m).toBeGreaterThanOrEqual(0.5);
+        expect(m).toBeLessThanOrEqual(1.5);
+        soma += m;
+      }
+      expect(soma / n).toBeCloseTo(1, 9);
+    }
+    expect(sombraMutua(0, 1)).toBeGreaterThan(sombraMutua(1, 1));
   });
 });
