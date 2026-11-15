@@ -2362,6 +2362,9 @@ export class GiganteResolvido {
             glslCamadaDoAnel: GLSL_CAMADA_DO_ANEL,
             rInt: anel.rInt,
             rExt: anel.rExt,
+            uEscala: U_PERFIL_ESCALA,
+            uBase: U_PERFIL_BASE,
+            fatorTau: (km) => regiaoDoAnelCpu(km).fatorTau,
           });
         } else {
           this.lajota = new LajotaDoAnel({

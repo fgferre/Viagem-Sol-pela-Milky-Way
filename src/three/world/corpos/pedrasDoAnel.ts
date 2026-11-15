@@ -812,6 +812,19 @@ const float LAMBDA = ${glslF(LAMBDA_DA_ESTEIRA_KM)};
 const float CEL_R = ${glslF(CELULA_DA_ESTEIRA_KM)};
 const float CEL_S = ${glslF(CELULA_NO_ARCO_KM)};
 const float N_CEL = ${glslF(CELULAS_NA_VOLTA)};
+// de Z = Σ e·e^{iψ} e da derivada dele ao longo de n, (δ, ∂δ/∂n)
+vec2 ondaDaEsteira(vec4 z, float amp) {
+  const float K_ONDA = 2.0 * PI / LAMBDA;
+  float z2 = dot(z.xy, z.xy);
+  float A = z2 + ${glslF(PISO_DA_AMPLITUDE)};
+  float r = max(sqrt(z2), 1.0e-9);
+  float dr = dot(z.xy, z.zw) / r;
+  float g = amp * ${glslF(GAMA_DA_ESTEIRA)} * r / A;
+  vec2 w = g * z.xy;
+  vec2 dw = g * (z.zw + z.xy * (dr / r - 2.0 * r * dr / A));
+  float um = 1.0 - w.x;
+  return 2.0 / K_ONDA * vec2(atan(w.y, um), (dw.y * um + dw.x * w.y) / (um * um + w.y * w.y));
+}
 vec2 esteira(float dRho, float dS, float rhoKm, vec2 n, float amp) {
   if (amp <= 0.0) return vec2(0.0);
   float uR = uCelCam.x + dRho / CEL_R;
@@ -848,27 +861,89 @@ vec2 esteira(float dRho, float dS, float rhoKm, vec2 n, float amp) {
       }
     }
   }
-  float z2 = dot(z.xy, z.xy);
-  float A = z2 + ${glslF(PISO_DA_AMPLITUDE)};
-  float r = max(sqrt(z2), 1.0e-9);
-  float dr = dot(z.xy, z.zw) / r;
-  float g = amp * ${glslF(GAMA_DA_ESTEIRA)} * r / A;
-  vec2 w = g * z.xy;
-  vec2 dw = g * (z.zw + z.xy * (dr / r - 2.0 * r * dr / A));
-  float um = 1.0 - w.x;
-  return 2.0 / K_ONDA * vec2(atan(w.y, um), (dw.y * um + dw.x * w.y) / (um * um + w.y * w.y));
+  return ondaDaEsteira(z, amp);
 }
-// \`densidadeDaEsteira\` na CPU: Newton ao longo de n até o ponto de origem
+// A MESMA SOMA só com os núcleos que alcançam o ponto de partida, com o
+// ponto andado u ao longo de n: o ξ de cada núcleo cai de u, o η fica, e a
+// fase gira K·u (\`cand\`: ξ0, η0²/E², cos e sen da fase em u = 0)
+const int CAND = 10;
+vec4 cand[CAND];
+int nCand;
+vec2 esteiraDosEscolhidos(float u, float amp) {
+  const float K_ONDA = 2.0 * PI / LAMBDA;
+  const float IX2 = ${glslF(1 / (ENVELOPE_XI_KM * ENVELOPE_XI_KM))};
+  float cu = cos(K_ONDA * u);
+  float su = sin(K_ONDA * u);
+  vec4 z = vec4(0.0);
+  for (int c = 0; c < CAND; c++) {
+    if (c >= nCand) break;
+    float xi = cand[c].x - u;
+    float q = xi * xi * IX2 + cand[c].y;
+    if (q >= 1.0) continue;
+    float m = 1.0 - q;
+    float e = m * m * m;
+    float eXi = -6.0 * m * m * xi * IX2;
+    float cs = cand[c].z * cu + cand[c].w * su;
+    float sn = cand[c].w * cu - cand[c].z * su;
+    z += vec4(e * cs, e * sn, eXi * cs - e * K_ONDA * sn, eXi * sn + e * K_ONDA * cs);
+  }
+  return ondaDaEsteira(z, amp);
+}
+// \`densidadeDaEsteira\` na CPU: Newton ao longo de n até o ponto de origem.
+// O ponto anda no máximo \`DESLOCAMENTO_MAXIMO_KM\` ao longo de n, então só
+// os núcleos das 2×2 células do ponto de partida que o alcançam com essa
+// folga entram nas somas (os de fora delas ficam a mais de meia célula, além
+// do envelope); com mais de \`CAND\` deles, a soma inteira. O Newton para
+// quando o passo some.
 float densidadeDaEsteira(float dRho, float dS, float rhoKm, vec2 n, float amp) {
   if (amp <= 0.0) return 1.0;
   float ns = n.y * P_R0 / rhoKm;
+  float uR = uCelCam.x + dRho / CEL_R;
+  float uS = uCelCam.y + dS / CEL_S;
+  float r0 = floor(uR - 0.5);
+  float s0 = floor(uS - 0.5);
+  float tr = uR - r0;
+  float ts = uS - s0;
+  float escS = CEL_S * rhoKm / P_R0;
+  // (1 + d/0,12)², d o deslocamento máximo: o alcance do envelope com a folga
+  const float Q_FOLGA = ${glslF((1 + DESLOCAMENTO_MAXIMO_KM / Math.min(ENVELOPE_XI_KM, ENVELOPE_ETA_KM)) ** 2 * 1.01)};
+  const float IX2 = ${glslF(1 / (ENVELOPE_XI_KM * ENVELOPE_XI_KM))};
+  const float IE2 = ${glslF(1 / (ENVELOPE_ETA_KM * ENVELOPE_ETA_KM))};
+  const float K_ONDA = 2.0 * PI / LAMBDA;
+  nCand = 0;
+  bool cheio = false;
+  for (int a = 0; a < 2; a++) {
+    for (int b = 0; b < 2; b++) {
+      uint iR = uint(uCelCam.z + r0 + float(a));
+      uint iS = uint(mod(uCelCam.w + s0 + float(b), N_CEL));
+      uint hc = misturar((iR * 0x8da6b343u) ^ misturar(iS + 0x68e31da4u));
+      for (int j = 0; j < ${NUCLEOS_POR_CELULA}; j++) {
+        uint h = misturar(hc ^ (uint(j + 1) * 0x9e3779b9u));
+        float xr = (tr - float(a) - float(h & 0x3ffu) / 1024.0) * CEL_R;
+        float xs = (ts - float(b) - float((h >> 10) & 0x3ffu) / 1024.0) * escS;
+        float xi = xr * n.x + xs * n.y;
+        float eta = xs * n.x - xr * n.y;
+        float qe = eta * eta * IE2;
+        if (xi * xi * IX2 + qe >= Q_FOLGA) continue;
+        if (nCand == CAND) cheio = true;
+        else {
+          float psi = K_ONDA * xi + 2.0 * PI * float(h >> 20) / 4096.0;
+          vec4 c4 = vec4(xi, qe, cos(psi), sin(psi));
+          for (int c = 0; c < CAND; c++) if (c == nCand) cand[c] = c4;
+          nCand++;
+        }
+      }
+    }
+  }
   float u = 0.0;
   vec2 e;
   for (int k = 0; k < 6; k++) {
-    e = esteira(dRho - u * n.x, dS - u * ns, rhoKm, n, amp);
-    u = clamp(u - (u - e.x) / (1.0 + e.y), ${glslF(-DESLOCAMENTO_MAXIMO_KM)}, ${glslF(DESLOCAMENTO_MAXIMO_KM)});
+    e = cheio ? esteira(dRho - u * n.x, dS - u * ns, rhoKm, n, amp) : esteiraDosEscolhidos(u, amp);
+    float u2 = clamp(u - (u - e.x) / (1.0 + e.y), ${glslF(-DESLOCAMENTO_MAXIMO_KM)}, ${glslF(DESLOCAMENTO_MAXIMO_KM)});
+    if (u2 == u) break;
+    u = u2;
   }
-  e = esteira(dRho - u * n.x, dS - u * ns, rhoKm, n, amp);
+  e = cheio ? esteira(dRho - u * n.x, dS - u * ns, rhoKm, n, amp) : esteiraDosEscolhidos(u, amp);
   return 1.0 / max(1.0 + e.y, 0.05);
 }
 `;
@@ -984,6 +1059,33 @@ vec3 gRegiao;
 mat3 gR;
 float gRaioMundo;
 
+// FORA DO QUADRO, NADA MAIS: a esfera envolvente contra os quatro planos
+// da lente, e o teto das malhas pelo raio na tela — o pedaço em \`gOff\`
+bool noQuadro(float raio, float p, float xo) {
+  gRaioMundo = length((modelViewMatrix * vec4(1.0, 0.0, 0.0, 0.0)).xyz);
+  gR = mat3(modelViewMatrix) / gRaioMundo;
+  gCV = gR * gOff;
+  float rB = 2.5 * raio;
+  float p00 = projectionMatrix[0][0];
+  float p11 = projectionMatrix[1][1];
+  float fz = -gCV.z;
+  if (fz < -rB || abs(gCV.x) * p00 - fz > rB * sqrt(p00 * p00 + 1.0)
+      || abs(gCV.y) * p11 - fz > rB * sqrt(p11 * p11 + 1.0)) return false;
+
+  gDist = length(gOff);
+  gRaio = raio;
+  // o raio NA TELA, em px: decide o que se paga (lóbulos, relevo)
+  gPx = gRaio * ESCALA_EQ * uPxPorRad / max(fz, gRaio);
+  // o teto das malhas pelo tamanho na tela (\`PX_CORTE\`): o mesmo teste nos dois
+#if defined(MALHA)
+  if (gPx < ${glslF(PX_CORTE)}) return false;
+#else
+  if (xo < X_CORTE && gPx >= ${glslF(PX_CORTE)}) return false;
+#endif
+  vFica = vec4(p, gRaio, gPx, 0.0);
+  return true;
+}
+
 // QUEM É, ONDE ESTÁ E SE APARECE. Falso = nada a desenhar.
 bool lugar(int o, int i) {
   gO = o;
@@ -1064,31 +1166,14 @@ bool lugar(int o, int i) {
   vec3 er = vec3(uEixo, 0.0);
   vec3 et = vec3(-uEixo.y, uEixo.x, 0.0);
   gOff = er * x + et * y + vec3(0.0, 0.0, dz);
-
-  // FORA DO QUADRO, NADA MAIS: a esfera envolvente contra os quatro
-  // planos da lente
-  gRaioMundo = length((modelViewMatrix * vec4(1.0, 0.0, 0.0, 0.0)).xyz);
-  gR = mat3(modelViewMatrix) / gRaioMundo;
-  gCV = gR * gOff;
-  float rB = 2.5 * raio;
-  float p00 = projectionMatrix[0][0];
-  float p11 = projectionMatrix[1][1];
-  float fz = -gCV.z;
-  if (fz < -rB || abs(gCV.x) * p00 - fz > rB * sqrt(p00 * p00 + 1.0)
-      || abs(gCV.y) * p11 - fz > rB * sqrt(p11 * p11 + 1.0)) return false;
-
-  gDist = length(gOff);
+#if defined(PRE_PASSO)
+  // o pré-passo para aqui: o que vem depois depende da lente
   gRaio = raio;
-  // o raio NA TELA, em px: decide o que se paga (lóbulos, relevo)
-  gPx = gRaio * ESCALA_EQ * uPxPorRad / max(fz, gRaio);
-  // o teto das malhas pelo tamanho na tela (\`PX_CORTE\`): o mesmo teste nos dois
-#if defined(MALHA)
-  if (gPx < ${glslF(PX_CORTE)}) return false;
-#else
-  if (xo < X_CORTE && gPx >= ${glslF(PX_CORTE)}) return false;
-#endif
-  vFica = vec4(p, gRaio, gPx, 0.0);
+  vFica = vec4(p, raio, 0.0, 0.0);
   return true;
+#else
+  return noQuadro(raio, p, xo);
+#endif
 }
 
 // A FORMA: o BLOCO é o elipsoide alongado ou achatado com quatro faces de
@@ -1146,12 +1231,23 @@ vec3 girar(vec3 v) {
   return v * gCosGiro + cross(eixoGiro, v) * gSenGiro + eixoGiro * dot(eixoGiro, v) * (1.0 - gCosGiro);
 }
 
+// A FASE DO CORPO: a curva de fase do anel já é a do campo inteiro; um
+// pedaço de Lambert visto a uma fase α mostra só a fração Φ(α) do disco
+// aceso — sem devolver isso a fase contaria duas vezes. Teto de 2×.
+void faseDoCorpo(vec3 vistaKm) {
+  float cosA = clamp(dot(vSol, -vistaKm / max(length(vistaKm), 1.0e-30)), -1.0, 1.0);
+  float alfaV = acos(cosA);
+  vTinta /= max((sqrt(1.0 - cosA * cosA) + (PI - alfaV) * cosA) / PI, ${glslF(FASE_PISO)});
+}
+
 // A LUZ: Sol com a sombra do globo e o brilho do globo (planetshine), a
 // luz do anel em volta, a sombra mútua, a névoa e o albedo deste pedaço
 void luzDaPedra(vec3 vistaKm) {
   vec3 pAbs = uCamLocal + gOff / KM_POR_RAIO;
+#if !defined(PRE_PASSO)
   vSol = normalize(gR * uDirSolLocal);
   vGlobo = normalize(gR * -pAbs);
+#endif
   vec3 razao = gPerfil.rgb / COR_B_DO_PERFIL;
   vec3 tinta = COR_DO_GELO
     * (razao / max(dot(razao, vec3(0.2126, 0.7152, 0.0722)), 1.0e-4));
@@ -1166,12 +1262,9 @@ void luzDaPedra(vec3 vistaKm) {
   vec3 limpo = mix(tinta, vec3(lumT), 0.8) * vec3(0.97, 1.0, 1.05) * 1.15;
   vec3 encardido = tinta * vec3(1.03, 0.98, 0.9) * 0.8;
   vTinta = mix(limpo, encardido, sujo) * (IF_RETRO * 1.5 * uLuzGanho * 0.88);
-  // A FASE DO CORPO: a curva de fase do anel já é a do campo inteiro; um
-  // pedaço de Lambert visto a uma fase α mostra só a fração Φ(α) do disco
-  // aceso — sem devolver isso a fase contaria duas vezes. Teto de 2×.
-  float cosA = clamp(dot(vSol, -vistaKm / max(length(vistaKm), 1.0e-30)), -1.0, 1.0);
-  float alfaV = acos(cosA);
-  vTinta /= max((sqrt(1.0 - cosA * cosA) + (PI - alfaV) * cosA) / PI, ${glslF(FASE_PISO)});
+#if !defined(PRE_PASSO)
+  faseDoCorpo(vistaKm);
+#endif
   float sombra = sombraDoPlaneta(pAbs);
   float rr = max(length(pAbs.xy), 1.001);
   vec3 pHat = vec3(pAbs.xy, 0.0) / rr;
@@ -1199,6 +1292,7 @@ void luzDaPedra(vec3 vistaKm) {
   // que corre dentro da camada (\`tauDaNevoa\`), com o peso da névoa
   float nevoa = 0.0;
   vNevoaCor = vec3(0.0);
+#if !defined(PRE_PASSO)
   vec3 cor0;
   vec3 cam3;
   vec2 luzN;
@@ -1221,8 +1315,63 @@ void luzDaPedra(vec3 vistaKm) {
 #if defined(MALHA)
   else vNevoaCam = vec4(0.0);
 #endif
+#endif
   vLuz = vec4(sombra, irrGlobo, mutua, nevoa);
 }
+
+#if defined(MALHA)
+// O PRÉ-PASSO (\`PedrasDoAnel.prePasso\`): tudo o que é do pedaço e não da
+// lente — o lugar com a esteira, a forma e a luz — sai UMA vez por pedaço
+// numa textura, em \`PRE_BANDAS\` faixas de um texel; a malha lê em vez de
+// refazer a conta em cada um dos seus milhares de vértices. A mesma conta,
+// no mesmo float32: o desenho é o mesmo. O texel 0 guarda a névoa da câmera.
+uniform highp sampler2D uPre;
+uniform int uPrePronto;
+vec4 lerPre(int j, int banda) {
+  return texelFetch(uPre, ivec2(j % PRE_W, banda * PRE_H + j / PRE_W), 0);
+}
+#if !defined(PRE_PASSO)
+bool lugarPronto(int o, int i, int j) {
+  vec4 b0 = lerPre(j, 0);
+  if (b0.w <= 0.0) return false;
+  gOff = b0.xyz;
+  vec4 b3 = lerPre(j, 3);
+  gXo = b3.z;
+  if (!noQuadro(b3.y, b0.w, b3.z)) return false;
+  vec4 b2 = lerPre(j, 2);
+  qGiro = lerPre(j, 1);
+  eixoGiro = b2.xyz;
+  gCosGiro = b2.w;
+  gSenGiro = b3.x;
+  eixosF = lerPre(j, 4).xyz;
+  int codigo = int(b3.w + 0.5);
+  gVar = codigo % ${VARIANTES};
+  bloco = codigo >= ${VARIANTES} ? 1.0 : 0.0;
+  gBase = misturar(uint(i) ^ (uint(o) << 24));
+  uint hs = misturar(gBase ^ 0xd3a2646cu);
+  vSemente = vec4(vec3(float(hs & 0x3ffu), float((hs >> 10) & 0x3ffu), float(hs >> 20)) * (37.0 / 1023.0), bloco > 0.5 ? 1.0 + float(gVar) : 0.0);
+  return true;
+}
+void luzPronta(vec3 vistaKm, int j) {
+  vec3 pAbs = uCamLocal + gOff / KM_POR_RAIO;
+  vSol = normalize(gR * uDirSolLocal);
+  vGlobo = normalize(gR * -pAbs);
+  vec4 b5 = lerPre(j, 5);
+  vec4 b6 = lerPre(j, 6);
+  vTinta = b5.xyz;
+  faseDoCorpo(vistaKm);
+  vLamina = lerPre(j, 4).w;
+  vNevoaCor = vec3(0.0);
+  vec4 n0 = lerPre(0, 0);
+  if (n0.w > 0.0) {
+    vNevoaCor0 = n0.xyz;
+    vNevoaCam = vec4(lerPre(0, 1).xyz, n0.w);
+    vNevoaLuz = lerPre(0, 2).xy;
+  } else vNevoaCam = vec4(0.0);
+  vLuz = vec4(b5.w, b6.x, b6.y, 0.0);
+}
+#endif
+#endif
 
 // A PROFUNDIDADE SÓ DOS PEDAÇOS (\`distanciaDaProfundidade\`): o recorte do
 // app fica em 12–32 m (a precisão é para o globo), e o pedaço de
@@ -1272,14 +1421,17 @@ varying vec2 vMonte;
 // 1 no triângulo com os três vértices no plano de uma face do bloco
 varying float vPlano;
 ${GLSL_PEDRA_COMUM}
+uniform int uBase;
 void main() {
   int id = int(aId + 0.5);
   int k = id / uPorOitava;
-  if (!lugar(k, id - k * uPorOitava)) {
+  int j = 1 + uBase + gl_InstanceID;
+  bool pronto = uPrePronto != 0;
+  if (pronto ? !lugarPronto(k, id - k * uPorOitava, j) : !lugar(k, id - k * uPorOitava)) {
     foraComum(); vVista = vec3(0.0); vNoAnel = vec3(0.0); vLocal = vec3(0.0); vNLocal = vec3(0.0, 0.0, 1.0); vGiroM = mat3(1.0); vMonte = vec2(1.0, 0.5); vPlano = 0.0;
     return;
   }
-  parametrosDaForma();
+  if (!pronto) parametrosDaForma();
   float lobos = min(clamp(X_CORTE - gXo, 0.0, 1.0), clamp(gPx / ${glslF(PX_CORTE)} - 1.0, 0.0, 1.0));
   int linha = (int(1.0 - bloco) * ${VARIANTES} + gVar) * ${LINHAS_DA_FORMA};
   vec3 uA = texelFetch(uFormas, ivec2(gl_VertexID, linha), 0).xyz;
@@ -1301,9 +1453,66 @@ void main() {
   vMonte = bloco > 0.5 ? vec2(1.0, 0.5) : vec2(mix(1.0, extra.x, lobos), mix(0.5, extra.y, lobos));
   vPlano = bloco < 0.5 ? 0.0 : lobos >= 1.0 ? extra.z : lobos <= 0.0 ? extra.w : extra.z * extra.w;
   gl_Position = comProfundidade(projectionMatrix * vec4(vVista * (gRaioMundo / KM_POR_RAIO), 1.0));
-  luzDaPedra(vVista);
+  if (pronto) luzPronta(vVista, j);
+  else luzDaPedra(vVista);
 }
 `;
+
+/**
+ * O PRÉ-PASSO DAS MALHAS: um ponto de um pixel por pedaço escolhido (o id
+ * vem em \`position.x\`; −1 é a névoa da câmera, no texel 0) e uma instância
+ * por faixa da textura. O ponto que não fica escreve zero (\`w\` = 0: a
+ * malha não desenha).
+ */
+const VERT_DO_PRE_PASSO = /* glsl */ `
+flat varying vec4 vSaida;
+${GLSL_PEDRA_COMUM}
+void main() {
+  int j = gl_VertexID;
+  int banda = gl_InstanceID;
+  gl_PointSize = 1.0;
+  gl_Position = vec4(
+    (float(j % PRE_W) + 0.5) / float(PRE_W) * 2.0 - 1.0,
+    (float(banda * PRE_H + j / PRE_W) + 0.5) / float(PRE_BANDAS * PRE_H) * 2.0 - 1.0,
+    0.0, 1.0);
+  vSaida = vec4(0.0);
+  if (position.x < 0.0) {
+    float peso = pesoDaNevoa(uZCamKm, regiaoDasPedras(uRhoCamKm).x);
+    if (peso > 0.0) {
+      vec3 cor0;
+      vec3 cam3;
+      vec2 luzN;
+      nevoaDaCamera(cor0, cam3, luzN);
+      vSaida = banda == 0 ? vec4(cor0, peso) : banda == 1 ? vec4(cam3, 0.0) : vec4(luzN, 0.0, 0.0);
+    }
+    return;
+  }
+  int id = int(position.x + 0.5);
+  int k = id / uPorOitava;
+  if (!lugar(k, id - k * uPorOitava)) return;
+  parametrosDaForma();
+  luzDaPedra(vec3(0.0));
+  if (banda == 0) vSaida = vec4(gOff, vFica.x);
+  else if (banda == 1) vSaida = qGiro;
+  else if (banda == 2) vSaida = vec4(eixoGiro, gCosGiro);
+  else if (banda == 3) vSaida = vec4(gSenGiro, gRaio, gXo, float(gVar) + ${glslF(VARIANTES)} * bloco);
+  else if (banda == 4) vSaida = vec4(eixosF, vLamina);
+  else if (banda == 5) vSaida = vec4(vTinta, vLuz.x);
+  else vSaida = vec4(vLuz.y, vLuz.z, 0.0, 0.0);
+}
+`;
+
+const FRAG_DO_PRE_PASSO = /* glsl */ `
+precision highp float;
+flat varying vec4 vSaida;
+void main() {
+  gl_FragColor = vSaida;
+}
+`;
+
+/** a textura do pré-passo: largura e faixas (uma por \`vec4\` do pedaço) */
+const PRE_W = 256;
+const PRE_BANDAS = 7;
 
 /**
  * O PONTO: um pedaço por vértice, o quadrado do tamanho dele na tela — o
@@ -1794,6 +2003,10 @@ export interface OpcoesDasPedras {
   glslCamadaDoAnel: string;
   rInt: number;
   rExt: number;
+  /** a régua do perfil (`U_PERFIL_ESCALA`, `U_PERFIL_BASE`) e o fator de τ da região (`regiaoDoAnelCpu`) */
+  uEscala: number;
+  uBase: number;
+  fatorTau: (km: number) => number;
 }
 
 /** a faixa de raio em que os pedaços podem existir (a da lajota) */
@@ -2460,7 +2673,17 @@ function formasDe(detalhe: number) {
   return f;
 }
 
-type Desenho = 'ponto' | 'esmaece' | 'malha';
+type Desenho = 'ponto' | 'esmaece' | 'malha' | 'pre';
+
+/** a capacidade de cada malha de perto: o dobro da conta média da janela de perto, por oitava */
+function capacidadeDePerto(): number {
+  const r = (2 ** X_CORTE * FOLGA_DA_ESCOLHA) / K_JANELA;
+  return OITAVAS * (Math.ceil(PEDRAS_POR_TIER.cinema * Math.min(1, 2 * r * r)) + 256);
+}
+/** as linhas de cada faixa da textura do pré-passo (o texel 0 e as três malhas cheias) */
+function linhasDoPrePasso(): number {
+  return Math.ceil((1 + MALHAS.length * capacidadeDePerto()) / PRE_W);
+}
 
 class Faixa {
   /** os pontos opacos e os que estão entrando (a mesma geometria) */
@@ -2473,6 +2696,11 @@ class Faixa {
   private readonly ids: THREE.InstancedBufferAttribute[];
   /** as chaves da ordem da frente para trás: log da distância e o id */
   private readonly chaves: Float64Array[];
+  /** o pré-passo: um ponto por pedaço das malhas (o id; o primeiro é a névoa da câmera) */
+  readonly pre: THREE.Points;
+  private readonly preIds: THREE.BufferAttribute;
+  /** quantos pontos o pré-passo desenha agora (1 = só a névoa: nenhuma malha) */
+  nPre = 1;
 
   constructor(material: (desenho: Desenho, formas?: THREE.DataTexture) => THREE.ShaderMaterial) {
     this.ordens = Array.from({ length: OITAVAS }, (_, o) => ordemDaOitava(o));
@@ -2480,15 +2708,20 @@ class Faixa {
     // só a contagem importa: o vértice é o pedaço (gl_VertexID)
     g.setAttribute('position', new THREE.BufferAttribute(new Uint8Array(OITAVAS * PEDRAS_POR_TIER.cinema), 1));
     g.setDrawRange(0, 0);
+    // A ESFERA ENVOLVENTE À MÃO: sem ela o three a calcula ao ordenar a cena
+    // lendo y e z do atributo de um componente — o último vértice lê
+    // `undefined`, que vai parar num Vector3 do próprio three, e a partir
+    // daí TODO Vector3 da página passa a guardar os campos sem o atalho de
+    // número (o planejador da galáxia dobrava de ~4 para ~9 ms por quadro).
+    // Ninguém a usa: os pontos não são recortados e a ordem é a de `renderOrder`.
+    g.boundingSphere = new THREE.Sphere();
     this.pontos = new THREE.Points(g, material('ponto'));
     this.esmaece = new THREE.Points(g, material('esmaece'));
     for (const p of [this.pontos, this.esmaece]) {
       p.frustumCulled = false;
       p.visible = false;
     }
-    // a capacidade: o dobro da conta média da janela de perto, por oitava
-    const r = (2 ** X_CORTE * FOLGA_DA_ESCOLHA) / K_JANELA;
-    const cap = OITAVAS * (Math.ceil(PEDRAS_POR_TIER.cinema * Math.min(1, 2 * r * r)) + 256);
+    const cap = capacidadeDePerto();
     this.pxs = MALHAS.map((m) => m.px);
     this.ids = MALHAS.map(() => {
       const a = new THREE.InstancedBufferAttribute(new Float32Array(cap), 1, false, 1);
@@ -2509,6 +2742,18 @@ class Faixa {
       malha.visible = false;
       return malha;
     });
+    const ids = new Float32Array(1 + MALHAS.length * cap);
+    ids[0] = -1;
+    this.preIds = new THREE.BufferAttribute(ids, 1);
+    this.preIds.setUsage(THREE.DynamicDrawUsage);
+    const gp = new THREE.InstancedBufferGeometry();
+    gp.setAttribute('position', this.preIds);
+    gp.instanceCount = PRE_BANDAS;
+    gp.setDrawRange(0, 1);
+    // à mão, pelo mesmo motivo dos pontos (o atributo tem um componente)
+    gp.boundingSphere = new THREE.Sphere();
+    this.pre = new THREE.Points(gp, material('pre'));
+    this.pre.frustumCulled = false;
   }
 
   /** os pontos: todos os pedaços das oitavas ativas */
@@ -2537,7 +2782,10 @@ class Faixa {
     fr: Float32Array,
     fs: Float32Array,
     gi: Float32Array,
-    gf: Float32Array
+    gf: Float32Array,
+    tauMaximo: ((rhoKm: number) => number) | null,
+    /** a primeira malha que o tier paga (o telefone não paga a mais fina) */
+    malhaMaisFina: number
   ) {
     const ns = this.ids.map(() => 0);
     const nOit = Math.min(Math.max(ativas, 0), OITAVAS);
@@ -2573,6 +2821,15 @@ class Faixa {
           const dRho = (dk + a - f) * lado;
           const h2 = dRho * dRho + dS * dS;
           if (h2 >= raio2) continue;
+          // O ACEITE DA DENSIDADE (o mesmo sorteio do vértice) contra o maior
+          // τ das caixas vizinhas do perfil: um superconjunto do que a GPU
+          // aceita — a malha não paga os vértices de quem ela recusaria
+          if (tauMaximo) {
+            const rho = rhoKm + dRho;
+            const base = misturar((i ^ (o << 24)) >>> 0);
+            const sorteio = (misturar((base ^ 0x1b873593) >>> 0) & 0xffff) / 65536;
+            if (sorteio * TAU_TETO * R0_KM >= tauMaximo(rho) * rho * 1.01) continue;
+          }
           const rc = ord.raio[j]! * t.s;
           const dz = alturaNaCamada(ord.z0[j]!, rc, espessuraKm) - zKm;
           // o raio na tela, px: decide a malha (sem a lente, pela distância)
@@ -2596,7 +2853,7 @@ class Faixa {
             px = (rq * lente.pxPorRad) / Math.max(fz, rq);
           }
           const logD = 0.5 * Math.log2(h2 + dz * dz);
-          let qual = 0;
+          let qual = malhaMaisFina;
           while (qual < this.pxs.length - 1 && px < this.pxs[qual]!) qual++;
           const ch = this.chaves[qual]!;
           if (ns[qual]! < ch.length) ch[ns[qual]!++] = Math.floor((logD + 40) * 256) * CHAVE + o * porOitava + i;
@@ -2604,12 +2861,16 @@ class Faixa {
       }
     }
     // DA FRENTE PARA TRÁS: o teste de profundidade poupa o fragmento das
-    // que ficam atrás
+    // que ficam atrás. Os ids vão também, em fila, para o pré-passo.
+    const pre = this.preIds.array as Float32Array;
+    let base = 0;
     this.malhas.forEach((malha, k) => {
       const n = ns[k]!;
       const ch = this.chaves[k]!.subarray(0, n).sort();
       const v = this.ids[k]!.array as Float32Array;
-      for (let j = 0; j < n; j++) v[j] = ch[j]! % CHAVE;
+      for (let j = 0; j < n; j++) v[j] = pre[1 + base + j] = ch[j]! % CHAVE;
+      (malha.material as THREE.ShaderMaterial).uniforms.uBase!.value = base;
+      base += n;
       (malha.geometry as THREE.InstancedBufferGeometry).instanceCount = n;
       malha.visible = n > 0;
       if (n > 0) {
@@ -2619,11 +2880,18 @@ class Faixa {
         a.needsUpdate = true;
       }
     });
+    this.nPre = 1 + base;
+    this.pre.geometry.setDrawRange(0, this.nPre);
+    if (base > 0) {
+      this.preIds.clearUpdateRanges();
+      this.preIds.addUpdateRange(1, base);
+      this.preIds.needsUpdate = true;
+    }
   }
 
   dispose() {
-    for (const m of [this.pontos, ...this.malhas]) m.geometry.dispose();
-    for (const m of [this.pontos, this.esmaece, ...this.malhas]) (m.material as THREE.ShaderMaterial).dispose();
+    for (const m of [this.pontos, ...this.malhas, this.pre]) m.geometry.dispose();
+    for (const m of [this.pontos, this.esmaece, ...this.malhas, this.pre]) (m.material as THREE.ShaderMaterial).dispose();
     for (const f of FORMAS.values()) {
       f.geo.dispose();
       f.tex.dispose();
@@ -2660,8 +2928,15 @@ export class PedrasDoAnel {
   private readonly lente: Lente = { m: new Float64Array(9), p00: 1, p11: 1, pxPorRad: 400, ok: false };
   private readonly m4 = new THREE.Matrix4();
   private readonly tela = new THREE.Vector4();
+  /** o pré-passo das malhas: quem desenha (lido do quadro anterior), o alvo e a cena dele */
+  private renderer: THREE.WebGLRenderer | null = null;
+  private alvoPre: THREE.WebGLRenderTarget | null = null;
+  private readonly cenaPre = new THREE.Scene();
+  private readonly cameraPre = new THREE.Camera();
+  /** o maior τ perto de um raio, do perfil medido (null até o perfil chegar) */
+  private tauMaximo: ((rhoKm: number) => number) | null = null;
 
-  constructor(opcoes: OpcoesDasPedras) {
+  constructor(private readonly opcoes: OpcoesDasPedras) {
     const constantes = `${opcoes.glslConstantesDoAnel}
 ${opcoes.glslRegiaoDoAnel}
 ${opcoes.glslCamadaDoAnel}
@@ -2701,20 +2976,35 @@ const float R_EXT = ${opcoes.rExt};`;
       uFundoFolha: { value: -0.02 },
       uRelevo: { value: texturaDoRelevo() },
       uPoloVista: { value: new THREE.Vector3(0, 0, 1) },
+      uPre: { value: null },
+      uPrePronto: { value: 0 },
     };
+    const pre = { PRE_W, PRE_H: linhasDoPrePasso(), PRE_BANDAS };
     const material = (desenho: Desenho, formas?: THREE.DataTexture) => {
       const malha = desenho === 'malha';
       const esmaece = desenho === 'esmaece';
+      if (desenho === 'pre') {
+        return new THREE.ShaderMaterial({
+          vertexShader: vertice(VERT_DO_PRE_PASSO),
+          fragmentShader: FRAG_DO_PRE_PASSO,
+          defines: { X_CORTE: glslF(X_CORTE), MALHA: 1, PRE_PASSO: 1, ...pre },
+          uniforms: this.uniforms,
+          blending: THREE.NoBlending,
+          depthTest: false,
+          depthWrite: false,
+          toneMapped: false,
+        });
+      }
       return new THREE.ShaderMaterial({
         vertexShader: vertice(malha ? VERT_DA_MALHA : VERT_DO_PONTO),
         fragmentShader: fragmento(malha ? FRAG_DA_MALHA : FRAG_DO_PONTO),
         defines: {
           X_CORTE: glslF(X_CORTE),
-          ...(malha ? { MALHA: 1 } : {}),
+          ...(malha ? { MALHA: 1, ...pre } : {}),
           ...(esmaece ? { ESMAECE: 1 } : {}),
         },
         // os uniformes divididos, mais a forma assada desta malha
-        uniforms: formas ? { ...this.uniforms, uFormas: { value: formas } } : this.uniforms,
+        uniforms: formas ? { ...this.uniforms, uFormas: { value: formas }, uBase: { value: 0 } } : this.uniforms,
         // os que estão entrando misturam por cima do disco, sem escrever
         // profundidade; o resto é opaco
         transparent: esmaece,
@@ -2732,6 +3022,7 @@ const float R_EXT = ${opcoes.rExt};`;
       renderer.getCurrentViewport(this.tela);
       this.uniforms.uPxPorRad!.value = 0.5 * this.tela.w * camera.projectionMatrix.elements[5]!;
       this.camera = camera;
+      this.renderer = renderer;
     };
     ordem.forEach((m, k) => {
       m.renderOrder = k - ordem.length;
@@ -2781,12 +3072,34 @@ const float R_EXT = ${opcoes.rExt};`;
       m.visible = false;
     }
     this.malha.add(this.folha, this.nevoa, this.faixa.esmaece);
+    this.cenaPre.add(this.faixa.pre);
     this.malha.matrixAutoUpdate = false;
     this.malha.visible = false;
   }
 
   ligarPerfil(textura: THREE.DataTexture) {
     this.uniforms.uMapaAnel!.value = textura;
+    // o maior τ das quatro caixas que a leitura linear do vértice pode
+    // misturar (e uma de folga de cada lado), sem o fator da região
+    const { data, width } = textura.image as { data: Uint8Array; width: number };
+    const tau = new Float32Array(width);
+    for (let k = 0; k < width; k++) {
+      const alfa = data[4 * k + 3]! / 255;
+      tau[k] = alfa < 0.004 ? 0 : -Math.log(Math.max(1 - alfa, 1e-3));
+    }
+    const maximo = new Float32Array(width);
+    for (let k = 0; k < width; k++) {
+      let m = 0;
+      for (let d = -2; d <= 2; d++) m = Math.max(m, tau[Math.min(Math.max(k + d, 0), width - 1)]!);
+      maximo[k] = m;
+    }
+    const { rInt, rExt, uEscala, uBase, fatorTau } = this.opcoes;
+    this.tauMaximo = (rhoKm: number) => {
+      const u = ((rhoKm / KM_POR_RAIO - rInt) / (rExt - rInt)) * uEscala + uBase;
+      if (u < 0 || u > 1) return 0;
+      const k = Math.min(Math.max(Math.floor(u * width), 0), width - 1);
+      return maximo[k]! * fatorTau(rhoKm) * 1.001;
+    };
   }
 
   fixarNoAnel(matriz: THREE.Matrix4) {
@@ -2875,7 +3188,7 @@ const float R_EXT = ${opcoes.rExt};`;
     const porOitava = PEDRAS_POR_TIER[q.tier];
     this.lerLente(theta);
     this.faixa.acenderPontos(ativas, porOitava);
-    this.faixa.escolherDePerto(ativas, porOitava, rhoKm, zKm, espessura, this.lente, this.fr, this.fs, this.gi, this.gf);
+    this.faixa.escolherDePerto(ativas, porOitava, rhoKm, zKm, espessura, this.lente, this.fr, this.fs, this.gi, this.gf, this.tauMaximo, q.tier === 'performance' ? 1 : 0);
     const u = this.uniforms;
     (u.uDirSolLocal!.value as THREE.Vector3).copy(q.dirSolLocal);
     (u.uCamLocal!.value as THREE.Vector3).copy(c);
@@ -2898,12 +3211,44 @@ const float R_EXT = ${opcoes.rExt};`;
     u.uRaioFolha!.value = raioDaFolhaKm(zKm);
     // do outro lado da camada, além do maior pedaço (o eixo maior passa de a)
     u.uFundoFolha!.value = -(Math.sign(zKm) || 1) * (0.5 * espessura + 2 * A_MAX_KM);
-    this.folha.visible = forca > 0;
+    // no telefone as esteiras ficam só nos pedaços: a folha do disco (a
+    // conta mais cara por pixel) não é desenhada, e o disco fica na média
+    this.folha.visible = forca > 0 && q.tier !== 'performance';
     this.nevoa.visible = peso > 0;
+    this.prePasso();
+  }
+
+  /**
+   * O PRÉ-PASSO: com malha de perto no quadro, a conta de cada pedaço dela
+   * vai para a textura antes do desenho, com os uniformes deste quadro. Sem
+   * quem desenhe ainda ou sem alvo em float, a malha faz a conta ela mesma.
+   */
+  private prePasso() {
+    const r = this.renderer;
+    const u = this.uniforms.uPrePronto!;
+    u.value = 0;
+    if (!r || this.faixa.nPre <= 1 || !r.extensions.has('EXT_color_buffer_float')) return;
+    if (!this.alvoPre) {
+      this.alvoPre = new THREE.WebGLRenderTarget(PRE_W, PRE_BANDAS * linhasDoPrePasso(), {
+        type: THREE.FloatType,
+        format: THREE.RGBAFormat,
+        minFilter: THREE.NearestFilter,
+        magFilter: THREE.NearestFilter,
+        depthBuffer: false,
+        generateMipmaps: false,
+      });
+      this.uniforms.uPre!.value = this.alvoPre.texture;
+    }
+    const antes = r.getRenderTarget();
+    r.setRenderTarget(this.alvoPre);
+    r.render(this.cenaPre, this.cameraPre);
+    r.setRenderTarget(antes);
+    u.value = 1;
   }
 
   dispose() {
     this.faixa.dispose();
+    this.alvoPre?.dispose();
     (this.uniforms.uRelevo!.value as THREE.Texture).dispose();
     for (const m of [this.folha, this.nevoa]) {
       m.geometry.dispose();
