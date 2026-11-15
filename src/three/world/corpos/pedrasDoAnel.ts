@@ -1,55 +1,52 @@
 // ============================================================
 // AS PEDRAS DO ANEL EM 3D (`?pedras=3d`, 14/11) — de perto, o anel de
-// Saturno se desfaz em pedaços de gelo SÓLIDOS, com forma, tamanho e
-// sombra, e o disco liso cede a luz que eles passam a carregar.
+// Saturno se desfaz nos pedaços de gelo que ele é, e o disco liso cede a
+// luz que eles passam a carregar.
 //
-// O PEDIDO, palavras dele (resumidas): "de perto os anéis parecem um disco
-// plano e liso; conforme a câmera se aproxima, milhares de pedaços de gelo
-// e rocha em 3D, de tamanhos e formatos variados, orbitando onde estão as
-// faixas; a passagem tem de ser imperceptível, nada brotando do nada".
+// A REGRA (sétima volta, do dono): o app só mostra o que existe. Cada
+// número abaixo vem de medida e cita a fonte; o que ninguém mediu (o lugar
+// e a forma de cada pedaço) é SORTEADO com as estatísticas medidas e está
+// confessado no cadastro de escala (`src/three/escala.ts`, id
+// `pedras-do-anel-de-saturno`). NADA NO MUNDO DEPENDE DA CÂMERA: o pedaço
+// de id i tem o mesmo lugar, tamanho e forma de onde quer que se olhe — a
+// câmera só ESCOLHE quais pedaços desenhar.
 //
 // O NOVO ENTRA AO LADO: sem o parâmetro a casa monta a lajota volumétrica
 // de sempre (`lajotaDoAnel.ts`, visual aprovado) e o `ANEL_FRAG` sai byte a
-// byte o de antes. Com ele, esta peça toma o lugar da lajota.
+// byte o de antes.
 //
-// O DESENHO, em quatro leis:
+// O DESENHO:
 //
-//  1. UMA POPULAÇÃO SÓ, POR OITAVAS. Os tamanhos seguem dN/ds ∝ s⁻³ (a lei
-//     dos anéis de verdade: cada oitava de tamanho cobre a MESMA área), de
-//     `S_MAX_KM` até `S_MAX_KM / 2^(OITAVAS−1)`. Cada oitava é um ladrilho
-//     periódico de `PEDRAS_POR_TIER` pedras, de lado 2·K·s, centrado na
-//     câmera: na borda (distância K·s) a pedra mede 1/K rad — poucos pixels
-//     — e entra com TAMANHO ZERO, crescendo até o tamanho cheio a 0,55·K·s.
-//     Descer acende oitavas cada vez mais finas a partir do sub-pixel; uma
-//     pedra que apareceu não some de perto: ela cresce e sai do quadro.
+//  1. OS TAMANHOS MEDIDOS. Raio de 0,5 cm a 10 m, n(a) ∝ a⁻³ (Zebker et al.
+//     1985; Cuzzi et al. 2009; Harbison et al. 2013), em `OITAVAS` oitavas de
+//     diâmetro (10–20 m a 2–4 cm). Cada oitava carrega ln2/ln(a_max/a_min)
+//     da profundidade óptica (`FRACAO_POR_OITAVA`); abaixo de 2 cm (~9 %)
+//     nada se resolve. A conta da densidade é `pedacosPorArea`.
 //
-//  2. O LADRILHO É POLAR E MORA EM VOLTA DA CÂMERA. As coordenadas são o
-//     raio ρ e o arco s = R0·θ (R0 fixo, `R0_KM`), e o período em arco
-//     divide a volta inteira (sem costura em θ = ±π). Tudo o que a GPU
-//     soma é RELATIVO à câmera — a fração dela no ladrilho sai da CPU em
-//     dupla precisão —, então a pedra de 2 m a 30 m da lente não treme: o
-//     float32 só vê números pequenos. É o truque do ladrilho ancorado da
-//     lajota, levado para perto.
+//  2. O LADRILHO EM VOLTA DA CÂMERA (só a escolha). Cada oitava é um
+//     ladrilho periódico POLAR — raio ρ e arco s = R0·θ, o período no arco
+//     divide a volta — de `PEDRAS_POR_TIER` pedaços e lado 2·K·s. Tudo o que
+//     a GPU soma é relativo à câmera (a fração dela no ladrilho sai da CPU
+//     em dupla precisão): o pedaço de 2 cm a 1 m da lente não treme. Na
+//     borda da janela (K = 256 tamanhos, ~3 px) o pedaço entra como PONTO
+//     com a opacidade subindo de 0 a 1 em meia oitava; ele é sempre do
+//     tamanho verdadeiro.
 //
-//  3. O CISALHAMENTO DE KEPLER, MEDIDO NO RAIO DA CÂMERA. Cada pedra anda
-//     no arco com Ω(ρ) − Ω(ρ_câmera): as de dentro ultrapassam, as de fora
-//     ficam para trás. As integrais do cisalhamento (G, E) andam com o
-//     relógio do app, na CPU, quadro a quadro — relógio parado, pedra
-//     parada; mexer a câmera não mexe pedra nenhuma. Com o relógio
-//     acelerado, o passo do quadro tem um TETO contínuo (`tanh`) para que
-//     nenhuma pedra ande mais que ~1/5 do próprio tamanho por quadro.
+//  3. A CAMADA E AS ESTEIRAS. A espessura total é a medida em cada região
+//     (`REGIOES_DAS_PEDRAS`); nos anéis A e B os pedaços se juntam nas
+//     esteiras de autogravidade (`densidadeDaEsteira`).
 //
-//  4. A LUZ SE CONSERVA. O disco cede, em cada ponto, a fração da
-//     profundidade óptica que as oitavas já resolvidas ali carregam
-//     (`cessaoDoDisco`): de longe ele é o de hoje; dentro da lâmina, perto
-//     da câmera, sobram só as pedras e o que se vê através delas.
+//  4. O MOVIMENTO. O cisalhamento de Kepler no relógio do app, medido no
+//     raio da câmera (relógio parado, pedra parada), e o giro próprio pela
+//     agitação medida (`V_AGITACAO_KM_S`).
 //
-// O QUE É EXAGERO está no cadastro de escala (`src/three/escala.ts`, id
-// `pedras-do-anel-de-saturno`): as oitavas acima de ~10 m (até 6,4 km), a
-// espessura que acompanha essas oitavas e o giro próprio.
+//  5. A LUZ SE CONSERVA. O disco cede, em cada ponto, a fração de τ das
+//     oitavas resolvidas ali (`cessaoDoDisco`); de dentro da camada o disco
+//     vira a névoa dos pedaços não resolvidos (`tauDaNevoa`).
 //
 // O FRAME é o do anel (o mesmo da lajota): plano XY, +Z o polo, unidade =
-// raio equatorial; a matriz vem copiada do mesh do anel.
+// raio equatorial; a matriz vem copiada do mesh do anel. O sentido orbital
+// é +θ (o cisalhamento do código: as de dentro ultrapassam para +s).
 // ============================================================
 import * as THREE from 'three';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -66,51 +63,50 @@ const KM_POR_RAIO = BODY_AXES.saturn[0]!;
 /** GM de Saturno, km³/s² (JPL) — só para Ω(ρ) do cisalhamento. */
 const GM_SATURNO = 37_931_207;
 
-/**
- * O RAIO DE REFERÊNCIA DO ARCO: s = R0·θ. Fica logo além da borda do A
- * (136 775 km), então o ladrilho só ENCOLHE no arco por ρ/R0 ≤ 1, e o
- * aceite da densidade devolve a diferença (ver `aceitaPedra`).
- */
+/** O RAIO DE REFERÊNCIA DO ARCO: s = R0·θ, logo além da borda do A (136 775 km). */
 export const R0_KM = 138_600;
 
-/** quantas oitavas de tamanho — de 3,2 km até 1,56 m */
-export const OITAVAS = 12;
-/** o DIÂMETRO mínimo da oitava 0; cada oitava sorteia de s a 2s */
-export const S_MAX_KM = 3.2;
 /**
- * AS OITAVAS DE VERDADE: as três últimas (1,56 a 12,5 m), o tamanho das
- * maiores partículas medidas no anel. As de cima são AGLOMERADOS (a
- * "multidão" que a lajota já confessava): de longe uma pedra, de perto
- * ela se DESFAZ nas partes — ver `presencaDaOitava`.
+ * OS TAMANHOS: o raio vai de `A_MIN_KM` = 0,5 cm a `A_MAX_KM` = 10 m, com
+ * n(a) ∝ a⁻³ (Zebker, Marouf & Tyler 1985; Cuzzi et al. 2009; Harbison,
+ * Thomas & Nicholson 2013). Nada maior existe no anel fora as luazinhas das
+ * hélices, que não entram aqui.
  */
-export const PRIMEIRA_OITAVA_REAL = 9;
-/**
- * A JANELA, em oitavas de distância (x = log2(d/s)): a pedra entra em
- * x = 7 (d = 128·s, onde ela mede 1/128 rad, ~6 px na lente de 58° em
- * 800 px) com tamanho ZERO e termina de crescer em x = 6; o aglomerado
- * começa a se desfazer em x = 4 (~50 px) e some em x = 3 (~100 px). Os
- * quatro números são inteiros DE PROPÓSITO: com rampas de uma oitava e
- * janela de quatro, em toda distância há exatamente TRÊS oitavas inteiras
- * presentes (as rampas vizinhas se completam) — é o que deixa a conta da
- * luz fechar sem ondular.
- */
-export const X_ENTRA = 7;
-export const X_DESFAZ = 3;
-export const PRESENTES = X_ENTRA - X_DESFAZ - 1;
-/** a janela em tamanhos: 2^7 */
-export const K_JANELA = 2 ** X_ENTRA;
-/**
- * A MEIA-ESPESSURA da lâmina de cada oitava: 2,5 tamanhos, com piso de
- * 15 m — a lâmina das oitavas pequenas é a do anel de verdade (dezenas
- * de metros); a das grandes acompanha o exagero delas.
- */
-const ESPESSURA_EM_TAMANHOS = 2.5;
-const ESPESSURA_MINIMA_KM = 0.015;
+export const A_MIN_KM = 0.5e-5;
+export const A_MAX_KM = 0.01;
+const LN_FAIXA = Math.log(A_MAX_KM / A_MIN_KM);
+/** quantas oitavas de diâmetro se desenham: 10–20 m até 1,95–3,9 cm */
+export const OITAVAS = 10;
+/** o DIÂMETRO mínimo da oitava 0 (10 m); cada oitava sorteia o diâmetro de s a 2s */
+export const S_MAX_KM = A_MAX_KM;
+/** a parte de τ que cada oitava carrega (a lei a⁻³ dá a mesma a cada uma) */
+export const FRACAO_POR_OITAVA = Math.LN2 / LN_FAIXA;
+/** a parte de τ abaixo da menor oitava (raio < 0,98 cm), que nunca se resolve: ~9 % */
+export const FRACAO_NAO_RESOLVIDA = Math.log(S_MAX_KM / 2 ** OITAVAS / A_MIN_KM) / LN_FAIXA;
 
 /**
- * QUANTAS PEDRAS POR OITAVA, por tier. O tier de baixo é um PREFIXO do de
- * cima (a pedra (oitava, i) tem o mesmo sorteio em qualquer tier): menos
- * pedras é um campo mais ralo, não outro campo — a doutrina da lajota.
+ * QUANTOS PEDAÇOS POR km² têm raio em [a, 2a), onde o perfil medido dá a
+ * profundidade óptica τ: com n(a) = C·a⁻³ entre a_min e a_max, τ = ∫πa²n da
+ * = π·C·ln(a_max/a_min), e a contagem da oitava é 3τ / (8π·ln(a_max/a_min)·a²).
+ */
+export function pedacosPorArea(tau: number, aKm: number): number {
+  return (3 * tau) / (8 * Math.PI * LN_FAIXA * aKm * aKm);
+}
+
+/**
+ * A JANELA, em oitavas de distância (x = log2(d/s)): o pedaço entra em x = 8
+ * (d = 256·s, onde ele mede 1/256 rad, ~3 px na lente de 58° em 800 px) com
+ * opacidade 0 e fica opaco em x = 7,5. Ele não muda de tamanho, e não sai
+ * mais de perto.
+ */
+export const X_ENTRA = 8;
+export const X_PLENO = 7.5;
+export const K_JANELA = 2 ** X_ENTRA;
+
+/**
+ * QUANTOS PEDAÇOS POR OITAVA, por tier. O tier de baixo é um PREFIXO do de
+ * cima (o pedaço (oitava, i) tem o mesmo sorteio em qualquer tier): menos
+ * pedaços é um campo mais ralo, e o resto fica no disco.
  */
 export const PEDRAS_POR_TIER: Readonly<Record<QualityLevel, number>> = {
   cinema: 16384,
@@ -119,15 +115,23 @@ export const PEDRAS_POR_TIER: Readonly<Record<QualityLevel, number>> = {
 };
 
 /**
- * A PROFUNDIDADE ÓPTICA QUE O CAMPO CHEIO CARREGA (tier cinema, em R0): as
- * três oitavas presentes × n·σ̄, com n = M/(2K·s)² por ladrilho e σ̄ a
- * seção média de uma pedra — (π/4)s² × E[x²] da lei s⁻³ em [1, 2)
- * (ln2/(3/8)) × 0,58 da forma achatada × 0,92 da rugosidade. Onde o perfil
- * pede mais que isto (o miolo do B), o campo satura: é o TETO declarado.
+ * A ÁREA MÉDIA DO CORPO desenhado, em unidades do disco de raio 1 (Monte
+ * Carlo sobre orientações, terceira volta; os tipos são acertados a ela por
+ * `ESCALA_DO_BLOCO` e `ESCALA_DO_MONTE`). O raio `a` de cada pedaço é o da
+ * esfera de MESMA seção média: o corpo é desenhado com raio a/√0,61 — o
+ * eixo maior passa de a, a sombra que ele faz no céu é a de πa².
  */
-export const TAU_TETO =
-  (PRESENTES * PEDRAS_POR_TIER.cinema * (Math.PI / 4) * (Math.LN2 / 0.375) * 0.58 * 0.92) /
-  (4 * K_JANELA * K_JANELA);
+const AREA_MEDIA_DO_CORPO = 0.61;
+const ESCALA_EQUIVALENTE = 1 / Math.sqrt(AREA_MEDIA_DO_CORPO);
+
+/**
+ * A PROFUNDIDADE ÓPTICA QUE O CAMPO CHEIO CARREGA (tier cinema, em R0): M
+ * pedaços por ladrilho de (2K·s)², seção média π·(2ln2/3)·s² na lei a⁻³ de
+ * raio em [s/2, s), dá FRACAO_POR_OITAVA·τ por oitava até τ = M·π·ln(a_max/
+ * a_min)/(6K²) ≈ 1. Onde o perfil pede mais (o B), o campo satura e o resto
+ * fica no disco: é o TETO declarado.
+ */
+export const TAU_TETO = (PEDRAS_POR_TIER.cinema * Math.PI * LN_FAIXA) / (6 * K_JANELA * K_JANELA);
 
 export interface Oitava {
   /** diâmetro mínimo, km */
@@ -140,8 +144,6 @@ export interface Oitava {
   ladoNoArco: number;
   /** quantos ladrilhos fecham a volta */
   voltas: number;
-  /** meia-espessura da lâmina, km */
-  meiaEspessura: number;
 }
 
 export const TABELA_DE_OITAVAS: readonly Oitava[] = Array.from({ length: OITAVAS }, (_, o) => {
@@ -149,46 +151,38 @@ export const TABELA_DE_OITAVAS: readonly Oitava[] = Array.from({ length: OITAVAS
   const janela = K_JANELA * s;
   const ladoRadial = 2 * janela;
   const voltas = Math.round((2 * Math.PI * R0_KM) / ladoRadial);
-  return {
-    s,
-    janela,
-    ladoRadial,
-    ladoNoArco: (2 * Math.PI * R0_KM) / voltas,
-    voltas,
-    meiaEspessura: Math.max(ESPESSURA_MINIMA_KM, ESPESSURA_EM_TAMANHOS * s),
-  };
+  return { s, janela, ladoRadial, ladoNoArco: (2 * Math.PI * R0_KM) / voltas, voltas };
 });
 
 const grampo = (x: number) => Math.min(1, Math.max(0, x));
+const suave = (a: number, b: number, x: number) => {
+  const t = grampo((x - a) / (b - a));
+  return t * t * (3 - 2 * t);
+};
 
 /**
- * A PRESENÇA da oitava `o` a `dKm` da câmera (na régua do ladrilho), em
- * área: entra (0 → 1) de x = 7 a x = 6, e — só nos aglomerados — se
- * desfaz (1 → 0) de x = 4 a x = 3. A pedra cresce com √ disto (a área é
- * que conta a luz) e o aglomerado se esburaca na mesma fração. É a mesma
- * conta do vértice.
+ * A PRESENÇA (a opacidade) da oitava `o` a `dKm` da câmera, na régua do
+ * ladrilho: 0 na borda da janela (x = 8), 1 de x = 7,5 para perto. É a
+ * mesma conta do vértice.
  */
 export function presencaDaOitava(o: number, dKm: number): number {
   const x = Math.log2(Math.max(dKm, 1e-12) / TABELA_DE_OITAVAS[o]!.s);
-  const entra = grampo(X_ENTRA - x);
-  const fica = o >= PRIMEIRA_OITAVA_REAL ? 1 : grampo(x - X_DESFAZ);
-  return entra * fica;
+  return grampo((X_ENTRA - x) / (X_ENTRA - X_PLENO));
 }
 
 /**
- * QUANTO DO DISCO AS PEDRAS JÁ CARREGAM a `dKm` da câmera: cada oitava
- * presente carrega um terço da profundidade óptica (a lei s⁻³ dá a mesma
- * parte a cada oitava). 0 longe, 1 onde as três estão inteiras.
+ * QUANTO DE τ OS PEDAÇOS RESOLVIDOS CARREGAM a `dKm` da câmera: a parte de
+ * cada oitava pela presença dela. 0 longe; no máximo 1 − `FRACAO_NAO_RESOLVIDA`.
  */
 export function cessaoDoDisco(dKm: number): number {
   let f = 0;
   for (let o = 0; o < OITAVAS; o++) f += presencaDaOitava(o, dKm);
-  return Math.min(f / PRESENTES, 1) * CESSAO_PLENA;
+  return f * FRACAO_POR_OITAVA;
 }
 
 /**
  * O ALFA DO DISCO DEPOIS DA CESSÃO — conserva a TRANSMISSÃO: o disco fica
- * com τ·(1 − F), e é o resto que as pedras carregam. F = 0 devolve o alfa
+ * com τ·(1 − F), e é o resto que os pedaços carregam. F = 0 devolve o alfa
  * de hoje, exato.
  */
 export function alfaCedido(alfa: number, f: number): number {
@@ -197,61 +191,89 @@ export function alfaCedido(alfa: number, f: number): number {
 }
 
 /**
- * A PARCELA DAS PEDRAS (segunda volta): quanto da cessão o disco de fato
- * entrega, pela ALTURA da câmera. O anel visto de 20 km ainda é uma lâmina
- * contínua de grãos menores que um pixel: as pedras resolvidas assumem só
- * `PARCELA_NO_ALTO` da luz e o disco segue atrás e entre elas como a
- * multidão não resolvida. Dos `H_CEDE_KM` para baixo o resto vai cedendo,
- * contínuo e monotônico na escala log da altura, até a borda da lâmina de
- * verdade (`ESPESSURA_MINIMA_KM`), onde sobra só o que as pedras carregam.
- */
-export const PARCELA_NO_ALTO = 0.35;
-export const H_CEDE_KM = 2;
-export function parcelaDasPedras(alturaKm: number): number {
-  const h = Math.max(Math.abs(alturaKm), 1e-9);
-  const t = grampo(Math.log2(H_CEDE_KM / h) / Math.log2(H_CEDE_KM / ESPESSURA_MINIMA_KM));
-  return PARCELA_NO_ALTO + (1 - PARCELA_NO_ALTO) * t * t * (3 - 2 * t);
-}
-
-/**
- * A NÉVOA DA LÂMINA: de raspão (μ = |z|/d pequeno) o disco não cede — a
- * lâmina vista de lado é a multidão inteira, uma faixa macia no horizonte
- * do anel. A altura da conta tem piso de duas lâminas (30 m): o vPos do
- * disco só tem ~15 m de precisão a 2 raios, e com a câmera a 3 m o μ
- * pontilhava de pixel em pixel. E sobre as pedras, a fração `NEVOA_K` da profundidade óptica do
- * trecho de raio que corre dentro da lâmina (o resto já está nelas).
- */
-export const MU_RASANTE = 0.04;
-export const NEVOA_K = 0.25;
-
-/**
- * O ACEITE DA DENSIDADE: a pedra fica se o sorteio cair abaixo de
+ * O ACEITE DA DENSIDADE: o pedaço fica se o sorteio cair abaixo de
  * τ·ρ/(R0·TAU_TETO). O ρ/R0 devolve o encolhimento do ladrilho no arco;
- * τ = 0 (divisão vazia, fora do anel) não aceita pedra nenhuma.
+ * τ = 0 (divisão vazia, fora do anel) não aceita pedaço nenhum.
  */
 export function aceitaPedra(tau: number, rhoKm: number, sorteio: number): boolean {
   return sorteio * TAU_TETO * R0_KM < tau * rhoKm;
 }
 
-/** Ω kepleriano a `rhoKm` do centro, rad/s */
-function omega(rhoKm: number): number {
-  return Math.sqrt(GM_SATURNO / (rhoKm * rhoKm * rhoKm));
+/**
+ * AS REGIÕES DOS PEDAÇOS, nas fronteiras de `REGIOES_DO_ANEL` (gigante.ts;
+ * o teste cobra a igualdade): a ESPESSURA TOTAL da camada, km — A ~6–10 m
+ * (Colwell et al. 2006; Hedman et al. 2007): 8 m; C 1,9–5,6 m (Baillié et
+ * al. 2011): 4 m; divisão de Cassini 2–20 m (Tiscareno et al. 2007): 10 m;
+ * o B não foi medido: 8 m, o do A, adotado — e a FORÇA DAS ESTEIRAS, 1 só
+ * no A e no B (ausentes no C e na divisão: Colwell 2006, Hedman 2007).
+ */
+export const REGIOES_DAS_PEDRAS: readonly { km: number; meia: number; espessura: number; esteira: number }[] = [
+  { km: 0, meia: 0, espessura: 0.004, esteira: 0 },
+  { km: 74490, meia: 150, espessura: 0.004, esteira: 0 },
+  { km: 91980, meia: 300, espessura: 0.008, esteira: 1 },
+  { km: 117580, meia: 60, espessura: 0.01, esteira: 0 },
+  { km: 121450, meia: 650, espessura: 0.008, esteira: 1 },
+  { km: 136775, meia: 60, espessura: 0.008, esteira: 0 },
+];
+
+/** a espessura total da camada (km) e a força das esteiras em `km` — o gêmeo de `regiaoDasPedras` no GLSL */
+export function regiaoDasPedras(km: number): { espessura: number; esteira: number } {
+  let espessura = REGIOES_DAS_PEDRAS[0]!.espessura;
+  let esteira = REGIOES_DAS_PEDRAS[0]!.esteira;
+  for (let k = 1; k < REGIOES_DAS_PEDRAS.length; k++) {
+    const r = REGIOES_DAS_PEDRAS[k]!;
+    const a = REGIOES_DAS_PEDRAS[k - 1]!;
+    const s = suave(r.km - r.meia, r.km + r.meia, km);
+    espessura += (r.espessura - a.espessura) * s;
+    esteira += (r.esteira - a.esteira) * s;
+  }
+  return { espessura, esteira };
 }
 
 /**
- * O TETO DO PASSO DO RELÓGIO (s de app por quadro): a pedra na borda da
- * janela anda no arco 1,5·Ω·R0/ρ · K·s por segundo; um quinto do tamanho
- * por quadro é o limite. É o mesmo número em toda oitava (a janela anda
- * com o tamanho).
+ * A ALTURA DO CENTRO do pedaço de raio `aKm` na camada de espessura `hKm`,
+ * pelo sorteio z0 ∈ [−1, 1] (triangular, mais denso no plano): o centro fica
+ * dentro da camada, e o pedaço maior que ela fica centrado no plano.
  */
-export function tetoDoPasso(rhoKm: number): number {
-  return 0.2 / (1.5 * omega(rhoKm) * (R0_KM / rhoKm) * K_JANELA);
+export function alturaNaCamada(z0: number, aKm: number, hKm: number): number {
+  return z0 * 0.5 * hKm * grampo(1 - (2 * aKm) / hKm);
 }
 
-/** o período do giro próprio (s de app) — escolha de cinema, declarada */
-const PERIODO_DO_GIRO_S = 6 * 3600;
+/**
+ * AS ESTEIRAS DE AUTOGRAVIDADE (self-gravity wakes), só nos anéis A e B —
+ * nunca fotografadas: vêm de ocultações (Colwell et al. 2006, 2007; Hedman
+ * et al. 2007). Espaçamento `LAMBDA_DA_ESTEIRA_KM` ~60 m; ARRASTADAS
+ * (trailing: quem está mais para fora fica para trás no sentido orbital, +s),
+ * inclinadas `anguloDaEsteira` da direção orbital; esteira quase opaca, vão
+ * ralo (pico:vale ~6:1); razão altura/largura 0,1–0,37 — da ordem da
+ * própria camada, e por isso a esteira não ganha altura própria aqui.
+ *
+ * A CONSTRUÇÃO: a fase cruza as cristas pela normal n = (cos φ, sen φ) em
+ * (ρ, arco físico). O anel é cortado em células de `CELULA_DA_ESTEIRA_KM`
+ * (5 esteiras); cada célula sorteia a fase e o contraste c ∈ [0,6; 0,8], e as
+ * quatro vizinhas se misturam por pesos suaves que somam 1: a esteira fica
+ * irregular, coerente por poucas cristas. O pedaço é DESLOCADO ao longo de n
+ * por δ = −(c·λ/2π)·sen(2π(ξ/λ + fase)) — um mapa compressivo contínuo: a
+ * densidade que ele produz é 1/(1 + ∂δ/∂n), com média 1 (a massa só anda),
+ * e com o cisalhamento os pedaços atravessam o padrão sem estalar. O disco
+ * lê a MESMA densidade (`densidadeDaEsteira`) no ponto final.
+ */
+export const LAMBDA_DA_ESTEIRA_KM = 0.06;
+const CELULA_DA_ESTEIRA_KM = 0.3;
+const CELULAS_NA_VOLTA = Math.round((2 * Math.PI * R0_KM) / CELULA_DA_ESTEIRA_KM);
+const CELULA_NO_ARCO_KM = (2 * Math.PI * R0_KM) / CELULAS_NA_VOLTA;
+/** o deslocamento máximo de um pedaço pela esteira, km (c ≤ 0,8 mais a folga da mistura) */
+const DESLOCAMENTO_MAXIMO_KM = (0.8 * LAMBDA_DA_ESTEIRA_KM) / (2 * Math.PI) + 0.0005;
+const GRAU = Math.PI / 180;
 
-const glslF = (x: number) => x.toExponential(9);
+/**
+ * O ÂNGULO DAS ESTEIRAS com a direção orbital, rad: ~18° no A médio subindo
+ * a ~24° no A externo (Hedman et al. 2007; Ferrari et al. 2009). No B,
+ * 22° — o meio da faixa medida de 18° a 26°, adotado.
+ */
+export function anguloDaEsteira(km: number): number {
+  return (22 - 4 * suave(117580, 121450, km) + 6 * suave(128000, 134000, km)) * GRAU;
+}
 
 /** o sorteio inteiro do vértice (`misturar` no GLSL), bit a bit */
 function misturar(x: number): number {
@@ -263,36 +285,193 @@ function misturar(x: number): number {
 }
 
 /**
- * O MATERIAL DE GELO (terceira volta, 14/11) — os números que o vértice, o
- * fragmento e o teste dividem. A luz do Sol é DURA: o terminador quase não
- * dá a volta (`ENVOLVE`), e o lado da noite fica quase preto — só o anel
- * em volta (`AMBIENTE_DO_ANEL`, apagado com a sombra do globo até o piso
- * `PISO_DA_NOITE`) e o globo, com a cor quente dele, o aquecem. Sem o
- * globo, a noite fica abaixo de 15 % do dia (o teste cobra).
+ * (δ, ∂δ/∂n) da esteira no ponto (ρ, s = R0·θ), km — o gêmeo de `esteira` no
+ * GLSL (lá relativo à câmera, aqui absoluto: a mesma conta).
+ */
+function esteiraEm(rhoKm: number, sKm: number): [number, number] {
+  const amp = regiaoDasPedras(rhoKm).esteira;
+  if (amp <= 0) return [0, 0];
+  const ang = anguloDaEsteira(rhoKm);
+  const nr = Math.cos(ang);
+  const ns = Math.sin(ang);
+  const uR = rhoKm / CELULA_DA_ESTEIRA_KM;
+  const uS = sKm / CELULA_NO_ARCO_KM;
+  const r0 = Math.floor(uR - 0.5);
+  const s0 = Math.floor(uS - 0.5);
+  const tr = uR - 0.5 - r0;
+  const ts = uS - 0.5 - s0;
+  const sr = tr * tr * (3 - 2 * tr);
+  const ss = ts * ts * (3 - 2 * ts);
+  const dr = (6 * tr * (1 - tr) * nr) / CELULA_DA_ESTEIRA_KM;
+  const dsw = (6 * ts * (1 - ts) * ns * R0_KM) / (rhoKm * CELULA_NO_ARCO_KM);
+  const escS = (CELULA_NO_ARCO_KM * rhoKm) / R0_KM;
+  let d = 0;
+  let dn = 0;
+  for (let a = 0; a < 2; a++) {
+    for (let b = 0; b < 2; b++) {
+      const iR = r0 + a;
+      const iS = (((s0 + b) % CELULAS_NA_VOLTA) + CELULAS_NA_VOLTA) % CELULAS_NA_VOLTA;
+      const h = misturar((Math.imul(iR, 0x8da6b343) ^ misturar((iS + 0x68e31da4) >>> 0)) >>> 0);
+      const fase = (h & 0xffff) / 65536;
+      const c = 0.6 + (0.2 * (h >>> 16)) / 65536;
+      const arg = 2 * Math.PI * ((((tr - a) * CELULA_DA_ESTEIRA_KM) * nr + (ts - b) * escS * ns) / LAMBDA_DA_ESTEIRA_KM + fase);
+      const dj = ((-c * LAMBDA_DA_ESTEIRA_KM) / (2 * Math.PI)) * Math.sin(arg);
+      const w = (a ? sr : 1 - sr) * (b ? ss : 1 - ss);
+      d += w * dj;
+      dn += ((a ? dr : -dr) * (b ? ss : 1 - ss) + (a ? sr : 1 - sr) * (b ? dsw : -dsw)) * dj + w * -c * Math.cos(arg);
+    }
+  }
+  return [amp * d, amp * dn];
+}
+
+/** O DESLOCAMENTO de um pedaço cujo lugar sorteado é (ρ, s): (Δρ, Δs em R0·θ), km */
+export function deslocamentoDaEsteira(sKm: number, rhoKm: number): [number, number] {
+  const [d] = esteiraEm(rhoKm, sKm);
+  const ang = anguloDaEsteira(rhoKm);
+  return [d * Math.cos(ang), (d * Math.sin(ang) * R0_KM) / rhoKm];
+}
+
+/**
+ * A DENSIDADE DAS ESTEIRAS no ponto (s = R0·θ, ρ), de média 1: o ponto de
+ * origem pelo inverso do deslocamento (Newton ao longo de n — o mapa é
+ * monotônico, 1 + ∂δ/∂n ≥ 0,1), e a densidade 1/(1 + ∂δ/∂n) lá. Vale 1 fora
+ * do A e do B.
+ */
+export function densidadeDaEsteira(sKm: number, rhoKm: number): number {
+  if (regiaoDasPedras(rhoKm).esteira <= 0) return 1;
+  const ang = anguloDaEsteira(rhoKm);
+  const nr = Math.cos(ang);
+  const ns = (Math.sin(ang) * R0_KM) / rhoKm;
+  let u = 0;
+  let dn = 0;
+  for (let k = 0; k < 8; k++) {
+    const [d, dnk] = esteiraEm(rhoKm - u * nr, sKm - u * ns);
+    dn = dnk;
+    u -= (u - d) / (1 + dnk);
+    u = Math.max(-DESLOCAMENTO_MAXIMO_KM, Math.min(DESLOCAMENTO_MAXIMO_KM, u));
+  }
+  dn = esteiraEm(rhoKm - u * nr, sKm - u * ns)[1];
+  return 1 / (1 + dn);
+}
+
+/** Ω kepleriano a `rhoKm` do centro, rad/s */
+function omega(rhoKm: number): number {
+  return Math.sqrt(GM_SATURNO / (rhoKm * rhoKm * rhoKm));
+}
+
+/**
+ * O TETO DO PASSO DO RELÓGIO (s de app por quadro): o pedaço na borda da
+ * janela anda no arco 1,5·Ω·R0/ρ · K·s por segundo; um quinto do tamanho
+ * por quadro é o limite. É o mesmo número em toda oitava.
+ */
+export function tetoDoPasso(rhoKm: number): number {
+  return 0.2 / (1.5 * omega(rhoKm) * (R0_KM / rhoKm) * K_JANELA);
+}
+
+/**
+ * AS FASES DO LADRILHO de cada oitava para a câmera em (ρ, θ), com as
+ * integrais do cisalhamento (g, e): a fração da câmera no ladrilho radial
+ * (`fr`), a fase do arco (`fs`) e o fator do cisalhamento em parte inteira
+ * (mod 65 536) e fracionária (`gi`, `gf`). É o que o vértice lê.
+ */
+export function fasesDoLadrilho(
+  rhoKm: number,
+  theta: number,
+  g: number,
+  e: number,
+  fr: Float32Array | Float64Array,
+  fs: Float32Array | Float64Array,
+  gi: Float32Array | Float64Array,
+  gf: Float32Array | Float64Array
+) {
+  for (let o = 0; o < OITAVAS; o++) {
+    const t = TABELA_DE_OITAVAS[o]!;
+    const kc = Math.floor(rhoKm / t.ladoRadial);
+    fr[o] = rhoKm / t.ladoRadial - kc;
+    const go = g * (t.ladoRadial / t.ladoNoArco);
+    const sigma = (theta / (2 * Math.PI)) * t.voltas;
+    const fase = go * kc - e / t.ladoNoArco - sigma;
+    fs[o] = fase - Math.floor(fase);
+    const gInt = Math.floor(go);
+    gi[o] = ((gInt % 65536) + 65536) % 65536;
+    gf[o] = go - gInt;
+  }
+}
+
+/**
+ * O LUGAR DE UM PEDAÇO, na CPU e em dupla precisão — a mesma conta do
+ * vértice (`lugar`), sem a escolha: (ρ, s = R0·θ em [0, 2πR0), z) do centro,
+ * com a esteira, e o raio a. Nenhum termo lê a posição da câmera além da
+ * escolha da imagem do ladrilho mais perto dela.
+ */
+export function lugarDaPedra(
+  o: number,
+  i: number,
+  cam: { rhoKm: number; theta: number; zKm: number },
+  g = 0,
+  e = 0
+): { rhoKm: number; sKm: number; zKm: number; raioKm: number } {
+  const fr = new Float64Array(OITAVAS);
+  const fs = new Float64Array(OITAVAS);
+  const gi = new Float64Array(OITAVAS);
+  const gf = new Float64Array(OITAVAS);
+  fasesDoLadrilho(cam.rhoKm, cam.theta, g, e, fr, fs, gi, gf);
+  const t = TABELA_DE_OITAVAS[o]!;
+  const base = misturar((i ^ (o << 24)) >>> 0);
+  const h0 = misturar((base ^ 0x51ed27) >>> 0);
+  const h1 = misturar((base ^ 0x2c1b3c6d) >>> 0);
+  const h2 = misturar((base ^ 0x7a3f91c5) >>> 0);
+  const q = h0 & 0xffff;
+  const a = q / 65536;
+  const dk = Math.floor(fr[o]! - a + 0.5);
+  const dRho = (dk + a - fr[o]!) * t.ladoRadial;
+  const cis = ((gi[o]! * q) % 65536) / 65536 + gf[o]! * (dk + a);
+  let sig = (h1 >>> 8) / 16777216 + cis + fs[o]!;
+  sig -= Math.floor(sig + 0.5);
+  const raioKm = (0.5 * t.s) / Math.sqrt(1 - (0.75 * (h0 >>> 16)) / 65536);
+  const rhoKm = cam.rhoKm + dRho;
+  const z0 = ((h2 & 0xffff) + (h2 >>> 16) + 1) / 65536 - 1;
+  const volta = 2 * Math.PI * R0_KM;
+  let sKm = R0_KM * cam.theta + sig * t.ladoNoArco;
+  const [eR, eS] = deslocamentoDaEsteira(sKm, rhoKm);
+  sKm = (((sKm + eS) % volta) + volta) % volta;
+  return { rhoKm: rhoKm + eR, sKm, zKm: alturaNaCamada(z0, raioKm, regiaoDasPedras(rhoKm).espessura), raioKm };
+}
+
+/**
+ * O GIRO PRÓPRIO: não medido; supõe-se equipartição com a agitação — a
+ * velocidade aleatória entre vizinhos, ~1 mm/s, a mesma que dá a camada de
+ * ~8 m (H ~ v/Ω). Velocidade angular ≈ v/a em torno de um eixo sorteado,
+ * contada em voltas inteiras por `PERIODO_DO_GIRO_S` (o relógio fica preciso
+ * no float32; o erro da contagem é < 3 % no pedaço de 10 m).
+ */
+export const V_AGITACAO_KM_S = 1e-6;
+const PERIODO_DO_GIRO_S = 2 ** 20;
+
+/** a velocidade angular do giro próprio do pedaço de raio `aKm`, rad/s */
+export function giroProprio(aKm: number): number {
+  const voltas = Math.max(1, Math.round(((V_AGITACAO_KM_S / aKm) * PERIODO_DO_GIRO_S) / (2 * Math.PI)));
+  return (2 * Math.PI * voltas) / PERIODO_DO_GIRO_S;
+}
+
+const glslF = (x: number) => x.toExponential(9);
+
+/**
+ * O MATERIAL DE GELO — os números que o vértice, o fragmento e o teste
+ * dividem. A luz do Sol é DURA: o terminador quase não dá a volta
+ * (`ENVOLVE`), e o lado da noite fica quase preto — só o anel em volta, o
+ * globo com a cor quente dele e um piso o aquecem.
  */
 export const ENVOLVE = 0.05;
 export const AMBIENTE_DO_ANEL = 0.03;
 export const PISO_DA_NOITE = 0.006;
-/**
- * A LUZ DA LÂMINA (sexta volta): os FUROS escuros das pedras de perto eram
- * blocos achatados vistos de frente com a face toda no lado da noite — a
- * face saía quase preta e lisa (só o ambiente constante), e diante de uma
- * pedra acesa lia como um buraco com a borda acesa por dentro. De dentro da
- * lâmina o lado da noite vê o anel aceso em volta: esta luz chega pelo
- * plano do anel (máxima na face que olha o horizonte da lâmina, `1 −
- * 0,6·|n·z|`), só onde o Sol direto não chega (`1 − envolve`), e apaga com
- * a sombra do globo como o ambiente. Dá forma e relevo à face da noite; a
- * noite segue abaixo de 15 % do dia (a luz dura fica).
- */
-export const LUZ_DA_LAMINA = 0.11;
 
 /**
- * A SOMBRA MÚTUA, estatística: a pedra mais funda na lâmina, do lado
- * oposto ao Sol, recebe menos Sol que a de cima. Com F a fração da lâmina
- * entre ela e a face do Sol (uniforme sobre as pedras), o Sol direto vale
- * 1 + `SOMBRA_MUTUA`·w·(1 − 2F): média 1 exata — o nível do campo segue
- * ancorado no I/F do disco — e limites [0,5; 1,5]. O peso w sobe com
- * τ/sen(elevação do Sol) e satura em 1.
+ * A SOMBRA MÚTUA, estatística: o pedaço mais fundo na camada, do lado
+ * oposto ao Sol, recebe menos Sol que o de cima. Com F a fração da camada
+ * entre ele e a face do Sol (uniforme sobre os pedaços), o Sol direto vale
+ * 1 + `SOMBRA_MUTUA`·w·(1 − 2F): média 1 exata e limites [0,5; 1,5]. O
+ * peso w sobe com τ/sen(elevação do Sol) e satura em 1.
  */
 export const SOMBRA_MUTUA = 0.5;
 export function sombraMutua(fracaoAcima: number, peso: number): number {
@@ -300,64 +479,25 @@ export function sombraMutua(fracaoAcima: number, peso: number): number {
 }
 
 /**
- * O CORTE, em oitavas de distância (x = log2(d/s)): além dele a pedra é um
- * PONTO (um vértice só, o corpo acertado no fragmento); aquém, uma MALHA
- * escolhida na CPU. O raio dela na tela no corte: ~12 px (o aglomerado,
- * sem caroços, corta meia oitava antes, a ~17 px: a malha custa por
- * vértice).
+ * O CORTE, em oitavas de distância: além dele o pedaço é um PONTO (um
+ * vértice só, o corpo acertado no fragmento); aquém, uma MALHA escolhida na
+ * CPU.
  */
 export const X_CORTE = 5.5;
-/** o nível médio da pedra pequena, de x = `X_NIVEL` a uma oitava e meia além (ver `luzDaPedra`) */
-export const NIVEL_DA_PEDRA_PEQUENA = 0.6;
-export const X_NIVEL = 4.5;
-/** a pedra de x = `X_NIVEL` a uma oitava e meia além desce ao nível do disco, e o disco cede na mesma medida */
-export function nivelDaPedra(x: number): number {
-  return 1 + (NIVEL_DA_PEDRA_PEQUENA - 1) * grampo((x - X_NIVEL) / 1.5);
-}
-/**
- * A CESSÃO PLENA (quinta volta): a fração da profundidade óptica que as
- * pedras carregam onde todas as oitavas estão — a luz delas, ponderada
- * pela presença, com o nível da pedra pequena (`nivelDaPedra`), na média
- * sobre a fase da oitava. Uma constante: o disco não ondula com a distância.
- */
-export const CESSAO_PLENA: number = (() => {
-  let soma = 0;
-  const n = 1000;
-  for (let k = 0; k < n; k++) {
-    const fase = (k + 0.5) / n;
-    for (let x = X_DESFAZ + fase - 1; x < X_ENTRA; x++) {
-      soma += grampo(X_ENTRA - x) * grampo(x - X_DESFAZ) * nivelDaPedra(x);
-    }
-  }
-  return soma / n / PRESENTES;
-})();
 
 /**
- * OS DOIS TIPOS DE PEDRA (quarta volta), sorteados por pedra:
- *
- *  - o BLOCO: gelo único e anguloso — o elipsoide alongado ou achatado,
- *    quatro faces de fratura planas (arestas de verdade na silhueta e na
- *    luz) e relevo fino por cima;
- *  - o MONTE: `MEMBROS` bolas de tamanhos bem diferentes — um miolo, três
- *    grandes que dominam, quatro médias e miúdas nos vãos —, unidas por um
- *    máximo suave (vale macio, não risco) e sombreadas pela oclusão das
- *    vizinhas. É a forma da malha (a silhueta) e é o que se desfaz: perto,
- *    o aglomerado vira as bolas de verdade, que encolhem e somem uma a uma.
- *
- * As pedras de verdade são blocos na fração `FRACAO_DE_BLOCOS`; os
- * aglomerados (os exagerados) são sempre montes. Por faixa, só o corte
- * ponto/malha (ver `X_CORTE`).
+ * AS FORMAS: a de cada pedaço não foi medida. O modelo aceito é que os
+ * grandes são AGREGADOS efêmeros de pedaços menores (Davis et al. 1984):
+ * acima de `DIAMETRO_DOS_MONTES_KM` (~2,5 m) a maioria é MONTE — doze bolas
+ * de tamanhos bem diferentes, unidas por um máximo suave; abaixo, a maioria
+ * é BLOCO — gelo único e anguloso, o elipsoide com faces de fratura planas.
  */
-const MATERIAIS = {
-  aglomerado: { corte: 5 },
-  real: { corte: X_CORTE },
-} as const;
-export const FRACAO_DE_BLOCOS = 0.8;
+export const DIAMETRO_DOS_MONTES_KM = 0.0025;
+const BLOCOS_ENTRE_OS_GRANDES = 0.2;
+const BLOCOS_ENTRE_OS_PEQUENOS = 0.8;
 /** o piso da fração acesa do disco de uma pedra na correção de fase (`luzDaPedra`) */
 export const FASE_PISO = 0.5;
 export const MEMBROS = 12;
-/** as bolas que o aglomerado que se desfaz desenha (o miolo, as três grandes e as quatro médias) */
-const BOLAS_DO_DESFAZ = 8;
 /** as formas assadas de cada tipo (ver `assarFormas`) */
 export const VARIANTES = 8;
 /** as linhas de cada variante na textura das formas: uA, uB, nA, nB, (oclusão, sujeira) */
@@ -367,43 +507,36 @@ const BASE_DO_MONTE = 0x9e3779b9;
 /** as bolas do monte de longe (o miolo e as três grandes) */
 const BOLAS_A_VALER = 4;
 /**
- * O TETO DAS MALHAS PELO TAMANHO NA TELA (quinta volta): abaixo deste raio
- * em px a pedra é ponto, mesmo dentro de x < `X_CORTE` (o telefone, a tela
- * pequena). A forma de perto acende só acima de 2× isto: nada estala.
+ * O TETO DAS MALHAS PELO TAMANHO NA TELA: abaixo deste raio em px o pedaço
+ * é ponto, mesmo dentro de x < `X_CORTE`. A forma de perto acende só acima
+ * de 2× isto: nada estala.
  */
 export const PX_CORTE = 12;
 /** as células do ruído de relevo por lado da textura (`texturaDoRelevo`) */
 const CELULAS_DO_RELEVO = 16;
 /**
- * A ÁREA DE CADA TIPO: a luz do campo (`TAU_TETO`, a cessão do disco) foi
- * medida com a seção do elipsoide da terceira volta (0,61 do disco de raio
- * 1, média sobre orientações, Monte Carlo); as faces do bloco e o vão entre
- * as bolas do monte tiram área (bloco 0,48 de longe e 0,43 de perto com as
- * sete faces; monte 0,42 com quatro bolas e 0,46 com doze). Cada tipo
- * cresce √(0,61/área) — o campo cobre o céu como antes e o nível não cai.
- * (longe, perto): perto sobe com os lóbulos, sem estalo na troca.
+ * A ÁREA DE CADA TIPO: a seção do elipsoide é 0,61 do disco de raio 1; as
+ * faces do bloco e o vão entre as bolas do monte tiram área. Cada tipo
+ * cresce √(0,61/área) (longe, perto) — a seção média fica a do elipsoide.
  */
 const ESCALA_DO_BLOCO = [1.124, 1.195] as const;
 const ESCALA_DO_MONTE = [1.212, 1.15] as const;
-/**
- * a média da oclusão das vizinhas no monte, pesada pela área (Monte Carlo
- * sobre 200 montes sorteados): o albedo é dividido por ela (o nível não cai)
- */
+/** a média da oclusão das vizinhas no monte, pesada pela área: o albedo é dividido por ela */
 const AO_MEDIO_DO_MONTE = 0.98;
 /** a cor do brilho de Saturno sobre as pedras: o bege do globo, luminância 1 (escolha declarada) */
 const COR_DE_SATURNO = [1.05, 0.99, 0.9] as const;
 
 /**
  * A LUZ QUE UMA FACE RECEBE, por unidade do albedo: Sol embrulhado com a
- * sombra do globo, globo embrulhado e o ambiente do anel. É a mesma conta
- * do fragmento (sem fase, brilho especular e relevo), e o teste cobra dela
- * que o lado da noite nunca é zero.
+ * sombra do globo, a luz do anel em volta (`lamina`: o I/F do próprio
+ * disco naquele ponto, ver `luzDaPedra`) só onde o Sol não chega, o globo
+ * e o ambiente. É a mesma conta do fragmento (sem fase, brilho e relevo).
  */
-export function luzDaFace(cosSol: number, cosGlobo: number, sombra: number, irrGlobo: number, poloAbs = 0): number {
+export function luzDaFace(cosSol: number, cosGlobo: number, sombra: number, irrGlobo: number, poloAbs = 0, lamina = 0): number {
   const envolve = (c: number) => Math.max((c + ENVOLVE) / (1 + ENVOLVE), 0);
   return (
     envolve(cosSol) * sombra +
-    LUZ_DA_LAMINA * (1 - 0.6 * poloAbs) * (1 - Math.min(envolve(cosSol), 1)) * (0.25 + 0.75 * sombra) +
+    lamina * (1 - 0.6 * poloAbs) * (1 - Math.min(envolve(cosSol), 1)) +
     envolve(cosGlobo) * irrGlobo +
     AMBIENTE_DO_ANEL * (0.25 + 0.75 * sombra) +
     PISO_DA_NOITE
@@ -411,17 +544,34 @@ export function luzDaFace(cosSol: number, cosGlobo: number, sombra: number, irrG
 }
 
 /**
- * O SORTEIO, no vértice e no fragmento (o aglomerado que se desfaz refaz
- * os membros por pixel). É INTEIRO (exato em qualquer GPU, e o mesmo da
- * CPU em `misturar`): a mesma pedra em todo fornecedor e em todo tier.
- * E O MONTE: `membro(base, k)` devolve o centro (no quadro da pedra, antes
- * do achatamento) e o raio do membro k, e em `lim` o limiar em que ele
- * some ao se desfazer (o miolo por último).
+ * DE DENTRO DA CAMADA o disco liso não serve (um plano visto de lado): ele
+ * passa a vez à NÉVOA — a multidão dos pedaços não resolvidos, integrada na
+ * fatia da camada ao longo de cada raio de visada. O peso da névoa é 1 com
+ * a câmera dentro da camada (|h| < H) e 0 a quatro espessuras; o disco leva
+ * o complemento.
  */
+export function pesoDaNevoa(alturaKm: number, espessuraKm: number): number {
+  return 1 - suave(espessuraKm, 4 * espessuraKm, Math.abs(alturaKm));
+}
+/** o raio da casca da névoa, km — além de todos os pedaços desenhados (a janela maior tem 2,56 km) */
+const RAIO_DA_NEVOA_KM = 3;
+/** até onde a névoa integra um raio de visada, km */
+const ALCANCE_DA_NEVOA_KM = 1000;
+
+/**
+ * AS ESTEIRAS NO DISCO aparecem abaixo de `H_ESTEIRA_KM` (de 25 a 20 km) —
+ * antes de qualquer pedaço se resolver (a janela maior tem 2,56 km) —, e
+ * somem quando o pixel passa de meio espaçamento.
+ */
+export const H_ESTEIRA_KM = 25;
+export function forcaDaEsteiraNoDisco(alturaKm: number, espessuraKm: number): number {
+  return (1 - suave(0.8 * H_ESTEIRA_KM, H_ESTEIRA_KM, Math.abs(alturaKm))) * (1 - pesoDaNevoa(alturaKm, espessuraKm));
+}
+
+/** O SORTEIO, no vértice e no fragmento: INTEIRO (exato em qualquer GPU, e o mesmo da CPU em `misturar`). */
 const GLSL_SORTEIO = /* glsl */ `
 const float PI = 3.14159265358979;
 const int MEMBROS = ${MEMBROS};
-const int BOLAS_DO_DESFAZ = ${BOLAS_DO_DESFAZ};
 uint misturar(uint x) {
   x ^= x >> 16; x *= 0x7feb352du;
   x ^= x >> 15; x *= 0x846ca68bu;
@@ -439,7 +589,7 @@ vec3 direcao(float z01, float a01) {
 }
 // 0: o miolo; 1–3: as grandes, que dominam; 4–7: as médias; 8–11: as
 // miúdas, meio enterradas no miolo (moram nos vãos entre as grandes)
-vec4 membro(uint base, int k, out float lim, out float sujo) {
+vec4 membro(uint base, int k) {
   uint h = misturar(base ^ (0x632be5abu + uint(k) * 0x9e3779b9u));
   vec4 r = quatro(h);
   float dist;
@@ -448,15 +598,8 @@ vec4 membro(uint base, int k, out float lim, out float sujo) {
   else if (k < 4) { dist = 0.42 + 0.12 * r.z; raio = 0.36 + 0.14 * r.w; }
   else if (k < 8) { dist = 0.55 + 0.1 * r.z; raio = 0.2 + 0.1 * r.w; }
   else { raio = 0.09 + 0.07 * r.w; dist = 0.5 + 0.6 * raio + 0.05 * r.z; }
-  uint h2 = misturar(h);
-  lim = k == 0 ? 0.32 : 0.36 + 0.64 * float(h2 & 0xffffu) / 65535.0;
-  sujo = float(h2 >> 16) / 65535.0;
   // ×1,12: a área média do monte é a do elipsoide do ponto (a luz fecha)
   return vec4(direcao(r.x, r.y) * dist, raio) * 1.12;
-}
-// o nível da pedra pequena (\`nivelDaPedra\` na CPU)
-float nivelDaPedra(float x) {
-  return mix(1.0, ${glslF(NIVEL_DA_PEDRA_PEQUENA)}, clamp((x - ${glslF(X_NIVEL)}) / 1.5, 0.0, 1.0));
 }
 // a variante da forma desta pedra (\`baseDaVariante\` na CPU)
 int gVar;
@@ -466,13 +609,174 @@ uint baseDaForma(bool bloco, uint base) {
 }
 `;
 
+const glslRegioes = (campo: 'espessura' | 'esteira') =>
+  REGIOES_DAS_PEDRAS.slice(1)
+    .map((r, k) => {
+      const a = REGIOES_DAS_PEDRAS[k]!;
+      return `${glslF(r[campo] - a[campo])} * smoothstep(${glslF(r.km - r.meia)}, ${glslF(r.km + r.meia)}, km)`;
+    })
+    .join(' + ');
+
 /**
- * O VÉRTICE COMUM às duas formas de desenhar uma pedra (terceira volta): os
- * uniformes, o sorteio e `lugar` — quem é a pedra, onde está, se aparece —,
- * os parâmetros da forma e a luz que ela recebe. O PONTO (`VERT_DO_PONTO`)
- * desenha uma pedra por vértice: o fragmento acerta o raio de visada no
- * corpo dela (`FRAG_DO_PONTO`). A MALHA (`VERT_DA_MALHA`) desenha as
- * pedras de perto, com lóbulos de verdade na silhueta.
+ * AS CONTAS PURAS DOS PEDAÇOS EM GLSL (sem uniforme): a região, o ângulo das
+ * esteiras, a cessão pela distância, o peso e a profundidade óptica da
+ * névoa. Entram nas pedras e, com `?pedras=3d`, no `ANEL_FRAG`.
+ */
+const GLSL_PURO_DAS_PEDRAS = /* glsl */ `
+const float P_R0 = ${glslF(R0_KM)};
+const float P_S_MAX = ${glslF(S_MAX_KM)};
+const float P_X_ENTRA = ${glslF(X_ENTRA)};
+const float P_RAMPA = ${glslF(1 / (X_ENTRA - X_PLENO))};
+const float P_FRACAO = ${glslF(FRACAO_POR_OITAVA)};
+const float P_TAU_TETO = ${glslF(TAU_TETO)};
+// (espessura total da camada km, força das esteiras) — \`regiaoDasPedras\` na CPU
+vec2 regiaoDasPedras(float km) {
+  return vec2(${glslF(REGIOES_DAS_PEDRAS[0]!.espessura)} + ${glslRegioes('espessura')},
+    ${glslF(REGIOES_DAS_PEDRAS[0]!.esteira)} + ${glslRegioes('esteira')});
+}
+// \`anguloDaEsteira\` na CPU
+float anguloDaEsteira(float km) {
+  return (22.0 - 4.0 * smoothstep(117580.0, 121450.0, km) + 6.0 * smoothstep(128000.0, 134000.0, km)) * ${glslF(GRAU)};
+}
+// \`cessaoDoDisco\` na CPU: a parte de τ das oitavas resolvidas a d km
+float cessaoDasPedras(float d) {
+  float x0 = log2(max(d, 1.0e-12) / P_S_MAX);
+  float f = 0.0;
+  for (int o = 0; o < ${OITAVAS}; o++) f += clamp((P_X_ENTRA - x0 - float(o)) * P_RAMPA, 0.0, 1.0);
+  return f * P_FRACAO;
+}
+// a parte de τ que o campo de fato carrega (o teto do campo × a fração do tier)
+float tetoDoCampo(float rhoKm, float tau, float fracaoDoTier) {
+  return min(1.0, P_TAU_TETO * P_R0 * fracaoDoTier / (max(rhoKm, 1.0) * max(tau, 1.0e-4)));
+}
+// \`pesoDaNevoa\` na CPU
+float pesoDaNevoa(float h, float esp) {
+  return 1.0 - smoothstep(esp, 4.0 * esp, abs(h));
+}
+// A PROFUNDIDADE ÓPTICA DA NÉVOA num raio de visada que sai da altura h com
+// componente vertical dz (unitário), até L km: só o trecho dentro da fatia
+// |z| < esp/2, com τ/esp por km — menos a parte das oitavas que já estão
+// desenhadas até onde cada uma se resolve (o meio da rampa de entrada).
+float tauDaNevoa(float h, float dz, float L, float esp, float tau, float teto) {
+  float lo;
+  float hi;
+  if (abs(dz) < 1.0e-6) {
+    if (abs(h) >= 0.5 * esp) return 0.0;
+    lo = 0.0; hi = L;
+  } else {
+    float t1 = (-0.5 * esp - h) / dz;
+    float t2 = (0.5 * esp - h) / dz;
+    lo = max(min(t1, t2), 0.0);
+    hi = min(max(t1, t2), L);
+  }
+  if (hi <= lo) return 0.0;
+  float soma = hi - lo;
+  for (int o = 0; o < ${OITAVAS}; o++) {
+    float lo2 = P_S_MAX * exp2(P_X_ENTRA - 0.5 / P_RAMPA - float(o));
+    soma -= P_FRACAO * teto * max(min(hi, lo2) - lo, 0.0);
+  }
+  return tau / esp * max(soma, 0.0);
+}
+`;
+
+/**
+ * AS ESTEIRAS EM GLSL, relativas à câmera: `uCelCam` = (fração da câmera na
+ * célula radial, idem no arco, índice da célula radial, idem no arco), da
+ * CPU em dupla precisão. (δ, ∂δ/∂n) em (dRho, dS) km da câmera — o gêmeo de
+ * `esteiraEm`.
+ */
+const GLSL_ESTEIRA = /* glsl */ `
+uniform vec4 uCelCam;
+const float LAMBDA = ${glslF(LAMBDA_DA_ESTEIRA_KM)};
+const float CEL_R = ${glslF(CELULA_DA_ESTEIRA_KM)};
+const float CEL_S = ${glslF(CELULA_NO_ARCO_KM)};
+const float N_CEL = ${glslF(CELULAS_NA_VOLTA)};
+vec2 esteira(float dRho, float dS, float rhoKm, vec2 n, float amp) {
+  if (amp <= 0.0) return vec2(0.0);
+  float uR = uCelCam.x + dRho / CEL_R;
+  float uS = uCelCam.y + dS / CEL_S;
+  float r0 = floor(uR - 0.5);
+  float s0 = floor(uS - 0.5);
+  float tr = uR - 0.5 - r0;
+  float ts = uS - 0.5 - s0;
+  float sr = tr * tr * (3.0 - 2.0 * tr);
+  float ss = ts * ts * (3.0 - 2.0 * ts);
+  float dr = 6.0 * tr * (1.0 - tr) * n.x / CEL_R;
+  float dsw = 6.0 * ts * (1.0 - ts) * n.y * P_R0 / (rhoKm * CEL_S);
+  float escS = CEL_S * rhoKm / P_R0;
+  float d = 0.0;
+  float dn = 0.0;
+  for (int a = 0; a < 2; a++) {
+    for (int b = 0; b < 2; b++) {
+      uint iR = uint(uCelCam.z + r0 + float(a));
+      uint iS = uint(mod(uCelCam.w + s0 + float(b), N_CEL));
+      uint h = misturar((iR * 0x8da6b343u) ^ misturar(iS + 0x68e31da4u));
+      float fase = float(h & 0xffffu) / 65536.0;
+      float c = 0.6 + 0.2 * float(h >> 16) / 65536.0;
+      float arg = 2.0 * PI * (((tr - float(a)) * CEL_R * n.x + (ts - float(b)) * escS * n.y) / LAMBDA + fase);
+      float dj = -c * LAMBDA / (2.0 * PI) * sin(arg);
+      float wr = a == 1 ? sr : 1.0 - sr;
+      float ws = b == 1 ? ss : 1.0 - ss;
+      d += wr * ws * dj;
+      dn += ((a == 1 ? dr : -dr) * ws + wr * (b == 1 ? dsw : -dsw)) * dj - wr * ws * c * cos(arg);
+    }
+  }
+  return amp * vec2(d, dn);
+}
+// \`densidadeDaEsteira\` na CPU: Newton ao longo de n até o ponto de origem
+float densidadeDaEsteira(float dRho, float dS, float rhoKm, vec2 n, float amp) {
+  if (amp <= 0.0) return 1.0;
+  float ns = n.y * P_R0 / rhoKm;
+  float u = 0.0;
+  vec2 e;
+  for (int k = 0; k < 6; k++) {
+    e = esteira(dRho - u * n.x, dS - u * ns, rhoKm, n, amp);
+    u = clamp(u - (u - e.x) / (1.0 + e.y), ${glslF(-DESLOCAMENTO_MAXIMO_KM)}, ${glslF(DESLOCAMENTO_MAXIMO_KM)});
+  }
+  e = esteira(dRho - u * n.x, dS - u * ns, rhoKm, n, amp);
+  return 1.0 / max(1.0 + e.y, 0.05);
+}
+`;
+
+/**
+ * A NÉVOA vista da câmera: τ, espessura e teto do campo no raio da câmera, a
+ * cor-base (a tinta do perfil) e (Sol que penetra na camada × sombra do
+ * globo, brilho do globo). Vale para a casca da névoa e para a névoa entre
+ * cada pedaço e a lente — a mesma conta.
+ */
+const GLSL_LUZ_DA_NEVOA = /* glsl */ `
+void nevoaDaCamera(out vec3 cor0, out vec3 camada3, out vec2 luz) {
+  float rho = uRhoCamKm;
+  float u = ((rho / KM_POR_RAIO - R_INT) / (R_EXT - R_INT)) * U_ESCALA + U_BASE;
+  vec4 perfil = (u < 0.0 || u > 1.0) ? vec4(0.0) : textureLod(uMapaAnel, vec2(u, 0.5), 0.0);
+  vec3 reg = regiaoDoAnel(rho);
+  float tau = perfil.a < 0.004 ? 0.0 : tauDaOpacidade(perfil.a) * reg.z;
+  vec3 razao = perfil.rgb / COR_B_DO_PERFIL;
+  vec3 tinta = COR_DO_GELO * (razao / max(dot(razao, vec3(0.2126, 0.7152, 0.0722)), 1.0e-4));
+  if (dot(tinta, tinta) < 1.0e-6) tinta = COR_DO_GELO;
+  cor0 = tinta * reg.x * IF_RETRO * uLuzGanho;
+  camada3 = vec3(tau, regiaoDasPedras(rho).x, tetoDoCampo(rho, tau, uFracaoDoTier));
+  // o Sol dentro da camada: a média de e^(−τ_acima/μ0) na espessura
+  float mu0 = max(abs(uDirSolLocal.z) / max(length(uDirSolLocal), 1.0e-9), 0.02);
+  float pen = tau > 1.0e-4 ? mu0 / tau * (1.0 - exp(-tau / mu0)) : 1.0;
+  float rr = max(length(uCamLocal.xy), 1.001);
+  vec3 pHat = vec3(uCamLocal.xy, 0.0) / rr;
+  float alfaFase = acos(clamp(dot(normalize(uDirSolLocal), pHat), -1.0, 1.0));
+  float fi = (sin(alfaFase) + (PI - alfaFase) * cos(alfaFase)) / PI;
+  luz = vec2(sombraDoPlaneta(uCamLocal) * pen, ALBEDO_GEO * fi / (rr * rr));
+}
+// a luz da multidão na direção dir: o espalhamento simples de uma camada
+// espessa vista de raspão (2·fase, a camada de \`camadaDeParticulas\` com μ → 0)
+vec3 corDaNevoa(vec3 cor0, vec2 luz, vec3 dir) {
+  return cor0 * (2.0 * hgDoAnel(dot(normalize(uDirSolLocal), dir)) * luz.x + 0.35 * luz.y + ${glslF(AMBIENTE_DO_ANEL)});
+}
+`;
+
+/**
+ * O VÉRTICE COMUM às duas formas de desenhar um pedaço: os uniformes, o
+ * sorteio e `lugar` — quem é, onde está, se aparece —, os parâmetros da
+ * forma e a luz que ele recebe. O PONTO desenha um pedaço por vértice (o
+ * fragmento acerta o raio de visada no corpo); a MALHA, os de perto.
  */
 const GLSL_PEDRA_COMUM = /* glsl */ `
 uniform sampler2D uMapaAnel;
@@ -484,7 +788,7 @@ uniform float uZCamKm;
 uniform float uLuzGanho;
 uniform float uKPolar;
 uniform float uSolAngRad;
-uniform float uNearKm;
+uniform float uFracaoDoTier;
 uniform int uPorOitava;
 uniform int uAtivas;
 uniform float uPxPorRad;
@@ -500,23 +804,24 @@ varying vec3 vTinta;
 varying vec3 vNevoaCor;
 varying vec4 vLuz;
 varying vec4 vFica;
+varying float vLamina;
 flat varying vec4 vSemente;
 
 const float R0 = ${glslF(R0_KM)};
 const float K_JANELA = ${glslF(K_JANELA)};
 const float S_MAX = ${glslF(S_MAX_KM)};
 const float X_ENTRA = ${glslF(X_ENTRA)};
-const float X_DESFAZ = ${glslF(X_DESFAZ)};
-const int PRIMEIRA_REAL = ${PRIMEIRA_OITAVA_REAL};
+const float X_PLENO = ${glslF(X_PLENO)};
 const float TAU_TETO = ${glslF(TAU_TETO)};
-const float ESP_TAM = ${glslF(ESPESSURA_EM_TAMANHOS)};
-const float ESP_MIN = ${glslF(ESPESSURA_MINIMA_KM)};
-const float NEVOA_K = ${glslF(NEVOA_K)};
+const float ESCALA_EQ = ${glslF(ESCALA_EQUIVALENTE)};
 const float SOMBRA_MUTUA = ${glslF(SOMBRA_MUTUA)};
 const float LADO_NO_ARCO[${OITAVAS}] = float[${OITAVAS}](${TABELA_DE_OITAVAS.map((o) => glslF(o.ladoNoArco)).join(', ')});
 CONSTANTES_DO_ANEL
 SOMBRA_DO_PLANETA
 ${GLSL_SORTEIO}
+${GLSL_PURO_DAS_PEDRAS}
+${GLSL_ESTEIRA}
+${GLSL_LUZ_DA_NEVOA}
 vec3 girarQ(vec4 q, vec3 v) {
   return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
 }
@@ -524,9 +829,7 @@ vec3 girarQ(vec4 q, vec3 v) {
 // o que \`lugar\` deixa para o resto do vértice
 int gO;
 uint gBase;
-float gS;
 float gXo;
-float gFica;
 float gZ0;
 float gTau;
 float gDist;
@@ -545,16 +848,14 @@ bool lugar(int o, int i) {
   uint base = misturar(uint(i) ^ (uint(o) << 24));
   gBase = base;
   float s = S_MAX * exp2(-float(o));
-  gS = s;
   float lado = 2.0 * K_JANELA * s;
-  float meia = max(ESP_MIN, ESP_TAM * s);
   // os sorteios do lugar, juntos: h0 = (raio, tamanho), h1 = arco,
-  // h2 = altura na lâmina, h3 = densidade
+  // h2 = altura na camada, e um da densidade
   uint h0 = misturar(base ^ 0x51ed27u);
   uint h1 = misturar(base ^ 0x2c1b3c6du);
   uint h2 = misturar(base ^ 0x7a3f91c5u);
 
-  // O RAIO: a imagem da pedra mais perto da câmera. O sorteio radial é
+  // O RAIO: a imagem do pedaço mais perto da câmera. O sorteio radial é
   // quantizado em 1/65 536 do ladrilho para o cisalhamento fechar em
   // inteiros (ver o arco).
   uint q = h0 & 0xffffu;
@@ -570,34 +871,48 @@ bool lugar(int o, int i) {
   dSig -= floor(dSig + 0.5);
   float dS = dSig * LADO_NO_ARCO[o];
 
-  // a lâmina: triangular, mais densa no plano. Com a câmera FORA da
-  // lâmina desta oitava (mais de uma espessura), as pedras ficam do lado
-  // dela: o disco que segue atrás (a multidão não resolvida) não as vela
-  // como fantasmas. A dobra é contínua — dentro da lâmina ela some.
+  // o TAMANHO: o raio a, lei a⁻³ dentro da oitava (inversa da acumulada)
+  float raio = 0.5 * s / sqrt(1.0 - 0.75 * float(h0 >> 16) / 65536.0);
+  // A CAMADA (\`alturaNaCamada\`): triangular, mais densa no plano
+  float rhoKm = uRhoCamKm + dRho;
+  vec2 reg = regiaoDasPedras(rhoKm);
   float z0 = (float(h2 & 0xffffu) + float(h2 >> 16) + 1.0) / 65536.0 - 1.0;
   gZ0 = z0;
-  float z = mix(z0 * meia, sign(uZCamKm) * abs(z0) * meia, clamp(abs(uZCamKm) / meia - 1.0, 0.0, 1.0));
-  float dz = z - uZCamKm;
+  float dz = z0 * 0.5 * reg.x * clamp(1.0 - 2.0 * raio / reg.x, 0.0, 1.0) - uZCamKm;
 
-  // A PRESENÇA (\`presencaDaOitava\`), na régua do ladrilho (≥ a distância
-  // de verdade): zero onde a pedra troca de imagem, e é por isso que
-  // nada estala. Entra crescendo do zero; o aglomerado, perto, se desfaz.
-  float dT = sqrt(dRho * dRho + dS * dS + dz * dz);
-  float xo = log2(max(dT, 1.0e-12) / s);
+  // A PRESENÇA (\`presencaDaOitava\`), na régua do ladrilho: zero onde o
+  // pedaço troca de imagem, e é por isso que nada estala
+  float xo = log2(max(sqrt(dRho * dRho + dS * dS + dz * dz), 1.0e-12) / s);
   gXo = xo;
-  float entra = clamp(X_ENTRA - xo, 0.0, 1.0);
-  gFica = o >= PRIMEIRA_REAL ? 1.0 : clamp(xo - X_DESFAZ, 0.0, 1.0);
-  if (entra * gFica <= 0.0) return false;
-  // o PONTO e a MALHA são complementares EXATOS pelo mesmo xo
-#ifdef MALHA
+  float p = clamp((X_ENTRA - xo) / (X_ENTRA - X_PLENO), 0.0, 1.0);
+  if (p <= 0.0) return false;
+  // o PONTO opaco, o que ESMAECE e a MALHA são complementares exatos
+#if defined(MALHA)
   if (xo >= X_CORTE) return false;
+#elif defined(ESMAECE)
+  if (p >= 1.0) return false;
+#else
+  if (p < 1.0) return false;
 #endif
+
+  // A DENSIDADE do perfil medido (o mesmo do disco), no lugar sorteado
+  float u = ((rhoKm / KM_POR_RAIO - R_INT) / (R_EXT - R_INT)) * U_ESCALA + U_BASE;
+  gPerfil = (u < 0.0 || u > 1.0) ? vec4(0.0) : textureLod(uMapaAnel, vec2(u, 0.5), 0.0);
+  gRegiao = regiaoDoAnel(rhoKm);
+  gTau = gPerfil.a < 0.004 ? 0.0 : tauDaOpacidade(gPerfil.a) * gRegiao.z;
+  if (float(misturar(base ^ 0x1b873593u) & 0xffffu) / 65536.0 * TAU_TETO * R0 >= gTau * rhoKm) return false;
+
+  // A ESTEIRA: o pedaço anda ao longo da normal das cristas
+  float ang = anguloDaEsteira(rhoKm);
+  vec2 n = vec2(cos(ang), sin(ang));
+  float del = esteira(dRho, dS, rhoKm, n, reg.y).x;
+  dRho += del * n.x;
+  dS += del * n.y * R0 / rhoKm;
+  rhoKm = uRhoCamKm + dRho;
 
   // o lugar, RELATIVO À CÂMERA, sem nenhuma soma de número grande
   // em SÉRIE, não em sin/cos: |θ| < 3e-3 rad, e o sin da GPU (Metal, via
-  // ANGLE) devolvia ZERO para ângulo negativo minúsculo — metade do campo
-  // empilhava numa parede na linha da câmera (medido na prancha v2)
-  float rhoKm = uRhoCamKm + dRho;
+  // ANGLE) devolvia ZERO para ângulo negativo minúsculo
   float dTh = dS / R0;
   float th2 = dTh * dTh;
   float senTh = dTh * (1.0 - th2 / 6.0);
@@ -609,82 +924,66 @@ bool lugar(int o, int i) {
   gOff = er * x + et * y + vec3(0.0, 0.0, dz);
 
   // FORA DO QUADRO, NADA MAIS: a esfera envolvente contra os quatro
-  // planos da lente, antes de qualquer conta de forma ou de luz
+  // planos da lente
   gRaioMundo = length((modelViewMatrix * vec4(1.0, 0.0, 0.0, 0.0)).xyz);
   gR = mat3(modelViewMatrix) / gRaioMundo;
   gCV = gR * gOff;
-  // o tamanho: s⁻³ dentro da oitava (inversa da acumulada em [1, 2))
-  float raioCheio = 0.5 * s / sqrt(1.0 - 0.75 * float(h0 >> 16) / 65536.0);
-  float rB = 1.9 * raioCheio;
+  float rB = 2.5 * raio;
   float p00 = projectionMatrix[0][0];
   float p11 = projectionMatrix[1][1];
   float fz = -gCV.z;
   if (fz < -rB || abs(gCV.x) * p00 - fz > rB * sqrt(p00 * p00 + 1.0)
       || abs(gCV.y) * p11 - fz > rB * sqrt(p11 * p11 + 1.0)) return false;
 
-  // A DENSIDADE do perfil medido (o mesmo do disco)
-  float u = ((rhoKm / KM_POR_RAIO - R_INT) / (R_EXT - R_INT)) * U_ESCALA + U_BASE;
-  gPerfil = (u < 0.0 || u > 1.0) ? vec4(0.0) : textureLod(uMapaAnel, vec2(u, 0.5), 0.0);
-  gRegiao = regiaoDoAnel(rhoKm);
-  gTau = gPerfil.a < 0.004 ? 0.0 : tauDaOpacidade(gPerfil.a) * gRegiao.z;
-  if (float(misturar(base ^ 0x1b873593u) & 0xffffu) / 65536.0 * TAU_TETO * R0 >= gTau * rhoKm) return false;
-
   gDist = length(gOff);
-  // colada na lente a pedra seria cortada pelo NEAR: ela encolhe antes
-  float perto = smoothstep(uNearKm, 3.0 * uNearKm, gDist - raioCheio);
-  gRaio = raioCheio * sqrt(entra) * perto;
-  if (gRaio <= 0.0) return false;
-  // o raio NA TELA, em px: decide o que se paga (lóbulos, borda roída)
-  gPx = gRaio * uPxPorRad / max(fz, gRaio);
+  gRaio = raio;
+  // o raio NA TELA, em px: decide o que se paga (lóbulos, relevo)
+  gPx = gRaio * ESCALA_EQ * uPxPorRad / max(fz, gRaio);
   // o teto das malhas pelo tamanho na tela (\`PX_CORTE\`): o mesmo teste nos dois
-#ifdef MALHA
+#if defined(MALHA)
   if (gPx < ${glslF(PX_CORTE)}) return false;
 #else
   if (xo < X_CORTE && gPx >= ${glslF(PX_CORTE)}) return false;
 #endif
+  vFica = vec4(p, gRaio, gPx, 0.0);
   return true;
 }
 
-// A FORMA (quarta volta): o BLOCO é o elipsoide alongado ou achatado com
-// quatro faces de fratura planas e, só na malha, mais três faces e lóbulos
-// fracos; o MONTE é, de longe, o miolo e as três grandes e, na malha, as
-// médias e as miúdas brotando do miolo. Aqui, os parâmetros desta pedra.
+// A FORMA: o BLOCO é o elipsoide alongado ou achatado com quatro faces de
+// fratura planas e, só na malha, mais três faces e lóbulos fracos; o MONTE
+// é, de longe, o miolo e as três grandes e, na malha, as médias e as miúdas
+// brotando do miolo. Aqui, os parâmetros deste pedaço.
 vec4 cortes[4];
 vec3 eixosF;
 float bloco;
 // a escala da área do tipo (\`ESCALA_DO_BLOCO\`, \`ESCALA_DO_MONTE\`), de longe (0) a perto (1)
 float escalaDoTipo(float perto) {
-  return bloco > 0.5
+  return ESCALA_EQ * (bloco > 0.5
     ? mix(${glslF(ESCALA_DO_BLOCO[0])}, ${glslF(ESCALA_DO_BLOCO[1])}, perto)
-    : mix(${glslF(ESCALA_DO_MONTE[0])}, ${glslF(ESCALA_DO_MONTE[1])}, perto);
+    : mix(${glslF(ESCALA_DO_MONTE[0])}, ${glslF(ESCALA_DO_MONTE[1])}, perto));
 }
 vec4 qGiro;
 vec3 eixoGiro;
-float angGiro;
 float gCosGiro;
 float gSenGiro;
-// a semente da variante (\`baseDaForma\`)
-uint gFormaBase;
 void parametrosDaForma() {
   uint base = gBase;
   vec4 r4 = quatro(misturar(base ^ 0x68e31da4u)); // giro inicial (3)
-  vec4 r5 = quatro(misturar(base ^ 0xb5297a4du)); // eixo do giro (2), voltas, fase
+  vec4 r5 = quatro(misturar(base ^ 0xb5297a4du)); // eixo do giro (2), fase
   vec4 r6 = quatro(misturar(base ^ 0x1b56c4e9u)); // eixos (2), tipo
-  bloco = gO >= PRIMEIRA_REAL && r6.z < ${glslF(FRACAO_DE_BLOCOS)} ? 1.0 : 0.0;
-  // A FORMA é a da variante (quinta volta): no bloco, as faces (normal,
-  // distância); no monte, o miolo e as três grandes (centro, raio) — o que
-  // o ponto desenha de longe, e a forma \`A\` da malha assada
+  // os grandes são na maioria montes (agregados, Davis et al. 1984)
+  bloco = r6.z < (2.0 * gRaio > ${glslF(DIAMETRO_DOS_MONTES_KM)} ? ${glslF(BLOCOS_ENTRE_OS_GRANDES)} : ${glslF(BLOCOS_ENTRE_OS_PEQUENOS)}) ? 1.0 : 0.0;
+  // A FORMA é a da variante: no bloco, as faces (normal, distância); no
+  // monte, o miolo e as três grandes (centro, raio) — o que o ponto desenha
+  // de longe, e a forma \`A\` da malha assada
   uint vb = baseDaForma(bloco > 0.5, base);
-  gFormaBase = vb;
 #ifndef MALHA
   for (int k = 0; k < 4; k++) {
     if (bloco > 0.5) {
       vec4 rc = quatro(misturar(vb ^ (0x9e3779b1u + uint(k) * 0x165667b1u)));
       cortes[k] = vec4(direcao(rc.x, rc.y), 0.5 + 0.32 * rc.z);
     } else {
-      float lim;
-      float sj;
-      cortes[k] = membro(vb, k, lim, sj);
+      cortes[k] = membro(vb, k);
     }
   }
 #endif
@@ -696,10 +995,11 @@ void parametrosDaForma() {
     sqrt(1.0 - r4.x) * sin(2.0 * PI * r4.y), sqrt(1.0 - r4.x) * cos(2.0 * PI * r4.y),
     sqrt(r4.x) * sin(2.0 * PI * r4.z), sqrt(r4.x) * cos(2.0 * PI * r4.z)
   );
-  // o GIRO PRÓPRIO: um eixo por pedra, 1 a 3 voltas por período
+  // O GIRO PRÓPRIO (\`giroProprio\`): v/a em voltas inteiras por período,
+  // em torno de um eixo sorteado
   eixoGiro = direcao(r5.x, r5.y);
-  float voltas = floor(min(r5.z, 0.999) * 6.0) - 2.5;
-  angGiro = 2.0 * PI * fract(uGiro * sign(voltas) * (abs(voltas) + 0.5) + r5.w);
+  float voltas = max(1.0, floor(${glslF(V_AGITACAO_KM_S * PERIODO_DO_GIRO_S / (2 * Math.PI))} / gRaio + 0.5));
+  float angGiro = 2.0 * PI * fract(uGiro * voltas + r5.w);
   gCosGiro = cos(angGiro);
   gSenGiro = sin(angGiro);
   uint hs = misturar(base ^ 0xd3a2646cu);
@@ -711,9 +1011,8 @@ vec3 girar(vec3 v) {
   return v * gCosGiro + cross(eixoGiro, v) * gSenGiro + eixoGiro * dot(eixoGiro, v) * (1.0 - gCosGiro);
 }
 
-// A LUZ: Sol com a sombra do globo e o brilho do globo (planetshine) — a
-// irradiância é a mesma conta de \`planetshineNoAnel\`, numa face —, a
-// sombra mútua, a névoa da lâmina e o albedo desta pedra
+// A LUZ: Sol com a sombra do globo e o brilho do globo (planetshine), a
+// luz do anel em volta, a sombra mútua, a névoa e o albedo deste pedaço
 void luzDaPedra(vec3 vistaKm) {
   vec3 pAbs = uCamLocal + gOff / KM_POR_RAIO;
   vSol = normalize(gR * uDirSolLocal);
@@ -723,31 +1022,21 @@ void luzDaPedra(vec3 vistaKm) {
     * (razao / max(dot(razao, vec3(0.2126, 0.7152, 0.0722)), 1.0e-4));
   if (dot(tinta, tinta) < 1.0e-6) tinta = COR_DO_GELO;
   tinta *= gRegiao.x;
+  // O ALBEDO POR PEDAÇO: do gelo limpo (claro, levemente azulado) ao gelo
+  // sujo (bege mais escuro e mais saturado), com a média na cor medida. O
   // 1,5 = 1 / (2/3): o disco de uma esfera de Lambert em oposição tem
-  // média 2/3 do brilho de face — assim o campo em retro bate com o I/F
-  // âncora do disco que ele substitui
-  vec3 base3 = tinta * IF_RETRO * 1.5 * uLuzGanho;
-  // O ALBEDO POR PEDRA: do gelo limpo (claro, levemente azulado) ao gelo
-  // sujo (bege mais escuro e mais saturado), com a média na cor medida
+  // média 2/3 do brilho de face — o campo em retro bate com o I/F do disco
   float sujo = float(misturar(gBase ^ 0x3c6ef372u) & 0xffffu) / 65536.0;
   float lumT = max(dot(tinta, vec3(0.2126, 0.7152, 0.0722)), 1.0e-4);
   vec3 limpo = mix(tinta, vec3(lumT), 0.8) * vec3(0.97, 1.0, 1.05) * 1.15;
   vec3 encardido = tinta * vec3(1.03, 0.98, 0.9) * 0.8;
   vTinta = mix(limpo, encardido, sujo) * (IF_RETRO * 1.5 * uLuzGanho * 0.88);
-  // A FASE DO CORPO (quarta volta): a curva de fase do anel já é a do
-  // campo de pedras inteiro; uma pedra de Lambert vista a uma fase α mostra
-  // só a fração Φ(α) = (sen α + (π − α)·cos α)/π do disco aceso. Sem
-  // devolver isso a pedra contava a fase duas vezes e o campo escurecia
-  // com a luz dura (medido: −15 a −26 %). Teto de 2× contra a luz.
+  // A FASE DO CORPO: a curva de fase do anel já é a do campo inteiro; um
+  // pedaço de Lambert visto a uma fase α mostra só a fração Φ(α) do disco
+  // aceso — sem devolver isso a fase contaria duas vezes. Teto de 2×.
   float cosA = clamp(dot(vSol, -vistaKm / max(length(vistaKm), 1.0e-30)), -1.0, 1.0);
   float alfaV = acos(cosA);
   vTinta /= max((sqrt(1.0 - cosA * cosA) + (PI - alfaV) * cosA) / PI, ${glslF(FASE_PISO)});
-  // A PEDRA DE POUCOS PIXELS NÃO É PINGO DE TINTA (quinta volta): com a
-  // correção de fase o lado aceso dela batia quase 2× a chapa em volta (a
-  // 93 km, medido). De x = X_NIVEL a uma oitava e meia além a média dela desce
-  // a \`NIVEL_DA_PEDRA_PEQUENA\` — ela se destaca só pelo lado claro e pelo
-  // escuro — e o disco cede na mesma medida (\`nivelDaPedra\` na cessão).
-  vTinta *= nivelDaPedra(gXo);
   float sombra = sombraDoPlaneta(pAbs);
   float rr = max(length(pAbs.xy), 1.001);
   vec3 pHat = vec3(pAbs.xy, 0.0) / rr;
@@ -755,9 +1044,15 @@ void luzDaPedra(vec3 vistaKm) {
   float fi = (sin(alfaFase) + (PI - alfaFase) * cos(alfaFase)) / PI;
   float irrGlobo = ALBEDO_GEO * fi / (rr * rr);
 
-  // A SOMBRA MÚTUA, estatística (\`sombraMutua\`): a fração F da lâmina
-  // entre a pedra e a face do Sol (a acumulada da triangular, uniforme
-  // sobre as pedras) tira luz da funda e dá à de cima, com média 1
+  // A LUZ DO ANEL EM VOLTA no lado da noite: o I/F do próprio disco ali,
+  // visto de lado (μ = 0,5, fase de 90°), a média do lado aceso e do lado
+  // sem luz, apagado com a sombra do globo
+  float mu0 = max(abs(uDirSolLocal.z) / max(length(uDirSolLocal), 1.0e-9), 0.02);
+  vec2 cA = camadaDeParticulas(gTau, mu0, 0.5, hgDoAnel(0.0), 1.0);
+  vec2 cB = camadaDeParticulas(gTau, mu0, 0.5, hgDoAnel(0.0), -1.0);
+  vLamina = IF_RETRO * 0.5 * (cA.x * cA.y + cB.x * cB.y) * sombra;
+
+  // A SOMBRA MÚTUA, estatística (\`sombraMutua\`)
   float z0 = gZ0;
   float cdf = z0 < 0.0 ? 0.5 * (1.0 + z0) * (1.0 + z0) : 1.0 - 0.5 * (1.0 - z0) * (1.0 - z0);
   float F = uDirSolLocal.z >= 0.0 ? 1.0 - cdf : cdf;
@@ -765,34 +1060,27 @@ void luzDaPedra(vec3 vistaKm) {
   float forca = clamp(0.6 * min(gTau, 1.5) / max(senE, 0.05), 0.0, 1.0);
   float mutua = 1.0 + SOMBRA_MUTUA * forca * (1.0 - 2.0 * F);
 
-  // A NÉVOA DA LÂMINA: a multidão não resolvida entre a pedra e a lente —
-  // a profundidade óptica do trecho do raio que corre DENTRO da lâmina de
-  // verdade (|z| < ESP_MIN), com uma fração NEVOA_K dela (o resto já está
-  // nas pedras). De cima ela é nada; de dentro, uma faixa no horizonte.
-  float zc = uZCamKm;
-  float zp = uZCamKm + gOff.z;
-  float dz = gOff.z;
-  // a névoa conta numa faixa de duas lâminas (a multidão fina se espalha
-  // além do miolo de ESP_MIN)
-  float hn = 2.0 * ESP_MIN;
+  // A NÉVOA entre o pedaço e a lente: os não resolvidos no trecho do raio
+  // que corre dentro da camada (\`tauDaNevoa\`), com o peso da névoa
   float nevoa = 0.0;
   vNevoaCor = vec3(0.0);
-  // só com a câmera a menos de 100 m do plano há névoa a contar
-  if (abs(zc) < 0.1) {
-    float dentro;
-    if (abs(dz) < 1.0e-7) dentro = abs(zc) < hn ? gDist : 0.0;
-    else dentro = gDist * max(min(max(zc, zp), hn) - max(min(zc, zp), -hn), 0.0) / abs(dz);
-    // τ grampeado em 1: no miolo do B a névoa apagaria a forma das pedras
-    nevoa = 1.0 - exp(-NEVOA_K * min(gTau, 1.0) / (2.0 * hn) * dentro);
-    float hgV = hgDoAnel(clamp(dot(vSol, normalize(vistaKm)), -1.0, 1.0));
-    vNevoaCor = base3 * (0.5 * sombra * hgV + 0.35 * irrGlobo + ${glslF(AMBIENTE_DO_ANEL)});
+  vec3 cor0;
+  vec3 cam3;
+  vec2 luzN;
+  float hc = regiaoDasPedras(uRhoCamKm).x;
+  float peso = pesoDaNevoa(uZCamKm, hc);
+  if (peso > 0.0) {
+    nevoaDaCamera(cor0, cam3, luzN);
+    vec3 dir = gOff / max(gDist, 1.0e-12);
+    nevoa = peso * (1.0 - exp(-tauDaNevoa(uZCamKm, dir.z, gDist, cam3.y, cam3.x, cam3.z)));
+    vNevoaCor = corDaNevoa(cor0, luzN, dir);
   }
   vLuz = vec4(sombra, irrGlobo, mutua, nevoa);
 }
 
 void foraComum() {
   vSol = vec3(0.0); vGlobo = vec3(0.0); vTinta = vec3(0.0); vNevoaCor = vec3(0.0);
-  vLuz = vec4(0.0); vFica = vec4(0.0); vSemente = vec4(0.0);
+  vLuz = vec4(0.0); vFica = vec4(0.0); vSemente = vec4(0.0); vLamina = 0.0;
   gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
 }
 `;
@@ -802,7 +1090,7 @@ void foraComum() {
  * `escolherDePerto`), com a forma ASSADA da variante (`assarFormas`): o
  * vértice lê as duas formas pelo `gl_VertexID` e as mistura por `lobos`
  * (zero em x = `X_CORTE` ou no teto de `PX_CORTE`: o mesmo corpo do ponto,
- * nada estala), e põe a pedra no lugar com o giro e os eixos dela.
+ * nada estala), e põe o pedaço no lugar com o giro e os eixos dele.
  */
 const VERT_DA_MALHA = /* glsl */ `
 uniform highp sampler2D uFormas;
@@ -817,7 +1105,7 @@ ${GLSL_PEDRA_COMUM}
 void main() {
   int id = int(aId + 0.5);
   int k = id / uPorOitava;
-  if (!lugar(OITAVA_BASE + k, id - k * uPorOitava)) {
+  if (!lugar(k, id - k * uPorOitava)) {
     foraComum(); vVista = vec3(0.0); vLocal = vec3(0.0); vNLocal = vec3(0.0, 0.0, 1.0); vGiroM = mat3(1.0); vMonte = vec2(1.0, 0.5);
     return;
   }
@@ -842,17 +1130,16 @@ void main() {
   vMonte = bloco > 0.5 ? vec2(1.0, 0.5) : vec2(mix(1.0, extra.x, lobos), mix(0.5, extra.y, lobos));
   gl_Position = projectionMatrix * vec4(vVista * (gRaioMundo / KM_POR_RAIO), 1.0);
   luzDaPedra(vVista);
-  vFica = vec4(gFica, gRaio, gPx, 0.0);
 }
 `;
 
 /**
- * O PONTO: uma pedra por vértice, o quadrado do tamanho dela na tela — o
- * desenho barato de todas as que ficam além de x = `X_CORTE`. As
- * oitavas vêm da mais FINA para a mais grossa (as finas moram mais perto:
- * o quadro sai quase da frente para trás). O fragmento recebe o corpo
- * inteiro (centro, giro, eixos e as faces do bloco) e acerta nele o raio
- * de visada.
+ * O PONTO: um pedaço por vértice, o quadrado do tamanho dele na tela — o
+ * desenho barato de todos os que ficam além de x = `X_CORTE`. As oitavas vêm
+ * da mais FINA para a mais grossa (as finas moram mais perto). O fragmento
+ * recebe o corpo inteiro (centro, giro, eixos e as faces do bloco) e acerta
+ * nele o raio de visada. Com `ESMAECE`, só os que estão entrando (opacidade
+ * < 1), misturados por cima do disco.
  */
 const VERT_DO_PONTO = /* glsl */ `
 flat varying vec3 vCentro;
@@ -860,67 +1147,11 @@ flat varying mat3 vGiro;
 flat varying vec3 vEixos;
 flat varying vec4 vCortes[4];
 flat varying vec4 vProj;
-flat varying vec2 vAoSujo;
 ${GLSL_PEDRA_COMUM}
-#ifdef DESFAZ
-attribute float aId;
-#endif
 void main() {
-#ifdef DESFAZ
-  // O AGLOMERADO QUE SE DESFAZ (quinta volta: pontos, não malhas): cada
-  // ponto é UMA BOLA — o membro gl_VertexID mod BOLAS_DO_DESFAZ da pedra
-  // aId (o miolo, as grandes e as médias). Ela encolhe um pouco com as
-  // outras e some no próprio limiar; abrem-se vãos entre bolas de verdade.
-  int id = int(aId + 0.5);
-  int k = id / uPorOitava;
-  int kM = gl_VertexID - (gl_VertexID / BOLAS_DO_DESFAZ) * BOLAS_DO_DESFAZ;
-  if (!lugar(OITAVA_BASE + k, id - k * uPorOitava)) {
-    foraComum(); gl_PointSize = 0.0;
-    return;
-  }
-  parametrosDaForma();
-  float lim;
-  float sj;
-  vec4 m = membro(gFormaBase, kM, lim, sj);
-  m.w *= smoothstep(lim - 0.32, lim, gFica) * (0.8 + 0.2 * gFica);
-  if (m.w <= 0.0) {
-    foraComum(); gl_PointSize = 0.0;
-    return;
-  }
-  // a oclusão pelo miolo e pelas grandes que ainda estão lá, no ponto da
-  // bola virado para fora
-  vec3 nU = normalize(m.xyz + vec3(1.0e-4, 0.0, 0.0));
-  vec3 u = m.xyz + nU * m.w;
-  float occ = 0.0;
-  for (int j = 0; j < 4; j++) {
-    if (j == kM) continue;
-    float lj;
-    float sjj;
-    vec4 o = membro(gFormaBase, j, lj, sjj);
-    o.w *= smoothstep(lj - 0.32, lj, gFica) * (0.8 + 0.2 * gFica);
-    vec3 v = o.xyz - u;
-    float l2 = max(dot(v, v), 1.0e-4);
-    occ += o.w * o.w / l2 * max(dot(nU, v), 0.0) * inversesqrt(l2);
-  }
-  vAoSujo = vec2(clamp(1.0 - 0.6 * occ, 0.35, 1.0) / ${glslF(AO_MEDIO_DO_MONTE)}, sj);
-  float raioI = gRaio * escalaDoTipo(1.0);
-  vGiro = gR * mat3(girar(vec3(1.0, 0.0, 0.0)), girar(vec3(0.0, 1.0, 0.0)), girar(vec3(0.0, 0.0, 1.0)));
-  vEixos = eixosF;
-  vec3 cB = gCV + vGiro * (m.xyz * eixosF) * raioI;
-  vCentro = cB;
-  vCortes[0] = vec4(0.0, 0.0, 0.0, m.w);
-  for (int j = 1; j < 4; j++) vCortes[j] = vec4(1.0e6, 0.0, 0.0, 0.0);
-  vSemente.w = 0.0;
-  vProj = vec4(projectionMatrix[0][0], projectionMatrix[1][1], projectionMatrix[2][0], projectionMatrix[2][1]);
-  gl_Position = projectionMatrix * vec4(cB * (gRaioMundo / KM_POR_RAIO), 1.0);
-  float rb = m.w * max(max(eixosF.x, eixosF.y), eixosF.z) * raioI;
-  gl_PointSize = 2.0 * rb * uPxPorRad / max(-cB.z, rb) + 1.5;
-  luzDaPedra(cB);
-  vFica = vec4(gFica, gRaio, gPx * m.w, raioI);
-#else
   int id = gl_VertexID;
   int k = id / uPorOitava;
-  int o = OITAVA_BASE + clamp(uAtivas - OITAVA_BASE, 1, QUANTAS) - 1 - k;
+  int o = clamp(uAtivas, 1, ${OITAVAS}) - 1 - k;
   if (!lugar(o, id - k * uPorOitava)) {
     foraComum(); gl_PointSize = 0.0;
     return;
@@ -932,13 +1163,11 @@ void main() {
   vGiro = gR * mat3(girar(vec3(1.0, 0.0, 0.0)), girar(vec3(0.0, 1.0, 0.0)), girar(vec3(0.0, 0.0, 1.0)));
   vEixos = eixosF;
   for (int j = 0; j < 4; j++) vCortes[j] = cortes[j];
-  vAoSujo = vec2(1.0, 0.5);
   vProj = vec4(projectionMatrix[0][0], projectionMatrix[1][1], projectionMatrix[2][0], projectionMatrix[2][1]);
   gl_Position = projectionMatrix * vec4(gCV * (gRaioMundo / KM_POR_RAIO), 1.0);
   gl_PointSize = 2.0 * raioI * uPxPorRad / max(-gCV.z, raioI) + 1.5;
   luzDaPedra(gCV);
-  vFica = vec4(gFica, gRaio, gPx, raioI);
-#endif
+  vFica.w = raioI;
 }
 `;
 
@@ -951,23 +1180,21 @@ varying vec3 vTinta;
 varying vec3 vNevoaCor;
 varying vec4 vLuz;
 varying vec4 vFica;
+varying float vLamina;
 flat varying vec4 vSemente;
 const float ENVOLVE = ${glslF(ENVOLVE)};
 const float AMBIENTE_DO_ANEL = ${glslF(AMBIENTE_DO_ANEL)};
 const float PISO_DA_NOITE = ${glslF(PISO_DA_NOITE)};
-const float LUZ_DA_LAMINA = ${glslF(LUZ_DA_LAMINA)};
-// o polo do anel na vista (a luz da lâmina chega pelo plano dele)
+// o polo do anel na vista (a luz do anel em volta chega pelo plano dele)
 uniform vec3 uPoloVista;
 const vec3 COR_DE_SATURNO = vec3(${COR_DE_SATURNO.join(', ')});
 uniform sampler2D uRelevo;
 CAMADA_DO_ANEL
 float envolver(float c) { return max((c + ENVOLVE) / (1.0 + ENVOLVE), 0.0); }
 
-// O RELEVO POR TEXTURA (quinta volta): a altura e a inclinação dela, em
-// três planos no quadro da pedra (pesos |n|⁴); \`esc\` em células por raio.
-// O mipmap apaga o que fica menor que o pixel. Devolve a inclinação (no
-// quadro da pedra) da altura amp·(h − 0,5). O viés de 2 níveis apaga a
-// célula entre ~4 e ~2 px, como a pegada da quarta volta.
+// O RELEVO POR TEXTURA: a altura e a inclinação dela, em três planos no
+// quadro da pedra (pesos |n|⁴); \`esc\` em células por raio. O mipmap apaga
+// o que fica menor que o pixel.
 vec3 relevo(vec3 p, vec3 w, float esc, float amp) {
   vec3 c = p * esc;
   vec4 tx = texture(uRelevo, c.yz / ${glslF(CELULAS_DO_RELEVO)}, 2.0);
@@ -979,30 +1206,26 @@ vec3 relevo(vec3 p, vec3 w, float esc, float amp) {
   return (amp * esc) * (w.x * vec3(0.0, gx.x, gx.y) + w.y * vec3(gy.y, 0.0, gy.x) + w.z * vec3(gz.x, gz.y, 0.0));
 }
 
-// A COR DE UM PIXEL DA PEDRA: \`vista\` o ponto em km na vista, \`p\` o ponto
+// A COR DE UM PIXEL DO PEDAÇO: \`vista\` o ponto em km na vista, \`p\` o ponto
 // no quadro da pedra (raio ~1), \`nl0\` a normal lisa nesse quadro, \`giro\`
 // do quadro da pedra para a vista, \`ao\` a oclusão das vizinhas (já
 // dividida pela média), \`sujo\` o gelo do membro.
 vec3 sombrear(vec3 vista, vec3 p, vec3 nl0, mat3 giro, float ao, float sujo) {
   vec3 v = -vista / max(length(vista), 1.0e-30);
   bool bloco = vSemente.w > 0.5;
-  // O RELEVO: no bloco, fino (o gelo fraturado, sem células); no monte, a
-  // pele encaroçada de cada membro
   vec3 w = nl0 * nl0;
   w *= w;
   w /= w.x + w.y + w.z;
   vec3 q = p + vSemente.xyz;
   vec3 nb = nl0;
-  // a pedra de poucos px (\`vFica.z\`, o raio na tela) não paga relevo: a
-  // célula mais grossa já mediria menos de ~2 px
+  // o pedaço de poucos px (\`vFica.z\`, o raio na tela) não paga relevo
   if (vFica.z > 4.0) {
     vec3 g = relevo(q, w, bloco ? 3.0 : 2.2, bloco ? 0.05 : 0.26);
     if (vFica.z > 12.0) g += relevo(q.zxy + vSemente.zxy, w.zxy, 13.0, bloco ? 0.022 : 0.04).yzx;
     nb -= g - dot(g, nl0) * nl0;
   }
   vec3 n = normalize(giro * nb);
-  // gelo limpo (claro, levemente azulado) ou sujo (bege) por membro; o
-  // bloco já sorteou o dele inteiro
+  // gelo limpo ou sujo por membro; o bloco já sorteou o dele inteiro
   vec3 tintaM = bloco ? vec3(1.0) : mix(vec3(1.04, 0.99, 0.9) * 0.82, vec3(0.98, 1.0, 1.04) * 1.16, sujo);
 
   float nl = dot(n, vSol);
@@ -1016,18 +1239,16 @@ vec3 sombrear(vec3 vista, vec3 p, vec3 nl0, mat3 giro, float ao, float sujo) {
   vec3 albedo = vTinta * tintaM * ao;
   // a sombra mútua (vLuz.z) pesa só no Sol direto
   vec3 cor = albedo * tom * (dif * fase * vLuz.x * vLuz.z);
-  // o brilho especular: pequeno, só nas faces viradas para o Sol (mais
-  // vivo na face plana do bloco)
+  // o brilho especular: pequeno, só nas faces viradas para o Sol
   vec3 meio = normalize(vSol + v);
   float brilho = pow(max(dot(n, meio), 0.0), 60.0) * step(0.0, nl);
   cor += vec3(dot(vTinta, vec3(0.2126, 0.7152, 0.0722))) * (0.35 * brilho * vLuz.x * vLuz.z * min(ao, 1.0));
-  // o globo (cor quente) e o ambiente do anel — o lado da noite fica quase
-  // preto, aquecido só pelo globo
+  // o globo (cor quente) e o ambiente do anel
   cor += albedo * COR_DE_SATURNO * (envolver(dot(n, vGlobo)) * vLuz.y);
   cor += albedo * (AMBIENTE_DO_ANEL * (0.25 + 0.75 * vLuz.x) + PISO_DA_NOITE);
-  // a luz da lâmina no lado da noite (\`LUZ_DA_LAMINA\`): é ela que tira o furo
-  cor += albedo * (LUZ_DA_LAMINA * (1.0 - 0.6 * abs(dot(n, uPoloVista))) * (1.0 - min(dif, 1.0)) * (0.25 + 0.75 * vLuz.x));
-  // de dentro da lâmina, a multidão entre a pedra e a lente
+  // a luz do anel em volta no lado da noite (\`vLamina\`, o I/F do disco ali)
+  cor += albedo * (vLamina * (1.0 - 0.6 * abs(dot(n, uPoloVista))) * (1.0 - min(dif, 1.0)));
+  // de dentro da camada, a multidão entre o pedaço e a lente
   return mix(cor, vNevoaCor, vLuz.w);
 }
 `;
@@ -1056,7 +1277,6 @@ flat varying mat3 vGiro;
 flat varying vec3 vEixos;
 flat varying vec4 vCortes[4];
 flat varying vec4 vProj;
-flat varying vec2 vAoSujo;
 void main() {
   // o RAIO DE VISADA deste pixel, na vista (a câmera na origem)
   vec2 ndc = (gl_FragCoord.xy - uTela.xy) / uTela.zw * 2.0 - 1.0;
@@ -1104,24 +1324,25 @@ void main() {
   float t = acerta ? t0 : -b / a;
   vec3 q = qo + t * qd;
   if (!acerta) nq = q;
-  vec3 c = sombrear(d * t, q * vEixos, normalize(nq / vEixos), vGiro, vAoSujo.x, vAoSujo.y);
+  vec3 c = sombrear(d * t, q * vEixos, normalize(nq / vEixos), vGiro, 1.0, 0.5);
   if (!acerta) discard;
-  gl_FragColor = vec4(c, 1.0);
+  // a opacidade da entrada (1 no ponto opaco; o que esmaece mistura)
+  gl_FragColor = vec4(c, vFica.x);
 }
 `;
 
 /**
  * A CESSÃO DO DISCO EM GLSL — entra no `ANEL_FRAG` só com `?pedras=3d`.
  * `uCamDasPedras` = (ρ da câmera em km, θ dela, altura em km, a fração do
- * campo que o tier desenha vezes a parcela da altura, `parcelaDasPedras` —
- * 0 com as pedras fora do desenho). A distância
- * é a da régua do ladrilho, como no vértice das pedras. O disco cede só o
- * que as pedras de fato carregam: onde o perfil pede mais que o teto do
- * campo (o miolo do B) ou o tier desenha menos pedras, o resto fica nele —
- * a transmissão da soma é a de hoje em toda altura.
+ * campo que o tier desenha — 0 com os pedaços fora do desenho). A distância
+ * é a da régua do ladrilho, como no vértice. O disco cede só o que os
+ * pedaços de fato carregam: a parte das oitavas resolvidas ali, até o teto
+ * do campo (no B o resto fica nele). De dentro da camada ele passa a vez à
+ * névoa (`pesoDaNevoa`).
  */
 export const GLSL_CESSAO_DAS_PEDRAS = /* glsl */ `
 uniform vec4 uCamDasPedras;
+${GLSL_PURO_DAS_PEDRAS}
 float cederAsPedras(float alfa, vec3 p, float tau) {
   if (uCamDasPedras.w <= 0.0) return alfa;
   float rKm = length(p.xy) * KM_POR_RAIO;
@@ -1129,101 +1350,47 @@ float cederAsPedras(float alfa, vec3 p, float tau) {
   // o ângulo envolvido sem sin/cos (ver o vértice das pedras)
   float dTh = atan(p.y, p.x) - uCamDasPedras.y;
   dTh -= 6.28318530718 * floor((dTh + 3.14159265359) / 6.28318530718);
-  float dS = dTh * ${glslF(R0_KM)};
+  float dS = dTh * P_R0;
   float d = sqrt(dRho * dRho + dS * dS + uCamDasPedras.z * uCamDasPedras.z);
-  // a oitava o está em x = x0 + o: só contam as de x < 7 que ainda não se
-  // desfizeram (x > 3, ou de verdade) — no máximo cinco seguidas, a partir
-  // da primeira com x > 2 ou da primeira de verdade (um log2 só por pixel)
-  float x0 = log2(max(d, 1.0e-12) / ${glslF(S_MAX_KM)});
-  int o0 = clamp(int(floor(${glslF(X_DESFAZ)} - x0)), 0, ${PRIMEIRA_OITAVA_REAL});
-  float f = 0.0;
-  for (int k = 0; k < 5; k++) {
-    int o = o0 + k;
-    if (o >= ${OITAVAS}) break;
-    float x = x0 + float(o);
-    float fica = o >= ${PRIMEIRA_OITAVA_REAL} ? 1.0 : clamp(x - ${glslF(X_DESFAZ)}, 0.0, 1.0);
-    f += clamp(${glslF(X_ENTRA)} - x, 0.0, 1.0) * fica;
-  }
-  f = min(f / ${glslF(PRESENTES)}, 1.0) * ${glslF(CESSAO_PLENA)}
-    * min(1.0, ${glslF(TAU_TETO * R0_KM)} / (max(rKm, 1.0) * max(tau, 1.0e-4)))
-    * uCamDasPedras.w
-    * (1.0 - exp(-max(abs(uCamDasPedras.z), ${glslF(2 * ESPESSURA_MINIMA_KM)}) / max(d, 1.0e-9) / ${glslF(MU_RASANTE)}));
+  float f = cessaoDasPedras(d) * tetoDoCampo(rKm, tau, uCamDasPedras.w);
   float a = f <= 0.0 ? alfa : 1.0 - pow(max(1.0 - alfa, 1.0e-4), 1.0 - f);
-  // DE DENTRO DA LÂMINA o disco é só um plano, e no B — onde ele fica com
-  // o que passa do teto do campo — era uma parede bege de borda dura no
-  // horizonte; a névoa da quarta volta saía PONTILHADA (a centenas de
-  // metros a direção de visada do disco é ruído de float32: o vPos dele
-  // não resolve metros). Na quinta volta, de dentro, o disco SAI: a névoa
-  // fica só com as pedras (\`vNevoaCor\`), lisa. A saída é contínua com
-  // a altura (de duas a seis lâminas).
-  float zc = abs(uCamDasPedras.z);
-  float dentro = 1.0 - smoothstep(${glslF(2 * ESPESSURA_MINIMA_KM)}, ${glslF(6 * ESPESSURA_MINIMA_KM)}, zc);
-  a *= 1.0 - dentro;
-  return a;
+  return a * (1.0 - pesoDaNevoa(uCamDasPedras.z, regiaoDasPedras(uCamDasPedras.x).x));
 }
 `;
 
 /**
- * O GRÃO DO DISCO (quarta volta): abaixo de `H_GRAO_KM` o disco atrás das
- * pedras não pode ler como chapa lisa. Uma folha no plano do anel, centrada
- * na câmera (o mesmo truque do relativo à câmera das pedras), MULTIPLICA a
- * luz do disco por um grão auto-semelhante: oitavas de célula de
- * `GRAO_BASE_KM`·2^k, e em cada pixel só as duas cuja célula mede de ~2 a
- * ~7 px, com pesos cos² que somam 1 (descer troca de oitava sem estalo).
- * Cada célula tem um grão — uma cúpula com lado claro e lado escuro pela
- * mesma direção do Sol, e um albedo próprio —, e as duas parcelas têm
- * média ZERO (o gradiente de uma cúpula que se anula na borda soma zero; o
- * albedo é simétrico): o disco escurece num lado do grão o que clareia no
- * outro, e a média fica a de hoje. O sorteio é por célula inteira e
- * periódica, com a fração da câmera no período tirada na CPU em dupla
- * precisão: o grão é estável no mundo. As pedras de poucos pixels nascem
- * do tamanho desse grão.
+ * AS ESTEIRAS NO DISCO: abaixo de `H_ESTEIRA_KM` o disco mostra as mesmas
+ * esteiras que os pedaços desenham, antes de qualquer pedaço se resolver. O
+ * vPos do disco só tem ~15 m de precisão a 2 raios — menos que um quarto
+ * de esteira —, então quem desenha é uma FOLHA centrada na câmera, com as
+ * coordenadas relativas a ela: a folha MULTIPLICA a luz que o disco já pôs
+ * no quadro pela razão entre o brilho da camada com τ·D e com τ (τ o que o
+ * disco guarda ali depois da cessão, D a densidade da esteira), apagada
+ * quando o pixel passa de meio espaçamento nos dois eixos. Ela mora do
+ * OUTRO lado da camada (`uFundoFolha`, além do maior pedaço), sobre o mesmo
+ * raio de visada: todo pedaço fica na frente dela, e só o disco é tocado.
  */
-export const H_GRAO_KM = 1600;
-const GRAO_BASE_KM = 0.001;
-const GRAO_OITAVAS = 18;
-const GRAO_PERIODO = 1024;
-/** a força do grão sobre a luz do disco (multiplica 1 ± isto) */
-export const GRAO_AMPLITUDE = 0.45;
-
-/** a força do grão pela altura: 0 em `H_GRAO_KM`, inteira uma oitava abaixo */
-export function forcaDoGrao(alturaKm: number): number {
-  const h = Math.max(Math.abs(alturaKm), 1e-9);
-  const t = grampo(Math.log2(H_GRAO_KM / h));
-  return t * t * (3 - 2 * t);
-}
-
-/** o alcance da folha: além de ~30 alturas ela já está de raspão e apagada */
-export function raioDaFolhaKm(alturaKm: number): number {
-  return Math.max(40, 30 * Math.abs(alturaKm));
-}
-
 const VERT_DA_FOLHA = /* glsl */ `
-uniform sampler2D uMapaAnel;
 uniform vec2 uEixo;
 uniform float uRhoCamKm;
 uniform float uZCamKm;
-uniform float uForcaGrao;
 uniform float uRaioFolha;
+uniform float uFundoFolha;
 varying vec2 vGrao;
-varying float vAmp;
+varying vec3 vRel;
 CONSTANTES_DO_ANEL
 void main() {
+  // o ponto do PLANO do anel, relativo à câmera, sem subtrair números grandes
   vec2 xy = position.xy * uRaioFolha;
-  vec3 er = vec3(uEixo, 0.0);
-  vec3 et = vec3(-uEixo.y, uEixo.x, 0.0);
-  vec3 off = er * xy.x + et * xy.y + vec3(0.0, 0.0, -uZCamKm);
   float rhoKm = length(vec2(uRhoCamKm + xy.x, xy.y));
-  // as coordenadas do grão RELATIVAS à câmera, sem subtrair números
-  // grandes: o raio e o arco em R0 (o mesmo arco das pedras)
   float dRho = (xy.x * (2.0 * uRhoCamKm + xy.x) + xy.y * xy.y) / (rhoKm + uRhoCamKm);
   vGrao = vec2(dRho, ${glslF(R0_KM)} * atan(xy.y, uRhoCamKm + xy.x));
-  float u = ((rhoKm / KM_POR_RAIO - R_INT) / (R_EXT - R_INT)) * U_ESCALA + U_BASE;
-  vec4 perfil = (u < 0.0 || u > 1.0) ? vec4(0.0) : textureLod(uMapaAnel, vec2(u, 0.5), 0.0);
-  float tau = perfil.a < 0.004 ? 0.0 : tauDaOpacidade(perfil.a) * regiaoDoAnel(rhoKm).z;
-  // de raspão o grão vira moiré: ele some quando a folha fica de lado
-  float mu = abs(uZCamKm) / max(length(off), 1.0e-9);
-  vAmp = ${glslF(GRAO_AMPLITUDE)} * uForcaGrao * min(tau, 1.0) * smoothstep(0.03, 0.15, mu);
+  vRel = vec3(xy, -uZCamKm);
+  // e a folha no fundo, no mesmo raio de visada
+  float t = uZCamKm / (uZCamKm - uFundoFolha);
+  vec3 er = vec3(uEixo, 0.0);
+  vec3 et = vec3(-uEixo.y, uEixo.x, 0.0);
+  vec3 off = (er * xy.x + et * xy.y) / t + vec3(0.0, 0.0, uFundoFolha - uZCamKm);
   float raioMundo = length((modelViewMatrix * vec4(1.0, 0.0, 0.0, 0.0)).xyz);
   mat3 R = mat3(modelViewMatrix) / raioMundo;
   gl_Position = projectionMatrix * vec4((R * off) * (raioMundo / KM_POR_RAIO), 1.0);
@@ -1233,62 +1400,49 @@ void main() {
 const FRAG_DA_FOLHA = /* glsl */ `
 precision highp float;
 precision highp int;
-uniform vec2 uGraoCam[${GRAO_OITAVAS}];
+uniform sampler2D uMapaAnel;
 uniform vec3 uDirSolLocal;
-uniform vec2 uEixo;
+uniform float uRhoCamKm;
 uniform float uZCamKm;
+uniform float uFracaoDoTier;
+uniform float uForcaEsteira;
 varying vec2 vGrao;
-varying float vAmp;
-uint misturar(uint x) {
-  x ^= x >> 16; x *= 0x7feb352du;
-  x ^= x >> 15; x *= 0x846ca68bu;
-  x ^= x >> 16;
-  return x;
-}
+varying vec3 vRel;
+CONSTANTES_DO_ANEL
+${GLSL_SORTEIO}
+${GLSL_PURO_DAS_PEDRAS}
+${GLSL_ESTEIRA}
 void main() {
-  // A PEGADA NOS DOIS EIXOS DA TELA (quinta volta): o pixel, no grão, é
-  // uma elipse; a oitava sai do eixo MAIOR, e de raspão (o menor muito mais
-  // curto) a célula vira risco alinhado — moiré. O grão some com a razão.
-  vec2 gx = dFdx(vGrao);
-  vec2 gy = dFdy(vGrao);
-  float maior = max(max(length(gx), length(gy)), 1.0e-12);
-  float menor = abs(gx.x * gy.y - gx.y * gy.x) / maior;
-  float pegada = maior;
-  float aniso = smoothstep(0.12, 0.35, menor / maior);
-  // o Sol no quadro do grão (raio, arco); do lado sem Sol a luz atravessa
-  // o anel e o relevo quase não aparece
-  vec2 L = vec2(dot(uDirSolLocal.xy, uEixo), dot(uDirSolLocal.xy, vec2(-uEixo.y, uEixo.x)));
-  vec2 inclina = L / max(abs(uDirSolLocal.z), 0.2) * (uDirSolLocal.z * uZCamKm >= 0.0 ? 1.0 : 0.35);
-  float t0 = log2(pegada / ${glslF(GRAO_BASE_KM)});
-  int k0 = int(ceil(t0 + 0.8));
-  float g = 0.0;
-  for (int j = 0; j < 2; j++) {
-    int k = k0 + j;
-    if (k < 0 || k >= ${GRAO_OITAVAS}) continue;
-    // t = log2(célula/pegada) em [0,8; 2,8]: cos² centrado em 1,8 — as duas
-    // oitavas somam peso 1
-    float w = cos(1.5707963 * (float(k) - t0 - 1.8));
-    w *= w;
-    vec2 q = (vGrao + uGraoCam[k]) / (${glslF(GRAO_BASE_KM)} * exp2(float(k)));
-    vec2 ii = floor(q);
-    vec2 ff = q - ii;
-    ii = mod(ii, ${GRAO_PERIODO}.0);
-    uint h = misturar(uint(ii.x) * 0x8da6b343u ^ misturar(uint(ii.y) + uint(k) * 0x68e31da4u));
-    vec4 r = vec4(float(h & 0xffu), float((h >> 8) & 0xffu), float((h >> 16) & 0xffu), float(h >> 24)) / 255.0;
-    float rg = 0.2 + 0.15 * r.z;
-    vec2 e = (ff - 0.35 - 0.3 * r.xy) / rg;
-    float r2 = dot(e, e);
-    if (r2 >= 1.0) continue;
-    // a cúpula (1 − r²)², de altura meio raio: o gradiente se anula na
-    // borda e soma zero; o lado virado ao Sol clareia, o outro escurece
-    float b = 1.0 - r2;
-    float lado = clamp(dot(2.0 * b * e, inclina), -1.0, 1.0);
-    g += w * (0.5 * (2.0 * r.w - 1.0) * b * b + lado);
-  }
+  float rhoKm = uRhoCamKm + vGrao.x;
+  vec2 reg = regiaoDasPedras(rhoKm);
+  float ang = anguloDaEsteira(rhoKm);
+  vec2 n = vec2(cos(ang), sin(ang));
+  // A PEGADA do pixel atravessando as cristas, nos dois eixos da tela
+  float xi = vGrao.x * n.x + vGrao.y * (rhoKm / P_R0) * n.y;
+  float pegada = abs(dFdx(xi)) + abs(dFdy(xi));
+  float amp = reg.y * uForcaEsteira * (1.0 - smoothstep(0.25, 0.5, pegada / LAMBDA));
+  float u = ((rhoKm / KM_POR_RAIO - R_INT) / (R_EXT - R_INT)) * U_ESCALA + U_BASE;
+  vec4 perfil = (u < 0.0 || u > 1.0) ? vec4(0.0) : textureLod(uMapaAnel, vec2(u, 0.5), 0.0);
+  if (amp <= 0.0 || perfil.a < 0.004) discard;
+  float D = densidadeDaEsteira(vGrao.x, vGrao.y, rhoKm, n, amp);
+  float tau = tauDaOpacidade(perfil.a) * regiaoDoAnel(rhoKm).z;
+  float d = sqrt(vGrao.x * vGrao.x + vGrao.y * vGrao.y + uZCamKm * uZCamKm);
+  float td = tau * (1.0 - cessaoDasPedras(d) * tetoDoCampo(rhoKm, tau, uFracaoDoTier));
+  float mu0 = max(abs(uDirSolLocal.z) / max(length(uDirSolLocal), 1.0e-9), 0.02);
+  float mu = max(abs(vRel.z) / max(length(vRel), 1.0e-9), 0.02);
+  float lado = uDirSolLocal.z * uZCamKm;
+  vec2 c0 = camadaDeParticulas(td, mu0, mu, 1.0, lado);
+  vec2 c1 = camadaDeParticulas(td * D, mu0, mu, 1.0, lado);
+  float m = c1.x * c1.y / max(c0.x * c0.y, 1.0e-6);
   // o disco já está no quadro: 2·cor·destino (a mistura multiplica)
-  gl_FragColor = vec4(vec3(0.5 * max(1.0 + vAmp * aniso * g, 0.0)), 1.0);
+  gl_FragColor = vec4(vec3(0.5 * clamp(m, 0.0, 2.0)), 1.0);
 }
 `;
+
+/** o alcance da folha: além de ~30 alturas ela já está de raspão e apagada */
+export function raioDaFolhaKm(alturaKm: number): number {
+  return Math.max(40, 30 * Math.abs(alturaKm));
+}
 
 /** a malha da folha: anéis em escala log de 10⁻⁵ a 1 (o raio sai do uniforme) */
 function geometriaDaFolha(): THREE.BufferGeometry {
@@ -1317,6 +1471,60 @@ function geometriaDaFolha(): THREE.BufferGeometry {
   return g;
 }
 
+/**
+ * A CASCA DA NÉVOA: uma esfera de `RAIO_DA_NEVOA_KM` em volta da câmera,
+ * vista por dentro, atrás de todos os pedaços desenhados. Cada pixel integra
+ * a névoa do seu raio de visada (`tauDaNevoa`) até o alcance: lisa, sem
+ * pontilhado; olhando para cima ou para baixo ela some, no horizonte da
+ * camada ela fecha.
+ */
+const VERT_DA_NEVOA = /* glsl */ `
+uniform sampler2D uMapaAnel;
+uniform vec3 uDirSolLocal;
+uniform vec3 uCamLocal;
+uniform float uRhoCamKm;
+uniform float uLuzGanho;
+uniform float uKPolar;
+uniform float uSolAngRad;
+uniform float uFracaoDoTier;
+varying vec3 vDir;
+flat varying vec3 vCor0;
+flat varying vec3 vCamada;
+flat varying vec2 vLuzN;
+CONSTANTES_DO_ANEL
+SOMBRA_DO_PLANETA
+const float PI = 3.14159265358979;
+${GLSL_PURO_DAS_PEDRAS}
+${GLSL_LUZ_DA_NEVOA}
+void main() {
+  vDir = position;
+  nevoaDaCamera(vCor0, vCamada, vLuzN);
+  float raioMundo = length((modelViewMatrix * vec4(1.0, 0.0, 0.0, 0.0)).xyz);
+  mat3 R = mat3(modelViewMatrix) / raioMundo;
+  gl_Position = projectionMatrix * vec4((R * (position * ${glslF(RAIO_DA_NEVOA_KM)})) * (raioMundo / KM_POR_RAIO), 1.0);
+}
+`;
+
+const FRAG_DA_NEVOA = /* glsl */ `
+precision highp float;
+uniform vec3 uDirSolLocal;
+uniform float uZCamKm;
+varying vec3 vDir;
+flat varying vec3 vCor0;
+flat varying vec3 vCamada;
+flat varying vec2 vLuzN;
+CAMADA_DO_ANEL
+${GLSL_PURO_DAS_PEDRAS}
+${GLSL_LUZ_DA_NEVOA.slice(GLSL_LUZ_DA_NEVOA.indexOf('// a luz da multidão'))}
+void main() {
+  vec3 d = normalize(vDir);
+  float a = pesoDaNevoa(uZCamKm, vCamada.y)
+    * (1.0 - exp(-tauDaNevoa(uZCamKm, d.z, ${glslF(ALCANCE_DA_NEVOA_KM)}, vCamada.y, vCamada.x, vCamada.z)));
+  if (a <= 0.0) discard;
+  gl_FragColor = vec4(corDaNevoa(vCor0, vLuzN, d), a);
+}
+`;
+
 /** O que o corpo entrega por quadro — o quadro da lajota, mais o relógio. */
 export interface QuadroDasPedras {
   dirSolLocal: THREE.Vector3;
@@ -1325,8 +1533,6 @@ export interface QuadroDasPedras {
   luzGanho: number;
   solAngRad: number;
   kPolar: number;
-  /** o NEAR do quadro em raios equatoriais */
-  nearRaios: number;
   tier: QualityLevel;
   /** o relógio do app (dia juliano) — o cisalhamento anda com ele */
   jd: number;
@@ -1344,55 +1550,33 @@ export interface OpcoesDasPedras {
   rExt: number;
 }
 
-/** a faixa de raio em que as pedras podem existir (a da lajota, com folga da janela maior) */
+/** a faixa de raio em que os pedaços podem existir (a da lajota) */
 const RAIO_MIN_KM = 55_000;
 const RAIO_MAX_KM = 160_000;
 
 /**
- * UMA FAIXA DE OITAVAS (terceira volta). O custo do quadro é o número de
- * vértices que a GPU invoca — medido: ~1,5 ns cada mesmo saindo na
- * primeira linha —, então nada de malha para todas as instâncias:
- *
- *  - os PONTOS: um vértice por pedra, todas as do ladrilho; o vértice
- *    descarta as de x < `X_CORTE` e o fragmento acerta o corpo;
- *  - as MALHAS de perto: só os ids que a CPU escolheu no quadro
- *    (`escolherDePerto`): as da janela x < `X_CORTE` (com folga) que caem
- *    no cone da lente. O vértice da malha descarta as de x ≥ `X_CORTE`
- *    pelo MESMO teste do ponto: nenhuma pedra sai nos dois, nenhuma falta.
- *
- * As malhas, pelo `detail` do icosaedro do three (1 → 42 vértices, 3 →
- * 162, 7 → 642), cada uma até o seu x (a CPU escolhe a primeira que
- * serve). Com a forma assada, a mais perto pode ter a malha fina.
+ * AS MALHAS DE PERTO, pelo `detail` do icosaedro do three (1 → 42
+ * vértices, 3 → 162, 7 → 642), cada uma até o seu x (a CPU escolhe a
+ * primeira que serve). O custo do quadro é o número de vértices que a GPU
+ * invoca, então só os ids que a CPU escolheu ganham malha.
  */
-const MALHAS: Readonly<Record<Tipo, readonly { detalhe: number; ate: number; desfaz?: true }[]>> = {
-  // o aglomerado que se desfaz (x < 4) são PONTOS, um por bola (o
-  // \`detalhe\` não conta). O monte inteiro pede vértices para a silhueta
-  // dos membros perto (162 até x = 4,5); longe, 42 bastam
-  aglomerado: [
-    { detalhe: 0, ate: X_DESFAZ + 1.05, desfaz: true },
-    { detalhe: 3, ate: 4.5 },
-    { detalhe: 1, ate: MATERIAIS.aglomerado.corte },
-  ],
-  real: [
-    { detalhe: 7, ate: 3.5 },
-    { detalhe: 3, ate: 4.5 },
-    { detalhe: 1, ate: MATERIAIS.real.corte },
-  ],
-};
+const MALHAS: readonly { detalhe: number; ate: number }[] = [
+  { detalhe: 7, ate: 3.5 },
+  { detalhe: 3, ate: 4.5 },
+  { detalhe: 1, ate: X_CORTE },
+];
 /** a folga da escolha da CPU sobre o corte (a GPU faz a conta em float32) */
 const FOLGA_DA_ESCOLHA = 1.03;
-/** o id cabe abaixo disto na chave da ordem (9 oitavas × 16 384 < 2¹⁸) */
+/** o id cabe abaixo disto na chave da ordem (10 oitavas × 16 384 < 2¹⁸) */
 const CHAVE = 2 ** 18;
 /** a folga do cone da lente na CPU, em rad (a câmera lida pode ser a do quadro anterior) */
 const FOLGA_DO_CONE = 0.12;
-
-type Tipo = keyof typeof MATERIAIS;
 
 /** os ids de uma oitava ordenados pelo sorteio radial — estático, uma vez */
 interface OrdemDaOitava {
   q: Uint16Array;
   i: Uint16Array;
-  /** o raio cheio ÷ s (o sorteio de tamanho do vértice) */
+  /** o raio a ÷ s (o sorteio de tamanho do vértice) */
   raio: Float32Array;
   arco: Float64Array;
   z0: Float32Array;
@@ -1458,7 +1642,7 @@ function direcao(z01: number, a01: number): [number, number, number] {
   const s = Math.sqrt(Math.max(1 - z * z, 0));
   return [s * Math.cos(a), s * Math.sin(a), z];
 }
-/** `membro` do GLSL, bit a bit: (cx, cy, cz, raio, limiar, sujeira) */
+/** `membro` do GLSL, bit a bit: (cx, cy, cz, raio), e a sujeira do membro (assada) */
 export function membro(base: number, k: number): number[] {
   const h = misturar((base ^ ((0x632be5ab + Math.imul(k, 0x9e3779b9)) >>> 0)) >>> 0);
   const r = quatro(h);
@@ -1469,9 +1653,8 @@ export function membro(base: number, k: number): number[] {
   else if (k < 8) { dist = 0.55 + 0.1 * r[2]; raio = 0.2 + 0.1 * r[3]; }
   else { raio = 0.09 + 0.07 * r[3]; dist = 0.5 + 0.6 * raio + 0.05 * r[2]; }
   const h2 = misturar(h);
-  const lim = k === 0 ? 0.32 : 0.36 + (0.64 * (h2 & 0xffff)) / 65535;
   const d = direcao(r[0], r[1]);
-  return [d[0] * dist * 1.12, d[1] * dist * 1.12, d[2] * dist * 1.12, raio * 1.12, lim, (h2 >>> 16) / 65535];
+  return [d[0] * dist * 1.12, d[1] * dist * 1.12, d[2] * dist * 1.12, raio * 1.12, (h2 >>> 16) / 65535];
 }
 /** a semente da forma da variante v (`baseDaForma` no GLSL) */
 export function baseDaVariante(bloco: boolean, v: number): number {
@@ -1686,7 +1869,7 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
         });
       } else {
         const todos = Array.from({ length: MEMBROS }, (_, k) => membro(vb, k));
-        const poucos = todos.map((m, k) => (k < BOLAS_A_VALER ? m : [0, 0, 0, 0, 1, 0.5]));
+        const poucos = todos.map((m, k) => (k < BOLAS_A_VALER ? m : [0, 0, 0, 0, 0.5]));
         ds.forEach((d, i) => {
           const a = raioDoMonte(d, poucos);
           por(l0, i, d.map((x) => x * a.r));
@@ -1703,7 +1886,7 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
             occ += ((m[3]! * m[3]!) / l2) * Math.max(dot3(b.n, w), 0) / Math.sqrt(l2);
           }
           const ao = Math.min(Math.max(1 - 0.6 * occ, 0.35), 1) / AO_MEDIO_DO_MONTE;
-          por(l0 + 4, i, [ao, todos[b.dono]![5]!, 0]);
+          por(l0 + 4, i, [ao, todos[b.dono]![4]!, 0]);
         });
       }
     }
@@ -1777,7 +1960,7 @@ interface Lente {
   ok: boolean;
 }
 
-/** as formas assadas, uma vez por detalhe (divididas pelas faixas) */
+/** as formas assadas, uma vez por detalhe */
 const FORMAS = new Map<number, { geo: THREE.BufferGeometry; tex: THREE.DataTexture }>();
 function formasDe(detalhe: number) {
   let f = FORMAS.get(detalhe);
@@ -1785,64 +1968,43 @@ function formasDe(detalhe: number) {
   return f;
 }
 
-type Desenho = 'ponto' | 'malha' | 'desfaz';
+type Desenho = 'ponto' | 'esmaece' | 'malha';
 
 class Faixa {
+  /** os pontos opacos e os que estão entrando (a mesma geometria) */
   readonly pontos: THREE.Points;
-  /** as de perto, da frente para trás em x: malhas, e as bolas do que se desfaz em pontos */
-  readonly malhas: (THREE.Mesh | THREE.Points)[];
-  readonly primeira: number;
-  readonly quantas: number;
+  readonly esmaece: THREE.Points;
+  /** as de perto, da frente para trás em x */
+  readonly malhas: THREE.Mesh[];
   private readonly ates: number[];
-  private readonly corte: number;
   private readonly ordens: OrdemDaOitava[];
-  private readonly ids: THREE.BufferAttribute[];
-  private readonly desfaz: boolean[];
+  private readonly ids: THREE.InstancedBufferAttribute[];
   /** as chaves da ordem da frente para trás: log da distância e o id */
   private readonly chaves: Float64Array[];
 
-  constructor(
-    primeira: number,
-    quantas: number,
-    tipo: Tipo,
-    material: (desenho: Desenho, formas?: THREE.DataTexture) => THREE.ShaderMaterial
-  ) {
-    this.primeira = primeira;
-    this.quantas = quantas;
-    this.ordens = Array.from({ length: quantas }, (_, k) => ordemDaOitava(primeira + k));
+  constructor(material: (desenho: Desenho, formas?: THREE.DataTexture) => THREE.ShaderMaterial) {
+    this.ordens = Array.from({ length: OITAVAS }, (_, o) => ordemDaOitava(o));
     const g = new THREE.BufferGeometry();
-    // só a contagem importa: o vértice é a pedra (gl_VertexID)
-    g.setAttribute('position', new THREE.BufferAttribute(new Uint8Array(quantas * PEDRAS_POR_TIER.cinema), 1));
+    // só a contagem importa: o vértice é o pedaço (gl_VertexID)
+    g.setAttribute('position', new THREE.BufferAttribute(new Uint8Array(OITAVAS * PEDRAS_POR_TIER.cinema), 1));
     g.setDrawRange(0, 0);
     this.pontos = new THREE.Points(g, material('ponto'));
-    this.pontos.frustumCulled = false;
-    this.pontos.visible = false;
+    this.esmaece = new THREE.Points(g, material('esmaece'));
+    for (const p of [this.pontos, this.esmaece]) {
+      p.frustumCulled = false;
+      p.visible = false;
+    }
     // a capacidade: o dobro da conta média da janela de perto, por oitava
-    this.corte = MATERIAIS[tipo].corte;
-    const r = (2 ** this.corte * FOLGA_DA_ESCOLHA) / K_JANELA;
-    const cap = quantas * (Math.ceil(PEDRAS_POR_TIER.cinema * Math.min(1, 2 * r * r)) + 256);
-    this.ates = MALHAS[tipo].map((m) => m.ate);
-    // no aglomerado que se desfaz cada pedra são `BOLAS_DO_DESFAZ` pontos
-    // (as bolas): o id se repete `BOLAS_DO_DESFAZ` vezes
-    this.desfaz = MALHAS[tipo].map(({ desfaz }) => desfaz === true);
-    this.ids = MALHAS[tipo].map(({ desfaz }) => {
-      const a = desfaz
-        ? new THREE.BufferAttribute(new Float32Array(cap * BOLAS_DO_DESFAZ), 1)
-        : new THREE.InstancedBufferAttribute(new Float32Array(cap), 1, false, 1);
+    const r = (2 ** X_CORTE * FOLGA_DA_ESCOLHA) / K_JANELA;
+    const cap = OITAVAS * (Math.ceil(PEDRAS_POR_TIER.cinema * Math.min(1, 2 * r * r)) + 256);
+    this.ates = MALHAS.map((m) => m.ate);
+    this.ids = MALHAS.map(() => {
+      const a = new THREE.InstancedBufferAttribute(new Float32Array(cap), 1, false, 1);
       a.setUsage(THREE.DynamicDrawUsage);
       return a;
     });
-    this.chaves = MALHAS[tipo].map(() => new Float64Array(cap));
-    this.malhas = MALHAS[tipo].map(({ detalhe, desfaz }, k) => {
-      if (desfaz) {
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute('aId', this.ids[k]!);
-        geo.setDrawRange(0, 0);
-        const bolas = new THREE.Points(geo, material('desfaz'));
-        bolas.frustumCulled = false;
-        bolas.visible = false;
-        return bolas;
-      }
+    this.chaves = MALHAS.map(() => new Float64Array(cap));
+    this.malhas = MALHAS.map(({ detalhe }, k) => {
       const f = formasDe(detalhe);
       const geo = new THREE.InstancedBufferGeometry();
       geo.index = f.geo.index;
@@ -1857,26 +2019,28 @@ class Faixa {
     });
   }
 
-  /** os pontos: todas as pedras das oitavas ativas desta faixa */
+  /** os pontos: todos os pedaços das oitavas ativas */
   acenderPontos(ativas: number, porOitava: number) {
-    const n = Math.min(Math.max(ativas - this.primeira, 0), this.quantas);
+    const n = Math.min(Math.max(ativas, 0), OITAVAS);
     this.pontos.geometry.setDrawRange(0, n * porOitava);
     this.pontos.visible = n > 0;
+    this.esmaece.visible = n > 0;
   }
 
   /**
    * AS CANDIDATAS DE PERTO, sem avaliar todas: o sorteio radial é estático,
    * então a janela radial é um trecho contíguo da ordem (com a volta em 1);
    * nele, o arco sai das mesmas contas do vértice (`uGi`, `uGf`, `uFs`), e
-   * o cone da lente (com folga) tira as de fora do quadro. Superconjunto
-   * das de x < `X_CORTE` que a GPU desenharia: a distância no plano nunca
-   * passa da de verdade.
+   * o cone da lente (com folga, e com o deslocamento máximo da esteira) tira
+   * as de fora do quadro. Superconjunto das de x < `X_CORTE` que a GPU
+   * desenharia.
    */
   escolherDePerto(
     ativas: number,
     porOitava: number,
     rhoKm: number,
     zKm: number,
+    espessuraKm: number,
     lente: Lente,
     fr: Float32Array,
     fs: Float32Array,
@@ -1884,24 +2048,19 @@ class Faixa {
     gf: Float32Array
   ) {
     const ns = this.ids.map(() => 0);
-    const nOit = Math.min(Math.max(ativas - this.primeira, 0), this.quantas);
+    const nOit = Math.min(Math.max(ativas, 0), OITAVAS);
     const m = lente.m;
     const s00 = Math.sqrt(lente.p00 * lente.p00 + 1);
     const s11 = Math.sqrt(lente.p11 * lente.p11 + 1);
-    for (let k = nOit - 1; k >= 0; k--) {
-      const o = this.primeira + k;
+    for (let o = nOit - 1; o >= 0; o--) {
       const t = TABELA_DE_OITAVAS[o]!;
-      const raio = 2 ** this.corte * t.s * FOLGA_DA_ESCOLHA;
+      const raio = 2 ** X_CORTE * t.s * FOLGA_DA_ESCOLHA;
       const raio2 = raio * raio;
       const meiaJanela = raio / t.ladoRadial;
       const f = fr[o]!;
-      const ord = this.ordens[k]!;
+      const ord = this.ordens[o]!;
       const lado = t.ladoRadial;
       const ladoArco = t.ladoNoArco;
-      const meia = t.meiaEspessura;
-      const dobra = grampo(Math.abs(zKm) / meia - 1);
-      const sinal = Math.sign(zKm);
-      const rB = 1.9 * t.s;
       const lo = Math.floor((f - meiaJanela) * 65536);
       const hi = Math.ceil((f + meiaJanela) * 65536);
       // o trecho [lo, hi] em q, aberto em até dois pedaços pela volta
@@ -1922,9 +2081,8 @@ class Faixa {
           const dRho = (dk + a - f) * lado;
           const h2 = dRho * dRho + dS * dS;
           if (h2 >= raio2) continue;
-          const z0 = ord.z0[j]!;
-          const z = (1 - dobra) * z0 * meia + dobra * sinal * Math.abs(z0) * meia;
-          const dz = z - zKm;
+          const rc = ord.raio[j]! * t.s;
+          const dz = alturaNaCamada(ord.z0[j]!, rc, espessuraKm) - zKm;
           if (lente.ok) {
             const th = dS / R0_KM;
             const x = (rhoKm + dRho) * Math.cos(th) - rhoKm;
@@ -1932,55 +2090,46 @@ class Faixa {
             const vx = m[0]! * x + m[1]! * y + m[2]! * dz;
             const vy = m[3]! * x + m[4]! * y + m[5]! * dz;
             const fz = -(m[6]! * x + m[7]! * y + m[8]! * dz);
-            const folga = rB + FOLGA_DO_CONE * Math.sqrt(h2 + dz * dz);
+            const folga = 2.5 * rc + DESLOCAMENTO_MAXIMO_KM + FOLGA_DO_CONE * Math.sqrt(h2 + dz * dz);
             if (fz < -folga || Math.abs(vx) * lente.p00 - fz > folga * s00 || Math.abs(vy) * lente.p11 - fz > folga * s11) {
               continue;
             }
-            // o teto de \`PX_CORTE\` (o raio na tela, por cima: o raio cheio, a
-            // profundidade com a folga do cone): a de poucos px fica no ponto
-            // e a malha não paga os vértices dela
-            const rc = ord.raio[j]! * t.s;
-            const fzC = fz - FOLGA_DO_CONE * Math.sqrt(h2 + dz * dz);
-            if ((rc * lente.pxPorRad) / Math.max(fzC, rc) < PX_CORTE) continue;
+            // o teto de \`PX_CORTE\` (o raio na tela, por cima): o de poucos px
+            // fica no ponto e a malha não paga os vértices dele
+            const rq = rc * ESCALA_EQUIVALENTE;
+            const fzC = fz - DESLOCAMENTO_MAXIMO_KM - FOLGA_DO_CONE * Math.sqrt(h2 + dz * dz);
+            if ((rq * lente.pxPorRad) / Math.max(fzC, rq) < PX_CORTE) continue;
           }
           const logD = 0.5 * Math.log2(h2 + dz * dz);
           const xo = logD - Math.log2(t.s);
           let qual = 0;
           while (qual < this.ates.length - 1 && xo >= this.ates[qual]!) qual++;
           const ch = this.chaves[qual]!;
-          if (ns[qual]! < ch.length) ch[ns[qual]!++] = Math.floor((logD + 40) * 256) * CHAVE + k * porOitava + i;
+          if (ns[qual]! < ch.length) ch[ns[qual]!++] = Math.floor((logD + 40) * 256) * CHAVE + o * porOitava + i;
         }
       }
     }
     // DA FRENTE PARA TRÁS: o teste de profundidade poupa o fragmento das
-    // que ficam atrás (a borda roída descarta, e o descarte desliga a
-    // remoção de superfícies escondidas da GPU)
+    // que ficam atrás
     this.malhas.forEach((malha, k) => {
       const n = ns[k]!;
       const ch = this.chaves[k]!.subarray(0, n).sort();
       const v = this.ids[k]!.array as Float32Array;
-      const rep = this.desfaz[k] ? BOLAS_DO_DESFAZ : 1;
-      for (let j = 0; j < n; j++) {
-        const id = ch[j]! % CHAVE;
-        for (let b = 0; b < rep; b++) v[j * rep + b] = id;
-      }
-      if (this.desfaz[k]) malha.geometry.setDrawRange(0, n * rep);
-      else (malha.geometry as THREE.InstancedBufferGeometry).instanceCount = n;
+      for (let j = 0; j < n; j++) v[j] = ch[j]! % CHAVE;
+      (malha.geometry as THREE.InstancedBufferGeometry).instanceCount = n;
       malha.visible = n > 0;
       if (n > 0) {
         const a = this.ids[k]!;
         a.clearUpdateRanges();
-        a.addUpdateRange(0, n * rep);
+        a.addUpdateRange(0, n);
         a.needsUpdate = true;
       }
     });
   }
 
   dispose() {
-    for (const m of [this.pontos, ...this.malhas]) {
-      m.geometry.dispose();
-      (m.material as THREE.ShaderMaterial).dispose();
-    }
+    for (const m of [this.pontos, ...this.malhas]) m.geometry.dispose();
+    for (const m of [this.pontos, this.esmaece, ...this.malhas]) (m.material as THREE.ShaderMaterial).dispose();
     for (const f of FORMAS.values()) {
       f.geo.dispose();
       f.tex.dispose();
@@ -1990,10 +2139,10 @@ class Faixa {
 }
 
 export class PedrasDoAnel {
-  /** o grupo das faixas — a matriz do anel mora nele */
+  /** o grupo dos desenhos — a matriz do anel mora nele */
   readonly malha = new THREE.Group();
 
-  private readonly faixas: readonly Faixa[];
+  private readonly faixa: Faixa;
   private readonly uniforms: Record<string, THREE.IUniform>;
   /** as integrais do cisalhamento e do giro, em dupla precisão */
   private g = 0;
@@ -2004,12 +2153,12 @@ export class PedrasDoAnel {
   private readonly fs = new Float32Array(OITAVAS);
   private readonly gi = new Float32Array(OITAVAS);
   private readonly gf = new Float32Array(OITAVAS);
-  /** (ρ km, θ, altura km, fração do campo que o tier desenha × parcela da altura) — o que o disco lê para ceder */
+  /** (ρ km, θ, altura km, fração do campo que o tier desenha) — o que o disco lê para ceder */
   readonly cessao = new THREE.Vector4(0, 0, 0, 0);
-  /** a folha do grão do disco (`O GRÃO DO DISCO` no texto acima) */
+  /** a folha das esteiras do disco e a casca da névoa */
   private readonly folha: THREE.Mesh;
-  private readonly graoCam = Array.from({ length: GRAO_OITAVAS }, () => new THREE.Vector2());
-  /** a última câmera que desenhou as pedras — a escolha de perto lê o cone dela */
+  private readonly nevoa: THREE.Mesh;
+  /** a última câmera que desenhou os pedaços — a escolha de perto lê o cone dela */
   private camera: THREE.Camera | null = null;
   private readonly lente: Lente = { m: new Float64Array(9), p00: 1, p11: 1, pxPorRad: 400, ok: false };
   private readonly m4 = new THREE.Matrix4();
@@ -2028,7 +2177,7 @@ const float R_EXT = ${opcoes.rExt};`;
     const fragmento = (f: string) =>
       f.replace('CAMADA_DO_ANEL', opcoes.glslCamadaDoAnel);
 
-    // UM objeto de uniformes, dividido por todas as malhas
+    // UM objeto de uniformes, dividido por todos os desenhos
     this.uniforms = {
       uMapaAnel: { value: null },
       uDirSolLocal: { value: new THREE.Vector3(1, 0, 0) },
@@ -2039,7 +2188,7 @@ const float R_EXT = ${opcoes.rExt};`;
       uLuzGanho: { value: 1 },
       uKPolar: { value: 1 },
       uSolAngRad: { value: 0 },
-      uNearKm: { value: 0 },
+      uFracaoDoTier: { value: 1 },
       uPorOitava: { value: PEDRAS_POR_TIER.cinema },
       uAtivas: { value: 0 },
       uPxPorRad: { value: 400 },
@@ -2049,66 +2198,60 @@ const float R_EXT = ${opcoes.rExt};`;
       uGi: { value: this.gi },
       uGf: { value: this.gf },
       uGiro: { value: 0 },
-      uForcaGrao: { value: 0 },
+      uCelCam: { value: new THREE.Vector4() },
+      uForcaEsteira: { value: 0 },
       uRaioFolha: { value: 40 },
-      uGraoCam: { value: this.graoCam },
+      uFundoFolha: { value: -0.02 },
       uRelevo: { value: texturaDoRelevo() },
       uPoloVista: { value: new THREE.Vector3(0, 0, 1) },
     };
-    const material = (primeira: number, quantas: number, tipo: Tipo) => (desenho: Desenho, formas?: THREE.DataTexture) => {
-      const m = MATERIAIS[tipo];
+    const material = (desenho: Desenho, formas?: THREE.DataTexture) => {
       const malha = desenho === 'malha';
+      const esmaece = desenho === 'esmaece';
       return new THREE.ShaderMaterial({
         vertexShader: vertice(malha ? VERT_DA_MALHA : VERT_DO_PONTO),
         fragmentShader: fragmento(malha ? FRAG_DA_MALHA : FRAG_DO_PONTO),
         defines: {
-          OITAVA_BASE: primeira,
-          QUANTAS: quantas,
-          X_CORTE: glslF(m.corte),
-          ...(desenho !== 'ponto' ? { MALHA: 1 } : {}),
-          ...(desenho === 'desfaz' ? { DESFAZ: 1 } : {}),
+          X_CORTE: glslF(X_CORTE),
+          ...(malha ? { MALHA: 1 } : {}),
+          ...(esmaece ? { ESMAECE: 1 } : {}),
         },
         // os uniformes divididos, mais a forma assada desta malha
         uniforms: formas ? { ...this.uniforms, uFormas: { value: formas } } : this.uniforms,
-        transparent: false,
-        depthWrite: true,
+        // os que estão entrando misturam por cima do disco, sem escrever
+        // profundidade; o resto é opaco
+        transparent: esmaece,
+        depthWrite: !esmaece,
         depthTest: true,
       });
     };
-    this.faixas = [
-      new Faixa(0, PRIMEIRA_OITAVA_REAL, 'aglomerado', material(0, PRIMEIRA_OITAVA_REAL, 'aglomerado')),
-      new Faixa(
-        PRIMEIRA_OITAVA_REAL,
-        OITAVAS - PRIMEIRA_OITAVA_REAL,
-        'real',
-        material(PRIMEIRA_OITAVA_REAL, OITAVAS - PRIMEIRA_OITAVA_REAL, 'real')
-      ),
-    ];
-    // DA FRENTE PARA TRÁS: as malhas de perto, das finas para as grossas;
-    // os pontos (que descartam) por último, depois das que a GPU sabe esconder
-    const [aglo, reais] = this.faixas as [Faixa, Faixa];
-    const ordem: THREE.Object3D[] = [...reais.malhas, ...aglo.malhas.slice(1), aglo.malhas[0]!, reais.pontos, aglo.pontos];
+    this.faixa = new Faixa(material);
+    // DA FRENTE PARA TRÁS: as malhas de perto; os pontos (que descartam) por
+    // último, depois das que a GPU sabe esconder
+    const ordem: THREE.Object3D[] = [...this.faixa.malhas, this.faixa.pontos];
+    const lerTela = (renderer: THREE.WebGLRenderer, camera: THREE.Camera) => {
+      // o raio na tela (px por radiano) e a janela saem do alvo em que o
+      // quadro é desenhado; a câmera fica para a escolha do próximo quadro
+      renderer.getCurrentViewport(this.tela);
+      this.uniforms.uPxPorRad!.value = 0.5 * this.tela.w * camera.projectionMatrix.elements[5]!;
+      this.camera = camera;
+    };
     ordem.forEach((m, k) => {
       m.renderOrder = k - ordem.length;
-      // o raio na tela (px por radiano) e a janela sai do alvo em que o
-      // quadro é desenhado; a câmera fica para a escolha do próximo quadro
-      m.onBeforeRender = (renderer, _cena, camera) => {
-        renderer.getCurrentViewport(this.tela);
-        this.uniforms.uPxPorRad!.value = 0.5 * this.tela.w * camera.projectionMatrix.elements[5]!;
-        this.camera = camera;
-      };
+      m.onBeforeRender = (renderer, _cena, camera) => lerTela(renderer, camera);
       this.malha.add(m);
     });
+    this.faixa.esmaece.onBeforeRender = (renderer, _cena, camera) => lerTela(renderer, camera);
     this.folha = new THREE.Mesh(
       geometriaDaFolha(),
       new THREE.ShaderMaterial({
         vertexShader: vertice(VERT_DA_FOLHA),
-        fragmentShader: FRAG_DA_FOLHA,
+        fragmentShader: vertice(fragmento(FRAG_DA_FOLHA)),
         uniforms: this.uniforms,
         transparent: true,
         depthWrite: false,
         depthTest: true,
-        // o grão MULTIPLICA o que o disco já pôs no quadro: 2·cor·destino
+        // a folha MULTIPLICA o que o disco já pôs no quadro: 2·cor·destino
         // (o fator 2 deixa a cor da folha abaixo de 1 em qualquer alvo)
         blending: THREE.CustomBlending,
         blendEquation: THREE.AddEquation,
@@ -2119,11 +2262,28 @@ const float R_EXT = ${opcoes.rExt};`;
         side: THREE.DoubleSide,
       })
     );
-    // DEPOIS do disco (é a luz dele que o grão modula)
+    this.nevoa = new THREE.Mesh(
+      new THREE.SphereGeometry(1, 64, 48),
+      new THREE.ShaderMaterial({
+        vertexShader: vertice(VERT_DA_NEVOA),
+        fragmentShader: fragmento(FRAG_DA_NEVOA),
+        uniforms: this.uniforms,
+        transparent: true,
+        depthWrite: false,
+        depthTest: true,
+        side: THREE.BackSide,
+      })
+    );
+    // DEPOIS do disco: a folha (é a luz dele que ela modula), a névoa (atrás
+    // de todos os pedaços) e os que estão entrando (na frente dela)
     this.folha.renderOrder = 10;
-    this.folha.frustumCulled = false;
-    this.folha.visible = false;
-    this.malha.add(this.folha);
+    this.nevoa.renderOrder = 11;
+    this.faixa.esmaece.renderOrder = 12;
+    for (const m of [this.folha, this.nevoa]) {
+      m.frustumCulled = false;
+      m.visible = false;
+    }
+    this.malha.add(this.folha, this.nevoa, this.faixa.esmaece);
     this.malha.matrixAutoUpdate = false;
     this.malha.visible = false;
   }
@@ -2140,7 +2300,8 @@ const float R_EXT = ${opcoes.rExt};`;
   static oitavasAtivas(alturaKm: number): number {
     let n = 0;
     for (const o of TABELA_DE_OITAVAS) {
-      if (o.janela > Math.abs(alturaKm) - o.meiaEspessura) n++;
+      // a camada mais o maior pedaço: ~20 m de folga
+      if (o.janela > Math.abs(alturaKm) - 0.02) n++;
       else break;
     }
     return n;
@@ -2175,13 +2336,16 @@ const float R_EXT = ${opcoes.rExt};`;
     const rhoKm = Math.hypot(c.x, c.y) * KM_POR_RAIO;
     const zKm = c.z * KM_POR_RAIO;
     const noAnel = rhoKm > RAIO_MIN_KM && rhoKm < RAIO_MAX_KM;
+    const espessura = regiaoDasPedras(rhoKm).espessura;
     const ativas = noAnel ? PedrasDoAnel.oitavasAtivas(zKm) : 0;
-    const forca = noAnel ? forcaDoGrao(zKm) : 0;
+    const forca = noAnel ? forcaDaEsteiraNoDisco(zKm, espessura) : 0;
+    const peso = noAnel ? pesoDaNevoa(zKm, espessura) : 0;
     this.malha.visible = ativas > 0 || forca > 0;
-    this.cessao.w = ativas > 0 ? 1 : 0;
+    const fracao = PEDRAS_POR_TIER[q.tier] / PEDRAS_POR_TIER.cinema;
+    this.cessao.w = ativas > 0 ? fracao : 0;
 
     // O RELÓGIO: o passo do quadro, com teto contínuo. Fora do desenho o
-    // relógio é só lembrado — ninguém vê a pedra andar.
+    // relógio é só lembrado — ninguém vê o pedaço andar.
     const dtBruto = Number.isFinite(q.jd) && Number.isFinite(this.jdAntes)
       ? (q.jd - this.jdAntes) * 86400
       : 0;
@@ -2195,29 +2359,16 @@ const float R_EXT = ${opcoes.rExt};`;
     const taxa = -1.5 * om * (R0_KM / rhoKm);
     this.g += taxa * dt;
     this.e += taxa * rhoKm * dt;
-    this.giro = (this.giro + dt / PERIODO_DO_GIRO_S) % 1;
+    this.giro = (((this.giro + dt / PERIODO_DO_GIRO_S) % 1) + 1) % 1;
 
     let theta = Math.atan2(c.y, c.x);
     if (theta < 0) theta += 2 * Math.PI;
-    for (let o = 0; o < OITAVAS; o++) {
-      const t = TABELA_DE_OITAVAS[o]!;
-      const kc = Math.floor(rhoKm / t.ladoRadial);
-      this.fr[o] = rhoKm / t.ladoRadial - kc;
-      const g = this.g * (t.ladoRadial / t.ladoNoArco);
-      const sigma = (theta / (2 * Math.PI)) * t.voltas;
-      const fase = g * kc - this.e / t.ladoNoArco - sigma;
-      this.fs[o] = fase - Math.floor(fase);
-      const gInt = Math.floor(g);
-      this.gi[o] = ((gInt % 65536) + 65536) % 65536;
-      this.gf[o] = g - gInt;
-    }
+    fasesDoLadrilho(rhoKm, theta, this.g, this.e, this.fr, this.fs, this.gi, this.gf);
 
     const porOitava = PEDRAS_POR_TIER[q.tier];
     this.lerLente(theta);
-    for (const f of this.faixas) {
-      f.acenderPontos(ativas, porOitava);
-      f.escolherDePerto(ativas, porOitava, rhoKm, zKm, this.lente, this.fr, this.fs, this.gi, this.gf);
-    }
+    this.faixa.acenderPontos(ativas, porOitava);
+    this.faixa.escolherDePerto(ativas, porOitava, rhoKm, zKm, espessura, this.lente, this.fr, this.fs, this.gi, this.gf);
     const u = this.uniforms;
     (u.uDirSolLocal!.value as THREE.Vector3).copy(q.dirSolLocal);
     (u.uCamLocal!.value as THREE.Vector3).copy(c);
@@ -2227,25 +2378,29 @@ const float R_EXT = ${opcoes.rExt};`;
     u.uLuzGanho!.value = q.luzGanho;
     u.uKPolar!.value = q.kPolar;
     u.uSolAngRad!.value = q.solAngRad;
-    u.uNearKm!.value = q.nearRaios * KM_POR_RAIO;
+    u.uFracaoDoTier!.value = fracao;
     u.uPorOitava!.value = porOitava;
     u.uAtivas!.value = ativas;
     u.uGiro!.value = this.giro;
-    this.cessao.set(rhoKm, theta, zKm, ativas > 0 ? (porOitava / PEDRAS_POR_TIER.cinema) * parcelaDasPedras(zKm) : 0);
-    u.uForcaGrao!.value = forca;
+    this.cessao.set(rhoKm, theta, zKm, ativas > 0 ? fracao : 0);
+    // a câmera na célula das esteiras, em dupla precisão
+    const uR = rhoKm / CELULA_DA_ESTEIRA_KM;
+    const uS = (theta / (2 * Math.PI)) * CELULAS_NA_VOLTA;
+    (u.uCelCam!.value as THREE.Vector4).set(uR - Math.floor(uR), uS - Math.floor(uS), Math.floor(uR), Math.floor(uS));
+    u.uForcaEsteira!.value = forca;
     u.uRaioFolha!.value = raioDaFolhaKm(zKm);
+    // do outro lado da camada, além do maior pedaço (o eixo maior passa de a)
+    u.uFundoFolha!.value = -(Math.sign(zKm) || 1) * (0.5 * espessura + 2 * A_MAX_KM);
     this.folha.visible = forca > 0;
-    this.graoCam.forEach((v, k) => {
-      const periodo = GRAO_BASE_KM * 2 ** k * GRAO_PERIODO;
-      const m = (x: number) => x - periodo * Math.floor(x / periodo);
-      v.set(m(rhoKm), m(R0_KM * theta));
-    });
+    this.nevoa.visible = peso > 0;
   }
 
   dispose() {
-    for (const f of this.faixas) f.dispose();
+    this.faixa.dispose();
     (this.uniforms.uRelevo!.value as THREE.Texture).dispose();
-    this.folha.geometry.dispose();
-    (this.folha.material as THREE.ShaderMaterial).dispose();
+    for (const m of [this.folha, this.nevoa]) {
+      m.geometry.dispose();
+      (m.material as THREE.ShaderMaterial).dispose();
+    }
   }
 }

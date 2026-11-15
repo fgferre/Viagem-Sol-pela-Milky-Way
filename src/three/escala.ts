@@ -459,21 +459,22 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
     id: 'pedras-do-anel-de-saturno',
     nome: 'as pedras 3D de dentro do anel (só com ?pedras=3d)',
     classe: 'instrumento',
-    fator: 512,
+    fator: 1,
     fatorDeBrilho: null,
-    endereco: 'src/three/world/corpos/pedrasDoAnel.ts:79',
+    endereco: 'src/three/world/corpos/pedrasDoAnel.ts:76',
     razao:
-      'O QUE É DE VERDADE: as três oitavas menores (pedras de 1,6 a 12,5 m, o ' +
-      'tamanho das maiores partículas medidas no anel), a lei de tamanhos dN/ds ' +
-      '∝ s⁻³, o lugar e a densidade de cada pedra (o perfil medido do anel, até o ' +
-      'teto do campo), a lâmina de ±15 m dessas oitavas e o cisalhamento de Kepler ' +
-      'no relógio do app. O QUE É EXAGERO: as nove oitavas de cima, até pedaços de ' +
-      '6,4 km — 512× a maior partícula real, e é o fator desta linha. Cada uma é ' +
-      'um AGLOMERADO (a multidão que a lajota já confessava) e se desfaz nas partes ' +
-      'quando a câmera chega perto; a lâmina delas engorda com o tamanho (±2,5 ' +
-      'tamanhos, até ±8 km); e o GIRO próprio de cada pedra (1 a 3 voltas a cada 6 h ' +
-      'de relógio) é escolha de cinema. O campo carrega no máximo τ ≈ 0,6: no miolo ' +
-      'do B o resto fica no disco liso',
+      'NÃO HÁ EXAGERO DE TAMANHO: os pedaços têm de 1 cm a 10 m de raio, na lei ' +
+      'de tamanhos medida (n ∝ a⁻³), na quantidade que o perfil medido do anel ' +
+      'pede, numa camada da espessura medida em cada anel (8 m no A, 4 m no C, ' +
+      '10 m na divisão de Cassini; no B, que ninguém mediu, os 8 m do A), e andam ' +
+      'com o cisalhamento de Kepler e giram com a agitação medida (~1 mm/s). O ' +
+      'QUE É SORTEADO: o lugar e a forma de cada pedaço, porque ninguém os ' +
+      'conhece — saem das estatísticas medidas; os grandes são na maioria montes ' +
+      'de pedaços menores, como o modelo aceito diz. As ESTEIRAS em que os pedaços ' +
+      'se juntam nos anéis A e B (a 60 m uma da outra, inclinadas ~20°) vêm de ' +
+      'ocultações de estrelas e nunca foram fotografadas: o desenho delas é ' +
+      'sorteado com o espaçamento, o ângulo e o contraste medidos. Onde o campo ' +
+      'não dá conta de tantos pedaços (o miolo do B), o resto fica no disco liso',
   },
 ] as const;
 

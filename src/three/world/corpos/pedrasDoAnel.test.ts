@@ -1,4 +1,4 @@
-// Serve: lei — as pedras 3D do anel (`?pedras=3d`) entram sem estalo e o disco cede só o que elas carregam
+// Serve: lei — as pedras 3D do anel (`?pedras=3d`) só mostram o que o anel tem, em lugar que não depende da câmera, e o disco cede só o que elas carregam
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
@@ -11,26 +11,33 @@ import {
   GLSL_SOMBRA_DO_PLANETA_NO_ANEL,
 } from './gigante';
 import {
-  CESSAO_PLENA,
+  A_MAX_KM,
+  FRACAO_NAO_RESOLVIDA,
+  FRACAO_POR_OITAVA,
   K_JANELA,
   OITAVAS,
   PEDRAS_3D,
-  PRIMEIRA_OITAVA_REAL,
   PEDRAS_POR_TIER,
   PedrasDoAnel,
+  R0_KM,
+  REGIOES_DAS_PEDRAS,
   TABELA_DE_OITAVAS,
+  TAU_TETO,
   VARIANTES,
+  X_PLENO,
   aceitaPedra,
   assarFormas,
   alfaCedido,
   cessaoDoDisco,
-  forcaDoGrao,
-  H_GRAO_KM,
+  densidadeDaEsteira,
+  lugarDaPedra,
   luzDaFace,
-  parcelaDasPedras,
+  pedacosPorArea,
   presencaDaOitava,
+  regiaoDasPedras,
   sombraMutua,
 } from './pedrasDoAnel';
+import { REGIOES_DO_ANEL } from './gigante';
 
 const KM_POR_RAIO = BODY_AXES.saturn[0]!;
 
@@ -65,15 +72,49 @@ describe('pedras 3D do anel', () => {
     expect(ANEL_FRAG).toContain('gl_FragColor = vec4(direta + doGlobo, clamp(camada.y, 0.0, 1.0));');
   });
 
-  it('cada oitava entra com peso zero na borda da janela; o aglomerado se desfaz perto, a pedra real não', () => {
+  it('cada pedaço entra com opacidade zero na borda da janela, opaco meia oitava dentro, e não sai de perto', () => {
     for (let o = 0; o < OITAVAS; o++) {
       const { s: tam, janela } = TABELA_DE_OITAVAS[o]!;
       expect(janela).toBe(K_JANELA * tam);
       expect(presencaDaOitava(o, janela)).toBe(0);
       expect(presencaDaOitava(o, janela * 1.5)).toBe(0);
-      expect(presencaDaOitava(o, janela * 0.99)).toBeLessThan(0.02);
-      expect(presencaDaOitava(o, 32 * tam)).toBe(1);
-      expect(presencaDaOitava(o, 4 * tam)).toBe(o >= PRIMEIRA_OITAVA_REAL ? 1 : 0);
+      expect(presencaDaOitava(o, janela * 0.99)).toBeLessThan(0.05);
+      expect(presencaDaOitava(o, 2 ** X_PLENO * tam)).toBe(1);
+      expect(presencaDaOitava(o, 0.01 * tam)).toBe(1);
+    }
+  });
+
+  it('só tamanhos medidos: a maior oitava acaba em 10 m de raio, a menor em ~1 cm', () => {
+    expect(TABELA_DE_OITAVAS[0]!.s).toBeCloseTo(2 * A_MAX_KM / 2, 12);
+    expect(TABELA_DE_OITAVAS[OITAVAS - 1]!.s / 2).toBeGreaterThan(0.5e-5);
+  });
+
+  it('a densidade por oitava é a da lei a⁻³ medida, e as frações de τ fecham em 1', () => {
+    // a integral de n(a) = C·a⁻³ em [a, 2a), com τ = π·C·ln(a_max/a_min)
+    const lnF = Math.log(A_MAX_KM / 0.5e-5);
+    for (const tau of [0.1, 0.5, 2]) {
+      for (const a of [1e-5, 1e-4, 1e-3, 5e-3]) {
+        const C = tau / (Math.PI * lnF);
+        let n = 0;
+        const passos = 20000;
+        for (let k = 0; k < passos; k++) {
+          const x = a * (1 + (k + 0.5) / passos);
+          n += (C / (x * x * x)) * (a / passos);
+        }
+        expect(pedacosPorArea(tau, a) / n).toBeCloseTo(1, 6);
+      }
+    }
+    expect(OITAVAS * FRACAO_POR_OITAVA + FRACAO_NAO_RESOLVIDA).toBeCloseTo(1, 12);
+    expect(FRACAO_NAO_RESOLVIDA).toBeGreaterThan(0.08);
+    expect(FRACAO_NAO_RESOLVIDA).toBeLessThan(0.1);
+    // o campo aceita exatamente essa contagem por área (antes do teto)
+    const rho = 128_000;
+    for (let o = 0; o < OITAVAS; o++) {
+      const t = TABELA_DE_OITAVAS[o]!;
+      const tau = 0.5;
+      const aceitos = PEDRAS_POR_TIER.cinema * ((tau * rho) / (R0_KM * TAU_TETO));
+      const area = t.ladoRadial * t.ladoNoArco * (rho / R0_KM);
+      expect(aceitos / area / pedacosPorArea(tau, t.s / 2)).toBeCloseTo(1, 2);
     }
   });
 
@@ -84,59 +125,113 @@ describe('pedras 3D do anel', () => {
     expect(aceitaPedra(0.5, 120_000, 0)).toBe(true);
   });
 
-  it('a cessão do disco é contínua, entre 0 e 1, inteira onde as três oitavas estão, e zero longe', () => {
-    let antes = cessaoDoDisco(1e-4);
-    expect(antes).toBe(CESSAO_PLENA);
-    // as pedras pequenas carregam menos luz: o disco guarda um pouco
-    expect(CESSAO_PLENA).toBeGreaterThan(0.7);
-    expect(CESSAO_PLENA).toBeLessThan(1);
-    // passos de 0,2 %: a mesma resolução em toda oitava
-    for (let d = 1e-4; d <= 1000; d *= 1.002) {
+  it('a cessão do disco é contínua e é a fração de τ das oitavas resolvidas', () => {
+    const cheia = OITAVAS * FRACAO_POR_OITAVA;
+    expect(cessaoDoDisco(1e-6)).toBeCloseTo(cheia, 12);
+    let antes = cessaoDoDisco(1e-6);
+    for (let d = 1e-6; d <= 10; d *= 1.002) {
       const f = cessaoDoDisco(d);
       expect(f).toBeGreaterThanOrEqual(0);
-      expect(f).toBeLessThanOrEqual(1);
+      expect(f).toBeLessThanOrEqual(cheia + 1e-12);
       expect(Math.abs(f - antes)).toBeLessThan(0.002);
-      // sem ondular: do primeiro metro até onde a oitava de cima se completa
-      if (d < 16 * TABELA_DE_OITAVAS[0]!.s) expect(f).toBeCloseTo(CESSAO_PLENA, 9);
       antes = f;
     }
+    // do alto nenhum pedaço se resolve: o disco é o de hoje
     expect(cessaoDoDisco(TABELA_DE_OITAVAS[0]!.janela)).toBe(0);
+    expect(cessaoDoDisco(6)).toBe(0);
     for (const a of [0, 0.2, 0.7, 1]) expect(alfaCedido(a, 0)).toBe(a);
     expect(alfaCedido(0.6, 1)).toBe(0);
+  });
+
+  it('o lugar de um pedaço no anel não depende da câmera (acima ou abaixo do plano)', () => {
+    const camA = { rhoKm: 128_000, theta: 0.3, zKm: 0.003 };
+    const camB = { rhoKm: 128_000.0004, theta: 0.3 + 2e-9, zKm: -0.003 };
+    let comparados = 0;
+    for (let o = 0; o < OITAVAS; o++) {
+      for (let i = 0; i < 400; i++) {
+        for (const [g, e] of [[0, 0], [3.7, -91.2]] as const) {
+          const a = lugarDaPedra(o, i, camA, g, e);
+          const b = lugarDaPedra(o, i, camB, g, e);
+          // só onde as duas câmeras escolhem a mesma imagem do ladrilho
+          const t = TABELA_DE_OITAVAS[o]!;
+          const dS = a.sKm - R0_KM * camA.theta;
+          if (Math.abs(a.rhoKm - camA.rhoKm) > 0.4 * t.ladoRadial || Math.abs(dS) > 0.4 * t.ladoNoArco) continue;
+          expect(b.rhoKm).toBeCloseTo(a.rhoKm, 9);
+          expect(b.sKm).toBeCloseTo(a.sKm, 9);
+          expect(b.zKm).toBe(a.zKm);
+          expect(b.raioKm).toBe(a.raioKm);
+          comparados++;
+        }
+      }
+    }
+    expect(comparados).toBeGreaterThan(1000);
+  });
+
+  it('nenhum pedaço passa de 10 m de raio, e nenhum centro sai da camada', () => {
+    for (const rho of [80_000, 100_000, 119_000, 128_000]) {
+      const esp = regiaoDasPedras(rho).espessura;
+      for (let o = 0; o < OITAVAS; o++) {
+        for (let i = 0; i < 2000; i++) {
+          const p = lugarDaPedra(o, i, { rhoKm: rho, theta: 1, zKm: 0 });
+          expect(p.raioKm).toBeLessThanOrEqual(A_MAX_KM);
+          expect(Math.abs(p.zKm)).toBeLessThanOrEqual(esp / 2);
+          if (2 * p.raioKm >= esp) expect(Math.abs(p.zKm)).toBe(0);
+        }
+      }
+    }
+  });
+
+  it('as esteiras: média 1, contraste forte no A, e 1 no C e na divisão de Cassini', () => {
+    // as fronteiras das regiões são as do disco
+    for (let k = 1; k < REGIOES_DAS_PEDRAS.length; k++) {
+      expect(REGIOES_DO_ANEL[k]!.km).toBe(REGIOES_DAS_PEDRAS[k]!.km);
+      expect(REGIOES_DO_ANEL[k]!.meia).toBe(REGIOES_DAS_PEDRAS[k]!.meia);
+    }
+    let soma = 0;
+    let n = 0;
+    let max = 0;
+    let min = Infinity;
+    for (let a = 0; a < 300; a++) {
+      for (let b = 0; b < 300; b++) {
+        const d = densidadeDaEsteira(50_000 + (b + 0.5) * 0.01, 128_000 + (a + 0.5) * 0.01);
+        soma += d;
+        n++;
+        max = Math.max(max, d);
+        min = Math.min(min, d);
+      }
+    }
+    expect(Math.abs(soma / n - 1)).toBeLessThan(0.02);
+    expect(max / min).toBeGreaterThan(5);
+    for (const rho of [80_000, 85_000, 118_500, 119_500]) {
+      for (const s of [0, 1234.5, 777_000]) expect(densidadeDaEsteira(s, rho)).toBe(1);
+    }
   });
 
   it('longe do plano não desenha; rente a ele acende só as oitavas que a altura alcança', () => {
     const p = pedrasDeTeste();
     p.atualizar(quadro(128_000, 2000));
     expect(p.malha.visible).toBe(false);
-    p.atualizar(quadro(128_000, 20));
+    p.atualizar(quadro(128_000, 1));
     expect(p.malha.visible).toBe(true);
-    // um ponto por pedra de cada oitava ativa (as malhas de perto e as bolas
-    // do que se desfaz, que leem \`aId\`, são escolhidas a mais)
-    let n = 0;
-    p.malha.traverse((m) => {
-      if (m instanceof THREE.Points && !m.geometry.getAttribute('aId')) n += m.geometry.drawRange.count;
-    });
+    // um ponto por pedaço de cada oitava ativa (as malhas de perto são escolhidas a mais)
+    const n = (p.malha.children.find((m) => m instanceof THREE.Points) as THREE.Points).geometry.drawRange.count;
     expect(n % PEDRAS_POR_TIER.cinema).toBe(0);
-    expect(n / PEDRAS_POR_TIER.cinema).toBe(PedrasDoAnel.oitavasAtivas(20));
-    expect(PedrasDoAnel.oitavasAtivas(20)).toBeLessThan(OITAVAS);
+    expect(n / PEDRAS_POR_TIER.cinema).toBe(PedrasDoAnel.oitavasAtivas(1));
+    expect(PedrasDoAnel.oitavasAtivas(1)).toBeLessThan(OITAVAS);
     expect(PedrasDoAnel.oitavasAtivas(0.003)).toBe(OITAVAS);
     p.dispose();
   });
 
-  it('o grão do disco entra contínuo abaixo de 1.600 km, antes das pedras', () => {
-    expect(forcaDoGrao(H_GRAO_KM)).toBe(0);
-    expect(forcaDoGrao(H_GRAO_KM / 2)).toBe(1);
-    for (let h = 3000; h > 1; h /= 1.002) {
-      expect(Math.abs(forcaDoGrao(h) - forcaDoGrao(h * 1.002))).toBeLessThan(0.005);
-    }
+  it('as esteiras do disco aparecem abaixo de 25 km, antes de qualquer pedaço', () => {
     const p = pedrasDeTeste();
-    p.atualizar(quadro(128_000, 1000));
+    p.atualizar(quadro(128_000, 30));
+    expect(p.malha.visible).toBe(false);
+    p.atualizar(quadro(128_000, 10));
     expect(p.malha.visible).toBe(true);
     expect(p.cessao.w).toBe(0);
     let pedras = 0;
     p.malha.traverse((m) => {
-      if (m.visible && m !== p.malha && m.renderOrder < 0) pedras++;
+      if (m.visible && m !== p.malha && m.renderOrder !== 10) pedras++;
     });
     expect(pedras).toBe(0);
     p.dispose();
@@ -145,28 +240,14 @@ describe('pedras 3D do anel', () => {
   it('relógio parado, pedra parada; mexer a câmera não acumula cisalhamento', () => {
     const p = pedrasDeTeste();
     const u = ((p.malha.children[0] as THREE.Mesh).material as THREE.ShaderMaterial).uniforms;
-    p.atualizar(quadro(128_000, 20));
+    p.atualizar(quadro(128_000, 1));
     const gf = Array.from(u.uGf.value as Float32Array);
-    p.atualizar(quadro(128_500, 25));
+    p.atualizar(quadro(128_500, 1.2));
     expect(Array.from(u.uGf.value as Float32Array)).toEqual(gf);
     // relógio andando: o cisalhamento anda, com o passo grampeado
-    p.atualizar(quadro(128_500, 25, 2446471 + 1));
+    p.atualizar(quadro(128_500, 1.2, 2446471 + 1));
     expect(Array.from(u.uGf.value as Float32Array)).not.toEqual(gf);
     p.dispose();
-  });
-
-  it('a parcela que as pedras assumem é contínua e monotônica com a altura', () => {
-    let antes = parcelaDasPedras(5000);
-    expect(antes).toBeGreaterThan(0);
-    for (let h = 5000; h >= 1e-4; h /= 1.002) {
-      const p = parcelaDasPedras(h);
-      expect(p).toBeGreaterThanOrEqual(antes);
-      expect(p - antes).toBeLessThan(0.002);
-      expect(p).toBeLessThanOrEqual(1);
-      antes = p;
-    }
-    expect(parcelaDasPedras(1e-4)).toBe(1);
-    expect(parcelaDasPedras(-20)).toBe(parcelaDasPedras(20));
   });
 
   it('o lado da noite nunca é zero, nem na sombra do globo', () => {
@@ -174,6 +255,7 @@ describe('pedras 3D do anel', () => {
       for (const cosGlobo of [-1, 0, 1]) {
         for (const sombra of [0, 1]) {
           expect(luzDaFace(cosSol, cosGlobo, sombra, 0)).toBeGreaterThan(0);
+          expect(luzDaFace(cosSol, cosGlobo, sombra, 0, 1, 0.1)).toBeGreaterThan(0);
         }
       }
     }
