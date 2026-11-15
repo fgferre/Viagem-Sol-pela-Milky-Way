@@ -543,8 +543,10 @@ export const X_CORTE = 5.5;
  * AS FORMAS: a de cada pedaço não foi medida. O modelo aceito é que os
  * grandes são AGREGADOS efêmeros de pedaços menores (Davis et al. 1984):
  * acima de `DIAMETRO_DOS_MONTES_KM` (~2,5 m) todo pedaço é MONTE — doze bolas
- * de tamanhos bem diferentes, unidas por um máximo suave; abaixo, a maioria
- * é BLOCO — gelo único e anguloso, o elipsoide com faces de fratura planas.
+ * de tamanhos bem diferentes, unidas por um máximo suave, e de perto dezenas
+ * de submembros pela lei dos tamanhos (`subMembros`); abaixo, a maioria é
+ * BLOCO — gelo único e anguloso, de perto um poliedro de 8 a 14 faces
+ * (`planosDoBloco`).
  * Nenhum bloco entre os grandes: um monólito de 20 m com faces planas lia
  * como uma tábua na frente de Saturno, e o modelo não o sustenta.
  */
@@ -556,6 +558,19 @@ export const FASE_PISO = 0.5;
 export const MEMBROS = 12;
 /** as formas assadas de cada tipo (ver `assarFormas`) */
 export const VARIANTES = 8;
+/**
+ * OS PLANOS DO BLOCO (décima volta): um estilhaço de gelo é anguloso por
+ * inteiro — o elipsoide com um ou dois cortes lia como queijo cortado. O
+ * bloco é a interseção de `PLANOS_DO_BLOCO` (8 a 14) semiespaços: as
+ * normais saem de uma rede de Fibonacci girada ao acaso e sacudida (elas
+ * cobrem a esfera, e o poliedro fecha), a distância de cada face, sorteada;
+ * o canto mais longe toca a esfera unitária (o ponto desenha dentro dela).
+ * De longe o poliedro é o de quinas vivas; de perto, as arestas
+ * arredondam. O alongado e o achatado vêm dos eixos da pedra, como antes.
+ */
+const PLANOS_DO_BLOCO = [8, 14] as const;
+/** o expoente do mínimo suave das faces: a aresta arredonda ~2 % do raio */
+const P_DA_ARESTA = 40;
 /** as linhas de cada variante na textura das formas: uA, uB, nA, nB, (oclusão, sujeira) */
 const LINHAS_DA_FORMA = 5;
 const BASE_DO_BLOCO = 0x2545f491;
@@ -574,11 +589,13 @@ const CELULAS_DO_RELEVO = 16;
  * A ÁREA DE CADA TIPO: a seção do elipsoide é 0,61 do disco de raio 1; as
  * faces do bloco e o vão entre as bolas do monte tiram área. Cada tipo
  * cresce √(0,61/área) (longe, perto) — a seção média fica a do elipsoide.
+ * O bloco poliedro (décima volta) mora dentro da esfera unitária e tem ~43 %
+ * da área do de antes: 1,124 × √(11,39/4,91) de longe, e de perto a mesma
+ * conta sobre a área dele (4,76, as arestas arredondadas) — longe e perto
+ * do mesmo tamanho.
  */
-const ESCALA_DO_BLOCO = [1.124, 1.195] as const;
+const ESCALA_DO_BLOCO = [1.711, 1.739] as const;
 const ESCALA_DO_MONTE = [1.212, 1.15] as const;
-/** a média da oclusão das vizinhas no monte, pesada pela área: o albedo é dividido por ela */
-const AO_MEDIO_DO_MONTE = 0.98;
 /** a cor do brilho de Saturno sobre as pedras: o bege do globo, luminância 1 (escolha declarada) */
 const COR_DE_SATURNO = [1.05, 0.99, 0.9] as const;
 
@@ -1098,19 +1115,12 @@ void parametrosDaForma() {
   vec4 r6 = quatro(misturar(base ^ 0x1b56c4e9u)); // eixos (2), tipo
   // os grandes são na maioria montes (agregados, Davis et al. 1984)
   bloco = r6.z < (2.0 * gRaio > ${glslF(DIAMETRO_DOS_MONTES_KM)} ? ${glslF(BLOCOS_ENTRE_OS_GRANDES)} : ${glslF(BLOCOS_ENTRE_OS_PEQUENOS)}) ? 1.0 : 0.0;
-  // A FORMA é a da variante: no bloco, as faces (normal, distância); no
-  // monte, o miolo e as três grandes (centro, raio) — o que o ponto desenha
-  // de longe, e a forma \`A\` da malha assada
+  // A FORMA é a da variante: no monte, o miolo e as três grandes (centro,
+  // raio) — o que o ponto desenha de longe, e a forma \`A\` da malha
+  // assada; no bloco, as faces da variante (\`PLANOS\`, no fragmento)
   uint vb = baseDaForma(bloco > 0.5, base);
 #ifndef MALHA
-  for (int k = 0; k < 4; k++) {
-    if (bloco > 0.5) {
-      vec4 rc = quatro(misturar(vb ^ (0x9e3779b1u + uint(k) * 0x165667b1u)));
-      cortes[k] = vec4(direcao(rc.x, rc.y), 0.5 + 0.32 * rc.z);
-    } else {
-      cortes[k] = membro(vb, k);
-    }
-  }
+  for (int k = 0; k < 4; k++) cortes[k] = bloco > 0.5 ? vec4(0.0) : membro(vb, k);
 #endif
   // o bloco vai do alongado ao achatado; o monte é mais redondo
   eixosF = bloco > 0.5
@@ -1128,7 +1138,7 @@ void parametrosDaForma() {
   gCosGiro = cos(angGiro);
   gSenGiro = sin(angGiro);
   uint hs = misturar(base ^ 0xd3a2646cu);
-  vSemente = vec4(vec3(float(hs & 0x3ffu), float((hs >> 10) & 0x3ffu), float(hs >> 20)) * (37.0 / 1023.0), bloco);
+  vSemente = vec4(vec3(float(hs & 0x3ffu), float((hs >> 10) & 0x3ffu), float(hs >> 20)) * (37.0 / 1023.0), bloco > 0.5 ? 1.0 + float(gVar) : 0.0);
 }
 // do quadro da pedra para o do anel (giro inicial e giro próprio)
 vec3 girar(vec3 v) {
@@ -1386,8 +1396,14 @@ vec3 sombrear(vec3 vista, vec3 p, vec3 nl0, mat3 giro, float ao, float sujo) {
   vec3 nb = nl0;
   // o pedaço de poucos px (\`vFica.z\`, o raio na tela) não paga relevo
   if (vFica.z > 4.0) {
-    vec3 g = relevo(q, w, bloco ? 3.0 : 2.2, bloco ? 0.05 : 0.26);
-    if (vFica.z > 12.0) g += relevo(q.zxy + vSemente.zxy, w.zxy, 13.0, bloco ? 0.022 : 0.04).yzx;
+    // (décima volta: a forma de perto já tem os caroços e as faces; o
+    // relevo largo, que neles lia como cera e gesso batido, afina)
+    vec3 g = relevo(q, w, bloco ? 3.0 : 2.2, bloco ? 0.03 : mix(0.26, 0.12, clamp(vFica.z / ${glslF(PX_CORTE)} - 1.0, 0.0, 1.0)));
+    // o monte grande é de mais pedaços: o relevo fino é mais fundo nele,
+    // e ganha uma oitava a mais (0 a 2,5 m de diâmetro, 1 a 20 m)
+    float grande = bloco ? 0.0 : clamp(log2(2.0 * vFica.y / ${glslF(DIAMETRO_DOS_MONTES_KM)}) / 3.0, 0.0, 1.0);
+    if (vFica.z > 12.0) g += relevo(q.zxy + vSemente.zxy, w.zxy, 13.0, bloco ? 0.022 : 0.04 * (1.0 + grande)).yzx;
+    if (vFica.z > 40.0 && grande > 0.0) g += relevo(q.yzx + vSemente.yzx, w.yzx, 41.0, 0.016 * grande).zxy;
     nb -= g - dot(g, nl0) * nl0;
   }
   vec3 n = normalize(giro * nb);
@@ -1470,12 +1486,21 @@ flat varying mat3 vGiro;
 flat varying vec3 vEixos;
 flat varying vec4 vCortes[4];
 flat varying vec4 vProj;
+// as faces dos blocos, \`PLANOS_DO_BLOCO[1]\` por variante (as que sobram, longe)
+const vec4 PLANOS[${VARIANTES * PLANOS_DO_BLOCO[1]}] = vec4[](${Array.from(
+  { length: VARIANTES },
+  (_, v) => {
+    const p = planosDoBloco(baseDaVariante(true, v));
+    while (p.length < PLANOS_DO_BLOCO[1]) p.push([0, 0, 1, 1e3]);
+    return p.map((c) => `vec4(${c.map(glslF).join(', ')})`).join(', ');
+  },
+).join(', ')});
 void main() {
   // o RAIO DE VISADA deste pixel, na vista (a câmera na origem)
   vec2 ndc = (gl_FragCoord.xy - uTela.xy) / uTela.zw * 2.0 - 1.0;
   vec3 d = normalize(vec3((ndc.x + vProj.z) / vProj.x, (ndc.y + vProj.w) / vProj.y, -1.0));
   // no quadro da pedra, com o achatamento desfeito: a esfera unitária
-  // cortada pelos planos de fratura
+  // (o envelope; o bloco é o poliedro dentro dela)
   mat3 Mt = transpose(vGiro);
   vec3 qo = (Mt * -vCentro) / vFica.w / vEixos;
   vec3 qd = (Mt * d) / vFica.w / vEixos;
@@ -1489,8 +1514,11 @@ void main() {
   vec3 nq = qo + t0 * qd;
   bool acerta;
   if (vSemente.w > 0.5) {
-    for (int k = 0; k < 4; k++) {
-      vec4 c = vCortes[k];
+    // o BLOCO de longe: o poliedro da variante (\`planosDoBloco\`), dentro
+    // da esfera unitária
+    int v0 = (int(vSemente.w + 0.5) - 1) * ${PLANOS_DO_BLOCO[1]};
+    for (int k = 0; k < ${PLANOS_DO_BLOCO[1]}; k++) {
+      vec4 c = PLANOS[v0 + k];
       float nd = dot(c.xyz, qd);
       float no = dot(c.xyz, qo);
       float tp = (c.w - no) / (abs(nd) > 1.0e-12 ? nd : 1.0e-12);
@@ -1848,9 +1876,9 @@ function molde(detalhe: number): THREE.BufferGeometry {
  *
  * Cada variante guarda as DUAS formas: a do ponto (`A`: o bloco com as
  * quatro faces, o monte com o miolo e as três grandes — o mesmo corpo que o
- * fragmento do ponto acerta) e a de perto (`B`: sete faces, lóbulos e o
- * relevo da silhueta; os doze membros). O vértice mistura as duas pela
- * mesma lei de antes (`lobos`): nada estala na troca.
+ * fragmento do ponto acerta) e a de perto (`B`: o poliedro do bloco; os
+ * doze membros e os submembros que a malha resolve). O vértice mistura as
+ * duas pela mesma lei de antes (`lobos`): nada estala na troca.
  */
 
 function quatro(h: number): [number, number, number, number] {
@@ -1880,18 +1908,118 @@ export function membro(base: number, k: number): number[] {
 export function baseDaVariante(bloco: boolean, v: number): number {
   return misturar((v + (bloco ? BASE_DO_BLOCO : BASE_DO_MONTE)) >>> 0);
 }
-/** as faces de fratura do bloco: as quatro do ponto e as três só de perto */
-function cortesDoBloco(vb: number): number[][] {
+function girarPorQuaternio(q: number[], v: number[]): number[] {
+  const [x, y, z, w] = q as [number, number, number, number];
+  const t = [
+    2 * (y * v[2]! - z * v[1]!),
+    2 * (z * v[0]! - x * v[2]!),
+    2 * (x * v[1]! - y * v[0]!),
+  ];
+  return [
+    v[0]! + w * t[0]! + y * t[2]! - z * t[1]!,
+    v[1]! + w * t[1]! + z * t[0]! - x * t[2]!,
+    v[2]! + w * t[2]! + x * t[1]! - y * t[0]!,
+  ];
+}
+function planosDoBloco(vb: number): number[][] {
+  const r0 = quatro(misturar((vb ^ 0x7f4a7c15) >>> 0));
+  const n =
+    PLANOS_DO_BLOCO[0] +
+    Math.min(
+      Math.floor(r0[0] * (PLANOS_DO_BLOCO[1] - PLANOS_DO_BLOCO[0] + 1)),
+      PLANOS_DO_BLOCO[1] - PLANOS_DO_BLOCO[0],
+    );
+  const q = [
+    Math.sqrt(1 - r0[1]) * Math.sin(2 * Math.PI * r0[2]),
+    Math.sqrt(1 - r0[1]) * Math.cos(2 * Math.PI * r0[2]),
+    Math.sqrt(r0[1]) * Math.sin(2 * Math.PI * r0[3]),
+    Math.sqrt(r0[1]) * Math.cos(2 * Math.PI * r0[3]),
+  ];
   const c: number[][] = [];
-  for (let k = 0; k < 4; k++) {
-    const r = quatro(misturar((vb ^ ((0x9e3779b1 + Math.imul(k, 0x165667b1)) >>> 0)) >>> 0));
-    c.push([...direcao(r[0], r[1]), 0.5 + 0.32 * r[2]]);
+  for (let k = 0; k < n; k++) {
+    const r = quatro(
+      misturar((vb ^ ((0x2c1b3c6d + Math.imul(k, 0x297a2d39)) >>> 0)) >>> 0),
+    );
+    const z = 1 - (2 * (k + 0.5)) / n;
+    const a = k * 2.399963;
+    const s = Math.sqrt(1 - z * z);
+    const base = girarPorQuaternio(q, [s * Math.cos(a), s * Math.sin(a), z]);
+    const sac = direcao(r[0], r[1]);
+    c.push([
+      ...unir([0, 1, 2].map((j) => base[j]! + 0.4 * sac[j]!)),
+      0.7 + 0.3 * r[2],
+    ]);
   }
-  for (let k = 0; k < 3; k++) {
-    const r = quatro(misturar((vb ^ ((0x3c6ef372 + Math.imul(k, 0x165667b1)) >>> 0)) >>> 0));
-    c.push([...direcao(r[0], r[1]), 0.55 + 0.25 * r[2]]);
-  }
+  // os cantos: os encontros de três faces que as outras não cortam
+  let rMax = 0;
+  for (let a = 0; a < n; a++)
+    for (let b = a + 1; b < n; b++)
+      for (let e = b + 1; e < n; e++) {
+        const [A, B, C] = [c[a]!, c[b]!, c[e]!];
+        const bc = [
+          B[1]! * C[2]! - B[2]! * C[1]!,
+          B[2]! * C[0]! - B[0]! * C[2]!,
+          B[0]! * C[1]! - B[1]! * C[0]!,
+        ];
+        const det = A[0]! * bc[0]! + A[1]! * bc[1]! + A[2]! * bc[2]!;
+        if (Math.abs(det) < 1e-9) continue;
+        const ca = [
+          C[1]! * A[2]! - C[2]! * A[1]!,
+          C[2]! * A[0]! - C[0]! * A[2]!,
+          C[0]! * A[1]! - C[1]! * A[0]!,
+        ];
+        const ab = [
+          A[1]! * B[2]! - A[2]! * B[1]!,
+          A[2]! * B[0]! - A[0]! * B[2]!,
+          A[0]! * B[1]! - A[1]! * B[0]!,
+        ];
+        const x = [0, 1, 2].map(
+          (j) => (A[3]! * bc[j]! + B[3]! * ca[j]! + C[3]! * ab[j]!) / det,
+        );
+        if (
+          c.every(
+            (p) =>
+              p[0]! * x[0]! + p[1]! * x[1]! + p[2]! * x[2]! <= p[3]! + 1e-9,
+          )
+        )
+          rMax = Math.max(rMax, Math.hypot(x[0]!, x[1]!, x[2]!));
+      }
+  for (const p of c) p[3] = p[3]! / rMax;
   return c;
+}
+/**
+ * O BLOCO na direção d: o mínimo suave das faces (de longe, `p` infinito: o
+ * mínimo), a normal do gradiente e a face dona
+ */
+function raioDoPoliedro(d: number[], planos: number[][], p = P_DA_ARESTA) {
+  if (!Number.isFinite(p)) {
+    let r = Infinity;
+    let dono = -1;
+    planos.forEach((c, k) => {
+      const kc = dot3(d, c);
+      if (kc > 1e-9 && c[3]! / kc < r) {
+        r = c[3]! / kc;
+        dono = k;
+      }
+    });
+    return { r, n: planos[dono]!.slice(0, 3), dono };
+  }
+  let s = 0;
+  let melhor = 0;
+  let dono = -1;
+  const g = [0, 0, 0];
+  planos.forEach((c, k) => {
+    const t = dot3(d, c) / c[3]!;
+    if (t <= 0) return;
+    const tp = t ** (p - 1);
+    s += tp * t;
+    for (let j = 0; j < 3; j++) g[j]! += (tp * c[j]!) / c[3]!;
+    if (t > melhor) {
+      melhor = t;
+      dono = k;
+    }
+  });
+  return { r: s ** (-1 / p), n: unir(g), dono };
 }
 /** o ruído de valor da CPU (o relevo da silhueta do bloco), em [0, 1] */
 function ruidoCPU(x: number, y: number, z: number): number {
@@ -1907,46 +2035,15 @@ function ruidoCPU(x: number, y: number, z: number): number {
     fz
   );
 }
-const LOBOS = [
-  [0, 0.5257311, 0.8506508], [0, 0.5257311, -0.8506508], [0.5257311, 0.8506508, 0],
-  [0.5257311, -0.8506508, 0], [0.8506508, 0, 0.5257311], [0.8506508, 0, -0.5257311],
-];
-const dot3 = (a: ArrayLike<number>, b: ArrayLike<number>) => a[0]! * b[0]! + a[1]! * b[1]! + a[2]! * b[2]!;
+const dot3 = (a: ArrayLike<number>, b: ArrayLike<number>) =>
+  a[0]! * b[0]! + a[1]! * b[1]! + a[2]! * b[2]!;
 function unir(v: number[]): number[] {
   const l = Math.hypot(v[0]!, v[1]!, v[2]!) || 1;
   return [v[0]! / l, v[1]! / l, v[2]! / l];
 }
 
-/** O BLOCO na direção d (a receita da quarta volta): raio, normal analítica e se caiu numa face */
-function raioDoBloco(d: number[], cortes: number[][], lobos: boolean, am: number[], lP: number) {
-  let r = 1;
-  let n = d;
-  if (lobos) {
-    const e2 = Math.exp(-2 * lP);
-    const g = [0, 0, 0];
-    for (let k = 0; k < 6; k++) {
-      const L = LOBOS[k]!;
-      const ep = Math.exp(lP * (dot3(d, L) - 1));
-      const em = e2 / ep;
-      r += am[k]! * ep + am[6 + k]! * em;
-      const gk = lP * (am[k]! * ep - am[6 + k]! * em);
-      for (let j = 0; j < 3; j++) g[j]! += gk * L[j]!;
-    }
-    const gd = dot3(g, d);
-    n = [0, 1, 2].map((j) => d[j]! - (g[j]! - gd * d[j]!) / r);
-  }
-  let face = -1;
-  const nc = lobos ? 7 : 4;
-  for (let k = 0; k < nc; k++) {
-    const c = cortes[k]!;
-    const kc = dot3(d, c);
-    if (kc > 0.05 && c[3]! < r * kc) { r = c[3]! / kc; n = c.slice(0, 3); face = k; }
-  }
-  return { r, n, face };
-}
-
-/** O MONTE na direção d: o máximo suave (p = 16) das saídas pelas bolas, com a normal analítica */
-function raioDoMonte(d: number[], mm: number[][]) {
+/** O MONTE na direção d: o máximo suave (p = 16 de longe) das saídas pelas bolas, com a normal analítica */
+function raioDoMonte(d: number[], mm: number[][], p = 16) {
   let s = 0;
   let melhor = -1;
   let dono = 0;
@@ -1959,13 +2056,16 @@ function raioDoMonte(d: number[], mm: number[][]) {
     const sg = Math.sign(disc);
     const f = b + sg * raiz;
     if (f <= 0) return;
-    if (f > melhor) { melhor = f; dono = k; }
-    const f16 = f ** 16;
-    s += f16;
-    const w = (f16 / f) * (1 + (sg * b) / Math.max(raiz, 0.08));
+    if (f > melhor) {
+      melhor = f;
+      dono = k;
+    }
+    const fp = f ** p;
+    s += fp;
+    const w = (fp / f) * (1 + (sg * b) / Math.max(raiz, 0.08));
     for (let j = 0; j < 3; j++) g[j]! += w * m[j]!;
   });
-  const r = Math.max(s, 1e-30) ** (1 / 16);
+  const r = Math.max(s, 1e-30) ** (1 / p);
   const k = r / Math.max(s, 1e-30);
   const gd = dot3(g, d) * k;
   let n = unir([0, 1, 2].map((j) => d[j]! - (g[j]! * k - gd * d[j]!) / r));
@@ -2022,6 +2122,104 @@ function arestasNasLinhas(ds: number[][], idx: ArrayLike<number>, rotulo: (d: nu
 }
 
 /**
+ * OS SUBMEMBROS DO MONTE (décima volta): um agregado de 20 m é um monte de
+ * milhares de pedaços menores, e doze bolas lisas fundidas liam como cera
+ * derretida. Sobre os doze membros, `SUBMEMBROS` sorteados com a lei dos
+ * próprios pedaços (n(s) ∝ s⁻³, raio de `S_SUB` em unidades do monte),
+ * cada um meio enterrado na superfície que os doze fazem; como os
+ * pedaços soltos, a maioria (`BLOCOS_ENTRE_OS_PEQUENOS`) é bloco — um dos
+ * poliedros das variantes, espelhado ao acaso —, o resto é bola. A malha
+ * fica só com os que ela resolve (`sMin`): os mesmos sorteios em toda
+ * malha, as menores com os maiores deles.
+ */
+const SUBMEMBROS = 320;
+const S_SUB = [0.055, 0.34] as const;
+/** o expoente do máximo suave do monte de perto: vales mais fundos que os de longe */
+const P_DO_MONTE = 56;
+/** o bloco de raio s dentro do monte: o poliedro (canto em 1) × s × isto, a área da bola de raio s */
+const BLOCO_NO_MONTE = 1.6;
+let planosDasVariantes: number[][][] | null = null;
+function subMembros(vb: number, todos: number[][], sMin: number): number[][] {
+  const out: number[][] = [];
+  const [a2, b2] = [S_SUB[0] ** -2, S_SUB[1] ** -2];
+  for (let k = 0; k < SUBMEMBROS; k++) {
+    const h = misturar(
+      (vb ^ ((0x5851f42d + Math.imul(k, 0x4c957f2d)) >>> 0)) >>> 0,
+    );
+    const r = quatro(h);
+    const s = (b2 + r[2] * (a2 - b2)) ** -0.5;
+    if (s < sMin) continue;
+    const d = direcao(r[0], r[1]);
+    const base = raioDoMonte(d, todos, P_DO_MONTE);
+    const fundo = base.r - (0.15 + 0.3 * r[3]) * s;
+    // o gelo dele: o do membro onde ele pousa, com um pouco de sorteio
+    const h2 = misturar(h);
+    const sujo = 0.6 * todos[base.dono]![4]! + 0.4 * ((h2 >>> 16) / 65535);
+    // bloco (a variante e o espelho de cada eixo) ou bola (−1)
+    const tipo =
+      (h2 & 0xff) / 256 < BLOCOS_ENTRE_OS_PEQUENOS
+        ? (h2 >>> 8) % VARIANTES
+        : -1;
+    const esp = [0, 1, 2].map((j) => ((h2 >>> (12 + j)) & 1 ? -1 : 1));
+    out.push([d[0] * fundo, d[1] * fundo, d[2] * fundo, s, sujo, tipo, ...esp]);
+  }
+  return out;
+}
+/** a saída do raio d (da origem) pelo submembro m; a mais funda, fora dele (contínua na borda); null longe */
+function saidaDoSub(d: number[], m: number[]): number | null {
+  const lc = Math.hypot(m[0]!, m[1]!, m[2]!);
+  const b = dot3(d, m);
+  const bloco = m[5]! >= 0;
+  const alcance = (1.3 * m[3]! * (bloco ? BLOCO_NO_MONTE : 1)) / lc;
+  if (alcance < 1 && b < lc * Math.sqrt(1 - alcance * alcance)) return null;
+  if (!bloco) {
+    const disc = b * b - lc * lc + m[3]! * m[3]!;
+    return b + Math.sign(disc) * Math.sqrt(Math.abs(disc));
+  }
+  planosDasVariantes ??= Array.from({ length: VARIANTES }, (_, v) =>
+    planosDoBloco(baseDaVariante(true, v)),
+  );
+  let te = -Infinity;
+  let tx = Infinity;
+  for (const c of planosDasVariantes[m[5]!]!) {
+    const nx = c[0]! * m[6]!;
+    const ny = c[1]! * m[7]!;
+    const nz = c[2]! * m[8]!;
+    const hh =
+      c[3]! * m[3]! * BLOCO_NO_MONTE + nx * m[0]! + ny * m[1]! + nz * m[2]!;
+    const nd = nx * d[0]! + ny * d[1]! + nz * d[2]!;
+    if (nd > 1e-9) tx = Math.min(tx, hh / nd);
+    else if (nd < -1e-9) te = Math.max(te, hh / nd);
+  }
+  return te <= tx ? tx : 2 * tx - te;
+}
+/**
+ * O MONTE DE PERTO na direção d: o máximo suave (`P_DO_MONTE`) das saídas
+ * pelos doze membros e pelos submembros (a normal sai da malha: as faces
+ * dos blocos não têm a conta fechada das bolas).
+ */
+function raioDoMonteDePerto(u: number[], doze: number[][], sub: number[][]) {
+  let s = 0;
+  let melhor = -1;
+  let dono = 0;
+  const soma = (f: number | null, k: number) => {
+    if (f === null || f <= 0) return;
+    s += f ** P_DO_MONTE;
+    if (f > melhor) {
+      melhor = f;
+      dono = k;
+    }
+  };
+  doze.forEach((m, k) => {
+    const b = dot3(u, m);
+    const disc = b * b - dot3(m, m) + m[3]! * m[3]!;
+    soma(b + Math.sign(disc) * Math.sqrt(Math.abs(disc)), k);
+  });
+  sub.forEach((m, k) => soma(saidaDoSub(u, m), doze.length + k));
+  return { r: Math.max(s, 1e-30) ** (1 / P_DO_MONTE), dono };
+}
+
+/**
  * Assa as `2 × VARIANTES` formas sobre o molde de `detalhe` numa textura
  * (largura = vértices, `LINHAS_DA_FORMA` linhas por variante; os blocos
  * primeiro). Na face de fratura a normal é a do plano: a face sai lisa e a
@@ -2038,103 +2236,152 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
     const o = (linha * n + i) * 4;
     dado[o] = v[0]!; dado[o + 1] = v[1]!; dado[o + 2] = v[2]!; dado[o + 3] = 0;
   };
-  const ds = Array.from({ length: n }, (_, i) => unir([pos.getX(i), pos.getY(i), pos.getZ(i)]));
+  const ds = Array.from({ length: n }, (_, i) =>
+    unir([pos.getX(i), pos.getY(i), pos.getZ(i)]),
+  );
+  // o menor submembro que a malha desenha: 1,25 lado de triângulo
+  const sMin =
+    1.25 * Math.sqrt(((4 * Math.PI) / (2 * n - 4)) * (4 / Math.sqrt(3)));
+  const aoMonte: number[][] = [];
   for (let t = 0; t < 2; t++) {
     const bloco = t === 0;
     for (let v = 0; v < VARIANTES; v++) {
       const vb = baseDaVariante(bloco, v);
       const l0 = (t * VARIANTES + v) * LINHAS_DA_FORMA;
       if (bloco) {
-        const cortes = cortesDoBloco(vb);
-        const caroco = 0.04 + 0.08 * quatro(misturar((vb ^ 0x1b56c4e9) >>> 0))[3];
-        const am = [0x85ebca6b, 0xc2b2ae35, 0x27d4eb2f].flatMap((c) =>
-          quatro(misturar((vb ^ c) >>> 0)).map((x) => (x * 1.4 - 0.4) * caroco)
+        const planos = planosDoBloco(vb);
+        const semente = quatro(misturar((vb ^ 0xd3a2646c) >>> 0)).map(
+          (x) => 37 * x,
         );
-        // (am na ordem do GLSL de antes: qA.xyzw, qB.xy empurram; qB.zw, qC puxam)
-        const lP = 1.5 + 2.5 * quatro(misturar((vb ^ 0x68e31da4) >>> 0))[3];
-        const semente = quatro(misturar((vb ^ 0xd3a2646c) >>> 0)).map((x) => 37 * x);
-        const uB: number[][] = [];
-        const faces: number[] = [];
-        const nB: number[][] = [];
         // as arestas nas linhas, em cada forma (`arestasNasLinhas`)
-        const linA = arestasNasLinhas(ds, idx, (d) => raioDoBloco(d, cortes, false, am, lP).face);
-        const linB = arestasNasLinhas(ds, idx, (d) => raioDoBloco(d, cortes, true, am, lP).face);
-        // o vértice NO PLANO de alguma face (dentro dela ou levado à aresta)
-        const noPlano = (d: number[], r: number, nc: number) => {
-          let m = 1;
-          for (let k = 0; k < nc; k++) {
-            const kc = dot3(d, cortes[k]!);
-            if (kc > 0.05) m = Math.min(m, cortes[k]![3]! - r * kc);
-          }
-          return m;
-        };
-        const planoA: number[] = [];
-        const planoB: number[] = [];
+        const linA = arestasNasLinhas(
+          ds,
+          idx,
+          (d) => raioDoPoliedro(d, planos, Infinity).dono,
+        );
+        const linB = arestasNasLinhas(
+          ds,
+          idx,
+          (d) => raioDoPoliedro(d, planos).dono,
+        );
         ds.forEach((_, i) => {
+          // de longe, o poliedro de quinas vivas: todo vértice numa face
           const dA = linA.dirs[i]!;
-          const a = raioDoBloco(dA, cortes, false, am, lP);
-          planoA.push(noPlano(dA, a.r, 4) < 1e-5 ? 1 : 0);
-          por(l0, i, dA.map((x) => x * a.r));
+          const a = raioDoPoliedro(dA, planos, Infinity);
+          por(
+            l0,
+            i,
+            dA.map((x) => x * a.r),
+          );
           por(l0 + 2, i, a.n);
+          // de perto, as arestas arredondadas e um relevo fino (±1 %) nas
+          // faces: a fratura não é um plano de vidro
           const d = linB.dirs[i]!;
-          const b = raioDoBloco(d, cortes, true, am, lP);
-          const u = d.map((x) => x * b.r);
-          // a silhueta: um relevo fraco fora das faces (o de antes, sobre o
-          // casco); no vértice levado à aresta, nenhum — ele fica na linha —,
-          // e ele some chegando a ela: o vizinho da aresta, empurrado para
-          // fora do plano, fazia dentes na beira da face
-          const margem = noPlano(d, b.r, 7);
-          planoB.push(margem < 1e-5 ? 1 : 0);
-          const desl = b.face < 0 && !linB.movido[i]
-            ? 0.07 * (ruidoCPU(u[0]! * 1.8 + semente[0]!, u[1]! * 1.8 + semente[1]!, u[2]! * 1.8 + semente[2]!) - 0.5) * Math.min(Math.max(margem / 0.06, 0), 1)
-            : 0;
-          uB.push(u.map((x) => x * (1 + desl)));
-          faces.push(b.face);
-          nB.push(b.n);
-        });
-        // fora das faces, a normal da malha de verdade (com o relevo); na face, a do plano
-        const acc = ds.map(() => [0, 0, 0]);
-        for (let j = 0; j < idx.length; j += 3) {
-          const [a, b, c] = [idx[j]!, idx[j + 1]!, idx[j + 2]!];
-          const e1 = [0, 1, 2].map((k) => uB[b]![k]! - uB[a]![k]!);
-          const e2 = [0, 1, 2].map((k) => uB[c]![k]! - uB[a]![k]!);
-          const cr = [e1[1]! * e2[2]! - e1[2]! * e2[1]!, e1[2]! * e2[0]! - e1[0]! * e2[2]!, e1[0]! * e2[1]! - e1[1]! * e2[0]!];
-          for (const q of [a, b, c]) for (let k = 0; k < 3; k++) acc[q]![k]! += cr[k]!;
-        }
-        ds.forEach((d, i) => {
-          por(l0 + 1, i, uB[i]!);
-          let nn = faces[i]! >= 0 ? nB[i]! : unir(acc[i]!);
-          if (dot3(nn, linB.dirs[i]!) < 0) nn = nB[i]!;
-          por(l0 + 3, i, nn);
-          // (ao, sujo, no plano na forma de perto, idem na de longe)
-          por(l0 + 4, i, [1, 0.5, planoB[i]!]);
-          dado[((l0 + 4) * n + i) * 4 + 3] = planoA[i]!;
+          const b = raioDoPoliedro(d, planos);
+          const rel =
+            1 +
+            0.02 *
+              (ruidoCPU(
+                d[0]! * b.r * 5 + semente[0]!,
+                d[1]! * b.r * 5 + semente[1]!,
+                d[2]! * b.r * 5 + semente[2]!,
+              ) -
+                0.5);
+          por(
+            l0 + 1,
+            i,
+            d.map((x) => x * b.r * rel),
+          );
+          por(l0 + 3, i, b.n);
+          // (ao, sujo, no plano na forma de perto — nenhum: a aresta é
+          // arredondada —, idem na de longe — todos)
+          por(l0 + 4, i, [1, 0.5, 0]);
+          dado[((l0 + 4) * n + i) * 4 + 3] = 1;
         });
       } else {
         const todos = Array.from({ length: MEMBROS }, (_, k) => membro(vb, k));
-        const poucos = todos.map((m, k) => (k < BOLAS_A_VALER ? m : [0, 0, 0, 0, 0.5]));
+        const poucos = todos.map((m, k) =>
+          k < BOLAS_A_VALER ? m : [0, 0, 0, 0, 0.5],
+        );
+        const sub = subMembros(vb, todos, sMin);
+        const tudo = [...todos, ...sub];
+        const uB: number[][] = [];
+        const donos: number[] = [];
+        let r2Antes = 0;
+        let r2 = 0;
         ds.forEach((d, i) => {
           const a = raioDoMonte(d, poucos);
           por(l0, i, d.map((x) => x * a.r));
           por(l0 + 2, i, a.n);
-          const b = raioDoMonte(d, todos);
-          const u = d.map((x) => x * b.r);
-          por(l0 + 1, i, u);
-          por(l0 + 3, i, b.n);
-          // a oclusão das vizinhas (a de uma esfera vista de um ponto)
+          r2Antes += raioDoMonte(d, todos).r ** 2;
+          const b = raioDoMonteDePerto(d, todos, sub);
+          r2 += b.r * b.r;
+          uB.push(d.map((x) => x * b.r));
+          donos.push(b.dono);
+        });
+        // a normal da malha (a soma das faces em volta de cada vértice)
+        const nB = ds.map(() => [0, 0, 0]);
+        for (let j = 0; j < idx.length; j += 3) {
+          const [a, b, c] = [uB[idx[j]!]!, uB[idx[j + 1]!]!, uB[idx[j + 2]!]!];
+          const e1 = [0, 1, 2].map((q) => b[q]! - a[q]!);
+          const e2 = [0, 1, 2].map((q) => c[q]! - a[q]!);
+          const cr = [
+            e1[1]! * e2[2]! - e1[2]! * e2[1]!,
+            e1[2]! * e2[0]! - e1[0]! * e2[2]!,
+            e1[0]! * e2[1]! - e1[1]! * e2[0]!,
+          ];
+          for (const q of [idx[j]!, idx[j + 1]!, idx[j + 2]!])
+            for (let e = 0; e < 3; e++) nB[q]![e]! += cr[e]!;
+        }
+        ds.forEach((d, i) => {
+          const u = uB[i]!;
+          let nn = unir(nB[i]!);
+          if (dot3(nn, d) < 0.05) nn = d;
+          nB[i] = nn;
+          // a oclusão das vizinhas (a de uma esfera vista de um ponto): os
+          // vales entre os submembros ficam em sombra
           let occ = 0;
-          for (const m of todos) {
+          for (const m of tudo) {
             const w = [m[0]! - u[0]!, m[1]! - u[1]!, m[2]! - u[2]!];
             const l2 = Math.max(dot3(w, w), 1e-4);
-            occ += ((m[3]! * m[3]!) / l2) * Math.max(dot3(b.n, w), 0) / Math.sqrt(l2);
+            occ +=
+              (((m[3]! * m[3]!) / l2) * Math.max(dot3(nn, w), 0)) /
+              Math.sqrt(l2);
           }
-          const ao = Math.min(Math.max(1 - 0.6 * occ, 0.35), 1) / AO_MEDIO_DO_MONTE;
-          por(l0 + 4, i, [ao, todos[b.dono]![4]!, 0]);
+          const ao = Math.min(Math.max(1 - 0.6 * occ, 0.35), 1);
+          aoMonte.push([l0 + 4, i, ao, dot3(u, u)]);
+          por(l0 + 4, i, [ao, tudo[donos[i]!]![4]!, 0]);
+        });
+        // o tamanho é o de antes: o quadrado médio do raio, o da forma de doze
+        const k = Math.sqrt(r2Antes / r2);
+        ds.forEach((_, i) => {
+          por(
+            l0 + 1,
+            i,
+            uB[i]!.map((x) => x * k),
+          );
+          por(l0 + 3, i, nB[i]!);
         });
       }
     }
   }
-  const tex = new THREE.DataTexture(dado, n, altura, THREE.RGBAFormat, THREE.FloatType);
+  // a oclusão dividida pela média dela pesada pela área (r²): o albedo médio
+  // do monte fica o mesmo, com ou sem os submembros desta malha
+  let somaAo = 0;
+  let somaP = 0;
+  for (const [, , ao, w] of aoMonte) {
+    somaAo += ao! * w!;
+    somaP += w!;
+  }
+  for (const [l, i, ao] of aoMonte)
+    dado[(l! * n + i!) * 4] = ao! / (somaAo / somaP);
+  const tex = new THREE.DataTexture(
+    dado,
+    n,
+    altura,
+    THREE.RGBAFormat,
+    THREE.FloatType,
+  );
   tex.needsUpdate = true;
   return { geo, tex };
 }
@@ -2591,6 +2838,16 @@ const float R_EXT = ${opcoes.rExt};`;
     this.malha.visible = ativas > 0 || forca > 0;
     const fracao = PEDRAS_POR_TIER[q.tier] / PEDRAS_POR_TIER.cinema;
     this.cessao.w = ativas > 0 ? fracao : 0;
+    // a câmera do disco em duas partes vale SEMPRE: a direção de vista do
+    // disco sai dela, e do alto (nada desenhado) ela ficava parada na
+    // origem — o disco era visto do centro de Saturno e saía escuro
+    const [ax, ay, az] = [Math.fround(c.x), Math.fround(c.y), Math.fround(c.z)];
+    this.camAlta.set(ax, ay, az);
+    this.camResto.set(
+      (c.x - ax) * KM_POR_RAIO,
+      (c.y - ay) * KM_POR_RAIO,
+      (c.z - az) * KM_POR_RAIO,
+    );
 
     // O RELÓGIO: o passo do quadro, com teto contínuo. Fora do desenho o
     // relógio é só lembrado — ninguém vê o pedaço andar.
@@ -2631,9 +2888,6 @@ const float R_EXT = ${opcoes.rExt};`;
     u.uAtivas!.value = ativas;
     u.uGiro!.value = this.giro;
     this.cessao.set(rhoKm, theta, zKm, ativas > 0 ? fracao : 0);
-    const [ax, ay, az] = [Math.fround(c.x), Math.fround(c.y), Math.fround(c.z)];
-    this.camAlta.set(ax, ay, az);
-    this.camResto.set((c.x - ax) * KM_POR_RAIO, (c.y - ay) * KM_POR_RAIO, (c.z - az) * KM_POR_RAIO);
     // a câmera na célula das esteiras, em dupla precisão
     const uR = rhoKm / CELULA_DA_ESTEIRA_KM;
     const uS = (theta / (2 * Math.PI)) * CELULAS_NA_VOLTA;

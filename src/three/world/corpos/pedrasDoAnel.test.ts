@@ -315,7 +315,7 @@ describe('pedras 3D do anel', () => {
             expect(Math.hypot(...nn)).toBeCloseTo(1, 4);
             expect(u[0]! * nn[0]! + u[1]! * nn[1]! + u[2]! * nn[2]!).toBeGreaterThan(0);
           }
-          // o bloco de longe é a esfera unitária cortada: nada passa do raio 1
+          // o bloco de longe é o poliedro dentro da esfera unitária: nada passa do raio 1
           if (t === 0) expect(Math.hypot(...v(l0, i))).toBeLessThanOrEqual(1 + 1e-6);
         }
       }
