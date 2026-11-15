@@ -12,6 +12,7 @@ import {
 } from './gigante';
 import { GLSL_RUIDO_DE_VALOR } from './corpos';
 import {
+  CESSAO_PLENA,
   K_JANELA,
   OITAVAS,
   PEDRAS_3D,
@@ -19,7 +20,9 @@ import {
   PEDRAS_POR_TIER,
   PedrasDoAnel,
   TABELA_DE_OITAVAS,
+  VARIANTES,
   aceitaPedra,
+  assarFormas,
   alfaCedido,
   cessaoDoDisco,
   forcaDoGrao,
@@ -85,7 +88,10 @@ describe('pedras 3D do anel', () => {
 
   it('a cessão do disco é contínua, entre 0 e 1, inteira onde as três oitavas estão, e zero longe', () => {
     let antes = cessaoDoDisco(1e-4);
-    expect(antes).toBe(1);
+    expect(antes).toBe(CESSAO_PLENA);
+    // as pedras pequenas carregam menos luz: o disco guarda um pouco
+    expect(CESSAO_PLENA).toBeGreaterThan(0.7);
+    expect(CESSAO_PLENA).toBeLessThan(1);
     // passos de 0,2 %: a mesma resolução em toda oitava
     for (let d = 1e-4; d <= 1000; d *= 1.002) {
       const f = cessaoDoDisco(d);
@@ -93,7 +99,7 @@ describe('pedras 3D do anel', () => {
       expect(f).toBeLessThanOrEqual(1);
       expect(Math.abs(f - antes)).toBeLessThan(0.002);
       // sem ondular: do primeiro metro até onde a oitava de cima se completa
-      if (d < 16 * TABELA_DE_OITAVAS[0]!.s) expect(f).toBeCloseTo(1, 9);
+      if (d < 16 * TABELA_DE_OITAVAS[0]!.s) expect(f).toBeCloseTo(CESSAO_PLENA, 9);
       antes = f;
     }
     expect(cessaoDoDisco(TABELA_DE_OITAVAS[0]!.janela)).toBe(0);
@@ -107,10 +113,11 @@ describe('pedras 3D do anel', () => {
     expect(p.malha.visible).toBe(false);
     p.atualizar(quadro(128_000, 20));
     expect(p.malha.visible).toBe(true);
-    // um ponto por pedra de cada oitava ativa (as malhas de perto são escolhidas a mais)
+    // um ponto por pedra de cada oitava ativa (as malhas de perto e as bolas
+    // do que se desfaz, que leem \`aId\`, são escolhidas a mais)
     let n = 0;
     p.malha.traverse((m) => {
-      if (m instanceof THREE.Points) n += m.geometry.drawRange.count;
+      if (m instanceof THREE.Points && !m.geometry.getAttribute('aId')) n += m.geometry.drawRange.count;
     });
     expect(n % PEDRAS_POR_TIER.cinema).toBe(0);
     expect(n / PEDRAS_POR_TIER.cinema).toBe(PedrasDoAnel.oitavasAtivas(20));
@@ -189,5 +196,25 @@ describe('pedras 3D do anel', () => {
       expect(soma / n).toBeCloseTo(1, 9);
     }
     expect(sombraMutua(0, 1)).toBeGreaterThan(sombraMutua(1, 1));
+  });
+
+  it('as formas assadas: a de longe é o corpo que o ponto acerta, e toda normal aponta para fora', () => {
+    const { geo, tex } = assarFormas(3);
+    const n = geo.getAttribute('position').count;
+    const d = tex.image.data as Float32Array;
+    const v = (linha: number, i: number) => Array.from(d.subarray((linha * n + i) * 4, (linha * n + i) * 4 + 3));
+    for (let t = 0; t < 2; t++) {
+      for (let k = 0; k < VARIANTES; k++) {
+        const l0 = (t * VARIANTES + k) * 5;
+        for (let i = 0; i < n; i++) {
+          for (const [u, nn] of [[v(l0, i), v(l0 + 2, i)], [v(l0 + 1, i), v(l0 + 3, i)]] as const) {
+            expect(Math.hypot(...nn)).toBeCloseTo(1, 4);
+            expect(u[0]! * nn[0]! + u[1]! * nn[1]! + u[2]! * nn[2]!).toBeGreaterThan(0);
+          }
+          // o bloco de longe é a esfera unitária cortada: nada passa do raio 1
+          if (t === 0) expect(Math.hypot(...v(l0, i))).toBeLessThanOrEqual(1 + 1e-6);
+        }
+      }
+    }
   });
 });
