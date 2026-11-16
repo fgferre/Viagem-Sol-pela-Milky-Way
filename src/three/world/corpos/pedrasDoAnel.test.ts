@@ -60,6 +60,10 @@ import {
   fatoresDaSombra,
   forcaDaSombra,
   volumeDaSombra,
+  ladoDaSombraNaTela,
+  pesoDaSombra,
+  SOMBRA_PX_SOME,
+  SOMBRA_PX_INTEIRA,
 } from './pedrasDoAnel';
 import { REGIOES_DO_ANEL } from './gigante';
 
@@ -637,10 +641,43 @@ describe('pedras 3D do anel', () => {
     }
   });
 
-  it('as sombras explícitas conservam a luz média do disco: num campo de pedaços, a média de T é a e^(−E) que sai da conta estatística', () => {
+  it('a largura da sombra na tela é o eixo menor da elipse projetada: a de cima, fina de lado, e cai com o rasante', () => {
+    const sen = Math.sin((25 * Math.PI) / 180);
+    const rumo: [number, number] = [Math.cos(0.7), Math.sin(0.7)];
+    // de cima: o eixo menor é o raio, a d km
+    expect(ladoDaSombraNaTela([0, 0, -2], rumo, sen, 1000)).toBeCloseTo(500, 6);
+    for (const rel of [[0.3, -0.8, -0.05], [-1.2, 0.1, -0.002], [0.05, 0.02, -0.04]] as [number, number, number][]) {
+      const d = Math.hypot(...rel);
+      const w = rel.map((x) => x / d);
+      const t = [-rumo[1], rumo[0], 0];
+      const r = [rumo[0], rumo[1], 0];
+      // a força bruta: o contorno da elipse projetado no plano da tela, o ponto mais perto do centro
+      const proj = (v: number[]) => {
+        const k = v[0]! * w[0]! + v[1]! * w[1]! + v[2]! * w[2]!;
+        return v.map((x, i) => x - k * w[i]!);
+      };
+      const e1 = proj(t);
+      const e2 = proj(r).map((x) => x / sen);
+      let menor = Infinity;
+      for (let i = 0; i < 3600; i++) {
+        const f = (Math.PI * i) / 3600;
+        menor = Math.min(menor, Math.hypot(...e1.map((x, k) => Math.cos(f) * x + Math.sin(f) * e2[k]!)));
+      }
+      expect((ladoDaSombraNaTela(rel, rumo, sen, 1000) * d) / 1000 / menor).toBeCloseTo(1, 2);
+    }
+    expect(pesoDaSombra(SOMBRA_PX_SOME)).toBe(0);
+    expect(pesoDaSombra(SOMBRA_PX_INTEIRA)).toBe(1);
+  });
+
+  it('as sombras explícitas conservam a luz média do disco: num campo de pedaços, a média de T é a e^(−E) que sai da conta estatística, com o nível de detalhe ou sem ele', () => {
     const h = 0.008;
     const tau = 0.6;
-    for (const [graus, oitavas] of [[25, [2]], [4, [0, 1, 2]]] as const) {
+    for (const [graus, oitavas, comPeso] of [
+      [25, [2], false],
+      [4, [0, 1, 2], false],
+      [25, [1, 2], true],
+      [4, [2], true],
+    ] as const) {
       const sen = Math.sin((graus * Math.PI) / 180);
       const cos = Math.sqrt(1 - sen * sen);
       const g = fatoresDaSombra(sen, h);
@@ -652,6 +689,13 @@ describe('pedras 3D do anel', () => {
       const od = new Float64Array(n * n);
       let semente = 12345;
       const sorteio = () => ((semente = (Math.imul(semente, 1664525) + 1013904223) >>> 0) / 4294967296);
+      // o nível de detalhe: o lado da sombra na tela sobe ao longo de x (a oitava 2 vai de 0 a 1,5 vez a largura inteira), o mesmo peso no pixel para T e para E
+      const s2 = TABELA_DE_OITAVAS[2]!.s;
+      const pesos = (i: number) =>
+        Array.from({ length: OITAVAS_DA_SOMBRA }, (_, o) =>
+          comPeso ? pesoDaSombra((TABELA_DE_OITAVAS[o]!.s / s2) * 1.5 * SOMBRA_PX_INTEIRA * ((((i % n) + n) % n) / n)) : 1
+        );
+      const pesoNaColuna = Array.from({ length: n }, (_, i) => pesos(i));
       for (const o of oitavas) {
         const s = TABELA_DE_OITAVAS[o]!.s;
         const quantos = Math.round(pedacosPorArea(tau, 0.5 * s) * lado * lado);
@@ -667,18 +711,26 @@ describe('pedras 3D do anel', () => {
               const v = j * passo - y;
               if (Math.abs(v) >= a) continue;
               const S = colunaDaSombra(i * passo - x, Math.sqrt(a * a - v * v), zs, h, sen, cos);
-              if (S > 0) od[(((i % n) + n) % n) * n + (((j % n) + n) % n)] -= Math.log(1 - k * S);
+              const ii = ((i % n) + n) % n;
+              if (S > 0) od[ii * n + (((j % n) + n) % n)] -= Math.log(1 - k * pesoNaColuna[ii]![o]! * S);
             }
         }
       }
-      let media = 0;
-      for (let c = 0; c < od.length; c++) media += Math.exp(-od[c]!) / od.length;
       const presencas = Array.from({ length: OITAVAS_DA_SOMBRA }, (_, o) => ((oitavas as readonly number[]).includes(o) ? 1 : 0));
-      const E = esperadoDaSombra(tau, presencas, g);
+      let media = 0;
+      let mediaE = 0;
+      for (let c = 0; c < od.length; c++) {
+        const E = esperadoDaSombra(tau, presencas, g, pesoNaColuna[Math.floor(c / n)]);
+        media += Math.exp(E - od[c]!) / od.length;
+        mediaE += E / od.length;
+      }
       // o Sol baixo bate no teto: as sombras clareiam, e e^(−E) não cai abaixo de e^(−1,5)
       if (graus === 4) expect(k).toBeLessThan(1);
-      expect(E).toBeGreaterThan(0.03);
-      expect(media * Math.exp(E)).toBeCloseTo(1, 2);
+      expect(mediaE).toBeGreaterThan(0.03);
+      // com o nível de detalhe, uma parte do quadrado é toda estatística e outra toda explícita
+      if (comPeso) expect(pesoNaColuna[0]![2]).toBe(0);
+      if (comPeso) expect(pesoNaColuna[n - 1]![2]).toBe(1);
+      expect(media).toBeCloseTo(1, 2);
     }
   });
 });

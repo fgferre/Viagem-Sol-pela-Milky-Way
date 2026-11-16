@@ -820,11 +820,56 @@ export function forcaDaSombra(tauCampo: number, g: readonly number[]): number {
   return Math.min(1, TETO_DA_SOMBRA / Math.max(tauCampo * FRACAO_POR_OITAVA * soma, 1e-9));
 }
 
-/** E: a média de −ln T que as sombras explícitas deixam, com as presenças das oitavas que as fazem */
-export function esperadoDaSombra(tauCampo: number, presencas: readonly number[], g: readonly number[]): number {
+/** E: a média de −ln T que as sombras explícitas deixam, com as presenças das oitavas que as fazem (e o peso de cada uma no nível de detalhe, `pesoDaSombra`; 1 sem ele) */
+export function esperadoDaSombra(tauCampo: number, presencas: readonly number[], g: readonly number[], pesos?: readonly number[]): number {
   let e = 0;
-  for (let o = 0; o < OITAVAS_DA_SOMBRA; o++) e += (presencas[o] ?? 0) * g[o]!;
+  for (let o = 0; o < OITAVAS_DA_SOMBRA; o++) e += (presencas[o] ?? 0) * g[o]! * (pesos?.[o] ?? 1);
   return forcaDaSombra(tauCampo, g) * tauCampo * FRACAO_POR_OITAVA * e;
+}
+
+/**
+ * O NÍVEL DE DETALHE DA SOMBRA (vigésima terceira volta). Vista de longe e
+ * rasante, a sombra de um pedaço fica mais fina que um pixel e vira risco:
+ * ali ela volta para a conta estatística. O peso é função da largura da
+ * sombra NA TELA, no ponto do plano em que ela cai — o eixo menor da elipse
+ * projetada (`ladoDaSombraNaTela`), com o raio típico da oitava
+ * (`RAIO_DA_SOMBRA_POR_S`), não o do pedaço: assim o triângulo da máscara e
+ * a média E do disco usam a MESMA função no mesmo pixel e a luz média fica
+ * exata. O que existe no mundo não muda; só quem desenha a sombra.
+ */
+/**
+ * a largura (px, da máscara = do quadro) abaixo da qual a sombra é toda
+ * estatística, e acima da qual é toda explícita — salvaguarda, não medida:
+ * começou em 0,75 e 1,5 px, e a foto a 50 m acima do anel ainda mostrava
+ * riscos de sombras de 1,5 a 3 px na faixa rasante; o dobro os tira
+ */
+export const SOMBRA_PX_SOME = 1.5;
+export const SOMBRA_PX_INTEIRA = 3;
+/** o raio típico da oitava, em s: E[a³]/E[a²] na lei de tamanhos do vértice (a = s/2 · (1 − 0,75u)^−½) = (1/3)/(ln 4/3) */
+export const RAIO_DA_SOMBRA_POR_S = 1 / 3 / (Math.log(4) / 3);
+
+/** o peso da sombra explícita pela largura dela na tela, px */
+export function pesoDaSombra(px: number): number {
+  return suave(SOMBRA_PX_SOME, SOMBRA_PX_INTEIRA, px);
+}
+
+/**
+ * px por km de raio: o semieixo menor, na tela, da elipse da sombra (a na
+ * transversal, a/sen e ao longo do `rumo`) no ponto `rel` do plano (km,
+ * relativo à câmera, quadro do anel). Os valores singulares da projeção:
+ * σ₁σ₂ = |ŵz|/sen e (a área) e σ₁² + σ₂² = F.
+ */
+export function ladoDaSombraNaTela(rel: readonly [number, number, number], rumo: readonly [number, number], senE: number, pxPorRad: number): number {
+  const d = Math.max(Math.hypot(rel[0], rel[1], rel[2]), 1e-9);
+  const wx = rel[0] / d;
+  const wy = rel[1] / d;
+  const wz = rel[2] / d;
+  const s = Math.max(senE, 1e-3);
+  const wt = -wx * rumo[1] + wy * rumo[0];
+  const wr = wx * rumo[0] + wy * rumo[1];
+  const f = Math.max(1 - wt * wt, 0) + Math.max(1 - wr * wr, 0) / (s * s);
+  const d2 = (wz * wz) / (s * s);
+  return (Math.sqrt((2 * d2) / Math.max(f + Math.sqrt(Math.max(f * f - 4 * d2, 0)), 1e-12)) * pxPorRad) / d;
 }
 
 /**
@@ -1191,16 +1236,39 @@ float tauDaNevoa(float h, float dz, float L, float esp, float tau, float teto) {
  * `GLSL_PURO_DAS_PEDRAS`): os G_o do quadro (`fatoresDaSombra`), a força k
  * (`forcaDaSombra`) e a soma das presenças pesadas por G_o.
  */
+const GLSL_PESO_DA_SOMBRA = /* glsl */ `
+// o nível de detalhe da sombra (\`pesoDaSombra\`, \`ladoDaSombraNaTela\`)
+float pesoDaSombra(float px) {
+  return smoothstep(${glslF(SOMBRA_PX_SOME)}, ${glslF(SOMBRA_PX_INTEIRA)}, px);
+}
+float ladoDaSombraNaTela(vec3 rel, vec2 rumo, float senE, float pxPorRad) {
+  float d = max(length(rel), 1.0e-9);
+  vec3 w = rel / d;
+  float s = max(senE, 1.0e-3);
+  float wt = dot(w.xy, vec2(-rumo.y, rumo.x));
+  float wr = dot(w.xy, rumo);
+  float f = max(1.0 - wt * wt, 0.0) + max(1.0 - wr * wr, 0.0) / (s * s);
+  float d2 = w.z * w.z / (s * s);
+  return sqrt(2.0 * d2 / max(f + sqrt(max(f * f - 4.0 * d2, 0.0)), 1.0e-12)) * pxPorRad / d;
+}
+// a largura da sombra típica da oitava o, px, com lado = \`ladoDaSombraNaTela\`
+float larguraDaSombra(int o, float lado) {
+  return ${glslF(2 * RAIO_DA_SOMBRA_POR_S * S_MAX_KM)} * exp2(-float(o)) * lado;
+}
+`;
+
 const GLSL_SOMBRA_COMUM = /* glsl */ `
 uniform float uSombraG[${OITAVAS_DA_SOMBRA}];
+${GLSL_PESO_DA_SOMBRA}
 // somaG = Σ G_o
 float forcaDaSombra(float campo, float somaG) {
   return min(1.0, ${glslF(TETO_DA_SOMBRA)} / max(campo * P_FRACAO * somaG, 1.0e-9));
 }
-float presencasDaSombra(float d) {
+// Σ p_o·gp_o, com gp_o = G_o·peso_o no pixel (\`pesoDaSombra\`)
+float presencasDaSombra(float d, float gp[${OITAVAS_DA_SOMBRA}]) {
   float x0 = log2(max(d, 1.0e-12) / P_S_MAX);
   float f = 0.0;
-  for (int o = 0; o < ${OITAVAS_DA_SOMBRA}; o++) f += clamp((P_X_ENTRA - x0 - float(o)) * P_RAMPA, 0.0, 1.0) * uSombraG[o];
+  for (int o = 0; o < ${OITAVAS_DA_SOMBRA}; o++) f += clamp((P_X_ENTRA - x0 - float(o)) * P_RAMPA, 0.0, 1.0) * gp[o];
   return f;
 }
 `;
@@ -1926,12 +1994,16 @@ const VERT_DA_SOMBRA = /* glsl */ `
 attribute float aCelula;
 uniform highp sampler2D uPermutacao;
 varying vec2 vUV;
+varying vec3 vRel;
 flat varying vec4 vPar;
+flat varying float vOitava;
 ${GLSL_PEDRA_COMUM}
 const ivec2 IMAGENS[${IMAGENS.length}] = ivec2[${IMAGENS.length}](${IMAGENS.map(([r, a]) => `ivec2(${r}, ${a})`).join(', ')});
 void main() {
   vUV = vec2(0.0);
+  vRel = vec3(0.0);
   vPar = vec4(0.0);
+  vOitava = 0.0;
   gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
   int codigo = int(aCelula + 0.5);
   int celula = codigo % ${CELULAS};
@@ -1959,10 +2031,27 @@ void main() {
   float u0 = -a * senE - m;
   float u1 = (a + (0.5 * H + zs) * cosE) / senE + m;
   float w = a + m;
+  vec2 rumo = uSombraSol.xy;
+  // o nível de detalhe (\`pesoDaSombra\`): sem triângulo se nem o ponto mais
+  // perto do rastro chega à largura mínima — a largura cai como ~1/d² na
+  // vista rasante, e perto (d < 2·rastro) não se corta
+  float extensao = u1 - u0 + 2.0 * w;
+  vec3 pc = vec3(gOff.xy, -uZCamKm);
+  float dc = length(pc);
+  if (dc > 2.0 * extensao) {
+    float perto = dc / (dc - extensao);
+    if (larguraDaSombra(o, ladoDaSombraNaTela(pc, rumo, senE, uPxPorRad)) * perto * perto < ${glslF(SOMBRA_PX_SOME)}) return;
+  }
+  // e o peso inteiro sem conta no fragmento quando a largura passa do teto
+  // em todo o rastro: o piso de \`ladoDaSombraNaTela\` é |ŵz|/(σ₁·sen e)
+  // por px/d, com σ₁ ≤ √(1 + 1/sen²e) e d ≤ dc + extensão
+  float dMax = dc + extensao;
+  float ladoMin = uZCamKm * uPxPorRad / (dMax * dMax * sqrt(senE * senE + 1.0));
+  vOitava = larguraDaSombra(o, abs(ladoMin)) >= ${glslF(SOMBRA_PX_INTEIRA)} ? -1.0 : float(o);
   // o triângulo que cobre o retângulo [u0, u1] × [−w, w]
   vec2 uv = canto == 0 ? vec2(u0, -w) : canto == 1 ? vec2(2.0 * u1 - u0, -w) : vec2(u0, 3.0 * w);
-  vec2 rumo = uSombraSol.xy;
   vec3 P = vec3(gOff.xy + rumo * uv.x + vec2(-rumo.y, rumo.x) * uv.y, -uZCamKm);
+  vRel = P;
   float raioMundo = length((modelViewMatrix * vec4(1.0, 0.0, 0.0, 0.0)).xyz);
   gl_Position = projectionMatrix * vec4((mat3(modelViewMatrix) / raioMundo * P) * (raioMundo / KM_POR_RAIO), 1.0);
   vUV = uv;
@@ -1973,8 +2062,12 @@ void main() {
 const FRAG_DA_SOMBRA = /* glsl */ `
 precision highp float;
 uniform vec4 uSombraSol;
+uniform float uPxPorRad;
 varying vec2 vUV;
+varying vec3 vRel;
 flat varying vec4 vPar;
+flat varying float vOitava;
+${GLSL_PESO_DA_SOMBRA}
 // a primitiva de √(a² − t²)
 float areaDoCorte(float t, float a) {
   float c = clamp(t, -a, a);
@@ -1998,7 +2091,10 @@ void main() {
   float hi = min(min(zs + (b - vUV.x * senE) / c, zs + vUV.x * c / senE), 0.5 * H);
   float S = max(hi - lo, 0.0) / H;
   if (S <= 0.0) discard;
-  gl_FragColor = vec4(-log(max(1.0 - vPar.w * S, 1.0e-4)), 0.0, 0.0, 1.0);
+  // o nível de detalhe no ponto do plano deste pixel: a mesma função que o disco usa na média E
+  float peso = vOitava < 0.0 ? 1.0 : pesoDaSombra(larguraDaSombra(int(vOitava + 0.5), ladoDaSombraNaTela(vRel, uSombraSol.xy, uSombraSol.z, uPxPorRad)));
+  if (peso <= 0.0) discard;
+  gl_FragColor = vec4(-log(max(1.0 - vPar.w * peso * S, 1.0e-4)), 0.0, 0.0, 1.0);
 }
 `;
 
@@ -2445,25 +2541,32 @@ float cederAsPedras(float alfa, float tau) {
 // iguais do trecho (a altura do pedaço tomada no plano: aproximação minha)
 ${GLSL_SOMBRA_COMUM}
 uniform highp sampler2D uSombraDasPedras;
-// (ligada, (H/2)·cot e com o H da câmera, Σ G_o, —) e o rumo para longe do Sol no plano
+// (ligada, (H/2)·cot e com o H da câmera, Σ G_o, —) e (o rumo para longe do Sol no plano, sen e, px por radiano da máscara)
 uniform vec4 uSombraNoDisco;
-uniform vec2 uSombraRumo;
+uniform vec4 uSombraRumo;
 float sombraDasPedras(float tau) {
   if (uSombraNoDisco.x <= 0.0) return 1.0;
   ivec2 px = ivec2(gl_FragCoord.xy);
   ivec2 n = textureSize(uSombraDasPedras, 0);
   if (px.x >= n.x || px.y >= n.y) return 1.0;
+  vec2 q = vRelDasPedras.xy;
+  // o nível de detalhe no ponto deste pixel, como no triângulo da máscara:
+  // onde nem a sombra da oitava maior chega à largura mínima, a máscara
+  // também não tem nada e tudo fica na conta estatística
+  float lado = ladoDaSombraNaTela(vec3(q, uCamDasPedras.z), uSombraRumo.xy, uSombraRumo.z, uSombraRumo.w);
+  if (larguraDaSombra(0, lado) <= ${glslF(SOMBRA_PX_SOME)}) return 1.0;
+  float gp[${OITAVAS_DA_SOMBRA}];
+  for (int o = 0; o < ${OITAVAS_DA_SOMBRA}; o++) gp[o] = uSombraG[o] * pesoDaSombra(larguraDaSombra(o, lado));
   float od = texelFetch(uSombraDasPedras, px, 0).r;
   vec2 er = vec2(cos(uCamDasPedras.y), sin(uCamDasPedras.y));
-  vec2 q = vRelDasPedras.xy;
   float rKm = length(vec2(uCamDasPedras.x + dot(q, er), dot(q, vec2(-er.y, er.x))));
   float campo = tau * tetoDoCampo(rKm, tau, uCamDasPedras.w);
   float t0 = uSombraNoDisco.y;
   float z2 = uCamDasPedras.z * uCamDasPedras.z;
   float s = 0.0;
   for (int j = 0; j < 3; j++) {
-    vec2 qj = q - uSombraRumo * (t0 * (2.0 * float(j) + 1.0) / 6.0);
-    s += presencasDaSombra(sqrt(dot(qj, qj) + z2));
+    vec2 qj = q - uSombraRumo.xy * (t0 * (2.0 * float(j) + 1.0) / 6.0);
+    s += presencasDaSombra(sqrt(dot(qj, qj) + z2), gp);
   }
   float esperado = forcaDaSombra(campo, uSombraNoDisco.z) * campo * P_FRACAO * s / 3.0;
   return exp(esperado - od);
@@ -2475,7 +2578,7 @@ export function uniformesDaSombraNoDisco(): Record<string, THREE.IUniform> {
   return {
     uSombraDasPedras: { value: null },
     uSombraNoDisco: { value: new THREE.Vector4() },
-    uSombraRumo: { value: new THREE.Vector2(1, 0) },
+    uSombraRumo: { value: new THREE.Vector4(1, 0, 1, 0) },
     uSombraG: { value: new Float32Array(OITAVAS_DA_SOMBRA) },
   };
 }
@@ -4746,7 +4849,8 @@ const float R_EXT = ${opcoes.rExt};`;
       0
     );
     (ua.uSombraG!.value as Float32Array).set(g);
-    (ua.uSombraRumo!.value as THREE.Vector2).set(sol.x, sol.y);
+    // a máscara tem o tamanho do quadro: os px por radiano dela são os do quadro
+    (ua.uSombraRumo!.value as THREE.Vector4).set(sol.x, sol.y, sol.z, this.uniforms.uPxPorRad!.value as number);
   }
 
   /**
