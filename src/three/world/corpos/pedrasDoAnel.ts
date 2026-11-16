@@ -351,6 +351,20 @@ function misturar(x: number): number {
   return (x ^ (x >>> 16)) >>> 0;
 }
 
+/**
+ * O ASSADO EM FATIAS: as contas pesadas (o ladrilho das esteiras, o grão,
+ * as formas) são geradores que cedem a vez a cada trecho de poucos ms; a
+ * versão de uma vez só esgota o mesmo gerador — os mesmos números, bit a
+ * bit, em qualquer dos dois caminhos.
+ */
+type Passos<T> = Generator<void, T, void>;
+function drenar<T>(g: Passos<T>): T {
+  for (;;) {
+    const r = g.next();
+    if (r.done) return r.value;
+  }
+}
+
 /** a FFT complexa inversa (sinal +), no lugar, de `n` números em re/im[off + k·passo] */
 function fftInversa(re: Float64Array, im: Float64Array, off: number, passo: number, n: number) {
   for (let i = 1, j = 0; i < n; i++) {
@@ -399,6 +413,9 @@ function fftInversa(re: Float64Array, im: Float64Array, off: number, passo: numb
  */
 let campo: Uint16Array | null = null;
 function campoDaEsteira(): Uint16Array {
+  return campo ?? drenar(campoDaEsteiraEmPassos());
+}
+function* campoDaEsteiraEmPassos(): Passos<Uint16Array> {
   if (campo) return campo;
   const N = TEXELS_DA_ESTEIRA;
   const M = 512;
@@ -429,10 +446,17 @@ function campoDaEsteira(): Uint16Array {
       br[k] = -2 * Math.PI * fn * ai[k]!;
       bi[k] = 2 * Math.PI * fn * ar[k]!;
     }
+    if ((b & 63) === 63) yield;
   }
   for (const [re, im] of [[ar, ai], [br, bi]] as const) {
-    for (let y = 0; y < M; y++) fftInversa(re, im, y * M, 1, M);
-    for (let x = 0; x < M; x++) fftInversa(re, im, x, M, M);
+    for (let y = 0; y < M; y++) {
+      fftInversa(re, im, y * M, 1, M);
+      if ((y & 63) === 63) yield;
+    }
+    for (let x = 0; x < M; x++) {
+      fftInversa(re, im, x, M, M);
+      if ((x & 63) === 63) yield;
+    }
   }
   let soma = 0;
   for (let k = 0; k < M * M; k++) soma += ar[k]! * ar[k]! + ai[k]! * ai[k]!;
@@ -494,9 +518,10 @@ function campoDaEsteira(): Uint16Array {
       dado[o] = THREE.DataUtils.toHalfFloat(((2 / kOnda) * Math.atan2(wi, um)) / LAMBDA_DA_ESTEIRA_KM);
       dado[o + 1] = THREE.DataUtils.toHalfFloat(((2 / kOnda) * (dwi * um + dwr * wi)) / (um * um + wi * wi));
     }
+    if ((j & 15) === 15) yield;
   }
-  campo = dado;
-  return dado;
+  campo ??= dado;
+  return campo;
 }
 
 /** a textura do ladrilho (a GPU lê os mesmos números da CPU) */
@@ -987,6 +1012,9 @@ const ESCURO_DA_FRESTA = 0.35;
 /** a textura do grão (`texturaDoRelevo`) e a altura média dela */
 let grao: { dado: Uint8Array; n: number; media: number } | null = null;
 function dadoDoGrao() {
+  return grao ?? drenar(dadoDoGraoEmPassos());
+}
+function* dadoDoGraoEmPassos(): Passos<{ dado: Uint8Array; n: number; media: number }> {
   if (grao) return grao;
   const n = VOXELS_DO_RELEVO;
   const C = CELULAS_DO_RELEVO;
@@ -994,7 +1022,7 @@ function dadoDoGrao() {
   const alt = new Float32Array(n * n * n);
   const inc = new Float32Array(n * n * n * 3);
   for (let k = 0; k < C; k++)
-    for (let j = 0; j < C; j++)
+    for (let j = 0; j < C; j++) {
       for (let i = 0; i < C; i++) {
         const h = misturar((Math.imul(i, 0x8da6b343) ^ Math.imul(j, 0xd8163841) ^ Math.imul(k, 0xcb1ab31f) ^ 0x51ed27) >>> 0);
         const r = quatro(h);
@@ -1018,6 +1046,8 @@ function dadoDoGrao() {
               for (let e = 0; e < 3; e++) inc[o * 3 + e] = g * d[e]!;
             }
       }
+      yield;
+    }
   const dado = new Uint8Array(n * n * n * 4);
   let soma = 0;
   for (let o = 0; o < n * n * n; o++) {
@@ -1028,7 +1058,7 @@ function dadoDoGrao() {
     for (let e = 0; e < 3; e++)
       dado[o * 4 + 1 + e] = Math.round(255 * Math.min(Math.max(inc[o * 3 + e]! / (2 * INCLINACAO_DO_GRAO) + 0.5, 0), 1));
   }
-  grao = { dado, n, media: soma / (n * n * n) };
+  grao ??= { dado, n, media: soma / (n * n * n) };
   return grao;
 }
 /**
@@ -2803,6 +2833,22 @@ export interface OpcoesDasPedras {
 /** a faixa de raio em que os pedaços podem existir (a da lajota) */
 const RAIO_MIN_KM = 55_000;
 const RAIO_MAX_KM = 160_000;
+/**
+ * O GATILHO DO ASSADO (nível de detalhe): a câmera a menos disto da faixa
+ * de raio dos pedaços (~11 raios de Saturno). As esteiras do disco acendem
+ * a 25 km do plano e os pedaços a ~5 km, mas a câmera do filme solar vai
+ * de 2 400 km a 25 km em ~5 s, e o assado leva ~1,6 s de CPU em fatias de
+ * ~8 ms: 200 quadros, mais de 10 s a 20 fps. Daqui o filme tem ~14 s (do
+ * começo do ato até as esteiras); quem só olha Saturno de perto paga as
+ * fatias, nunca uma trava.
+ */
+const GATILHO_DO_ASSADO_KM = 700_000;
+/** a CPU que o assado toma por quadro, ms (`assarUmPouco`) */
+const FATIA_DO_ASSADO_MS = 8;
+/** a distância da câmera à faixa de raio dos pedaços, no plano do anel, km */
+function distanciaDoAnelKm(rhoKm: number, zKm: number): number {
+  return Math.hypot(Math.max(RAIO_MIN_KM - rhoKm, rhoKm - RAIO_MAX_KM, 0), zKm);
+}
 
 /**
  * AS MALHAS DE PERTO, pelo `detail` do icosaedro do three (3 → 162
@@ -2836,7 +2882,7 @@ interface OrdemDaOitava {
   z0: Float32Array;
 }
 
-function ordemDaOitava(o: number): OrdemDaOitava {
+function* ordemDaOitava(o: number): Passos<OrdemDaOitava> {
   const n = PEDRAS_POR_TIER.cinema;
   const q = new Uint16Array(n);
   const raio = new Float32Array(n);
@@ -2851,7 +2897,9 @@ function ordemDaOitava(o: number): OrdemDaOitava {
     const h2 = misturar((base ^ 0x7a3f91c5) >>> 0);
     z0[i] = ((h2 & 0xffff) + (h2 >>> 16) + 1) / 65536 - 1;
   }
+  yield;
   const ids = Array.from({ length: n }, (_, i) => i).sort((x, y) => q[x]! - q[y]!);
+  yield;
   return {
     q: Uint16Array.from(ids, (i) => q[i]!),
     i: Uint16Array.from(ids),
@@ -3094,16 +3142,18 @@ function raioDoMonte(d: number[], mm: number[][], p = 16) {
  * para lá (cada vértice anda uma vez só). A aresta da pedra passa a correr
  * por vértices. Só na hora de assar: nenhum custo por quadro.
  */
-function arestasNasLinhas(ds: number[][], idx: ArrayLike<number>, rotulo: (d: number[]) => number): {
+function* arestasNasLinhas(ds: number[][], idx: ArrayLike<number>, rotulo: (d: number[]) => number): Passos<{
   dirs: number[][];
   movido: boolean[];
-} {
+}> {
   const dirs = ds.map((d) => d.slice());
   const movido = ds.map(() => false);
   const rot = ds.map(rotulo);
+  yield;
   const vistas = new Set<number>();
   const n = ds.length;
   for (let j = 0; j < idx.length; j += 3) {
+    if (j % 3072 === 3069) yield;
     for (let e = 0; e < 3; e++) {
       const a = idx[j + e]!;
       const b = idx[j + ((e + 1) % 3)]!;
@@ -3201,6 +3251,9 @@ function r2Medio(f: (d: number[]) => number): number {
   return s / DIRECOES_DA_AREA.length;
 }
 function osAgregados() {
+  return agregados ?? drenar(osAgregadosEmPassos());
+}
+function* osAgregadosEmPassos(): Passos<{ membros: number[][][]; escala: number[]; r2Perto: number[] }> {
   if (agregados) return agregados;
   // o monte: o quadrado médio do raio da forma de longe (quatro bolas) e o
   // da de perto (as doze), na média das variantes
@@ -3210,6 +3263,7 @@ function osAgregados() {
     const todos = Array.from({ length: MEMBROS }, (_, k) => membro(baseDaVariante(false, v), k));
     r2LongeMonte += r2Medio((d) => raioDoMonte(d, todos.slice(0, BOLAS_A_VALER)).r) / VARIANTES;
     r2PertoMonte += r2Medio((d) => raioDoMonte(d, todos).r) / VARIANTES;
+    yield;
   }
   const membros: number[][][] = [];
   const escala: number[] = [];
@@ -3256,8 +3310,9 @@ function osAgregados() {
     membros.push(ms);
     escala.push(Math.sqrt(r2LongeMonte / longe));
     r2Perto.push((longe * r2PertoMonte) / r2LongeMonte);
+    yield;
   }
-  agregados = { membros, escala, r2Perto };
+  agregados ??= { membros, escala, r2Perto };
   return agregados;
 }
 /**
@@ -3310,12 +3365,15 @@ let longe: {
   tex: THREE.DataTexture | null;
 } | null = null;
 function formasDeLonge() {
+  return longe ?? drenar(formasDeLongeEmPassos());
+}
+function* formasDeLongeEmPassos(): Passos<NonNullable<typeof longe>> {
   if (longe) return longe;
   const N = LADO_DE_LONGE;
   // duas vezes as linhas: (normal, raio), depois (céu aberto, -, -, -)
   const dado = new Float32Array(2 * 2 * VARIANTES * N * N * 4);
   const ceu = 2 * VARIANTES * N * N * 4;
-  const ag = osAgregados();
+  const ag = yield* osAgregadosEmPassos();
   let raioMaximo = 1;
   const somaAo = [0, 0];
   const somaP = [0, 0];
@@ -3335,6 +3393,7 @@ function formasDeLonge() {
           const r = raioDoMonteDePerto(d, todos, sub).r;
           r2 += r * r;
           P.push(d.map((x) => x * r));
+          if (i === N - 1 && j % 6 === 5) yield;
         }
       const r2Antes = monte ? r2Medio((d) => raioDoMonte(d, todos).r) : ag.r2Perto[v]!;
       // o mapa octaédrico tem a mesma área por texel só perto disso: a média
@@ -3364,10 +3423,11 @@ function formasDeLonge() {
           dado[o + 3] = r;
           dado[ceu + o] = vis;
         }
-      normas.push(...normaDoSol(pontos));
+      yield;
+      normas.push(...(yield* normaDoSolEmPassos(pontos)));
     }
   }
-  longe = {
+  longe ??= {
     dado,
     raioMaximo,
     aoMedio: [somaAo[0]! / somaP[0]!, somaAo[1]! / somaP[1]!],
@@ -3443,6 +3503,9 @@ export function solAberto(cosEnvoltoria: number, vis: number): number {
  * `FAIXAS_DA_NORMA` mapas octaédricos de `LADO_DA_NORMA`² direções.
  */
 export function normaDoSol(pontos: readonly (readonly number[])[]): number[] {
+  return drenar(normaDoSolEmPassos(pontos));
+}
+function* normaDoSolEmPassos(pontos: readonly (readonly number[])[]): Passos<number[]> {
   const L = LADO_DA_NORMA;
   const F = FAIXAS_DA_NORMA;
   const env = (c: number) => Math.max((c + ENVOLVE) / (1 + ENVOLVE), 0);
@@ -3483,6 +3546,7 @@ export function normaDoSol(pontos: readonly (readonly number[])[]): number[] {
         deveria += d;
       }
       if (total > 0) for (let k = 0; k < F; k++) t[(k * L + j) * L + i]! *= total / deveria;
+      if (pontos.length > 1000) yield;
     }
   return t;
 }
@@ -3667,6 +3731,11 @@ const P_DA_ARESTA_VIVA = 40;
  * a do plano (quinas vivas, sem derivada de tela); nas de perto, a da malha.
  */
 export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: THREE.DataTexture } {
+  return drenar(assarFormasEmPassos(detalhe));
+}
+/** os vértices entre duas cessões da vez (`Passos`) */
+const VERTICES_POR_PASSO = 256;
+function* assarFormasEmPassos(detalhe: number): Passos<{ geo: THREE.BufferGeometry; tex: THREE.DataTexture }> {
   const geo = molde(detalhe);
   const pos = geo.getAttribute('position');
   const idx = geo.index!.array;
@@ -3683,7 +3752,8 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
   // o menor submembro que a malha desenha: 1,25 lado de triângulo
   const sMin =
     1.25 * Math.sqrt(((4 * Math.PI) / (2 * n - 4)) * (4 / Math.sqrt(3)));
-  const ag = osAgregados();
+  const ag = yield* osAgregadosEmPassos();
+  yield* formasDeLongeEmPassos();
   const normas: number[] = [];
   for (let t = 0; t < 3; t++) {
     const aoDoTipo: number[][] = [];
@@ -3696,20 +3766,22 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
           (x) => 37 * x,
         );
         // as arestas nas linhas, em cada forma (`arestasNasLinhas`)
-        const linA = arestasNasLinhas(
+        const linA = yield* arestasNasLinhas(
           ds,
           idx,
           (d) => raioDoPoliedro(d, planos, Infinity).dono,
         );
-        const linB = arestasNasLinhas(
+        yield;
+        const linB = yield* arestasNasLinhas(
           ds,
           idx,
           (d) => raioDoPoliedro(d, planos).dono,
         );
+        yield;
         const uB: number[][] = [];
         let r2Viva = 0;
         let r2 = 0;
-        ds.forEach((_, i) => {
+        for (let i = 0; i < n; i++) {
           // de longe, o poliedro de quinas vivas: todo vértice numa face
           const dA = linA.dirs[i]!;
           const a = raioDoPoliedro(dA, planos, Infinity);
@@ -3740,7 +3812,8 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
           // longe — todos)
           por(l0 + 4, i, [1, 0.5, 0]);
           dado[((l0 + 4) * n + i) * 4 + 3] = 1;
-        });
+          if (i % VERTICES_POR_PASSO === VERTICES_POR_PASSO - 1) yield;
+        }
         // o tamanho é o do bloco de arestas vivas (a área da escala do tipo)
         const k = Math.sqrt(r2Viva / r2);
         const nB = normaisDaMalha(uB, idx, ds);
@@ -3748,6 +3821,7 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
           por(l0 + 1, i, uB[i]!.map((x) => x * k));
           por(l0 + 3, i, nB[i]!);
         });
+        yield;
       } else {
         const monte = t === 1;
         const vb = baseDaVariante(false, monte ? v : VARIANTES + v);
@@ -3761,7 +3835,8 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
         const pontos: number[][] = [];
         let r2Antes = 0;
         let r2 = 0;
-        ds.forEach((d, i) => {
+        for (let i = 0; i < n; i++) {
+          const d = ds[i]!;
           // de longe, a forma do ponto (\`formasDeLonge\`), lida no mapa
           const a = lerDeLonge((t - 1) * VARIANTES + v, d);
           por(l0, i, a.u);
@@ -3773,10 +3848,12 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
           r2 += b.r * b.r;
           uB.push(d.map((x) => x * b.r));
           donos.push(b.dono);
-        });
+          if (i % VERTICES_POR_PASSO === VERTICES_POR_PASSO - 1) yield;
+        }
         if (!monte) r2Antes = ag.r2Perto[v]! * n;
         const nB = normaisDaMalha(uB, idx, ds);
-        ds.forEach((_, i) => {
+        yield;
+        for (let i = 0; i < n; i++) {
           const u = uB[i]!;
           const nn = nB[i]!;
           // a oclusão das vizinhas (a de uma esfera vista de um ponto): os
@@ -3796,10 +3873,11 @@ export function assarFormas(detalhe: number): { geo: THREE.BufferGeometry; tex: 
           por(l0 + 4, i, [ao, tudo[donos[i]!]![4]!, vis]);
           dado[((l0 + 4) * n + i) * 4 + 3] = visDeLonge[i]!;
           pontos.push([...nn, ...nDeLonge[i]!, vis, dot3(u, u)]);
-        });
+          if (i % VERTICES_POR_PASSO === VERTICES_POR_PASSO - 1) yield;
+        }
         // o tamanho é o de antes: o quadrado médio do raio, o da forma de doze
         const k = Math.sqrt(r2Antes / r2);
-        normas.push(...normaDoSol(pontos));
+        normas.push(...(yield* normaDoSolEmPassos(pontos)));
         ds.forEach((_, i) => {
           por(
             l0 + 1,
@@ -3920,6 +3998,9 @@ export interface CelulasDaOitava {
 }
 
 export function celulasDaOitava(o: number): CelulasDaOitava {
+  return drenar(celulasDaOitavaEmPassos(o));
+}
+function* celulasDaOitavaEmPassos(o: number): Passos<CelulasDaOitava> {
   const n = PEDRAS_POR_TIER.cinema;
   const a = new Float64Array(n);
   const h = new Float64Array(n);
@@ -3928,6 +4009,7 @@ export function celulasDaOitava(o: number): CelulasDaOitava {
     a[i] = (misturar((base ^ 0x51ed27) >>> 0) & 0xffff) / 65536;
     h[i] = (misturar((base ^ 0x2c1b3c6d) >>> 0) >>> 8) / 16777216;
   }
+  yield;
   const ids = new Uint16Array(n);
   const por = CELULA * CELULAS_POR_FAIXA;
   const cortes = [0, PEDRAS_POR_TIER.performance, PEDRAS_POR_TIER.alta, PEDRAS_POR_TIER.cinema];
@@ -3937,6 +4019,7 @@ export function celulasDaOitava(o: number): CelulasDaOitava {
       const faixa = grupo.slice(f, f + por).sort((x, y) => h[x]! - h[y]!);
       ids.set(faixa, cortes[g]! + f);
     }
+    yield;
   }
   const aMin = new Float64Array(FAIXAS).fill(1);
   const aMax = new Float64Array(FAIXAS);
@@ -4142,10 +4225,14 @@ class Faixa {
   readonly sombra: THREE.Mesh;
   private readonly codigosDaSombra: THREE.InstancedBufferAttribute;
 
-  constructor(material: (desenho: Desenho, formas?: THREE.DataTexture) => THREE.ShaderMaterial) {
-    this.ordens = Array.from({ length: OITAVAS }, (_, o) => ordemDaOitava(o));
+  constructor(
+    material: (desenho: Desenho, formas?: THREE.DataTexture) => THREE.ShaderMaterial,
+    ordens: OrdemDaOitava[],
+    celulas: CelulasDaOitava[]
+  ) {
+    this.ordens = ordens;
     // a ordem de desenho: os ids de cada oitava por célula, numa textura
-    this.celulas = Array.from({ length: OITAVAS }, (_, o) => celulasDaOitava(o));
+    this.celulas = celulas;
     const largura = 512;
     const perm = new Float32Array(OITAVAS * PEDRAS_POR_TIER.cinema);
     this.celulas.forEach((c, o) => perm.set(c.ids, o * PEDRAS_POR_TIER.cinema));
@@ -4424,7 +4511,10 @@ export class PedrasDoAnel {
   /** o grupo dos desenhos — a matriz do anel mora nele */
   readonly malha = new THREE.Group();
 
-  private readonly faixa: Faixa;
+  /** os desenhos: null até o assado terminar (`assarUmPouco`, `assarJa`) */
+  private faixa: Faixa | null = null;
+  /** o assado em andamento (começa com a câmera rumo ao anel) */
+  private passos: Passos<void> | null = null;
   private readonly uniforms: Record<string, THREE.IUniform>;
   /** as integrais do cisalhamento e do giro, em dupla precisão */
   private g = 0;
@@ -4441,8 +4531,8 @@ export class PedrasDoAnel {
   readonly camAlta = new THREE.Vector3();
   readonly camResto = new THREE.Vector3();
   /** a folha das esteiras do disco e a casca da névoa */
-  private readonly folha: THREE.Mesh;
-  private readonly nevoa: THREE.Mesh;
+  private folha: THREE.Mesh | null = null;
+  private nevoa: THREE.Mesh | null = null;
   /** a última câmera que desenhou os pedaços — a escolha de perto lê o cone dela */
   private camera: THREE.Camera | null = null;
   private readonly lente: Lente = { m: new Float64Array(9), p00: 1, p11: 1, pxPorRad: 400, ok: false };
@@ -4469,21 +4559,13 @@ export class PedrasDoAnel {
 
   private readonly opcoes: OpcoesDasPedras;
 
+  /**
+   * NADA PESADO AQUI: abrir Saturno não paga o assado. Só os uniformes (as
+   * texturas assadas entram em `montar`); o grupo fica vazio e escondido
+   * até o assado terminar.
+   */
   constructor(opcoes: OpcoesDasPedras) {
     this.opcoes = opcoes;
-    const constantes = `${opcoes.glslConstantesDoAnel}
-${opcoes.glslRegiaoDoAnel}
-${opcoes.glslCamadaDoAnel}
-const float R_INT = ${opcoes.rInt};
-const float R_EXT = ${opcoes.rExt};`;
-    const vertice = (v: string) =>
-      v
-        .replace('CONSTANTES_DO_ANEL', constantes)
-        .replace('SOMBRA_DO_PLANETA', opcoes.glslSombraDoPlaneta)
-        .replace('ASSADOS_DAS_PEDRAS', glslAssado());
-    const fragmento = (f: string) =>
-      f.replace('CAMADA_DO_ANEL', opcoes.glslCamadaDoAnel).replace('ASSADOS_DAS_PEDRAS', glslAssado());
-
     // UM objeto de uniformes, dividido por todos os desenhos
     this.uniforms = {
       uMapaAnel: { value: null },
@@ -4505,14 +4587,14 @@ const float R_EXT = ${opcoes.rExt};`;
       uGi: { value: this.gi },
       uGf: { value: this.gf },
       uGiro: { value: 0 },
-      uEsteira: { value: texturaDaEsteira() },
+      uEsteira: { value: null },
       uEstCam: { value: new THREE.Vector4() },
       uForcaEsteira: { value: 0 },
       uRaioFolha: { value: 40 },
       uFundoFolha: { value: -0.02 },
-      uRelevo: { value: texturaDoRelevo() },
-      uLonge: { value: texturaDeLonge() },
-      uNormaDeLonge: { value: (formasDeLonge().texNorma ??= texturaDaNorma(formasDeLonge().normaDoSol)) },
+      uRelevo: { value: null },
+      uLonge: { value: null },
+      uNormaDeLonge: { value: null },
       uPoloVista: { value: new THREE.Vector3(0, 0, 1) },
       uPre: { value: null },
       uPrePronto: { value: 0 },
@@ -4520,6 +4602,86 @@ const float R_EXT = ${opcoes.rExt};`;
       uSombraSol: { value: new THREE.Vector4(1, 0, 0.5, Math.sqrt(0.75)) },
       uSombraG: { value: new Float32Array(OITAVAS_DA_SOMBRA) },
     };
+    this.malha.matrixAutoUpdate = false;
+    this.malha.visible = false;
+  }
+
+  /** com o assado terminado, os desenhos existem */
+  get pronto(): boolean {
+    return this.faixa !== null;
+  }
+
+  /**
+   * O ASSADO EM FATIAS: as contas em cache do módulo (o ladrilho das
+   * esteiras, o grão, os agregados, a forma de longe, as formas das três
+   * malhas), as ordens e as células de cada oitava, e por fim `montar`.
+   */
+  private *passosDoAssado(): Passos<void> {
+    yield* campoDaEsteiraEmPassos();
+    yield* dadoDoGraoEmPassos();
+    yield* formasDeLongeEmPassos();
+    texturaDeLonge();
+    yield;
+    for (const { detalhe } of MALHAS) {
+      if (FORMAS.has(detalhe)) continue;
+      const f = yield* assarFormasEmPassos(detalhe);
+      if (!FORMAS.has(detalhe)) FORMAS.set(detalhe, f);
+    }
+    const ordens: OrdemDaOitava[] = [];
+    const celulas: CelulasDaOitava[] = [];
+    for (let o = 0; o < OITAVAS; o++) {
+      ordens.push(yield* ordemDaOitava(o));
+      celulas.push(yield* celulasDaOitavaEmPassos(o));
+    }
+    this.montar(ordens, celulas);
+  }
+
+  /**
+   * assa por até `orcamentoMs` de CPU: ao menos um passo, e o seguinte só
+   * se o tempo que o anterior levou ainda cabe (os passos são de poucos ms)
+   */
+  assarUmPouco(orcamentoMs: number) {
+    if (this.faixa) return;
+    const g = (this.passos ??= this.passosDoAssado());
+    const t0 = performance.now();
+    let antes = t0;
+    let passo = 0;
+    for (;;) {
+      if (g.next().done || this.faixa) break;
+      const agora = performance.now();
+      passo = agora - antes;
+      antes = agora;
+      if (agora - t0 + passo > orcamentoMs) break;
+    }
+  }
+
+  /** assa o que falta de uma vez (a câmera chegou antes do assado: melhor um engasgo que um buraco) */
+  assarJa() {
+    if (this.faixa) return;
+    drenar((this.passos ??= this.passosDoAssado()));
+  }
+
+  /** os desenhos, com tudo assado: barato (texturas embrulham o que já está em cache) */
+  private montar(ordens: OrdemDaOitava[], celulas: CelulasDaOitava[]) {
+    const opcoes = this.opcoes;
+    const constantes = `${opcoes.glslConstantesDoAnel}
+${opcoes.glslRegiaoDoAnel}
+${opcoes.glslCamadaDoAnel}
+const float R_INT = ${opcoes.rInt};
+const float R_EXT = ${opcoes.rExt};`;
+    const vertice = (v: string) =>
+      v
+        .replace('CONSTANTES_DO_ANEL', constantes)
+        .replace('SOMBRA_DO_PLANETA', opcoes.glslSombraDoPlaneta)
+        .replace('ASSADOS_DAS_PEDRAS', glslAssado());
+    const fragmento = (f: string) =>
+      f.replace('CAMADA_DO_ANEL', opcoes.glslCamadaDoAnel).replace('ASSADOS_DAS_PEDRAS', glslAssado());
+
+    const u = this.uniforms;
+    u.uEsteira!.value = texturaDaEsteira();
+    u.uRelevo!.value = texturaDoRelevo();
+    u.uLonge!.value = texturaDeLonge();
+    u.uNormaDeLonge!.value = formasDeLonge().texNorma ??= texturaDaNorma(formasDeLonge().normaDoSol);
     const pre = { PRE_W, PRE_H: linhasDoPrePasso(), PRE_BANDAS };
     const material = (desenho: Desenho, formas?: THREE.DataTexture) => {
       const malha = desenho === 'malha' || desenho === 'reserva';
@@ -4587,11 +4749,11 @@ const float R_EXT = ${opcoes.rExt};`;
         };
       return m;
     };
-    this.faixa = new Faixa(material);
-    this.uniforms.uPermutacao!.value = this.faixa.permutacao;
+    const faixa = new Faixa(material, ordens, celulas);
+    this.uniforms.uPermutacao!.value = faixa.permutacao;
     // DA FRENTE PARA TRÁS: as malhas de perto; os pontos (que descartam) por
     // último, depois das que a GPU sabe esconder
-    const ordem: THREE.Object3D[] = [...this.faixa.malhas, this.faixa.pontos];
+    const ordem: THREE.Object3D[] = [...faixa.malhas, faixa.pontos];
     const lerTela = (renderer: THREE.WebGLRenderer, camera: THREE.Camera) => {
       // o raio na tela (px por radiano) e a janela saem do alvo em que o
       // quadro é desenhado; a câmera fica para a escolha do próximo quadro
@@ -4605,8 +4767,8 @@ const float R_EXT = ${opcoes.rExt};`;
       m.onBeforeRender = (renderer, _cena, camera) => lerTela(renderer, camera);
       this.malha.add(m);
     });
-    this.faixa.esmaece.onBeforeRender = (renderer, _cena, camera) => lerTela(renderer, camera);
-    this.folha = new THREE.Mesh(
+    faixa.esmaece.onBeforeRender = (renderer, _cena, camera) => lerTela(renderer, camera);
+    const folha = new THREE.Mesh(
       geometriaDaFolha(),
       new THREE.ShaderMaterial({
         vertexShader: vertice(VERT_DA_FOLHA),
@@ -4626,7 +4788,7 @@ const float R_EXT = ${opcoes.rExt};`;
         side: THREE.DoubleSide,
       })
     );
-    this.nevoa = new THREE.Mesh(
+    const nevoa = new THREE.Mesh(
       new THREE.SphereGeometry(1, 64, 48),
       new THREE.ShaderMaterial({
         vertexShader: vertice(VERT_DA_NEVOA),
@@ -4640,18 +4802,19 @@ const float R_EXT = ${opcoes.rExt};`;
     );
     // DEPOIS do disco: a folha (é a luz dele que ela modula), a névoa (atrás
     // de todos os pedaços) e os que estão entrando (na frente dela)
-    this.folha.renderOrder = 10;
-    this.nevoa.renderOrder = 11;
-    this.faixa.esmaece.renderOrder = 12;
-    for (const m of [this.folha, this.nevoa]) {
+    folha.renderOrder = 10;
+    nevoa.renderOrder = 11;
+    faixa.esmaece.renderOrder = 12;
+    for (const m of [folha, nevoa]) {
       m.frustumCulled = false;
       m.visible = false;
     }
-    this.malha.add(this.folha, this.nevoa, this.faixa.esmaece);
-    this.cenaPre.add(this.faixa.pre);
-    this.cenaSombra.add(this.faixa.sombra);
-    this.malha.matrixAutoUpdate = false;
-    this.malha.visible = false;
+    this.malha.add(folha, nevoa, faixa.esmaece);
+    this.cenaPre.add(faixa.pre);
+    this.cenaSombra.add(faixa.sombra);
+    this.folha = folha;
+    this.nevoa = nevoa;
+    this.faixa = faixa;
   }
 
   ligarPerfil(textura: THREE.DataTexture) {
@@ -4727,10 +4890,17 @@ const float R_EXT = ${opcoes.rExt};`;
     const ativas = noAnel ? PedrasDoAnel.oitavasAtivas(zKm) : 0;
     const forca = noAnel ? forcaDaEsteiraNoDisco(zKm, espessura) : 0;
     const peso = noAnel ? pesoDaNevoa(zKm, espessura) : 0;
-    this.malha.visible = ativas > 0 || forca > 0;
+    // O ASSADO É NÍVEL DE DETALHE: em fatias com a câmera rumo ao anel; de
+    // uma vez se ela chegou antes (teletransporte, seek de filme)
+    if (!this.faixa) {
+      if (ativas > 0 || forca > 0) this.assarJa();
+      else if (distanciaDoAnelKm(rhoKm, zKm) < GATILHO_DO_ASSADO_KM) this.assarUmPouco(FATIA_DO_ASSADO_MS);
+    }
+    const faixa = this.faixa;
+    this.malha.visible = faixa !== null && (ativas > 0 || forca > 0);
     this.sombraAtiva = false;
     const fracao = PEDRAS_POR_TIER[q.tier] / PEDRAS_POR_TIER.cinema;
-    this.cessao.w = ativas > 0 ? fracao : 0;
+    this.cessao.w = faixa && ativas > 0 ? fracao : 0;
     // a câmera do disco em duas partes vale SEMPRE: a direção de vista do
     // disco sai dela, e do alto (nada desenhado) ela ficava parada na
     // origem — o disco era visto do centro de Saturno e saía escuro
@@ -4748,7 +4918,7 @@ const float R_EXT = ${opcoes.rExt};`;
       ? (q.jd - this.jdAntes) * 86400
       : 0;
     this.jdAntes = q.jd;
-    if (!this.malha.visible) return;
+    if (!this.malha.visible || !faixa) return;
 
     const teto = tetoDoPasso(rhoKm);
     const dt = teto * Math.tanh(dtBruto / teto);
@@ -4768,8 +4938,8 @@ const float R_EXT = ${opcoes.rExt};`;
     // a maior espessura que a janela (≤ 1,5 ladrilho da maior oitava) alcança
     const alcance = 1.5 * TABELA_DE_OITAVAS[0]!.ladoRadial;
     const espessuraKm = Math.max(espessura, regiaoDasPedras(rhoKm - alcance).espessura, regiaoDasPedras(rhoKm + alcance).espessura);
-    this.faixa.acenderPontos({ ativas, porOitava, rhoKm, zKm, espessuraKm, lente: this.lente, fr: this.fr, fs: this.fs, gi: this.gi, gf: this.gf });
-    this.faixa.escolherDePerto(ativas, porOitava, rhoKm, R0_KM * theta, zKm, espessura, this.lente, this.fr, this.fs, this.gi, this.gf, this.tauMaximo, q.tier === 'performance' ? 1 : 0);
+    faixa.acenderPontos({ ativas, porOitava, rhoKm, zKm, espessuraKm, lente: this.lente, fr: this.fr, fs: this.fs, gi: this.gi, gf: this.gf });
+    faixa.escolherDePerto(ativas, porOitava, rhoKm, R0_KM * theta, zKm, espessura, this.lente, this.fr, this.fs, this.gi, this.gf, this.tauMaximo, q.tier === 'performance' ? 1 : 0);
     const u = this.uniforms;
     (u.uDirSolLocal!.value as THREE.Vector3).copy(q.dirSolLocal);
     (u.uCamLocal!.value as THREE.Vector3).copy(c);
@@ -4792,8 +4962,8 @@ const float R_EXT = ${opcoes.rExt};`;
     u.uRaioFolha!.value = raioDaFolhaKm(zKm);
     // do outro lado da camada, além do maior pedaço (o eixo maior passa de a)
     u.uFundoFolha!.value = -(Math.sign(zKm) || 1) * (0.5 * espessura + 2 * A_MAX_KM);
-    this.folha.visible = forca > 0;
-    this.nevoa.visible = peso > 0;
+    this.folha!.visible = forca > 0;
+    this.nevoa!.visible = peso > 0;
 
     // AS SOMBRAS: o Sol no plano do anel, os G_o e as células, com a folga
     // do rastro mais longo (o maior pedaço na camada mais espessa). O nível
@@ -4813,7 +4983,7 @@ const float R_EXT = ${opcoes.rExt};`;
     }
     const r = this.renderer;
     this.sombraAtiva = q.tier !== 'performance' && ativas > 0 && peso < 1 && r !== null && r.extensions.has('EXT_color_buffer_float');
-    this.faixa.sombra.visible = false;
+    faixa.sombra.visible = false;
     if (this.sombraAtiva) {
       this.alvoSombra ??= new THREE.WebGLRenderTarget(1, 1, {
         type: THREE.HalfFloatType,
@@ -4823,7 +4993,7 @@ const float R_EXT = ${opcoes.rExt};`;
         depthBuffer: false,
         generateMipmaps: false,
       });
-      this.faixa.acenderSombra({
+      faixa.acenderSombra({
         ativas: Math.min(ativas, OITAVAS_DA_SOMBRA),
         porOitava,
         rhoKm,
@@ -4836,9 +5006,9 @@ const float R_EXT = ${opcoes.rExt};`;
         gf: this.gf,
         folgaKm: (A_MAX_KM + espessuraKm * cosE) / senE,
       });
-      this.desenharSombra();
+      this.desenharSombra(faixa);
     }
-    this.prePasso();
+    this.prePasso(faixa);
   }
 
   /**
@@ -4866,7 +5036,7 @@ const float R_EXT = ${opcoes.rExt};`;
    * dele já no lugar deste: ANTES do desenho do quadro, como o pré-passo —
    * no meio dele, a troca de alvo partia o passe da placa (+1 ms medido).
    */
-  private desenharSombra() {
+  private desenharSombra(faixa: Faixa) {
     const r = this.renderer;
     const cam = this.camera;
     const alvo = this.alvoSombra;
@@ -4876,7 +5046,7 @@ const float R_EXT = ${opcoes.rExt};`;
     if (alvo.width !== w || alvo.height !== h) alvo.setSize(w, h);
     cam.updateMatrixWorld();
     this.malha.updateWorldMatrix(true, false);
-    const s = this.faixa.sombra;
+    const s = faixa.sombra;
     s.matrix.copy(this.malha.matrixWorld);
     s.matrixWorldNeedsUpdate = true;
     const antes = r.getRenderTarget();
@@ -4898,12 +5068,12 @@ const float R_EXT = ${opcoes.rExt};`;
    * vai para a textura antes do desenho, com os uniformes deste quadro. Sem
    * quem desenhe ainda ou sem alvo em float, a malha faz a conta ela mesma.
    */
-  private prePasso() {
+  private prePasso(faixa: Faixa) {
     const r = this.renderer;
     const u = this.uniforms.uPrePronto!;
     u.value = 0;
-    this.faixa.usarPrePasso(false);
-    if (!r || this.faixa.nPre <= 1 || !r.extensions.has('EXT_color_buffer_float')) return;
+    faixa.usarPrePasso(false);
+    if (!r || faixa.nPre <= 1 || !r.extensions.has('EXT_color_buffer_float')) return;
     if (!this.alvoPre) {
       this.alvoPre = new THREE.WebGLRenderTarget(PRE_W, PRE_BANDAS * linhasDoPrePasso(), {
         type: THREE.FloatType,
@@ -4920,19 +5090,21 @@ const float R_EXT = ${opcoes.rExt};`;
     r.render(this.cenaPre, this.cameraPre);
     r.setRenderTarget(antes);
     u.value = 1;
-    this.faixa.usarPrePasso(true);
+    faixa.usarPrePasso(true);
   }
 
   dispose() {
-    this.faixa.dispose();
+    this.passos = null;
     this.alvoPre?.dispose();
     this.alvoSombra?.dispose();
+    if (!this.faixa) return;
+    this.faixa.dispose();
     (this.uniforms.uRelevo!.value as THREE.Texture).dispose();
     (this.uniforms.uLonge!.value as THREE.Texture).dispose();
     (this.uniforms.uNormaDeLonge!.value as THREE.Texture).dispose();
     if (longe) longe.tex = longe.texNorma = null;
     (this.uniforms.uEsteira!.value as THREE.Texture).dispose();
-    for (const m of [this.folha, this.nevoa]) {
+    for (const m of [this.folha!, this.nevoa!]) {
       m.geometry.dispose();
       (m.material as THREE.ShaderMaterial).dispose();
     }

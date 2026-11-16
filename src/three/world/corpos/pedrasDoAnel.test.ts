@@ -69,8 +69,8 @@ import { REGIOES_DO_ANEL, U_PERFIL_BASE, U_PERFIL_ESCALA, regiaoDoAnelCpu } from
 
 const KM_POR_RAIO = BODY_AXES.saturn[0]!;
 
-function pedrasDeTeste() {
-  return new PedrasDoAnel({
+function pedrasDeTeste(Classe: typeof PedrasDoAnel = PedrasDoAnel) {
+  return new Classe({
     glslSombraDoPlaneta: GLSL_SOMBRA_DO_PLANETA_NO_ANEL,
     glslConstantesDoAnel: GLSL_CONSTANTES_DO_ANEL,
     glslRegiaoDoAnel: GLSL_REGIAO_DO_ANEL,
@@ -411,6 +411,7 @@ describe('pedras 3D do anel', () => {
 
   it('longe do plano não desenha; rente a ele acende só as oitavas que a altura alcança', () => {
     const p = pedrasDeTeste();
+    p.assarJa();
     p.atualizar(quadro(128_000, 2000));
     expect(p.malha.visible).toBe(false);
     p.atualizar(quadro(128_000, 1));
@@ -445,6 +446,7 @@ describe('pedras 3D do anel', () => {
 
   it('relógio parado, pedra parada; mexer a câmera não acumula cisalhamento', () => {
     const p = pedrasDeTeste();
+    p.assarJa();
     const u = ((p.malha.children[0] as THREE.Mesh).material as THREE.ShaderMaterial).uniforms;
     p.atualizar(quadro(128_000, 1));
     const gf = Array.from(u.uGf.value as Float32Array);
@@ -455,6 +457,60 @@ describe('pedras 3D do anel', () => {
     expect(Array.from(u.uGf.value as Float32Array)).not.toEqual(gf);
     p.dispose();
   });
+
+  it('montar não assa; o assado em fatias termina rumo ao anel e sai, byte a byte, o de uma vez só', async () => {
+    vi.resetModules();
+    const fatiado = await import('./pedrasDoAnel');
+    vi.resetModules();
+    const deUmaVez = await import('./pedrasDoAnel');
+    try {
+      const t0 = performance.now();
+      const a = pedrasDeTeste(fatiado.PedrasDoAnel);
+      expect(performance.now() - t0).toBeLessThan(50);
+      expect(a.pronto).toBe(false);
+      expect(a.malha.children).toHaveLength(0);
+      // longe do anel nada anda; rumo a ele, uma fatia por quadro, sem desenhar
+      a.atualizar(quadro(600_000, 0));
+      a.atualizar(quadro(128_000, 50_000));
+      expect(a.pronto).toBe(false);
+      expect(a.malha.visible).toBe(false);
+      expect(a.cessao.w).toBe(0);
+      let fatias = 1;
+      while (!a.pronto && fatias < 5000) {
+        a.assarUmPouco(8);
+        fatias++;
+      }
+      expect(a.pronto).toBe(true);
+      expect(fatias).toBeGreaterThan(20);
+      const b = pedrasDeTeste(deUmaVez.PedrasDoAnel);
+      b.assarJa();
+      const bytes = (p: PedrasDoAnel) => {
+        const u = ((p.malha.children[0] as THREE.Mesh).material as THREE.ShaderMaterial).uniforms;
+        const dados: ArrayBufferView[] = ['uEsteira', 'uRelevo', 'uLonge', 'uNormaDeLonge', 'uPermutacao'].map(
+          (k) => (u[k]!.value as THREE.DataTexture).image.data as ArrayBufferView
+        );
+        const shaders: string[] = [];
+        p.malha.traverse((m) => {
+          if (!(m instanceof THREE.Mesh || m instanceof THREE.Points)) return;
+          const mat = m.material as THREE.ShaderMaterial;
+          shaders.push(mat.vertexShader, mat.fragmentShader);
+          dados.push(m.geometry.getAttribute('position').array);
+          if (m.geometry.index) dados.push(m.geometry.index.array);
+          for (const k of ['uFormas', 'uNormaDaMalha'])
+            if (mat.uniforms[k]) dados.push((mat.uniforms[k].value as THREE.DataTexture).image.data as ArrayBufferView);
+        });
+        return { shaders, dados: dados.map((d) => Buffer.from(d.buffer, d.byteOffset, d.byteLength)) };
+      };
+      const [x, y] = [bytes(a), bytes(b)];
+      expect(x.shaders).toEqual(y.shaders);
+      expect(x.dados.length).toBe(y.dados.length);
+      x.dados.forEach((d, k) => expect(d.equals(y.dados[k]!)).toBe(true));
+      a.dispose();
+      b.dispose();
+    } finally {
+      vi.resetModules();
+    }
+  }, 60_000);
 
   it('o lado da noite nunca é zero, nem na sombra do globo', () => {
     for (const cosSol of [-1, -0.5, 0]) {
