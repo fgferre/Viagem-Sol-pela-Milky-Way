@@ -15,7 +15,7 @@
  *   3. massa: anãs e subgigantes pela relação massa-luminosidade de Eker et
  *      al. (2018); gigantes e supergigantes por um valor típico DECLARADO
  *      (artístico — cor e brilho não fixam a massa de uma estrela evoluída);
- *      anã branca 0,6 M☉ (artístico);
+ *      anã branca não entra (sem lei de superfície: fica ponto de luz);
  *   4. coerência: a gravidade (log g) tem de caber na classe que o rótulo
  *      diz; se não cabe, o rótulo é descartado e a estrela é refeita como se
  *      não o tivesse; se ainda não cabe, null;
@@ -154,7 +154,7 @@ const BC_FLOWER_TORRES: readonly (readonly number[])[] = [
 ];
 const TEFF_MIN_DA_BC_K = 3000;
 const TEFF_MAX_DA_BC_K = 50000;
-export const M_BOL_DO_SOL = 4.73;
+const M_BOL_DO_SOL = 4.73;
 
 function bcFlowerTorres(teffK: number): number {
   const l = Math.log10(Math.min(TEFF_MAX_DA_BC_K, Math.max(TEFF_MIN_DA_BC_K, teffK)));
@@ -178,7 +178,7 @@ const BC_ANAS_FRIAS: readonly (readonly [teffK: number, bc: number])[] = [
   [3060, -3.27], [2810, -4.1], [2570, -4.86],
 ];
 
-export function correcaoBolometrica(teffK: number, classe: LuminosityClass = 'III'): number {
+function correcaoBolometrica(teffK: number, classe: LuminosityClass = 'III'): number {
   if (!(teffK < TEFF_DA_EMENDA_K && (classe === 'V' || classe === 'VI'))) return bcFlowerTorres(teffK);
   for (let k = 1; k < BC_ANAS_FRIAS.length; k++) {
     const [t1, b1] = BC_ANAS_FRIAS[k];
@@ -210,7 +210,7 @@ const MLR_EKER: readonly { readonly ate: number; readonly a: number; readonly b:
 ];
 const MASSA_MIN_MSOL = 0.075;
 
-export function massaPelaLuminosidade(lumLsol: number): number {
+function massaPelaLuminosidade(lumLsol: number): number {
   const logL = Math.log10(lumLsol);
   let de = MASSA_MIN_MSOL;
   for (const f of MLR_EKER) {
@@ -242,7 +242,6 @@ const MASSA_TIPICA: Partial<Record<LuminosityClass, readonly [fria: number, quen
   Ia: [20, 25],
   '0': [25, 40],
 };
-const MASSA_DA_ANA_BRANCA = 0.6;
 
 // ─── a coerência ────────────────────────────────────────────────────────────
 
@@ -341,11 +340,9 @@ function calcular(
   // o tipo só fixa a Teff com o dígito da subclasse; sem ele, a cor
   const pelaClasse = tipo !== null && Number.isFinite(tipo.subclass);
   if (!pelaClasse && !temCor) return null;
-  const anaBranca = tipo?.spectralClass === 'WD';
-  const classe: LuminosityClass = anaBranca
-    ? 'VII'
-    : (tipo?.luminosityClass ??
-      (temCor ? descriptorFromCatalog({ bv: n.ci!, spect: null, absmag: mv }).luminosityClass : 'V'));
+  const classe: LuminosityClass =
+    tipo?.luminosityClass ??
+    (temCor ? descriptorFromCatalog({ bv: n.ci!, spect: null, absmag: mv }).luminosityClass : 'V');
   const teff = pelaClasse
     ? teffPeloTipo(tipo.spectralClass, tipo.subclass, classe)
     : { v: temperatureFromBV(n.ci!), fonte: BALLESTEROS };
@@ -356,12 +353,10 @@ function calcular(
   if (!(teff.v >= TEFF_MIN_K && teff.v <= TEFF_MAX_K && raio >= RAIO_MIN_RSOL && raio <= RAIO_MAX_RSOL)) return null;
 
   const tipica = MASSA_TIPICA[classe];
-  const massa: Numero = anaBranca
-    ? { v: MASSA_DA_ANA_BRANCA, p: 'artistico', fonte: 'Kepler et al. 2007, MNRAS 375, 1315' }
-    : tipica
-      ? // sem fonte: nenhuma medida fixa este número (o selo artístico diz isso)
-        { v: tipica[teff.v >= TEFF_DAS_EVOLUIDAS_QUENTES_K ? 1 : 0], p: 'artistico', fonte: '' }
-      : { v: massaPelaLuminosidade(lum), p: 'derivado', fonte: EKER };
+  const massa: Numero = tipica
+    ? // sem fonte: nenhuma medida fixa este número (o selo artístico diz isso)
+      { v: tipica[teff.v >= TEFF_DAS_EVOLUIDAS_QUENTES_K ? 1 : 0], p: 'artistico', fonte: '' }
+    : { v: massaPelaLuminosidade(lum), p: 'derivado', fonte: EKER };
   if (!Number.isFinite(massa.v) || massa.v <= 0) return null;
   const [gMin, gMax] = LOG_G_DA_CLASSE[classe];
   const logG = logGravidade(massa.v, raio);
@@ -411,6 +406,12 @@ export function estrelaDoCatalogo(n: NamedStar): EstrelaVisitavel | null {
   return semRotulo?.coerente ? semRotulo.ficha : null;
 }
 
+/** a companheira de uma escrita à mão (Sirius B) já tem corpo, na órbita
+ *  dela: nem corpo nem ficha física pela regra única */
+export function ehCompanheiraDesenhada(nome: string): boolean {
+  return ESTRELAS_VISITAVEIS.some((e) => e.companheira?.nome === nome);
+}
+
 const memoria = new Map<string, EstrelaVisitavel | null>();
 
 /**
@@ -421,7 +422,7 @@ const memoria = new Map<string, EstrelaVisitavel | null>();
 export function estrelaComCorpo(nome: string, named: readonly NamedStar[]): EstrelaVisitavel | null {
   const autoral = estrelaVisitavelPorNome(nome);
   if (autoral) return autoral;
-  if (ESTRELAS_VISITAVEIS.some((e) => e.companheira?.nome === nome)) return null;
+  if (ehCompanheiraDesenhada(nome)) return null;
   if (memoria.has(nome)) return memoria.get(nome)!;
   const n = named.find((s) => s.n === nome);
   const ficha = n ? estrelaDoCatalogo(n) : null;

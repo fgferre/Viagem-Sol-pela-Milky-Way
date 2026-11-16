@@ -71,7 +71,7 @@ import {
   type EstrelaVisitavel,
   type Numero,
 } from './estrelasVisitaveis';
-import { estrelaDoCatalogo } from './estrelaDoCatalogo';
+import { ehCompanheiraDesenhada, estrelaDoCatalogo } from './estrelaDoCatalogo';
 import type { NamedStar } from '../../three/config';
 import type { LugarDoCeu } from '../lugaresDoFilme';
 import type { Sonda } from '../sondas';
@@ -1165,7 +1165,7 @@ export function montarFichaDeEstrela(
   const linhas: (LinhaDaFicha | null)[] = [];
   // a ficha física: a escrita à mão, ou a da regra única (`estrelaDoCatalogo`)
   const autoral = estrela ? estrelaVisitavelPorNome(nome) : null;
-  const piloto = autoral ?? (estrela ? estrelaDoCatalogo(estrela) : null);
+  const piloto = autoral ?? (estrela && !ehCompanheiraDesenhada(nome) ? estrelaDoCatalogo(estrela) : null);
   // o tipo do catálogo some só quando a ficha física o repete (ou é a
   // escrita à mão); o rótulo que a regra descartou continua visível, medido
   const tipoRepetido = autoral !== null || piloto?.tipo.texto === (estrela?.s ?? '').trim();

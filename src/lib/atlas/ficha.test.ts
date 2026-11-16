@@ -832,7 +832,8 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
 
   it('a temperatura é DERIVADA, e é o primeiro consumidor de tela de temperatureFromBV', () => {
     // a estrela sem ficha física (a regra única recusou): a linha pelo B−V
-    const semFicha = starsMeta.named.find((s) => s.ci !== undefined && estrelaDoCatalogo(s) === null)!;
+    const semFicha = starsMeta.named.find((s) => s.ci !== undefined && estrelaDoCatalogo(s) === null);
+    if (!semFicha) throw new Error('o catálogo não tem mais estrela com cor que a regra única recuse: trocar o exemplo');
     const linha = linhasDe(montarFichaDeEstrela(semFicha.n, semFicha)!).get('temperatura')!;
     expect(linha.procedencia).toBe('derivado');
     expect(linha.fonte).toContain('Ballesteros');
@@ -916,7 +917,8 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     // a sem ficha física (nem à mão, nem pela regra única) fica como era
     const semFicha = starsMeta.named.find(
       (s) => s.b && s.hd !== undefined && s.ci !== undefined && s.s && estrelaDoCatalogo(s) === null
-    )!;
+    );
+    if (!semFicha) throw new Error('o catálogo não tem mais estrela completa que a regra única recuse: trocar o exemplo');
     const f = montarFichaDeEstrela(semFicha.n, semFicha)!;
     expect(f.secoes.map((x) => x.id)).toEqual(['estrela']);
     expect(f.secoes[0]!.linhas.map((l) => l.rotulo)).toEqual([
