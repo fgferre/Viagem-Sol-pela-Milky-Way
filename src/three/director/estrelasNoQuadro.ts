@@ -38,9 +38,10 @@ import { PontoDeEstrela } from '../world/pontoDeEstrela';
 import { RAIO_SOL_PC } from '../escala';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
 import { bvToColor } from '../shaders/common';
-import { BV_MEDIDO, SOL_BV, type CandidataVisitada } from '../world/clarao';
+import { BV_MEDIDO, SOL_BV, VAGAS_DE_VISITADAS, type CandidataVisitada } from '../world/clarao';
 import { cessaoDoSol } from './solNoQuadro';
 import type { PoliticaDeLuz } from '../../lib/atlas/luz';
+import { estrelaComCorpo } from '../../lib/atlas/estrelaDoCatalogo';
 import {
   CONTRASTE_REAL_DO_SOL,
   ESTRELAS_VISITAVEIS,
@@ -351,6 +352,46 @@ interface Piloto {
   companheira: (Superficie & { ponto: PontoDeEstrela; pos: THREE.Vector3 }) | null;
   /** a última cessão escrita no campo (evita escrita por quadro) */
   cedeu: number;
+  /** a vaga do clarão da principal (a companheira, a seguinte) — fixa */
+  vaga: number;
+  /** nasceu pelo foco (uma nomeada fora da lista à mão): sai da lista
+   *  quando perde o foco e o corpo dela já foi desmontado */
+  sobDemanda: boolean;
+}
+
+/**
+ * A VAGA DE QUEM NASCE PELO FOCO: o último par do cadastro do clarão. As da
+ * lista à mão ficam com 2 × índice (14 estrelas, vagas 0–27), como sempre.
+ * Toda estrela sob demanda é NOMEADA, e o clarão escreve a nomeada na vaga
+ * da nomeada (não nesta) — esta só precisa caber no cadastro.
+ */
+const VAGA_SOB_DEMANDA = VAGAS_DE_VISITADAS - 2;
+
+function novoPiloto(
+  named: readonly NamedStar[],
+  dados: EstrelaVisitavel,
+  vaga: number,
+  sobDemanda: boolean
+): Piloto | null {
+  const nomeada = named.findIndex((n) => n.n === dados.nomeNoCatalogo);
+  if (nomeada < 0) return null;
+  const s = named[nomeada];
+  const pos = new THREE.Vector3(s.x, s.y, s.z);
+  return {
+    dados,
+    pos,
+    eixo: eixoDeRotacao(dados, pos, new THREE.Vector3()),
+    indice: -1,
+    mBaseDoNome: s.d > 0 ? s.m - 5 * Math.log10(s.d) : NaN,
+    nomeada,
+    nomeadaDaCompanheira: named.findIndex((n) => n.n === dados.companheira?.nome),
+    principal: null,
+    pontoProprio: null,
+    companheira: null,
+    cedeu: 0,
+    vaga,
+    sobDemanda,
+  };
 }
 
 function estadoDe(id: string, raioPc: number, teffK: number, pos: THREE.Vector3): EstadoDaEstrela {
@@ -405,6 +446,9 @@ export class EstrelasNoQuadro {
   private readonly poolDeOclusores: OclusorDeRotulo[] = [];
   private readonly listaDeOclusores: OclusorDeRotulo[] = [];
   private lugaresResolvidos = false;
+  private readonly named: readonly NamedStar[];
+  /** o último foco que não deu piloto (sem ficha pela regra): não refaz a busca */
+  private focoSemPiloto: string | null = null;
   private readonly fios: {
     stars: () => StarField | undefined;
     palco: () => CorposResolvidos;
@@ -427,25 +471,30 @@ export class EstrelasNoQuadro {
 
   constructor(named: readonly NamedStar[], fios: EstrelasNoQuadro['fios']) {
     this.fios = fios;
+    this.named = named;
     for (const dados of ESTRELAS_VISITAVEIS) {
-      const nomeada = named.findIndex((n) => n.n === dados.nomeNoCatalogo);
-      if (nomeada < 0) continue;
-      const s = named[nomeada];
-      const pos = new THREE.Vector3(s.x, s.y, s.z);
-      this.pilotos.push({
-        dados,
-        pos,
-        eixo: eixoDeRotacao(dados, pos, new THREE.Vector3()),
-        indice: -1,
-        mBaseDoNome: s.d > 0 ? s.m - 5 * Math.log10(s.d) : NaN,
-        nomeada,
-        nomeadaDaCompanheira: named.findIndex((n) => n.n === dados.companheira?.nome),
-        principal: null,
-        pontoProprio: null,
-        companheira: null,
-        cedeu: 0,
-      });
+      const p = novoPiloto(named, dados, 2 * this.pilotos.length, false);
+      if (p) this.pilotos.push(p);
     }
+  }
+
+  /**
+   * A NOMEADA EM FOCO QUE NÃO ESTÁ NA LISTA À MÃO: ganha piloto pela ficha
+   * da regra única (`estrelaComCorpo`), com o lugar resolvido no ponto do
+   * catálogo como os outros. Sem ficha confiável, segue ponto.
+   */
+  private pilotoPeloFoco(nome: string | null) {
+    if (!nome || nome === this.focoSemPiloto) return;
+    if (this.pilotos.some((p) => p.dados.nomeNoCatalogo === nome)) return;
+    const dados = estrelaComCorpo(nome, this.named);
+    const p = dados ? novoPiloto(this.named, dados, VAGA_SOB_DEMANDA, true) : null;
+    if (!p) {
+      this.focoSemPiloto = nome;
+      return;
+    }
+    this.focoSemPiloto = null;
+    this.resolverLugar(p);
+    this.pilotos.push(p);
   }
 
   /**
@@ -478,9 +527,15 @@ export class EstrelasNoQuadro {
     return this.listaDeOclusores;
   }
 
-  /** A posição de catálogo de um piloto pelo nome (para a escada). */
-  posicaoDe(nomeNoCatalogo: string): THREE.Vector3 | null {
-    this.resolverLugares();
+  /**
+   * A posição de catálogo de um piloto pelo nome (para a escada). Com
+   * `preparar`, a estrela que só tem corpo SOB DEMANDA ganha o piloto já
+   * aqui: a escada pergunta o lugar ANTES do primeiro quadro em foco, e
+   * sem isto a câmera estacionava no lugar do NOME (arredondado a 1e-4 pc)
+   * — em Arcturus, a 517 raios do corpo, que nasce no ponto do catálogo.
+   */
+  posicaoDe(nomeNoCatalogo: string, preparar = false): THREE.Vector3 | null {
+    if (this.resolverLugares() && preparar) this.pilotoPeloFoco(nomeNoCatalogo);
     return this.pilotos.find((p) => p.dados.nomeNoCatalogo === nomeNoCatalogo)?.pos ?? null;
   }
 
@@ -491,7 +546,7 @@ export class EstrelasNoQuadro {
     corpo.group.position.copy(p.pos);
     this.group.add(corpo.group);
     const stars = this.fios.stars();
-    const vaga = 2 * this.pilotos.indexOf(p);
+    const vaga = p.vaga;
     // o clarão de longe é a óptica do PONTO: a magnitude e a cor dele
     let mBase = Infinity;
     let cor: readonly [number, number, number] = [1, 1, 1];
@@ -568,15 +623,20 @@ export class EstrelasNoQuadro {
     if (this.lugaresResolvidos) return true;
     const stars = this.fios.stars();
     if (!stars) return false;
-    const xyz = stars.points.geometry.getAttribute('position') as THREE.BufferAttribute;
-    for (const p of this.pilotos) {
-      p.indice = this.indiceNoCatalogo(p);
-      if (p.indice < 0) continue;
-      p.pos.set(xyz.getX(p.indice), xyz.getY(p.indice), xyz.getZ(p.indice));
-      eixoDeRotacao(p.dados, p.pos, p.eixo);
-    }
+    for (const p of this.pilotos) this.resolverLugar(p);
     this.lugaresResolvidos = true;
     return true;
+  }
+
+  /** o lugar de UM piloto no ponto do catálogo (o catálogo já chegou) */
+  private resolverLugar(p: Piloto) {
+    const stars = this.fios.stars();
+    if (!stars) return;
+    const xyz = stars.points.geometry.getAttribute('position') as THREE.BufferAttribute;
+    p.indice = this.indiceNoCatalogo(p);
+    if (p.indice < 0) return;
+    p.pos.set(xyz.getX(p.indice), xyz.getY(p.indice), xyz.getZ(p.indice));
+    eixoDeRotacao(p.dados, p.pos, p.eixo);
   }
 
   /**
@@ -621,6 +681,8 @@ export class EstrelasNoQuadro {
     this.candidatas.length = 0;
     // sem o catálogo não há lugar certo (nem ponto a ceder): espera
     if (!this.resolverLugares()) return;
+    this.pilotoPeloFoco(q.focoNome);
+    let saiu = false;
     for (const p of this.pilotos) {
       const emFoco = q.focoNome === p.dados.nomeNoCatalogo;
       // o motor do Sol é PESADO (sim, bakes, coroa 3D): fora de foco e longe,
@@ -631,12 +693,19 @@ export class EstrelasNoQuadro {
         const longe = !emFoco && q.camPos.distanceTo(p.pos) > RAIO_DE_DESMONTE_PC;
         if (longe || this.fios.motorDoSol().quality !== p.principal.corpo.quality) {
           this.desmontar(p);
-          if (longe) continue;
+          if (longe) {
+            if (p.sobDemanda) saiu = true;
+            continue;
+          }
         }
       }
       if (!p.principal) {
         const perto = q.camPos.distanceTo(p.pos) < RAIO_DE_PREPARO_PC;
-        if (!(perto || emFoco)) continue;
+        if (!(perto || emFoco)) {
+          // a sob demanda sem foco e já desmontada sai da lista
+          if (p.sobDemanda) saiu = true;
+          continue;
+        }
         this.criar(p, q.jd);
       }
       const a = p.principal!;
@@ -681,6 +750,11 @@ export class EstrelasNoQuadro {
           peso: 1 - cedeB,
         });
       }
+    }
+    if (saiu) {
+      const ficam = this.pilotos.filter((p) => !(p.sobDemanda && !p.principal));
+      this.pilotos.length = 0;
+      this.pilotos.push(...ficam);
     }
   }
 

@@ -71,6 +71,7 @@ import {
   type EstrelaVisitavel,
   type Numero,
 } from './estrelasVisitaveis';
+import { estrelaDoCatalogo } from './estrelaDoCatalogo';
 import type { NamedStar } from '../../three/config';
 import type { LugarDoCeu } from '../lugaresDoFilme';
 import type { Sonda } from '../sondas';
@@ -1162,7 +1163,12 @@ export function montarFichaDeEstrela(
 ): Ficha | null {
   if (!nome) return null;
   const linhas: (LinhaDaFicha | null)[] = [];
-  const piloto = estrela ? estrelaVisitavelPorNome(nome) : null;
+  // a ficha física: a escrita à mão, ou a da regra única (`estrelaDoCatalogo`)
+  const autoral = estrela ? estrelaVisitavelPorNome(nome) : null;
+  const piloto = autoral ?? (estrela ? estrelaDoCatalogo(estrela) : null);
+  // o tipo do catálogo some só quando a ficha física o repete (ou é a
+  // escrita à mão); o rótulo que a regra descartou continua visível, medido
+  const tipoRepetido = autoral !== null || piloto?.tipo.texto === (estrela?.s ?? '').trim();
   if (estrela) {
     // a anfitriã que o catálogo não nomeia veio do arquivo de exoplanetas
     const CATALOGO = ehAnfitriaAcrescentada(nome) ? ARQUIVO_DE_EXOPLANETAS() : t('ficha.fonte.catalogoHyg');
@@ -1192,7 +1198,7 @@ export function montarFichaDeEstrela(
             t('ficha.fonte.paralaxe')
           ),
       linha(t('ficha.campo.magnitude'), comCasas(estrela.m, 2), 'medido', CATALOGO),
-      piloto ? null : linha(t('ficha.campo.tipoEspectral'), estrela.s || null, 'medido', CATALOGO),
+      piloto && tipoRepetido ? null : linha(t('ficha.campo.tipoEspectral'), estrela.s || null, 'medido', CATALOGO),
       linha(
         t('ficha.campo.corBV'),
         estrela.ci === undefined ? null : comCasas(estrela.ci, 3),

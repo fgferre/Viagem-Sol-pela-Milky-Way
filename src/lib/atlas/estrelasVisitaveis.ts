@@ -325,7 +325,7 @@ function anfitria(c: {
 
 /** A SUPERFÍCIE PELA LEI DE CLASSE (a do comentário acima): o grânulo de
  *  Tremblay, o contraste e a borda de Claret pela temperatura, borda nítida */
-function superficiePelaTemperatura(T: number, raioRsol: number, massaMsol: number): Superficie {
+export function superficiePelaTemperatura(T: number, raioRsol: number, massaMsol: number): Superficie {
   const contraste =
     T < 3900
       ? { v: 0.04, p: 'derivado' as const, fonte: 'Beeck et al. 2013, A&A 558, A48 (simulação)' }

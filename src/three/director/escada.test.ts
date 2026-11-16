@@ -25,6 +25,7 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import type { Engine } from '../core/engine';
+import type { NamedStar, StarsMeta } from '../config';
 import type { FreeRoam } from '../cinematic/cameraRig';
 import type { Planetas } from '../world/planetas/planetas';
 import type { GiganteResolvido } from '../world/corpos/gigante';
@@ -146,7 +147,13 @@ function noQuadro(camera: THREE.PerspectiveCamera, centro: THREE.Vector3, raio: 
 }
 
 /** a escada com o rig REAL e o mundo de mentira em volta */
-function bancada({ comEfemeride = false, comAnoes = false, comSaturno = false, comPiloto = false } = {}) {
+function bancada({
+  comEfemeride = false,
+  comAnoes = false,
+  comSaturno = false,
+  comPiloto = false,
+  named = undefined as NamedStar[] | undefined,
+} = {}) {
   const atlas = new AtlasRig();
   const camera = new THREE.PerspectiveCamera(35, 4 / 3, 0.1, 1e6);
   // sem efeméride: as posições saem do retrato, e o instante é o da
@@ -184,7 +191,7 @@ function bancada({ comEfemeride = false, comAnoes = false, comSaturno = false, c
       reducedMotion: () => false,
       planetas: () =>
         ({ posicoes: new Float32Array(CORPOS_DO_SISTEMA.length * 3) }) as unknown as Planetas,
-      meta: () => undefined,
+      meta: () => (named ? ({ named } as unknown as StarsMeta) : undefined),
       // o piloto das estrelas com corpo (`?estrelaslugar`), desligado por padrão aqui
       estrelasComLugar: () => comPiloto,
       // a lista viva dos rochosos CONSTRUÍDOS. Os anões e asteroides
@@ -688,6 +695,17 @@ describe('o "Aproximar" de cometas e de lugares do céu (13/11)', () => {
     expect(escada.escadaViva).toMatchObject({ degrau: 'estrela', podeAproximar: true });
     escada.aproximarDoCorpo();
     expect(escada.escadaViva).toMatchObject({ degrau: 'estrela', podeAproximar: false });
+  });
+
+  it('a nomeada fora da lista à mão também desce, pela ficha da regra única', () => {
+    const arcturus: NamedStar = { n: 'Arcturus', x: 0, y: 11.26, z: 0, m: -0.05, s: 'K1.5III', d: 11.26, ci: 1.23 };
+    const { escada } = bancada({ comPiloto: true, named: [arcturus] });
+    escada.visitarEstrela(arcturus);
+    expect(escada.escadaViva).toMatchObject({ degrau: 'estrela', podeAproximar: true });
+    // com `?estrelaslugar=0`, ponto como antes
+    const sem = bancada({ named: [arcturus] }).escada;
+    sem.visitarEstrela(arcturus);
+    expect(sem.escadaViva).toMatchObject({ degrau: 'estrela', podeAproximar: false });
   });
 });
 

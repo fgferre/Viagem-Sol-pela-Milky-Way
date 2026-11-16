@@ -98,6 +98,7 @@ import type { IdRetrato } from '../world/planetas/retrato2026';
 import { escalaDaUi, larguraDeCss } from '../../lib/uiScale';
 import { Escolha } from './escolha';
 import { estrelaVisitavelPorNome, raioDaEstrelaPc, type EstrelaVisitavel } from '../../lib/atlas/estrelasVisitaveis';
+import { estrelaComCorpo } from '../../lib/atlas/estrelaDoCatalogo';
 // o centro do frame heliocêntrico mora no vizinho neutro
 // (`cinematic/enquadramento.ts`): exportá-lo DAQUI fazia o único ciclo de
 // import de valor do `src/` — a escada precisa da `Escolha`, e a escolha
@@ -732,10 +733,15 @@ export class Escada {
       // continua o de estrela: quem quiser desce a roda até o gás.
       const centroGalactico = pos.distanceToSquared(GAL.GC_POS) < 1;
       const raioEstelar = raioDeEnquadramentoEstelar(pos.length());
-      // a estrela que TEM CORPO (piloto de 12/11) deixa a roda descer até
-      // a superfície: o piso do zoom é o raio físico, como no Sol
+      // a estrela que TEM CORPO (piloto de 12/11; toda nomeada com ficha
+      // pela regra única) deixa a roda descer até a superfície: o piso do
+      // zoom é o raio físico, como no Sol
       const piloto =
-        nome && (this.fios.estrelasComLugar?.() ?? false) ? estrelaVisitavelPorNome(nome) : null;
+        nome && (this.fios.estrelasComLugar?.() ?? false) ? this.estrelaComCorpo(nome) : null;
+      // o quadro é centrado no CORPO (o ponto do catálogo), não no nome:
+      // o nome vem arredondado a 1e-4 pc, dezenas de UA ao lado, e quem
+      // descia a roda na vista de órbita via a estrela fugir do centro
+      if (piloto && nome) pos = this.fios.posicaoDaEstrelaComLugar?.(nome) ?? pos;
       // UMA ANFITRIÃ DE EXOPLANETAS (12/11): o quadro é o do SISTEMA —
       // as órbitas inteiras e a zona habitável, centrado no corpo da
       // estrela (o ponto do catálogo), com o piso no raio físico dela
@@ -1047,10 +1053,18 @@ export class Escada {
     return poseDePertoDaEstrelaS(l.estrelaDePerto, jd, l.pisoRaio);
   }
 
+  /** a ficha com corpo de uma estrela: a escrita à mão ou a da regra única
+   *  (sem a lista de nomeadas ainda, só a escrita à mão — a regra guarda
+   *  por nome, e uma lista vazia gravaria "sem corpo" para sempre) */
+  private estrelaComCorpo(nome: string): EstrelaVisitavel | null {
+    const named = this.meta?.named;
+    return named ? estrelaComCorpo(nome, named) : estrelaVisitavelPorNome(nome);
+  }
+
   /** a estrela em foco, se ela é do piloto e o piloto está ligado */
   private pilotoEmFoco(): { dados: EstrelaVisitavel; pos: THREE.Vector3; nome: string } | null {
     if (!this.focoEstrela || !this.estrelaFocada?.nome || !(this.fios.estrelasComLugar?.() ?? false)) return null;
-    const dados = estrelaVisitavelPorNome(this.estrelaFocada.nome);
+    const dados = this.estrelaComCorpo(this.estrelaFocada.nome);
     if (!dados) return null;
     const pos = this.fios.posicaoDaEstrelaComLugar?.(this.estrelaFocada.nome) ?? this.estrelaFocada.pos;
     return { dados, pos, nome: this.estrelaFocada.nome };

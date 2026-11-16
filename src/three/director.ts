@@ -1290,7 +1290,7 @@ export class Director {
           ? this.orbitas.corpoNoPonto(x, y, this.engine.camera, window.innerWidth, window.innerHeight)
           : null,
       estrelasComLugar: () => lerPortaEstrelasComLugar(this.debug.get('estrelaslugar')),
-      posicaoDaEstrelaComLugar: (nome) => this.posicaoDaAnfitria(nome),
+      posicaoDaEstrelaComLugar: (nome) => this.posicaoDaEstrelaEmFoco(nome),
     },
   });
   private disposed = false;
@@ -1324,6 +1324,10 @@ export class Director {
     }
     return pos;
   };
+  /** para a ESCADA: a estrela que ela pergunta é a que vai a foco, então
+   *  a que só tem corpo sob demanda é preparada antes (o lugar do corpo) */
+  private readonly posicaoDaEstrelaEmFoco = (nome: string): THREE.Vector3 | null =>
+    this.estrelasNoQuadro?.posicaoDe(nome, true) ?? this.posicaoDaAnfitria(nome);
   /** pré-compilação em voo; o dispose do renderer espera por ela */
   private warmup: Promise<unknown> | null = null;
   /** download disparado no construtor, consumido pelo init */

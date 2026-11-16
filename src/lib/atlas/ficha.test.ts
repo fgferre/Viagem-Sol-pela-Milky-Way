@@ -33,6 +33,7 @@ import {
   montarFichaDeLugar,
 } from './ficha';
 import { temperatureFromBV } from './stellarPhysics';
+import { estrelaDoCatalogo } from './estrelaDoCatalogo';
 import { dateToTDB } from './time';
 import { definirIdioma } from '../idioma';
 import { COMETAS, cometaPorId } from '../cometas';
@@ -830,13 +831,14 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
   });
 
   it('a temperatura é DERIVADA, e é o primeiro consumidor de tela de temperatureFromBV', () => {
-    const arcturus = starsMeta.named.find((s) => s.n === 'Arcturus')!;
-    const linha = linhasDe(montarFichaDeEstrela('Arcturus', arcturus)!).get('temperatura')!;
+    // a estrela sem ficha física (a regra única recusou): a linha pelo B−V
+    const semFicha = starsMeta.named.find((s) => s.ci !== undefined && estrelaDoCatalogo(s) === null)!;
+    const linha = linhasDe(montarFichaDeEstrela(semFicha.n, semFicha)!).get('temperatura')!;
     expect(linha.procedencia).toBe('derivado');
     expect(linha.fonte).toContain('Ballesteros');
     // três algarismos significativos: Ballesteros não vale mais que isso, e
     // "9927 K" fingiria uma precisão que a fórmula não tem.
-    const t = temperatureFromBV(arcturus.ci!);
+    const t = temperatureFromBV(semFicha.ci!);
     expect(linha.valor).toBe(`${Number(t.toPrecision(3))} K`.replace(/^(\d)(\d{3}) K$/, '$1.$2 K'));
   });
 
@@ -875,7 +877,9 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
       const f = montarFichaDeEstrela(estrela.n, estrela)!;
       // + 1 para a anfitriã de exoplanetas: a seção do sistema planetário
       const doSistema = sistemaDaEstrela(estrela.n) ? 1 : 0;
-      expect(f.secoes.length, estrela.n).toBe((estrela.n === 'Sirius' ? 3 : estrelaVisitavelPorNome(estrela.n) ? 2 : 1) + doSistema);
+      // + 1 para quem tem ficha física (a escrita à mão ou a da regra única): a seção da imagem
+      const fisica = estrelaVisitavelPorNome(estrela.n) ?? estrelaDoCatalogo(estrela);
+      expect(f.secoes.length, estrela.n).toBe((estrela.n === 'Sirius' ? 3 : fisica ? 2 : 1) + doSistema);
       for (const l of f.secoes.flatMap((x) => x.linhas)) {
         expect(l.valor.length, `${estrela.n}/${l.rotulo}`).toBeGreaterThan(0);
         expect(`${l.valor}`, `${estrela.n}/${l.rotulo}`).not.toMatch(/undefined|NaN/);
@@ -909,12 +913,31 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     const imgProx = prox.secoes.find((x) => x.id === 'imagem')!;
     expect(imgProx.linhas).toHaveLength(3);
 
-    const arc = starsMeta.named.find((s) => s.n === 'Arcturus')!;
-    const f = montarFichaDeEstrela('Arcturus', arc)!;
+    // a sem ficha física (nem à mão, nem pela regra única) fica como era
+    const semFicha = starsMeta.named.find(
+      (s) => s.b && s.hd !== undefined && s.ci !== undefined && s.s && estrelaDoCatalogo(s) === null
+    )!;
+    const f = montarFichaDeEstrela(semFicha.n, semFicha)!;
     expect(f.secoes.map((x) => x.id)).toEqual(['estrela']);
     expect(f.secoes[0]!.linhas.map((l) => l.rotulo)).toEqual([
       'designação', 'distância', 'magnitude aparente', 'tipo espectral', 'cor B−V', 'temperatura', 'catálogos',
     ]);
+  });
+
+  it('a nomeada fora da lista à mão traz a física da regra única, derivada ou artística, nunca medida', () => {
+    const arc = starsMeta.named.find((s) => s.n === 'Arcturus')!;
+    const l = linhasDe(montarFichaDeEstrela('Arcturus', arc)!);
+    // o tipo do catálogo, medido, uma vez só
+    expect(l.get('tipo espectral')!.valor).toBe(arc.s);
+    expect(l.get('tipo espectral')!.procedencia).toBe('medido');
+    expect(l.get('temperatura')!.fonte).toContain('Alonso');
+    expect(l.get('raio')!.procedencia).toBe('derivado');
+    expect(l.get('raio')!.fonte).toContain('Stefan-Boltzmann');
+    expect(l.get('luminosidade')!.procedencia).toBe('derivado');
+    // gigante: a massa é típica, artística e sem fonte
+    expect(l.get('massa')!.procedencia).toBe('artistico');
+    expect(l.get('massa')!.fonte).toBeUndefined();
+    expect(l.get('massa')!.valor).toBe('1,5 M☉');
   });
 
   it('Aldebaran monta a ficha de gigante com raio, idade e rotação selados', () => {
