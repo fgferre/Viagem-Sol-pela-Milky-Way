@@ -6,6 +6,8 @@ import {
   celulaRealEmRaios,
   contrasteDaConveccao,
   fracaoEscura,
+  larguraDaBordaEmMu,
+  pesoDaEscalaProfunda,
   raioDaAtmosferaEmRaios,
   regraDaForja,
   ritmoDaFervura,
@@ -14,10 +16,11 @@ import {
   RELEVO_DAS_GIGANTES,
   SOL_PARAMS,
   cirurgiaDaEstrela,
-  cirurgiaDoRelevoDaForja,
   cirurgiaDoRelevoDasGigantes,
   cirurgiasDaFotosfera,
   forjaDe,
+  frenteDaAtmosfera,
+  literalGlsl,
   pesoDoFiltro,
   type StellarParams,
 } from './stellarBody';
@@ -75,6 +78,23 @@ describe('a Forja, botão GRAVIDADE — a regra', () => {
     expect(ritmoDaFervura(0.12)).toBeCloseTo(1 / 6, 12);
     expect(ritmoDaFervura(0.01)).toBeLessThan(1);
   });
+
+  it('a escala profunda: zero a log g ≥ 1, inteira a ≤ −0,3, Betelgeuse (−0,07) acima de 0,9', () => {
+    expect(pesoDaEscalaProfunda(1.0)).toBe(0);
+    expect(pesoDaEscalaProfunda(1.9)).toBe(0);
+    expect(pesoDaEscalaProfunda(-0.3)).toBe(1);
+    expect(pesoDaEscalaProfunda(-0.6)).toBe(1);
+    expect(pesoDaEscalaProfunda(-0.07)).toBeGreaterThan(0.9);
+    expect(pesoDaEscalaProfunda(-0.07)).toBeLessThan(1);
+  });
+
+  it('a borda macia: μ_w = √(2·Hp/R), Hp = A/10 — Betelgeuse ~0,15, Arcturus ~0,08', () => {
+    expect(larguraDaBordaEmMu(0.12)).toBeCloseTo(Math.sqrt(0.024), 12);
+    expect(regraDaForja(3600, -0.07, 764).bordaEmMu).toBeCloseTo(0.155, 2);
+    const arcturus = regraDaForja(4450, 1.89, 25.4).bordaEmMu;
+    expect(arcturus).toBeGreaterThan(0.07);
+    expect(arcturus).toBeLessThan(0.1);
+  });
 });
 
 describe('a Forja desligada não muda nada', () => {
@@ -98,6 +118,13 @@ describe('a Forja desligada não muda nada', () => {
     expect(forjaDe(SOL_PARAMS, true)).toBeNull();
     expect(forjaDe({ ...bet, dinamo: true }, true)).toBeNull();
     expect(forjaDe(bet, true)).not.toBeNull();
+  });
+
+  it('a estrela quente (contraste zero, acima de ~9.300 K) fica com o desenho de hoje', () => {
+    for (const teffK of [9600, 9940, 12100, 25000]) {
+      expect(forjaDe({ ...bet, teffK, logG: 4.0 }, true)).toBeNull();
+    }
+    expect(forjaDe({ ...bet, teffK: 7650, logG: 4.16 }, true)).not.toBeNull();
   });
 
   it('o shader gerado sem a Forja é o texto do caminho de antes, cirurgia a cirurgia', () => {
@@ -125,16 +152,31 @@ describe('a Forja desligada não muda nada', () => {
     );
   });
 
-  it('ligada: bake plano, a convecção dela no lugar das gigantes e da granulação viva', () => {
+  it('ligada: bake plano, a convecção dela no lugar das gigantes e da granulação viva, sem relevo', () => {
     const c = cirurgiasDaFotosfera(sunJs, sunJs, bet, forjaDe(bet, true))!;
     expect(c.relevo).toBe(0);
     expect(c.fragment).toContain('uMaxK*mix(0.39, 0.20, close))*0.000000;');
-    expect(c.fragment.split('conveccao(sp/').length - 1).toBe(1);
+    expect(c.fragment.split('conveccao(sp, t)').length - 1).toBe(1);
     expect(c.fragment).not.toContain('celulasGigantesNaTela(sp');
     expect(c.fragment).not.toContain('granulacaoViva(sp');
-    expect(c.vertex).toContain('conveccaoGrande(normalize(position)');
-    expect(c.vertex).not.toContain('celulaGigante(normalize(position)');
-    // o vertex não pode ter derivadas de tela
-    expect(cirurgiaDoRelevoDaForja('n * uDispScale + pmSum', regraDaForja(3600, -0.5, 764), 0.01)).not.toContain('fwidth');
+    // a borda macia, na largura da regra, até o piso da frente da casca
+    const r = forjaDe(bet, true)!;
+    expect(c.fragment).toContain(
+      `color *= mix(${literalGlsl(frenteDaAtmosfera(r.atmosferaEmRaios))}, 1.0, smoothstep(0.0, max(${literalGlsl(r.bordaEmMu)}, `
+    );
+    // sem atmosfera estendida (anã quente), a borda vai a zero
+    const ana = { ...bet, teffK: 7650, logG: 4.16 };
+    expect(cirurgiasDaFotosfera(sunJs, sunJs, ana, forjaDe(ana, true))!.fragment).toContain('  color *= smoothstep(0.0, max(');
+    // sem relevo nenhum: o vertex é o de antes
+    expect(c.vertex).toBe(sunJs);
+  });
+
+  it('a escala profunda só entra no texto de quem tem peso', () => {
+    const sup = cirurgiasDaFotosfera(sunJs, sunJs, bet, forjaDe(bet, true))!;
+    expect(sup.fragment.split('campoDaForja(sp/').length - 1).toBe(2);
+    expect(sup.fragment).toContain('campoDaForja(sp/0.500000 + 41.0');
+    const gig = { ...bet, logG: 1.19, teffK: 3900 };
+    const c = cirurgiasDaFotosfera(sunJs, sunJs, gig, forjaDe(gig, true))!;
+    expect(c.fragment.split('campoDaForja(sp/').length - 1).toBe(1);
   });
 });

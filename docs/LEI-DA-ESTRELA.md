@@ -1265,7 +1265,10 @@ luminosidade. Cada camada do corpo é função contínua deles.
      descidas conectadas e frias — Steffen et al. 2005; Beeck et al. 2013).
      A fração da área mais escura que a média é a das simulações: 0,5 até a
      Teff do Sol (0,53 no Sol), linear até 0,34 a 8.000 K (Steffen 2005) — é
-     ela que separa célula de "rede desenhada". A fervura é mais lenta quanto
+     ela que separa célula de "rede desenhada" (a textura de hoje não desce
+     de 0,42: acima de ~6.900 K fica em 0,42). Tamanhos espalhados de 0,77× a
+     2× por uma lente de baixa frequência; miolo em domo; faixas de largura e
+     escuridão variáveis; um vinco mole em ~1 de cada 10 células grandes. A fervura é mais lenta quanto
      maior a célula (ritmo de hoje no grão do Sol, o das gigantes de hoje
      a partir de 0,1 R, linear em log do tamanho): ARTÍSTICO, sem medida de
      tempo de vida.
@@ -1279,9 +1282,28 @@ luminosidade. Cada camada do corpo é função contínua deles.
      com a gravidade: mistura linear em log g, de 4,44 (anã) a 1,0, rumo à
      reta entre o Sol (15,7 %) e a gigante de 3.660 K de Ludwig & Kučinskas
      (18 %). Gigante quente: sem medida, vale a curva das anãs.
-   - *Relevo:* a superfície sobe e desce uma escala de altura, Hp ≈ A/10
-     (Trampedach: A/Hp de 9 a 13), pelo mesmo campo da cor. A amplitude de
-     uma Hp é ARTÍSTICA.
+   - *Escala profunda (volta 2):* as fotos de gravidade baixíssima mostram
+     POUCAS células enormes — π¹ Gru, uma célula de ~1/4 do diâmetro (ESO
+     eso1741); Betelgeuse, mancha quente de ~1 raio (Montargès et al. 2016,
+     arXiv 1602.05108) e, na simulação, estruturas de 5–15 mas mais uma
+     célula de ~30 mas (Chiavassa et al. 2010) — enquanto a log g 1 só há
+     grânulos (Ludwig & Kučinskas 2012). A âncora medida vence a
+     extrapolação: uma segunda escala, de 0,5 R (o diâmetro de π¹ Gru), entra
+     com peso que vai de 0 em log g 1,0 a 1 em −0,3 (Betelgeuse 0,92), a
+     mesma célula do grão; numa supergigante ela domina e o grão aparece por
+     cima a meio peso (divisão 1 : 0,5 ARTÍSTICA).
+   - *Sem ganho de tela:* δ = contraste/4, Planck por canal, TiO só nas M. O
+     ganho 2,6× da Betelgeuse aprovada não tem medida e saiu: o contraste
+     visível dela fica em ~60 % do aprovado (0,19 contra 0,32 na tela).
+   - *Sem relevo:* estrela brilha por si; o relevo entortava a normal e a lei
+     de borda virava luz rasante ("almofada"). O claro-escuro é só temperatura.
+   - *Borda macia:* a intensidade cai a zero na espessura da fotosfera,
+     smoothstep(0, μw, μ) com μw = √(2·Hp/R), Hp = A/10 (Trampedach: A/Hp de
+     9 a 13) — Betelgeuse 0,16, Arcturus 0,08; onde há atmosfera estendida
+     ela desce só até o brilho da casca rente (sem fresta). Forma ARTÍSTICA.
+   - *Estrela quente:* onde o contraste da regra dá zero (~9.300 K), a Forja
+     não vale e fica o desenho de hoje — a beleza de Vega é do giro, o
+     próximo botão.
    - *Atmosfera estendida (a borda que borra e o gás em volta):* raio da camada
      molecular por log g, linear entre âncoras medidas: anã 1,0 (borda nítida);
      Arcturus 1,04 R (CO, Ohnaka & Morales Marín 2018, arXiv 1809.01181; log g
@@ -1290,9 +1312,10 @@ luminosidade. Cada camada do corpo é função contínua deles.
      al. 2009, arXiv 0906.4792; Antares 1,2–1,4 R: Ohnaka et al. 2013, arXiv
      1304.4800). Só nas frias: inteira abaixo de 4.500 K (a linha de Linsky &
      Haisch, mesma constante do dínamo) e a zero em 5.000 K — a rampa é
-     ARTÍSTICA. O desenho é a casca de plumas que Betelgeuse já tinha, com o
-     brilho proporcional ao excesso de raio até 0,3 R (camada rasa, pouco gás
-     na linha de visada; ARTÍSTICO).
+     ARTÍSTICA. O desenho é a casca de plumas que Betelgeuse já tinha, mais
+     fraca e lisa na Forja (até ~1,7 R em Betelgeuse, dentro das medidas de
+     1,2–1,7 R), com o brilho proporcional ao excesso de raio até 0,3 R
+     (camada rasa, pouco gás na linha de visada; ARTÍSTICO).
    - *Ponto da regra:* Betelgeuse deixa de ter caminho próprio (células de
      0,6 R e contraste 0,25 à mão viram 0,12 R e 18 % pela regra). O visual
      aprovado fica com o interruptor desligado até a prancha decidir.

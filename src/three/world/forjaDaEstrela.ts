@@ -136,9 +136,37 @@ export function ritmoDaFervura(aR: number): number {
   return 1 + x * (1 / 6 - 1);
 }
 
-/** O RELEVO, em raios: uma escala de altura, Hp ≈ A/10 (Trampedach: A/Hp de 9 a 13), da célula REAL */
-export function relevoEmRaios(aR: number): number {
-  return aR / 10;
+/**
+ * A ESCALA PROFUNDA, em raios: as fotos das gigantes de gravidade baixíssima
+ * mostram POUCAS células enormes por cima dos grânulos — π¹ Gru, célula de
+ * ~1/4 do diâmetro (ESO eso1741, Paladini et al. 2018); Betelgeuse, mancha
+ * quente de ~1 raio (Montargès et al. 2016, arXiv 1602.05108) e, na simulação
+ * CO5BOLD, estruturas de 5–15 mas mais UMA célula de ~30 mas num disco de
+ * ~43 mas (Chiavassa et al. 2010, arXiv 1003.1407); poucas células grandes e
+ * grânulos pequenos (Freytag et al. 2002). O tamanho é fixo: o diâmetro da de
+ * π¹ Gru (Betelgeuse dá 0,5–1 R).
+ */
+export const CELULA_PROFUNDA_EM_RAIOS = 0.5;
+
+/**
+ * O PESO DA ESCALA PROFUNDA por log g: zero a log g ≥ 1,0, onde a grade de
+ * Trampedach ainda vale (Ludwig & Kučinskas 2012: só grânulos, ~400, a
+ * log g 1), inteiro a log g ≤ −0,3 (as supergigantes vermelhas), smoothstep
+ * entre os dois.
+ */
+export function pesoDaEscalaProfunda(logG: number): number {
+  const x = Math.min(1, Math.max(0, (1.0 - logG) / 1.3));
+  return x * x * (3 - 2 * x);
+}
+
+/**
+ * A LARGURA DA BORDA, em μ: a borda amacia na espessura da fotosfera, uma
+ * escala de altura Hp ≈ A/10 da célula REAL (Trampedach: A/Hp de 9 a 13);
+ * a linha de visada rasante atravessa Hp/R em ρ, μ_w = √(2·Hp/R).
+ * Betelgeuse ~0,15, Arcturus ~0,09. A forma (smoothstep) é ARTÍSTICA.
+ */
+export function larguraDaBordaEmMu(aR: number): number {
+  return Math.sqrt((2 * aR) / 10);
 }
 
 export interface RegraDaForja {
@@ -146,9 +174,14 @@ export interface RegraDaForja {
   readonly celulaNaTelaEmRaios: number;
   readonly contraste: number;
   readonly atmosferaEmRaios: number;
-  readonly relevoEmRaios: number;
   readonly fracaoEscura: number;
   readonly ritmo: number;
+  /** o peso da escala profunda (`pesoDaEscalaProfunda`), 0 a 1 */
+  readonly pesoProfundo: number;
+  /** o ritmo da fervura da escala profunda */
+  readonly ritmoProfundo: number;
+  /** a largura da borda em μ (`larguraDaBordaEmMu`) */
+  readonly bordaEmMu: number;
 }
 
 /** O botão GRAVIDADE inteiro, de Teff, log g e raio. */
@@ -159,8 +192,10 @@ export function regraDaForja(teffK: number, logG: number, raioRsol: number): Reg
     celulaNaTelaEmRaios: celulaNaTelaEmRaios(a),
     contraste: contrasteDaConveccao(teffK, logG),
     atmosferaEmRaios: raioDaAtmosferaEmRaios(teffK, logG),
-    relevoEmRaios: relevoEmRaios(a),
     fracaoEscura: fracaoEscura(teffK),
     ritmo: ritmoDaFervura(a),
+    pesoProfundo: pesoDaEscalaProfunda(logG),
+    ritmoProfundo: ritmoDaFervura(CELULA_PROFUNDA_EM_RAIOS),
+    bordaEmMu: larguraDaBordaEmMu(a),
   };
 }
