@@ -38,7 +38,12 @@ import {
   densidadeDaEsteira,
   distanciaDaProfundidade,
   estiramentoDaEsteira,
-  imagensDaJanela,
+  CELULA,
+  LAMBDA_DA_ESTEIRA_KM,
+  alturaNaCamada,
+  celulasDaOitava,
+  celulasDoQuadro,
+  fasesDoLadrilho,
   lugarDaPedra,
   luzDaFace,
   pedacosPorArea,
@@ -205,21 +210,116 @@ describe('pedras 3D do anel', () => {
     }
   }, 120_000);
 
-  it('as imagens vizinhas só entram onde a janela as alcança: a da câmera sempre, nenhuma do alto', () => {
-    const saida = new Int32Array(2 * IMAGENS.length);
-    // na camada: toda oitava ativa pede as nove
-    imagensDaJanela(OITAVAS, 130_000, 0, 0.008, null, saida);
-    for (let m = 0; m < IMAGENS.length; m++) expect([saida[2 * m], saida[2 * m + 1]]).toEqual([0, OITAVAS - 1]);
+  it('as células vizinhas só entram onde a janela as alcança: nenhuma do alto, a 4,3 km só as de lado', () => {
+    const celulas = Array.from({ length: OITAVAS }, (_, o) => celulasDaOitava(o));
+    const op = new Float32Array(IMAGENS.length * OITAVAS * (PEDRAS_POR_TIER.cinema / CELULA));
+    const es = new Float32Array(op.length);
+    const fases = [0, 1, 2, 3].map(() => new Float64Array(OITAVAS));
+    fasesDoLadrilho(130_000, 0.4, 0, 0, fases[0]!, fases[1]!, fases[2]!, fases[3]!);
+    const vista = (ativas: number, zKm: number) => ({
+      ativas, porOitava: PEDRAS_POR_TIER.cinema, rhoKm: 130_000, zKm, espessuraKm: 0.008, lente: null,
+      fr: fases[0]!, fs: fases[1]!, gi: fases[2]!, gf: fases[3]!,
+    });
+    expect(celulasDoQuadro(vista(0, 20), celulas, op, es)).toEqual([0, 0]);
     // a 4,3 km só a maior oitava alcança, e só as vizinhas de lado (os cantos ficam a ≥ 362 tamanhos no plano)
     const ativas = PedrasDoAnel.oitavasAtivas(4.3);
     expect(ativas).toBe(1);
-    imagensDaJanela(ativas, 130_000, 4.3, 0.008, null, saida);
-    expect([saida[0], saida[1]]).toEqual([0, 0]);
-    expect([saida[2], saida[3]]).toEqual([0, 0]);
-    expect(saida[2 * 5]).toBe(-1);
-    imagensDaJanela(0, 130_000, 20, 0.008, null, saida);
-    expect([...saida].every((v) => v === -1)).toBe(true);
+    const [nOp, nEs] = celulasDoQuadro(vista(ativas, 4.3), celulas, op, es);
+    expect(nOp).toBe(0);
+    const imagens = new Set(Array.from(es.subarray(0, nEs), (k) => Math.floor(k / (OITAVAS * (PEDRAS_POR_TIER.cinema / CELULA)))));
+    expect([...imagens].every((m) => m < 5)).toBe(true);
+    expect(imagens.has(0)).toBe(true);
   });
+
+  it('o descarte por célula nunca deixa de fora um pedaço que o vértice desenharia, nem perto da borda da tela', () => {
+    const celulas = Array.from({ length: OITAVAS }, (_, o) => celulasDaOitava(o));
+    const posicao = celulas.map((c) => {
+      const p = new Int32Array(PEDRAS_POR_TIER.cinema);
+      c.ids.forEach((i, j) => (p[i] = j));
+      return p;
+    });
+    const op = new Float32Array(IMAGENS.length * OITAVAS * (PEDRAS_POR_TIER.cinema / CELULA));
+    const es = new Float32Array(op.length);
+    const mis = (x: number) => {
+      x = (x ^ (x >>> 16)) >>> 0;
+      x = Math.imul(x, 0x7feb352d) >>> 0;
+      x = (x ^ (x >>> 15)) >>> 0;
+      x = Math.imul(x, 0x846ca68b) >>> 0;
+      return (x ^ (x >>> 16)) >>> 0;
+    };
+    const des = (Math.max(...REGIOES_DAS_PEDRAS.map((r) => r.esteira)) * 2 * Math.asin(0.66) * LAMBDA_DA_ESTEIRA_KM) / (2 * Math.PI) + 0.0005;
+    // (altura km, mergulho e azimute da visada em graus, cisalhamento g, tier): de cima, rasante, dentro da camada
+    const cameras = [
+      [0.1, 30, 200, 0, 'cinema'],
+      [0.02, 2, 95, -37.3, 'cinema'],
+      [0, 0, 10, 5.6, 'cinema'],
+      [0.002, -20, 300, -0.4, 'performance'],
+    ] as const;
+    let conferidos = 0;
+    for (const [zKm, dep, az, g, tier] of cameras) {
+      const rho = 128_370;
+      const fr = new Float64Array(OITAVAS);
+      const fs = new Float64Array(OITAVAS);
+      const gi = new Float64Array(OITAVAS);
+      const gf = new Float64Array(OITAVAS);
+      fasesDoLadrilho(rho, 0.7, g, g * rho, fr, fs, gi, gf);
+      // a lente: linhas = direita, cima, trás, no quadro (er, et, ez); 58° na vertical, 1280 × 800
+      const fw = new THREE.Vector3(Math.cos((az * Math.PI) / 180), Math.sin((az * Math.PI) / 180), 0)
+        .multiplyScalar(Math.cos((dep * Math.PI) / 180)).setZ(-Math.sin((dep * Math.PI) / 180));
+      const dir = new THREE.Vector3().crossVectors(fw, new THREE.Vector3(0, 0, 1)).normalize();
+      const cima = new THREE.Vector3().crossVectors(dir, fw);
+      const p11 = 1 / Math.tan((29 * Math.PI) / 180);
+      const lente = { m: new Float64Array([...dir.toArray(), ...cima.toArray(), ...fw.clone().negate().toArray()]), p00: p11 / 1.6, p11, pxPorRad: 400 * p11, ok: true };
+      const ativas = PedrasDoAnel.oitavasAtivas(zKm);
+      const porOitava = PEDRAS_POR_TIER[tier];
+      const [nOp, nEs] = celulasDoQuadro({ ativas, porOitava, rhoKm: rho, zKm, espessuraKm: 0.008, lente, fr, fs, gi, gf }, celulas, op, es);
+      const opacos = new Set(op.subarray(0, nOp));
+      const esmaece = new Set(es.subarray(0, nEs));
+      // menos que a janela inteira, mas tudo o que o vértice desenha
+      expect(nOp + nEs).toBeLessThan(0.6 * 2 * IMAGENS.length * ativas * (porOitava / CELULA));
+      let perdidos = 0;
+      for (let o = 0; o < ativas; o++) {
+        const t = TABELA_DE_OITAVAS[o]!;
+        const alcance2 = 2 ** (2 * X_ENTRA) * t.s * t.s;
+        for (let m = 0; m < IMAGENS.length; m++) {
+          const [jr, ja] = IMAGENS[m]!;
+          for (let i = 0; i < porOitava; i++) {
+            const base = mis((i ^ (o << 24)) >>> 0);
+            const h0 = mis((base ^ 0x51ed27) >>> 0);
+            const q = h0 & 0xffff;
+            const a = q / 65536;
+            const dk = Math.floor(fr[o]! - a + 0.5) + jr;
+            const dR = (dk + a - fr[o]!) * t.ladoRadial;
+            if (dR * dR >= alcance2) continue;
+            const cis = ((gi[o]! * q) % 65536) / 65536 + gf[o]! * (dk + a);
+            let sg = (mis((base ^ 0x2c1b3c6d) >>> 0) >>> 8) / 16777216 + cis + fs[o]!;
+            sg -= Math.floor(sg + 0.5);
+            const dS = (sg + ja) * t.ladoNoArco;
+            if (dR * dR + dS * dS >= alcance2) continue;
+            const raio = (0.5 * t.s) / Math.sqrt(1 - (0.75 * (h0 >>> 16)) / 65536);
+            const h2 = mis((base ^ 0x7a3f91c5) >>> 0);
+            const dz = alturaNaCamada(((h2 & 0xffff) + (h2 >>> 16) + 1) / 65536 - 1, raio, regiaoDasPedras(rho + dR).espessura) - zKm;
+            const x = Math.log2(Math.hypot(dR, dS, dz) / t.s);
+            const p = Math.min(Math.max(X_ENTRA - x, 0), 1);
+            if (p <= 0) continue;
+            // o cone do vértice, com a lente exata (sem a folga da câmera lida)
+            const y = (dS * (rho + dR)) / R0_KM;
+            const M = lente.m;
+            const vx = M[0]! * dR + M[1]! * y + M[2]! * dz;
+            const vy = M[3]! * dR + M[4]! * y + M[5]! * dz;
+            const cz = M[6]! * dR + M[7]! * y + M[8]! * dz;
+            const rF = 2.5 * raio + 1.5 * des + 4e-6 * (dR * dR + dS * dS) + 1e-4;
+            if (-cz < -rF || Math.abs(vx) * lente.p00 + cz > rF * Math.hypot(lente.p00, 1) || Math.abs(vy) * lente.p11 + cz > rF * Math.hypot(lente.p11, 1)) continue;
+            const k = (m * OITAVAS + o) * (PEDRAS_POR_TIER.cinema / CELULA) + Math.floor(posicao[o]![i]! / CELULA);
+            if (!(p >= 1 ? opacos : esmaece).has(k)) perdidos++;
+            conferidos++;
+          }
+        }
+      }
+      expect(perdidos).toBe(0);
+    }
+    expect(conferidos).toBeGreaterThan(50_000);
+  }, 120_000);
 
   it('nenhum pedaço passa de 10 m de raio, e nenhum centro sai da camada', () => {
     for (const rho of [80_000, 100_000, 119_000, 128_000]) {
@@ -285,10 +385,14 @@ describe('pedras 3D do anel', () => {
     expect(p.malha.visible).toBe(false);
     p.atualizar(quadro(128_000, 1));
     expect(p.malha.visible).toBe(true);
-    // um ponto por pedaço de cada oitava ativa (as malhas de perto são escolhidas a mais)
-    const n = (p.malha.children.find((m) => m instanceof THREE.Points) as THREE.Points).geometry.drawRange.count;
-    expect(n % PEDRAS_POR_TIER.cinema).toBe(0);
-    expect(n / PEDRAS_POR_TIER.cinema).toBe(PedrasDoAnel.oitavasAtivas(1));
+    // as células desenhadas (opacas e esmaecendo) são só das oitavas ativas, e todas elas aparecem
+    const oitavas = new Set<number>();
+    for (const m of p.malha.children.filter((m) => m instanceof THREE.Points)) {
+      const g = (m as THREE.Points).geometry as THREE.InstancedBufferGeometry;
+      for (const k of (g.getAttribute('aCelula').array as Float32Array).subarray(0, g.instanceCount))
+        oitavas.add(Math.floor(k / (PEDRAS_POR_TIER.cinema / CELULA)) % OITAVAS);
+    }
+    expect([...oitavas].sort()).toEqual(Array.from({ length: PedrasDoAnel.oitavasAtivas(1) }, (_, o) => o));
     expect(PedrasDoAnel.oitavasAtivas(1)).toBeLessThan(OITAVAS);
     expect(PedrasDoAnel.oitavasAtivas(0.003)).toBe(OITAVAS);
     p.dispose();

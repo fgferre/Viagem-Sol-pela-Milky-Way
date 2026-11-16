@@ -130,6 +130,15 @@ export const PEDRAS_POR_TIER: Readonly<Record<QualityLevel, number>> = {
   performance: 3072,
 };
 
+/** os ids de cada oitava em células de `CELULA` (ver `celulasDaOitava`) */
+export const CELULA = 32;
+const CELULAS = PEDRAS_POR_TIER.cinema / CELULA;
+/** células por faixa radial (as de uma faixa dividem o arco) */
+const CELULAS_POR_FAIXA = 8;
+const FAIXAS = CELULAS / CELULAS_POR_FAIXA;
+/** a folga das contas da GPU em float32, em frações do ladrilho */
+const FOLGA_DO_FLOAT = 1e-5;
+
 /**
  * A ÁREA MÉDIA DO CORPO desenhado, em unidades do disco de raio 1 (Monte
  * Carlo sobre orientações, terceira volta; os tipos são acertados a ela por
@@ -1809,14 +1818,20 @@ flat varying vec4 vProj;
 // do km da vista para a unidade do mundo
 flat varying float vMundo;
 ${GLSL_PEDRA_COMUM}
+// a célula: (imagem·OITAVAS + oitava)·CELULAS + célula; o id, pela permutação
+in float aCelula;
+uniform highp sampler2D uPermutacao;
 const ivec2 IMAGENS[${IMAGENS.length}] = ivec2[${IMAGENS.length}](${IMAGENS.map(([r, a]) => `ivec2(${r}, ${a})`).join(', ')});
 void main() {
-  // o vértice é (imagem, oitava, pedaço): cada imagem num bloco do tamanho do tier cheio
-  int img = gl_VertexID / ${OITAVAS * PEDRAS_POR_TIER.cinema};
-  int id = gl_VertexID - img * ${OITAVAS * PEDRAS_POR_TIER.cinema};
-  int k = id / uPorOitava;
-  int o = clamp(uAtivas, 1, ${OITAVAS}) - 1 - k;
-  if (!lugar(o, id - k * uPorOitava, IMAGENS[img])) {
+  // o vértice é (célula, pedaço da célula); a CPU escolheu as células
+  int codigo = int(aCelula + 0.5);
+  int celula = codigo % ${CELULAS};
+  int io = codigo / ${CELULAS};
+  int o = io % ${OITAVAS};
+  int img = io / ${OITAVAS};
+  int p = o * ${PEDRAS_POR_TIER.cinema} + celula * ${CELULA} + gl_VertexID;
+  int id = int(texelFetch(uPermutacao, ivec2(p & 511, p >> 9), 0).r + 0.5);
+  if (!lugar(o, id, IMAGENS[img])) {
     foraComum(); gl_PointSize = 0.0;
     return;
   }
@@ -3510,80 +3525,221 @@ function linhasDoPrePasso(): number {
 }
 
 /**
- * AS IMAGENS QUE O QUADRO PAGA: para cada imagem do ladrilho (`IMAGENS`), o
- * trecho de oitavas, na ordem do desenho (k = ativas − 1 − o), em que alguma
- * parte dela fica dentro da janela (a presença lê a distância antes da
- * esteira, então a caixa da imagem é exata) e dentro do cone da lente (com
- * a esteira, o maior pedaço e a folga da câmera de folga). `saida[2m]` e
- * `saida[2m + 1]` = primeiro e último k, ou −1. A imagem da câmera paga
- * todas as ativas, como antes. `xMax` é o alcance de quem se pede: a janela
- * inteira (`X_ENTRA`, os que esmaecem) ou só a parte opaca (`X_PLENO`).
+ * AS CÉLULAS DO LADRILHO: os ids de cada oitava em blocos de `CELULA`, cada
+ * bloco um retalho do ladrilho (uma faixa radial, um trecho do arco). Só a
+ * ORDEM DE DESENHO muda (a identidade e o lugar de cada pedaço são os de
+ * sempre): o vértice lê o id pela permutação, e a CPU desenha por quadro só
+ * as células que tocam a janela e o cone da lente. Os grupos de ids de cada
+ * tier (os prefixos de `PEDRAS_POR_TIER`) têm células próprias.
  */
-export function imagensDaJanela(
-  ativas: number,
-  rhoKm: number,
-  zKm: number,
-  espessuraKm: number,
-  lente: Lente | null,
-  saida: Int32Array,
-  xMax = X_ENTRA
-) {
-  const nOit = Math.min(Math.max(ativas, 0), OITAVAS);
-  saida.fill(-1);
-  if (nOit === 0) return;
-  saida[0] = 0;
-  saida[1] = nOit - 1;
-  // a menor distância vertical de um centro à câmera
-  const dzMin = Math.max(Math.abs(zKm) - 0.5 * espessuraKm, 0);
-  const s00 = lente ? Math.sqrt(lente.p00 * lente.p00 + 1) : 1;
-  const s11 = lente ? Math.sqrt(lente.p11 * lente.p11 + 1) : 1;
-  const zs = [0.5 * espessuraKm - zKm, -0.5 * espessuraKm - zKm];
-  for (let m = 1; m < IMAGENS.length; m++) {
-    const [jr, ja] = IMAGENS[m]!;
-    for (let k = 0; k < nOit; k++) {
-      const t = TABELA_DE_OITAVAS[nOit - 1 - k]!;
-      const r0 = (jr - 0.5) * t.ladoRadial;
-      const r1 = (jr + 0.5) * t.ladoRadial;
-      const a0 = (ja - 0.5) * t.ladoNoArco;
-      const a1 = (ja + 0.5) * t.ladoNoArco;
-      const pr = Math.max(r0, 0, -r1);
-      const pa = Math.max(a0, 0, -a1);
-      const alcance = 2 ** xMax * t.s;
-      if (pr * pr + pa * pa + dzMin * dzMin >= alcance * alcance) continue;
-      if (lente?.ok) {
-        // os oito cantos da caixa contra os quatro planos e o de trás: fora
-        // se todos ficam do lado de fora de um deles
-        const m9 = lente.m;
-        const longe = Math.hypot(Math.max(Math.abs(r0), Math.abs(r1)), Math.max(Math.abs(a0), Math.abs(a1)), Math.abs(zKm) + espessuraKm);
-        const folga = 2.5 * t.s + DESLOCAMENTO_MAXIMO_KM + FOLGA_DO_CONE * longe;
-        let fora = 0b11111;
-        // no arco, o lado em R0 encolhe para ρ/R0 (`y = ρ·sen θ` do vértice)
-        const ya = (a0 * rhoKm) / R0_KM;
-        const yb = (a1 * rhoKm) / R0_KM;
-        for (const x of [r0, r1])
-          for (const y of [ya, yb])
-            for (const z of zs) {
-              const vx = m9[0]! * x + m9[1]! * y + m9[2]! * z;
-              const vy = m9[3]! * x + m9[4]! * y + m9[5]! * z;
-              const fz = -(m9[6]! * x + m9[7]! * y + m9[8]! * z);
-              if (fz >= -folga) fora &= ~1;
-              if (vx * lente.p00 - fz <= folga * s00) fora &= ~2;
-              if (-vx * lente.p00 - fz <= folga * s00) fora &= ~4;
-              if (vy * lente.p11 - fz <= folga * s11) fora &= ~8;
-              if (-vy * lente.p11 - fz <= folga * s11) fora &= ~16;
-            }
-        if (fora) continue;
-      }
-      if (saida[2 * m]! < 0) saida[2 * m] = k;
-      saida[2 * m + 1] = k;
+
+export interface CelulasDaOitava {
+  /** os ids na ordem do desenho */
+  ids: Uint16Array;
+  /** o sorteio radial (a = q/65 536) de cada faixa, mínimo e máximo */
+  aMin: Float64Array;
+  aMax: Float64Array;
+  /** o sorteio do arco (h1 >> 8)/2²⁴ de cada célula, mínimo e máximo */
+  hMin: Float64Array;
+  hMax: Float64Array;
+}
+
+export function celulasDaOitava(o: number): CelulasDaOitava {
+  const n = PEDRAS_POR_TIER.cinema;
+  const a = new Float64Array(n);
+  const h = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    const base = misturar((i ^ (o << 24)) >>> 0);
+    a[i] = (misturar((base ^ 0x51ed27) >>> 0) & 0xffff) / 65536;
+    h[i] = (misturar((base ^ 0x2c1b3c6d) >>> 0) >>> 8) / 16777216;
+  }
+  const ids = new Uint16Array(n);
+  const por = CELULA * CELULAS_POR_FAIXA;
+  const cortes = [0, PEDRAS_POR_TIER.performance, PEDRAS_POR_TIER.alta, PEDRAS_POR_TIER.cinema];
+  for (let g = 0; g + 1 < cortes.length; g++) {
+    const grupo = Array.from({ length: cortes[g + 1]! - cortes[g]! }, (_, k) => cortes[g]! + k).sort((x, y) => a[x]! - a[y]!);
+    for (let f = 0; f < grupo.length; f += por) {
+      const faixa = grupo.slice(f, f + por).sort((x, y) => h[x]! - h[y]!);
+      ids.set(faixa, cortes[g]! + f);
     }
   }
+  const aMin = new Float64Array(FAIXAS).fill(1);
+  const aMax = new Float64Array(FAIXAS);
+  const hMin = new Float64Array(CELULAS).fill(1);
+  const hMax = new Float64Array(CELULAS);
+  for (let j = 0; j < n; j++) {
+    const i = ids[j]!;
+    const c = Math.floor(j / CELULA);
+    const f = Math.floor(c / CELULAS_POR_FAIXA);
+    aMin[f] = Math.min(aMin[f]!, a[i]!);
+    aMax[f] = Math.max(aMax[f]!, a[i]!);
+    hMin[c] = Math.min(hMin[c]!, h[i]!);
+    hMax[c] = Math.max(hMax[c]!, h[i]!);
+  }
+  return { ids, aMin, aMax, hMin, hMax };
+}
+
+/** o que a vista de cada quadro precisa para escolher as células */
+export interface VistaDasCelulas {
+  ativas: number;
+  /** pedaços por oitava do tier (um prefixo, múltiplo de `CELULA · CELULAS_POR_FAIXA`) */
+  porOitava: number;
+  rhoKm: number;
+  zKm: number;
+  /** a maior espessura da camada que a janela alcança */
+  espessuraKm: number;
+  lente: Lente | null;
+  fr: ArrayLike<number>;
+  fs: ArrayLike<number>;
+  gi: ArrayLike<number>;
+  gf: ArrayLike<number>;
+}
+
+/**
+ * A CAIXA (radial r0..r1, arco s0..s1, km a partir da câmera, no lugar sem a
+ * esteira) contra a janela e o cone: bit 1 = algum pedaço dela pode sair
+ * opaco (x ≤ `X_PLENO`), bit 2 = algum pode estar esmaecendo (`X_PLENO` < x
+ * < `X_ENTRA`). Superconjunto do que o vértice desenha: a presença é a mesma
+ * conta (o lugar antes da esteira), e o cone leva a folga do cone do vértice
+ * (o maior corpo, a esteira, a curvatura) mais a da câmera lida.
+ */
+function caixaDaJanela(v: VistaDasCelulas, s: number, r0: number, r1: number, s0: number, s1: number): number {
+  const meia = 0.5 * v.espessuraKm;
+  const dzMin = Math.max(Math.abs(v.zKm) - meia, 0);
+  const dzMax = Math.abs(v.zKm) + meia;
+  const pr = Math.max(r0, 0, -r1);
+  const pa = Math.max(s0, 0, -s1);
+  const min2 = pr * pr + pa * pa + dzMin * dzMin;
+  const pleno = 2 ** (2 * X_PLENO) * s * s;
+  const entra = 2 ** (2 * X_ENTRA) * s * s;
+  if (min2 >= entra * (1 + 1e-4)) return 0;
+  const max2 = Math.max(r0 * r0, r1 * r1) + Math.max(s0 * s0, s1 * s1) + dzMax * dzMax;
+  let bits = 0;
+  if (min2 <= pleno * (1 + 1e-4)) bits |= 1;
+  if (max2 >= pleno * (1 - 1e-4)) bits |= 2;
+  const lente = v.lente;
+  if (!bits || !lente?.ok) return bits;
+  const m9 = lente.m;
+  const d2 = r0 * r0 + r1 * r1 + s0 * s0 + s1 * s1;
+  const folga = 2.5 * s + 1.5 * DESLOCAMENTO_MAXIMO_KM + 4e-6 * d2 + 1e-4 + FOLGA_DO_CONE * Math.sqrt(max2);
+  const s00 = folga * Math.sqrt(lente.p00 * lente.p00 + 1);
+  const s11 = folga * Math.sqrt(lente.p11 * lente.p11 + 1);
+  let fora = 0b11111;
+  const za = meia - v.zKm;
+  const zb = -meia - v.zKm;
+  for (let canto = 0; canto < 8; canto++) {
+    const x = canto & 1 ? r1 : r0;
+    const y = ((canto & 2 ? s1 : s0) * (v.rhoKm + x)) / R0_KM;
+    const z = canto & 4 ? zb : za;
+    const vx = m9[0]! * x + m9[1]! * y + m9[2]! * z;
+    const vy = m9[3]! * x + m9[4]! * y + m9[5]! * z;
+    const fz = -(m9[6]! * x + m9[7]! * y + m9[8]! * z);
+    if (fz >= -folga) fora &= ~1;
+    if (vx * lente.p00 - fz <= s00) fora &= ~2;
+    if (-vx * lente.p00 - fz <= s00) fora &= ~4;
+    if (vy * lente.p11 - fz <= s11) fora &= ~8;
+    if (-vy * lente.p11 - fz <= s11) fora &= ~16;
+    if (!fora) return bits;
+  }
+  return fora ? 0 : bits;
+}
+
+/**
+ * AS CÉLULAS QUE O QUADRO PAGA, por imagem do ladrilho (`IMAGENS`) e
+ * oitava (da mais fina para a mais grossa): o código (imagem·OITAVAS +
+ * oitava)·CELULAS + célula vai para `opacos` ou `esmaece` (ou os dois).
+ * Devolve quantas em cada. O lugar de cada id é a conta do vértice: o raio
+ * (dk + a − f)·lado, com o dk da volta do ladrilho, e o arco h + g·a + gf·dk
+ * + fs (mod 1), com o cisalhamento g reduzido ao inteiro mais perto de zero.
+ */
+export function celulasDoQuadro(
+  v: VistaDasCelulas,
+  celulas: readonly CelulasDaOitava[],
+  opacos: Float32Array,
+  esmaece: Float32Array
+): [number, number] {
+  const nOit = Math.min(Math.max(v.ativas, 0), OITAVAS);
+  const faixas = Math.floor(v.porOitava / (CELULA * CELULAS_POR_FAIXA));
+  let nOp = 0;
+  let nEs = 0;
+  const arcos = [0, 0, 0, 0];
+  const bitsDaCelula = new Int32Array(CELULAS_POR_FAIXA);
+
+  for (let m = 0; m < IMAGENS.length; m++) {
+    const [jr, ja] = IMAGENS[m]!;
+    for (let o = nOit - 1; o >= 0; o--) {
+      const t = TABELA_DE_OITAVAS[o]!;
+      const lado = t.ladoRadial;
+      const ladoArco = t.ladoNoArco;
+      // a imagem inteira primeiro
+      if (!caixaDaJanela(v, t.s, (jr - 0.5) * lado, (jr + 0.5) * lado, (ja - 0.5) * ladoArco, (ja + 0.5) * ladoArco)) continue;
+      const f = v.fr[o]!;
+      const gi = v.gi[o]!;
+      const g = (gi >= 32768 ? gi - 65536 : gi) + v.gf[o]!;
+      const cel = celulas[o]!;
+      const codigo = (m * OITAVAS + o) * CELULAS;
+      for (let b = 0; b < faixas; b++) {
+        const a0 = cel.aMin[b]! - FOLGA_DO_FLOAT;
+        const a1 = cel.aMax[b]! + FOLGA_DO_FLOAT;
+        // o dk da volta do ladrilho: a faixa que a cruza vira dois trechos
+        const dkA = Math.floor(f - a0 + 0.5);
+        const dkB = Math.floor(f - a1 + 0.5);
+        const corte = dkA === dkB ? a1 : f + 0.5 - dkA;
+        bitsDaCelula.fill(0);
+        for (let p = 0; p < (dkA === dkB ? 1 : 2); p++) {
+          const p0 = p === 0 ? a0 : corte;
+          const p1 = p === 0 ? corte : a1;
+          const dk = (p === 0 ? dkA : dkB) + jr;
+          const r0 = (dk + p0 - f) * lado;
+          const r1 = (dk + p1 - f) * lado;
+          // a faixa inteira (o arco todo) antes das células
+          if (!caixaDaJanela(v, t.s, r0, r1, (ja - 0.5) * ladoArco, (ja + 0.5) * ladoArco)) continue;
+          const c0 = v.gf[o]! * dk + v.fs[o]! + Math.min(g * p0, g * p1);
+          const largo = Math.abs(g) * (p1 - p0);
+          for (let c = 0; c < CELULAS_POR_FAIXA; c++) {
+            const k = b * CELULAS_POR_FAIXA + c;
+            const w = cel.hMax[k]! - cel.hMin[k]! + largo + 2 * FOLGA_DO_FLOAT;
+            let n = 0;
+            if (w >= 1) {
+              arcos[0] = -0.5;
+              arcos[1] = 0.5;
+              n = 1;
+            } else {
+              let lo = cel.hMin[k]! + c0 - FOLGA_DO_FLOAT;
+              lo -= Math.floor(lo + 0.5);
+              arcos[0] = lo;
+              arcos[1] = Math.min(lo + w, 0.5);
+              n = 1;
+              if (lo + w > 0.5) {
+                arcos[2] = -0.5;
+                arcos[3] = lo + w - 1;
+                n = 2;
+              }
+            }
+            for (let q = 0; q < n; q++)
+              bitsDaCelula[c] |= caixaDaJanela(v, t.s, r0, r1, (arcos[2 * q]! + ja) * ladoArco, (arcos[2 * q + 1]! + ja) * ladoArco);
+          }
+        }
+        for (let c = 0; c < CELULAS_POR_FAIXA; c++) {
+          const x = bitsDaCelula[c]!;
+          const k = codigo + b * CELULAS_POR_FAIXA + c;
+          if (x & 1) opacos[nOp++] = k;
+          if (x & 2) esmaece[nEs++] = k;
+        }
+      }
+    }
+  }
+  return [nOp, nEs];
 }
 
 class Faixa {
-  /** os pontos opacos e os que estão entrando (a mesma geometria), um par por imagem do ladrilho */
-  readonly pontos: THREE.Points[];
-  readonly esmaece: THREE.Points[];
+  /** os pontos opacos e os que estão entrando: uma instância por célula (`celulasDoQuadro`) */
+  readonly pontos: THREE.Points;
+  readonly esmaece: THREE.Points;
+  /** as células de cada oitava e a permutação delas (o id de cada vértice da célula) */
+  readonly celulas: CelulasDaOitava[];
+  readonly permutacao: THREE.DataTexture;
+  private readonly codigos: THREE.InstancedBufferAttribute[];
   /** as de perto, da frente para trás em x */
   readonly malhas: THREE.Mesh[];
   /** o desenho de cada malha com o pré-passo e o de reserva, sem ele */
@@ -3602,32 +3758,36 @@ class Faixa {
 
   constructor(material: (desenho: Desenho, formas?: THREE.DataTexture) => THREE.ShaderMaterial) {
     this.ordens = Array.from({ length: OITAVAS }, (_, o) => ordemDaOitava(o));
-    // só a contagem importa: o vértice é (imagem, pedaço) (gl_VertexID); um
-    // atributo para todas as imagens, uma geometria (o trecho) por imagem
-    const contagem = new THREE.BufferAttribute(new Uint8Array(IMAGENS.length * OITAVAS * PEDRAS_POR_TIER.cinema), 1);
-    const ponto = material('ponto');
-    const esmaece = material('esmaece');
-    this.pontos = [];
-    this.esmaece = [];
-    for (let m = 0; m < IMAGENS.length; m++) {
-      // uma geometria por desenho: o trecho dos opacos e o dos que esmaecem diferem
-      const g = new THREE.BufferGeometry();
-      const ge = new THREE.BufferGeometry();
-      for (const x of [g, ge]) {
-        x.setAttribute('position', contagem);
-        x.setDrawRange(0, 0);
-        // A ESFERA ENVOLVENTE À MÃO: sem ela o three a calcula ao ordenar a cena
-        // lendo y e z do atributo de um componente — o último vértice lê
-        // `undefined`, que vai parar num Vector3 do próprio three, e a partir
-        // daí TODO Vector3 da página passa a guardar os campos sem o atalho de
-        // número (o planejador da galáxia dobrava de ~4 para ~9 ms por quadro).
-        // Ninguém a usa: os pontos não são recortados e a ordem é a de `renderOrder`.
-        x.boundingSphere = new THREE.Sphere();
-      }
-      this.pontos.push(new THREE.Points(g, ponto));
-      this.esmaece.push(new THREE.Points(ge, esmaece));
-    }
-    for (const p of [...this.pontos, ...this.esmaece]) {
+    // a ordem de desenho: os ids de cada oitava por célula, numa textura
+    this.celulas = Array.from({ length: OITAVAS }, (_, o) => celulasDaOitava(o));
+    const largura = 512;
+    const perm = new Float32Array(OITAVAS * PEDRAS_POR_TIER.cinema);
+    this.celulas.forEach((c, o) => perm.set(c.ids, o * PEDRAS_POR_TIER.cinema));
+    this.permutacao = new THREE.DataTexture(perm, largura, perm.length / largura, THREE.RedFormat, THREE.FloatType);
+    this.permutacao.needsUpdate = true;
+    // só a contagem importa: o vértice é (célula, pedaço da célula) (gl_InstanceID, gl_VertexID)
+    const contagem = new THREE.BufferAttribute(new Uint8Array(CELULA), 1);
+    this.codigos = [];
+    const pontos = (desenho: Desenho) => {
+      const g = new THREE.InstancedBufferGeometry();
+      g.setAttribute('position', contagem);
+      const codigos = new THREE.InstancedBufferAttribute(new Float32Array(IMAGENS.length * OITAVAS * CELULAS), 1, false, 1);
+      codigos.setUsage(THREE.DynamicDrawUsage);
+      g.setAttribute('aCelula', codigos);
+      g.instanceCount = 0;
+      this.codigos.push(codigos);
+      // A ESFERA ENVOLVENTE À MÃO: sem ela o three a calcula ao ordenar a cena
+      // lendo y e z do atributo de um componente — o último vértice lê
+      // `undefined`, que vai parar num Vector3 do próprio three, e a partir
+      // daí TODO Vector3 da página passa a guardar os campos sem o atalho de
+      // número (o planejador da galáxia dobrava de ~4 para ~9 ms por quadro).
+      // Ninguém a usa: os pontos não são recortados e a ordem é a de `renderOrder`.
+      g.boundingSphere = new THREE.Sphere();
+      return new THREE.Points(g, material(desenho));
+    };
+    this.pontos = pontos('ponto');
+    this.esmaece = pontos('esmaece');
+    for (const p of [this.pontos, this.esmaece]) {
       p.frustumCulled = false;
       p.visible = false;
     }
@@ -3675,18 +3835,21 @@ class Faixa {
     });
   }
 
-  /** os pontos: em cada imagem, o trecho de oitavas que `imagensDaJanela` escolheu */
-  acenderPontos(porOitava: number, opacos: Int32Array, trechos: Int32Array) {
-    const bloco = OITAVAS * PEDRAS_POR_TIER.cinema;
-    for (let m = 0; m < IMAGENS.length; m++) {
-      // os opacos (x < `X_PLENO`) moram mais perto: menos imagens que os que esmaecem
-      for (const [p, t] of [[this.pontos[m]!, opacos], [this.esmaece[m]!, trechos]] as const) {
-        const k0 = t[2 * m]!;
-        const k1 = t[2 * m + 1]!;
-        p.visible = k0 >= 0;
-        if (k0 >= 0) p.geometry.setDrawRange(m * bloco + k0 * porOitava, (k1 - k0 + 1) * porOitava);
+  /** os pontos: as células que `celulasDoQuadro` escolheu */
+  acenderPontos(vista: VistaDasCelulas) {
+    const [op, es] = this.codigos.map((c) => c.array as Float32Array);
+    const ns = celulasDoQuadro(vista, this.celulas, op!, es!);
+    [this.pontos, this.esmaece].forEach((p, k) => {
+      const n = ns[k]!;
+      (p.geometry as THREE.InstancedBufferGeometry).instanceCount = n;
+      p.visible = n > 0;
+      if (n > 0) {
+        const a = this.codigos[k]!;
+        a.clearUpdateRanges();
+        a.addUpdateRange(0, n);
+        a.needsUpdate = true;
       }
-    }
+    });
   }
 
   /**
@@ -3834,8 +3997,9 @@ class Faixa {
   }
 
   dispose() {
-    for (const m of [...this.pontos, ...this.esmaece, ...this.malhas, this.pre]) m.geometry.dispose();
-    for (const m of [this.pontos[0]!, this.esmaece[0]!, this.pre]) (m.material as THREE.ShaderMaterial).dispose();
+    for (const m of [this.pontos, this.esmaece, ...this.malhas, this.pre]) m.geometry.dispose();
+    for (const m of [this.pontos, this.esmaece, this.pre]) (m.material as THREE.ShaderMaterial).dispose();
+    this.permutacao.dispose();
     for (const m of [...this.leves, ...this.reservas]) m.dispose();
     for (const f of FORMAS.values()) {
       f.geo.dispose();
@@ -3871,9 +4035,6 @@ export class PedrasDoAnel {
   private readonly nevoa: THREE.Mesh;
   /** a última câmera que desenhou os pedaços — a escolha de perto lê o cone dela */
   private camera: THREE.Camera | null = null;
-  /** o trecho de oitavas de cada imagem do ladrilho neste quadro (`imagensDaJanela`) */
-  private readonly trechos = new Int32Array(2 * IMAGENS.length);
-  private readonly opacos = new Int32Array(2 * IMAGENS.length);
   private readonly lente: Lente = { m: new Float64Array(9), p00: 1, p11: 1, pxPorRad: 400, ok: false };
   private readonly m4 = new THREE.Matrix4();
   private readonly tela = new THREE.Vector4();
@@ -3931,6 +4092,7 @@ const float R_EXT = ${opcoes.rExt};`;
       uPoloVista: { value: new THREE.Vector3(0, 0, 1) },
       uPre: { value: null },
       uPrePronto: { value: 0 },
+      uPermutacao: { value: null },
     };
     const pre = { PRE_W, PRE_H: linhasDoPrePasso(), PRE_BANDAS };
     const material = (desenho: Desenho, formas?: THREE.DataTexture) => {
@@ -3983,9 +4145,10 @@ const float R_EXT = ${opcoes.rExt};`;
       return m;
     };
     this.faixa = new Faixa(material);
+    this.uniforms.uPermutacao!.value = this.faixa.permutacao;
     // DA FRENTE PARA TRÁS: as malhas de perto; os pontos (que descartam) por
     // último, depois das que a GPU sabe esconder
-    const ordem: THREE.Object3D[] = [...this.faixa.malhas, ...this.faixa.pontos];
+    const ordem: THREE.Object3D[] = [...this.faixa.malhas, this.faixa.pontos];
     const lerTela = (renderer: THREE.WebGLRenderer, camera: THREE.Camera) => {
       // o raio na tela (px por radiano) e a janela saem do alvo em que o
       // quadro é desenhado; a câmera fica para a escolha do próximo quadro
@@ -3999,7 +4162,7 @@ const float R_EXT = ${opcoes.rExt};`;
       m.onBeforeRender = (renderer, _cena, camera) => lerTela(renderer, camera);
       this.malha.add(m);
     });
-    for (const p of this.faixa.esmaece) p.onBeforeRender = (renderer, _cena, camera) => lerTela(renderer, camera);
+    this.faixa.esmaece.onBeforeRender = (renderer, _cena, camera) => lerTela(renderer, camera);
     this.folha = new THREE.Mesh(
       geometriaDaFolha(),
       new THREE.ShaderMaterial({
@@ -4036,12 +4199,12 @@ const float R_EXT = ${opcoes.rExt};`;
     // de todos os pedaços) e os que estão entrando (na frente dela)
     this.folha.renderOrder = 10;
     this.nevoa.renderOrder = 11;
-    for (const p of this.faixa.esmaece) p.renderOrder = 12;
+    this.faixa.esmaece.renderOrder = 12;
     for (const m of [this.folha, this.nevoa]) {
       m.frustumCulled = false;
       m.visible = false;
     }
-    this.malha.add(this.folha, this.nevoa, ...this.faixa.esmaece);
+    this.malha.add(this.folha, this.nevoa, this.faixa.esmaece);
     this.cenaPre.add(this.faixa.pre);
     this.malha.matrixAutoUpdate = false;
     this.malha.visible = false;
@@ -4157,9 +4320,10 @@ const float R_EXT = ${opcoes.rExt};`;
 
     const porOitava = PEDRAS_POR_TIER[q.tier];
     this.lerLente(theta);
-    imagensDaJanela(ativas, rhoKm, zKm, espessura, this.lente, this.opacos, X_PLENO);
-    imagensDaJanela(ativas, rhoKm, zKm, espessura, this.lente, this.trechos);
-    this.faixa.acenderPontos(porOitava, this.opacos, this.trechos);
+    // a maior espessura que a janela (≤ 1,5 ladrilho da maior oitava) alcança
+    const alcance = 1.5 * TABELA_DE_OITAVAS[0]!.ladoRadial;
+    const espessuraKm = Math.max(espessura, regiaoDasPedras(rhoKm - alcance).espessura, regiaoDasPedras(rhoKm + alcance).espessura);
+    this.faixa.acenderPontos({ ativas, porOitava, rhoKm, zKm, espessuraKm, lente: this.lente, fr: this.fr, fs: this.fs, gi: this.gi, gf: this.gf });
     this.faixa.escolherDePerto(ativas, porOitava, rhoKm, R0_KM * theta, zKm, espessura, this.lente, this.fr, this.fs, this.gi, this.gf, this.tauMaximo, q.tier === 'performance' ? 1 : 0);
     const u = this.uniforms;
     (u.uDirSolLocal!.value as THREE.Vector3).copy(q.dirSolLocal);
