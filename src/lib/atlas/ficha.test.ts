@@ -932,7 +932,7 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     // o tipo do catálogo, medido, uma vez só
     expect(l.get('tipo espectral')!.valor).toBe(arc.s);
     expect(l.get('tipo espectral')!.procedencia).toBe('medido');
-    expect(l.get('temperatura')!.fonte).toContain('Alonso');
+    expect(l.get('temperatura')!.fonte).toContain('van Belle');
     expect(l.get('raio')!.procedencia).toBe('derivado');
     expect(l.get('raio')!.fonte).toContain('Stefan-Boltzmann');
     expect(l.get('luminosidade')!.procedencia).toBe('derivado');
