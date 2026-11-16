@@ -468,7 +468,7 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
       'é a dívida escrita, o mesmo molde da poeira',
   },
   {
-    // item 139: a lajota volumétrica não emite gl_PointSize — ela desenha
+    // item 139 (só com `?pedras=0`): a lajota volumétrica não emite gl_PointSize — ela desenha
     // em QUAD aditivo, que é exatamente o buraco que a SEGUNDA varredura
     // (`PADRAO_DE_QUAD_ADITIVO`) existe para fechar.
     id: 'lajota-do-anel-de-saturno',
@@ -490,7 +490,7 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
       'escrita, o mesmo molde das plumas',
   },
   {
-    // a prova `?pedras=3d`: os pedaços do anel no tamanho e no lugar medidos
+    // os pedaços do anel no tamanho e no lugar medidos (o padrão desde 14/11)
     id: 'pedras-do-anel-de-saturno',
     nome: 'os pedaços de gelo do anel de Saturno vistos de perto (pontos de longe, malhas de perto)',
     arquivos: ['src/three/world/corpos/pedrasDoAnel.ts'],

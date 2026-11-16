@@ -439,7 +439,7 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
   },
   {
     id: 'lajota-do-anel-de-saturno',
-    nome: 'as partículas e pedras de gelo de dentro do anel',
+    nome: 'as partículas e pedras de gelo de dentro do anel (só com ?pedras=0)',
     classe: 'instrumento',
     fator: 24,
     fatorDeBrilho: null,
@@ -457,11 +457,11 @@ export const CADASTRO_DE_ESCALA: readonly EscalaDeclarada[] = [
   },
   {
     id: 'pedras-do-anel-de-saturno',
-    nome: 'as pedras 3D de dentro do anel (só com ?pedras=3d)',
+    nome: 'as pedras 3D de dentro do anel',
     classe: 'instrumento',
     fator: 1,
     fatorDeBrilho: null,
-    endereco: 'src/three/world/corpos/pedrasDoAnel.ts:76',
+    endereco: 'src/three/world/corpos/pedrasDoAnel.ts:81',
     razao:
       'NÃO HÁ EXAGERO DE TAMANHO: os pedaços têm de 1 cm a 10 m de raio, na lei ' +
       'de tamanhos medida (n ∝ a⁻³), na quantidade que o perfil medido do anel ' +

@@ -1,6 +1,6 @@
-// Serve: lei — as pedras 3D do anel (`?pedras=3d`) só mostram o que o anel tem, em lugar que não depende da câmera, e o disco cede só o que elas carregam
+// Serve: lei — as pedras 3D do anel (o padrão; `?pedras=0` volta à lajota) só mostram o que o anel tem, em lugar que não depende da câmera, e o disco cede só o que elas carregam
 import * as THREE from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
 import {
   ANEL_FRAG,
@@ -65,7 +65,7 @@ import {
   SOMBRA_PX_SOME,
   SOMBRA_PX_INTEIRA,
 } from './pedrasDoAnel';
-import { REGIOES_DO_ANEL } from './gigante';
+import { REGIOES_DO_ANEL, U_PERFIL_BASE, U_PERFIL_ESCALA, regiaoDoAnelCpu } from './gigante';
 
 const KM_POR_RAIO = BODY_AXES.saturn[0]!;
 
@@ -77,6 +77,9 @@ function pedrasDeTeste() {
     glslCamadaDoAnel: GLSL_CAMADA_DO_ANEL,
     rInt: ANEL_SATURNO.rInt,
     rExt: ANEL_SATURNO.rExt,
+    uEscala: U_PERFIL_ESCALA,
+    uBase: U_PERFIL_BASE,
+    fatorTau: (km) => regiaoDoAnelCpu(km).fatorTau,
   });
 }
 
@@ -94,10 +97,26 @@ function quadro(rKm: number, alturaKm: number, jd = 2446471) {
 }
 
 describe('pedras 3D do anel', () => {
-  it('sem ?pedras=3d nada muda: o disco não carrega a cessão', () => {
-    expect(PEDRAS_3D).toBe(false);
-    expect(ANEL_FRAG).not.toContain('cederAsPedras');
-    expect(ANEL_FRAG).toContain('gl_FragColor = vec4(direta + doGlobo, clamp(camada.y, 0.0, 1.0));');
+  it('as pedras são o padrão: sem parâmetro (e fora do navegador) o disco carrega a cessão', () => {
+    expect(PEDRAS_3D).toBe(true);
+    expect(ANEL_FRAG).toContain('cederAsPedras(clamp(camada.y, 0.0, 1.0), tau)');
+  });
+
+  it('com ?pedras=0 nada muda do de antes: o disco não carrega a cessão', async () => {
+    vi.stubGlobal('window', { location: { search: '?pedras=0' } });
+    vi.resetModules();
+    try {
+      const volta = await import('./pedrasDoAnel');
+      const giganteDeAntes = await import('./gigante');
+      expect(volta.PEDRAS_3D).toBe(false);
+      expect(giganteDeAntes.ANEL_FRAG).not.toContain('cederAsPedras');
+      expect(giganteDeAntes.ANEL_FRAG).toContain(
+        'gl_FragColor = vec4(direta + doGlobo, clamp(camada.y, 0.0, 1.0));'
+      );
+    } finally {
+      vi.unstubAllGlobals();
+      vi.resetModules();
+    }
   });
 
   it('cada pedaço entra com opacidade zero na borda da janela, opaco uma oitava dentro, e não sai de perto', () => {

@@ -1,5 +1,5 @@
 // ============================================================
-// AS PEDRAS DO ANEL EM 3D (`?pedras=3d`, 14/11) — de perto, o anel de
+// AS PEDRAS DO ANEL EM 3D (14/11, o padrão; `?pedras=0` volta à lajota) — de perto, o anel de
 // Saturno se desfaz nos pedaços de gelo que ele é, e o disco liso cede a
 // luz que eles passam a carregar.
 //
@@ -11,9 +11,9 @@
 // de id i tem o mesmo lugar, tamanho e forma de onde quer que se olhe — a
 // câmera só ESCOLHE quais pedaços desenhar.
 //
-// O NOVO ENTRA AO LADO: sem o parâmetro a casa monta a lajota volumétrica
-// de sempre (`lajotaDoAnel.ts`, visual aprovado) e o `ANEL_FRAG` sai byte a
-// byte o de antes.
+// O DE ANTES FICA AO LADO: com `?pedras=0` a casa monta a lajota
+// volumétrica de antes (`lajotaDoAnel.ts`) e o `ANEL_FRAG` sai byte a byte
+// o de antes.
 //
 // O DESENHO:
 //
@@ -54,10 +54,15 @@ import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
 import type { QualityLevel } from '../../core/engine';
 
-/** O interruptor: só `?pedras=3d` liga a peça nova. */
+/**
+ * O interruptor — as pedras 3D são o padrão desde que o dono as aprovou
+ * pela prancha (`capturas/aneis-de-perto-14-11/`). `?pedras=0` devolve a
+ * lajota e o disco de antes, byte a byte; `?pedras=3d` segue aceito. Fora
+ * do navegador (testes em Node, sem `window`) vale o padrão: as pedras.
+ */
 export const PEDRAS_3D: boolean =
-  typeof window !== 'undefined' &&
-  new URLSearchParams(window.location.search).get('pedras') === '3d';
+  typeof window === 'undefined' ||
+  new URLSearchParams(window.location.search).get('pedras') !== '0';
 
 const KM_POR_RAIO = BODY_AXES.saturn[0]!;
 
@@ -1176,7 +1181,7 @@ const glslRegioes = (campo: 'espessura' | 'esteira') =>
 
 /**
  * AS CONTAS PURAS DOS PEDAÇOS EM GLSL (sem uniforme): a região, a cessão
- * pela distância, o peso e a profundidade óptica da névoa. Entram nas pedras e, com `?pedras=3d`, no `ANEL_FRAG`.
+ * pela distância, o peso e a profundidade óptica da névoa. Entram nas pedras e, sem `?pedras=0`, no `ANEL_FRAG`.
  */
 const GLSL_PURO_DAS_PEDRAS = /* glsl */ `
 const float P_R0 = ${glslF(R0_KM)};
@@ -2505,7 +2510,7 @@ void main() {
 `;
 
 /**
- * A CESSÃO DO DISCO EM GLSL — entra no `ANEL_FRAG` só com `?pedras=3d`.
+ * A CESSÃO DO DISCO EM GLSL — entra no `ANEL_FRAG` salvo com `?pedras=0`.
  * `uCamDasPedras` = (ρ da câmera em km, θ dela, altura em km, a fração do
  * campo que o tier desenha — 0 com os pedaços fora do desenho). A distância
  * é a da régua do ladrilho, como no vértice. O disco cede só o que os
@@ -2584,7 +2589,7 @@ export function uniformesDaSombraNoDisco(): Record<string, THREE.IUniform> {
 }
 
 /**
- * O VÉRTICE DO DISCO com `?pedras=3d`: o de sempre (`ANEL_VERT`) mais o
+ * O VÉRTICE DO DISCO com as pedras (sem `?pedras=0`): o de sempre (`ANEL_VERT`) mais o
  * ponto relativo à câmera em km, com a câmera em duas partes (a parte
  * float32 e o resto, da CPU em dupla precisão) — a cessão lê a distância
  * à câmera sem os ~15 m de grão do vPos.
@@ -3514,7 +3519,7 @@ float solDaFresta(highp sampler3D t, int linha, vec3 s, float c, float vis) {
 `;
 
 /**
- * O QUE SÓ SE ASSA COM `?pedras=3d`: as constantes do GLSL que saem de
+ * O QUE SÓ SE ASSA COM AS PEDRAS MONTADAS: as constantes do GLSL que saem de
  * contas (a escala dos agregados, a altura média do grão, as faces dos
  * blocos, o raio e a oclusão média da forma de longe) entram no lugar de
  * `ASSADOS_DAS_PEDRAS` quando os materiais são montados — a carga do módulo
@@ -4462,7 +4467,10 @@ export class PedrasDoAnel {
   private readonly chaveDosG = [Number.NaN, Number.NaN];
   private readonly corAntes = new THREE.Color();
 
-  constructor(private readonly opcoes: OpcoesDasPedras) {
+  private readonly opcoes: OpcoesDasPedras;
+
+  constructor(opcoes: OpcoesDasPedras) {
+    this.opcoes = opcoes;
     const constantes = `${opcoes.glslConstantesDoAnel}
 ${opcoes.glslRegiaoDoAnel}
 ${opcoes.glslCamadaDoAnel}

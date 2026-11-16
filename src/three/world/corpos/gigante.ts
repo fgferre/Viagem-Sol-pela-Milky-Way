@@ -1855,11 +1855,11 @@ export class GiganteResolvido {
   private tenues: AneisTenuesDeSaturno | null = null;
   /** o quadro dos dois véus, REUSADO (zero alocação por tick, M4 da casa) */
   private quadroDosTenues: QuadroDosAneisTenues | null = null;
-  /** item 139: a lajota volumétrica — só Saturno a tem (`lajotaDoAnel.ts`) */
+  /** item 139: a lajota volumétrica — só Saturno, só com `?pedras=0` (`lajotaDoAnel.ts`) */
   private lajota: LajotaDoAnel | null = null;
   /** o quadro da lajota, REUSADO (zero alocação por tick, M4 da casa) */
   private quadroDaLajota: QuadroDaLajota | null = null;
-  /** `?pedras=3d`: as pedras 3D no lugar da lajota (`pedrasDoAnel.ts`) */
+  /** as pedras 3D (o padrão) no lugar da lajota (`pedrasDoAnel.ts`) */
   private pedras: PedrasDoAnel | null = null;
   /** item 139: o CHÃO do anel para o palco (o ponto do plano mais próximo
    *  da câmera), REUSADO — nasce com a lajota, e só com ela */
@@ -2323,7 +2323,7 @@ export class GiganteResolvido {
                 uMediasDoBrilho: { value: new Float32Array(REGIOES_DO_ANEL.length * 3).fill(1) },
               }
             : {}),
-          // só com `?pedras=3d`: a cessão do disco às pedras
+          // com as pedras (sem `?pedras=0`): a cessão do disco a elas
           ...(placa && PEDRAS_3D
             ? {
                 uCamDasPedras: { value: new THREE.Vector4() },
@@ -2358,7 +2358,8 @@ export class GiganteResolvido {
         // item 139 — a lajota volumétrica: as partículas e pedras de gelo
         // de DENTRO do anel. Nasce com o anel e vive escondida: só entra
         // no desenho com a câmera rente ao plano (ver `atualizar` dela).
-        // Com `?pedras=3d` quem mora ali são as pedras 3D, no lugar dela.
+        // Hoje quem mora ali são as pedras 3D, no lugar dela; `?pedras=0`
+        // devolve a lajota.
         if (PEDRAS_3D) {
           this.pedras = new PedrasDoAnel({
             glslSombraDoPlaneta: GLSL_SOMBRA_DO_PLANETA_NO_ANEL,
