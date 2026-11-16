@@ -2812,6 +2812,10 @@ export interface QuadroDasPedras {
   tier: QualityLevel;
   /** o relógio do app (dia juliano) — o cisalhamento anda com ele */
   jd: number;
+  /** o Atlas escolheu o planeta (15/11): o assado anda em fatias mesmo de longe */
+  destinoDoAtlas?: boolean;
+  /** o destino do Atlas é o ponto do anel: fatias largas, e nunca de uma vez */
+  anelNoDestino?: boolean;
 }
 
 export interface OpcoesDasPedras {
@@ -2844,7 +2848,16 @@ const RAIO_MAX_KM = 160_000;
  */
 const GATILHO_DO_ASSADO_KM = 700_000;
 /** a CPU que o assado toma por quadro, ms (`assarUmPouco`) */
-const FATIA_DO_ASSADO_MS = 8;
+export const FATIA_DO_ASSADO_MS = 8;
+/**
+ * A FATIA DA CHEGADA AO ANEL, ms (15/11): com o ponto do anel por destino
+ * (o botão "Anéis" da ficha, o `?foco=aneis-de-saturno`), o que falta do
+ * assado corre pela rampa da câmera e depois dela, nunca num quadro só —
+ * os pedaços entram alguns décimos de segundo depois, e até lá o disco
+ * não lhes cede nada (`cessao.w`), então não há buraco. O quadro fica
+ * perto dos 50 ms em vez do segundo inteiro de tela parada.
+ */
+export const FATIA_DA_CHEGADA_MS = 30;
 /** a distância da câmera à faixa de raio dos pedaços, no plano do anel, km */
 function distanciaDoAnelKm(rhoKm: number, zKm: number): number {
   return Math.hypot(Math.max(RAIO_MIN_KM - rhoKm, rhoKm - RAIO_MAX_KM, 0), zKm);
@@ -4893,8 +4906,11 @@ const float R_EXT = ${opcoes.rExt};`;
     // O ASSADO É NÍVEL DE DETALHE: em fatias com a câmera rumo ao anel; de
     // uma vez se ela chegou antes (teletransporte, seek de filme)
     if (!this.faixa) {
-      if (ativas > 0 || forca > 0) this.assarJa();
-      else if (distanciaDoAnelKm(rhoKm, zKm) < GATILHO_DO_ASSADO_KM) this.assarUmPouco(FATIA_DO_ASSADO_MS);
+      if (q.anelNoDestino) this.assarUmPouco(FATIA_DA_CHEGADA_MS);
+      else if (ativas > 0 || forca > 0) this.assarJa();
+      else if (q.destinoDoAtlas || distanciaDoAnelKm(rhoKm, zKm) < GATILHO_DO_ASSADO_KM) {
+        this.assarUmPouco(FATIA_DO_ASSADO_MS);
+      }
     }
     const faixa = this.faixa;
     this.malha.visible = faixa !== null && (ativas > 0 || forca > 0);

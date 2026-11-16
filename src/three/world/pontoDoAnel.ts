@@ -28,6 +28,12 @@ import type { PoseDaSonda } from './sondas';
 
 /** o id do link (`?foco=aneis-de-saturno`) e da lista da busca */
 export const ID_DO_PONTO_DO_ANEL = 'aneis-de-saturno';
+/** o planeta do ponto: a volta do Esc e da ficha, e o único corpo com o botão "Anéis" */
+export const PLANETA_DO_PONTO_DO_ANEL = 'saturn';
+/** o destino de anel do corpo `id` (o botão "Anéis" da ficha), ou `null` se ele não tem */
+export function pontoDoAnelDe(id: string | null): string | null {
+  return id === PLANETA_DO_PONTO_DO_ANEL ? ID_DO_PONTO_DO_ANEL : null;
+}
 /** o nome nas duas línguas (o cabeçalho e a chave do link) */
 export const NOME_DO_PONTO_DO_ANEL = { nome: 'Anéis de Saturno', nomeEn: "Saturn's rings" } as const;
 /** o raio do ponto no plano do anel, km: 2,13 raios equatoriais, no anel A */

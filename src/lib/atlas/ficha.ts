@@ -1328,6 +1328,16 @@ export function montarFichaDeSonda(sonda: Sonda, jd: number | null | undefined):
   return { id: `sonda:${sonda.id}`, nome: sonda.nome, classe: classeEmTexto('sonda'), secoes };
 }
 
+/**
+ * A FICHA DO PONTO DO ANEL DE SATURNO (15/11/2026): o nome e a classe, sem
+ * seção — os números do anel moram na ficha do planeta, e a ficha diz que
+ * este lugar não tem dados próprios em vez de inventá-los. Ela existe para
+ * o cabeçalho e para a volta ao planeta, no topo dela.
+ */
+export function montarFichaDoAnel(nome: string): Ficha {
+  return { id: 'anel', nome, classe: classeEmTexto('anel'), secoes: [] };
+}
+
 /** UA com as casas que a distância pede (0,587 · 4,34 · 35,0) */
 function emUa(x: number): string {
   const casas = x < 1 ? 3 : x < 10 ? 2 : 1;

@@ -84,7 +84,7 @@ import { AneisTenuesDeSaturno } from './aneisTenues';
 import type { QuadroDosAneisTenues } from './aneisTenues';
 import { LajotaDoAnel, VOLUME_DA_LAJOTA } from './lajotaDoAnel';
 import type { QuadroDaLajota } from './lajotaDoAnel';
-import { ANEL_VERT_DAS_PEDRAS, GLSL_CESSAO_DAS_PEDRAS, PEDRAS_3D, PedrasDoAnel, regiaoDasPedras, uniformesDaSombraNoDisco } from './pedrasDoAnel';
+import { ANEL_VERT_DAS_PEDRAS, GLSL_CESSAO_DAS_PEDRAS, FATIA_DA_CHEGADA_MS, FATIA_DO_ASSADO_MS, PEDRAS_3D, PedrasDoAnel, regiaoDasPedras, uniformesDaSombraNoDisco } from './pedrasDoAnel';
 import { FitaDosPicos, GLSL_RELEVO_DO_ANEL, RELEVO_DO_ANEL, uniformesDoRelevo, vertDaFita } from './relevoDoAnel';
 import { posicaoKepler } from '../../../lib/atlas/kepler';
 import { cessaoAlvo, gateBinario, saltoGuardado } from './terra';
@@ -2091,6 +2091,14 @@ export class GiganteResolvido {
     // com a câmera longe do plano, o palco não o vê
     e.superficieDoAnel = null;
     if (emQuadro) this.posicionar(q);
+    // OS PEDAÇOS DO ANEL ASSAM DESDE A ESCOLHA (15/11): com o planeta
+    // escolhido no Atlas o botão "Anéis" está à vista, e o salto até o anel
+    // não pode achar o assado por fazer. Em quadro quem fatia é o
+    // `atualizar` dos pedaços (`posicionar`); aqui, o planeta longe demais
+    // para estar em quadro
+    else if (q.destinoDoAtlas) {
+      this.pedras?.assarUmPouco(q.anelNoDestino ? FATIA_DA_CHEGADA_MS : FATIA_DO_ASSADO_MS);
+    }
     return e;
   }
 
@@ -2256,7 +2264,12 @@ export class GiganteResolvido {
         l.tier = this.tierVivo();
         if (this.pedras) {
           this.pedras.fixarNoAnel(this.anel.matrix);
-          this.pedras.atualizar({ ...l, jd: this.jdEscrito });
+          this.pedras.atualizar({
+            ...l,
+            jd: this.jdEscrito,
+            destinoDoAtlas: q.destinoDoAtlas,
+            anelNoDestino: q.anelNoDestino,
+          });
           (ua.uCamDasPedras!.value as THREE.Vector4).copy(this.pedras.cessao);
           (ua.uCamAltaDasPedras!.value as THREE.Vector3).copy(this.pedras.camAlta);
           (ua.uCamRestoDasPedras!.value as THREE.Vector3).copy(this.pedras.camResto);

@@ -441,6 +441,9 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.aproximarAria': 'Closer: frame {nome} up close',
   'ficha.sistema': 'System',
   'ficha.sistemaAria': 'Back to the solar system framing',
+  'ficha.aneis': 'Rings',
+  'ficha.aneisAria': "Rings: enter the layer of ice in {nome}'s rings",
+  'ficha.voltarAoPlanetaAria': 'Back to {nome}: the planet up close',
   'ficha.relevoDaCor': '◐ Invented relief',
   'ficha.relevoDaCorAria':
     "Turn on relief invented from the colour of {nome}'s photo — there is no relief map",

@@ -385,6 +385,31 @@
 .atlas-ficha-escada .hud-btn {
   min-height: 2.75rem;
 }
+/* A FILEIRA NUNCA QUEBRA (gosto do dono, 01/10; o terceiro botão,
+   "Anéis", 15/11): coube, fica como sempre foi; não coube (a ficha mede,
+   `FichaDoObjeto.tsx`), aperta em degraus, cada um só se o anterior não
+   bastou. 1: os botões dividem a largura da fileira por igual, com menos
+   respiro; 2: sem os ícones; 3: o rótulo corta com reticências. */
+.atlas-ficha-escada[data-apertada] .hud-btn {
+  flex: 1 1 0;
+  justify-content: center;
+  padding-inline: 0.5rem;
+}
+.atlas-ficha-escada:is([data-apertada='2'], [data-apertada='3']) {
+  gap: 0.25rem;
+}
+.atlas-ficha-escada:is([data-apertada='2'], [data-apertada='3']) .hud-btn > svg {
+  display: none;
+}
+.atlas-ficha-escada[data-apertada='3'] .hud-btn {
+  min-width: 0;
+}
+.atlas-ficha-escada[data-apertada='3'] .hud-btn > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* O RÓTULO DA LINHA NASCE MINÚSCULO DO DICIONÁRIO ("distância — Sol",
    "gravidade"…) — a pele B pede caixa normal com a PRIMEIRA letra

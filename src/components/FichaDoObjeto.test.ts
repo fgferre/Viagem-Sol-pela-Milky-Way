@@ -11,6 +11,10 @@
 // ============================================================
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { NOMES_DOS_CORPOS } from '../three/atlasConfig';
+import { ID_DO_PONTO_DO_ANEL, pontoDoAnelDe } from '../three/world/pontoDoAnel';
+import { PT } from '../lib/idioma/pt';
+import { EN } from '../lib/idioma/en';
 
 const FONTE = readFileSync(new URL('./FichaDoObjeto.tsx', import.meta.url), 'utf8');
 
@@ -74,5 +78,31 @@ describe('o botão "Aproximar" segue só a escada', () => {
   it('a ficha não soma uma segunda regra à `podeAproximar`', () => {
     expect(FONTE).toContain('{podeAproximar && (');
     expect(FONTE).not.toContain('estrelaVisitavelPorNome(estrelaEmFoco)');
+  });
+});
+
+// O BOTÃO "ANÉIS" (15/11): o salto ao ponto do anel, só no corpo que tem
+// esse destino — a regra mora no destino (`pontoDoAnelDe`), não na ficha.
+describe('o botão "Anéis" só aparece onde há destino de anel', () => {
+  const APP = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
+
+  it('a ficha só o desenha com `onAneis`, e o App só o passa pelo destino do corpo em foco', () => {
+    expect(FONTE).toContain('{onAneis && (');
+    expect(APP).toContain('const aneisDoFoco = pontoDoAnelDe(escada.corpoId);');
+    expect(APP).toContain('onAneis={aneisDoFoco ? () => directorRef.current?.focarNoCorpo(aneisDoFoco) : null}');
+  });
+
+  it('dos corpos do Atlas, só Saturno tem o destino', () => {
+    const comAnel = Object.keys(NOMES_DOS_CORPOS).filter((id) => pontoDoAnelDe(id) !== null);
+    expect(comAnel).toEqual(['saturn']);
+    expect(pontoDoAnelDe('saturn')).toBe(ID_DO_PONTO_DO_ANEL);
+    expect(pontoDoAnelDe(null)).toBeNull();
+  });
+
+  it('as frases novas existem nas duas línguas', () => {
+    for (const chave of ['ficha.aneis', 'ficha.aneisAria', 'ficha.voltarAoPlanetaAria'] as const) {
+      expect(PT[chave]).toBeTruthy();
+      expect(EN[chave]).toBeTruthy();
+    }
   });
 });

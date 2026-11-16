@@ -56,6 +56,7 @@ export function quadroDoPalcoVazio(): QuadroDoPalco {
     ligado: false,
     focoDoAtlas: false,
     destinoDoAtlas: false,
+    anelNoDestino: false,
     vizinhoDoAtlas: false,
     pedidoDoRoteiro: false,
     politica: 'assistida',
@@ -156,6 +157,8 @@ export interface FiosDoPalco {
    * pede o degrau da tela como qualquer vizinho.
    */
   noDestino: (id: string) => boolean;
+  /** o destino é um ponto do anel DESTE corpo (15/11) — `MiraDaTela.anelNoDestino` */
+  noAnel?: (id: string) => boolean;
   /**
    * O SISTEMA do foco (`corpoNaVizinhancaDoAtlas`), já com a rede liberada
    * pelo aparelho: armado, o corpo pede o teto na última vez da fila.
@@ -187,6 +190,7 @@ export function passoDoPalco(
     noFoco,
     noRoteiro,
     noDestino,
+    noAnel,
     noVizinho,
     perturbar,
   } = fios;
@@ -199,6 +203,7 @@ export function passoDoPalco(
     // de 22/08, separada em duas mãos pelo item 115)
     quadro.focoDoAtlas = noFoco(posto.id);
     quadro.destinoDoAtlas = noDestino(posto.id);
+    quadro.anelNoDestino = noAnel?.(posto.id) ?? false;
     quadro.vizinhoDoAtlas = noVizinho(posto.id);
     quadro.pedidoDoRoteiro = noRoteiro(posto.id);
     const e = posto.corpo.atualizar(quadro);

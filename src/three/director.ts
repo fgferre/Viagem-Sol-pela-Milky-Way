@@ -724,7 +724,10 @@ export class Director {
     return corpoPedidoPeloRoteiro(this.phase, this.journeyT, id, this.filme.apoios);
   }
   private corpoNoDestino(id: string): boolean {
-    return corpoEDestinoDoAtlas(this.phase, this.escada.focoCorpoId, id);
+    return corpoEDestinoDoAtlas(this.phase, this.escada.corpoDoDestino, id);
+  }
+  private anelNoDestino(id: string): boolean {
+    return this.phase === 'atlas' && this.escada.anelDoDestino === id;
   }
   private corpoNaVizinhanca(id: string): boolean {
     return (
@@ -1330,6 +1333,7 @@ export class Director {
     this.corpoNoFoco = this.corpoNoFoco.bind(this);
     this.corpoNoRoteiro = this.corpoNoRoteiro.bind(this);
     this.corpoNoDestino = this.corpoNoDestino.bind(this);
+    this.anelNoDestino = this.anelNoDestino.bind(this);
     this.corpoNaVizinhanca = this.corpoNaVizinhanca.bind(this);
     this.events = events;
     this.engine = new Engine(canvas);
@@ -2780,6 +2784,10 @@ export class Director {
 
   subirDegrau(): boolean {
     return this.escada.subirDegrau();
+  }
+
+  voltarAoPlanetaDoAnel() {
+    this.escada.voltarAoPlanetaDoAnel();
   }
 
   /**
@@ -4288,6 +4296,7 @@ export class Director {
         noFoco: this.corpoNoFoco,
         noRoteiro: this.corpoNoRoteiro,
         noDestino: this.corpoNoDestino,
+        noAnel: this.anelNoDestino,
         noVizinho: this.corpoNaVizinhanca,
         perturbar: this.perturbarDoPalco,
       });

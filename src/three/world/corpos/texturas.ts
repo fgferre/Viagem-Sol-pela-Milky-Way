@@ -364,6 +364,9 @@ export interface MiraDaTela {
   meioConeDaTelaRad?: number;
   /** o Atlas está focado NESTE corpo — não na lua dele, não no pai */
   destinoDoAtlas?: boolean;
+  /** o destino do Atlas é um ponto do ANEL deste corpo (15/11): o assado
+   *  dos pedaços corre em fatias largas até o fim (`gigante.ts`) */
+  anelNoDestino?: boolean;
   /**
    * o corpo é do SISTEMA do foco do Atlas (`corpoNaVizinhancaDoAtlas`) e a
    * rede pode adiantá-lo: armado, ele pede o teto na última vez da fila

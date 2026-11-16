@@ -467,6 +467,9 @@ export const PT = {
   'ficha.aproximarAria': 'Aproximar: enquadrar {nome} de perto',
   'ficha.sistema': 'Sistema',
   'ficha.sistemaAria': 'Voltar ao enquadramento do sistema solar',
+  'ficha.aneis': 'Anéis',
+  'ficha.aneisAria': 'Anéis: entrar na camada de gelo dos anéis de {nome}',
+  'ficha.voltarAoPlanetaAria': 'Voltar a {nome}: o planeta de perto',
   'ficha.relevoDaCor': '◐ Relevo inventado',
   'ficha.relevoDaCorAria':
     'Ligar um relevo inventado a partir da cor da foto de {nome} — não existe mapa de relevo',

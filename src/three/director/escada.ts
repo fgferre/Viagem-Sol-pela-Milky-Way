@@ -52,6 +52,7 @@ import { poseDaSonda } from '../world/sondas';
 import {
   ID_DO_PONTO_DO_ANEL,
   NOME_DO_PONTO_DO_ANEL,
+  PLANETA_DO_PONTO_DO_ANEL,
   escolherPontoDoAnel,
   poseDoPontoDoAnel,
   type EscolhaDoPontoDoAnel,
@@ -665,7 +666,7 @@ export class Escada {
         tipo: 'anel' as const,
         nome: nomeNaLingua(NOME_DO_PONTO_DO_ANEL),
         pose: (jd: number) => {
-          const p = posicaoDoGiganteUA('saturn', jd, this.maquinaDoTempo.efemeride);
+          const p = posicaoDoGiganteUA(PLANETA_DO_PONTO_DO_ANEL, jd, this.maquinaDoTempo.efemeride);
           if (!p) return null;
           const centro = paraPc(p);
           this.escolhaDoAnel ??= escolherPontoDoAnel(centro, jd);
@@ -1737,6 +1738,10 @@ export class Escada {
       this.focarNoSistema();
       return true;
     }
+    if (degrau === 'anel') {
+      this.voltarAoPlanetaDoAnel();
+      return true;
+    }
     if (degrau === 'lua') {
       // sobe para o CORPO do pai (o degrau imediatamente acima)
       const entrada = LUAS_DO_SISTEMA.find((l) => l.id === this.focoCorpoId);
@@ -1765,6 +1770,31 @@ export class Escada {
     }
     this.focarNoSistema();
     return true;
+  }
+
+  /**
+   * DO PONTO DO ANEL DE VOLTA AO PLANETA (15/11): o Esc e o botão da ficha
+   * no anel. É o degrau de cima, como o da lua: o corpo do pai, de perto.
+   */
+  voltarAoPlanetaDoAnel() {
+    if (this.phase !== 'atlas' || this.pequeno?.tipo !== 'anel') return;
+    this.focoSonda = null;
+    this.focoCorpoId = PLANETA_DO_PONTO_DO_ANEL;
+    this.aproximarDoCorpo();
+  }
+
+  /**
+   * O CORPO QUE A CÂMERA VAI ENCONTRAR: o foco, ou o planeta do ponto do
+   * anel (15/11) — a carga antecipada dele (`corpoEDestinoDoAtlas`) e o
+   * assado dos pedaços em fatias desde que ele é escolhido, até a chegada.
+   */
+  get corpoDoDestino(): string | null {
+    return this.focoCorpoId ?? this.anelDoDestino;
+  }
+
+  /** o planeta cujo ANEL é o destino (o ponto do anel em foco), ou `null` */
+  get anelDoDestino(): string | null {
+    return this.pequeno?.tipo === 'anel' ? PLANETA_DO_PONTO_DO_ANEL : null;
   }
 
   /**

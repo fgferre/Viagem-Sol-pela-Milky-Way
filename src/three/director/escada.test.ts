@@ -726,6 +726,18 @@ describe('o ponto do anel de Saturno (15/11): chegar à mão até a camada', () 
     expect(daCamera.length() / KM).toBeLessThan(5);
   });
 
+  it('o Esc no anel volta ao planeta, de perto — como o da lua —, e o botão da ficha faz o mesmo', () => {
+    const { escada } = bancada({ comSaturno: true });
+    escada.visitarSonda(ID_DO_PONTO_DO_ANEL);
+    expect(escada.corpoDoDestino).toBe('saturn');
+    expect(escada.subirDegrau()).toBe(true);
+    expect(escada.escadaViva).toMatchObject({ degrau: 'corpo', corpoId: 'saturn' });
+    expect(escada.anelDoDestino).toBeNull();
+    escada.visitarSonda(ID_DO_PONTO_DO_ANEL);
+    escada.voltarAoPlanetaDoAnel();
+    expect(escada.escadaViva).toMatchObject({ degrau: 'corpo', corpoId: 'saturn' });
+  });
+
   it('o piso da roda fica em metros (2,5 m)', () => {
     const { escada, atlas } = bancada({ comSaturno: true });
     escada.visitarSonda(ID_DO_PONTO_DO_ANEL);

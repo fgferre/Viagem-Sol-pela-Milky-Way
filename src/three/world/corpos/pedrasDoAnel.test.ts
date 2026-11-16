@@ -427,7 +427,8 @@ describe('pedras 3D do anel', () => {
     expect(PedrasDoAnel.oitavasAtivas(1)).toBeLessThan(OITAVAS);
     expect(PedrasDoAnel.oitavasAtivas(0.003)).toBe(OITAVAS);
     p.dispose();
-  });
+    // assa tudo (1–2 s sozinho): com a suíte inteira em paralelo passou de 5 s e caiu no limite padrão
+  }, 30_000);
 
   it('as esteiras do disco aparecem abaixo de 25 km, antes de qualquer pedaço', () => {
     const p = pedrasDeTeste();
@@ -442,7 +443,7 @@ describe('pedras 3D do anel', () => {
     });
     expect(pedras).toBe(0);
     p.dispose();
-  });
+  }, 30_000);
 
   it('relógio parado, pedra parada; mexer a câmera não acumula cisalhamento', () => {
     const p = pedrasDeTeste();
@@ -455,6 +456,18 @@ describe('pedras 3D do anel', () => {
     // relógio andando: o cisalhamento anda, com o passo grampeado
     p.atualizar(quadro(128_500, 1.2, 2446471 + 1));
     expect(Array.from(u.uGf.value as Float32Array)).not.toEqual(gf);
+    p.dispose();
+  }, 30_000);
+
+  it('com o anel por destino do Atlas o assado nunca sai de uma vez, nem rente à camada (15/11)', async () => {
+    vi.resetModules();
+    const novo = await import('./pedrasDoAnel');
+    const p = pedrasDeTeste(novo.PedrasDoAnel);
+    // dentro da camada, onde sem o destino o assado sairia inteiro neste quadro
+    p.atualizar({ ...quadro(128_000, 0.001), anelNoDestino: true });
+    expect(p.pronto).toBe(false);
+    expect(p.malha.visible).toBe(false);
+    expect(p.cessao.w).toBe(0);
     p.dispose();
   });
 
