@@ -143,6 +143,9 @@ export function createChromo(ctx){
     '}'
   ].join('\n');
   chromoFragment = tuneLic(chromoFragment);
+  // a Forja (`stellarBody.ts`, `cirurgiaDoAssado`) troca o que o assado
+  // pinta; sem ela o gancho não existe e nada muda
+  if (ctx.cirurgiaDoAssado) chromoFragment = ctx.cirurgiaDoAssado(chromoFragment);
   var chromoMaterial = new THREE.ShaderMaterial({ uniforms: chromoUniforms, vertexShader: quadVertex, fragmentShader: chromoFragment });
   var chromoScene = makeFullscreenScene(chromoMaterial);
 
@@ -208,6 +211,7 @@ export function createChromo(ctx){
     '  gl_FragColor = vec4(sm.r, sm.g, sm.b, fib*0.5 + 0.5);',
     '}'
   ].join('\n');
+  if (ctx.cirurgiaDoSmear) smearFragment = ctx.cirurgiaDoSmear(smearFragment);
   var smearMaterial = new THREE.ShaderMaterial({ uniforms: smearUniforms, vertexShader: quadVertex, fragmentShader: smearFragment });
   var smearScene = makeFullscreenScene(smearMaterial);
 
@@ -307,5 +311,6 @@ export function createChromo(ctx){
     for (var i=0;i<charges.length;i++) bakeCharges[i].copy(charges[i]);
   }
   ctx.bakeSets = bakeSets;
+  ctx.chromoMaterial = chromoMaterial;
   return { bakeChromoSlice: bakeChromoSlice, snapshotBakeInputs: snapshotBakeInputs };
 }

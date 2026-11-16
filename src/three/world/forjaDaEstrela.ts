@@ -184,6 +184,43 @@ export function larguraDaBordaEmMu(aR: number): number {
   return Math.sqrt((2 * aR) / 10);
 }
 
+/**
+ * A LARGURA DO ASSADO da convecção (a textura equirretangular que o motor do
+ * Sol já assa, `sol/chromo.js`): ~8 texels por célula NA TELA no equador,
+ * 8·2π/A_tela, levada à potência de 2 mais próxima (em log₂) e presa entre
+ * 512 e 2048. A altura é a metade. Custo, não física: abaixo de ~8 texels a
+ * célula perde a borda; o detalhe mais fino que isso vem por pixel, de perto.
+ */
+export function larguraDoAssado(celulaNaTelaEmRaios: number): number {
+  const alvo = (8 * 2 * Math.PI) / Math.max(celulaNaTelaEmRaios, 1e-6);
+  return Math.min(2048, Math.max(512, 2 ** Math.round(Math.log2(alvo))));
+}
+
+/**
+ * O PICO DAS CÉLULAS QUENTES ENORMES das supergigantes, δ = ΔT/T: a mancha de
+ * Betelgeuse de Haubois et al. 2009 (A&A 508, 923; IOTA, banda H, 1,65 µm)
+ * carrega 8,5 % do fluxo em ~6 % da área — 1,42× o brilho médio
+ * NA BANDA H. Pela lei de Planck naquela banda, B(T(1+δ))/B(T) = 1,42 dá
+ * δ ≈ 0,15 a 3.600 K (~+540 K); no visível o mesmo δ sai ~2,6× mais claro
+ * (a mancha quase branca das imagens do ESO). Resolvido por bisseção.
+ */
+export const FLUXO_DA_MANCHA_QUENTE = 0.085;
+export const AREA_DA_MANCHA_QUENTE = 0.06;
+const LAMBDA_DA_BANDA_H_UM = 1.65;
+export function picoDasCelulasQuentes(teffK: number): number {
+  const alvo = FLUXO_DA_MANCHA_QUENTE / AREA_DA_MANCHA_QUENTE;
+  const x = 14388 / (LAMBDA_DA_BANDA_H_UM * teffK);
+  const razao = (d: number) => Math.expm1(x) / Math.expm1(x / (1 + d));
+  let lo = 0;
+  let hi = 1;
+  for (let i = 0; i < 60; i++) {
+    const m = (lo + hi) / 2;
+    if (razao(m) < alvo) lo = m;
+    else hi = m;
+  }
+  return (lo + hi) / 2;
+}
+
 export interface RegraDaForja {
   readonly celulaRealEmRaios: number;
   readonly celulaNaTelaEmRaios: number;
@@ -199,6 +236,10 @@ export interface RegraDaForja {
   readonly bordaEmMu: number;
   /** a desordem do escoamento (`desordemDaConveccao`), 0 a 1 */
   readonly desordem: number;
+  /** a largura do assado em texels (`larguraDoAssado`) */
+  readonly assado: number;
+  /** o pico δ das células quentes enormes (`picoDasCelulasQuentes`) */
+  readonly picoQuente: number;
 }
 
 /** O botão GRAVIDADE inteiro, de Teff, log g e raio. */
@@ -215,5 +256,7 @@ export function regraDaForja(teffK: number, logG: number, raioRsol: number): Reg
     ritmoProfundo: ritmoDaFervura(CELULA_PROFUNDA_EM_RAIOS),
     bordaEmMu: larguraDaBordaEmMu(a),
     desordem: desordemDaConveccao(logG),
+    assado: larguraDoAssado(celulaNaTelaEmRaios(a)),
+    picoQuente: picoDasCelulasQuentes(teffK),
   };
 }

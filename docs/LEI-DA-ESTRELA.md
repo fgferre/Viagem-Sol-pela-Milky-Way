@@ -1318,6 +1318,20 @@ luminosidade. Cada camada do corpo é função contínua deles.
      smoothstep(0, μw, μ) com μw = √(2·Hp/R), Hp = A/10 (Trampedach: A/Hp de
      9 a 13) — Betelgeuse 0,16, Arcturus 0,08; onde há atmosfera estendida
      ela desce só até o brilho da casca rente (sem fresta). Forma ARTÍSTICA.
+   - *Assado (volta 4):* a convecção é pintada no assado que o motor do Sol
+     já tinha (textura que dá a volta na estrela, em fatias por quadro, com
+     troca suave), no lugar da cromosfera do Sol que as estrelas sem dínamo
+     assavam e jogavam fora; largura de ~8 texels por célula na tela, de 512
+     a 2.048 (Arcturus 1.024, 12 MB; supergigantes 512, 3 MB). O escoamento
+     da simulação do Sol (`granulation.js`) transporta o campo, atenuado
+     perto dos polos. A fotosfera só amostra e desenha a faixa por pixel
+     (meia largura de 4–10 % da célula, mais estreita que a do Sol — Ludwig &
+     Kučinskas 2012); uma oitava fina por pixel só de perto. Cor do contínuo
+     puro (o tom do filtro do Sol tem peso 0 na Forja): Arcturus sai no
+     laranja-pálido do corpo negro dela, as M mais vermelhas pelo TiO.
+   - *Células quentes:* nas supergigantes, manchas grandes de δ ≈ 0,148 a
+     3.600 K, resolvido pela lei de Planck na banda H a partir da mancha de
+     Haubois et al. 2009 (8,5 % do fluxo em ~6 % da área, +42 %).
    - *Estrela quente:* onde o contraste da regra dá zero (~9.300 K), a Forja
      não vale e fica o desenho de hoje — a beleza de Vega é do giro, o
      próximo botão.
@@ -1331,7 +1345,8 @@ luminosidade. Cada camada do corpo é função contínua deles.
      Haisch, mesma constante do dínamo) e a zero em 5.000 K — a rampa é
      ARTÍSTICA. O desenho é a casca de plumas que Betelgeuse já tinha, mais
      fraca e lisa na Forja (até ~1,7 R em Betelgeuse, dentro das medidas de
-     1,2–1,7 R), com o brilho proporcional ao excesso de raio até 0,3 R
+     1,2–1,7 R; fiapos claros que somem com a altura, sem nunca escurecer o
+     fundo), com o brilho proporcional ao excesso de raio até 0,3 R
      (camada rasa, pouco gás na linha de visada; ARTÍSTICO).
    - *Ponto da regra:* Betelgeuse deixa de ter caminho próprio (células de
      0,6 R e contraste 0,25 à mão viram 0,12 R e 18 % pela regra). O visual

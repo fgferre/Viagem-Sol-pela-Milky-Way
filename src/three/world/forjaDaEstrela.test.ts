@@ -8,7 +8,9 @@ import {
   desordemDaConveccao,
   fracaoEscura,
   larguraDaBordaEmMu,
+  larguraDoAssado,
   pesoDaEscalaProfunda,
+  picoDasCelulasQuentes,
   raioDaAtmosferaEmRaios,
   regraDaForja,
   ritmoDaFervura,
@@ -18,12 +20,16 @@ import {
   SOL_PARAMS,
   calibracaoDaForja,
   cirurgiaDaEstrela,
+  cirurgiaDoAssado,
+  cirurgiaDoSmear,
+  glslDoAssadoDaForja,
   cirurgiaDoRelevoDasGigantes,
   cirurgiasDaFotosfera,
   forjaDe,
   frenteDaAtmosfera,
   literalGlsl,
   pesoDoFiltro,
+  tierDaEstrela,
   type StellarParams,
 } from './stellarBody';
 
@@ -96,12 +102,15 @@ describe('a Forja, botão GRAVIDADE — a regra', () => {
 
   it('a textura alcança a fração escura da regra, até 0,34 (8.000 K)', () => {
     const quente = calibracaoDaForja(fracaoEscura(8000));
-    expect(quente.k).toBeGreaterThan(2.5);
-    expect(quente.k).toBeLessThan(3);
-    // a 0,5 (as frias) o k é o de antes
-    expect(calibracaoDaForja(0.5).k).toBeCloseTo(0.69, 1);
-    // a normalização anda com a desordem: as regiões somam variância
-    expect(calibracaoDaForja(0.5, 1).s).toBeGreaterThan(calibracaoDaForja(0.5, 0).s);
+    // com a faixa fina, só as células quase chapadas descem a 0,34 — ainda
+    // dentro da tabela medida, sem bater na ponta (1,2)
+    expect(quente.k).toBeGreaterThan(0.9);
+    expect(quente.k).toBeLessThan(1.2);
+    // a 0,5 (as frias): o domo estreito, k perto de zero
+    expect(calibracaoDaForja(0.5).k).toBeGreaterThanOrEqual(0);
+    expect(calibracaoDaForja(0.5).k).toBeLessThan(0.1);
+    // medida no assado: a desordem quase não muda a estatística
+    expect(Math.abs(calibracaoDaForja(0.5, 1).s - calibracaoDaForja(0.5, 0).s)).toBeLessThan(0.005);
   });
 
   it('a fervura: o ritmo de hoje na célula do Sol, o das gigantes a partir de 0,1 R', () => {
@@ -117,6 +126,29 @@ describe('a Forja, botão GRAVIDADE — a regra', () => {
     expect(pesoDaEscalaProfunda(-0.6)).toBe(1);
     expect(pesoDaEscalaProfunda(-0.07)).toBeGreaterThan(0.9);
     expect(pesoDaEscalaProfunda(-0.07)).toBeLessThan(1);
+  });
+
+  it('o assado: ~8 texels por célula na tela, potência de 2 entre 512 e 2048', () => {
+    // Arcturus (célula na tela ~0,042 R): 8·2π/0,042 ≈ 1.197 → 1.024
+    expect(larguraDoAssado(0.042)).toBe(1024);
+    // as supergigantes (~0,12 R): 419 → o piso, 512
+    expect(larguraDoAssado(0.12)).toBe(512);
+    // o grão do Sol na tela (1/30): 1.508 → 2.048, o teto
+    expect(larguraDoAssado(1 / 30)).toBe(2048);
+    expect(larguraDoAssado(1e-4)).toBe(2048);
+    for (const a of [0.01, 0.03, 0.05, 0.08, 0.2]) {
+      const w = larguraDoAssado(a);
+      expect(Math.log2(w) % 1).toBe(0);
+    }
+  });
+
+  it('a célula quente da supergigante: 1,42× o brilho na banda H (Haubois 2009) → δ ≈ 0,15 a 3.600 K', () => {
+    const d = picoDasCelulasQuentes(3600);
+    expect(d).toBeGreaterThan(0.14);
+    expect(d).toBeLessThan(0.16);
+    // a conta de volta: B_H(T(1+δ))/B_H(T) = 0,085/0,06
+    const x = 14388 / (1.65 * 3600);
+    expect(Math.expm1(x) / Math.expm1(x / (1 + d))).toBeCloseTo(0.085 / 0.06, 6);
   });
 
   it('a borda macia: μ_w = √(2·Hp/R), Hp = A/10 — Betelgeuse ~0,15, Arcturus ~0,08', () => {
@@ -187,7 +219,17 @@ describe('a Forja desligada não muda nada', () => {
     const c = cirurgiasDaFotosfera(sunJs, sunJs, bet, forjaDe(bet, true))!;
     expect(c.relevo).toBe(0);
     expect(c.fragment).toContain('uMaxK*mix(0.39, 0.20, close))*0.000000;');
-    expect(c.fragment.split('conveccao(sp, t)').length - 1).toBe(1);
+    expect(c.fragment.split('conveccaoDoAssado(st, sp, t)').length - 1).toBe(1);
+    // o assado em duas leituras com a troca suave, sem a fervura por ruído
+    expect(c.fragment).toContain('vec4 st = mix(texture2D(uChromoFarP, buv), texture2D(uChromoFar, buv), uBakeMix);');
+    expect(c.fragment).not.toContain('texture2D(uChromoTex,');
+    expect(c.fragment).toContain('  vec2 buv = vUvV;');
+    // contínuo puro: sem a rampa de brilho H-alfa, sem o avermelhamento do
+    // limbo, com a borda do contínuo inteira
+    expect(c.fragment).not.toContain('color *= mix(0.16, 1.42,');
+    expect(c.fragment).toContain('color.g *= 1.0 - edge*0.30*0.000000;');
+    expect(c.fragment).toContain('razaoDePlanck(');
+    expect(c.fragment).toContain(', 1.000000);');
     expect(c.fragment).not.toContain('celulasGigantesNaTela(sp');
     expect(c.fragment).not.toContain('granulacaoViva(sp');
     // a borda macia, na largura da regra, até o piso da frente da casca
@@ -202,11 +244,17 @@ describe('a Forja desligada não muda nada', () => {
     expect(c.vertex).toBe(sunJs);
   });
 
-  it('a desordem só entra no texto de quem a tem', () => {
-    const sup = cirurgiasDaFotosfera(sunJs, sunJs, bet, forjaDe(bet, true))!;
-    expect(sup.fragment).toContain('float regiao = ');
-    const ana = { ...bet, teffK: 6500, logG: 4.6 };
-    expect(cirurgiasDaFotosfera(sunJs, sunJs, ana, forjaDe(ana, true))!.fragment).not.toContain('regiao');
+  it('o assado da Forja: o main da cromosfera dá lugar ao da convecção, levada pelo escoamento', () => {
+    const r = forjaDe(bet, true)!;
+    const cromosfera = 'uniform float uTime;\nfloat ajuda(){ return 1.0; }\nvoid main(){\n  gl_FragColor = vec4(uGranFreq*1.45);\n}\n';
+    const f = cirurgiaDoAssado(cromosfera, r);
+    expect(f.startsWith('uniform float uTime;\nfloat ajuda(){ return 1.0; }\n')).toBe(true);
+    expect(f).not.toContain('uGranFreq*1.45');
+    expect(f.split('void main(){').length - 1).toBe(1);
+    expect(f).toContain('escoamentoDaForja(sp)');
+    expect(f).toContain('texture2D(uSimTex,');
+    expect(cirurgiaDoSmear(cromosfera)).toContain('gl_FragColor = texture2D(uSrc, vUv);');
+    expect(() => cirurgiaDoAssado('sem main', r)).toThrow();
   });
 
   it('a borda desce até a casca rente: inteira numa supergigante, 0,7·1,6·excesso/0,3 numa rasa', () => {
@@ -215,12 +263,20 @@ describe('a Forja desligada não muda nada', () => {
     expect(frenteDaAtmosfera(1)).toBe(0);
   });
 
-  it('a escala profunda só entra no texto de quem tem peso', () => {
-    const sup = cirurgiasDaFotosfera(sunJs, sunJs, bet, forjaDe(bet, true))!;
-    expect(sup.fragment.split('campoDaForja(sp/').length - 1).toBe(2);
-    expect(sup.fragment).toContain('campoDaForja(sp/0.500000 + 41.0');
+  it('as células quentes enormes só entram no assado de quem tem a escala profunda', () => {
+    const r = forjaDe(bet, true)!;
+    const sup = glslDoAssadoDaForja(r);
+    expect(sup).toContain('float quente = 0.0;');
+    // o pico na unidade de z: δ_quente/δ, com δ = contraste/4
+    expect(sup).toContain(literalGlsl((r.picoQuente / (r.contraste / 4)) * r.pesoProfundo));
     const gig = { ...bet, logG: 1.19, teffK: 3900 };
-    const c = cirurgiasDaFotosfera(sunJs, sunJs, gig, forjaDe(gig, true))!;
-    expect(c.fragment.split('campoDaForja(sp/').length - 1).toBe(1);
+    expect(glslDoAssadoDaForja(forjaDe(gig, true)!)).not.toContain('quente');
+  });
+
+  it('o tier leva o assado da regra', () => {
+    const r = forjaDe(bet, true)!;
+    const tier = { fbm: 5, seg: 128, simW: 768, simH: 384, simStep: 1 / 22, prom: 6, chromo: 1024, granFreq: 30, lic7: true, loops: 12, larc: 7, lseg: 36, cstep: 22, cmestep: 16, cmen: 1024 };
+    expect(tierDaEstrela(tier, bet, r).chromo).toBe(r.assado);
+    expect(tierDaEstrela(tier, bet).chromo).toBe(256);
   });
 });
