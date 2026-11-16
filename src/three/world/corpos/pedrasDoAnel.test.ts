@@ -34,6 +34,7 @@ import {
   assarFormas,
   atenuacaoDoSol,
   alfaCedido,
+  alfaComANevoa,
   cessaoDoDisco,
   densidadeDaEsteira,
   distanciaDaProfundidade,
@@ -687,6 +688,29 @@ describe('pedras 3D do anel', () => {
     expect(Math.exp(-tauDaNevoa(0, 0, ALCANCE_DA_NEVOA_KM, esp, tau, 1))).toBeLessThan(1e-6);
     expect(Math.exp(-tauDaNevoa(0, Math.sin((5 * Math.PI) / 180), ALCANCE_DA_NEVOA_KM, esp, tau, 1))).toBeCloseTo(0.47, 1);
     expect(Math.exp(-tauDaNevoa(0, Math.sin((20 * Math.PI) / 180), ALCANCE_DA_NEVOA_KM, esp, tau, 1))).toBeCloseTo(0.91, 1);
+  });
+
+  it('rente ao plano, na passagem disco → névoa, a camada inteira tapa como e^(−τ/sen e): as duas repartem τ, não o alfa', () => {
+    // a câmera a 20 m do plano do A (τ = 0,44, espessura 8 m): o raio atravessa a camada inteira
+    const tau = 0.44;
+    const esp = 0.008;
+    const h = 0.02;
+    for (const graus of [3, 5, 10, 20]) {
+      const dz = -Math.sin((graus * Math.PI) / 180);
+      const esperada = Math.exp(-tau / -dz);
+      // o disco e a névoa com a mesma camada inteira (nada cedido aos pedaços: teto 0)
+      const alfaDoDisco = 1 - esperada;
+      const tauNevoa = tauDaNevoa(h, dz, ALCANCE_DA_NEVOA_KM, esp, tau, 0);
+      for (const peso of [0.2, 0.5, 0.8]) {
+        const disco = alfaComANevoa(alfaDoDisco, peso);
+        const nevoa = 1 - Math.exp(-peso * tauNevoa);
+        expect((1 - disco) * (1 - nevoa)).toBeCloseTo(esperada, 6);
+      }
+      // repartir o alfa vazava: a 5°, no meio da passagem, ~25 % em vez de 0,6 %
+      if (graus === 5) expect((1 - 0.5 * alfaDoDisco) * (1 - 0.5 * (1 - Math.exp(-tauNevoa)))).toBeGreaterThan(0.2);
+    }
+    expect(alfaComANevoa(0.7, 0)).toBe(0.7);
+    expect(alfaComANevoa(0.7, 1)).toBe(0);
   });
 
   it('a sombra do pedaço cai para longe do Sol: no plano médio, a elipse de a por a/sen e deslocada pela altura', () => {

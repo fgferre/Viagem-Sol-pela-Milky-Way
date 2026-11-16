@@ -84,7 +84,7 @@ import { AneisTenuesDeSaturno } from './aneisTenues';
 import type { QuadroDosAneisTenues } from './aneisTenues';
 import { LajotaDoAnel, VOLUME_DA_LAJOTA } from './lajotaDoAnel';
 import type { QuadroDaLajota } from './lajotaDoAnel';
-import { ANEL_VERT_DAS_PEDRAS, GLSL_CESSAO_DAS_PEDRAS, FATIA_DA_CHEGADA_MS, FATIA_DO_ASSADO_MS, PEDRAS_3D, PedrasDoAnel, regiaoDasPedras, uniformesDaSombraNoDisco } from './pedrasDoAnel';
+import { ANEL_VERT_DAS_PEDRAS, GLSL_CESSAO_DAS_PEDRAS, GLSL_PROFUNDIDADE_DO_DISCO, FATIA_DA_CHEGADA_MS, FATIA_DO_ASSADO_MS, PEDRAS_3D, PedrasDoAnel, regiaoDasPedras, uniformesDaSombraNoDisco } from './pedrasDoAnel';
 import { FitaDosPicos, GLSL_RELEVO_DO_ANEL, RELEVO_DO_ANEL, uniformesDoRelevo, vertDaFita } from './relevoDoAnel';
 import { posicaoKepler } from '../../../lib/atlas/kepler';
 import { cessaoAlvo, gateBinario, saltoGuardado } from './terra';
@@ -1574,7 +1574,7 @@ ${GLSL_SOMBRA_DO_PLANETA_NO_ANEL}
 ${GLSL_CAMADA_DO_ANEL}
 ${GLSL_PLANETSHINE_NO_ANEL}
 ${GLSL_RUIDO_DE_VALOR}
-${GLSL_ESPETACULO_DO_ANEL}${BRILHO_MEDIDO_DO_ANEL ? GLSL_BRILHO_MEDIDO_DO_ANEL : ''}${PEDRAS_3D ? GLSL_CESSAO_DAS_PEDRAS : ''}${
+${GLSL_ESPETACULO_DO_ANEL}${BRILHO_MEDIDO_DO_ANEL ? GLSL_BRILHO_MEDIDO_DO_ANEL : ''}${PEDRAS_3D ? GLSL_CESSAO_DAS_PEDRAS : ''}${PEDRAS_3D && !fita ? GLSL_PROFUNDIDADE_DO_DISCO : ''}${
   RELEVO_DO_ANEL
     ? `${GLSL_RELEVO_DO_ANEL}${fita ? 'varying vec3 vNormalDaFita;\nvarying float vAlturaKm;\n' : ''}`
     : ''
@@ -1598,7 +1598,14 @@ void main() {
   float u = clamp(uBase + ondasDeDafnis(uBase, ang, uDafnisLon), 0.0, 1.0);
   vec4 perfil = texture2D(uMapaAnel, vec2(clamp(u, 0.0, 1.0), 0.5));
   float alfa = perfil.a;
-  if (alfa < 0.004) discard;
+  if (alfa < 0.004) discard;${
+    PEDRAS_3D && !fita
+      ? `
+  // a profundidade pelo raio do pixel e o globo na frente por conta (\`GLSL_PROFUNDIDADE_DO_DISCO\`)
+  if (globoNaFrente(vPos)) discard;
+  profundidadeDoDisco();`
+      : ''
+  }
   vec3 n = ${fita ? 'normSeguro(vNormalDaFita)' : 'vec3(0.0, 0.0, 1.0)'};
   vec3 view = normSeguro(${
     // com as pedras a câmera chega a metros do disco, e o vPos (~15 m de
@@ -2400,6 +2407,8 @@ export class GiganteResolvido {
                 uCamDasPedras: { value: new THREE.Vector4() },
                 uCamAltaDasPedras: { value: new THREE.Vector3() },
                 uCamRestoDasPedras: { value: new THREE.Vector3() },
+                // a janela do quadro em que o disco é desenhado (`profundidadeDoDisco`)
+                uTelaDoDisco: { value: new THREE.Vector4() },
                 ...uniformesDaSombraNoDisco(),
               }
             : {}),
@@ -2413,6 +2422,10 @@ export class GiganteResolvido {
       });
       this.anel = new THREE.Mesh(this.geoAnel, this.matAnel);
       this.anel.matrixAutoUpdate = false;
+      if (placa && PEDRAS_3D) {
+        const tela = this.matAnel.uniforms.uTelaDoDisco!.value as THREE.Vector4;
+        this.anel.onBeforeRender = (renderer) => renderer.getCurrentViewport(tela);
+      }
       this.group.add(this.anel);
       if (placa) {
         // S5 — o F e o E nascem com o anel e morrem com ele; o gate deles é

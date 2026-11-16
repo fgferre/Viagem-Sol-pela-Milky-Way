@@ -111,10 +111,10 @@ describe('relevo medido do anel', () => {
     try {
       const g = await import('./gigante');
       const p = await import('./pedrasDoAnel');
-      // os hashes do d12fefd3 (pedras 3D e brilho medido ligados, o padrão)
-      expect(sha(g.ANEL_FRAG)).toBe('b4539ea8a4ce62f8c23b2a9374780da7fe8ad3f7ec02fd173eda1e2544087258');
+      // os hashes do g1 (pedras 3D e brilho medido ligados, o padrão; o disco ganhou a profundidade pelo raio)
+      expect(sha(g.ANEL_FRAG)).toBe('01a698ce8e044479abf43bf679956b02282362c4e272d4482acbbbbf89c86e46');
       expect(sha(g.ANEL_VERT)).toBe('cde5b1ab1c7cf36cef0d9ecc297ff34f04303b73fca562a65d991dc6214c7632');
-      expect(sha(p.ANEL_VERT_DAS_PEDRAS)).toBe('4d10da6227712b5e062a713cb5a3ddb19a7174a88d57f744315dafd16fd548e7');
+      expect(sha(p.ANEL_VERT_DAS_PEDRAS)).toBe('f41a879febb63f5623811d97dbf33803706475ba94141aec709634c3ec21a7f8');
       expect(g.ANEL_FRAG_DA_FITA).toBe('');
       vi.stubGlobal('window', { location: { search: '?relevo=1' } });
       vi.resetModules();

@@ -221,6 +221,17 @@ export function alfaCedido(alfa: number, f: number): number {
 }
 
 /**
+ * A PASSAGEM DISCO → NÉVOA (`pesoDaNevoa`, de 8 a 32 m do plano) reparte a
+ * PROFUNDIDADE ÓPTICA: o disco fica com (1 − peso) da dele e a névoa com
+ * peso·τ, e as transmissões se multiplicam — com os dois opacos o raio
+ * segue opaco. O gêmeo do fim de `cederAsPedras` no GLSL.
+ */
+export function alfaComANevoa(alfa: number, peso: number): number {
+  if (peso <= 0) return alfa;
+  return 1 - Math.max(1 - alfa, 1e-4) ** (1 - Math.min(peso, 1));
+}
+
+/**
  * O ACEITE DA DENSIDADE: o pedaço fica se o sorteio cair abaixo de
  * τ·ρ/(R0·TAU_TETO). O ρ/R0 devolve o encolhimento do ladrilho no arco;
  * τ = 0 (divisão vazia, fora do anel) não aceita pedaço nenhum.
@@ -1787,7 +1798,7 @@ void luzDaPedra(vec3 vistaKm) {
     vNevoaLuz = luzN;
 #else
     vec3 dir = gOff / max(gDist, 1.0e-12);
-    nevoa = peso * (1.0 - exp(-tauDaNevoa(uZCamKm, dir.z, gDist, cam3.y, cam3.x, cam3.z)));
+    nevoa = 1.0 - exp(-peso * tauDaNevoa(uZCamKm, dir.z, gDist, cam3.y, cam3.x, cam3.z));
     vNevoaCor = corDaNevoa(cor0, luzN, dir);
 #endif
   }
@@ -2401,7 +2412,7 @@ void main() {
   if (vNevoaCam.w > 0.0) {
     float L = length(vNoAnel);
     vec3 dir = vNoAnel / max(L, 1.0e-30);
-    float a = vNevoaCam.w * (1.0 - exp(-tauDaNevoa(uZCamKm, dir.z, L, vNevoaCam.y, vNevoaCam.x, vNevoaCam.z)));
+    float a = 1.0 - exp(-vNevoaCam.w * tauDaNevoa(uZCamKm, dir.z, L, vNevoaCam.y, vNevoaCam.x, vNevoaCam.z));
     cor = mix(cor, corDaNevoa(vNevoaCor0, vNevoaLuz, dir), a);
   }
   gl_FragColor = vec4(cor, 1.0);
@@ -2567,7 +2578,13 @@ float cederAsPedras(float alfa, float tau) {
   float d = sqrt(dRho * dRho + dS * dS + uCamDasPedras.z * uCamDasPedras.z);
   float f = cessaoDasPedras(d) * tetoDoCampo(rKm, tau, uCamDasPedras.w);
   float a = f <= 0.0 ? alfa : 1.0 - pow(max(1.0 - alfa, 1.0e-4), 1.0 - f);
-  return a * (1.0 - pesoDaNevoa(uCamDasPedras.z, regiaoDasPedras(uCamDasPedras.x).x));
+  // \`alfaComANevoa\` na CPU: a passagem disco → névoa (8 a 32 m do plano) reparte a PROFUNDIDADE
+  // ÓPTICA, não o alfa: o disco fica com (1 − peso)·τ e a névoa com peso·τ,
+  // e as transmissões se multiplicam. Repartir o alfa deixava vazar até ~25 %
+  // no meio da passagem com os dois opacos (g1: 3,3 % a 5° de visada, a 20 m
+  // do plano, contra 0,9 %)
+  float peso = pesoDaNevoa(uCamDasPedras.z, regiaoDasPedras(uCamDasPedras.x).x);
+  return peso <= 0.0 ? a : 1.0 - pow(max(1.0 - a, 1.0e-4), 1.0 - peso);
 }
 // A SOMBRA DOS PEDAÇOS SOBRE A LUZ DIRETA DO DISCO: T/e^(−E), com T da
 // textura das sombras (−ln T, \`VERT_DA_SOMBRA\`) e E a média dela
@@ -2629,10 +2646,74 @@ uniform vec3 uCamAltaDasPedras;
 uniform vec3 uCamRestoDasPedras;
 varying vec3 vPos;
 varying vec3 vRelDasPedras;
+flat varying vec4 vProjDoDisco;
+flat varying vec4 vProfDoDisco;
+flat varying vec3 vPoloDoDisco;
 void main() {
   vPos = position;
   vRelDasPedras = (position - uCamAltaDasPedras) * ${glslF(KM_POR_RAIO)} - uCamRestoDasPedras;
+  // o que \`profundidadeDoDisco\` lê: a lente, a altura da câmera (km), a
+  // unidade do mundo por km e o polo do anel na vista
+  vProjDoDisco = vec4(projectionMatrix[0][0], projectionMatrix[1][1], projectionMatrix[2][0], projectionMatrix[2][1]);
+  float raioMundo = length(mat3(modelViewMatrix)[0]);
+  vProfDoDisco = vec4(projectionMatrix[2][2], projectionMatrix[3][2],
+    raioMundo / ${glslF(KM_POR_RAIO)}, uCamAltaDasPedras.z * ${glslF(KM_POR_RAIO)} + uCamRestoDasPedras.z);
+  vPoloDoDisco = normalize(mat3(modelViewMatrix) * vec3(0.0, 0.0, 1.0));
   gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`;
+
+/**
+ * A PROFUNDIDADE DO DISCO, do raio de visada do pixel (g1, 16/11). O near
+ * acompanha a câmera rente ao anel (mm a m) e o far vai à galáxia: com os
+ * vértices do disco a milhares de km, o z do recorte (w − 2n) perde o 2n no
+ * float32, e o triângulo cortado pelo near sai com a profundidade perto de
+ * 1 — a do globo. Medido: o disco OPACO à força, a 520 m do plano, deixava
+ * passar 47 % de Saturno a 1° de visada (contra 0 %), em manchas que seguem
+ * o arredondamento da profundidade do globo. A conta daqui é a dos pedaços
+ * (\`FRAG_DO_PONTO\`): o ponto do plano z = 0 no raio deste pixel, a
+ * distância à lente dele e a mesma compressão perto do near — o disco e os
+ * pedaços se ordenam pela mesma régua. Sem o raio no plano (de raspão no
+ * float) fica a profundidade do vértice.
+ *
+ * O GLOBO NA FRENTE vai por conta: além de n/6·10⁻⁸ (67 km com o near de
+ * 4 mm) qualquer profundidade arredonda para 1, a do globo também, e o anel
+ * de trás passaria por cima dele. O segmento lente→ponto que toca o
+ * elipsoide (o achatamento \`uKPolar\`, a mesma conta de \`sombraDoPlaneta\`)
+ * é descartado.
+ */
+export const GLSL_PROFUNDIDADE_DO_DISCO = /* glsl */ `
+uniform vec4 uTelaDoDisco;
+flat varying vec4 vProjDoDisco;
+flat varying vec4 vProfDoDisco;
+flat varying vec3 vPoloDoDisco;
+bool globoNaFrente(vec3 ponto) {
+  float k = max(uKPolar, 1.0e-4);
+  vec3 o = vec3(uCamLocal.xy, uCamLocal.z / k);
+  vec3 s = vec3(ponto.xy, ponto.z / k) - o;
+  float a = dot(s, s);
+  float b = dot(o, s);
+  float disc = b * b - a * (dot(o, o) - 1.0);
+  if (disc <= 0.0 || a <= 0.0) return false;
+  float t = (-b - sqrt(disc)) / a;
+  return t > 0.0 && t < 1.0;
+}
+void profundidadeDoDisco() {
+  gl_FragDepth = gl_FragCoord.z;
+  if (uTelaDoDisco.z <= 0.0) return;
+  vec2 ndc = (gl_FragCoord.xy - uTelaDoDisco.xy) / uTelaDoDisco.zw * 2.0 - 1.0;
+  vec3 d = normalize(vec3((ndc.x + vProjDoDisco.z) / vProjDoDisco.x, (ndc.y + vProjDoDisco.w) / vProjDoDisco.y, -1.0));
+  // até o plano: t km ao longo do raio (a câmera a vProfDoDisco.w km dele)
+  float t = -vProfDoDisco.w / dot(d, vPoloDoDisco);
+  if (!(t > 0.0) || t > 1.0e9) return;
+  float pd = -d.z * t * vProfDoDisco.z;
+  float p22 = vProfDoDisco.x;
+  float p32 = vProfDoDisco.y;
+  float pn = p32 / (p22 - 1.0);
+  float pMin = ${glslF(PERTO_MINIMO_KM)} * vProfDoDisco.z;
+  if (pd > 0.0 && pd < 2.0 * pn && 2.0 * pn > pMin)
+    pd = mix(${glslF(1 + FOLGA_DO_RECORTE)} * pn, 2.0 * pn, clamp((pd - pMin) / (2.0 * pn - pMin), 0.0, 1.0));
+  gl_FragDepth = 0.5 * (p32 / max(pd, 1.0e-30) - p22) + 0.5;
 }
 `;
 
@@ -2794,8 +2875,8 @@ ${GLSL_PURO_DAS_PEDRAS}
 ${GLSL_LUZ_DA_NEVOA.slice(GLSL_LUZ_DA_NEVOA.indexOf('// a luz da multidão'))}
 void main() {
   vec3 d = normalize(vDir);
-  float a = pesoDaNevoa(uZCamKm, vCamada.y)
-    * (1.0 - exp(-tauDaNevoa(uZCamKm, d.z, ${glslF(ALCANCE_DA_NEVOA_KM)}, vCamada.y, vCamada.x, vCamada.z)));
+  float a = 1.0 - exp(-pesoDaNevoa(uZCamKm, vCamada.y)
+    * tauDaNevoa(uZCamKm, d.z, ${glslF(ALCANCE_DA_NEVOA_KM)}, vCamada.y, vCamada.x, vCamada.z));
   if (a <= 0.0) discard;
   gl_FragColor = vec4(corDaNevoa(vCor0, vLuzN, d), a);
 }
