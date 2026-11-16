@@ -50,6 +50,7 @@ import {
   PISO_DO_CONTRASTE_NA_TELA,
   atividadeDe,
   granuloNaTelaEmRaios,
+  logGravidade,
   posicaoDaCompanheira,
   raioDaEstrelaPc,
   rotacaoDe,
@@ -181,6 +182,7 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
     activityLevel: atividadeDe(e).nivel,
     teffK: e.teffK.v,
     dinamo: temDinamoSolar(e),
+    logG: logGravidade(e.massaMsol.v, e.raioRsol.v),
     seed: (SOL_PARAMS.seed ^ sementeDe(e)) >>> 0,
     knobPrefix: e.id,
     granuloRelativoAoSol:

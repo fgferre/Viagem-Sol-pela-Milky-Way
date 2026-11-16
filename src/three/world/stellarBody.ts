@@ -64,6 +64,7 @@ import {
   radianciaVisivelDeCorpoNegro,
 } from '../luzDaCasa';
 import type { Achatamento } from '../../lib/atlas/estrelasVisitaveis';
+import { regraDaForja, type RegraDaForja } from './forjaDaEstrela';
 import type { EstadoDaEstrela, FaseDoCiclo } from '../estrela';
 import { UNIDADES_POR_CICLO, tempoDoCiclo } from '../estrela';
 import { GLSL_COMPRESSAO } from '../shaders/common';
@@ -257,6 +258,73 @@ export function anguloDoGiro(
   return 2 * Math.PI * (voltas - Math.floor(voltas));
 }
 
+/** `?forja=1` liga a Forja (etapa 2); fora do navegador (testes em Node) fica desligada. */
+export const FORJA: boolean =
+  typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('forja') === '1';
+
+/**
+ * A regra da Forja para esta instância, ou `null` (o caminho de hoje): só com
+ * o interruptor, com `logG` e sem dínamo — o Sol e as de dínamo nunca.
+ */
+export function forjaDe(p: StellarParams, ligada: boolean = FORJA): RegraDaForja | null {
+  if (!ligada || p.logG === undefined || p.dinamo) return null;
+  return regraDaForja(p.teffK, p.logG, p.radiusPc / RAIO_DO_SOL_NA_CENA);
+}
+
+/**
+ * As cirurgias da fotosfera de OUTRA estrela, puras: o fragment, o vertex e
+ * o fator do relevo fbm (`uDispScale`); `null` sem nada a fazer (o Sol).
+ * Com a Forja (`forja` ≠ null) a textura H-alfa do bake fica PLANA
+ * (contraste 0: o bake é cromosfera do Sol, não fotosfera), a convecção é a
+ * dela no lugar das células gigantes e da granulação viva, e o relevo é o
+ * do mesmo campo. Sem a Forja, o caminho de antes, texto a texto.
+ */
+export function cirurgiasDaFotosfera(
+  fragment: string,
+  vertex: string,
+  p: StellarParams,
+  forja: RegraDaForja | null,
+  /** os segmentos da esfera da fotosfera (o LOD do relevo da Forja) */
+  segmentos: number = TIERS.high.seg
+): { fragment: string; vertex: string; relevo: number } | null {
+  const a = p.achatamento;
+  const o = {
+    contraste: forja ? 0 : p.contrasteRelativoAoSol,
+    bordaU: p.bordaU,
+    semDinamo: !p.dinamo,
+    gravidade: Boolean(a),
+    avermelhamento: pesoDoFiltro(p.teffK),
+    gigantes: forja ? undefined : p.celulasGigantes,
+    teffK: p.teffK,
+    continuo: 1 - pesoDoFiltro(p.teffK),
+    ...(forja ? { forja } : {}),
+  };
+  if (
+    (o.contraste === undefined || o.contraste === 1) &&
+    (o.bordaU === undefined || o.bordaU === 0.3) &&
+    !o.semDinamo &&
+    !a &&
+    o.avermelhamento === 1 &&
+    !o.gigantes
+  ) {
+    return null;
+  }
+  // o RELEVO da fotosfera (o fbm do vertex, `uDispScale`) é o da mesma
+  // convecção: escala com o contraste dela (A: quase liso)
+  const relevo = o.contraste !== undefined && o.contraste !== 1 ? Math.max(0, o.contraste) : 1;
+  let v = vertex;
+  if (a) {
+    const { a: k, norma } = termoZonalDaForma(a.raioPolarRsol.v, a.raioEquatorialRsol.v);
+    v = cirurgiaDaForma(v, k, norma);
+  }
+  if (o.gigantes) v = cirurgiaDoRelevoDasGigantes(v, o.gigantes.tamanhoEmRaios, RELEVO_DAS_GIGANTES);
+  if (forja) {
+    const amp = forja.relevoEmRaios * relevoNaMalha(forja.celulaNaTelaEmRaios, segmentos);
+    if (amp > 0) v = cirurgiaDoRelevoDaForja(v, forja, amp);
+  }
+  return { fragment: cirurgiaDaEstrela(fragment, o), vertex: v, relevo };
+}
+
 /** O que descreve UMA estrela procedural desta casa. */
 export interface StellarParams {
   /** Nome da instância — diagnóstico e registro, só. */
@@ -292,6 +360,11 @@ export interface StellarParams {
    * linha de Linsky & Haisch (Betelgeuse) — a lei é `temDinamoSolar`.
    */
   readonly dinamo: boolean;
+  /**
+   * A GRAVIDADE DA SUPERFÍCIE, log₁₀ g (cgs; omitido no Sol). Só a Forja
+   * (`?forja=1`, `forjaDe`) a lê: a convecção de quem não tem dínamo.
+   */
+  readonly logG?: number;
   /*
    * (A DRAMATURGIA POR TORÇÃO DE FASE morreu em 21/08 — item 5. Eram
    * quatro números aqui — as fases do arranque e do pico, mais a janela
@@ -513,6 +586,8 @@ function trocarUma(texto: string, ancora: string, novo: string, quem: string): s
  *  · `gigantes`: as células gigantes (`GLSL_CELULAS_GIGANTES`) como um campo
  *    de TEMPERATURA, T = Teff·(1 + δ·z), levado à cor e ao brilho de cada
  *    canal pela lei de Planck (`razaoDePlanck`), antes da borda;
+ *  · `forja`: a convecção da Forja (`glslDaConveccao`) como temperatura, do
+ *    mesmo jeito, no lugar das gigantes e da granulação viva;
  *  · `continuo` (peso > 0): a borda do CONTÍNUO — a atmosfera cinza de
  *    Eddington, T(μ)⁴ ∝ μ + ⅔, pela lei de Planck por canal — no lugar da
  *    lei linear, com o peso que o filtro H-alfa do Sol deixa (1 − w): zero
@@ -531,6 +606,8 @@ export function cirurgiaDaEstrela(
     teffK?: number;
     /** o peso da borda do contínuo (1 − `pesoDoFiltro`) */
     continuo?: number;
+    /** a convecção da Forja (`glslDaConveccao`): a regra da estrela */
+    forja?: RegraDaForja;
   }
 ): string {
   const quem = 'cirurgiaDaEstrela';
@@ -565,7 +642,7 @@ export function cirurgiaDaEstrela(
     // sem campo, a textura que sobra é a da CONVECÇÃO: a granulação viva
     // (`GLSL_GRANULACAO_VIVA`) no lugar das fibrilas, na frequência da
     // estrela (`uGranFreq`) e no contraste dela
-    const ag = GRANULACAO_VIVA * Math.max(0, o.contraste ?? 1);
+    const ag = o.forja ? 0 : GRANULACAO_VIVA * Math.max(0, o.contraste ?? 1);
     f = trocarUma(
       f,
       '  float fibC = st.a*2.0 - 1.0;',
@@ -593,7 +670,7 @@ export function cirurgiaDaEstrela(
     f = trocarUma(f, '  color *= 1.0 - edge*0.15;', `  color *= 1.0 - edge*0.15*${w};`, quem);
   }
   const teff = o.teffK ?? TEFF_SOL_K;
-  const planck = (o.gigantes || (o.continuo ?? 0) > 0) ? GLSL_RAZAO_DE_PLANCK : '';
+  const planck = (o.gigantes || o.forja || (o.continuo ?? 0) > 0) ? GLSL_RAZAO_DE_PLANCK : '';
   if (o.gigantes) {
     const d = deltaTDasGigantes(o.gigantes.contraste);
     f =
@@ -605,6 +682,24 @@ export function cirurgiaDaEstrela(
         `  float zGig = celulasGigantesNaTela(sp/${literalGlsl(o.gigantes.tamanhoEmRaios)} + 17.0, t*0.05);\n` +
           `  float rGig = max(0.5, 1.0 + ${literalGlsl(d)}*(zGig > 0.0 ? zGig : ${literalGlsl(DESCIDA_DAS_GIGANTES)}*zGig));\n` +
           `  color *= razaoDePlanck(${xDePlanckGlsl(teff)}, rGig) * exp(-${TIO_DAS_GIGANTES_GLSL} * max(0.0, 1.0 - rGig));\n` +
+          '  color *= (1.0-limbU) + limbU*mu;',
+        quem
+      );
+  }
+  if (o.forja) {
+    // a mesma temperatura das gigantes, sem o ganho de tela nem a assimetria
+    // (a forma da textura já é assimétrica), contraste ∝ μ para a borda
+    const d = Math.max(0, o.forja.contraste) / 4;
+    const tio = pesoDoTiO(teff);
+    f =
+      GLSL_CELULA_DA_FORJA +
+      glslDaConveccao(calibracaoDaForja(o.forja.fracaoEscura)) +
+      trocarUma(
+        f,
+        '  color *= (1.0-limbU) + limbU*mu;',
+        `  float rForja = max(0.5, 1.0 + ${literalGlsl(d)}*mu*conveccao(sp/${literalGlsl(o.forja.celulaNaTelaEmRaios)} + 17.0, t*${literalGlsl(o.forja.ritmo)}));\n` +
+          `  color *= razaoDePlanck(${xDePlanckGlsl(teff)}, rForja)` +
+          (tio > 0 ? ` * exp(-${literalGlsl(tio)} * ${TIO_DAS_GIGANTES_GLSL} * max(0.0, 1.0 - rForja));\n` : ';\n') +
           '  color *= (1.0-limbU) + limbU*mu;',
         quem
       );
@@ -671,6 +766,138 @@ float granulacaoViva(vec3 p, float t, float mu) {
   return (G - 0.355) / 0.31 * filtro * mu;
 }
 `;
+
+/**
+ * A CONVECÇÃO DA FORJA (`?forja=1`, docs/LEI-DA-ESTRELA.md §10): UMA textura
+ * para toda estrela sem dínamo. Subidas claras no miolo das células, que
+ * escurecem aos poucos rumo à borda, e descidas escuras conectadas entre
+ * elas — a topologia das simulações (Steffen et al. 2005; Beeck et al.
+ * 2013); a forma é ARTÍSTICA, declarada. Worley 3D de 27 vizinhas com peso
+ * por célula (distância ÷ tamanho: bordas curvas, tamanhos diferentes),
+ * sobre o domínio torcido devagar da granulação viva. Pela coordenada
+ * u = (F2 − F1)/(F2 + F1) (0 na borda, 1 no centro): o perfil
+ * (1 − e^(−u/k)) — de platô (k pequeno) a rampa (k grande) —, um pico
+ * próprio por célula (as maiores um pouco mais claras, Magic & Asplund 2014)
+ * e a faixa escura de largura própria. O `k` sai da FRAÇÃO ESCURA da regra
+ * (`fracaoEscura`, a área abaixo da média) por `calibracaoDaForja`. A oitava
+ * 2,3× menor não desenha outra rede: só a divisão mais escura de um grânulo
+ * se partindo, mole, e só no miolo claro da célula grande. Cada oitava
+ * esmaece para a média quando a célula dela cai abaixo de ~2 px (`fwidth`) e
+ * nem é calculada depois; a faixa mais fina que o pixel alarga e clareia na
+ * mesma proporção.
+ */
+const GLSL_CELULA_DA_FORJA = /* glsl */ `
+vec3 hashDaForja(vec3 p) {
+  p = fract(p * vec3(0.1031, 0.1030, 0.0973));
+  p += dot(p, p.yxz + 33.33);
+  return fract((p.xxy + p.yxx) * p.zyx);
+}
+// x: o brilho; y: u, 0 na borda e 1 no centro. px: o pixel em células
+// (0 = sem filtro); k: o perfil (calibracaoDaForja)
+vec2 celulaDaForja(vec3 p, float t, float px, float k) {
+  p += 0.32 * sin(p.yzx * 0.9 + t * 0.05) + 0.2 * sin(p.zxy * 2.7 + 4.1) + 0.08 * sin(p.yzx * 4.9 + 1.3);
+  vec3 c = floor(p);
+  vec3 f = p - c;
+  float d1 = 8.0;
+  float d2 = 8.0;
+  vec3 h1 = vec3(0.5);
+  for (int i = -1; i <= 1; i++)
+  for (int j = -1; j <= 1; j++)
+  for (int l = -1; l <= 1; l++) {
+    vec3 o = vec3(float(i), float(j), float(l));
+    vec3 h = hashDaForja(c + o);
+    vec3 q = o + 0.5 + 0.4 * sin(6.2831853 * h + t * 0.3 * (0.5 + h)) - f;
+    float d = length(q) / (0.8 + 0.4 * h.y);
+    if (d < d1) { d2 = d1; d1 = d; h1 = h; }
+    else if (d < d2) { d2 = d; }
+  }
+  float tam = 0.8 + 0.4 * h1.y;
+  float vari = min(1.0, k / 0.2);
+  float u = (d2 - d1) / (d2 + d1);
+  float lw = (0.03 + 0.06 * h1.z) * (0.5 + 0.5 * vari);
+  float lwE = max(lw, 1.5 * px);
+  float faixa = lw / lwE * exp(-u / lwE);
+  float pico = 1.0 + vari * (0.625 * (tam - 1.0) + 0.3 * (h1.x - 0.5));
+  float domo = (1.0 - exp(-u / k)) / (1.0 - exp(-1.0 / k));
+  return vec2(pico * (0.15 + 0.85 * domo) * (1.0 - faixa), u);
+}
+`;
+
+/**
+ * A CALIBRAÇÃO DA FORJA por Monte Carlo (réplica JS do GLSL, na esfera, 2·10⁵
+ * pontos e tempos ao acaso por linha, a 10 células por raio; a 30 dá o
+ * mesmo a 0,003): o `k` do perfil, a fração da área com z < 0 que ele dá, e
+ * a normalização — média da oitava grande (m1), desvio da soma (s), e média
+ * e desvio do campo do relevo, com a faixa alargada a 0,3 célula (mv, sv).
+ * A média da divisão da oitava pequena é 0,025 em toda a tabela (±0,002).
+ */
+const TABELA_DA_FORJA = [
+  { k: 0.04, fracao: 0.338, m1: 0.7699, s: 0.3042, mv: 0.8073, sv: 0.2142 },
+  { k: 0.06, fracao: 0.3728, m1: 0.719, s: 0.3155, mv: 0.7512, sv: 0.2357 },
+  { k: 0.08, fracao: 0.3997, m1: 0.6737, s: 0.3195, mv: 0.7032, sv: 0.247 },
+  { k: 0.1, fracao: 0.4215, m1: 0.6345, s: 0.3189, mv: 0.6626, sv: 0.2517 },
+  { k: 0.13, fracao: 0.4469, m1: 0.5834, s: 0.3132, mv: 0.6107, sv: 0.2523 },
+  { k: 0.16, fracao: 0.4684, m1: 0.5375, s: 0.3066, mv: 0.5657, sv: 0.2499 },
+  { k: 0.2, fracao: 0.4899, m1: 0.4911, s: 0.2967, mv: 0.5201, sv: 0.2442 },
+  { k: 0.23, fracao: 0.4969, m1: 0.467, s: 0.2851, mv: 0.4943, sv: 0.2368 },
+  { k: 0.26, fracao: 0.5022, m1: 0.4461, s: 0.2751, mv: 0.4724, sv: 0.2298 },
+] as const;
+const MEDIA_DA_DIVISAO = 0.025;
+
+export type CalibracaoDaForja = { k: number; m1: number; s: number; mv: number; sv: number };
+
+/** a linha da tabela para uma fração escura, interpolada (limitada às pontas) */
+export function calibracaoDaForja(fracao: number): CalibracaoDaForja {
+  const T = TABELA_DA_FORJA;
+  let i = 1;
+  while (i < T.length - 1 && fracao > T[i]!.fracao) i++;
+  const a = T[i - 1]!;
+  const b = T[i]!;
+  const x = Math.min(1, Math.max(0, (fracao - a.fracao) / (b.fracao - a.fracao)));
+  const m = (u: number, v: number) => u + x * (v - u);
+  return { k: m(a.k, b.k), m1: m(a.m1, b.m1), s: m(a.s, b.s), mv: m(a.mv, b.mv), sv: m(a.sv, b.sv) };
+}
+
+/** a convecção do fragment (duas oitavas, filtro de pixel), na calibração dada */
+function glslDaConveccao(c: CalibracaoDaForja): string {
+  const k = literalGlsl(c.k);
+  return /* glsl */ `
+float conveccao(vec3 p, float t) {
+  float px = length(fwidth(p));
+  float f1 = 1.0 - smoothstep(0.25, 0.5, px);
+  if (f1 <= 0.0) return 0.0;
+  vec2 a = celulaDaForja(p, t, px, ${k});
+  float z = f1 * (a.x - ${literalGlsl(c.m1)});
+  float f2 = 1.0 - smoothstep(0.25, 0.5, px * 2.3);
+  if (f2 > 0.0) {
+    // o grânulo que se parte: a borda da célula menor, mole, no miolo claro
+    vec2 b = celulaDaForja(p * 2.3 + 5.0, t * 1.7, px * 2.3, ${k});
+    float lw = max(0.35, 1.5 * px * 2.3);
+    float corte = 0.35 / lw * exp(-b.y / lw);
+    z -= f2 * 0.4 * (a.x * smoothstep(0.35, 0.75, a.y) * corte - ${literalGlsl(MEDIA_DA_DIVISAO)});
+  }
+  return z / ${literalGlsl(c.s)};
+}
+`;
+}
+
+/** a oitava grande para o relevo do vertex (sem derivadas), a faixa alargada a 0,3 célula — o filtro da malha */
+function glslDaConveccaoGrande(c: CalibracaoDaForja): string {
+  return /* glsl */ `
+float conveccaoGrande(vec3 p, float t) {
+  return (celulaDaForja(p, t, 0.3, ${literalGlsl(c.k)}).x - ${literalGlsl(c.mv)}) / ${literalGlsl(c.sv)};
+}
+`;
+}
+
+/**
+ * O PESO DO TiO nas descidas da Forja (`TIO_DAS_GIGANTES`): as bandas só
+ * existem nas M — inteiro abaixo de 3.600 K, zero acima de 4.000 K, linear
+ * entre (ARTÍSTICO, declarado).
+ */
+export function pesoDoTiO(teffK: number): number {
+  return Math.min(1, Math.max(0, (4000 - teffK) / 400));
+}
 
 /** os comprimentos de onda efetivos dos canais R, G, B (µm) e c₂ = hc/k (µm·K) */
 const LAMBDA_DOS_CANAIS_UM = [0.61, 0.55, 0.465] as const;
@@ -894,6 +1121,38 @@ export function cirurgiaDoRelevoDasGigantes(vertex: string, tamanhoEmRaios: numb
       'cirurgiaDoRelevoDasGigantes'
     )
   );
+}
+
+/**
+ * O RELEVO DA FORJA no vertex: o mesmo campo da cor (`conveccaoGrande`, só a
+ * oitava grande, mesma escala, semente e tempo), `amplitude` raios por
+ * desvio — uma escala de altura (`relevoEmRaios`) × `relevoNaMalha`. Molde de
+ * `cirurgiaDoRelevoDasGigantes`; compõe com `cirurgiaDaForma`.
+ */
+export function cirurgiaDoRelevoDaForja(vertex: string, forja: RegraDaForja, amplitude: number): string {
+  return (
+    GLSL_CELULA_DA_FORJA +
+    glslDaConveccaoGrande(calibracaoDaForja(forja.fracaoEscura)) +
+    trocarUma(
+      vertex,
+      'n * uDispScale + pmSum',
+      `n * uDispScale + ${literalGlsl(amplitude)} * conveccaoGrande(normalize(position)/${literalGlsl(forja.celulaNaTelaEmRaios)} + 17.0, uTime*${literalGlsl(forja.ritmo)}) * length(position) + pmSum`,
+      'cirurgiaDoRelevoDaForja'
+    )
+  );
+}
+
+/**
+ * O LOD DA MALHA para o relevo da Forja — a regra do pixel da cor, com o
+ * vértice no lugar do pixel: a célula com menos de ~4 vértices de lado
+ * esmaece e com 2 some (o passo do equador, 2π/segmentos, em células).
+ * Com 128 segmentos a célula de 0,12 R da Betelgeuse tem ~2,4: o relevo
+ * inteiro facetava a silhueta em pedra (16/11).
+ */
+export function relevoNaMalha(celulaNaTelaEmRaios: number, segmentos: number): number {
+  const px = (2 * Math.PI) / segmentos / celulaNaTelaEmRaios;
+  const x = Math.min(1, Math.max(0, (px - 0.25) / 0.25));
+  return 1 - x * x * (3 - 2 * x);
 }
 
 /** a amplitude do relevo das células gigantes, em raios por desvio */
@@ -1465,6 +1724,15 @@ const ESCALA_DA_CAMADA_RENTE = 0.08;
  *  média, para que a borda do disco continue sendo a borda */
 const BRILHO_DA_ATMOSFERA = 1.2;
 /**
+ * A COLUNA DA ATMOSFERA: o brilho acima vale para a camada de uma
+ * supergigante (excesso de 0,3 R, Betelgeuse); uma camada mais rasa tem menos
+ * gás na linha de visada e brilha na proporção do excesso (Arcturus, 0,04 R:
+ * 13 %). Sem isto a casca rasa saía mais clara que a borda escurecida do disco
+ * e a borda lia como um anel escuro. Proporção ARTÍSTICA, declarada; com
+ * excesso ≥ 0,3 é 1 (a Betelgeuse aprovada não muda).
+ */
+const EXCESSO_DA_ATMOSFERA_PLENA = 0.3;
+/**
  * O VÉU (`criarABordaDifusa`) — ARTÍSTICO, declarado. A luz que sobra é a de
  * uma câmera diante de uma fonte ofuscante (o espalhamento da óptica sobre o
  * que o sensor REGISTROU): por isso é uma fração da borda do disco já
@@ -1626,6 +1894,10 @@ export class StellarBody {
    * coroa quente — essas camadas nem nascem. Sobra a fotosfera.
    */
   private readonly semDinamo: boolean;
+  /** a regra da Forja (`?forja=1`, `forjaDe`), ou null: o caminho de antes */
+  private readonly forja: RegraDaForja | null;
+  /** o raio da atmosfera estendida (`bordaDifusaRaios`, ou o da Forja) */
+  private readonly raioDaBordaDifusa: number;
   /** a frequência das erupções relativa ao Sol (1 = a do Sol, pulada) */
   private readonly taxaDeErupcoes: number;
   /** o eixo na base da cena (`eixoNaCena`) e o giro em torno dele */
@@ -1651,6 +1923,8 @@ export class StellarBody {
     this.rotSpeed = rotSpeedFromPeriod(params.rotPeriodDays);
     this.outraCor = params.teffK !== TEFF_SOL_K;
     this.semDinamo = !params.dinamo;
+    this.forja = forjaDe(params);
+    this.raioDaBordaDifusa = this.forja ? this.forja.atmosferaEmRaios : (params.bordaDifusaRaios ?? 1);
     this.taxaDeErupcoes =
       !this.semDinamo && params.activityLevel !== 1 ? taxaDeErupcoesPelaAtividade(params.activityLevel) : 1;
     if (params.eixoNaCena) {
@@ -1895,7 +2169,7 @@ export class StellarBody {
     this.operarOPesoDasCamadas(ctx);
     // a atmosfera estendida: só quem a tem (o Sol nem a constrói). Depois
     // das cirurgias das camadas — ela não usa mundo nem cor embutida
-    if (((params.bordaDifusaRaios ?? 1) > 1 || (params.veu ?? 0) > 0) && this.filtroSolarLigado) {
+    if ((this.raioDaBordaDifusa > 1 || (params.veu ?? 0) > 0) && this.filtroSolarLigado) {
       this.criarABordaDifusa(ctx);
     }
 
@@ -2000,7 +2274,7 @@ export class StellarBody {
   private criarABordaDifusa(ctx: any) {
     const p = this.params;
     const su = ctx.sunUniforms;
-    const rEnv = Math.max(1, p.bordaDifusaRaios ?? 1);
+    const rEnv = Math.max(1, this.raioDaBordaDifusa);
     const veu = Math.max(0, p.veu ?? 0);
     const rCasca = Math.max(1 + (rEnv - 1) * PLUMA_MAX * ALCANCE_DA_ATMOSFERA, veu > 0 ? RAIO_DO_VEU : 1);
     const u = p.bordaU ?? 0.3;
@@ -2053,7 +2327,7 @@ export class StellarBody {
             * (1.0 - smoothstep(0.5, 1.0, (b - 1.0) / ${literalGlsl(rCasca - 1)}));
           // estrias ao longo do raio (o ruído só da direção): filamento, não caroço
           float fio = 0.8 + 0.4*fbmLight(vDirObj*5.0 + vec3(0.0, 0.0, uTime*0.01));
-          luz += ${literalGlsl(1 - u)} * vec3(1.0, 0.85, 0.7) * ${literalGlsl(BRILHO_DA_ATMOSFERA)} * fe * mix(0.5, 1.5, pl) * fio;`
+          luz += ${literalGlsl(1 - u)} * vec3(1.0, 0.85, 0.7) * ${literalGlsl(BRILHO_DA_ATMOSFERA * Math.min(1, (rEnv - 1) / EXCESSO_DA_ATMOSFERA_PLENA))} * fe * mix(0.5, 1.5, pl) * fio;`
               : ''
           }
           float veu = 0.0;
@@ -2099,36 +2373,14 @@ export class StellarBody {
   private operarAFotosfera(ctx: any) {
     const p = this.params;
     const a = p.achatamento;
-    const o = {
-      contraste: p.contrasteRelativoAoSol,
-      bordaU: p.bordaU,
-      semDinamo: this.semDinamo,
-      gravidade: Boolean(a),
-      avermelhamento: pesoDoFiltro(p.teffK),
-      gigantes: p.celulasGigantes,
-      teffK: p.teffK,
-      continuo: 1 - pesoDoFiltro(p.teffK),
-    };
-    if (
-      (o.contraste === undefined || o.contraste === 1) &&
-      (o.bordaU === undefined || o.bordaU === 0.3) &&
-      !o.semDinamo &&
-      !a &&
-      o.avermelhamento === 1 &&
-      !o.gigantes
-    ) {
-      return;
-    }
     const mat = ctx.sunMesh.material as THREE.ShaderMaterial;
-    mat.fragmentShader = cirurgiaDaEstrela(mat.fragmentShader, o);
-    // o RELEVO da fotosfera (o fbm do vertex, `uDispScale`) é o da mesma
-    // convecção: escala com o contraste dela (A: quase liso)
-    if (o.contraste !== undefined && o.contraste !== 1) {
-      ctx.sunUniforms.uDispScale.value *= Math.max(0, o.contraste);
-    }
+    const seg = (ctx.sunMesh.geometry as THREE.SphereGeometry).parameters.widthSegments;
+    const cir = cirurgiasDaFotosfera(mat.fragmentShader, mat.vertexShader, p, this.forja, seg);
+    if (!cir) return;
+    mat.fragmentShader = cir.fragment;
+    mat.vertexShader = cir.vertex;
+    ctx.sunUniforms.uDispScale.value *= cir.relevo;
     if (a) {
-      const { a: k, norma } = termoZonalDaForma(a.raioPolarRsol.v, a.raioEquatorialRsol.v);
-      mat.vertexShader = cirurgiaDaForma(mat.vertexShader, k, norma);
       // a GRAVIDADE por vértice: cor × brilho da Teff local (von Zeipel,
       // `rocheDe`) relativos à média da estrela (`teffK`, a que a matiz e o
       // brilho de CPU já usam) — interpolada por fragmento
@@ -2149,9 +2401,6 @@ export class StellarBody {
         for (let k2 = 0; k2 < 3; k2++) fator[i * 3 + k2] = (c[k2] / cm[k2]) * b;
       }
       geo.setAttribute('aGravidade', new THREE.BufferAttribute(fator, 3));
-    }
-    if (o.gigantes) {
-      mat.vertexShader = cirurgiaDoRelevoDasGigantes(mat.vertexShader, o.gigantes.tamanhoEmRaios, RELEVO_DAS_GIGANTES);
     }
     mat.needsUpdate = true;
   }

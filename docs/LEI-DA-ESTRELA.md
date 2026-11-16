@@ -1218,3 +1218,92 @@ brilho, não.
 
 **Não entra nesta fila.** É obra própria, depois da luz — mas a lei já a referencia
 para que ninguém a implemente como "mais uma curva de LOD" quando ela chegar.
+
+---
+
+## 10. A FORJA — o corpo de qualquer estrela por uma regra só (16/11/2026)
+
+**O pedido do dono (16/11):** um motor único que gere todas as qualidades das
+estrelas pela física de cada uma, eficiente, sem um motor por tipo. A observação
+manda no conteúdo; o que ela não mede sai de uma regra e se confessa no selo.
+O Sol não passa pela Forja: o desenho dele (H-alfa, aprovado) é a guarda, e
+qualquer mudança visível nele pede a palavra do dono.
+
+**O que era caso à mão (inventário de 16/11):** o tamanho do grão por T·R/M
+(Tremblay, Hp) com teto seco de 0,1 R na tela; o contraste em três degraus
+(0,04 / 0,15 / 0,015 por Teff) mais um piso artístico de 0,04; duas texturas
+diferentes para a mesma física (a granulação "viva" em borrão e as células
+gigantes só de Betelgeuse, com 0,6 R e contraste 0,25 escritos à mão e os
+grânulos dela a 20 %); a borda difusa só onde há medida própria (Betelgeuse
+1,3 R); o relevo só nas células gigantes; o achatamento só onde há Roche
+medido (Vega); o liga-desliga do dínamo por dois cortes secos (Teff ≥ 7.000 K;
+log g < 3,5 com Teff < 4.500 K); a atividade "igual à do Sol" para quem não
+tem giro medido; o ciclo de 11 anos do Sol em todas.
+
+**Os quatro botões.** Entrada: Teff, log g, raio, período de giro,
+luminosidade. Cada camada do corpo é função contínua deles.
+
+1. **GRAVIDADE — a convecção (etapa 2, `?forja=1`).**
+   - *Tamanho da célula:* log₁₀(A/Mm) = 1,3210 log₁₀ Teff − 1,0970 log g +
+     0,0306 (Trampedach et al. 2013, arXiv 1303.1780, ajuste de 37 simulações
+     3D). Conferência: Sol 1,35 Mm, ~2 milhões de grãos na face (ESO eso1741);
+     gigante de 3.660 K e log g 1 dá 4,4 Gm contra os ~5 Gm da simulação de
+     Ludwig & Kučinskas 2012 (arXiv 1211.7304). **Extrapolado** abaixo de
+     log g ≈ 1 (fora da grade): Antares 0,11 R, Betelgeuse 0,12 R; a imagem de
+     π¹ Gru (Paladini et al. 2018: células de ~1,2·10⁸ km) bate com o ajuste se
+     Teff ≈ 3.100 K (Teff de π¹ Gru não aberto).
+   - *Na tela:* a concessão de sempre (o grão do Sol aparece 17,8× maior,
+     1/30 R) vira curva contínua: A_tela = (1/30)·(A/A☉)^0,279 abaixo de
+     0,1 R (A☉ = 0,00194 R, o do ajuste), A_tela = A acima — passa pelo grão do Sol aprovado e encontra o
+     tamanho real em 0,1 R. ARTÍSTICO, declarado; preserva a ordem entre as
+     estrelas (o teto seco deixava Arcturus, Aldebaran, Capella e Deneb iguais).
+   - *Desenho:* UMA textura para todas: células claras (subida quente) com
+     faixas escuras estreitas (descida fria) e uma oitava menor por dentro, que
+     some quando cai abaixo do pixel. Vira temperatura, T = Teff·(1 + δz) com
+     δ = contraste/4 (I ∝ T⁴), e a cor de cada canal pela lei de Planck. A
+     forma das faixas é ARTÍSTICA (topologia das simulações: subidas quentes,
+     descidas conectadas e frias — Steffen et al. 2005; Beeck et al. 2013).
+     A fração da área mais escura que a média é a das simulações: 0,5 até a
+     Teff do Sol (0,53 no Sol), linear até 0,34 a 8.000 K (Steffen 2005) — é
+     ela que separa célula de "rede desenhada". A fervura é mais lenta quanto
+     maior a célula (ritmo de hoje no grão do Sol, o das gigantes de hoje
+     a partir de 0,1 R, linear em log do tamanho): ARTÍSTICO, sem medida de
+     tempo de vida.
+   - *Contraste rms (TEMPERATURA × GRAVIDADE):* nas anãs, interpolado em Teff
+     pela tabela de Beeck et al. 2013 (arXiv 1308.4874: M2V 2,2 %, M0V 3,6 %,
+     K5V 6,9 %, K0V 8,0 %, G2V 15,7 %, F3V 20,3 %) e Steffen et al. 2005
+     (astro-ph/0509464: 12,7 % a 8.000 K, 7,9 % a 8.500 K); **extrapolado** a
+     zero em ~9.300 K pela reta dos dois últimos (estrela sem envelope
+     convectivo: sem granulação); o piso artístico de 4 % sai. Abaixo da Teff do
+     Sol a granulação "escondida" das anãs frias (Beeck: densidade) se desfaz
+     com a gravidade: mistura linear em log g, de 4,44 (anã) a 1,0, rumo à
+     reta entre o Sol (15,7 %) e a gigante de 3.660 K de Ludwig & Kučinskas
+     (18 %). Gigante quente: sem medida, vale a curva das anãs.
+   - *Relevo:* a superfície sobe e desce uma escala de altura, Hp ≈ A/10
+     (Trampedach: A/Hp de 9 a 13), pelo mesmo campo da cor. A amplitude de
+     uma Hp é ARTÍSTICA.
+   - *Atmosfera estendida (a borda que borra e o gás em volta):* raio da camada
+     molecular por log g, linear entre âncoras medidas: anã 1,0 (borda nítida);
+     Arcturus 1,04 R (CO, Ohnaka & Morales Marín 2018, arXiv 1809.01181; log g
+     1,66 de literatura, não aberto); supergigante vermelha 1,3 R em log g 0
+     (Betelgeuse 1,2–1,5 R: Montargès et al. 2014, arXiv 1408.2994; Ohnaka et
+     al. 2009, arXiv 0906.4792; Antares 1,2–1,4 R: Ohnaka et al. 2013, arXiv
+     1304.4800). Só nas frias: inteira abaixo de 4.500 K (a linha de Linsky &
+     Haisch, mesma constante do dínamo) e a zero em 5.000 K — a rampa é
+     ARTÍSTICA. O desenho é a casca de plumas que Betelgeuse já tinha, com o
+     brilho proporcional ao excesso de raio até 0,3 R (camada rasa, pouco gás
+     na linha de visada; ARTÍSTICO).
+   - *Ponto da regra:* Betelgeuse deixa de ter caminho próprio (células de
+     0,6 R e contraste 0,25 à mão viram 0,12 R e 18 % pela regra). O visual
+     aprovado fica com o interruptor desligado até a prancha decidir.
+2. **GIRO — a forma (etapa 3).** Roche e escurecimento gravitacional de
+   Espinosa Lara & Rieutord 2011 (arXiv 1109.3038) para toda estrela com
+   ω conhecido; conferência Altair, Régulo, Vega (Monnier 2007/2012, Che 2011).
+3. **GIRO — a atividade (etapa 4).** Rossby (Wright et al. 2011/2018) sem
+   "igual ao Sol" por omissão; ciclo próprio; Barnard calma, Próxima eruptiva.
+4. **BRILHO — vento e disco (etapa 5).** Rigel, Deneb (vento medido), Achernar
+   (disco a 1,7–2,3 raios, Dalla Vedova et al. 2017).
+
+**Fraco, sem medida:** manchas em outras estrelas; a luminosidade a partir da
+qual o vento aparece; o tempo de vida das células (a animação usa as taxas de
+antes, ARTÍSTICAS).
