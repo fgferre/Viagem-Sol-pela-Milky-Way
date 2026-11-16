@@ -5,6 +5,7 @@ import {
   celulaNaTelaEmRaios,
   celulaRealEmRaios,
   contrasteDaConveccao,
+  desordemDaConveccao,
   fracaoEscura,
   larguraDaBordaEmMu,
   pesoDaEscalaProfunda,
@@ -15,6 +16,7 @@ import {
 import {
   RELEVO_DAS_GIGANTES,
   SOL_PARAMS,
+  calibracaoDaForja,
   cirurgiaDaEstrela,
   cirurgiaDoRelevoDasGigantes,
   cirurgiasDaFotosfera,
@@ -38,10 +40,29 @@ describe('a Forja, botão GRAVIDADE — a regra', () => {
     expect(Math.abs((celulaRealEmRaios(3660, 1, r) * r * 695.7) / 4400 - 1)).toBeLessThan(0.05);
   });
 
-  it('na tela, o grão do Sol é 1/30 e a curva encontra a célula real em 0,1, crescente', () => {
-    expect(celulaNaTelaEmRaios(celulaRealEmRaios(5772, 4.438, 1))).toBeCloseTo(1 / 30, 12);
-    expect(celulaNaTelaEmRaios(0.1 - 1e-9)).toBeCloseTo(0.1, 6);
+  it('na tela, um piso contínuo: o grão do Sol fica em 1/30, as gigantes no tamanho real', () => {
+    // (A⁴ + (1/30)⁴)^¼: no Sol o termo real é (30·A☉)⁴ ≈ 1,1e-5 → +2,9e-6
+    const sol = celulaNaTelaEmRaios(celulaRealEmRaios(5772, 4.438, 1));
+    expect(Math.abs(sol * 30 - 1)).toBeLessThan(3e-6);
+    const arcturus = celulaRealEmRaios(4450, 1.89, 22.97);
+    expect(celulaNaTelaEmRaios(arcturus) / arcturus).toBeGreaterThan(1.1);
+    expect(celulaNaTelaEmRaios(arcturus) / arcturus).toBeLessThan(1.16);
+    const aldebaran = celulaRealEmRaios(3900, 1.19, 45.1);
+    expect(celulaNaTelaEmRaios(aldebaran) / aldebaran).toBeLessThan(1.03);
+    expect(celulaNaTelaEmRaios(0.12) / 0.12).toBeLessThan(1.002);
     expect(celulaNaTelaEmRaios(0.05)).toBeLessThan(celulaNaTelaEmRaios(0.06));
+    expect(celulaNaTelaEmRaios(0)).toBeCloseTo(1 / 30, 12);
+  });
+
+  it('a desordem segue o Mach de Ludwig & Kučinskas: 0 no Sol, 1 a log g 1, linear entre', () => {
+    expect(desordemDaConveccao(4.438)).toBe(0);
+    expect(desordemDaConveccao(4.8)).toBe(0);
+    expect(desordemDaConveccao(1.0)).toBeCloseTo(1, 12);
+    expect(desordemDaConveccao(-0.07)).toBe(1);
+    // Mach 3,9 no meio do caminho
+    expect(desordemDaConveccao((4.438 + 1) / 2)).toBeCloseTo(0.5, 12);
+    expect(desordemDaConveccao(1.89)).toBeCloseTo((4.438 - 1.89) / 3.438, 12);
+    expect(regraDaForja(3600, -0.07, 764).desordem).toBe(1);
   });
 
   it('o contraste das anãs reproduz os pontos medidos e é zero sem envelope', () => {
@@ -71,6 +92,16 @@ describe('a Forja, botão GRAVIDADE — a regra', () => {
     expect(fracaoEscura(8000)).toBeCloseTo(0.34, 12);
     expect(fracaoEscura((5772 + 8000) / 2)).toBeCloseTo(0.42, 12);
     expect(fracaoEscura(9500)).toBeCloseTo(0.34, 12);
+  });
+
+  it('a textura alcança a fração escura da regra, até 0,34 (8.000 K)', () => {
+    const quente = calibracaoDaForja(fracaoEscura(8000));
+    expect(quente.k).toBeGreaterThan(2.5);
+    expect(quente.k).toBeLessThan(3);
+    // a 0,5 (as frias) o k é o de antes
+    expect(calibracaoDaForja(0.5).k).toBeCloseTo(0.69, 1);
+    // a normalização anda com a desordem: as regiões somam variância
+    expect(calibracaoDaForja(0.5, 1).s).toBeGreaterThan(calibracaoDaForja(0.5, 0).s);
   });
 
   it('a fervura: o ritmo de hoje na célula do Sol, o das gigantes a partir de 0,1 R', () => {
@@ -169,6 +200,19 @@ describe('a Forja desligada não muda nada', () => {
     expect(cirurgiasDaFotosfera(sunJs, sunJs, ana, forjaDe(ana, true))!.fragment).toContain('  color *= smoothstep(0.0, max(');
     // sem relevo nenhum: o vertex é o de antes
     expect(c.vertex).toBe(sunJs);
+  });
+
+  it('a desordem só entra no texto de quem a tem', () => {
+    const sup = cirurgiasDaFotosfera(sunJs, sunJs, bet, forjaDe(bet, true))!;
+    expect(sup.fragment).toContain('float regiao = ');
+    const ana = { ...bet, teffK: 6500, logG: 4.6 };
+    expect(cirurgiasDaFotosfera(sunJs, sunJs, ana, forjaDe(ana, true))!.fragment).not.toContain('regiao');
+  });
+
+  it('a borda desce até a casca rente: inteira numa supergigante, 0,7·1,6·excesso/0,3 numa rasa', () => {
+    expect(frenteDaAtmosfera(1.3)).toBe(1);
+    expect(frenteDaAtmosfera(1.04)).toBeCloseTo(0.7 * 1.6 * (0.04 / 0.3), 12);
+    expect(frenteDaAtmosfera(1)).toBe(0);
   });
 
   it('a escala profunda só entra no texto de quem tem peso', () => {

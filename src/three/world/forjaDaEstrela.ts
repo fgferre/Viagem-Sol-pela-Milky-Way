@@ -23,21 +23,21 @@ export function celulaRealEmRaios(teffK: number, logG: number, raioRsol: number)
 
 /** a célula do Sol pela mesma conta (~0,00194 R) */
 const A_SOL = celulaRealEmRaios(TEFF_SOL_K, LOG_G_SOL, 1);
-/** onde a célula na tela encontra a real */
-const ENCONTRO = 0.1;
-/** o grão do Sol aprovado na tela */
+/** a célula a partir da qual a fervura tem o ritmo das gigantes de hoje */
+const CELULA_DAS_GIGANTES = 0.1;
+/** o grão do Sol aprovado na tela: o piso de visibilidade */
 const CELULA_DO_SOL_NA_TELA = 1 / 30;
-/** o expoente que leva 1/30 (em A☉) a 0,1 (em 0,1): ~0,279 */
-const EXPOENTE_DA_TELA = Math.log(ENCONTRO / CELULA_DO_SOL_NA_TELA) / Math.log(ENCONTRO / A_SOL);
 
 /**
  * A CÉLULA NA TELA, em raios — a concessão de sempre (o grão do Sol aparece
- * 17,8× maior) como curva contínua e crescente: (1/30)·(A/A☉)^p abaixo de
- * 0,1 R, a própria célula acima. ARTÍSTICO, declarado.
+ * 17,8× maior) como um PISO de visibilidade contínuo:
+ * A_tela = (A⁴ + (1/30)⁴)^¼. O grão que a tela não resolveria sobe ao grão
+ * do Sol aprovado; onde o tamanho real já se vê (gigantes), a ampliação cai
+ * a 1 (Arcturus ~1,13×, Aldebaran ~1,02×). ARTÍSTICO, declarado.
  */
 export function celulaNaTelaEmRaios(aR: number): number {
-  if (aR >= ENCONTRO) return aR;
-  return CELULA_DO_SOL_NA_TELA * Math.pow(Math.max(aR, 0) / A_SOL, EXPOENTE_DA_TELA);
+  const a = Math.max(aR, 0);
+  return Math.pow(a ** 4 + CELULA_DO_SOL_NA_TELA ** 4, 0.25);
 }
 
 /** interpolação linear por pontos (x crescente), constante fora */
@@ -96,6 +96,21 @@ export function contrasteDaConveccao(teffK: number, logG: number): number {
 }
 
 /**
+ * A DESORDEM DA CONVECÇÃO, 0 a 1, por log g: o escoamento fica mais violento
+ * quando a gravidade cai — Mach horizontal máximo de ~1,8 no Sol e ~6,0 na
+ * gigante de log g 1 (Ludwig & Kučinskas 2012, arXiv 1211.7304), linear em
+ * log g entre as duas âncoras; a desordem é (Ma − 1,8)/(6,0 − 1,8), presa em
+ * [0, 1]. Ela comanda a torção do domínio, a quebra das faixas em plumas e
+ * as regiões mais quentes e mais frias da textura; a forma é ARTÍSTICA.
+ */
+const MACH_DO_SOL = 1.8;
+const MACH_DA_GIGANTE = 6.0;
+export function desordemDaConveccao(logG: number): number {
+  const mach = MACH_DO_SOL + ((LOG_G_SOL - logG) / (LOG_G_SOL - LOG_G_DA_GIGANTE)) * (MACH_DA_GIGANTE - MACH_DO_SOL);
+  return Math.min(1, Math.max(0, (mach - MACH_DO_SOL) / (MACH_DA_GIGANTE - MACH_DO_SOL)));
+}
+
+/**
  * O RAIO DA ATMOSFERA ESTENDIDA, em raios, por log g: anã 1,0; Arcturus
  * 1,04 (log g 1,66; Ohnaka & Morales Marín 2018); supergigante 1,3 em
  * log g 0 (Montargès 2014; Ohnaka 2009, 2013). Só nas frias: o excesso é
@@ -132,7 +147,7 @@ export function fracaoEscura(teffK: number): number {
  * maior ferve mais devagar. ARTÍSTICO, declarado.
  */
 export function ritmoDaFervura(aR: number): number {
-  const x = Math.min(1, Math.max(0, Math.log(aR / A_SOL) / Math.log(ENCONTRO / A_SOL)));
+  const x = Math.min(1, Math.max(0, Math.log(aR / A_SOL) / Math.log(CELULA_DAS_GIGANTES / A_SOL)));
   return 1 + x * (1 / 6 - 1);
 }
 
@@ -182,6 +197,8 @@ export interface RegraDaForja {
   readonly ritmoProfundo: number;
   /** a largura da borda em μ (`larguraDaBordaEmMu`) */
   readonly bordaEmMu: number;
+  /** a desordem do escoamento (`desordemDaConveccao`), 0 a 1 */
+  readonly desordem: number;
 }
 
 /** O botão GRAVIDADE inteiro, de Teff, log g e raio. */
@@ -197,5 +214,6 @@ export function regraDaForja(teffK: number, logG: number, raioRsol: number): Reg
     pesoProfundo: pesoDaEscalaProfunda(logG),
     ritmoProfundo: ritmoDaFervura(CELULA_PROFUNDA_EM_RAIOS),
     bordaEmMu: larguraDaBordaEmMu(a),
+    desordem: desordemDaConveccao(logG),
   };
 }

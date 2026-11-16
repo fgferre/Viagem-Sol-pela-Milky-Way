@@ -1253,10 +1253,12 @@ luminosidade. Cada camada do corpo é função contínua deles.
      π¹ Gru (Paladini et al. 2018: células de ~1,2·10⁸ km) bate com o ajuste se
      Teff ≈ 3.100 K (Teff de π¹ Gru não aberto).
    - *Na tela:* a concessão de sempre (o grão do Sol aparece 17,8× maior,
-     1/30 R) vira curva contínua: A_tela = (1/30)·(A/A☉)^0,279 abaixo de
-     0,1 R (A☉ = 0,00194 R, o do ajuste), A_tela = A acima — passa pelo grão do Sol aprovado e encontra o
-     tamanho real em 0,1 R. ARTÍSTICO, declarado; preserva a ordem entre as
-     estrelas (o teto seco deixava Arcturus, Aldebaran, Capella e Deneb iguais).
+     1/30 R) vira um PISO de visibilidade contínuo (volta 3): A_tela =
+     (A⁴ + (1/30)⁴)^¼ — o grão que a tela não resolveria sobe ao grão do Sol
+     aprovado; onde o tamanho real já se vê (gigantes), a ampliação cai a 1
+     (Arcturus ~1,13×, Aldebaran ~1,004×). ARTÍSTICO, declarado. (A volta 1
+     usava uma potência que só encontrava o real em 0,1 R e inflava Arcturus
+     2,3×.)
    - *Desenho:* UMA textura para todas: células claras (subida quente) com
      faixas escuras estreitas (descida fria) e uma oitava menor por dentro, que
      some quando cai abaixo do pixel. Vira temperatura, T = Teff·(1 + δz) com
@@ -1292,9 +1294,24 @@ luminosidade. Cada camada do corpo é função contínua deles.
      com peso que vai de 0 em log g 1,0 a 1 em −0,3 (Betelgeuse 0,92), a
      mesma célula do grão; numa supergigante ela domina e o grão aparece por
      cima a meio peso (divisão 1 : 0,5 ARTÍSTICA).
-   - *Sem ganho de tela:* δ = contraste/4, Planck por canal, TiO só nas M. O
-     ganho 2,6× da Betelgeuse aprovada não tem medida e saiu: o contraste
-     visível dela fica em ~60 % do aprovado (0,19 contra 0,32 na tela).
+   - *Sem ganho de tela (conferido na fonte, volta 3):* na gigante de
+     Ludwig & Kučinskas 2012 (arXiv 1211.7304, apêndice B) os 18 % de
+     contraste em luz branca vêm de uma flutuação de temperatura de 4,5 % —
+     exatamente o δ = contraste/4 que o motor usa. No visível a lei de Planck
+     amplia: a 3.600 K, dI/I ≈ x·δ com x = c₂/(λT) ≈ 7,3 em 0,55 µm, ou seja
+     ~33 % no verde, ~29 % no vermelho e ~39 % no azul (o miolo quente sai mais
+     claro E mais amarelo; a faixa fria, mais escura e mais vermelha). A volta
+     2 mediu 0,36 linear na Betelgeuse: é a física. O ganho 2,6× da aprovada
+     (0,61 linear) não tem fonte e não volta. As simulações de supergigante
+     (Chiavassa et al. 2009–2011) não publicam contraste no óptico em número.
+   - *Desordem pela gravidade:* o escoamento fica mais violento quando a
+     gravidade cai — Mach máximo horizontal de ~1,8 no Sol e ~6,0 na gigante
+     de log g 1 (vertical 1,5 e 2,5), atribuído ao grânulo grande diante da
+     escala de altura (Ludwig & Kučinskas 2012). A desordem da textura
+     (torção do domínio, faixas que se quebram em plumas) segue esse Mach,
+     linear em log g entre as duas âncoras; a forma é ARTÍSTICA. A mesma
+     fonte: faixas MAIS ESTREITAS que as do Sol na gigante, distribuição de
+     intensidade de um pico só, grânulos de borda clara.
    - *Sem relevo:* estrela brilha por si; o relevo entortava a normal e a lei
      de borda virava luz rasante ("almofada"). O claro-escuro é só temperatura.
    - *Borda macia:* a intensidade cai a zero na espessura da fotosfera,

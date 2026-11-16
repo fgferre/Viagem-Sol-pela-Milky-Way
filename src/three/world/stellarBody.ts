@@ -796,14 +796,25 @@ float granulacaoViva(vec3 p, float t, float mu) {
  *    ondas planas faziam alvos na esfera), largas onde são escuras e
  *    estreitas e fracas onde somem;
  *  · a CÉLULA QUE SE PARTE: um vinco mole e raro (~1 em 10) atravessando o miolo
- *    das células grandes — uma linha, sem rede menor e sem marcas em "Y".
+ *    das células grandes — uma linha, sem rede menor e sem marcas em "Y";
+ *  · a DESORDEM (`desordemDaConveccao`, o Mach pela gravidade): o domínio
+ *    torcido por ruído de valor (largo, ~3 células: alonga; médio, ~1:
+ *    entorta a borda), as faixas partidas em plumas de largura e escuridão
+ *    variáveis que somem e voltam (mais estreitas em média, Ludwig &
+ *    Kučinskas 2012) e mais macias quando chegam ao pixel, o ombro do domo
+ *    mais mole e, somadas ao brilho, regiões mais quentes e mais frias de
+ *    média escala, um meio-tom do tamanho da célula e um fino que some
+ *    abaixo do pixel (ruído de valor, sem Worley novo). Em zero, nada disso
+ *    entra no texto. Amplitudes ARTÍSTICAS, declaradas.
  * O σ do domo, a rampa e a largura das faixas saem de UM botão `k`, calibrado pela
  * FRAÇÃO ESCURA da regra (`fracaoEscura`) em `calibracaoDaForja`. A célula
  * menor que ~2 px esmaece para a média e nem é calculada; a faixa e o vinco
  * mais finos que o pixel alargam e clareiam na mesma proporção.
  */
-function glslDaCelulaDaForja(c: CalibracaoDaForja): string {
-  const { sigma, faixa, rampa } = perfilDaForja(c.k);
+function glslDaCelulaDaForja(c: CalibracaoDaForja, desordem: number): string {
+  const { sigma, faixa, rampa, espalhamento } = perfilDaForja(c.k);
+  const D = Math.min(1, Math.max(0, desordem));
+  const L = (x: number) => literalGlsl(x);
   return /* glsl */ `
 vec3 hashDaForja(vec3 p) {
   p = fract(p * vec3(0.1031, 0.1030, 0.0973));
@@ -825,24 +836,34 @@ vec3 lenteDaForja(vec3 p) {
   }
   return p - 3.0 * desl;
 }
-// dois campos suaves de valor (0 a 1), para a faixa variar ao longo do contorno
-vec2 ruidoDaForja(vec3 p) {
+// três campos suaves de valor (0 a 1)
+vec3 valorDaForja(vec3 p) {
   vec3 i = floor(p);
   vec3 f = p - i;
   f = f * f * (3.0 - 2.0 * f);
-  vec2 r = vec2(0.0);
+  vec3 r = vec3(0.0);
   for (int a = 0; a <= 1; a++)
   for (int b = 0; b <= 1; b++)
   for (int c = 0; c <= 1; c++) {
     vec3 o = vec3(float(a), float(b), float(c));
     vec3 w = mix(1.0 - f, f, o);
-    r += w.x * w.y * w.z * hashDaForja(i + o).xy;
+    r += w.x * w.y * w.z * hashDaForja(i + o);
   }
-  return clamp(0.5 + 1.6 * (r - 0.5), 0.0, 1.0);
+  return r;
 }
 // x: o brilho; y: u, 0 na borda e 1 no centro. px: o pixel em células
 vec2 celulaDaForja(vec3 p, float t, float px) {
-  p += 0.42 * sin(p.yzx * 0.9 + t * 0.05) + 0.16 * sin(p.zxy * 2.1 + 4.1) + 0.04 * sin(p.yzx * 4.9 + 1.3);
+  p += 0.42 * sin(p.yzx * 0.9 + t * 0.05) + 0.16 * sin(p.zxy * 2.1 + 4.1) + 0.04 * sin(p.yzx * 4.9 + 1.3);${
+    D > 0
+      ? `
+  // a desordem: o domínio torcido por ruído de valor, largo (alonga a
+  // célula) e médio (entorta a borda); o mesmo ruído faz as regiões
+  vec3 wl = valorDaForja(p * 0.29 + vec3(5.3, 1.7, 9.2) + t * 0.004) - 0.5;
+  vec3 wm = valorDaForja(p * 1.13 + vec3(2.1, 8.4, 4.6) + t * 0.01) - 0.5;
+  float regiao = 2.0 * wl.z + wm.z;
+  p += ${L(1.1 * D)} * wl + ${L(0.6 * D)} * wm;`
+      : ''
+  }
   vec3 c = floor(p);
   vec3 f = p - c;
   float d1 = 8.0;
@@ -863,24 +884,35 @@ vec2 celulaDaForja(vec3 p, float t, float px) {
   float u = (d2 - d1) / max(d2 + d1, 1e-6);
   // o domo: radial a partir do centro (sem os vincos de u por dentro)
   float domo = exp(-(d1 * d1) / ${literalGlsl(sigma * sigma)});
-  vec2 nn = ruidoDaForja(p * 0.6 + 3.7);
+  vec3 nn = clamp(0.5 + 1.6 * (valorDaForja(p * ${L(0.6 + 1.2 * D)} + 3.7) - 0.5), 0.0, 1.0);
   float n1 = nn.x;
   float n2 = nn.y;
+  // as plumas: com desordem a faixa se parte em pedaços que somem e voltam
+  float seg = smoothstep(${L(0.55 * D - 0.25)}, ${L(0.7 * D)}, nn.z);
   // a faixa: larga onde é escura, estreita e fraca onde some
-  float lw = (0.1 + 0.2 * n1) * ${literalGlsl(faixa)};
-  float lwE = max(lw, 1.5 * px);
+  float lw = (0.1 + 0.2 * n1) * ${L(faixa * (1 - 0.2 * D))} * (1.0 + ${L(1.6 * D)} * (seg - 0.5));
+  float lwE = max(lw, ${L(1.5 * (1 + D))} * px);
   float faixa = lw / lwE * exp(-(u * u) / (lwE * lwE));
-  float escura = (0.25 + 0.65 * n1) * (0.7 + 0.3 * n2);
-  float pico = 1.0 + 0.5 * (tam - 1.0) + 0.35 * (h1.x - 0.5);
+  float escura = (0.25 + 0.65 * n1) * (0.7 + 0.3 * n2) * seg;
+  float pico = 1.0 + ${L(espalhamento)} * (0.5 * (tam - 1.0) + 0.35 * (h1.x - 0.5));
   // o brilho de cada célula desce até um nível comum na borda (0,75): os
   // dois lados de uma faixa fraca se encontram sem degrau
-  float v = (0.75 + (pico * domo - 0.75) * smoothstep(0.0, ${literalGlsl(rampa)}, u)) * (1.0 - escura * faixa);
+  float v = (0.75 + (pico * domo - 0.75) * smoothstep(0.0, ${L(rampa + 0.1 * D)}, u)) * (1.0 - escura * faixa);
   float raro = smoothstep(0.7, 0.9, h1.z) * smoothstep(0.95, 1.15, tam);
   if (raro > 0.0) {
     vec3 nv = fract(h1 * vec3(7.13, 5.71, 3.37) + vec3(0.3, 0.6, 0.1)) - 0.5;
     float dl = dot(q1, nv) / ((length(nv) + 1e-3) * tam);
     float wv = max(0.12, 1.5 * px);
     v *= 1.0 - 0.3 * raro * (0.12 / wv) * smoothstep(0.3, 0.65, u) * exp(-(dl * dl) / (wv * wv));
+  }
+  ${
+    D > 0
+      ? `
+  // a turbulência por dentro: as regiões, um meio-tom do tamanho da célula e
+  // um fino, que esmaece quando cai abaixo do pixel
+  float fino = (valorDaForja(p * 4.1 + vec3(1.9, 6.2, 3.3)).x - 0.5) * (1.0 - smoothstep(0.08, 0.2, px));
+  v += ${L(0.6 * D)} * regiao + ${L(0.6 * D)} * (nn.y - 0.5) + ${L(0.5 * D)} * fino;`
+      : ''
   }
   return vec2(v, u);
 }
@@ -896,34 +928,51 @@ float campoDaForja(vec3 p, float t) {
 }
 
 /**
- * A CALIBRAÇÃO DA FORJA por Monte Carlo (réplica JS do GLSL, na esfera, 2·10⁵
- * pontos e tempos ao acaso por linha, a 10 células por raio; a 30 dá o
- * mesmo a 0,001): para cada `k`, a fração da área abaixo da média e a
- * normalização (média m, desvio s). A fração vai de 0,520 a 0,416 e para
- * aí (mais platô quase não a baixa: o brilho por célula passa a mandar),
- * então as estrelas acima de ~6.900 K, que pedem menos (0,34 a 8.000 K),
- * ficam em 0,416.
+ * A CALIBRAÇÃO DA FORJA por Monte Carlo (réplica numpy do GLSL, na esfera,
+ * 2·10⁵ pontos e tempos ao acaso por linha, a 10 células por raio): para
+ * cada `k`, a fração da área abaixo da média sem desordem e a normalização
+ * (média m, desvio s) com desordem 0, ½ e 1. A fração vai de 0,517 a 0,339:
+ * acima de k = 1,5 o brilho por célula (`espalhamento`) se estreita e as
+ * faixas escuras ficam com a área abaixo da média — 0,34 a 8.000 K (Steffen
+ * 2005). Com desordem as regiões levam a fração para ~0,5 (0,44 a 0,52 em
+ * desordem ½), o que só pesa em gigante quente.
  */
 const TABELA_DA_FORJA = [
-  { k: 1.5, fracao: 0.4157, m: 0.8168, s: 0.2457 },
-  { k: 1.25, fracao: 0.4281, m: 0.7867, s: 0.2523 },
-  { k: 1, fracao: 0.466, m: 0.7294, s: 0.2571 },
-  { k: 0.9, fracao: 0.4797, m: 0.709, s: 0.2562 },
-  { k: 0.8, fracao: 0.4907, m: 0.6898, s: 0.2542 },
-  { k: 0.7, fracao: 0.5013, m: 0.6716, s: 0.2513 },
-  { k: 0.6, fracao: 0.5119, m: 0.6544, s: 0.2476 },
-  { k: 0.5, fracao: 0.5199, m: 0.6379, s: 0.2431 },
+  { k: 3, fracao: 0.3391, m: [0.824, 0.8089, 0.8276], s: [0.2331, 0.2727, 0.3628] },
+  { k: 2.5, fracao: 0.345, m: [0.8244, 0.8095, 0.8284], s: [0.2374, 0.2761, 0.3652] },
+  { k: 2, fracao: 0.371, m: [0.8227, 0.8083, 0.8276], s: [0.243, 0.2805, 0.3683] },
+  { k: 1.5, fracao: 0.4045, m: [0.8173, 0.8041, 0.8242], s: [0.2492, 0.2852, 0.3719] },
+  { k: 1.25, fracao: 0.4189, m: [0.7876, 0.7774, 0.8063], s: [0.2552, 0.289, 0.3741] },
+  { k: 1, fracao: 0.4612, m: [0.7305, 0.7253, 0.7669], s: [0.2593, 0.2882, 0.3732] },
+  { k: 0.9, fracao: 0.4753, m: [0.7099, 0.7068, 0.753], s: [0.2581, 0.2862, 0.3721] },
+  { k: 0.8, fracao: 0.4877, m: [0.6906, 0.6895, 0.7399], s: [0.2559, 0.2836, 0.3709] },
+  { k: 0.7, fracao: 0.4985, m: [0.6723, 0.6732, 0.7276], s: [0.2527, 0.2805, 0.3695] },
+  { k: 0.6, fracao: 0.5086, m: [0.6549, 0.6578, 0.716], s: [0.2488, 0.277, 0.3679] },
+  { k: 0.5, fracao: 0.5174, m: [0.6384, 0.6433, 0.7049], s: [0.2443, 0.2732, 0.3663] },
 ] as const;
 
 export type CalibracaoDaForja = { k: number; m: number; s: number };
 
-/** o perfil de um `k`: a largura do domo (σ, em células), a escala da largura das faixas e a rampa até a faixa (em u) */
-export function perfilDaForja(k: number): { sigma: number; faixa: number; rampa: number } {
-  return { sigma: 0.9 + 0.9 * k, faixa: Math.max(0.3, 1 - 0.5 * k), rampa: Math.max(0.12, 0.5 - 0.3 * k) };
+/**
+ * o perfil de um `k`: a largura do domo (σ, em células), a escala da largura
+ * das faixas, a rampa até a faixa (em u) e o espalhamento do brilho por
+ * célula (1 até k = 1,5, depois mais estreito)
+ */
+export function perfilDaForja(k: number): { sigma: number; faixa: number; rampa: number; espalhamento: number } {
+  return {
+    sigma: 0.9 + 0.9 * k,
+    faixa: Math.max(0.3, 1 - 0.5 * k),
+    rampa: Math.max(0.12, 0.5 - 0.3 * k),
+    espalhamento: k <= 1.5 ? 1 : Math.max(0, 1 - 0.5 * (k - 1.5)),
+  };
 }
 
-/** a linha da tabela para uma fração escura, interpolada (limitada às pontas) */
-export function calibracaoDaForja(fracao: number): CalibracaoDaForja {
+/**
+ * a linha da tabela para uma fração escura (o `k`, pela coluna sem
+ * desordem) e a normalização daquele `k` na desordem dada — tudo
+ * interpolado, limitado às pontas
+ */
+export function calibracaoDaForja(fracao: number, desordem: number = 0): CalibracaoDaForja {
   const T = TABELA_DA_FORJA;
   let i = 1;
   while (i < T.length - 1 && fracao > T[i]!.fracao) i++;
@@ -931,7 +980,11 @@ export function calibracaoDaForja(fracao: number): CalibracaoDaForja {
   const b = T[i]!;
   const x = Math.min(1, Math.max(0, (fracao - a.fracao) / (b.fracao - a.fracao)));
   const m = (u: number, v: number) => u + x * (v - u);
-  return { k: m(a.k, b.k), m: m(a.m, b.m), s: m(a.s, b.s) };
+  const d = 2 * Math.min(1, Math.max(0, desordem));
+  const j = Math.min(1, Math.floor(d));
+  const y = d - j;
+  const col = (c: readonly number[]) => c[j]! + y * (c[j + 1]! - c[j]!);
+  return { k: m(a.k, b.k), m: m(col(a.m), col(b.m)), s: m(col(a.s), col(b.s)) };
 }
 
 /**
@@ -950,7 +1003,7 @@ function glslDaConveccao(forja: RegraDaForja): string {
       ? `  return (${literalGlsl(a)} * ${grao} + ${literalGlsl(w)} * campoDaForja(sp/${literalGlsl(CELULA_PROFUNDA_EM_RAIOS)} + 41.0, t*${literalGlsl(forja.ritmoProfundo)})) / ${literalGlsl(Math.hypot(a, w))};`
       : `  return ${grao};`;
   return (
-    glslDaCelulaDaForja(calibracaoDaForja(forja.fracaoEscura)) +
+    glslDaCelulaDaForja(calibracaoDaForja(forja.fracaoEscura, forja.desordem), forja.desordem) +
     /* glsl */ `
 float conveccao(vec3 sp, float t) {
 ${corpo}
@@ -1779,15 +1832,16 @@ const EXCESSO_DA_ATMOSFERA_PLENA = 0.3;
  */
 const CASCA_DA_FORJA = { plumaMin: 0.6, plumaMax: 1.2, alcance: 1.9, brilho: 0.7 } as const;
 /**
- * A METADE DA FRENTE da casca da Forja rente à borda, em frações da borda do
- * disco: o brilho dela em b = 1 (com a camada rente, 1 + 0,6) pela metade —
- * a linha de visada que toca a fotosfera só cruza o gás da frente. É o piso
- * da borda macia da fotosfera; zero sem atmosfera estendida.
+ * A CASCA DA FORJA RENTE à borda, em frações da borda do disco: o brilho
+ * dela em b = 1 (com a camada rente, 1 + 0,6), preso em 1. É o piso da borda
+ * macia da fotosfera: o disco desce até onde a casca começa, e os dois perfis
+ * se encontram sem vale (a metade, só o gás da frente, deixava uma fresta
+ * escura de 1–2 px entre o disco e a casca). Zero sem atmosfera estendida.
  */
 export function frenteDaAtmosfera(atmosferaEmRaios: number): number {
   const excesso = atmosferaEmRaios - 1;
   if (excesso <= 0) return 0;
-  return 0.5 * CASCA_DA_FORJA.brilho * Math.min(1, excesso / EXCESSO_DA_ATMOSFERA_PLENA) * 1.6;
+  return Math.min(1, CASCA_DA_FORJA.brilho * Math.min(1, excesso / EXCESSO_DA_ATMOSFERA_PLENA) * 1.6);
 }
 /**
  * O VÉU (`criarABordaDifusa`) — ARTÍSTICO, declarado. A luz que sobra é a de
