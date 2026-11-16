@@ -48,13 +48,18 @@
     {
       "nome": "saturnoRasante",
       "camera": {
-        "duracao": 6.5,
+        "duracao": "duracaoDoRasante",
         "movimento": {
-          "tipo": "trajeto",
-          "pontos": ["sobreOAnelA", "rasante", "entradaNoAnel"]
+          "tipo": "aproximacao",
+          "centro": "travessia",
+          "de": "sobreOAnelA",
+          "para": "entradaNoAnel",
+          "ritmoDaDirecao": "glide",
+          "progresso": {"tipo": "rampa", "de": 0, "para": 1, "ritmo": "quadratic"}
         },
         "mira": {"tipo": "fixo", "ponto": "Saturno"},
         "lente": [58, 58],
+        "ritmo": "linear",
         "inclinacao": {"tipo": "rampa", "de": 0, "para": "inclinacaoNoAnel", "ritmo": "glide"}
       },
       "fundoSilencioso": true,
@@ -67,7 +72,7 @@
             "texto": "Ice: 280,000 km end to end, tens of metres thick",
             "subtexto": "and perhaps young — they may be less than 100 million years old"
           },
-          "duracao": 6
+          "duracao": 5.6
         }
       ],
       "olhar": "assunto"
@@ -76,10 +81,36 @@
       "nome": "saturnoDentroDoAnel",
       "qa": {"rasanteDosAneis": 0.5},
       "camera": {
-        "duracao": 5.5,
-        "movimento": {"tipo": "reta", "de": "entradaNoAnel", "para": "saidaDoAnel"},
+        "duracao": "duracaoDaTravessia",
+        "movimento": {
+          "tipo": "sequencia",
+          "trechos": [
+            {
+              "ate": "fimDaFreada",
+              "movimento": {
+                "tipo": "aproximacao",
+                "centro": "travessia",
+                "de": "entradaNoAnel",
+                "para": "mioloSul",
+                "progresso": {
+                  "tipo": "soma",
+                  "curvas": [
+                    {"tipo": "rampa", "de": 0, "para": "pesoDaFreada"},
+                    {"tipo": "rampa", "de": 0, "para": "restoDaFreada", "ritmo": "easeOut"}
+                  ]
+                }
+              }
+            },
+            {"ate": "fimDoMiolo", "movimento": {"tipo": "reta", "de": "mioloSul", "para": "mioloNorte"}},
+            {
+              "ate": 1,
+              "movimento": {"tipo": "aproximacao", "centro": "travessia", "de": "mioloNorte", "para": "saidaDoAnel"}
+            }
+          ]
+        },
         "mira": {"tipo": "fixo", "ponto": "Saturno"},
         "lente": [58, 58],
+        "ritmo": "linear",
         "inclinacao": {"tipo": "fixo", "valor": "inclinacaoNoAnel"}
       },
       "fundoSilencioso": true,
@@ -101,20 +132,24 @@
     {
       "nome": "saturnoCruzamento",
       "camera": {
-        "duracao": 9,
+        "duracao": "duracaoDoCruzamento",
         "movimento": {
-          "tipo": "trajeto",
-          "pontos": ["saidaDoAnel", "cruzamento", "alemDoCruzamento", "subida"],
+          "tipo": "aproximacao",
+          "centro": "travessia",
+          "de": "saidaDoAnel",
+          "para": "subida",
+          "ritmoDaDirecao": "glide",
           "progresso": {
             "tipo": "soma",
             "curvas": [
-              {"tipo": "rampa", "de": 0, "para": 0.4, "ritmo": "quadratic"},
-              {"tipo": "rampa", "de": 0, "para": 0.6, "ritmo": "launch"}
+              {"tipo": "rampa", "de": 0, "para": "pesoDaArrancada", "ritmo": "settle"},
+              {"tipo": "rampa", "de": 0, "para": "restoDaArrancada", "ritmo": "glide"}
             ]
           }
         },
         "mira": {"tipo": "fixo", "ponto": "Saturno"},
         "lente": [58, 58],
+        "ritmo": "linear",
         "inclinacao": {"tipo": "rampa", "de": "inclinacaoNoAnel", "para": 0, "ritmo": "glide"}
       },
       "fundoSilencioso": true,

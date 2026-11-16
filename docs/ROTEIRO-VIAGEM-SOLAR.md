@@ -144,7 +144,7 @@ Formato de cada cena: **o que se vê** (o que é nosso) · **câmera** · **lege
 - Inspiração: *Passport* passa sob os anéis.
 
 **15. Rasante nos anéis (200–215 s)**
-- Vê-se: os grãos da laje passando, a sombra do planeta.
+- Vê-se: a descida pela face acesa freando de quilômetros a metros; a câmera atravessa a camada de pedaços de gelo a ~6 m/s, com Saturno visto através deles, e sai pela face norte subindo.
 - Legenda (dimensionar + reviravolta): **"Gelo: 280 mil km de ponta a ponta, dezenas de metros de espessura"** / *e talvez jovens — podem ter menos de 100 milhões de anos*.
 - Inspiração: *The Planets* 2019 (Saturno nasceu sem anéis).
 

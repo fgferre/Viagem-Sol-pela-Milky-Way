@@ -161,6 +161,26 @@ describe('os nomes e as juntas', () => {
   });
 });
 
+describe('a travessia da camada do anel', () => {
+  it.each(['saturnoDentroDoAnel', 'saturnoCruzamento'])(
+    'a junta que abre o plano %s não salta de posição, de olhar nem de lente, e passa com a mesma velocidade',
+    (nome) => {
+      const { i, inicio: t } = plano(nome);
+      const fim = filme.shots[i - 1].pos(1, new THREE.Vector3());
+      // a 1 cm: a travessia anda a metros do plano
+      expect(fim.distanceTo(filme.shots[i].pos(0, new THREE.Vector3()))).toBeLessThan(1e-5 / 3.0857e13);
+      const [a, b] = [journey.at(t - 1e-6), journey.at(t + 1e-6)];
+      expect(graus(a.look.clone().sub(a.pos).angleTo(b.look.clone().sub(b.pos)))).toBeLessThan(0.01);
+      expect(Math.abs(a.fov - b.fov)).toBeLessThan(1e-3);
+      expect(Math.abs(a.roll - b.roll)).toBeLessThan(1e-3);
+      const h = 1e-4;
+      const v = (x: number, y: number) => journey.at(y).pos.sub(journey.at(x).pos).divideScalar(y - x);
+      const antes = v(t - 2 * h, t - h);
+      expect(antes.distanceTo(v(t + h, t + 2 * h))).toBeLessThan(0.05 * antes.length());
+    }
+  );
+});
+
 describe('Hipérion e o postal (cenas 18 e 19)', () => {
   const HIPERION = filme.pinos.get('hyperion')!;
   const k = joelho(HIPERION, ['hiperionChegada', 'hiperionRaspao']);

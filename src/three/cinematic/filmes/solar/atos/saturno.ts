@@ -35,34 +35,73 @@ const GIRO = Math.sign(((AZ_ENCELADO - AZ_CHEGADA + 540) % 360) - 180);
 const az = (graus: number) => AZ_CHEGADA + GIRO * graus;
 /** o raio do anel desenhado (até o F), em raios de Saturno */
 export const RAIO_DOS_ANEIS = 2.326;
-/** o cruzamento declarado do plano: na divisão de Cassini (1,95–2,03) */
-export const RAIO_DO_CRUZAMENTO = 1.99;
+/** o único cruzamento do plano dentro do anel: a travessia da camada, no anel A */
+export const RAIO_DO_CRUZAMENTO = 2.13;
 const CHEGADA_A_SATURNO = emSaturno(14, az(0), -14 * Math.sin(rad(2)));
 const SOBRE_O_ANEL_A = emSaturno(2.25, az(60), -0.04);
-const RASANTE = emSaturno(2.17, az(65), -0.012);
-/** o voo DENTRO do anel A, pela face acesa, como na referência do dono:
- *  RENTE ao plano, a `altura` km dele — logo fora da lajota de ±12 km, onde
- *  o campo de grãos enche a metade de cima do quadro até o horizonte —,
- *  olhando ao longo do plano para Saturno e andando `passo` km quase de frente
- *  para ele, devagar o bastante para os grãos passarem como pedras */
-const VOO_NO_ANEL = { altura: 20, raio: 2.13, passo: 400 };
+/** A TRAVESSIA DA CAMADA (14/11, pedido do dono: "o anel deve ter alguma
+ *  espessura"). A camada do A tem ~8 m e pedaços de centímetros a 20 m,
+ *  parados no instante do filme: é a câmera que chega perto e devagar.
+ *  Ela anda numa reta pelo ponto `travessia`, subindo `subida` graus
+ *  sobre o plano, da face acesa (sul) para a norte, com o rumo `rumo`
+ *  graus para dentro a partir do sentido do giro: de lado para Saturno,
+ *  para os pedaços passarem com paralaxe. Perto do plano a distância ao
+ *  ponto cai (e depois sobe) por razão constante — um fator e a cada
+ *  `tau` s —, e no `miolo` (km pelo caminho, de cada lado) a velocidade
+ *  fica constante, `miolo`/`tau`. O rasante entrega a `entrada` km do
+ *  plano e a travessia termina a `saida` km do outro lado. As durações
+ *  do rasante e da subida são escolha; a da travessia e os pesos dos
+ *  ritmos saem das contas abaixo, para as duas juntas passarem com a
+ *  mesma velocidade. O ponto fica `desvio` km para dentro do raio
+ *  declarado: ali o caminho passa a mais de 2,5 m da superfície de todo
+ *  pedaço de 60 cm ou mais do sorteio (conferido contra `lugarDaPedra`
+ *  com o relógio parado, contando como presentes todos os sorteados;
+ *  no raio redondo um pedaço de 1 m passava a 30 cm da lente). */
+const TRAVESSIA = {
+  az: 67.6, rumo: 22, subida: 45, entrada: 2, miolo: 0.012, tau: 2, saida: 0.03, desvio: -0.01,
+  rasante: 6, cruzamento: 6.1,
+};
 const KM_EM_RAIOS = 1 / BODY_AXES.saturn[0]!;
-const ENTRADA_NO_ANEL = emSaturno(VOO_NO_ANEL.raio, az(67.6), -VOO_NO_ANEL.altura * KM_EM_RAIOS);
-const SAIDA_DO_ANEL = emSaturno(
-  VOO_NO_ANEL.raio - VOO_NO_ANEL.passo * KM_EM_RAIOS, az(67.6), -VOO_NO_ANEL.altura * KM_EM_RAIOS
-);
+const PONTO_DA_TRAVESSIA = emSaturno(RAIO_DO_CRUZAMENTO + TRAVESSIA.desvio * KM_EM_RAIOS, az(TRAVESSIA.az), 0);
+const RUMO_DA_TRAVESSIA = girar(
+  girar(E_SATURNO, F_SATURNO, az(TRAVESSIA.az) + GIRO * 90),
+  girar(E_SATURNO, F_SATURNO, az(TRAVESSIA.az)).negate(),
+  TRAVESSIA.rumo
+).multiplyScalar(Math.cos(rad(TRAVESSIA.subida))).addScaledVector(POLO_DE_SATURNO, Math.sin(rad(TRAVESSIA.subida)));
+/** o ponto a `km` do ponto da travessia pelo caminho: antes dele (face sul) se positivo, depois se negativo */
+const naTravessia = (km: number) =>
+  PONTO_DA_TRAVESSIA.clone().addScaledVector(RUMO_DA_TRAVESSIA, -km * KM_EM_RAIOS * R_SATURNO);
+const kmAteATravessia = (p: THREE.Vector3) => p.distanceTo(PONTO_DA_TRAVESSIA) / (KM_EM_RAIOS * R_SATURNO);
+const ENTRADA_NO_CAMINHO = TRAVESSIA.entrada / Math.sin(rad(TRAVESSIA.subida));
+const SAIDA_NO_CAMINHO = TRAVESSIA.saida / Math.sin(rad(TRAVESSIA.subida));
+const ENTRADA_NO_ANEL = naTravessia(ENTRADA_NO_CAMINHO);
+const SAIDA_DO_ANEL = naTravessia(-SAIDA_NO_CAMINHO);
 /** o horizonte do anel DEITADO no quadro, com o anel em cima e Saturno
  *  embaixo: o roll que leva o "cima" do filme (a eclíptica) ao polo de
- *  Saturno visto da entrada — a conta do `lookAt` da câmera do rig */
+ *  Saturno visto da travessia — a conta do `lookAt` da câmera do rig */
 function rollAtePolo(de: THREE.Vector3, para: THREE.Vector3): number {
   const z = de.clone().sub(para).normalize();
   const x = new THREE.Vector3().crossVectors(CIMA_DA_ECLIPTICA, z).normalize();
   const y = new THREE.Vector3().crossVectors(z, x);
   return Math.atan2(-POLO_DE_SATURNO.dot(x), POLO_DE_SATURNO.dot(y));
 }
-const CRUZAMENTO = emSaturno(RAIO_DO_CRUZAMENTO, az(76), 0);
-const ALEM_DO_CRUZAMENTO = emSaturno(2.02, az(84), 0.04);
 const SUBIDA = emSaturno(2.8, az(100), 0.6);
+/** AS CONTAS DAS JUNTAS, em fatores e por segundo (ln da distância ao
+ *  ponto da travessia). O rasante parte parado (`quadratic`) e chega à
+ *  entrada a `taxaNaEntrada`; a freada da travessia parte dessa taxa e
+ *  cai a 1/`tau` na borda do miolo (`linear` + `easeOut`, o peso do
+ *  linear é a taxa final); o miolo e a saída andam a 1/`tau`; a subida
+ *  parte a 1/`tau` (`settle` + `glide`) e pousa parada na subida, onde
+ *  Encélado começa. */
+const FATORES_DO_RASANTE = Math.log(kmAteATravessia(SOBRE_O_ANEL_A) / ENTRADA_NO_CAMINHO);
+const TAXA_NA_ENTRADA = (2 * FATORES_DO_RASANTE) / TRAVESSIA.rasante;
+const FATORES_DA_FREADA = Math.log(ENTRADA_NO_CAMINHO / TRAVESSIA.miolo);
+const DURACAO_DA_FREADA = (3 * FATORES_DA_FREADA) / (TAXA_NA_ENTRADA + 2 / TRAVESSIA.tau);
+const PESO_DA_FREADA = DURACAO_DA_FREADA / (TRAVESSIA.tau * FATORES_DA_FREADA);
+const DURACAO_DA_SAIDA = TRAVESSIA.tau * Math.log(SAIDA_NO_CAMINHO / TRAVESSIA.miolo);
+const DURACAO_DA_TRAVESSIA = DURACAO_DA_FREADA + 2 * TRAVESSIA.tau + DURACAO_DA_SAIDA;
+const FATORES_DA_SUBIDA = Math.log(kmAteATravessia(SUBIDA) / SAIDA_NO_CAMINHO);
+const PESO_DA_ARRANCADA = TRAVESSIA.cruzamento / (TRAVESSIA.tau * FATORES_DA_SUBIDA * 2.2);
 /** Encélado pelo lado do DIA: a câmera vem da subida (Encélado a ~60° de
  *  fase), cruza a linha do Sol e no joelho o vê a 30° de fase, 12° ao sul
  *  do equador (o polo sul e os jatos no limbo, acesos de lado); depois do
@@ -123,9 +162,10 @@ const JOELHO_DE_HIPERION = girar(SOL_EM_HIPERION, versor(
 
 /** os pontos nomeados do ato III, em pc */
 export const PONTOS_SATURNO: Readonly<Record<string, THREE.Vector3>> = {
-  chegadaASaturno: CHEGADA_A_SATURNO, sobreOAnelA: SOBRE_O_ANEL_A, rasante: RASANTE,
-  entradaNoAnel: ENTRADA_NO_ANEL, saidaDoAnel: SAIDA_DO_ANEL,
-  cruzamento: CRUZAMENTO, alemDoCruzamento: ALEM_DO_CRUZAMENTO, subida: SUBIDA,
+  chegadaASaturno: CHEGADA_A_SATURNO, sobreOAnelA: SOBRE_O_ANEL_A,
+  travessia: PONTO_DA_TRAVESSIA, entradaNoAnel: ENTRADA_NO_ANEL,
+  mioloSul: naTravessia(TRAVESSIA.miolo), mioloNorte: naTravessia(-TRAVESSIA.miolo),
+  saidaDoAnel: SAIDA_DO_ANEL, subida: SUBIDA,
   joelhoDeEncelado: JOELHO_DE_ENCELADO, depoisDeEncelado: DEPOIS_DE_ENCELADO,
   saidaDeEncelado: SAIDA_DE_ENCELADO, joelhoDeTita: JOELHO_DE_TITA, saidaDeTita: SAIDA_DE_TITA,
   joelhoDeJapeto: JOELHO_DE_JAPETO, saidaDeJapeto: SAIDA_DE_JAPETO,
@@ -140,5 +180,12 @@ export const NUMEROS_SATURNO: Readonly<Record<string, number>> = {
   raspaoDeJapeto: RASPAO_DE_JAPETO.raio * R_JAPETO, raspaoDeHiperion: 3 * R_HIPERION,
   raioDoPostalDe: POSTAL_1.distanceTo(SATURNO), raioDoPostalPara: POSTAL_2.distanceTo(SATURNO),
   /** em radianos */
-  inclinacaoNoAnel: rollAtePolo(ENTRADA_NO_ANEL, SATURNO),
+  inclinacaoNoAnel: rollAtePolo(PONTO_DA_TRAVESSIA, SATURNO),
+  /** a travessia da camada: durações em s, frações do relógio e pesos dos ritmos */
+  duracaoDoRasante: TRAVESSIA.rasante, duracaoDaTravessia: DURACAO_DA_TRAVESSIA,
+  duracaoDoCruzamento: TRAVESSIA.cruzamento,
+  fimDaFreada: DURACAO_DA_FREADA / DURACAO_DA_TRAVESSIA,
+  fimDoMiolo: (DURACAO_DA_FREADA + 2 * TRAVESSIA.tau) / DURACAO_DA_TRAVESSIA,
+  pesoDaFreada: PESO_DA_FREADA, restoDaFreada: 1 - PESO_DA_FREADA,
+  pesoDaArrancada: PESO_DA_ARRANCADA, restoDaArrancada: 1 - PESO_DA_ARRANCADA,
 };

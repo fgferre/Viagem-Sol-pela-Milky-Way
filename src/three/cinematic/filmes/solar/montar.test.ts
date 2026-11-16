@@ -20,7 +20,7 @@ import { RELEVO_DA_LUA } from '../../../world/corpos/rochoso';
 (globalThis as unknown as { window: { location: { search: string } } }).window = {
   location: { search: '' },
 };
-const { montarFilmeSolar, raioPc, RAIO_DOS_ANEIS } = await import('./montar');
+const { montarFilmeSolar, raioPc, RAIO_DOS_ANEIS, RAIO_DO_CRUZAMENTO } = await import('./montar');
 const { RELOGIOS_SOLAR } = await import('./pinos');
 const { RAIO_SOL_PC } = await import('../../../escala');
 const { glide } = await import('../../movimentos');
@@ -101,7 +101,7 @@ const plano = (nome: string) => {
 describe('o filme solar monta', () => {
   it('dura o prólogo no Sol, o ato I de Mercúrio a Ceres, Júpiter, Saturno, o ato IV de Urano ao retrato de família e o epílogo de volta à Terra (390–400 s), em seis atos', () => {
     expect(duracao).toBeGreaterThanOrEqual(390);
-    expect(duracao).toBeLessThanOrEqual(400); // 398,15 s: o retrato acaba em 382,15 s e o epílogo dura 16 s
+    expect(duracao).toBeLessThanOrEqual(400); // 399,94 s: o retrato acaba em 383,94 s e o epílogo dura 16 s
     expect(filme.planosPorAto).toHaveLength(6);
     expect(filme.planosPorAto[1]).toBe(16);
   });
@@ -237,7 +237,7 @@ describe('a geometria das aproximações', () => {
     expect(dentro).toEqual([]);
   });
 
-  it('o plano dos anéis só é cruzado uma vez dentro do anel, na divisão de Cassini', () => {
+  it('o plano dos anéis só é cruzado uma vez dentro do anel, na travessia da camada do anel A', () => {
     const polo = new THREE.Vector3(...baseCorpoEquatorial(IAU_ORIENTATIONS.saturn, filme.jd).polo);
     const saturno = pinos.get('saturn')!;
     const rs = raioPc('saturn');
@@ -251,8 +251,7 @@ describe('a geometria das aproximações', () => {
       anterior = h;
     }
     expect(cruzamentos).toHaveLength(1);
-    expect(cruzamentos[0]).toBeGreaterThan(1.95);
-    expect(cruzamentos[0]).toBeLessThan(2.03);
+    expect(cruzamentos[0]).toBeCloseTo(RAIO_DO_CRUZAMENTO, 3);
   });
 });
 
