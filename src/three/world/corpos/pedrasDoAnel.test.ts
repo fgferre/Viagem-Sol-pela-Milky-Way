@@ -353,17 +353,20 @@ describe('pedras 3D do anel', () => {
   }, 120_000);
 
   it('nenhum pedaço passa de 10 m de raio, e nenhum centro sai da camada', () => {
+    // conta as violações e cobra uma vez: 200 mil `expect` no laço estouravam 5 s com a máquina carregada
+    let fora = 0;
     for (const rho of [80_000, 100_000, 119_000, 128_000]) {
       const esp = regiaoDasPedras(rho).espessura;
       for (let o = 0; o < OITAVAS; o++) {
         for (let i = 0; i < 2000; i++) {
           const p = lugarDaPedra(o, i, { rhoKm: rho, theta: 1, zKm: 0 });
-          expect(p.raioKm).toBeLessThanOrEqual(A_MAX_KM);
-          expect(Math.abs(p.zKm)).toBeLessThanOrEqual(esp / 2);
-          if (2 * p.raioKm >= esp) expect(Math.abs(p.zKm)).toBe(0);
+          if (!(p.raioKm <= A_MAX_KM)) fora++;
+          if (!(Math.abs(p.zKm) <= esp / 2)) fora++;
+          if (2 * p.raioKm >= esp && Math.abs(p.zKm) !== 0) fora++;
         }
       }
     }
+    expect(fora).toBe(0);
   });
 
   it('as esteiras: média 1, contraste forte no A, e 1 no C e na divisão de Cassini', () => {
