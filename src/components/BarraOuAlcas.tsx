@@ -31,7 +31,6 @@ import { REGISTRO_ORBITAL } from '../lib/atlas/registroOrbital';
 import { exoplanetaPorNome } from '../lib/exoplanetas';
 import { foraDaViaLactea } from '../lib/lugaresDoFilme';
 import { FILMES_EM_CARTAZ, filmeDe } from '../three/cinematic/filme';
-import { PLANETA_DO_PONTO_DO_ANEL } from '../three/world/pontoDoAnel';
 import { BotaoDaGaveta, BotaoDoTempo } from './HudDoAtlas';
 import { BotaoDaBusca } from './PaletaDeBusca';
 import { BotaoDaFicha } from './FichaDoObjeto';
@@ -175,13 +174,8 @@ function trechosDoContexto(
   };
   // O CORPO-PAI só entra quando o centro da órbita NÃO é o Sol (uma lua):
   // um planeta é "Sistema Solar › Marte", nunca "Sistema Solar › Sol ›
-  // Marte" — repetir o Sol no meio não ajudaria ninguém a se achar. O
-  // ponto do anel (15/11) tem o pai de uma lua: o planeta dele.
-  const pai = escada.corpoId
-    ? REGISTRO_ORBITAL[escada.corpoId]?.centro
-    : escada.degrau === 'anel'
-      ? PLANETA_DO_PONTO_DO_ANEL
-      : null;
+  // Marte" — repetir o Sol no meio não ajudaria ninguém a se achar.
+  const pai = escada.corpoId ? REGISTRO_ORBITAL[escada.corpoId]?.centro : null;
   const nomeDoPai = pai && pai !== 'sun' ? nomeDoCorpo(pai) : null;
   const trechos = [...viaLactea, sistemaSolar];
   if (nomeDoPai && pai) {

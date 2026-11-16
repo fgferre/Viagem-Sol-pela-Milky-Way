@@ -1,10 +1,13 @@
 // ============================================================
-// UM PONTO DO ANEL DE SATURNO — o destino do Atlas para chegar à mão
-// até poucos metros da camada de gelo e atravessá-la (15/11/2026).
+// UM PONTO DO ANEL DE SATURNO — a pose da VISTA DOS ANÉIS (`ver=aneis`),
+// para chegar à mão até poucos metros da camada de gelo e atravessá-la
+// (15/11/2026).
 //
-// Entra pela porta dos objetos pequenos (`Escada.visitarSonda`): uma
-// `pose(jd)` com alvo, esfera, eixo, polo e piso, recomposta pelo
-// religador do relógio. O alvo é um ponto do PLANO MÉDIO do anel A, a
+// O ANEL NÃO É UM LUGAR, É SATURNO (o dono, 16/11): o corpo em foco segue
+// sendo o planeta, e o que muda é a vista — como a de perto (`ver=corpo`).
+// Daqui sai só a `pose(jd)` com alvo, esfera, eixo, polo e piso, que a
+// escada usa na chegada (`Escada.aproximarDosAneis`) e o religador do
+// relógio recompõe. O alvo é um ponto do PLANO MÉDIO do anel A, a
 // 2,13 raios de Saturno — o mesmo raio da travessia do filme solar, onde
 // as esteiras e os pedaços estão bem desenhados.
 //
@@ -26,16 +29,15 @@ import { orientacaoInercialDoAnelNaCena } from './corpos/orientacaoNaCena';
 import { eixoQuePousaEm } from './lugaresDoCeu';
 import type { PoseDaSonda } from './sondas';
 
-/** o id do link (`?foco=aneis-de-saturno`) e da lista da busca */
+/** o link já entregue (`?foco=aneis-de-saturno`, 15/11): um atalho para
+ *  `?foco=saturn&ver=aneis`, resolvido na porta do boot (`useDirector.ts`) */
 export const ID_DO_PONTO_DO_ANEL = 'aneis-de-saturno';
-/** o planeta do ponto: a volta do Esc e da ficha, e o único corpo com o botão "Anéis" */
+/** o planeta do ponto: o único corpo com a vista dos anéis */
 export const PLANETA_DO_PONTO_DO_ANEL = 'saturn';
-/** o destino de anel do corpo `id` (o botão "Anéis" da ficha), ou `null` se ele não tem */
-export function pontoDoAnelDe(id: string | null): string | null {
-  return id === PLANETA_DO_PONTO_DO_ANEL ? ID_DO_PONTO_DO_ANEL : null;
+/** o corpo `id` tem a vista dos anéis (o botão "Anéis" da ficha, `?ver=aneis`)? */
+export function temVistaDosAneis(id: string | null): boolean {
+  return id === PLANETA_DO_PONTO_DO_ANEL;
 }
-/** o nome nas duas línguas (o cabeçalho e a chave do link) */
-export const NOME_DO_PONTO_DO_ANEL = { nome: 'Anéis de Saturno', nomeEn: "Saturn's rings" } as const;
 /** o raio do ponto no plano do anel, km: 2,13 raios equatoriais, no anel A */
 export const RAIO_DO_PONTO_KM = 2.13 * BODY_AXES.saturn[0]!;
 /** quantos graus o ponto fica do meridiano do Sol no plano do anel, no sentido +θ */

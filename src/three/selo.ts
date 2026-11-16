@@ -345,9 +345,11 @@ export function lerPortaLuz(bruto: string | null | undefined): PoliticaDeLuz | n
 /**
  * O DEGRAU DE ENQUADRAMENTO da escada (Onda 6 F2b, D7). `orbita` é o
  * default e a semântica ATUAL de `?foco=` (as baselines não mudam de
- * significado — emenda P-E2); `corpo` desce ao corpo com raio físico.
+ * significado — emenda P-E2); `corpo` desce ao corpo com raio físico;
+ * `aneis` (16/11/2026) é o mesmo corpo visto de dentro da camada dos anéis
+ * dele (`world/pontoDoAnel.ts`) — o anel não é um lugar, é o planeta.
  */
-export type VerDaEscada = 'orbita' | 'corpo';
+export type VerDaEscada = 'orbita' | 'corpo' | 'aneis';
 
 /**
  * A LEI da porta `?ver=` (D7/D8), no mesmo contrato de `lerPortaLuz`:
@@ -356,7 +358,7 @@ export type VerDaEscada = 'orbita' | 'corpo';
  * (a lição do `?tone=constructor`).
  */
 export function lerPortaVer(bruto: string | null | undefined): VerDaEscada | null {
-  return bruto === 'corpo' || bruto === 'orbita' ? bruto : null;
+  return bruto === 'corpo' || bruto === 'orbita' || bruto === 'aneis' ? bruto : null;
 }
 
 /** O que o selo precisa saber da vista para se decidir. */
@@ -1082,11 +1084,12 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   /**
    * `?ver=` — O DEGRAU DA ESCADA (F2b/D7): `orbita` (default, a
    * semântica de sempre do `?foco=`) ou `corpo` (o alvo enquadrado com
-   * o raio FÍSICO dele). Mesma família de `?foco=`/`?pos=`: diz DE ONDE
+   * o raio FÍSICO dele) ou `aneis` (o corpo visto de dentro dos anéis
+   * dele). Mesma família de `?foco=`/`?pos=`: diz DE ONDE
    * se olha, nunca com quanta luz — a fotometria dos dois degraus é a
    * mesma lei, e o eixo ESCALA continua saindo da geometria sozinho.
    */
-  neutra('ver', 'degrau do enquadramento (corpo ou órbita)'),
+  neutra('ver', 'degrau do enquadramento (corpo, órbita ou anéis)'),
   /**
    * `?d=` — A DISTÂNCIA AO ALVO, em RAIOS DELE (item 73, 22/08). A
    * grandeza que a roda escreve, e a que faltava para o link contar a

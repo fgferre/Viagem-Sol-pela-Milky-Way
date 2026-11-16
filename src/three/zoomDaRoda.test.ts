@@ -486,8 +486,10 @@ describe('?d= entra no espelho; ?ver= vira só leitura', () => {
     );
     expect(escritor).toContain("url.searchParams.set('d', String(Number(emRaios.toPrecision(4))))");
     expect(escritor).toContain("url.searchParams.delete('ver');");
-    // ...e não há um segundo caminho que ressuscite a escrita do degrau
-    expect(ESPELHO).not.toContain("searchParams.set('ver'");
+    // ...e não há um segundo caminho que ressuscite a escrita do degrau: a
+    // única é a vista dos anéis (16/11), um ponto de vista que o `?d=` não diz
+    expect(ESPELHO.match(/searchParams\.set\('ver'/g)).toHaveLength(1);
+    expect(escritor).toContain("url.searchParams.set('ver', 'aneis')");
   });
 
   it('a porta se declara no REGISTRO do selo, como toda porta da casa', () => {

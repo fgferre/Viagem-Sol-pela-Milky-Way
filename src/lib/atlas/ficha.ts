@@ -137,6 +137,8 @@ export interface LinhaDaFicha {
 export type IdDeSecao =
   | 'agora'
   | 'fisico'
+  /** a dos ANÉIS de Saturno (16/11/2026) — números da literatura */
+  | 'aneis'
   | 'orbita'
   | 'ceu'
   | 'contexto'
@@ -429,6 +431,40 @@ function secaoFisico(id: string): LinhaDaFicha[] {
       'derivado',
       t('ficha.fonte.deGm'),
       eDaTerra ? undefined : selo(massa, massaDeGm('earth'))
+    ),
+  ].filter((l): l is LinhaDaFicha => l !== null);
+}
+
+/**
+ * A MASSA DOS ANÉIS DE SATURNO, kg: 1,54 ± 0,49 × 10¹⁹, medida pela gravidade
+ * nas órbitas finais da Cassini (Iess et al. 2019, Science 364, eaat2965).
+ */
+const MASSA_DOS_ANEIS_KG = 1.54e19;
+
+/**
+ * OS ANÉIS DE SATURNO (16/11/2026): o anel não é um lugar, é Saturno — os
+ * números dele moram na ficha do planeta, da literatura, com a citação ao
+ * lado, como os fatos de um lugar do céu (`lugaresDoFilme.ts`). Os mesmos
+ * números que a cena desenha: o raio do anel F (`ANEL_SATURNO`), a camada
+ * e os pedaços (`pedrasDoAnel.ts`). Vazia para os outros corpos.
+ */
+function secaoAneis(id: string): LinhaDaFicha[] {
+  if (id !== 'saturn') return [];
+  const mimas = massaDeGm('mimas');
+  return [
+    linha(t('ficha.anel.extensao'), t('ficha.anel.extensaoValor'), 'medido', t('ficha.anel.extensaoFonte')),
+    linha(t('ficha.anel.espessura'), t('ficha.anel.espessuraValor'), 'derivado', 'Tiscareno et al. 2007; Colwell et al. 2009'),
+    linha(t('ficha.anel.pedacos'), t('ficha.anel.pedacosValor'), 'derivado', 'Zebker et al. 1985; Cuzzi et al. 2009'),
+    linha(
+      t('ficha.campo.massa'),
+      mimas === null
+        ? null
+        : t('ficha.anel.massaValor', {
+            massa: formatarMassaKg(MASSA_DOS_ANEIS_KG) ?? '',
+            fracao: numeroDoIdioma(Math.round((MASSA_DOS_ANEIS_KG / mimas) * 10) / 10),
+          }),
+      'medido',
+      'Iess et al. 2019 (Science)'
     ),
   ].filter((l): l is LinhaDaFicha => l !== null);
 }
@@ -1328,16 +1364,6 @@ export function montarFichaDeSonda(sonda: Sonda, jd: number | null | undefined):
   return { id: `sonda:${sonda.id}`, nome: sonda.nome, classe: classeEmTexto('sonda'), secoes };
 }
 
-/**
- * A FICHA DO PONTO DO ANEL DE SATURNO (15/11/2026): o nome e a classe, sem
- * seção — os números do anel moram na ficha do planeta, e a ficha diz que
- * este lugar não tem dados próprios em vez de inventá-los. Ela existe para
- * o cabeçalho e para a volta ao planeta, no topo dela.
- */
-export function montarFichaDoAnel(nome: string): Ficha {
-  return { id: 'anel', nome, classe: classeEmTexto('anel'), secoes: [] };
-}
-
 /** UA com as casas que a distância pede (0,587 · 4,34 · 35,0) */
 function emUa(x: number): string {
   const casas = x < 1 ? 3 : x < 10 ? 2 : 1;
@@ -1711,6 +1737,7 @@ export function montarFicha(entrada: EntradaDaFicha): Ficha | null {
   const secoes: SecaoDaFicha[] = [
     { id: 'agora', titulo: TITULO('agora'), linhas: secaoAgora(entrada) },
     { id: 'fisico', titulo: TITULO('fisico'), linhas: secaoFisico(entrada.id) },
+    { id: 'aneis', titulo: TITULO('aneis'), linhas: secaoAneis(entrada.id) },
     { id: 'orbita', titulo: TITULO('orbita'), linhas: secaoOrbita(entrada) },
     { id: 'ceu', titulo: TITULO('ceu'), linhas: secaoCeu(entrada) },
     { id: 'contexto', titulo: TITULO('contexto'), linhas: secaoContexto(pt) },

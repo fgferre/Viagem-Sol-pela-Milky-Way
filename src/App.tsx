@@ -17,8 +17,7 @@ import type { EstadoDaPoeira } from './three/selo';
 import { HUD_POR_FASE, arrastoFazAlgo } from './three/fases';
 import { PRESETS, TIER_DE_PRODUTO } from './three/core/engine';
 import { LABORATORIO_PADRAO } from './three/world/laboratorioDaGalaxia';
-import { PLANETA_DO_PONTO_DO_ANEL, pontoDoAnelDe } from './three/world/pontoDoAnel';
-import { nomeDoCorpo } from './three/atlasConfig';
+import { temVistaDosAneis } from './three/world/pontoDoAnel';
 import { LabelCanvas } from './components/LabelCanvas';
 import { sondarGl } from './lib/glProbe';
 import { t } from './lib/idioma';
@@ -1060,9 +1059,10 @@ export default function App() {
    * fileira, escrita uma vez: sem alvo em foco não há ficha para abrir, e
    * botão que não faz nada é pior que botão nenhum.
    */
-  /** o destino de anel do corpo em foco (o botão "Anéis" da ficha) */
-  const aneisDoFoco = pontoDoAnelDe(escada.corpoId);
-  const ofereceFicha = Boolean(hud.ficha && foco && (escada.corpoId || escada.degrau === 'estrela' || escada.degrau === 'sonda' || escada.degrau === 'cometa' || escada.degrau === 'exoplaneta' || escada.degrau === 'anel'));
+  const ofereceFicha = Boolean(hud.ficha && foco && (escada.corpoId || escada.degrau === 'estrela' || escada.degrau === 'sonda' || escada.degrau === 'cometa' || escada.degrau === 'exoplaneta'));
+  /** o corpo em foco que oferece a vista dos anéis (o botão "Anéis" da
+   *  ficha) — dentro dela o botão some, como o "Aproximar" no corpo */
+  const vistaDosAneis = temVistaDosAneis(escada.corpoId) && escada.degrau !== 'aneis' ? escada.corpoId : null;
 
   /**
    * U11 (C5, PLANO-MOTION-UI.md §12.5) — a linha de rumo só confirma a
@@ -1504,7 +1504,6 @@ export default function App() {
         sonda={sondaEmFoco}
         cometa={cometaEmFoco}
         exoplaneta={exoplanetaEmFoco}
-        anel={escada.degrau === 'anel' ? foco : null}
         jd={tempo?.jd ?? null}
         camaraUa={camera}
         fonte={directorRef.current?.efemerideViva ?? null}
@@ -1512,16 +1511,8 @@ export default function App() {
         noSistema={escada.degrau === 'sistema'}
         onAproximar={() => directorRef.current?.aproximarDoCorpo()}
         onSistema={() => directorRef.current?.focarNoSistema()}
-        // o salto ao anel é o MESMO do `?foco=aneis-de-saturno`
-        onAneis={aneisDoFoco ? () => directorRef.current?.focarNoCorpo(aneisDoFoco) : null}
-        voltarAoPlaneta={
-          escada.degrau === 'anel'
-            ? {
-                nome: nomeDoCorpo(PLANETA_DO_PONTO_DO_ANEL) ?? PLANETA_DO_PONTO_DO_ANEL,
-                aoClicar: () => directorRef.current?.voltarAoPlanetaDoAnel(),
-              }
-            : null
-        }
+        // a vista dos anéis, pelo MESMO caminho do `?ver=aneis`
+        onAneis={vistaDosAneis ? () => directorRef.current?.focarNoCorpo(vistaDosAneis, 'aneis') : null}
         relevoDaCor={directorRef.current?.relevoDaCor(escada.corpoId) ?? null}
         // o fator do relevo QUE A TELA DESENHA neste corpo (item 232): a
         // ficha confessa o realçado; relido a cada troca de qualidade

@@ -443,7 +443,6 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.sistemaAria': 'Back to the solar system framing',
   'ficha.aneis': 'Rings',
   'ficha.aneisAria': "Rings: enter the layer of ice in {nome}'s rings",
-  'ficha.voltarAoPlanetaAria': 'Back to {nome}: the planet up close',
   'ficha.relevoDaCor': '◐ Invented relief',
   'ficha.relevoDaCorAria':
     "Turn on relief invented from the colour of {nome}'s photo — there is no relief map",
@@ -469,6 +468,7 @@ export const EN: Record<keyof typeof PT, string> = {
   // ---- section titles and field labels -----------------------------
   'ficha.secao.agora': 'right now',
   'ficha.secao.fisico': 'physical',
+  'ficha.secao.aneis': 'the rings',
   'ficha.secao.orbita': 'orbit',
   'ficha.secao.ceu': 'in the sky',
   'ficha.secao.contexto': 'context',
@@ -495,6 +495,15 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.campo.gravidade': 'gravity',
   'ficha.campo.escape': 'escape velocity',
   'ficha.campo.massa': 'mass',
+  'ficha.anel.extensao': 'extent',
+  'ficha.anel.extensaoValor':
+    "≈ 280,000 km from edge to edge: the outer edge of the A ring lies 136,775 km from Saturn's centre, and the F ring 140,180 km",
+  'ficha.anel.extensaoFonte': 'stellar and radio occultations (Voyager and Cassini)',
+  'ficha.anel.espessura': 'thickness',
+  'ficha.anel.espessuraValor': '≈ 10 m, from 5 to 30 m depending on the region',
+  'ficha.anel.pedacos': 'particles',
+  'ficha.anel.pedacosValor': 'from ~1 cm to ~10 m, of water ice',
+  'ficha.anel.massaValor': '≈ {massa}, about {fracao} of the mass of Mimas',
   'ficha.campo.periodo': 'orbital period',
   'ficha.campo.afelioPerielio': 'aphelion · perihelion',
   'ficha.campo.excentricidade': 'eccentricity',
@@ -944,7 +953,6 @@ export const EN: Record<keyof typeof PT, string> = {
   'classe.cometa': 'comet',
   'classe.cometa interestelar': 'interstellar comet',
   'classe.exoplaneta': 'exoplanet',
-  'classe.anel': 'ring',
 
   // ---- the time machine --------------------------------------------
   'tempo.mes.0': 'January',

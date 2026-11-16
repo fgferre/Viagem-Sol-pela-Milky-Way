@@ -25,6 +25,7 @@ import type { EstadoDoTempo } from '../three/tempoDoAtlas';
 import { construirIndice, resolverFoco } from '../lib/buscaEstrelas';
 import type { EntradaDaBusca } from '../lib/buscaEstrelas';
 import { LUGARES_DA_BUSCA } from '../three/world/lugaresDoCeu';
+import { ID_DO_PONTO_DO_ANEL, PLANETA_DO_PONTO_DO_ANEL } from '../three/world/pontoDoAnel';
 import { lerPortaVer } from '../three/selo';
 import type { EstadoDaPoeira, VerDaEscada } from '../three/selo';
 
@@ -287,15 +288,20 @@ export function useDirector(fios: FiosDoDirector) {
             // `useMemo` que ainda não rodou (o estado das nomeadas está
             // sendo publicado neste mesmo tick), e este morre na linha
             // seguinte. A conta é uma passada nas 1.726.
+            //
+            // O LINK JÁ ENTREGUE `?foco=aneis-de-saturno` (15/11) é atalho
+            // para `?foco=saturn&ver=aneis`: o anel não é um lugar, é Saturno
+            const atalhoDosAneis = foco === ID_DO_PONTO_DO_ANEL;
             const achado = resolverFoco(
-              foco,
+              atalhoDosAneis ? PLANETA_DO_PONTO_DO_ANEL : foco,
               construirIndice(d.nomeadas, d.corpos, LUGARES_DA_BUSCA)
             );
             // `?ver=corpo` (F2b/D7) desce ao degrau do corpo — a lei
             // única da porta (`lerPortaVer`); inválido cai no default
             // `orbita`, a semântica de sempre do `?foco=`
             if (achado) {
-              escolherAlvo(achado.entrada, d, lerPortaVer(query.get('ver')) ?? 'orbita');
+              const ver = atalhoDosAneis ? 'aneis' : (lerPortaVer(query.get('ver')) ?? 'orbita');
+              escolherAlvo(achado.entrada, d, ver);
             }
             // sem palpite: a linha de contexto vai mostrar o sistema, que
             // é o que ficou de fato em quadro (precedente do `?pos=`)

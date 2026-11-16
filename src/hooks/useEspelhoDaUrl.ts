@@ -206,7 +206,12 @@ export function useEspelhoDaUrl(dep: {
     // em `selo.ts` e o bloco do `useDirector` ficam inteiros). O que
     // some é a ESCRITA — e ela some sempre, inclusive quando a porta
     // chegou pela URL: espelho reescreve o que a vista diz agora.
-    url.searchParams.delete('ver');
+    //
+    // A EXCEÇÃO É A VISTA DOS ANÉIS (16/11): ela não é uma distância que o
+    // `?d=` saiba dizer, é OUTRO ponto de vista do mesmo corpo — sem ela o
+    // link copiado dentro do anel abriria Saturno visto de longe.
+    if (phase === 'atlas' && emQuadro && d.verDaEscada === 'aneis') url.searchParams.set('ver', 'aneis');
+    else url.searchParams.delete('ver');
     // A DISTÂNCIA AO ALVO, em RAIOS dele — 4 algarismos significativos.
     // Ela entra SÓ quando o visitante pinou (mexeu na roda ou chegou com
     // `?d=`): sem pino a vista É o enquadramento, e um link que

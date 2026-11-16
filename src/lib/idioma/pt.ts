@@ -469,7 +469,6 @@ export const PT = {
   'ficha.sistemaAria': 'Voltar ao enquadramento do sistema solar',
   'ficha.aneis': 'Anéis',
   'ficha.aneisAria': 'Anéis: entrar na camada de gelo dos anéis de {nome}',
-  'ficha.voltarAoPlanetaAria': 'Voltar a {nome}: o planeta de perto',
   'ficha.relevoDaCor': '◐ Relevo inventado',
   'ficha.relevoDaCorAria':
     'Ligar um relevo inventado a partir da cor da foto de {nome} — não existe mapa de relevo',
@@ -495,6 +494,7 @@ export const PT = {
   // ---- os títulos de seção e os rótulos de campo (`lib/atlas/ficha.ts`)
   'ficha.secao.agora': 'agora',
   'ficha.secao.fisico': 'físico',
+  'ficha.secao.aneis': 'os anéis',
   'ficha.secao.orbita': 'órbita',
   'ficha.secao.ceu': 'no céu',
   'ficha.secao.contexto': 'contexto',
@@ -522,6 +522,15 @@ export const PT = {
   'ficha.campo.gravidade': 'gravidade',
   'ficha.campo.escape': 'velocidade de escape',
   'ficha.campo.massa': 'massa',
+  'ficha.anel.extensao': 'extensão',
+  'ficha.anel.extensaoValor':
+    '≈ 280 mil km de ponta a ponta: a borda externa do anel A fica a 136.775 km do centro de Saturno, e o anel F a 140.180 km',
+  'ficha.anel.extensaoFonte': 'ocultações de estrelas e de rádio (Voyager e Cassini)',
+  'ficha.anel.espessura': 'espessura',
+  'ficha.anel.espessuraValor': '≈ 10 m, de 5 a 30 m conforme a região',
+  'ficha.anel.pedacos': 'pedaços',
+  'ficha.anel.pedacosValor': 'de ~1 cm a ~10 m, de gelo de água',
+  'ficha.anel.massaValor': '≈ {massa}, cerca de {fracao} da massa de Mimas',
   'ficha.campo.periodo': 'período orbital',
   'ficha.campo.afelioPerielio': 'afélio · periélio',
   'ficha.campo.excentricidade': 'excentricidade',
@@ -979,7 +988,6 @@ export const PT = {
   'classe.cometa': 'cometa',
   'classe.cometa interestelar': 'cometa interestelar',
   'classe.exoplaneta': 'exoplaneta',
-  'classe.anel': 'anel',
 
   // ---- a máquina do tempo (`three/tempoDoAtlas.ts`) -----------------
   'tempo.mes.0': 'janeiro',

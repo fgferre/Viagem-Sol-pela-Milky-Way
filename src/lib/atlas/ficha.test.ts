@@ -1058,6 +1058,40 @@ describe('a massa na ficha', () => {
   });
 });
 
+// OS ANÉIS (16/11/2026): o anel não é um lugar, é Saturno — os números dele
+// moram na ficha do planeta, cada um com selo e citação.
+describe('os anéis na ficha de Saturno', () => {
+  afterEach(() => definirIdioma('pt-BR'));
+
+  it('a seção vem logo depois do físico, com quatro linhas seladas e citadas', () => {
+    const f = ficha('saturn')!;
+    const ids = f.secoes.map((s) => s.id);
+    expect(ids.indexOf('aneis')).toBe(ids.indexOf('fisico') + 1);
+    const aneis = f.secoes.find((s) => s.id === 'aneis')!;
+    expect(aneis.titulo).toBe('os anéis');
+    expect(aneis.linhas.map((l) => [l.rotulo, l.procedencia])).toEqual([
+      ['extensão', 'medido'],
+      ['espessura', 'derivado'],
+      ['pedaços', 'derivado'],
+      ['massa', 'medido'],
+    ]);
+    for (const l of aneis.linhas) expect(l.fonte, l.rotulo).toBeTruthy();
+    expect(aneis.linhas[3]!.valor).toBe('≈ 1,54 × 10¹⁹ kg, cerca de 0,4 da massa de Mimas');
+  });
+
+  it('em inglês, as mesmas linhas com o texto da língua', () => {
+    definirIdioma('en');
+    const aneis = ficha('saturn')!.secoes.find((s) => s.id === 'aneis')!;
+    expect(aneis.linhas.map((l) => l.rotulo)).toEqual(['extent', 'thickness', 'particles', 'mass']);
+    expect(aneis.linhas[3]!.valor).toBe('≈ 1.54 × 10¹⁹ kg, about 0.4 of the mass of Mimas');
+  });
+
+  it('só Saturno tem a seção', () => {
+    const com = ALVOS.filter((id) => ficha(id)!.secoes.some((s) => s.id === 'aneis'));
+    expect(com).toEqual(['saturn']);
+  });
+});
+
 // ============================================================
 // A PROSA EM DUAS LÍNGUAS (item 130/F2, lista do §19).
 //

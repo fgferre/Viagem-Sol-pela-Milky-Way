@@ -724,7 +724,7 @@ export class Director {
     return corpoPedidoPeloRoteiro(this.phase, this.journeyT, id, this.filme.apoios);
   }
   private corpoNoDestino(id: string): boolean {
-    return corpoEDestinoDoAtlas(this.phase, this.escada.corpoDoDestino, id);
+    return corpoEDestinoDoAtlas(this.phase, this.escada.focoCorpoId, id);
   }
   private anelNoDestino(id: string): boolean {
     return this.phase === 'atlas' && this.escada.anelDoDestino === id;
@@ -2784,10 +2784,6 @@ export class Director {
 
   subirDegrau(): boolean {
     return this.escada.subirDegrau();
-  }
-
-  voltarAoPlanetaDoAnel() {
-    this.escada.voltarAoPlanetaDoAnel();
   }
 
   /**

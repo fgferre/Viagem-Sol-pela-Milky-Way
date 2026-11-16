@@ -55,7 +55,6 @@ import {
   montarFichaDeExoplaneta,
   montarFichaDeLugar,
   montarFichaDeSonda,
-  montarFichaDoAnel,
 } from '../lib/atlas/ficha';
 import { estrelaVisitavelPorNome } from '../lib/atlas/estrelasVisitaveis';
 import type { Sonda } from '../lib/sondas';
@@ -122,7 +121,6 @@ export function FichaDoObjeto({
   sonda = null,
   cometa = null,
   exoplaneta = null,
-  anel = null,
   jd,
   camaraUa,
   fonte,
@@ -131,7 +129,6 @@ export function FichaDoObjeto({
   onAproximar,
   onSistema,
   onAneis = null,
-  voltarAoPlaneta = null,
   relevoDaCor,
   onRelevoDaCor,
   realceDoRelevo,
@@ -163,8 +160,6 @@ export function FichaDoObjeto({
   cometa?: Cometa | null;
   /** o EXOPLANETA em foco (12/11) e o sistema dele — `montarFichaDeExoplaneta` */
   exoplaneta?: { planeta: Exoplaneta; sistema: SistemaPlanetario } | null;
-  /** o NOME do ponto do anel em foco (15/11) — `montarFichaDoAnel`; `null` fora dele */
-  anel?: string | null;
   /** o instante MOSTRADO pela máquina do tempo */
   jd: number | null;
   /** onde a CÂMERA está, em eclíptica heliocêntrica UA — `null` fora do
@@ -178,10 +173,9 @@ export function FichaDoObjeto({
   noSistema: boolean;
   onAproximar: () => void;
   onSistema: () => void;
-  /** o salto ao ponto do anel do corpo em foco (15/11) — `null` onde ele não tem */
+  /** a vista dos anéis do corpo em foco (16/11) — `null` onde ele não tem e
+   *  dentro dela */
   onAneis?: (() => void) | null;
-  /** no ponto do anel, a volta ao planeta dele (o mesmo gesto do Esc) */
-  voltarAoPlaneta?: { nome: string; aoClicar: () => void } | null;
   /** o interruptor do relevo fingido da cor (rochoso com foto e sem mapa
    *  de relevo); `null` onde ele não existe — e o botão nem aparece */
   relevoDaCor: boolean | null;
@@ -324,8 +318,6 @@ export function FichaDoObjeto({
           ? montarFichaDeCometa(cometa, jd, fonte)
           : exoplaneta
           ? montarFichaDeExoplaneta(exoplaneta.planeta, exoplaneta.sistema, estrelaVisitavelPorNome(exoplaneta.sistema.estrela))
-          : anel
-          ? montarFichaDoAnel(anel)
           : lugar
           ? montarFichaDeLugar(lugar)
           : estrelaEmFoco
@@ -336,7 +328,7 @@ export function FichaDoObjeto({
     // memo devolveria a ficha da língua anterior (item 130). O lint não
     // vê a dependência porque ela chega pelo dicionário, não pelo nome.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [corpoId, estrelaEmFoco, estrela, lugar, sonda, cometa, exoplaneta, anel, jd, fonte, corpos, texturas, camaraUa, realceDoRelevo, idioma]
+    [corpoId, estrelaEmFoco, estrela, lugar, sonda, cometa, exoplaneta, jd, fonte, corpos, texturas, camaraUa, realceDoRelevo, idioma]
   );
 
   /**
@@ -442,7 +434,6 @@ export function FichaDoObjeto({
   const escadaRef = useRef<HTMLDivElement>(null);
   const temFicha = ficha !== null;
   const temAneis = onAneis !== null;
-  const nomeDaVolta = voltarAoPlaneta?.nome ?? null;
   useLayoutEffect(() => {
     const fileira = escadaRef.current;
     if (!fileira) return;
@@ -459,7 +450,7 @@ export function FichaDoObjeto({
     return () => observador.disconnect();
     // o que muda a fileira: os botões que existem e a língua — nunca o
     // `jd` ou a câmera, que remontam a ficha sem tocá-la
-  }, [aberta, temFicha, podeAproximar, noSistema, temAneis, nomeDaVolta, idioma, celular, fichaExpandida]);
+  }, [aberta, temFicha, podeAproximar, noSistema, temAneis, idioma, celular, fichaExpandida]);
 
   if (!aberta || !ficha) return null;
   const primeira = ficha.secoes[0]?.id;
@@ -597,7 +588,7 @@ export function FichaDoObjeto({
             className="hud-btn small"
             onClick={() => {
               onAneis();
-              // o botão some na ficha do anel: o foco fica na ficha, e o Esc a
+              // o botão some na vista dos anéis: o foco fica na ficha, e o Esc a
               // fecha e depois sobe a escada (sem isto ia ao corpo da página,
               // e com a ficha aberta o Esc não fazia nada)
               refDaFicha.current?.focus({ preventScroll: true });
@@ -606,20 +597,6 @@ export function FichaDoObjeto({
           >
             <Icone nome="anel" tamanho={16} />
             <span>{t('ficha.aneis')}</span>
-          </button>
-        )}
-        {voltarAoPlaneta && (
-          <button
-            type="button"
-            className="hud-btn small"
-            onClick={() => {
-              voltarAoPlaneta.aoClicar();
-              refDaFicha.current?.focus({ preventScroll: true });
-            }}
-            aria-label={t('ficha.voltarAoPlanetaAria', { nome: voltarAoPlaneta.nome })}
-          >
-            <Icone nome="setaEsquerda" tamanho={16} />
-            <span>{voltarAoPlaneta.nome}</span>
           </button>
         )}
         {!noSistema && (
