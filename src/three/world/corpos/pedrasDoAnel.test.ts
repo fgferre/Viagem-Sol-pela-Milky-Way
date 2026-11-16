@@ -53,6 +53,13 @@ import {
   tauDaNevoa,
   ESCALA_DO_MONTE,
   ENVOLVE,
+  OITAVAS_DA_SOMBRA,
+  colunaDaSombra,
+  elipseDaSombra,
+  esperadoDaSombra,
+  fatoresDaSombra,
+  forcaDaSombra,
+  volumeDaSombra,
 } from './pedrasDoAnel';
 import { REGIOES_DO_ANEL } from './gigante';
 
@@ -588,5 +595,90 @@ describe('pedras 3D do anel', () => {
     expect(Math.exp(-tauDaNevoa(0, 0, ALCANCE_DA_NEVOA_KM, esp, tau, 1))).toBeLessThan(1e-6);
     expect(Math.exp(-tauDaNevoa(0, Math.sin((5 * Math.PI) / 180), ALCANCE_DA_NEVOA_KM, esp, tau, 1))).toBeCloseTo(0.47, 1);
     expect(Math.exp(-tauDaNevoa(0, Math.sin((20 * Math.PI) / 180), ALCANCE_DA_NEVOA_KM, esp, tau, 1))).toBeCloseTo(0.91, 1);
+  });
+
+  it('a sombra do pedaço cai para longe do Sol: no plano médio, a elipse de a por a/sen e deslocada pela altura', () => {
+    const e = (20 * Math.PI) / 180;
+    const az = (30 * Math.PI) / 180;
+    const a = 0.001;
+    const h = 0.008;
+    for (const lado of [1, -1]) {
+      const sol: [number, number, number] = [Math.cos(az) * Math.cos(e), Math.sin(az) * Math.cos(e), lado * Math.sin(e)];
+      const p: [number, number, number] = [0.1, 0.2, 0.002];
+      const el = elipseDaSombra(p, a, sol);
+      // o rumo é o oposto do azimute do Sol; o centro anda z·cot e para lá (z do lado do Sol)
+      expect(el.rumo[0]).toBeCloseTo(-Math.cos(az), 12);
+      expect(el.rumo[1]).toBeCloseTo(-Math.sin(az), 12);
+      const zs = lado * p[2];
+      expect(el.centro[0]).toBeCloseTo(p[0] + el.rumo[0] * zs / Math.tan(e), 12);
+      expect(el.centro[1]).toBeCloseTo(p[1] + el.rumo[1] * zs / Math.tan(e), 12);
+      expect(el.maior).toBeCloseTo(a / Math.sin(e), 12);
+      expect(el.menor).toBe(a);
+      // a coluna: sombreada atrás do pedaço, nunca do lado do Sol
+      const atras = colunaDaSombra(Math.max(zs, 0) / Math.tan(e) + 0.5 * a, a, zs, h, Math.sin(e), Math.cos(e));
+      expect(atras).toBeGreaterThan(0);
+      expect(colunaDaSombra(-2 * a, a, zs, h, Math.sin(e), Math.cos(e))).toBe(0);
+    }
+    // a integral da coluna no plano é o volume sombreado (a mesma geometria por dois caminhos), pequeno e grande
+    for (const [ra, zs] of [[0.0005, 0.002], [0.006, 0]] as const) {
+      const sen = Math.sin(e);
+      const cos = Math.cos(e);
+      const u0 = -ra * sen;
+      const u1 = (ra + (0.5 * h + zs) * cos) / sen;
+      const nu = 800;
+      const nv = 200;
+      let soma = 0;
+      for (let i = 0; i < nu; i++)
+        for (let j = 0; j < nv; j++) {
+          const v = ra * (-1 + (2 * (j + 0.5)) / nv);
+          soma += colunaDaSombra(u0 + ((i + 0.5) * (u1 - u0)) / nu, Math.sqrt(ra * ra - v * v), zs, h, sen, cos);
+        }
+      expect((soma * ((u1 - u0) / nu) * ((2 * ra) / nv)) / (volumeDaSombra(ra, zs, h, sen) / h)).toBeCloseTo(1, 2);
+    }
+  });
+
+  it('as sombras explícitas conservam a luz média do disco: num campo de pedaços, a média de T é a e^(−E) que sai da conta estatística', () => {
+    const h = 0.008;
+    const tau = 0.6;
+    for (const [graus, oitavas] of [[25, [2]], [4, [0, 1, 2]]] as const) {
+      const sen = Math.sin((graus * Math.PI) / 180);
+      const cos = Math.sqrt(1 - sen * sen);
+      const g = fatoresDaSombra(sen, h);
+      const k = forcaDaSombra(tau, g);
+      // um quadrado periódico de 1 km, numa grade de 2 m; o Sol vem de −x
+      const lado = 1;
+      const n = 500;
+      const passo = lado / n;
+      const od = new Float64Array(n * n);
+      let semente = 12345;
+      const sorteio = () => ((semente = (Math.imul(semente, 1664525) + 1013904223) >>> 0) / 4294967296);
+      for (const o of oitavas) {
+        const s = TABELA_DE_OITAVAS[o]!.s;
+        const quantos = Math.round(pedacosPorArea(tau, 0.5 * s) * lado * lado);
+        for (let q = 0; q < quantos; q++) {
+          const a = (0.5 * s) / Math.sqrt(1 - 0.75 * sorteio());
+          const zs = alturaNaCamada(sorteio() + sorteio() - 1, a, h);
+          const x = sorteio() * lado;
+          const y = sorteio() * lado;
+          const u0 = -a * sen;
+          const u1 = (a + (0.5 * h + zs) * cos) / sen;
+          for (let i = Math.floor((x + u0) / passo); i <= Math.ceil((x + u1) / passo); i++)
+            for (let j = Math.floor((y - a) / passo); j <= Math.ceil((y + a) / passo); j++) {
+              const v = j * passo - y;
+              if (Math.abs(v) >= a) continue;
+              const S = colunaDaSombra(i * passo - x, Math.sqrt(a * a - v * v), zs, h, sen, cos);
+              if (S > 0) od[(((i % n) + n) % n) * n + (((j % n) + n) % n)] -= Math.log(1 - k * S);
+            }
+        }
+      }
+      let media = 0;
+      for (let c = 0; c < od.length; c++) media += Math.exp(-od[c]!) / od.length;
+      const presencas = Array.from({ length: OITAVAS_DA_SOMBRA }, (_, o) => ((oitavas as readonly number[]).includes(o) ? 1 : 0));
+      const E = esperadoDaSombra(tau, presencas, g);
+      // o Sol baixo bate no teto: as sombras clareiam, e e^(−E) não cai abaixo de e^(−1,5)
+      if (graus === 4) expect(k).toBeLessThan(1);
+      expect(E).toBeGreaterThan(0.03);
+      expect(media * Math.exp(E)).toBeCloseTo(1, 2);
+    }
   });
 });

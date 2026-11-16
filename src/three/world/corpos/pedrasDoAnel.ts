@@ -716,6 +716,118 @@ export function atenuacaoDoSol(fracaoAcima: number, tau: number, mu0: number): n
 }
 
 /**
+ * A SOMBRA DE CADA PEDAÇO SOBRE A CAMADA (vigésima segunda volta). O Sol
+ * no anel é baixo (a elevação e nunca passa de ~27°), e cada pedaço tira a
+ * luz direta de um cilindro de raio a que parte dele para longe do Sol. A
+ * matéria que ele sombreia é a da camada (o disco, os não resolvidos),
+ * espalhada na espessura H: na coluna do ponto (u, v) do plano — u ao longo
+ * do rumo para longe do Sol, v na transversal, os dois a partir do centro
+ * do pedaço — a fração sombreada S é o trecho da coluna dentro do cilindro
+ * (e atrás do terminador), dividido por H. No plano médio o corte do
+ * cilindro é a elipse de semieixos a (transversal) e a/sen e (ao longo do
+ * rumo), deslocada de z·cot e pela altura z do pedaço (`elipseDaSombra`); a
+ * espessura espalha essa elipse num rastro de até (a + H·cos e)/sen e — a
+ * borda é a da camada, não a do Sol: a penumbra do Sol (0,056° de diâmetro
+ * em Saturno) dá ~1 cm a 10 m, desprezível aqui.
+ *
+ * As sombras de um quadro se compõem pelo produto T = Π(1 − k·p·S) (p a
+ * presença do pedaço, a mesma da cessão). A média de T num campo de Poisson
+ * é e^(−E), E = Σ_o k·τ_o·p_o·G_o (`esperadoDaSombra`), e é ela que sai da
+ * conta estatística: o disco multiplica a luz direta por T/e^(−E). A média
+ * fica a de antes, e onde não há pedaço resolvido nada muda.
+ */
+/** as oitavas que fazem sombra explícita: abaixo delas a sombra de um pedaço tira menos de ~4 % da coluna de 8 m (2a/H), e elas ficam na conta estatística (salvaguarda minha, pelo custo) */
+export const OITAVAS_DA_SOMBRA = 6;
+/** o piso do seno da elevação do Sol na sombra: o mesmo piso de μ0 do disco (0,02, ~1,1°) — com o Sol no plano o rastro iria ao infinito */
+export const SEN_MIN_DA_SOMBRA = 0.02;
+/**
+ * o teto de E, a profundidade óptica média das sombras explícitas: metade
+ * de `X_DO_SOL` (a mesma salvaguarda: e^(−x/2) é a média do pedaço miúdo).
+ * Acima dele as sombras clareiam por k = teto/E, e a parte iluminada nunca
+ * passa de e^1,5 ≈ 4,5× a média
+ */
+export const TETO_DA_SOMBRA = X_DO_SOL / 2;
+
+/** a fração S da coluna (u, v) sombreada; `b` = √(a² − v²), a meia largura do cilindro na altura do ponto */
+export function colunaDaSombra(u: number, b: number, zs: number, h: number, senE: number, cosE: number): number {
+  const c = Math.max(cosE, 1e-3);
+  const lo = Math.max(zs + (-b - u * senE) / c, -0.5 * h);
+  const hi = Math.min(zs + (b - u * senE) / c, zs + (u * c) / senE, 0.5 * h);
+  return Math.max(hi - lo, 0) / h;
+}
+
+/**
+ * O CORTE DA SOMBRA NO PLANO MÉDIO do pedaço em `p` (km, quadro do anel,
+ * z = altura na camada) de raio `a`, com o Sol na direção `sol`: o centro,
+ * o rumo para longe do Sol e os semieixos.
+ */
+export function elipseDaSombra(
+  p: readonly [number, number, number],
+  a: number,
+  sol: readonly [number, number, number]
+): { centro: [number, number]; rumo: [number, number]; maior: number; menor: number; senE: number } {
+  const l = Math.hypot(sol[0], sol[1], sol[2]);
+  const senE = Math.max(Math.abs(sol[2]) / l, SEN_MIN_DA_SOMBRA);
+  const cosE = Math.sqrt(1 - senE * senE);
+  const lh = Math.hypot(sol[0], sol[1]) || 1;
+  const rumo: [number, number] = [-sol[0] / lh, -sol[1] / lh];
+  const zs = p[2] * (sol[2] >= 0 ? 1 : -1);
+  const desloca = (zs * cosE) / senE;
+  return { centro: [p[0] + rumo[0] * desloca, p[1] + rumo[1] * desloca], rumo, maior: a / senE, menor: a, senE };
+}
+
+/** ∫S dA · H: o volume da camada que o pedaço (raio a, altura zs para o lado do Sol) sombreia — a integral no disco do terminador */
+export function volumeDaSombra(a: number, zs: number, h: number, senE: number): number {
+  const cosE = Math.sqrt(Math.max(1 - senE * senE, 0));
+  const n = 32;
+  let v = 0;
+  for (let k = 0; k < n; k++) {
+    const r = a * (-1 + (2 * (k + 0.5)) / n);
+    v += 2 * Math.sqrt(a * a - r * r) * Math.min(Math.max(zs + r * cosE + 0.5 * h, 0), h);
+  }
+  return (v * (2 * a)) / n / senE;
+}
+
+/**
+ * G_o: a sombra média da oitava o sobre a camada por unidade de τ dela —
+ * E[∫S dA]/E[πa²], na lei de tamanhos e de alturas do vértice. Para o
+ * pedaço miúdo, 1/(2 sen e); o grande, maior que a camada, sombreia menos.
+ */
+export function fatoresDaSombra(senE: number, h: number): number[] {
+  return Array.from({ length: OITAVAS_DA_SOMBRA }, (_, o) => {
+    const s = TABELA_DE_OITAVAS[o]!.s;
+    let num = 0;
+    let den = 0;
+    const na = 12;
+    const nz = 12;
+    for (let i = 0; i < na; i++) {
+      const a = (0.5 * s) / Math.sqrt(1 - (0.75 * (i + 0.5)) / na);
+      den += a * a;
+      for (let j = 0; j < nz; j++) {
+        // a altura triangular do vértice (z0 ∈ [−1, 1]), pela inversa da acumulada
+        const t = (j + 0.5) / nz;
+        const z0 = t < 0.5 ? Math.sqrt(2 * t) - 1 : 1 - Math.sqrt(2 * (1 - t));
+        num += volumeDaSombra(a, alturaNaCamada(z0, a, h), h, senE) / h / (Math.PI * nz);
+      }
+    }
+    return num / den;
+  });
+}
+
+/** k: a força das sombras explícitas onde o campo carrega `tauCampo`, com o teto de E */
+export function forcaDaSombra(tauCampo: number, g: readonly number[]): number {
+  const soma = g.reduce((x, y) => x + y, 0);
+  return Math.min(1, TETO_DA_SOMBRA / Math.max(tauCampo * FRACAO_POR_OITAVA * soma, 1e-9));
+}
+
+/** E: a média de −ln T que as sombras explícitas deixam, com as presenças das oitavas que as fazem */
+export function esperadoDaSombra(tauCampo: number, presencas: readonly number[], g: readonly number[]): number {
+  let e = 0;
+  for (let o = 0; o < OITAVAS_DA_SOMBRA; o++) e += (presencas[o] ?? 0) * g[o]!;
+  return forcaDaSombra(tauCampo, g) * tauCampo * FRACAO_POR_OITAVA * e;
+}
+
+/**
  * O CORTE, em oitavas de distância: além dele o pedaço é um PONTO (um
  * vértice só, o corpo acertado no fragmento); aquém, uma MALHA escolhida na
  * CPU.
@@ -1075,6 +1187,25 @@ float tauDaNevoa(float h, float dz, float L, float esp, float tau, float teto) {
 `;
 
 /**
+ * AS SOMBRAS EXPLÍCITAS, o que o vértice delas e o disco dividem (depois de
+ * `GLSL_PURO_DAS_PEDRAS`): os G_o do quadro (`fatoresDaSombra`), a força k
+ * (`forcaDaSombra`) e a soma das presenças pesadas por G_o.
+ */
+const GLSL_SOMBRA_COMUM = /* glsl */ `
+uniform float uSombraG[${OITAVAS_DA_SOMBRA}];
+// somaG = Σ G_o
+float forcaDaSombra(float campo, float somaG) {
+  return min(1.0, ${glslF(TETO_DA_SOMBRA)} / max(campo * P_FRACAO * somaG, 1.0e-9));
+}
+float presencasDaSombra(float d) {
+  float x0 = log2(max(d, 1.0e-12) / P_S_MAX);
+  float f = 0.0;
+  for (int o = 0; o < ${OITAVAS_DA_SOMBRA}; o++) f += clamp((P_X_ENTRA - x0 - float(o)) * P_RAMPA, 0.0, 1.0) * uSombraG[o];
+  return f;
+}
+`;
+
+/**
  * AS ESTEIRAS EM GLSL, relativas à câmera: `uEstCam` = (a câmera no
  * ladrilho: radial, arco no B, arco no A — as frações, da CPU em dupla
  * precisão). O vértice dos pedaços lê o δ pela mesma leitura bilinear da CPU
@@ -1238,6 +1369,8 @@ uniform float uFs[${OITAVAS}];
 uniform float uGi[${OITAVAS}];
 uniform float uGf[${OITAVAS}];
 uniform float uGiro;
+// as sombras: (rumo para longe do Sol no plano, sen e, cos e)
+uniform vec4 uSombraSol;
 
 ${GLSL_VARYINGS_DO_PEDACO}
 
@@ -1254,6 +1387,7 @@ CONSTANTES_DO_ANEL
 SOMBRA_DO_PLANETA
 ${GLSL_SORTEIO}
 ${GLSL_PURO_DAS_PEDRAS}
+${GLSL_SOMBRA_COMUM}
 ${GLSL_ESTEIRA}
 ${GLSL_LUZ_DA_NEVOA}
 ${GLSL_GIRO_DO_PEDACO}
@@ -1361,6 +1495,10 @@ bool lugar(int o, int i, ivec2 img) {
       + vec3(-uEixo.y, uEixo.x, 0.0) * (dS * (uRhoCamKm + dRho) / R0) + vec3(0.0, 0.0, dz));
     float d2c = dRho * dRho + dS * dS;
     float rF = 2.5 * raio + ${glslF(1.5 * DESLOCAMENTO_MAXIMO_KM)} + 4.0e-6 * d2c + 1.0e-4;
+#if defined(SOMBRA)
+    // a sombra de quem está fora do quadro pode cair dentro: o rastro inteiro de folga
+    rF += (raio + reg.x * uSombraSol.w) / uSombraSol.z;
+#endif
     float c00 = projectionMatrix[0][0];
     float c11 = projectionMatrix[1][1];
     if (-cv.z < -rF || abs(cv.x) * c00 + cv.z > rF * sqrt(c00 * c00 + 1.0)
@@ -1370,6 +1508,8 @@ bool lugar(int o, int i, ivec2 img) {
   // o PONTO opaco, o que ESMAECE e a MALHA são complementares exatos
 #if defined(MALHA)
   if (xo >= X_CORTE) return false;
+#elif defined(SOMBRA)
+  // a sombra é de todo pedaço presente, opaco ou entrando
 #elif defined(ESMAECE)
   if (p >= 1.0) return false;
 #else
@@ -1404,8 +1544,8 @@ bool lugar(int o, int i, ivec2 img) {
   vec3 er = vec3(uEixo, 0.0);
   vec3 et = vec3(-uEixo.y, uEixo.x, 0.0);
   gOff = er * x + et * y + vec3(0.0, 0.0, dz);
-#if defined(PRE_PASSO)
-  // o pré-passo para aqui: o que vem depois depende da lente
+#if defined(PRE_PASSO) || defined(SOMBRA)
+  // o pré-passo (e a sombra) para aqui: o que vem depois depende da lente
   gRaio = raio;
   vFica = vec4(p, raio, 0.0, 0.0);
   return true;
@@ -1772,6 +1912,93 @@ precision highp float;
 flat varying vec4 vSaida;
 void main() {
   gl_FragColor = vSaida;
+}
+`;
+
+/**
+ * A SOMBRA DE CADA PEDAÇO NA TELA (`colunaDaSombra`): um triângulo por
+ * pedaço, no plano médio, cobrindo o rastro dele (com a folga de um pixel e
+ * meio); o fragmento soma −ln(1 − k·p·S) numa textura do tamanho do quadro,
+ * que o disco lê antes de se desenhar (`sombraDasPedras`). As células são
+ * as dos pontos, com a folga do rastro (`acenderSombra`).
+ */
+const VERT_DA_SOMBRA = /* glsl */ `
+attribute float aCelula;
+uniform highp sampler2D uPermutacao;
+varying vec2 vUV;
+flat varying vec4 vPar;
+${GLSL_PEDRA_COMUM}
+const ivec2 IMAGENS[${IMAGENS.length}] = ivec2[${IMAGENS.length}](${IMAGENS.map(([r, a]) => `ivec2(${r}, ${a})`).join(', ')});
+void main() {
+  vUV = vec2(0.0);
+  vPar = vec4(0.0);
+  gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+  int codigo = int(aCelula + 0.5);
+  int celula = codigo % ${CELULAS};
+  int io = codigo / ${CELULAS};
+  int o = io % ${OITAVAS};
+  int img = io / ${OITAVAS};
+  int k = gl_VertexID / 3;
+  int canto = gl_VertexID - 3 * k;
+  int p = o * ${PEDRAS_POR_TIER.cinema} + celula * ${CELULA} + k;
+  int id = int(texelFetch(uPermutacao, ivec2(p & 511, p >> 9), 0).r + 0.5);
+  if (!lugar(o, id, IMAGENS[img])) return;
+  float rho = uRhoCamKm + dot(gOff.xy, uEixo);
+  float H = regiaoDasPedras(rho).x;
+  float somaG = 0.0;
+  for (int j = 0; j < ${OITAVAS_DA_SOMBRA}; j++) somaG += uSombraG[j];
+  float kp = forcaDaSombra(gTau * tetoDoCampo(rho, gTau, uFracaoDoTier), somaG) * vFica.x;
+  if (kp <= 0.0) return;
+  float senE = uSombraSol.z;
+  float cosE = uSombraSol.w;
+  // a altura do centro para o lado do Sol
+  float zs = (gOff.z + uZCamKm) * (uDirSolLocal.z >= 0.0 ? 1.0 : -1.0);
+  // um pixel e meio no pedaço, km: a folga do filtro do fragmento
+  float m = 1.5 * length(gOff) / max(uPxPorRad, 1.0);
+  float a = gRaio;
+  float u0 = -a * senE - m;
+  float u1 = (a + (0.5 * H + zs) * cosE) / senE + m;
+  float w = a + m;
+  // o triângulo que cobre o retângulo [u0, u1] × [−w, w]
+  vec2 uv = canto == 0 ? vec2(u0, -w) : canto == 1 ? vec2(2.0 * u1 - u0, -w) : vec2(u0, 3.0 * w);
+  vec2 rumo = uSombraSol.xy;
+  vec3 P = vec3(gOff.xy + rumo * uv.x + vec2(-rumo.y, rumo.x) * uv.y, -uZCamKm);
+  float raioMundo = length((modelViewMatrix * vec4(1.0, 0.0, 0.0, 0.0)).xyz);
+  gl_Position = projectionMatrix * vec4((mat3(modelViewMatrix) / raioMundo * P) * (raioMundo / KM_POR_RAIO), 1.0);
+  vUV = uv;
+  vPar = vec4(a, zs, H, kp);
+}
+`;
+
+const FRAG_DA_SOMBRA = /* glsl */ `
+precision highp float;
+uniform vec4 uSombraSol;
+varying vec2 vUV;
+flat varying vec4 vPar;
+// a primitiva de √(a² − t²)
+float areaDoCorte(float t, float a) {
+  float c = clamp(t, -a, a);
+  return 0.5 * (c * sqrt(max(a * a - c * c, 0.0)) + a * a * asin(clamp(c / a, -1.0, 1.0)));
+}
+void main() {
+  float a = vPar.x;
+  if (vPar.w <= 0.0 || a <= 0.0) discard;
+  // a meia largura do cilindro na média do pixel em v (o rastro mais fino
+  // que o pixel fica mais largo e mais fraco, com a mesma área)
+  float wv = fwidth(vUV.y);
+  float b = wv < 1.0e-3 * a
+    ? sqrt(max(a * a - vUV.y * vUV.y, 0.0))
+    : (areaDoCorte(vUV.y + 0.5 * wv, a) - areaDoCorte(vUV.y - 0.5 * wv, a)) / wv;
+  if (b <= 0.0) discard;
+  float senE = uSombraSol.z;
+  float c = max(uSombraSol.w, 1.0e-3);
+  float zs = vPar.y;
+  float H = vPar.z;
+  float lo = max(zs + (-b - vUV.x * senE) / c, -0.5 * H);
+  float hi = min(min(zs + (b - vUV.x * senE) / c, zs + vUV.x * c / senE), 0.5 * H);
+  float S = max(hi - lo, 0.0) / H;
+  if (S <= 0.0) discard;
+  gl_FragColor = vec4(-log(max(1.0 - vPar.w * S, 1.0e-4)), 0.0, 0.0, 1.0);
 }
 `;
 
@@ -2211,7 +2438,47 @@ float cederAsPedras(float alfa, float tau) {
   float a = f <= 0.0 ? alfa : 1.0 - pow(max(1.0 - alfa, 1.0e-4), 1.0 - f);
   return a * (1.0 - pesoDaNevoa(uCamDasPedras.z, regiaoDasPedras(uCamDasPedras.x).x));
 }
+// A SOMBRA DOS PEDAÇOS SOBRE A LUZ DIRETA DO DISCO: T/e^(−E), com T da
+// textura das sombras (−ln T, \`VERT_DA_SOMBRA\`) e E a média dela
+// (\`esperadoDaSombra\`). As presenças são as de quem faz sombra AQUI: os
+// pedaços do lado do Sol, a até (H/2)·cot e — três pontos no meio de terços
+// iguais do trecho (a altura do pedaço tomada no plano: aproximação minha)
+${GLSL_SOMBRA_COMUM}
+uniform highp sampler2D uSombraDasPedras;
+// (ligada, (H/2)·cot e com o H da câmera, Σ G_o, —) e o rumo para longe do Sol no plano
+uniform vec4 uSombraNoDisco;
+uniform vec2 uSombraRumo;
+float sombraDasPedras(float tau) {
+  if (uSombraNoDisco.x <= 0.0) return 1.0;
+  ivec2 px = ivec2(gl_FragCoord.xy);
+  ivec2 n = textureSize(uSombraDasPedras, 0);
+  if (px.x >= n.x || px.y >= n.y) return 1.0;
+  float od = texelFetch(uSombraDasPedras, px, 0).r;
+  vec2 er = vec2(cos(uCamDasPedras.y), sin(uCamDasPedras.y));
+  vec2 q = vRelDasPedras.xy;
+  float rKm = length(vec2(uCamDasPedras.x + dot(q, er), dot(q, vec2(-er.y, er.x))));
+  float campo = tau * tetoDoCampo(rKm, tau, uCamDasPedras.w);
+  float t0 = uSombraNoDisco.y;
+  float z2 = uCamDasPedras.z * uCamDasPedras.z;
+  float s = 0.0;
+  for (int j = 0; j < 3; j++) {
+    vec2 qj = q - uSombraRumo * (t0 * (2.0 * float(j) + 1.0) / 6.0);
+    s += presencasDaSombra(sqrt(dot(qj, qj) + z2));
+  }
+  float esperado = forcaDaSombra(campo, uSombraNoDisco.z) * campo * P_FRACAO * s / 3.0;
+  return exp(esperado - od);
+}
 `;
+
+/** os uniformes do disco para a sombra dos pedaços (`sombraDasPedras`): o gigante os cria, `PedrasDoAnel.sombraNoDisco` os enche */
+export function uniformesDaSombraNoDisco(): Record<string, THREE.IUniform> {
+  return {
+    uSombraDasPedras: { value: null },
+    uSombraNoDisco: { value: new THREE.Vector4() },
+    uSombraRumo: { value: new THREE.Vector2(1, 0) },
+    uSombraG: { value: new Float32Array(OITAVAS_DA_SOMBRA) },
+  };
+}
 
 /**
  * O VÉRTICE DO DISCO com `?pedras=3d`: o de sempre (`ANEL_VERT`) mais o
@@ -3512,7 +3779,7 @@ function formasDe(detalhe: number) {
 }
 
 /** a malha de perto lê o pedaço do pré-passo; a 'reserva' faz a conta ela mesma (sem alvo em float) */
-type Desenho = 'ponto' | 'esmaece' | 'malha' | 'reserva' | 'pre';
+type Desenho = 'ponto' | 'esmaece' | 'malha' | 'reserva' | 'pre' | 'sombra';
 
 /** a capacidade de cada malha de perto: o dobro da conta média da janela de perto, por oitava */
 function capacidadeDePerto(): number {
@@ -3593,6 +3860,8 @@ export interface VistaDasCelulas {
   fs: ArrayLike<number>;
   gi: ArrayLike<number>;
   gf: ArrayLike<number>;
+  /** a folga a mais do cone, km: o rastro da sombra (`acenderSombra`) */
+  folgaKm?: number;
 }
 
 /**
@@ -3621,7 +3890,7 @@ function caixaDaJanela(v: VistaDasCelulas, s: number, r0: number, r1: number, s0
   if (!bits || !lente?.ok) return bits;
   const m9 = lente.m;
   const d2 = r0 * r0 + r1 * r1 + s0 * s0 + s1 * s1;
-  const folga = 2.5 * s + 1.5 * DESLOCAMENTO_MAXIMO_KM + 4e-6 * d2 + 1e-4 + FOLGA_DO_CONE * Math.sqrt(max2);
+  const folga = 2.5 * s + 1.5 * DESLOCAMENTO_MAXIMO_KM + 4e-6 * d2 + 1e-4 + FOLGA_DO_CONE * Math.sqrt(max2) + (v.folgaKm ?? 0);
   const s00 = folga * Math.sqrt(lente.p00 * lente.p00 + 1);
   const s11 = folga * Math.sqrt(lente.p11 * lente.p11 + 1);
   let fora = 0b11111;
@@ -3647,7 +3916,8 @@ function caixaDaJanela(v: VistaDasCelulas, s: number, r0: number, r1: number, s0
 /**
  * AS CÉLULAS QUE O QUADRO PAGA, por imagem do ladrilho (`IMAGENS`) e
  * oitava (da mais fina para a mais grossa): o código (imagem·OITAVAS +
- * oitava)·CELULAS + célula vai para `opacos` ou `esmaece` (ou os dois).
+ * oitava)·CELULAS + célula vai para `opacos` ou `esmaece` (ou os dois; com
+ * `unir`, toda célula com algum pedaço presente vai só para `opacos`).
  * Devolve quantas em cada. O lugar de cada id é a conta do vértice: o raio
  * (dk + a − f)·lado, com o dk da volta do ladrilho, e o arco h + g·a + gf·dk
  * + fs (mod 1), com o cisalhamento g reduzido ao inteiro mais perto de zero.
@@ -3656,7 +3926,8 @@ export function celulasDoQuadro(
   v: VistaDasCelulas,
   celulas: readonly CelulasDaOitava[],
   opacos: Float32Array,
-  esmaece: Float32Array
+  esmaece: Float32Array,
+  unir = false
 ): [number, number] {
   const nOit = Math.min(Math.max(v.ativas, 0), OITAVAS);
   const faixas = Math.floor(v.porOitava / (CELULA * CELULAS_POR_FAIXA));
@@ -3723,8 +3994,12 @@ export function celulasDoQuadro(
         for (let c = 0; c < CELULAS_POR_FAIXA; c++) {
           const x = bitsDaCelula[c]!;
           const k = codigo + b * CELULAS_POR_FAIXA + c;
-          if (x & 1) opacos[nOp++] = k;
-          if (x & 2) esmaece[nEs++] = k;
+          if (unir) {
+            if (x) opacos[nOp++] = k;
+          } else {
+            if (x & 1) opacos[nOp++] = k;
+            if (x & 2) esmaece[nEs++] = k;
+          }
         }
       }
     }
@@ -3755,6 +4030,9 @@ class Faixa {
   private readonly preIds: THREE.BufferAttribute;
   /** quantos pontos o pré-passo desenha agora (1 = só a névoa: nenhuma malha) */
   nPre = 1;
+  /** as sombras: um triângulo por pedaço das células de `acenderSombra` (desenhadas fora do quadro, no alvo delas) */
+  readonly sombra: THREE.Mesh;
+  private readonly codigosDaSombra: THREE.InstancedBufferAttribute;
 
   constructor(material: (desenho: Desenho, formas?: THREE.DataTexture) => THREE.ShaderMaterial) {
     this.ordens = Array.from({ length: OITAVAS }, (_, o) => ordemDaOitava(o));
@@ -3787,6 +4065,16 @@ class Faixa {
     };
     this.pontos = pontos('ponto');
     this.esmaece = pontos('esmaece');
+    const gs = new THREE.InstancedBufferGeometry();
+    gs.setAttribute('position', new THREE.BufferAttribute(new Uint8Array(3 * CELULA), 1));
+    this.codigosDaSombra = new THREE.InstancedBufferAttribute(new Float32Array(IMAGENS.length * OITAVAS * CELULAS), 1, false, 1);
+    this.codigosDaSombra.setUsage(THREE.DynamicDrawUsage);
+    gs.setAttribute('aCelula', this.codigosDaSombra);
+    gs.instanceCount = 0;
+    gs.boundingSphere = new THREE.Sphere();
+    this.sombra = new THREE.Mesh(gs, material('sombra'));
+    this.sombra.frustumCulled = false;
+    this.sombra.matrixAutoUpdate = false;
     for (const p of [this.pontos, this.esmaece]) {
       p.frustumCulled = false;
       p.visible = false;
@@ -3850,6 +4138,20 @@ class Faixa {
         a.needsUpdate = true;
       }
     });
+  }
+
+  /** as sombras: as células com algum pedaço presente, das oitavas e com a folga que a vista traz */
+  acenderSombra(vista: VistaDasCelulas) {
+    const a = this.codigosDaSombra;
+    const op = a.array as Float32Array;
+    const n = celulasDoQuadro(vista, this.celulas, op, op, true)[0];
+    (this.sombra.geometry as THREE.InstancedBufferGeometry).instanceCount = n;
+    this.sombra.visible = n > 0;
+    if (n > 0) {
+      a.clearUpdateRanges();
+      a.addUpdateRange(0, n);
+      a.needsUpdate = true;
+    }
   }
 
   /**
@@ -3997,8 +4299,8 @@ class Faixa {
   }
 
   dispose() {
-    for (const m of [this.pontos, this.esmaece, ...this.malhas, this.pre]) m.geometry.dispose();
-    for (const m of [this.pontos, this.esmaece, this.pre]) (m.material as THREE.ShaderMaterial).dispose();
+    for (const m of [this.pontos, this.esmaece, ...this.malhas, this.pre, this.sombra]) m.geometry.dispose();
+    for (const m of [this.pontos, this.esmaece, this.pre, this.sombra]) (m.material as THREE.ShaderMaterial).dispose();
     this.permutacao.dispose();
     for (const m of [...this.leves, ...this.reservas]) m.dispose();
     for (const f of FORMAS.values()) {
@@ -4045,6 +4347,17 @@ export class PedrasDoAnel {
   private readonly cameraPre = new THREE.Camera();
   /** o maior τ perto de um raio, do perfil medido (null até o perfil chegar) */
   private tauMaximo: ((rhoKm: number) => number) | null = null;
+  /**
+   * AS SOMBRAS (`colunaDaSombra`): o alvo do tamanho do quadro, a cena dele,
+   * se valem neste quadro, se já foram desenhadas, e os G_o (guardados pela
+   * elevação e pela espessura)
+   */
+  private alvoSombra: THREE.WebGLRenderTarget | null = null;
+  private readonly cenaSombra = new THREE.Scene();
+  private sombraAtiva = false;
+  private espessuraDaSombra = 0;
+  private readonly chaveDosG = [Number.NaN, Number.NaN];
+  private readonly corAntes = new THREE.Color();
 
   constructor(private readonly opcoes: OpcoesDasPedras) {
     const constantes = `${opcoes.glslConstantesDoAnel}
@@ -4093,11 +4406,30 @@ const float R_EXT = ${opcoes.rExt};`;
       uPre: { value: null },
       uPrePronto: { value: 0 },
       uPermutacao: { value: null },
+      uSombraSol: { value: new THREE.Vector4(1, 0, 0.5, Math.sqrt(0.75)) },
+      uSombraG: { value: new Float32Array(OITAVAS_DA_SOMBRA) },
     };
     const pre = { PRE_W, PRE_H: linhasDoPrePasso(), PRE_BANDAS };
     const material = (desenho: Desenho, formas?: THREE.DataTexture) => {
       const malha = desenho === 'malha' || desenho === 'reserva';
       const esmaece = desenho === 'esmaece';
+      if (desenho === 'sombra') {
+        // −ln T SOMA: a ordem dos triângulos não importa
+        return new THREE.ShaderMaterial({
+          vertexShader: vertice(VERT_DA_SOMBRA),
+          fragmentShader: FRAG_DA_SOMBRA,
+          defines: { X_CORTE: glslF(X_CORTE), SOMBRA: 1 },
+          uniforms: this.uniforms,
+          blending: THREE.CustomBlending,
+          blendEquation: THREE.AddEquation,
+          blendSrc: THREE.OneFactor,
+          blendDst: THREE.OneFactor,
+          depthTest: false,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+          toneMapped: false,
+        });
+      }
       if (desenho === 'pre') {
         return new THREE.ShaderMaterial({
           vertexShader: vertice(VERT_DO_PRE_PASSO),
@@ -4206,6 +4538,7 @@ const float R_EXT = ${opcoes.rExt};`;
     }
     this.malha.add(this.folha, this.nevoa, this.faixa.esmaece);
     this.cenaPre.add(this.faixa.pre);
+    this.cenaSombra.add(this.faixa.sombra);
     this.malha.matrixAutoUpdate = false;
     this.malha.visible = false;
   }
@@ -4284,6 +4617,7 @@ const float R_EXT = ${opcoes.rExt};`;
     const forca = noAnel ? forcaDaEsteiraNoDisco(zKm, espessura) : 0;
     const peso = noAnel ? pesoDaNevoa(zKm, espessura) : 0;
     this.malha.visible = ativas > 0 || forca > 0;
+    this.sombraAtiva = false;
     const fracao = PEDRAS_POR_TIER[q.tier] / PEDRAS_POR_TIER.cinema;
     this.cessao.w = ativas > 0 ? fracao : 0;
     // a câmera do disco em duas partes vale SEMPRE: a direção de vista do
@@ -4349,7 +4683,102 @@ const float R_EXT = ${opcoes.rExt};`;
     u.uFundoFolha!.value = -(Math.sign(zKm) || 1) * (0.5 * espessura + 2 * A_MAX_KM);
     this.folha.visible = forca > 0;
     this.nevoa.visible = peso > 0;
+
+    // AS SOMBRAS: o Sol no plano do anel, os G_o e as células, com a folga
+    // do rastro mais longo (o maior pedaço na camada mais espessa). O nível
+    // performance fica sem elas (a conta estatística inteira), e de dentro
+    // da camada o disco já passou a vez à névoa.
+    const L = q.dirSolLocal;
+    const senE = Math.max(Math.abs(L.z) / (L.length() || 1), SEN_MIN_DA_SOMBRA);
+    const cosE = Math.sqrt(1 - senE * senE);
+    const lh = Math.hypot(L.x, L.y) || 1;
+    (u.uSombraSol!.value as THREE.Vector4).set(-L.x / lh, -L.y / lh, senE, cosE);
+    this.espessuraDaSombra = espessura;
+    const chave = this.chaveDosG;
+    if (!(Math.abs(senE - chave[0]!) <= 1e-4 * senE) || espessura !== chave[1]) {
+      (u.uSombraG!.value as Float32Array).set(fatoresDaSombra(senE, espessura));
+      chave[0] = senE;
+      chave[1] = espessura;
+    }
+    const r = this.renderer;
+    this.sombraAtiva = q.tier !== 'performance' && ativas > 0 && peso < 1 && r !== null && r.extensions.has('EXT_color_buffer_float');
+    this.faixa.sombra.visible = false;
+    if (this.sombraAtiva) {
+      this.alvoSombra ??= new THREE.WebGLRenderTarget(1, 1, {
+        type: THREE.HalfFloatType,
+        format: THREE.RedFormat,
+        minFilter: THREE.NearestFilter,
+        magFilter: THREE.NearestFilter,
+        depthBuffer: false,
+        generateMipmaps: false,
+      });
+      this.faixa.acenderSombra({
+        ativas: Math.min(ativas, OITAVAS_DA_SOMBRA),
+        porOitava,
+        rhoKm,
+        zKm,
+        espessuraKm,
+        lente: this.lente,
+        fr: this.fr,
+        fs: this.fs,
+        gi: this.gi,
+        gf: this.gf,
+        folgaKm: (A_MAX_KM + espessuraKm * cosE) / senE,
+      });
+      this.desenharSombra();
+    }
     this.prePasso();
+  }
+
+  /**
+   * O DISCO LÊ AS SOMBRAS (`sombraDasPedras`): os uniformes que o gigante
+   * criou com `uniformesDaSombraNoDisco`, cheios a cada quadro depois de
+   * `atualizar`.
+   */
+  sombraNoDisco(ua: Record<string, THREE.IUniform>) {
+    const sol = this.uniforms.uSombraSol!.value as THREE.Vector4;
+    ua.uSombraDasPedras!.value = this.alvoSombra?.texture ?? null;
+    const g = this.uniforms.uSombraG!.value as Float32Array;
+    (ua.uSombraNoDisco!.value as THREE.Vector4).set(
+      this.sombraAtiva && this.alvoSombra ? 1 : 0,
+      (0.5 * this.espessuraDaSombra * sol.w) / sol.z,
+      g.reduce((x, y) => x + y, 0),
+      0
+    );
+    (ua.uSombraG!.value as Float32Array).set(g);
+    (ua.uSombraRumo!.value as THREE.Vector2).set(sol.x, sol.y);
+  }
+
+  /**
+   * AS SOMBRAS DO QUADRO, no alvo do tamanho do último quadro, com a câmera
+   * dele já no lugar deste: ANTES do desenho do quadro, como o pré-passo —
+   * no meio dele, a troca de alvo partia o passe da placa (+1 ms medido).
+   */
+  private desenharSombra() {
+    const r = this.renderer;
+    const cam = this.camera;
+    const alvo = this.alvoSombra;
+    if (!r || !cam || !alvo) return;
+    const w = Math.max(this.tela.z, 1);
+    const h = Math.max(this.tela.w, 1);
+    if (alvo.width !== w || alvo.height !== h) alvo.setSize(w, h);
+    cam.updateMatrixWorld();
+    this.malha.updateWorldMatrix(true, false);
+    const s = this.faixa.sombra;
+    s.matrix.copy(this.malha.matrixWorld);
+    s.matrixWorldNeedsUpdate = true;
+    const antes = r.getRenderTarget();
+    const limpa = r.autoClear;
+    r.getClearColor(this.corAntes);
+    const alfa = r.getClearAlpha();
+    r.setRenderTarget(alvo);
+    r.setClearColor(0x000000, 0);
+    r.clear(true, false, false);
+    r.autoClear = false;
+    if (s.visible) r.render(this.cenaSombra, cam);
+    r.autoClear = limpa;
+    r.setClearColor(this.corAntes, alfa);
+    r.setRenderTarget(antes);
   }
 
   /**
@@ -4385,6 +4814,7 @@ const float R_EXT = ${opcoes.rExt};`;
   dispose() {
     this.faixa.dispose();
     this.alvoPre?.dispose();
+    this.alvoSombra?.dispose();
     (this.uniforms.uRelevo!.value as THREE.Texture).dispose();
     (this.uniforms.uLonge!.value as THREE.Texture).dispose();
     (this.uniforms.uNormaDeLonge!.value as THREE.Texture).dispose();

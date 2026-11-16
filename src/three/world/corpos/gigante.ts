@@ -84,7 +84,7 @@ import { AneisTenuesDeSaturno } from './aneisTenues';
 import type { QuadroDosAneisTenues } from './aneisTenues';
 import { LajotaDoAnel, VOLUME_DA_LAJOTA } from './lajotaDoAnel';
 import type { QuadroDaLajota } from './lajotaDoAnel';
-import { ANEL_VERT_DAS_PEDRAS, GLSL_CESSAO_DAS_PEDRAS, PEDRAS_3D, PedrasDoAnel } from './pedrasDoAnel';
+import { ANEL_VERT_DAS_PEDRAS, GLSL_CESSAO_DAS_PEDRAS, PEDRAS_3D, PedrasDoAnel, uniformesDaSombraNoDisco } from './pedrasDoAnel';
 import { posicaoKepler } from '../../../lib/atlas/kepler';
 import { cessaoAlvo, gateBinario, saltoGuardado } from './terra';
 import { CANAL_MAP, type Seguradores, TexturasDoCorpo, diametroPedidoPelaTela } from './texturas';
@@ -1621,7 +1621,10 @@ void main() {
   float ladoSuave = smoothstep(-0.03, 0.03, mesmoLado);
   vec3 direta = (tinta * IF_RETRO)
     * ((camada.x * (1.0 - raios * ladoSuave) + raios * 0.5 * alfa) * uLuzGanho)
-    * sombraDoPlaneta(vPos);
+    * sombraDoPlaneta(vPos)${
+      // com as pedras, a sombra de cada pedaço resolvido tira só a luz direta
+      PEDRAS_3D ? ' * sombraDasPedras(tau)' : ''
+    };
   // o planetshine NÃO leva a sombra do planeta: o planeta é a FONTE
   vec3 doGlobo = (tinta * IF_RETRO)
     * (planetshineNoAnel(vPos, r, view, mu, tau, nDotV) * uLuzGanho);
@@ -2208,6 +2211,7 @@ export class GiganteResolvido {
           (ua.uCamDasPedras!.value as THREE.Vector4).copy(this.pedras.cessao);
           (ua.uCamAltaDasPedras!.value as THREE.Vector3).copy(this.pedras.camAlta);
           (ua.uCamRestoDasPedras!.value as THREE.Vector3).copy(this.pedras.camResto);
+          this.pedras.sombraNoDisco(ua);
         } else if (this.lajota) {
           this.lajota.fixarNoAnel(this.anel.matrix);
           this.lajota.atualizar(l);
@@ -2325,6 +2329,7 @@ export class GiganteResolvido {
                 uCamDasPedras: { value: new THREE.Vector4() },
                 uCamAltaDasPedras: { value: new THREE.Vector3() },
                 uCamRestoDasPedras: { value: new THREE.Vector3() },
+                ...uniformesDaSombraNoDisco(),
               }
             : {}),
         },
