@@ -941,6 +941,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'classe.cometa': 'comet',
   'classe.cometa interestelar': 'interstellar comet',
   'classe.exoplaneta': 'exoplanet',
+  'classe.anel': 'ring',
 
   // ---- the time machine --------------------------------------------
   'tempo.mes.0': 'January',

@@ -976,6 +976,7 @@ export const PT = {
   'classe.cometa': 'cometa',
   'classe.cometa interestelar': 'cometa interestelar',
   'classe.exoplaneta': 'exoplaneta',
+  'classe.anel': 'anel',
 
   // ---- a máquina do tempo (`three/tempoDoAtlas.ts`) -----------------
   'tempo.mes.0': 'janeiro',

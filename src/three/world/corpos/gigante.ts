@@ -84,7 +84,7 @@ import { AneisTenuesDeSaturno } from './aneisTenues';
 import type { QuadroDosAneisTenues } from './aneisTenues';
 import { LajotaDoAnel, VOLUME_DA_LAJOTA } from './lajotaDoAnel';
 import type { QuadroDaLajota } from './lajotaDoAnel';
-import { ANEL_VERT_DAS_PEDRAS, GLSL_CESSAO_DAS_PEDRAS, PEDRAS_3D, PedrasDoAnel, uniformesDaSombraNoDisco } from './pedrasDoAnel';
+import { ANEL_VERT_DAS_PEDRAS, GLSL_CESSAO_DAS_PEDRAS, PEDRAS_3D, PedrasDoAnel, regiaoDasPedras, uniformesDaSombraNoDisco } from './pedrasDoAnel';
 import { FitaDosPicos, GLSL_RELEVO_DO_ANEL, RELEVO_DO_ANEL, uniformesDoRelevo, vertDaFita } from './relevoDoAnel';
 import { posicaoKepler } from '../../../lib/atlas/kepler';
 import { cessaoAlvo, gateBinario, saltoGuardado } from './terra';
@@ -2220,6 +2220,13 @@ export class GiganteResolvido {
         rProjPc > VOLUME_DA_LAJOTA.rMin &&
         rProjPc < VOLUME_DA_LAJOTA.rMax;
       if (noAnel) {
+        // com os pedaços o chão é a CAMADA DE VERDADE (metros, `regiaoDasPedras`
+        // no raio da câmera), não os 12 km da lajota: senão o anteparo do near
+        // ficava em 12 m e cortava os pedaços rente à lente dentro da camada
+        if (this.pedras) {
+          const kmPorRaio = BODY_AXES.saturn[0]!;
+          chao.raioPc = ((0.5 * regiaoDasPedras(rProjPc * kmPorRaio).espessura) / kmPorRaio) * this.raioA;
+        }
         chao.centroPc.copy(q.camPosPc).addScaledVector(this.vAnelY, -alturaPc);
         this.estado.superficieDoAnel = chao;
       }

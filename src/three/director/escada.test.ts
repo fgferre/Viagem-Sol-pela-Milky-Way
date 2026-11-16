@@ -46,9 +46,12 @@ import { LUGARES_DA_BUSCA, poseDePertoDaEstrelaS, poseDoLugar } from '../world/l
 import { posicaoDoCometaNaCena, poseDoCometaDePerto } from '../world/cometas';
 import { M31 } from '../world/geradorDasVizinhas';
 import { GAL } from '../world/baseGalactica';
-import { ENTREGA_DO_BURACO_PC } from '../escala';
+import { ENTREGA_DO_BURACO_PC, kmParaPc } from '../escala';
 import { RS_SGR_A_PC } from '../../lib/buracoNegro';
 import { ATLAS_FOV_GRAUS, enquadrar, retanguloUtilDoAtlas } from '../cinematic/atlasRig';
+import { orientacaoInercialDoAnelNaCena } from '../world/corpos/orientacaoNaCena';
+import { ID_DO_PONTO_DO_ANEL, NOME_DO_PONTO_DO_ANEL, PISO_KM, RAIO_DO_PONTO_KM } from '../world/pontoDoAnel';
+import { construirIndice, resolverFoco } from '../../lib/buscaEstrelas';
 
 // O runner da casa é `node` (vitest.config.ts) e o enquadramento pergunta
 // a largura da janela (`larguraDeCss`) a cada `apply`. Uma linha de
@@ -685,5 +688,70 @@ describe('o "Aproximar" de cometas e de lugares do céu (13/11)', () => {
     expect(escada.escadaViva).toMatchObject({ degrau: 'estrela', podeAproximar: true });
     escada.aproximarDoCorpo();
     expect(escada.escadaViva).toMatchObject({ degrau: 'estrela', podeAproximar: false });
+  });
+});
+
+describe('o ponto do anel de Saturno (15/11): chegar à mão até a camada', () => {
+  const KM = kmParaPc(1);
+  const SATURNO = paraPc(posicaoDoGiganteUA('saturn', EPOCA_JD_TDB, null)!);
+  /** o ponto no frame do anel: raio (km), longitude (rad) e altura (km) */
+  function noAnel(p: THREE.Vector3, centro: THREE.Vector3, jd: number) {
+    const o = orientacaoInercialDoAnelNaCena(IAU_ORIENTATIONS.saturn, jd);
+    const v = p.clone().sub(centro);
+    const x = v.dot(new THREE.Vector3(...o.colunaX));
+    const y = -v.dot(new THREE.Vector3(...o.colunaZ));
+    return { rho: Math.hypot(x, y) / KM, lon: Math.atan2(y, x), z: v.dot(new THREE.Vector3(...o.colunaY)) / KM };
+  }
+
+  it('`?foco=aneis-de-saturno` acha o destino e o põe no plano do anel A, com a face acesa no alto', () => {
+    const { escada, atlas, camera, aplicar, focos } = bancada({ comSaturno: true });
+    const achado = resolverFoco(ID_DO_PONTO_DO_ANEL, construirIndice([], escada.corpos, []));
+    expect(achado?.entrada).toMatchObject({ tipo: 'corpo', corpo: { id: ID_DO_PONTO_DO_ANEL } });
+    escada.focarNoCorpo(ID_DO_PONTO_DO_ANEL);
+    aplicar();
+    expect(escada.escadaViva.degrau).toBe('anel');
+    expect(focos.at(-1)).toBe(NOME_DO_PONTO_DO_ANEL.nome);
+    const p = noAnel(atlas.alvo, SATURNO, EPOCA_JD_TDB);
+    expect(p.rho).toBeCloseTo(RAIO_DO_PONTO_KM, 3);
+    expect(Math.abs(p.z)).toBeLessThan(1e-3);
+    // o polo do alto é o do anel, do lado que o Sol ilumina
+    const polo = (atlas as unknown as { polo: THREE.Vector3 }).polo;
+    expect(Math.abs(polo.dot(poloDe('saturn')))).toBeCloseTo(1, 9);
+    expect(polo.dot(SATURNO.clone().negate())).toBeGreaterThan(0);
+    // a câmera chega pela face acesa, 30° acima do plano, a ~1,5 km do ponto
+    const daCamera = camera.position.clone().sub(atlas.alvo);
+    expect((Math.asin(daCamera.clone().normalize().dot(polo)) * 180) / Math.PI).toBeCloseTo(30, 3);
+    // a régua da bancada (4:3, lente de 35°) não é a da mesa; só a ordem de grandeza
+    expect(daCamera.length() / KM).toBeGreaterThan(0.5);
+    expect(daCamera.length() / KM).toBeLessThan(5);
+  });
+
+  it('o piso da roda fica em metros (2,5 m)', () => {
+    const { escada, atlas } = bancada({ comSaturno: true });
+    escada.visitarSonda(ID_DO_PONTO_DO_ANEL);
+    expect(atlas.pisoDeZoom / KM).toBeCloseTo(PISO_KM, 9);
+    atlas.pinarDistancia(1e-30);
+    expect(atlas.distancia / KM).toBeCloseTo(PISO_KM, 9);
+  });
+
+  it('com o relógio andando o ponto fica na MESMA longitude do frame do anel — a lei dos pedaços, sem giro de conjunto', () => {
+    const { escada, atlas, camera, aplicar, maquinaDoTempo } = bancada({ comSaturno: true, comEfemeride: true });
+    escada.visitarSonda(ID_DO_PONTO_DO_ANEL);
+    aplicar();
+    // a efeméride de mentira deixa Saturno no lugar: o que se julga é o frame do anel
+    const centro = paraPc(efemerideDeMentira().posicaoHeliocentrica('saturn'));
+    const antes = noAnel(atlas.alvo, centro, EPOCA_JD_TDB);
+    const cameraAntes = noAnel(camera.position, atlas.alvo, EPOCA_JD_TDB);
+    // meio dia de céu: um pedaço a 2,13 raios daria ~1/3 de volta se o anel girasse em bloco
+    maquinaDoTempo.jdVivo = EPOCA_JD_TDB + 0.5;
+    escada.recomporAlvo();
+    aplicar();
+    const depois = noAnel(atlas.alvo, centro, maquinaDoTempo.jdVivo);
+    expect(depois.rho).toBeCloseTo(antes.rho, 3);
+    expect(depois.lon).toBeCloseTo(antes.lon, 9);
+    // e a câmera fica parada em volta dele, no mesmo frame
+    const cameraDepois = noAnel(camera.position, atlas.alvo, maquinaDoTempo.jdVivo);
+    expect(cameraDepois.lon).toBeCloseTo(cameraAntes.lon, 6);
+    expect(cameraDepois.z).toBeCloseTo(cameraAntes.z, 6);
   });
 });

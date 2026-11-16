@@ -49,6 +49,13 @@ import type { CorpoBuscavel, LugarBuscavel } from '../../lib/buscaEstrelas';
 import { nomeDoLugar } from '../../lib/buscaEstrelas';
 import { poseDePertoDaEstrelaS, poseDoLugar, type PoseDoLugar } from '../world/lugaresDoCeu';
 import { poseDaSonda } from '../world/sondas';
+import {
+  ID_DO_PONTO_DO_ANEL,
+  NOME_DO_PONTO_DO_ANEL,
+  escolherPontoDoAnel,
+  poseDoPontoDoAnel,
+  type EscolhaDoPontoDoAnel,
+} from '../world/pontoDoAnel';
 import { poseDoCometa, poseDoCometaDePerto } from '../world/cometas';
 import { poseDoExoplaneta, poseDoSistema } from '../world/exoplanetas';
 import { SISTEMAS_PLANETARIOS, exoplanetaPorId, sistemaDaEstrela } from '../../lib/exoplanetas';
@@ -71,6 +78,7 @@ import {
   LUAS_DO_SISTEMA,
   HELIO_SEM_PONTO,
   nomeDoCorpo,
+  nomeNaLingua,
 } from '../atlasConfig';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
 import { baseCorpoEquatorial } from '../../lib/atlas/orientacao';
@@ -162,7 +170,7 @@ export function quadroDePerto(id: string, raioPc: number): { raio: number; regua
  * corpo resolvido dela é Onda 7), mas o botão "sistema" e o Esc valem.
  */
 export interface EstadoDaEscada {
-  degrau: 'sistema' | 'ceu' | 'orbita' | 'corpo' | 'lua' | 'estrela' | 'sonda' | 'cometa' | 'exoplaneta';
+  degrau: 'sistema' | 'ceu' | 'orbita' | 'corpo' | 'lua' | 'estrela' | 'sonda' | 'cometa' | 'exoplaneta' | 'anel';
   /** existe degrau abaixo alcançável pelo botão "aproximar"? Só quando
    *  o corpo em foco tem MESH resolvido (Terra nesta fase) — aproximar
    *  de um ponto fotométrico enquadraria um clarão sem corpo. */
@@ -248,7 +256,10 @@ export class Escada {
   /** o OBJETO PEQUENO em foco — uma sonda ou um cometa (pilar 4,
    *  12/11/2026): os dois moram num campo só, então toda escrita do foco
    *  que zera `focoSonda` zera também o cometa */
-  private pequeno: { tipo: 'sonda' | 'cometa' | 'exoplaneta'; id: string } | null = null;
+  private pequeno: { tipo: 'sonda' | 'cometa' | 'exoplaneta' | 'anel'; id: string } | null = null;
+  /** o PONTO DO ANEL em foco: a longitude e a face fixadas na entrada
+   *  (`escolherPontoDoAnel`); o relógio recompõe a pose com elas */
+  private escolhaDoAnel: EscolhaDoPontoDoAnel | null = null;
   /** a SONDA em foco — id de `lib/sondas.ts`; `null` também apaga um cometa */
   get focoSonda(): string | null {
     return this.pequeno?.tipo === 'sonda' ? this.pequeno.id : null;
@@ -624,6 +635,8 @@ export class Escada {
   visitarSonda(id: string) {
     const objeto = this.objetoPequeno(id);
     if (!objeto || this.phase !== 'atlas') return;
+    // o ponto do anel escolhe a longitude A CADA ENTRADA, pelo Sol de agora
+    if (objeto.tipo === 'anel') this.escolhaDoAnel = null;
     const pose = objeto.pose(this.maquinaDoTempo.jdVivo);
     if (pose) {
       this.atlas.focar(pose.alvo, pose.raio, pose.eixoDe, {
@@ -645,6 +658,21 @@ export class Escada {
    * de `poseDoSegmento`); o cometa abre mais o quadro para as caudas.
    */
   private objetoPequeno(id: string) {
+    // UM PONTO DO ANEL DE SATURNO (15/11): a mesma porta — o alvo anda com
+    // Saturno, na longitude escolhida na entrada (`pontoDoAnel.ts`)
+    if (id === ID_DO_PONTO_DO_ANEL) {
+      return {
+        tipo: 'anel' as const,
+        nome: nomeNaLingua(NOME_DO_PONTO_DO_ANEL),
+        pose: (jd: number) => {
+          const p = posicaoDoGiganteUA('saturn', jd, this.maquinaDoTempo.efemeride);
+          if (!p) return null;
+          const centro = paraPc(p);
+          this.escolhaDoAnel ??= escolherPontoDoAnel(centro, jd);
+          return poseDoPontoDoAnel(centro, jd, this.escolhaDoAnel);
+        },
+      };
+    }
     const sonda = sondaPorId(id);
     if (sonda) return { tipo: 'sonda' as const, nome: sonda.nome, pose: (jd: number) => poseDaSonda(id, jd) };
     const cometa = cometaPorId(id);
@@ -683,7 +711,7 @@ export class Escada {
   }
 
   /** o trio do foco, escrito para uma sonda ou um cometa */
-  private marcarSonda(nome: string, tipo: 'sonda' | 'cometa' | 'exoplaneta', id: string) {
+  private marcarSonda(nome: string, tipo: 'sonda' | 'cometa' | 'exoplaneta' | 'anel', id: string) {
     this.focoCorpoId = null;
     this.focoEstrela = false;
     this.noCeu = false;
@@ -1095,7 +1123,7 @@ export class Escada {
     if (this.phase !== 'atlas') return;
     // UMA SONDA entra pela porta dos corpos (a busca e o `?foco=` a
     // tratam como alvo do sistema), mas o enquadramento é o dela
-    if (sondaPorId(id) || cometaPorId(id) || exoplanetaPorId(id)) {
+    if (sondaPorId(id) || cometaPorId(id) || exoplanetaPorId(id) || id === ID_DO_PONTO_DO_ANEL) {
       this.visitarSonda(id);
       if (ver === 'corpo' && this.escada.podeAproximar) this.aproximarDoCorpo();
       return;
@@ -1526,7 +1554,7 @@ export class Escada {
     }
     // A SONDA ANDA COM O RELÓGIO: a mesma pose da chegada, no instante
     // vivo — fora da tabela (antes do lançamento) não há o que recompor
-    if (degrau === 'sonda' || degrau === 'cometa' || degrau === 'exoplaneta') {
+    if (degrau === 'sonda' || degrau === 'cometa' || degrau === 'exoplaneta' || degrau === 'anel') {
       const pose = !this.pequeno
         ? null
         : degrau === 'cometa' && this.ver === 'corpo'
@@ -1773,6 +1801,9 @@ export class Escada {
     // efeméride nenhuma, e reenquadrá-la seria mover a câmera sem gesto
     if (degrau === 'ceu') return;
     if (degrau === 'sistema') this.focarNoSistema();
+    // o ponto do anel mora no Saturno da efeméride: a mesma longitude, no
+    // centro que o mesh passa a usar agora (correção, não gesto)
+    else if (degrau === 'anel') this.recomporAlvo();
     else if (degrau === 'lua') this.focarNaLua(this.focoCorpoId ?? 'moon');
     // o corpo do SOL tem método próprio (`aproximarDoCorpo` só conhece
     // os corpos com mesh de planeta e sairia sem fazer nada)
@@ -1902,7 +1933,14 @@ export class Escada {
         apelidos: pl.apelidos,
       }));
     });
-    return [...dez, ...luas, ...anoes, ...sondas, ...cometas, ...exoplanetas];
+    // O PONTO DO ANEL DE SATURNO (15/11): a porta do `?foco=aneis-de-saturno`
+    const anel = {
+      id: ID_DO_PONTO_DO_ANEL,
+      ...NOME_DO_PONTO_DO_ANEL,
+      classe: 'anel',
+      rUA: RETRATO_2026.saturn.rUA,
+    };
+    return [...dez, ...luas, ...anoes, ...sondas, ...cometas, ...exoplanetas, anel];
   }
 
   /**
