@@ -2,6 +2,20 @@
 
 Quem pede e decide é a coordenadora (conversa "Onde estamos no projeto"); parar ao fim de cada item e relatar curto. Ao dono só vai gosto visual com imagem, gerar dado e publicar. Nada aqui está publicado.
 
+## A régua do dono (17/11) — vale para toda decisão do motor
+"Para mim, é parâmetro. Se Betelgeuse tem questões específicas dela, o gerador não fez um bom trabalho. Toda estrela tem todos os parâmetros. Ele pode estar zero, que seria desligado, ou uma graduação específica." E, sobre a região fria do Grande Escurecimento: "o Sol tem manchas também, que aparecem e somem de acordo com os campos magnéticos". Leitura da coordenadora: UM vetor de parâmetros igual para toda estrela, cada botão contínuo, zero onde não atua; o que muda de estrela para estrela é só de onde vem o valor (a regra ou a medida). O motor não conhece nomes. Onde o motor ainda fere isso, em ordem de peso:
+1. A ATIVIDADE é um liga-desliga (`dinamo`): dois ramos, o do Sol e o da Forja. Tem de virar botão contínuo (Rossby, idade), com o Sol num valor.
+2. Há DUAS máquinas para a mesma coisa: as manchas do ramo do Sol e a região fria da Forja. É um botão só (região mais fria que a vizinhança: área, contraste de temperatura, lugar, tempo); a causa, magnética ou convectiva, só define o valor.
+3. Tabelas por NOME dentro do código (`VENTOS_MEDIDOS`, a das manchas medidas, `RAIOS_DA_LINHA_MEDIDOS`): devem ser campos do registro da estrela, lidos como qualquer parâmetro.
+4. Limiares secos que sobraram e classes sem corpo (anãs brancas, Wolf-Rayet, pulsantes, binárias próximas).
+
+## Sobras da revisão do Grande Escurecimento (a próxima conversa faz PRIMEIRO, num commit pequeno)
+- O texto da ficha ficou preso a Betelgeuse em chaves genéricas (`ficha.estrela.grandeEscurecimento`, `escurecimentoNoDesenho` em `pt.ts`/`en.ts`): cita os 1,614 mag, "sul", 225° e um "2,1×/3,5×" escrito à mão, que não segue `TIO_DA_FORJA`. O texto tem de sair dos números do registro da estrela.
+- Selo: a linha do desenho sai como "derivado", mas a largura da borda, o recorte pela rede e o aperto da célula são artísticos no código. Separar ou trocar o selo.
+- Uma estrela com épocas e `contrasteNaTela` = 0 daria 0/0 (stellarBody.ts ~777): guardar com um mínimo.
+- Faltam testes de `escreverManchaFria` (limiar, liga-desliga do define, tempo não finito, o espelho do x no assado).
+- Sem conferir: custo por quadro dentro da janela, `npm run done` inteiro com a máquina calma (a rodada de 17/11 deu só estouros de tempo com carga 123), celular e níveis baixos.
+
 ## O que já está no principal local (e1467577)
 - **GRAVIDADE** (adea5447): toda estrela sem dínamo com contraste > 0 (até ~9.300 K) é desenhada pela Forja — convecção assada, célula por Trampedach 2013, cor pelo filtro do Sol deslocado pela temperatura mais TiO, casca em fiapos. Regra em `docs/LEI-DA-ESTRELA.md` §10, contas em `src/three/world/forjaDaEstrela.ts`, desenho em `src/three/world/stellarBody.ts`.
 - **Sobras da gravidade** (f7bfa2d4): a anã quente perdeu o contorno preto no limbo (a queda da borda fica rasa na proporção largura real / largura desenhada).
