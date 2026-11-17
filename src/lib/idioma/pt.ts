@@ -737,6 +737,7 @@ export const PT = {
   'ficha.fonte.daTrajetoria': 'conta sobre a trajetória do Horizons',
   'ficha.fonte.reguaDeEscala': 'regra de escala da casa',
   'ficha.secao.companheira': '{nome} (anã branca)',
+  'ficha.secao.companheiraDoPar': '{nome} (a outra estrela do par)',
   'ficha.campo.raioSolar': 'raio',
   'ficha.campo.luminosidade': 'luminosidade',
   'ficha.campo.rotacao': 'rotação',

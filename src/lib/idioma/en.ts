@@ -703,6 +703,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.fonte.daTrajetoria': 'computed from the Horizons trajectory',
   'ficha.fonte.reguaDeEscala': 'the app’s scale rule',
   'ficha.secao.companheira': '{nome} (white dwarf)',
+  'ficha.secao.companheiraDoPar': '{nome} (the other star of the pair)',
   'ficha.campo.raioSolar': 'radius',
   'ficha.campo.luminosidade': 'luminosity',
   'ficha.campo.rotacao': 'rotation',

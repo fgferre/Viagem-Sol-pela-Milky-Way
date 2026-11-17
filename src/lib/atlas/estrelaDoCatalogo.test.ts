@@ -72,6 +72,9 @@ const FORA: Record<string, readonly string[]> = {
   // mais fria, e o L medido pede BC ~−3,7. O erro é do rótulo, não da
   // coluna: ajustar a coluna para ela passar estragaria as outras anãs M
   'Proxima Centauri': ['luminosidadeLsol', 'raioRsol'],
+  // o catálogo a traz como uma estrela só, "M1: comp" (o tipo e o brilho são
+  // do PAR); a escrita à mão é a componente Aa, medida (Torres et al. 2015)
+  Capella: ['teffK', 'raioRsol', 'luminosidadeLsol', 'massaMsol'],
 };
 
 describe('a regra confere com as fichas escritas à mão', () => {
@@ -92,6 +95,6 @@ describe('a regra confere com as fichas escritas à mão', () => {
       if (g.massaMsol.p === 'derivado') confere('massaMsol', Math.abs(g.massaMsol.v / a.massaMsol.v - 1) <= 0.25);
       conferidas++;
     }
-    expect(conferidas).toBe(11);
+    expect(conferidas).toBe(12);
   });
 });

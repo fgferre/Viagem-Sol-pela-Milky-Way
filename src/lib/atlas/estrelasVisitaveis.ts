@@ -55,6 +55,8 @@ export interface Companheira {
   readonly teffK: Numero;
   readonly raioRsol: Numero;
   readonly massaMsol: Numero;
+  /** só onde há medida; sem ela, a lei única (`rotacaoDe`) */
+  readonly rotacaoDias?: Numero;
   readonly orbita: Orbita;
 }
 
@@ -247,6 +249,50 @@ const ALDEBARAN: EstrelaVisitavel = {
   superficie: superficiePelaTemperatura(ALDEBARAN_T, ALDEBARAN_R, ALDEBARAN_M),
 };
 
+/**
+ * CAPELLA É UM PAR de gigantes amarelas a 0,74 UA uma da outra, uma volta a
+ * cada 104 dias. O catálogo a traz como uma estrela só, "M1: comp" (o tipo
+ * descreve o par), e a regra única a lia como gigante vermelha de 3.750 K e
+ * 55 R☉. Todos os números de Torres, Claret, Pavlovski & Dotter 2015 (ApJ
+ * 807, 26; arXiv:1505.07461), lidos no artigo em 16/11/2026: tabela 1 (a
+ * órbita, astrometria + velocidades radiais) e tabela 3 (as duas estrelas).
+ * A principal aqui é a Aa (a mais massiva e maior); a Ab é a companheira.
+ */
+const TORRES_2015 = 'Torres et al. 2015, ApJ 807, 26';
+const CAPELLA: EstrelaVisitavel = {
+  id: 'capella',
+  nomeNoCatalogo: 'Capella',
+  hip: 24608,
+  tipo: { texto: 'G8 III', v: 0, p: 'medido', fonte: TORRES_2015 }, // o par é G8 III + G0 III
+  teffK: { v: 4970, p: 'medido', fonte: TORRES_2015 }, // espectro (±50 K)
+  raioRsol: { v: 11.98, p: 'medido', fonte: TORRES_2015 }, // diâmetro angular + paralaxe orbital (±0,57)
+  massaMsol: { v: 2.5687, p: 'medido', fonte: TORRES_2015 }, // órbita (±0,0074)
+  luminosidadeLsol: { v: 78.7, p: 'derivado', fonte: TORRES_2015 }, // ±4,2
+  rotacaoDias: { v: 104, p: 'medido', fonte: TORRES_2015 }, // ±3 d: gira presa à órbita
+  idadeGa: { v: 0.62, p: 'derivado', fonte: TORRES_2015 }, // 590–650 Ma, modelos de evolução
+  superficie: superficiePelaTemperatura(4970, 11.98, 2.5687),
+  companheira: {
+    nome: 'Capella Ab',
+    tipo: 'G0 III',
+    teffK: { v: 5730, p: 'medido', fonte: TORRES_2015 }, // ±60 K
+    raioRsol: { v: 8.83, p: 'medido', fonte: TORRES_2015 }, // ±0,33
+    massaMsol: { v: 2.4828, p: 'medido', fonte: TORRES_2015 }, // ±0,0067
+    rotacaoDias: { v: 8.5, p: 'medido', fonte: TORRES_2015 }, // ±0,2 d: ainda não freou
+    orbita: {
+      periodoAnos: 104.02128 / 365.25,
+      // T do periastro HJD 2.448.147,6 (±2,6 d; a órbita é quase um círculo)
+      periastroAno: 2000 + (2448147.6 - 2451545) / 365.25,
+      aSegArco: 0.056442,
+      e: 0.00089,
+      iGraus: 137.156,
+      nodoGraus: 40.522,
+      // o artigo dá ω da primária (342,6°); a órbita relativa da secundária é ω + 180°
+      argPeriastroGraus: 162.6,
+      fonte: TORRES_2015,
+    },
+  },
+};
+
 const VEGA: EstrelaVisitavel = {
   id: 'vega',
   nomeNoCatalogo: 'Vega',
@@ -372,6 +418,7 @@ export const ESTRELAS_VISITAVEIS: readonly EstrelaVisitavel[] = [
   PROXIMA, SIRIUS, BETELGEUSE, VEGA, ...ANFITRIAS,
   // no fim, para não mudar a vaga de clarão de quem já estava (`2 × índice`)
   ALDEBARAN,
+  CAPELLA,
 ];
 
 export function estrelaVisitavelPorNome(nomeNoCatalogo: string): EstrelaVisitavel | null {

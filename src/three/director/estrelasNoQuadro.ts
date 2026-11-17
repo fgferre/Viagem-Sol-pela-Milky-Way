@@ -50,9 +50,11 @@ import {
   PISO_DO_CONTRASTE_NA_TELA,
   atividadeDe,
   granuloNaTelaEmRaios,
+  luminosidadeDe,
   posicaoDaCompanheira,
   raioDaEstrelaPc,
   rotacaoDe,
+  superficiePelaTemperatura,
   temDinamoSolar,
   type EstrelaVisitavel,
 } from '../../lib/atlas/estrelasVisitaveis';
@@ -206,16 +208,42 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
 export function parametrosDaCompanheira(e: EstrelaVisitavel): StellarParams | null {
   const c = e.companheira;
   if (!c) return null;
+  const nome = `${e.id}-b`;
+  const seed = (SOL_PARAMS.seed ^ sementeDe(e) ^ 0x0b0b0b0b) >>> 0;
+  // A COMPANHEIRA QUE NÃO É ANÃ BRANCA (Capella Ab, 16/11) é uma estrela
+  // como qualquer outra: a MESMA lei da principal (`parametrosDoMotor`),
+  // sobre a ficha que os números medidos dela dão. Sem eixo medido.
+  if (!c.tipo.startsWith('D')) {
+    return {
+      ...parametrosDoMotor({
+        id: nome,
+        nomeNoCatalogo: c.nome,
+        tipo: { texto: c.tipo, v: 0, p: 'medido', fonte: c.orbita.fonte },
+        teffK: c.teffK,
+        raioRsol: c.raioRsol,
+        massaMsol: c.massaMsol,
+        luminosidadeLsol: {
+          v: luminosidadeDe(c.raioRsol.v, c.teffK.v),
+          p: 'derivado',
+          fonte: 'Stefan-Boltzmann',
+        },
+        ...(c.rotacaoDias ? { rotacaoDias: c.rotacaoDias } : {}),
+        superficie: superficiePelaTemperatura(c.teffK.v, c.raioRsol.v, c.massaMsol.v),
+      }),
+      seed,
+      knobPrefix: `${e.id}b`,
+    };
+  }
   return {
     ...SOL_PARAMS,
-    nome: `${e.id}-b`,
+    nome,
     radiusPc: c.raioRsol.v * RAIO_SOL_PC,
     rotPeriodDays: SOL_PARAMS.rotPeriodDays,
     tiltRad: 0,
     activityLevel: 0,
     teffK: c.teffK.v,
     dinamo: false,
-    seed: (SOL_PARAMS.seed ^ sementeDe(e) ^ 0x0b0b0b0b) >>> 0,
+    seed,
     knobPrefix: `${e.id}b`,
     contrasteRelativoAoSol: 0,
     bordaU: 0.3,
