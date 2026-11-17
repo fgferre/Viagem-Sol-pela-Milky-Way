@@ -2,11 +2,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import {
+  EXPOENTE_SEM_O_FILTRO,
   NIVEL_DO_PICO_DAS_QUENTES,
   EXPOENTE_DO_BRILHO_ASSISTIDO,
   EstrelasNoQuadro,
   eixoDeRotacao,
   ganhoDaVisita,
+  pesoDoPico,
   parametrosDoMotor,
 } from './estrelasNoQuadro';
 import type { NamedStar } from '../config';
@@ -15,6 +17,7 @@ import type { CorposResolvidos } from '../world/corpos/corpos';
 import { VAGAS_DE_VISITADAS } from '../world/clarao';
 import { ESTRELAS_VISITAVEIS, estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
 import { radianciaVisivelDeCorpoNegro } from '../luzDaCasa';
+import { pesoDoFiltro } from '../world/stellarBody';
 
 describe('toda estrela visitável vira parâmetros do MESMO motor, sem nome', () => {
   it('cada uma tem raio, período e atividade finitos', () => {
@@ -83,13 +86,17 @@ describe('a exposição da visita: ¼ com o filtro do Sol, o pico do disco nas q
     expect(radianciaVisivelDeCorpoNegro(12730) * ganhoDaVisita(12730, 'assistida', 14520)).toBeLessThan(1.3);
     // e nenhuma das quentes do piloto fica mais clara que antes (era radiância^⅖)
     for (const T of [8039, 8590, 9600, 9845, 12730, 15539]) {
-      expect(radianciaVisivelDeCorpoNegro(T) * ganhoDaVisita(T, 'assistida')).toBeLessThan(radianciaVisivelDeCorpoNegro(T) ** 0.4);
+      expect(radianciaVisivelDeCorpoNegro(T) * ganhoDaVisita(T, 'assistida')).toBeLessThan(radianciaVisivelDeCorpoNegro(T) ** EXPOENTE_SEM_O_FILTRO);
     }
     const regulo = parametrosDoMotor(estrelaVisitavelPorNome('Regulus')!);
     expect(regulo.veu).toBeCloseTo(1 - ganhoDaVisita(12730, 'assistida', 14520), 12);
-    // entre a Teff do Sol e os 8.000 K a passagem é contínua nas duas pontas
-    expect(ganhoDaVisita(5773, 'assistida')).toBeCloseTo(ganhoDaVisita(5772, 'assistida'), 2);
-    expect(pico(7999.9, 7999.9)).toBeCloseTo(NIVEL_DO_PICO_DAS_QUENTES, 3);
+    // até os 8.000 K é a exposição de sempre (Altair, com a rede de convecção, não muda);
+    // o pico entra daí até a convecção de superfície sumir (~9.320 K)
+    expect(ganhoDaVisita(7570, 'assistida', 8450)).toBe(Math.pow(radianciaVisivelDeCorpoNegro(7570), 0.25 * pesoDoFiltro(7570) + EXPOENTE_SEM_O_FILTRO * (1 - pesoDoFiltro(7570)) - 1));
+    expect(ganhoDaVisita(8000, 'assistida')).toBe(Math.pow(radianciaVisivelDeCorpoNegro(8000), EXPOENTE_SEM_O_FILTRO - 1));
+    expect(pesoDoPico(8000)).toBe(0);
+    expect(pesoDoPico(9330)).toBe(1);
+    expect(pico(9330, 9330)).toBeCloseTo(NIVEL_DO_PICO_DAS_QUENTES, 12);
   });
 });
 

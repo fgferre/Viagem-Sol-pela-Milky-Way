@@ -300,6 +300,10 @@ export function cirurgiasDaFotosfera(
     teffK: p.teffK,
     continuo: 1 - pesoDoFiltro(p.teffK),
     ...(forja ? { forja } : {}),
+    // CANDIDATO ofusca=b
+    ...((OFUSCA === 'b' || OFUSCA === 'c') && (p.pesoDoPico ?? 0) > 0
+      ? { pontaDoPico: { peso: p.pesoDoPico!, lumPolo: a ? lumDoPolo(p.teffK, a) : 1 } }
+      : {}),
   };
   if (
     (o.contraste === undefined || o.contraste === 1) &&
@@ -417,6 +421,8 @@ export interface StellarParams {
    * (1 − ganho), espalhada em volta dele (`criarABordaDifusa`).
    */
   readonly veu?: number;
+  /** CANDIDATO ofusca: o peso da regra do pico das quentes (`pesoDoPico`; omitido = 0) */
+  readonly pesoDoPico?: number;
 }
 
 /**
@@ -619,6 +625,8 @@ export function cirurgiaDaEstrela(
     continuo?: number;
     /** a convecção da Forja (`glslDaForjaNaFotosfera`): a regra da estrela */
     forja?: RegraDaForja;
+    /** CANDIDATO ofusca=b: o peso do pico e a luminância de `vGravidade` no polo */
+    pontaDoPico?: { peso: number; lumPolo: number };
   }
 ): string {
   const quem = 'cirurgiaDaEstrela';
@@ -772,7 +780,29 @@ export function cirurgiaDaEstrela(
       quem
     );
   }
+  if (o.pontaDoPico) {
+    // CANDIDATO ofusca=b
+    const rel = o.gravidade
+      ? `(0.4 + 0.6*mu) * dot(vGravidade, vec3(0.2126, 0.7152, 0.0722)) / ${literalGlsl(o.pontaDoPico.lumPolo)}`
+      : '(0.4 + 0.6*mu)';
+    f = trocarUma(
+      f,
+      '  color *= uPaleta;',
+      `  float relDoPico = max(0.0, ${rel});\n  float relDoPico2 = relDoPico*relDoPico;\n` +
+        `  color *= 1.0 + ${literalGlsl(PONTA_DO_PICO.ganho * o.pontaDoPico.peso)} * relDoPico2*relDoPico2*relDoPico2;\n  color *= uPaleta;`,
+      quem
+    );
+  }
   return planck + granulacao + f;
+}
+
+/** CANDIDATO ofusca=b: a luminância de `aGravidade` no polo (a mesma conta de `operarAFotosfera`) */
+function lumDoPolo(teffK: number, a: Achatamento): number {
+  const tp = rocheDe(0, a).teffK;
+  const cp = corpoNegroUnitario(tp);
+  const cm = corpoNegroUnitario(teffK);
+  const b = radianciaVisivelDeCorpoNegro(tp) / radianciaVisivelDeCorpoNegro(teffK);
+  return (0.2126 * cp[0]) / cm[0] * b + (0.7152 * cp[1]) / cm[1] * b + (0.0722 * cp[2]) / cm[2] * b;
 }
 
 /**
@@ -1904,6 +1934,48 @@ export function forcaDoVeu(veu: number): number {
   return veu > 0 ? VEU_TETO * (1 - Math.exp(-veu / VEU_TETO)) : 0;
 }
 
+// CANDIDATO ofusca=a|b|c — knob temporário (`?ofusca=`), lido uma vez; sem ele, nada muda
+const OFUSCA: string | null =
+  typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('ofusca') : null;
+// CANDIDATO ofusca=a — a luz que a exposição tirou do disco volta, na ASA do véu
+// (o rente fica como está: teto da borda). F = ganho de antes / ganho de hoje, com o
+// ganho de antes rad^(⅖ − 1) (`EXPOENTE_SEM_O_FILTRO`: toda quente tem w = 0); a asa
+// longa (escala `VEU_ASA_LONGA`, cauda a zero em `RAIO_DO_VEU_QUENTE`) leva
+// `VEU_POR_STOP` × ln F × a luz do véu de hoje, integrada em b (peso b db) — em stops,
+// porque a tela é logarítmica. ARTÍSTICO: a escala, o raio e a luz por stop.
+// (em C a ponta do pico já devolve luz no disco: a asa leva menos, recalibrada pela mesma régua)
+const VEU_POR_STOP = OFUSCA === 'c' ? 1.3 : 2.3;
+const VEU_ASA_LONGA = 0.35;
+const RAIO_DO_VEU_QUENTE = 2.2;
+function caudaDoVeu(b: number, raio: number): number {
+  const t = Math.min(1, Math.max(0, (b - 0.5 * (raio + 1)) / (raio - 0.5 * (raio + 1))));
+  return 1 - t * t * (3 - 2 * t);
+}
+export function pesoDaAsaLonga(teffK: number, veu: number): number {
+  const ganho = 1 - veu;
+  if (!(ganho > 0)) return 0;
+  const f = Math.pow(radianciaVisivelDeCorpoNegro(teffK), 0.4 - 1) / ganho;
+  if (!(f > 1)) return 0;
+  let hoje = 0;
+  let asa = 0;
+  const n = 4000;
+  for (let i = 0; i < n; i++) {
+    const b = 1 + ((i + 0.5) / n) * (RAIO_DO_VEU_QUENTE - 1);
+    const x = b - 1;
+    hoje += (VEU_PESO_RENTE * Math.exp(-x / VEU_RENTE) + VEU_PESO_ASA * Math.exp(-x / VEU_ASA)) * caudaDoVeu(b, RAIO_DO_VEU) * b;
+    asa += Math.exp(-x / VEU_ASA_LONGA) * caudaDoVeu(b, RAIO_DO_VEU_QUENTE) * b;
+  }
+  return (VEU_POR_STOP * Math.log(f) * hoje) / asa;
+}
+// CANDIDATO ofusca=b — a PONTA DO PICO: com a intensidade local relativa ao pico do
+// disco, i (borda de Eddington cinza 0,4 + 0,6μ × o brilho de von Zeipel relativo ao
+// polo; 1 no polo de frente, no centro de uma redonda), a emissão vai a
+// 1 + ganho × peso do pico × i⁶ — sem degrau (um smoothstep abria anel). ARTÍSTICO: ganho e expoente.
+const PONTA_DO_PICO = { ganho: 4 } as const;
+// CANDIDATO ofusca=c — o véu mais azul que o disco: o espalhamento de Rayleigh,
+// (550/λ)⁴ em 610/550/465 nm (luminância ≈ 1). ARTÍSTICO, declarado.
+const COR_DO_ESPALHAMENTO = [0.661, 1.0, 1.957] as const;
+
 export const SOL_PARAMS: StellarParams = {
   nome: 'Sol',
   // O RAIO FÍSICO DA FOTOSFERA (F3), pela fonte única do cadastro — não
@@ -2456,7 +2528,15 @@ export class StellarBody {
     const plumaMax = fj ? CASCA_DA_FORJA.plumaMax : PLUMA_MAX;
     const alcance = fj ? CASCA_DA_FORJA.alcance : ALCANCE_DA_ATMOSFERA;
     const brilho = fj ? CASCA_DA_FORJA.brilho : BRILHO_DA_ATMOSFERA;
-    const rCasca = Math.max(1 + (rEnv - 1) * plumaMax * alcance, veu > 0 ? RAIO_DO_VEU : 1);
+    // CANDIDATO ofusca=a / c: a asa longa e o véu azul, só nas quentes
+    const quente = (p.pesoDoPico ?? 0) > 0 && veu > 0;
+    const asaLonga = quente && (OFUSCA === 'a' || OFUSCA === 'c') ? pesoDaAsaLonga(p.teffK, veu) : 0;
+    const veuAzul = quente && OFUSCA === 'c';
+    const rCasca = Math.max(
+      1 + (rEnv - 1) * plumaMax * alcance,
+      veu > 0 ? RAIO_DO_VEU : 1,
+      asaLonga > 0 ? RAIO_DO_VEU_QUENTE : 1
+    );
     const u = p.bordaU ?? 0.3;
     // A BORDA DE UMA ESTRELA ACHATADA (`achatamento`): o perfil começa no
     // contorno dela, não no círculo do raio equatorial — senão sobra, entre o
@@ -2598,11 +2678,19 @@ export class StellarBody {
             + ${literalGlsl(VEU_PESO_ASA)}*exp(-(b - 1.0) / ${literalGlsl(VEU_ASA)}))
             * (1.0 - smoothstep(${literalGlsl(0.5 * (RAIO_DO_VEU + 1))}, ${literalGlsl(RAIO_DO_VEU)}, b));`
               : ''
+          }${
+            asaLonga > 0
+              ? `
+          veu += ${literalGlsl(forcaDoVeu(veu) * asaLonga)} * exp(-(b - 1.0) / ${literalGlsl(VEU_ASA_LONGA)})
+            * (1.0 - smoothstep(${literalGlsl(0.5 * (RAIO_DO_VEU_QUENTE + 1))}, ${literalGlsl(RAIO_DO_VEU_QUENTE)}, b));`
+              : ''
           }
           vec3 k = c * uPaleta * uTransmitancia * uBrilhoDaVisita;
           // o véu sobre a borda do disco como a tela a mostra (comprimida)
           vec3 borda = comprimir3(k * ${literalGlsl(1 - u)}, ${literalGlsl(BETA_DA_EMISSAO)});
-          gl_FragColor = vec4((comprimir3(k * luz, ${literalGlsl(BETA_DA_EMISSAO)}) + borda * veu) * uWorldFade, 1.0);
+          gl_FragColor = vec4((comprimir3(k * luz, ${literalGlsl(BETA_DA_EMISSAO)}) + borda * veu${
+            veuAzul ? ` * vec3(${COR_DO_ESPALHAMENTO.map((x) => literalGlsl(x)).join(', ')})` : ''
+          }) * uWorldFade, 1.0);
         }`,
       uniforms: {
         uCorFria: ctx.corFria,

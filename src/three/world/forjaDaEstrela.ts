@@ -109,6 +109,14 @@ export function semConveccaoNaSuperficie(teffK: number, logG: number): boolean {
   return contrasteDaConveccao(teffK, logG) <= 0;
 }
 
+/** A Teff em que a reta das anãs chega a contraste zero (~9.320 K): daí para
+ *  cima a estrela é lisa (`semConveccaoNaSuperficie`). */
+export const TEFF_SEM_CONVECCAO_K = (() => {
+  const [xa, ya] = CONTRASTE_DAS_ANAS[CONTRASTE_DAS_ANAS.length - 2]!;
+  const [xb, yb] = CONTRASTE_DAS_ANAS[CONTRASTE_DAS_ANAS.length - 1]!;
+  return xb + (yb * (xb - xa)) / (ya - yb);
+})();
+
 /**
  * O PISO NA TELA do contraste — a concessão das quentes com envelope fino
  * (a superfície não sai lisa), na régua da Forja. Acima de ~7.800 K o contraste real cai

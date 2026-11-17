@@ -33,8 +33,8 @@ import type { OclusorDeRotulo } from '../world/labels';
 import { faseDoCiclo, repartir, type JanelaDoQuadro, type EstadoDaEstrela } from '../estrela';
 import { EXPO_M0, M_V_SOL_DO_CAMPO, SIGMA_PX, radianciaVisivelDeCorpoNegro } from '../luzDaCasa';
 import type { QualityLevel } from '../core/engine';
-import { SOL_PARAMS, StellarBody, pesoDoFiltro, rocheDe, type StellarParams } from '../world/stellarBody';
-import { semConveccaoNaSuperficie } from '../world/forjaDaEstrela';
+import { SOL_PARAMS, StellarBody, TEFF_SEM_FILTRO_K, pesoDoFiltro, rocheDe, type StellarParams } from '../world/stellarBody';
+import { TEFF_SEM_CONVECCAO_K, semConveccaoNaSuperficie } from '../world/forjaDaEstrela';
 import { PontoDeEstrela } from '../world/pontoDeEstrela';
 import { RAIO_SOL_PC } from '../escala';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
@@ -96,10 +96,15 @@ export function eixoDeRotacao(e: EstrelaVisitavel, pos: THREE.Vector3, out: THRE
  * os planetas já têm (`lib/atlas/luzDaVisita.ts`), aplicada à fotosfera.
  *
  * Ele vale para quem o FILTRO fotográfico do Sol vale (`pesoDoFiltro`:
- * inteiro até 5.772 K) e passa, junto com o filtro, à regra das quentes
- * (≥ 8.000 K, `NIVEL_DO_PICO_DAS_QUENTES`).
+ * inteiro até 5.772 K) e passa, junto com o filtro, a ⅖ aos 8.000 K
+ * (`EXPOENTE_SEM_O_FILTRO`): com ¼ o disco das A saía cinza. Daí para cima,
+ * onde a convecção de superfície some, entra a regra das quentes
+ * (`NIVEL_DO_PICO_DAS_QUENTES`).
  */
 export const EXPOENTE_DO_BRILHO_ASSISTIDO = 0.25;
+/** o expoente de quem já não tem o filtro do Sol mas ainda tem a rede de
+ *  convecção para mostrar (Altair, Fomalhaut) — ARTÍSTICO, ver acima */
+export const EXPOENTE_SEM_O_FILTRO = 0.4;
 
 /**
  * O NÍVEL DO PICO DAS QUENTES — a exposição do INSTRUMENTO, um número só
@@ -121,6 +126,12 @@ export const EXPOENTE_DO_BRILHO_ASSISTIDO = 0.25;
  * placa (acima de ~1,8 a rede de convecção de Fomalhaut lava); mais baixo e
  * o contraste abre mas o disco acinzenta.
  *
+ * ONDE ENTRA: junto com a saída da convecção de superfície, de 8.000 K a
+ * `TEFF_SEM_CONVECCAO_K` (~9.320 K, `pesoDoPico`). Quem tem a rede de
+ * convecção para mostrar fica na exposição de sempre, que já a mostrava
+ * (Altair pelo pico escurecia de 196 para 170 na tela sem ganhar contraste);
+ * a lisa, que só tem a borda e o gradiente para ler, vai pelo pico.
+ *
  * A luz que a exposição NÃO põe no disco vira o VÉU em volta dele (`veuDe`,
  * 1 − ganho): o ofuscamento fica, fora do disco, como numa câmera — uma
  * fração da borda do disco como a tela a mostra, nunca mais clara que ela
@@ -129,24 +140,31 @@ export const EXPOENTE_DO_BRILHO_ASSISTIDO = 0.25;
  */
 export const NIVEL_DO_PICO_DAS_QUENTES = 1.6;
 
+/** O peso da regra do pico: 0 até 8.000 K, 1 de `TEFF_SEM_CONVECCAO_K` em diante. */
+export function pesoDoPico(teffK: number): number {
+  const t = Math.min(1, Math.max(0, (teffK - TEFF_SEM_FILTRO_K) / (TEFF_SEM_CONVECCAO_K - TEFF_SEM_FILTRO_K)));
+  return t * t * (3 - 2 * t);
+}
+
 /**
  * O ganho que leva a radiância verdadeira de uma fotosfera ao nível da
- * visita: 1 no modo REAL; no ASSISTIDO, rad^(¼ − 1) para quem o filtro do
- * Sol vale e, nas quentes, o que põe o pico do disco em
- * `NIVEL_DO_PICO_DAS_QUENTES` — as duas pontas misturadas em stops pelo peso
- * do filtro. `teffDoPicoK` é a temperatura do ponto mais quente (o polo de
- * uma achatada); sem ela, a média. Propriedade do CORPO, não do foco da
- * câmera. Quem o aplica é a rampa do filtro (`ganho^(1 − g)`): com o disco
- * pequeno (g = 1) a emissão é a verdadeira e a troca com o ponto conserva a
- * luz.
+ * visita: 1 no modo REAL; no ASSISTIDO, rad^(e − 1), com e = ¼ passando a ⅖
+ * junto com o filtro do Sol e, nas quentes, o que põe o pico do disco em
+ * `NIVEL_DO_PICO_DAS_QUENTES` — misturados em stops por `pesoDoPico`.
+ * `teffDoPicoK` é a temperatura do ponto mais quente (o polo de uma
+ * achatada); sem ela, a média. Propriedade do CORPO, não do foco da câmera.
+ * Quem o aplica é a rampa do filtro (`ganho^(1 − g)`): com o disco pequeno
+ * (g = 1) a emissão é a verdadeira e a troca com o ponto conserva a luz.
  */
 export function ganhoDaVisita(teffK: number, politica: PoliticaDeLuz, teffDoPicoK: number = teffK): number {
   if (politica === 'real') return 1;
   const w = pesoDoFiltro(teffK);
-  const comOFiltro = Math.pow(radianciaVisivelDeCorpoNegro(teffK), EXPOENTE_DO_BRILHO_ASSISTIDO - 1);
-  if (w >= 1) return comOFiltro;
+  const e = w * EXPOENTE_DO_BRILHO_ASSISTIDO + (1 - w) * EXPOENTE_SEM_O_FILTRO;
+  const deSempre = Math.pow(radianciaVisivelDeCorpoNegro(teffK), e - 1);
+  const q = pesoDoPico(teffK);
+  if (q <= 0) return deSempre;
   const peloPico = NIVEL_DO_PICO_DAS_QUENTES / radianciaVisivelDeCorpoNegro(teffDoPicoK);
-  return Math.pow(comOFiltro, w) * Math.pow(peloPico, 1 - w);
+  return Math.pow(deSempre, 1 - q) * Math.pow(peloPico, q);
 }
 
 /** A distância (pc) além da qual a estrela do motor do Sol, fora de foco, é
@@ -219,6 +237,8 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
     bordaU: s.bordaU.v,
     foraDaOrigem: true,
     ...(veu > 0 ? { veu } : {}),
+    // CANDIDATO ofusca: o peso da regra do pico, só nas quentes
+    ...(pesoDoPico(e.teffK.v) > 0 ? { pesoDoPico: pesoDoPico(e.teffK.v) } : {}),
     ...(achatamento ? { achatamento } : {}),
     // sem inclinação (o giro de um período) o eixo segue o +Y do motor: a
     // estrela achata em volta do eixo em que já girava
@@ -281,6 +301,8 @@ export function parametrosDaCompanheira(e: EstrelaVisitavel): StellarParams | nu
     foraDaOrigem: true,
     // o véu pela MESMA lei da principal (a anã branca é a mais radiante)
     ...(veuDe(c.teffK.v) > 0 ? { veu: veuDe(c.teffK.v) } : {}),
+    // CANDIDATO ofusca: o peso da regra do pico, só nas quentes
+    ...(pesoDoPico(c.teffK.v) > 0 ? { pesoDoPico: pesoDoPico(c.teffK.v) } : {}),
   };
 }
 
