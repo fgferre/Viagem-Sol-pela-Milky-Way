@@ -36,6 +36,8 @@ import {
   cirurgiaDaNormalDasEspiculas,
   cirurgiaDasParticulas,
   cirurgiaDaEstrela,
+  cirurgiasDaFotosfera,
+  forjaDe,
   cirurgiaDaForma,
   cirurgiaDaFotosfera,
   cirurgiaDaMatiz,
@@ -48,7 +50,9 @@ import {
   rotSpeedFromPeriod,
   taxaDeErupcoesPelaAtividade,
   forcaDoVeu,
+  pesoDaAsaLonga,
   tierDaEstrela,
+  tomDoVeu,
 } from './stellarBody';
 import { uvMeshVertex } from './sol/common.js';
 import { estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
@@ -178,7 +182,7 @@ describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
     const src = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
     // o estado da lei, o avermelhamento do limbo, a régua de Planck e a
     // borda do contínuo, a média da gravidade (`operarAFotosfera`) e a regra
-    // da Forja (`forjaDe`); CANDIDATO ofusca: o polo da ponta e a asa longa do véu
+    // da Forja (`forjaDe`), o polo da ponta do pico e o tom do véu
     expect(src.match(/p\.teffK/g)).toHaveLength(8);
     // sem envelope convectivo não há dínamo: o construtor (`semDinamo`) e
     // o tier da estrela (`tierDaEstrela`) leem o campo
@@ -737,6 +741,59 @@ describe('um motor, qualquer estrela — os parâmetros novos são neutros no So
     expect(c).toContain('pow((mu + 0.6666667)/1.6666667, 0.25)');
     expect(c).toContain('granulacaoViva(sp * uGranFreq, t, mu)');
     expect(cirurgiaDaEstrela(sunJs, { semDinamo: true, contraste: 0 })).not.toContain('granulacaoViva');
+  });
+
+  it('a ponta do pico: a fotosfera de uma quente a leva, a de peso 0 sai a de antes', () => {
+    const quente = { ...SOL_PARAMS, teffK: 9845, dinamo: false, contrasteRelativoAoSol: 0 };
+    const sem = cirurgiasDaFotosfera(sunJs, '', quente, null)!.fragment;
+    const com = cirurgiasDaFotosfera(sunJs, '', { ...quente, pesoDoPico: 1, stopsDoPico: 0.4 }, null)!.fragment;
+    expect(sem).not.toContain('quenteDoPico');
+    expect(cirurgiasDaFotosfera(sunJs, '', { ...quente, pesoDoPico: 0 }, null)!.fragment).toBe(sem);
+    expect(com.match(/color \*= 1\.0 \+ 3\.500000 \* quenteDoPico;/g)).toHaveLength(1);
+    // o branco nunca passa da mistura inteira (mix fora de [0, 1] extrapola a cor)
+    expect(com).toContain('min(1.0, 1.500000 * quenteDoPico)');
+    // com a rede de convecção da Forja para ler (Fomalhaut), a ponta não entra
+    const fomalhaut = { ...SOL_PARAMS, teffK: 8590, dinamo: false, logG: 4.3, pesoDoPico: 0.42, stopsDoPico: 0.1 };
+    expect(cirurgiasDaFotosfera(sunJs, '', fomalhaut, forjaDe(fomalhaut))!.fragment).not.toContain('quenteDoPico');
+  });
+
+  it('a asa longa e o tom do véu: só nas quentes; o tom é contínuo na Teff e tem teto', () => {
+    const casca = (extra: Partial<typeof SOL_PARAMS>) => {
+      const alvo = {
+        params: { ...SOL_PARAMS, teffK: 12730, veu: 0.9, ...extra },
+        raioDaBordaDifusa: 1,
+        forja: null,
+        brilhoDaVisita: { value: 1 },
+        group: new THREE.Group(),
+      };
+      const v = { value: 1 };
+      const ctx = { sunUniforms: { uTransmitancia: v, uWorldFade: v, uTime: v }, NOISE_GLSL: '', corFria: v, corQuente: v, paleta: v };
+      (StellarBody.prototype as unknown as { criarABordaDifusa(c: unknown): void }).criarABordaDifusa.call(alvo, ctx);
+      return ((alvo.group.children[0] as THREE.Mesh).material as THREE.ShaderMaterial).fragmentShader;
+    };
+    const fria = casca({});
+    expect(fria).not.toContain('veu +=');
+    expect(fria).toContain('+ borda * veu) * uWorldFade');
+    const quente = casca({ pesoDoPico: 1, stopsDoPico: 0.9 });
+    expect(quente.match(/veu \+= /g)).toHaveLength(1);
+    expect(quente).toContain(`borda * veu * vec3(${tomDoVeu(12730).map((x) => literalGlsl(x)).join(', ')})`);
+    // a asa: proporcional aos stops, zero sem eles
+    expect(pesoDaAsaLonga(0)).toBe(0);
+    expect(pesoDaAsaLonga(2)).toBeCloseTo(2 * pesoDaAsaLonga(1), 12);
+    // o tom: luminância 1, Rayleigh inteiro até 12.800 K, contínuo, e o azul/vermelho
+    // não sobe com a Teff e para no piso
+    const az = (T: number) => tomDoVeu(T)[2] / tomDoVeu(T)[0];
+    for (const T of [9000, 12730, 14000, 20000]) {
+      const t = tomDoVeu(T);
+      expect(0.2126 * t[0] + 0.7152 * t[1] + 0.0722 * t[2]).toBeCloseTo(1, 12);
+    }
+    expect(az(12800)).toBeCloseTo(1.957 / 0.661, 9);
+    for (let T = 9000; T < 30000; T += 50) {
+      expect(az(T + 50)).toBeLessThanOrEqual(az(T) + 1e-12);
+      expect(Math.abs(az(T + 50) - az(T))).toBeLessThan(0.05);
+    }
+    expect(az(15500)).toBeCloseTo(az(40000), 12);
+    expect(az(40000)).toBeGreaterThan(1);
   });
 
   it('a matiz escreve na saída GLSL3 quando ela existe (as partículas da CME)', () => {

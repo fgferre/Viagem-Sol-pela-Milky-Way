@@ -9,7 +9,9 @@ import {
   eixoDeRotacao,
   ganhoDaVisita,
   pesoDoPico,
+  parametrosDaCompanheira,
   parametrosDoMotor,
+  stopsDoPico,
 } from './estrelasNoQuadro';
 import type { NamedStar } from '../config';
 import type { StarField } from '../world/stars';
@@ -43,6 +45,26 @@ describe('toda estrela visitável vira parâmetros do MESMO motor, sem nome', ()
     expect(parametrosDoMotor(estrelaVisitavelPorNome('Proxima Centauri')!).contrasteRelativoAoSol).toBeCloseTo(0.04 / 0.15, 12);
     // mais fria que o Sol (51 Peg, 5.761 K): nenhum véu
     expect(parametrosDoMotor(estrelaVisitavelPorNome('Helvetios')!).veu).toBeUndefined();
+  });
+  it('os campos da regra do pico só aparecem com peso do pico > 0', () => {
+    for (const nome of ['Altair', 'Proxima Centauri', 'Betelgeuse']) {
+      const p = parametrosDoMotor(estrelaVisitavelPorNome(nome)!);
+      expect(p.pesoDoPico).toBeUndefined();
+      expect(p.stopsDoPico).toBeUndefined();
+    }
+    const regulo = parametrosDoMotor(estrelaVisitavelPorNome('Regulus')!);
+    expect(regulo.pesoDoPico).toBe(1);
+    // os stops tirados: o ganho de sempre (radiância^(⅖ − 1)) sobre o da visita, pelo polo
+    expect(regulo.stopsDoPico).toBeCloseTo(
+      Math.log(radianciaVisivelDeCorpoNegro(12730) ** (EXPOENTE_SEM_O_FILTRO - 1) / ganhoDaVisita(12730, 'assistida', 14520)),
+      2
+    );
+    expect(stopsDoPico(8000)).toBe(0);
+    // a anã branca, pela MESMA lei
+    const b = parametrosDaCompanheira(estrelaVisitavelPorNome('Sirius')!)!;
+    expect(b.pesoDoPico).toBe(1);
+    expect(b.stopsDoPico).toBeCloseTo(stopsDoPico(b.teffK), 12);
+    expect(b.stopsDoPico!).toBeGreaterThan(regulo.stopsDoPico!);
   });
   it('as anãs são de dínamo', () => {
     const p = parametrosDoMotor(estrelaVisitavelPorNome('Proxima Centauri')!);

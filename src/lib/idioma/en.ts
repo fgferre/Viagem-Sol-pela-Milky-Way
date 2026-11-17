@@ -737,10 +737,13 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.estrela.tamanhoPeloRaio': 'the radius in this card',
   'ficha.campo.veu': 'veil of light',
   'ficha.campo.granulacao': 'granulation',
+  'ficha.campo.pontoMaisQuente': 'hottest point',
   'ficha.estrela.veu':
-    'more radiant than the Sun: the disk is shown at a lower exposure (in hot stars, the one that leaves the hottest point of the disk just below white, like an instrument that scales to the peak) and the leftover light becomes a veil around it, as in a camera — the peak level and the veil\'s strength and reach are a choice',
+    'more radiant than the Sun: the disk is shown at a lower exposure (in hot stars, the one that leaves the hottest point of the disk just below white, like an instrument that scales to the peak) and the leftover light becomes a veil around it, as in a camera, stronger and bluer in hot stars — the peak level and the veil\'s strength, reach and blue are a choice',
   'ficha.estrela.granulacaoExtrapolada':
     'the real one has ~{real} % contrast, invisible; drawn at the {piso} % floor so the surface does not come out smooth',
+  'ficha.estrela.pontaDoPico':
+    'the hottest part of the disk burns out to white, as on a camera sensor — how much is a choice',
   'ficha.estrela.superficieLisa':
     'smooth: too hot for visible granulation — the surface does not boil like the Sun\'s',
   'ficha.estrela.desenhoInventado':

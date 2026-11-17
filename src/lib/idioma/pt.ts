@@ -771,10 +771,13 @@ export const PT = {
   'ficha.estrela.tamanhoPeloRaio': 'o raio da ficha',
   'ficha.campo.veu': 'véu de luz',
   'ficha.campo.granulacao': 'granulação',
+  'ficha.campo.pontoMaisQuente': 'ponto mais quente',
   'ficha.estrela.veu':
-    'mais radiante que o Sol: o disco aparece numa exposição mais baixa (nas quentes, a que deixa o ponto mais quente do disco logo abaixo do branco, como um instrumento que mede pelo pico) e a luz que sobra vira um véu em volta dele, como numa câmera — o nível do pico, a força e o alcance do véu são escolha',
+    'mais radiante que o Sol: o disco aparece numa exposição mais baixa (nas quentes, a que deixa o ponto mais quente do disco logo abaixo do branco, como um instrumento que mede pelo pico) e a luz que sobra vira um véu em volta dele, como numa câmera, mais forte e mais azul nas quentes — o nível do pico e a força, o alcance e o azul do véu são escolha',
   'ficha.estrela.granulacaoExtrapolada':
     'a real tem ~{real} % de contraste, invisível; desenhada no piso de {piso} % para a superfície não sair lisa',
+  'ficha.estrela.pontaDoPico':
+    'a parte mais quente do disco estoura para o branco, como num sensor de câmera — o quanto é escolha',
   'ficha.estrela.superficieLisa':
     'lisa: quente demais para ter granulação visível — a superfície não ferve como a do Sol',
   'ficha.estrela.desenhoInventado':

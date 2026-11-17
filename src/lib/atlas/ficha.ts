@@ -1164,6 +1164,8 @@ function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
       // por nome): mais radiante que o Sol, véu; granulação abaixo do piso
       // da Forja, extrapolada
       e.teffK.v > TEFF_DO_SOL_K ? linha(t('ficha.campo.veu'), t('ficha.estrela.veu'), 'artistico') : null,
+      // a lisa (toda pela regra do pico): a ponta branca no ponto mais quente do disco
+      lisa ? linha(t('ficha.campo.pontoMaisQuente'), t('ficha.estrela.pontaDoPico'), 'artistico') : null,
       forja && forja.contraste < PISO_DA_FORJA_NA_TELA
         ? linha(
             t('ficha.campo.granulacao'),

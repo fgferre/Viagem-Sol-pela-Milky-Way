@@ -300,8 +300,10 @@ export function cirurgiasDaFotosfera(
     teffK: p.teffK,
     continuo: 1 - pesoDoFiltro(p.teffK),
     ...(forja ? { forja } : {}),
-    // CANDIDATO ofusca=b
-    ...((OFUSCA === 'b' || OFUSCA === 'c') && (p.pesoDoPico ?? 0) > 0
+    // a ponta do pico: só quem tem peso do pico E é lisa (`PONTA_DO_PICO`) —
+    // com a Forja há uma rede de convecção para ler, e a ponta a lavava
+    // (Fomalhaut: 0,89 % → 0,33 % na tela)
+    ...((p.pesoDoPico ?? 0) > 0 && !forja
       ? { pontaDoPico: { peso: p.pesoDoPico!, lumPolo: a ? lumDoPolo(p.teffK, a) : 1 } }
       : {}),
   };
@@ -421,8 +423,14 @@ export interface StellarParams {
    * (1 − ganho), espalhada em volta dele (`criarABordaDifusa`).
    */
   readonly veu?: number;
-  /** CANDIDATO ofusca: o peso da regra do pico das quentes (`pesoDoPico`; omitido = 0) */
+  /**
+   * O PESO DA REGRA DO PICO das quentes (`pesoDoPico` do diretor; omitido ou
+   * 0 = nenhuma): liga a ponta do pico na fotosfera, a asa longa e o tom do
+   * véu (`PONTA_DO_PICO`, `VEU_POR_STOP`, `TOM_DO_VEU`).
+   */
   readonly pesoDoPico?: number;
+  /** os STOPS que a regra do pico tirou do disco (ln do ganho de sempre sobre o da visita; omitido = 0) */
+  readonly stopsDoPico?: number;
 }
 
 /**
@@ -625,7 +633,7 @@ export function cirurgiaDaEstrela(
     continuo?: number;
     /** a convecção da Forja (`glslDaForjaNaFotosfera`): a regra da estrela */
     forja?: RegraDaForja;
-    /** CANDIDATO ofusca=b: o peso do pico e a luminância de `vGravidade` no polo */
+    /** a ponta do pico (`PONTA_DO_PICO`): o peso do pico e a luminância de `vGravidade` no polo */
     pontaDoPico?: { peso: number; lumPolo: number };
   }
 ): string {
@@ -781,22 +789,27 @@ export function cirurgiaDaEstrela(
     );
   }
   if (o.pontaDoPico) {
-    // CANDIDATO ofusca=b
-    const rel = o.gravidade
-      ? `(0.4 + 0.6*mu) * dot(vGravidade, vec3(0.2126, 0.7152, 0.0722)) / ${literalGlsl(o.pontaDoPico.lumPolo)}`
-      : '(0.4 + 0.6*mu)';
+    // a PONTA DO PICO (`PONTA_DO_PICO`): o sensor que estoura
+    const q = o.pontaDoPico.peso;
+    const g = o.gravidade
+      ? `max(0.0, dot(vGravidade, vec3(0.2126, 0.7152, 0.0722)) / ${literalGlsl(o.pontaDoPico.lumPolo)})`
+      : '1.0';
     f = trocarUma(
       f,
       '  color *= uPaleta;',
-      `  float relDoPico = max(0.0, ${rel});\n  float relDoPico2 = relDoPico*relDoPico;\n` +
-        `  color *= 1.0 + ${literalGlsl(PONTA_DO_PICO.ganho * o.pontaDoPico.peso)} * relDoPico2*relDoPico2*relDoPico2;\n  color *= uPaleta;`,
+      `  float gDoPico = ${g};\n  float gDoPico2 = gDoPico*gDoPico;\n` +
+        '  float lDoPico = 0.4 + 0.6*mu;\n  float lDoPico2 = lDoPico*lDoPico;\n' +
+        '  float quenteDoPico = gDoPico2*gDoPico2*gDoPico2 * lDoPico2*lDoPico2;\n' +
+        `  color *= 1.0 + ${literalGlsl(PONTA_DO_PICO.ganho * q)} * quenteDoPico;\n` +
+        `  color = mix(color, vec3(dot(color, vec3(0.2126, 0.7152, 0.0722))), min(1.0, ${literalGlsl(PONTA_DO_PICO.branco * q)} * quenteDoPico));\n` +
+        '  color *= uPaleta;',
       quem
     );
   }
   return planck + granulacao + f;
 }
 
-/** CANDIDATO ofusca=b: a luminância de `aGravidade` no polo (a mesma conta de `operarAFotosfera`) */
+/** a luminância de `aGravidade` no polo (a mesma conta de `operarAFotosfera`) */
 function lumDoPolo(teffK: number, a: Achatamento): number {
   const tp = rocheDe(0, a).teffK;
   const cp = corpoNegroUnitario(tp);
@@ -1934,47 +1947,69 @@ export function forcaDoVeu(veu: number): number {
   return veu > 0 ? VEU_TETO * (1 - Math.exp(-veu / VEU_TETO)) : 0;
 }
 
-// CANDIDATO ofusca=a|b|c — knob temporário (`?ofusca=`), lido uma vez; sem ele, nada muda
-const OFUSCA: string | null =
-  typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('ofusca') : null;
-// CANDIDATO ofusca=a — a luz que a exposição tirou do disco volta, na ASA do véu
-// (o rente fica como está: teto da borda). F = ganho de antes / ganho de hoje, com o
-// ganho de antes rad^(⅖ − 1) (`EXPOENTE_SEM_O_FILTRO`: toda quente tem w = 0); a asa
-// longa (escala `VEU_ASA_LONGA`, cauda a zero em `RAIO_DO_VEU_QUENTE`) leva
-// `VEU_POR_STOP` × ln F × a luz do véu de hoje, integrada em b (peso b db) — em stops,
-// porque a tela é logarítmica. ARTÍSTICO: a escala, o raio e a luz por stop.
-// (em C a ponta do pico já devolve luz no disco: a asa leva menos, recalibrada pela mesma régua)
-const VEU_POR_STOP = OFUSCA === 'c' ? 1.3 : 2.3;
+/**
+ * O OFUSCAMENTO DAS QUENTES (17/11) — a regra do pico (`pesoDoPico`, no
+ * diretor) põe o ponto mais quente do disco num nível só, e a luz que ela tira
+ * do disco sumia: a estrela quente lia como uma bola fosca. Três peças, todas
+ * só de quem tem peso do pico (sem os campos, o texto sai o de antes):
+ *  · A ASA LONGA DO VÉU: os STOPS que a regra do pico tirou do disco
+ *    (`stopsDoPico`, ln do ganho de sempre sobre o da visita) voltam em volta
+ *    dele, na asa (escala `VEU_ASA_LONGA`, cauda a zero em
+ *    `RAIO_DO_VEU_QUENTE`), como `VEU_POR_STOP` × stops × a luz do véu de
+ *    sempre, integrada em b (peso b db). O rente fica como está: véu rente
+ *    mais claro que a borda faz a estrela lisa parecer fora de foco. Em stops
+ *    porque a tela é logarítmica; a luz total na tela volta à de antes da
+ *    regra (±7 %). ARTÍSTICO: a escala, o raio e a luz por stop;
+ *  · A PONTA DO PICO, na fotosfera (`cirurgiaDaEstrela`), só da estrela
+ *    LISA (sem a Forja: onde há rede de convecção ela a lavava): um sensor
+ *    que estoura. Com o calor local h = (g/g_polo)⁶ · (0,4 + 0,6μ)⁴ — g o brilho
+ *    de von Zeipel (`vGravidade`, 1 numa redonda), a borda cinza de Eddington
+ *    —, a emissão vai a 1 + `ganho`·q·h e a cor desce ao branco de mesma
+ *    luminância na fração min(1, `branco`·q·h): o polo (ou o centro) estoura
+ *    para o branco e o equador e a borda guardam o azul. O expoente alto na
+ *    gravidade segue o polo mesmo quando ele está perto da borda (Achernar a
+ *    29°); sem degrau (um smoothstep abria anel). ARTÍSTICO: os números;
+ *  · O TOM DO VÉU: o espalhamento de Rayleigh, (550/λ)⁴ em 610/550/465 nm,
+ *    elevado a k e normalizado à luminância 1 — k = 1 até `inteiroAte` e
+ *    descendo suave até `piso` em `pisoDesde`: nas mais quentes, que já são
+ *    azuis, o tom cede à cor da própria estrela (o miolo estoura para o
+ *    branco, o que sobra em volta guarda a cor da estrela, como numa imagem
+ *    de instrumento colorizada), e o azul do véu na tela tem teto (~3,5 em
+ *    azul/vermelho, o de Régulo). ARTÍSTICO, declarado.
+ */
+const VEU_POR_STOP = 1.2;
 const VEU_ASA_LONGA = 0.35;
 const RAIO_DO_VEU_QUENTE = 2.2;
+const PONTA_DO_PICO = { ganho: 3.5, branco: 1.5 } as const;
+const COR_DO_ESPALHAMENTO = [0.661, 1.0, 1.957] as const;
+const TOM_DO_VEU = { inteiroAte: 12800, pisoDesde: 15500, piso: 0.52 } as const;
 function caudaDoVeu(b: number, raio: number): number {
   const t = Math.min(1, Math.max(0, (b - 0.5 * (raio + 1)) / (raio - 0.5 * (raio + 1))));
   return 1 - t * t * (3 - 2 * t);
 }
-export function pesoDaAsaLonga(teffK: number, veu: number): number {
-  const ganho = 1 - veu;
-  if (!(ganho > 0)) return 0;
-  const f = Math.pow(radianciaVisivelDeCorpoNegro(teffK), 0.4 - 1) / ganho;
-  if (!(f > 1)) return 0;
-  let hoje = 0;
+/** o peso da asa longa (relativo à força do véu) para os stops que a regra do pico tirou do disco */
+export function pesoDaAsaLonga(stopsDoPico: number): number {
+  if (!(stopsDoPico > 0)) return 0;
+  let deSempre = 0;
   let asa = 0;
   const n = 4000;
   for (let i = 0; i < n; i++) {
     const b = 1 + ((i + 0.5) / n) * (RAIO_DO_VEU_QUENTE - 1);
     const x = b - 1;
-    hoje += (VEU_PESO_RENTE * Math.exp(-x / VEU_RENTE) + VEU_PESO_ASA * Math.exp(-x / VEU_ASA)) * caudaDoVeu(b, RAIO_DO_VEU) * b;
+    deSempre +=
+      (VEU_PESO_RENTE * Math.exp(-x / VEU_RENTE) + VEU_PESO_ASA * Math.exp(-x / VEU_ASA)) * caudaDoVeu(b, RAIO_DO_VEU) * b;
     asa += Math.exp(-x / VEU_ASA_LONGA) * caudaDoVeu(b, RAIO_DO_VEU_QUENTE) * b;
   }
-  return (VEU_POR_STOP * Math.log(f) * hoje) / asa;
+  return (VEU_POR_STOP * stopsDoPico * deSempre) / asa;
 }
-// CANDIDATO ofusca=b — a PONTA DO PICO: com a intensidade local relativa ao pico do
-// disco, i (borda de Eddington cinza 0,4 + 0,6μ × o brilho de von Zeipel relativo ao
-// polo; 1 no polo de frente, no centro de uma redonda), a emissão vai a
-// 1 + ganho × peso do pico × i⁶ — sem degrau (um smoothstep abria anel). ARTÍSTICO: ganho e expoente.
-const PONTA_DO_PICO = { ganho: 4 } as const;
-// CANDIDATO ofusca=c — o véu mais azul que o disco: o espalhamento de Rayleigh,
-// (550/λ)⁴ em 610/550/465 nm (luminância ≈ 1). ARTÍSTICO, declarado.
-const COR_DO_ESPALHAMENTO = [0.661, 1.0, 1.957] as const;
+/** o tom do véu de uma quente (luminância 1): Rayleigh^k, k contínuo na Teff, com piso */
+export function tomDoVeu(teffK: number): [number, number, number] {
+  const u = Math.min(1, Math.max(0, (teffK - TOM_DO_VEU.inteiroAte) / (TOM_DO_VEU.pisoDesde - TOM_DO_VEU.inteiroAte)));
+  const k = 1 - (1 - TOM_DO_VEU.piso) * u * u * (3 - 2 * u);
+  const t = COR_DO_ESPALHAMENTO.map((x) => Math.pow(x, k));
+  const y = LUMA_R * t[0] + LUMA_G * t[1] + LUMA_B * t[2];
+  return [t[0] / y, t[1] / y, t[2] / y];
+}
 
 export const SOL_PARAMS: StellarParams = {
   nome: 'Sol',
@@ -2528,10 +2563,9 @@ export class StellarBody {
     const plumaMax = fj ? CASCA_DA_FORJA.plumaMax : PLUMA_MAX;
     const alcance = fj ? CASCA_DA_FORJA.alcance : ALCANCE_DA_ATMOSFERA;
     const brilho = fj ? CASCA_DA_FORJA.brilho : BRILHO_DA_ATMOSFERA;
-    // CANDIDATO ofusca=a / c: a asa longa e o véu azul, só nas quentes
+    // a asa longa e o tom do véu: só nas quentes (ver `VEU_POR_STOP`)
     const quente = (p.pesoDoPico ?? 0) > 0 && veu > 0;
-    const asaLonga = quente && (OFUSCA === 'a' || OFUSCA === 'c') ? pesoDaAsaLonga(p.teffK, veu) : 0;
-    const veuAzul = quente && OFUSCA === 'c';
+    const asaLonga = quente ? pesoDaAsaLonga(p.stopsDoPico ?? 0) : 0;
     const rCasca = Math.max(
       1 + (rEnv - 1) * plumaMax * alcance,
       veu > 0 ? RAIO_DO_VEU : 1,
@@ -2689,7 +2723,7 @@ export class StellarBody {
           // o véu sobre a borda do disco como a tela a mostra (comprimida)
           vec3 borda = comprimir3(k * ${literalGlsl(1 - u)}, ${literalGlsl(BETA_DA_EMISSAO)});
           gl_FragColor = vec4((comprimir3(k * luz, ${literalGlsl(BETA_DA_EMISSAO)}) + borda * veu${
-            veuAzul ? ` * vec3(${COR_DO_ESPALHAMENTO.map((x) => literalGlsl(x)).join(', ')})` : ''
+            quente ? ` * vec3(${tomDoVeu(p.teffK).map((x) => literalGlsl(x)).join(', ')})` : ''
           }) * uWorldFade, 1.0);
         }`,
       uniforms: {

@@ -970,8 +970,8 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     expect(dist.valor).toContain(`${Math.round(7.4957 * sirius.d * 10) / 10}`.replace('.', ','));
     const img = sir.secoes.find((x) => x.id === 'imagem')!;
     // mais radiante que o Sol: véu confessado; quente demais para convecção na superfície: lisa, com a fonte
-    expect(img.linhas.map((l) => l.procedencia)).toEqual(['derivado', 'derivado', 'derivado', 'artistico']);
-    expect(img.linhas.map((l) => l.rotulo).slice(3)).toEqual(['véu de luz']);
+    expect(img.linhas.map((l) => l.procedencia)).toEqual(['derivado', 'derivado', 'derivado', 'artistico', 'artistico']);
+    expect(img.linhas.map((l) => l.rotulo).slice(3)).toEqual(['véu de luz', 'ponto mais quente']);
     expect(img.linhas[2]!.valor).toContain('lisa');
     expect(img.linhas[2]!.fonte).toContain('Cantiello');
     const imgProx = prox.secoes.find((x) => x.id === 'imagem')!;

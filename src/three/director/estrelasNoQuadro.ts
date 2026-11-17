@@ -158,13 +158,34 @@ export function pesoDoPico(teffK: number): number {
  */
 export function ganhoDaVisita(teffK: number, politica: PoliticaDeLuz, teffDoPicoK: number = teffK): number {
   if (politica === 'real') return 1;
-  const w = pesoDoFiltro(teffK);
-  const e = w * EXPOENTE_DO_BRILHO_ASSISTIDO + (1 - w) * EXPOENTE_SEM_O_FILTRO;
-  const deSempre = Math.pow(radianciaVisivelDeCorpoNegro(teffK), e - 1);
+  const deSempre = ganhoDeSempre(teffK);
   const q = pesoDoPico(teffK);
   if (q <= 0) return deSempre;
   const peloPico = NIVEL_DO_PICO_DAS_QUENTES / radianciaVisivelDeCorpoNegro(teffDoPicoK);
   return Math.pow(deSempre, 1 - q) * Math.pow(peloPico, q);
+}
+
+/** o ganho ASSISTIDO sem a regra do pico: rad^(e − 1), e de ¼ a ⅖ com o filtro do Sol */
+function ganhoDeSempre(teffK: number): number {
+  const w = pesoDoFiltro(teffK);
+  const e = w * EXPOENTE_DO_BRILHO_ASSISTIDO + (1 - w) * EXPOENTE_SEM_O_FILTRO;
+  return Math.pow(radianciaVisivelDeCorpoNegro(teffK), e - 1);
+}
+
+/**
+ * Os STOPS que a regra do pico tirou do disco: ln(ganho de sempre / ganho da
+ * visita). 0 sem peso do pico. O motor os devolve em volta do disco, na asa
+ * do véu (`VEU_POR_STOP` em `stellarBody.ts`).
+ */
+export function stopsDoPico(teffK: number, teffDoPicoK: number = teffK): number {
+  if (pesoDoPico(teffK) <= 0) return 0;
+  return Math.log(ganhoDeSempre(teffK) / ganhoDaVisita(teffK, 'assistida', teffDoPicoK));
+}
+
+/** Os campos da regra do pico em `StellarParams`: só com peso do pico > 0. */
+function camposDoPico(teffK: number, teffDoPicoK: number): Pick<StellarParams, 'pesoDoPico' | 'stopsDoPico'> {
+  const q = pesoDoPico(teffK);
+  return q > 0 ? { pesoDoPico: q, stopsDoPico: stopsDoPico(teffK, teffDoPicoK) } : {};
 }
 
 /** A distância (pc) além da qual a estrela do motor do Sol, fora de foco, é
@@ -217,7 +238,8 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
   const achatamento = achatamentoDe(e);
   const logG = logGravidade(e.massaMsol.v, e.raioRsol.v);
   const contrasteDosGranulos = semConveccaoNaSuperficie(e.teffK.v, logG) ? 0 : s.contrasteGranulos.v;
-  const veu = veuDe(e.teffK.v, achatamento ? rocheDe(0, achatamento).teffK : e.teffK.v);
+  const teffDoPicoK = achatamento ? rocheDe(0, achatamento).teffK : e.teffK.v;
+  const veu = veuDe(e.teffK.v, teffDoPicoK);
   return {
     ...SOL_PARAMS,
     nome: e.id,
@@ -237,8 +259,8 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
     bordaU: s.bordaU.v,
     foraDaOrigem: true,
     ...(veu > 0 ? { veu } : {}),
-    // CANDIDATO ofusca: o peso da regra do pico, só nas quentes
-    ...(pesoDoPico(e.teffK.v) > 0 ? { pesoDoPico: pesoDoPico(e.teffK.v) } : {}),
+    // a regra do pico (a ponta, a asa e o tom do véu no motor): só nas quentes
+    ...camposDoPico(e.teffK.v, teffDoPicoK),
     ...(achatamento ? { achatamento } : {}),
     // sem inclinação (o giro de um período) o eixo segue o +Y do motor: a
     // estrela achata em volta do eixo em que já girava
@@ -301,8 +323,8 @@ export function parametrosDaCompanheira(e: EstrelaVisitavel): StellarParams | nu
     foraDaOrigem: true,
     // o véu pela MESMA lei da principal (a anã branca é a mais radiante)
     ...(veuDe(c.teffK.v) > 0 ? { veu: veuDe(c.teffK.v) } : {}),
-    // CANDIDATO ofusca: o peso da regra do pico, só nas quentes
-    ...(pesoDoPico(c.teffK.v) > 0 ? { pesoDoPico: pesoDoPico(c.teffK.v) } : {}),
+    // a regra do pico pela MESMA lei da principal
+    ...camposDoPico(c.teffK.v, c.teffK.v),
   };
 }
 
