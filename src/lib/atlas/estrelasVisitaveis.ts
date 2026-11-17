@@ -55,6 +55,19 @@ export interface Companheira {
   readonly teffK: Numero;
   readonly raioRsol: Numero;
   readonly massaMsol: Numero;
+  /** só onde há medida; sem ela, a lei única (`rotacaoDe`) */
+  readonly rotacaoDias?: Numero;
+  readonly orbita: Orbita;
+}
+
+/**
+ * A companheira com a ÓRBITA medida mas sem tamanho nem temperatura medidos
+ * (Dubhe B: o tipo dela vai de A3 a F7 conforme o autor). Entra na ficha;
+ * não ganha corpo — desenhá-la pediria inventar o raio e a cor.
+ */
+export interface CompanheiraSemCorpo {
+  readonly nome: string;
+  readonly massaMsol?: Numero;
   readonly orbita: Orbita;
 }
 
@@ -104,6 +117,7 @@ export interface EstrelaVisitavel {
   readonly achatamento?: Achatamento;
   readonly superficie: Superficie;
   readonly companheira?: Companheira;
+  readonly companheiraSemCorpo?: CompanheiraSemCorpo;
 }
 
 /** a Teff do Sol (K): a régua das concessões que só a física liga */
@@ -247,6 +261,95 @@ const ALDEBARAN: EstrelaVisitavel = {
   superficie: superficiePelaTemperatura(ALDEBARAN_T, ALDEBARAN_R, ALDEBARAN_M),
 };
 
+/**
+ * CAPELLA É UM PAR de gigantes amarelas a 0,74 UA uma da outra, uma volta a
+ * cada 104 dias. O catálogo a traz como uma estrela só, "M1: comp" (o tipo
+ * descreve o par), e a regra única a lia como gigante vermelha de 3.750 K e
+ * 55 R☉. Todos os números de Torres, Claret, Pavlovski & Dotter 2015 (ApJ
+ * 807, 26; arXiv:1505.07461), lidos no artigo em 16/11/2026: tabela 1 (a
+ * órbita, astrometria + velocidades radiais) e tabela 3 (as duas estrelas).
+ * A principal aqui é a Aa (a mais massiva e maior); a Ab é a companheira.
+ */
+const TORRES_2015 = 'Torres et al. 2015, ApJ 807, 26';
+const CAPELLA: EstrelaVisitavel = {
+  id: 'capella',
+  nomeNoCatalogo: 'Capella',
+  hip: 24608,
+  tipo: { texto: 'G8 III', v: 0, p: 'medido', fonte: TORRES_2015 }, // o par é G8 III + G0 III
+  teffK: { v: 4970, p: 'medido', fonte: TORRES_2015 }, // espectro (±50 K)
+  raioRsol: { v: 11.98, p: 'medido', fonte: TORRES_2015 }, // diâmetro angular + paralaxe orbital (±0,57)
+  massaMsol: { v: 2.5687, p: 'medido', fonte: TORRES_2015 }, // órbita (±0,0074)
+  luminosidadeLsol: { v: 78.7, p: 'derivado', fonte: TORRES_2015 }, // ±4,2
+  rotacaoDias: { v: 104, p: 'medido', fonte: TORRES_2015 }, // ±3 d: gira presa à órbita
+  idadeGa: { v: 0.62, p: 'derivado', fonte: TORRES_2015 }, // 590–650 Ma, modelos de evolução
+  superficie: superficiePelaTemperatura(4970, 11.98, 2.5687),
+  companheira: {
+    nome: 'Capella Ab',
+    tipo: 'G0 III',
+    teffK: { v: 5730, p: 'medido', fonte: TORRES_2015 }, // ±60 K
+    raioRsol: { v: 8.83, p: 'medido', fonte: TORRES_2015 }, // ±0,33
+    massaMsol: { v: 2.4828, p: 'medido', fonte: TORRES_2015 }, // ±0,0067
+    rotacaoDias: { v: 8.5, p: 'medido', fonte: TORRES_2015 }, // ±0,2 d: ainda não freou
+    orbita: {
+      periodoAnos: 104.02128 / 365.25,
+      // T do periastro HJD 2.448.147,6 (±2,6 d; a órbita é quase um círculo)
+      periastroAno: 2000 + (2448147.6 - 2451545) / 365.25,
+      aSegArco: 0.056442,
+      e: 0.00089,
+      iGraus: 137.156,
+      nodoGraus: 40.522,
+      // o artigo dá ω da primária (342,6°); a órbita relativa da secundária é ω + 180°
+      argPeriastroGraus: 162.6,
+      fonte: TORRES_2015,
+    },
+  },
+};
+
+/**
+ * DUBHE É UMA GIGANTE LARANJA com uma companheira a ~22 UA, uma volta a cada
+ * 44 anos. O catálogo a traz como "F7V comp" (o tipo é o da MISTURA das
+ * duas luzes), e a regra única a relia como supergigante. Lidos nos artigos
+ * em 16/11/2026:
+ *   - raio, temperatura e luminosidade da principal: Baines et al. 2025 (AJ
+ *     169, 293; arXiv:2506.02912), tabela 7 — diâmetro angular medido no
+ *     NPOI (θ_LD 6,749 ± 0,008 mas) + paralaxe Hipparcos;
+ *   - tipo, massas e a órbita: Gray 2018 (ApJ 869, 81). O tipo K0 III é o
+ *     de uso (Gray prefere K0 II–III); as massas são as astrométricas de
+ *     Gontcharov & Kiyaeva 2002 que ele cita (3,7 ± 0,4 e 2,5 ± 0,4 M☉), e
+ *     ele mesmo as chama de incertas; a órbita é a visual de Scardia et al.
+ *     2011 (speckle), copiada da tabela 2 dele com os valores PUBLICADOS.
+ * A companheira não tem tamanho nem temperatura medidos (Gray não acha o
+ * espectro dela; o tipo vai de A3 a F7 conforme o autor): fica só na ficha.
+ * A rotação da principal tem só limite superior (< 1,35 ano): vale a lei.
+ */
+const BAINES_2025 = 'Baines et al. 2025, AJ 169, 293';
+const GRAY_2018 = 'Gray 2018, ApJ 869, 81';
+const DUBHE: EstrelaVisitavel = {
+  id: 'dubhe',
+  nomeNoCatalogo: 'Dubhe',
+  hip: 54061,
+  tipo: { texto: 'K0 III', v: 0, p: 'medido', fonte: GRAY_2018 },
+  teffK: { v: 4810, p: 'derivado', fonte: BAINES_2025 }, // diâmetro + fluxo bolométrico (±22 K)
+  raioRsol: { v: 27.33, p: 'medido', fonte: BAINES_2025 }, // +0,49 −0,50
+  massaMsol: { v: 3.7, p: 'derivado', fonte: `Gontcharov & Kiyaeva 2002; ${GRAY_2018}` }, // ±0,4, astrometria
+  luminosidadeLsol: { v: 360.8, p: 'derivado', fonte: BAINES_2025 },
+  superficie: superficiePelaTemperatura(4810, 27.33, 3.7),
+  companheiraSemCorpo: {
+    nome: 'Dubhe B',
+    massaMsol: { v: 2.5, p: 'derivado', fonte: `Gontcharov & Kiyaeva 2002; ${GRAY_2018}` }, // ±0,4
+    orbita: {
+      periodoAnos: 44.45,
+      periastroAno: 2002.17,
+      aSegArco: 0.59,
+      e: 0.439,
+      iGraus: 159.9,
+      nodoGraus: 9.3,
+      argPeriastroGraus: 232.8,
+      fonte: `Scardia et al. 2011; ${GRAY_2018}`,
+    },
+  },
+};
+
 const VEGA: EstrelaVisitavel = {
   id: 'vega',
   nomeNoCatalogo: 'Vega',
@@ -372,6 +475,8 @@ export const ESTRELAS_VISITAVEIS: readonly EstrelaVisitavel[] = [
   PROXIMA, SIRIUS, BETELGEUSE, VEGA, ...ANFITRIAS,
   // no fim, para não mudar a vaga de clarão de quem já estava (`2 × índice`)
   ALDEBARAN,
+  CAPELLA,
+  DUBHE,
 ];
 
 export function estrelaVisitavelPorNome(nomeNoCatalogo: string): EstrelaVisitavel | null {

@@ -1051,24 +1051,40 @@ function linhasDoPiloto(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
 
 /** A companheira (Sirius B); a separação em UA é aSegArco × distância em pc. */
 function secaoDaCompanheira(e: EstrelaVisitavel, distanciaPc: number): SecaoDaFicha | null {
+  // a que tem corpo (tamanho e temperatura medidos) ou a que só tem a
+  // órbita medida (Dubhe B): a mesma seção, com as linhas que existem
   const c = e.companheira;
-  if (!c) return null;
-  const o = c.orbita;
+  const semCorpo = e.companheiraSemCorpo;
+  const base = c ?? semCorpo;
+  if (!base) return null;
+  const o = base.orbita;
+  // a anã branca tem título e régua próprios (o tamanho da Terra); a
+  // companheira que é uma estrela comum (Capella Ab) lê como a principal
+  const anaBranca = c?.tipo.startsWith('D') ?? false;
   const linhas = [
-    linha(t('ficha.campo.tipoEspectral'), c.tipo, 'medido', o.fonte),
-    linhaDoNumero(t('ficha.campo.temperatura'), kelvin(c.teffK), c.teffK),
-    linhaDoNumero(
-      t('ficha.campo.raioSolar'),
-      t('ficha.estrela.doTamanhoDaTerra', {
-        km: inteiroDoIdioma(Number((c.raioRsol.v * RSOL_KM).toPrecision(2))),
-      }),
-      c.raioRsol
-    ),
-    linhaDoNumero(
-      t('ficha.campo.massa'),
-      t('ficha.estrela.massaEmMsol', { v: tresSignificativos(c.massaMsol.v) }),
-      c.massaMsol
-    ),
+    c ? linha(t('ficha.campo.tipoEspectral'), c.tipo, 'medido', o.fonte) : null,
+    c ? linhaDoNumero(t('ficha.campo.temperatura'), kelvin(c.teffK), c.teffK) : null,
+    c
+      ? linhaDoNumero(
+          t('ficha.campo.raioSolar'),
+          anaBranca
+            ? t('ficha.estrela.doTamanhoDaTerra', {
+                km: inteiroDoIdioma(Number((c.raioRsol.v * RSOL_KM).toPrecision(2))),
+              })
+            : raioEmTexto(c.raioRsol.v),
+          c.raioRsol
+        )
+      : null,
+    base.massaMsol
+      ? linhaDoNumero(
+          t('ficha.campo.massa'),
+          t('ficha.estrela.massaEmMsol', { v: tresSignificativos(base.massaMsol.v) }),
+          base.massaMsol
+        )
+      : null,
+    c?.rotacaoDias
+      ? linhaDoNumero(t('ficha.campo.rotacao'), formatarDuracao(c.rotacaoDias.v), c.rotacaoDias)
+      : null,
     linha(t('ficha.campo.periodo'), formatarDuracao(o.periodoAnos * DIAS_POR_ANO), 'medido', o.fonte),
     linha(
       t('ficha.campo.separacaoMedia'),
@@ -1077,7 +1093,8 @@ function secaoDaCompanheira(e: EstrelaVisitavel, distanciaPc: number): SecaoDaFi
       o.fonte
     ),
   ].filter((l): l is LinhaDaFicha => l !== null);
-  return { id: 'companheira', titulo: t('ficha.secao.companheira', { nome: c.nome }), linhas };
+  const titulo = t(anaBranca ? 'ficha.secao.companheira' : 'ficha.secao.companheiraDoPar', { nome: base.nome });
+  return { id: 'companheira', titulo, linhas };
 }
 
 /** A SEÇÃO DA IMAGEM da estrela do piloto: o que é medida e o que é desenho. */

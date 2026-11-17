@@ -51,9 +51,11 @@ import {
   atividadeDe,
   granuloNaTelaEmRaios,
   logGravidade,
+  luminosidadeDe,
   posicaoDaCompanheira,
   raioDaEstrelaPc,
   rotacaoDe,
+  superficiePelaTemperatura,
   temDinamoSolar,
   type EstrelaVisitavel,
 } from '../../lib/atlas/estrelasVisitaveis';
@@ -208,16 +210,42 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
 export function parametrosDaCompanheira(e: EstrelaVisitavel): StellarParams | null {
   const c = e.companheira;
   if (!c) return null;
+  const nome = `${e.id}-b`;
+  const seed = (SOL_PARAMS.seed ^ sementeDe(e) ^ 0x0b0b0b0b) >>> 0;
+  // A COMPANHEIRA QUE NÃO É ANÃ BRANCA (Capella Ab, 16/11) é uma estrela
+  // como qualquer outra: a MESMA lei da principal (`parametrosDoMotor`),
+  // sobre a ficha que os números medidos dela dão. Sem eixo medido.
+  if (!c.tipo.startsWith('D')) {
+    return {
+      ...parametrosDoMotor({
+        id: nome,
+        nomeNoCatalogo: c.nome,
+        tipo: { texto: c.tipo, v: 0, p: 'medido', fonte: c.orbita.fonte },
+        teffK: c.teffK,
+        raioRsol: c.raioRsol,
+        massaMsol: c.massaMsol,
+        luminosidadeLsol: {
+          v: luminosidadeDe(c.raioRsol.v, c.teffK.v),
+          p: 'derivado',
+          fonte: 'Stefan-Boltzmann',
+        },
+        ...(c.rotacaoDias ? { rotacaoDias: c.rotacaoDias } : {}),
+        superficie: superficiePelaTemperatura(c.teffK.v, c.raioRsol.v, c.massaMsol.v),
+      }),
+      seed,
+      knobPrefix: `${e.id}b`,
+    };
+  }
   return {
     ...SOL_PARAMS,
-    nome: `${e.id}-b`,
+    nome,
     radiusPc: c.raioRsol.v * RAIO_SOL_PC,
     rotPeriodDays: SOL_PARAMS.rotPeriodDays,
     tiltRad: 0,
     activityLevel: 0,
     teffK: c.teffK.v,
     dinamo: false,
-    seed: (SOL_PARAMS.seed ^ sementeDe(e) ^ 0x0b0b0b0b) >>> 0,
+    seed,
     knobPrefix: `${e.id}b`,
     contrasteRelativoAoSol: 0,
     bordaU: 0.3,
@@ -362,12 +390,15 @@ interface Piloto {
 }
 
 /**
- * A VAGA DE QUEM NASCE PELO FOCO: o último par do cadastro do clarão. As da
- * lista à mão ficam com 2 × índice (14 estrelas, vagas 0–27), como sempre.
- * Toda estrela sob demanda é NOMEADA, e o clarão escreve a nomeada na vaga
- * da nomeada (não nesta) — esta só precisa caber no cadastro.
+ * A VAGA DE QUEM NASCE PELO FOCO: a última do cadastro do clarão (a sob
+ * demanda não tem companheira, uma vaga basta). As da lista à mão ficam com
+ * 2 × índice, como sempre: 16 estrelas, vagas 0–30 — a de Dubhe, a 16ª, é a
+ * 30, e a 31 seria a da companheira dela, que não tem corpo. O CADASTRO
+ * ESTÁ CHEIO: a 17ª escrita à mão pede `VAGAS_DE_VISITADAS` maior. Toda
+ * estrela sob demanda é NOMEADA, e o clarão escreve a nomeada na vaga da
+ * nomeada (não nesta) — esta só precisa caber e não repetir a de outra.
  */
-const VAGA_SOB_DEMANDA = VAGAS_DE_VISITADAS - 2;
+const VAGA_SOB_DEMANDA = VAGAS_DE_VISITADAS - 1;
 
 function novoPiloto(
   named: readonly NamedStar[],
