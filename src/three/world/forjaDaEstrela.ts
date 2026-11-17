@@ -402,3 +402,79 @@ export function regraDaForja(
     manchaMedida: mancha !== undefined,
   };
 }
+
+/**
+ * A REGIÃO FRIA DE UM ESCURECIMENTO (`EscurecimentoMedido` da ficha), em
+ * números de desenho: por época (ano decimal), a borda nas imagens (raios ao
+ * longo do lado escuro), a razão T_fria/T_fotosfera do modelo do artigo e a
+ * direção do lado escuro no céu (ângulo de posição, graus). A estrela leva a
+ * razão, não a temperatura absoluta: a fotosfera do modelo (3.700 K em
+ * Betelgeuse) não é a Teff da ficha (3.600 K). Quem anda no tempo é o
+ * director (linear entre as épocas, `faseDoDisco`).
+ *
+ * O DESENHO (`cirurgiaDaEstrela`, `manchaFria`): dentro da região, a
+ * temperatura É a dela — a razão entra pela lei de Planck por canal e pelo
+ * TiO da Forja na temperatura local, o brilho das células cede
+ * (`brilhoDasCelulasNaRegiaoFria`), ficando as faixas e a textura, e a
+ * célula quente some do assado (o pico e o alisamento por dentro), voltando
+ * a rede comum; a rampa do instrumento vê só a convecção em volta da média dela
+ * (o ganho do instrumento sobre a queda inteira não tem fonte e afundava a
+ * rampa no pé). A BORDA é larga e irregular: segue o campo das células da
+ * própria Forja.
+ */
+export interface EscurecimentoDoMotor {
+  readonly borda: readonly (readonly [number, number])[];
+  readonly razaoT: readonly (readonly [number, number])[];
+  readonly anguloGraus: readonly (readonly [number, number])[];
+}
+
+/**
+ * A meia largura da borda da região fria, em raios no disco projetado (a
+ * borda inteira ~0,3 R), e quanto o campo das células a desloca por desvio
+ * (limitado a ±2σ: ±0,12 R). ARTÍSTICAS, declaradas na ficha — as imagens
+ * do SPHERE, com o feixe de ~24 mas num disco de 42 mas, não resolvem a borda.
+ */
+export const BORDA_DA_MANCHA_FRIA = 0.15;
+export const BORDA_PELAS_CELULAS = 0.06;
+
+/** a borda de quem não tem região fria: além do disco inteiro, com a borda larga e o deslocamento */
+export const CORDA_SEM_MANCHA = 2;
+
+/** a borda além da qual nada da região fria toca o disco */
+export const BORDA_FORA_DO_DISCO = 1 + BORDA_DA_MANCHA_FRIA + 2 * BORDA_PELAS_CELULAS;
+
+/**
+ * O BRILHO DAS CÉLULAS NA REGIÃO FRIA: o desvio positivo δ da temperatura
+ * local (as células claras e as quentes enormes) vira δ/(1 + 2δ/σ), com σ o
+ * desvio de uma célula comum na tela, e nunca passa de σ/2; as faixas (δ < 0)
+ * ficam, e com elas a textura. Uma célula comum (δ = σ) sai a um terço e a
+ * quente de Haubois (δ ≈ 5σ) a 0,45σ, quase no nível das comuns: a região
+ * medida a 3.400 K não tem célula a +15 % dentro dela (com o teto em σ, a
+ * quente virava um platô liso mais claro que tudo em volta). ARTÍSTICO na
+ * forma, declarado.
+ */
+export function brilhoDasCelulasNaRegiaoFria(delta: number, sigma: number): number {
+  return delta > 0 ? delta / (1 + (2 * delta) / sigma) : delta;
+}
+
+/**
+ * UMA DIREÇÃO NO CÉU DE QUEM VÊ DA TERRA, na base da cena (equatorial ICRS,
+ * +Z o polo norte celeste), em volta de uma estrela na posição `pos` (pc, a
+ * partir do Sol): o ângulo de posição do norte para o leste. Norte é o polo
+ * projetado no plano do céu, leste = norte × (a linha de visada), o sentido
+ * da ascensão reta crescente. Unitária. No polo (sem norte), o +X.
+ */
+export function direcaoNoCeu(pos: readonly [number, number, number], anguloGraus: number): [number, number, number] {
+  const l = Math.hypot(pos[0], pos[1], pos[2]);
+  const rho = Math.hypot(pos[0], pos[1]);
+  if (!(l > 0) || !(rho > 1e-12 * l)) return [1, 0, 0];
+  const [rx, ry, rz] = [pos[0] / l, pos[1] / l, pos[2] / l];
+  const s = rho / l;
+  // norte: ẑ − (ẑ·r̂) r̂, normalizado (|·| = √(1 − rz²) = s); leste: ẑ × r̂ / s
+  const norte = [(-rz * rx) / s, (-rz * ry) / s, (1 - rz * rz) / s];
+  const leste = [-ry / s, rx / s, 0];
+  const a = (anguloGraus * Math.PI) / 180;
+  const c = Math.cos(a);
+  const n = Math.sin(a);
+  return [c * norte[0] + n * leste[0], c * norte[1] + n * leste[1], c * norte[2] + n * leste[2]];
+}

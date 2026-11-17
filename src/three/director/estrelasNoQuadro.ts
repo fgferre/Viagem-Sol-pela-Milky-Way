@@ -34,7 +34,12 @@ import { faseDoCiclo, repartir, type JanelaDoQuadro, type EstadoDaEstrela } from
 import { EXPO_M0, M_V_SOL_DO_CAMPO, SIGMA_PX, radianciaVisivelDeCorpoNegro } from '../luzDaCasa';
 import type { QualityLevel } from '../core/engine';
 import { SOL_PARAMS, StellarBody, pesoDoFiltro, rocheDe, type StellarParams } from '../world/stellarBody';
-import { pesoDoPico, semConveccaoNaSuperficie } from '../world/forjaDaEstrela';
+import {
+  direcaoNoCeu,
+  pesoDoPico,
+  semConveccaoNaSuperficie,
+  type EscurecimentoDoMotor,
+} from '../world/forjaDaEstrela';
 import { PontoDeEstrela } from '../world/pontoDeEstrela';
 import { anoDoJd, faseDoDisco, gasDaEstrela } from '../world/ventoDaEstrela';
 import { RAIO_SOL_PC } from '../escala';
@@ -269,6 +274,18 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
     ...(achatamento?.inclinacaoGraus && eixo ? { eixoNaCena: [eixo.x, eixo.y, eixo.z] as const } : {}),
     ...(gas ? { gas } : {}),
     ...(mancha.medida ? { manchaQuente: { razao: mancha.razao.v, lambdaUm: mancha.lambdaUm.v } } : {}),
+    ...(e.escurecimento ? { escurecimento: escurecimentoDoMotor(e.escurecimento) } : {}),
+  };
+}
+
+/** as épocas do escurecimento da ficha em números de desenho: o ano pela data UT, a borda das imagens e a razão das temperaturas */
+export function escurecimentoDoMotor(x: NonNullable<EstrelaVisitavel['escurecimento']>): EscurecimentoDoMotor {
+  const ano = (data: string) => anoDoJd(Date.parse(data) / 86400000 + 2440587.5);
+  const t0 = x.teffDaFotosferaK.v;
+  return {
+    borda: x.epocas.map((p) => [ano(p.data), p.bordaNaImagemEmRaios.v] as const),
+    razaoT: x.epocas.map((p) => [ano(p.data), p.teffDaManchaK.v / t0] as const),
+    anguloGraus: x.epocas.map((p) => [ano(p.data), p.anguloGraus.v] as const),
   };
 }
 
@@ -358,9 +375,11 @@ export class EstrelaPeloMotorDoSol {
   readonly quality: QualityLevel;
   private readonly meios: MeiosDoMotor;
   private readonly epocasDoDisco: readonly (readonly [number, number])[] | null;
+  private readonly escurecimento: EscurecimentoDoMotor | null;
   constructor(params: StellarParams, meios: MeiosDoMotor, jd: number) {
     this.meios = meios;
     this.epocasDoDisco = params.gas?.disco?.epocas ?? null;
+    this.escurecimento = params.escurecimento ?? null;
     this.quality = meios.quality;
     const t0 = performance.now();
     this.corpo = new StellarBody(params, meios.renderer, meios.camera, meios.quality, faseDoCiclo(jd));
@@ -398,6 +417,18 @@ export class EstrelaPeloMotorDoSol {
     this.corpo.escreverCiclo(faseDoCiclo(q.jd));
     // a fase do disco de gás (Achernar) é a da DATA, pela lista medida
     if (this.epocasDoDisco) this.corpo.escreverDisco(faseDoDisco(this.epocasDoDisco, anoDoJd(q.jd)));
+    // a mancha fria de um escurecimento (Betelgeuse, 2019–20) é a da DATA,
+    // presa ao céu de quem olha da Terra (a linha de visada é a posição a
+    // partir do Sol), não à câmera nem ao giro da estrela
+    const x = this.escurecimento;
+    if (x) {
+      const ano = anoDoJd(q.jd);
+      this.corpo.escreverManchaFria(
+        direcaoNoCeu([q.posPc.x, q.posPc.y, q.posPc.z], faseDoDisco(x.anguloGraus, ano)),
+        faseDoDisco(x.borda, ano),
+        faseDoDisco(x.razaoT, ano)
+      );
+    }
     this.corpo.update(q.tempoS, this.meios.camera);
   }
 

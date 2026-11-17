@@ -1129,6 +1129,45 @@ function linhasDaNuvem(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
   ];
 }
 
+/**
+ * O ESCURECIMENTO MEDIDO por época (`EscurecimentoMedido`, Betelgeuse em
+ * 2019–20): o que foi medido (as datas, o brilho, o sul mais de 10× mais
+ * escuro, o quadrante sudoeste em março) e o ajuste de mancha fria do artigo,
+ * com as épocas da ficha; a outra leitura (a poeira) e o artigo que não
+ * escolhe. O que o desenho deriva vai na seção da imagem.
+ */
+function linhasDoEscurecimento(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
+  const x = e.escurecimento;
+  if (!x) return [];
+  const medidas = x.epocas.filter((p) => p.fracaoDoDisco.p === 'medido');
+  return [
+    linha(t('ficha.campo.grandeEscurecimento'), t('ficha.estrela.grandeEscurecimento'), 'medido', x.teffDaFotosferaK.fonte),
+    linha(
+      t('ficha.campo.manchaFria'),
+      t('ficha.estrela.manchaFria', {
+        t0: inteiroDoIdioma(x.teffDaFotosferaK.v),
+        epocas: medidas
+          .map((p) =>
+            t('ficha.estrela.epocaDaManchaFria', {
+              data: dataDaEpoca(p.data),
+              pct: numeroDoIdioma(Math.round(p.fracaoDoDisco.v * 100)),
+              k: inteiroDoIdioma(p.teffDaManchaK.v),
+            })
+          )
+          .join('; '),
+      }),
+      oMaisFraco(medidas.flatMap((p) => [p.fracaoDoDisco.p, p.teffDaManchaK.p])),
+      [...new Set(medidas.flatMap((p) => [p.fracaoDoDisco.fonte, p.teffDaManchaK.fonte]))].join('; ')
+    ),
+  ];
+}
+
+/** uma data UT da ficha (ISO 8601) na língua de agora: 27/12/2019 · 2019-12-27 */
+function dataDaEpoca(iso: string): string {
+  const [a, m, d] = iso.slice(0, 10).split('-');
+  return t('ficha.estrela.dataDaEpoca', { a, m, d });
+}
+
 /** Uma linha de número do piloto: o selo e a fonte vêm do próprio número. */
 function linhaDoNumero(rotulo: string, valor: string | null, n: Numero): LinhaDaFicha | null {
   return linha(rotulo, valor, n.p, n.fonte);
@@ -1275,6 +1314,7 @@ function linhasDoPiloto(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
     ...linhasDaMancha(e, forja),
     ...linhasDoGas(e),
     ...linhasDaNuvem(e),
+    ...linhasDoEscurecimento(e),
   ];
 }
 
@@ -1377,6 +1417,18 @@ function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
       // o gás em volta (vento, disco): visto como num filtro estreito de hidrogênio
       fracaoDesenhadaDoVento(e) > 0 || e.discoDeGas
         ? linha(t('ficha.campo.gasEmVolta'), t('ficha.estrela.gasEmVolta'), 'artistico')
+        : null,
+      // o escurecimento pelo relógio: a mancha fria do modelo, com o que o desenho deriva
+      e.escurecimento && daForja
+        ? linha(
+            t('ficha.campo.escurecimentoNoDesenho'),
+            t('ficha.estrela.escurecimentoNoDesenho', {
+              de: dataDaEpoca(e.escurecimento.epocas[0].data),
+              ate: dataDaEpoca(e.escurecimento.epocas[e.escurecimento.epocas.length - 1].data),
+            }),
+            'derivado',
+            e.escurecimento.teffDaFotosferaK.fonte
+          )
         : null,
       forja && forja.contraste < forja.contrasteNaTela
         ? linha(

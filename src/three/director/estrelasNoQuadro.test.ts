@@ -7,6 +7,7 @@ import {
   EXPOENTE_DO_BRILHO_ASSISTIDO,
   EstrelasNoQuadro,
   eixoDeRotacao,
+  escurecimentoDoMotor,
   ganhoDaVisita,
   parametrosDaCompanheira,
   parametrosDoMotor,
@@ -19,7 +20,8 @@ import { VAGAS_DE_VISITADAS } from '../world/clarao';
 import { ESTRELAS_VISITAVEIS, estrelaVisitavelPorNome, manchaQuenteDe } from '../../lib/atlas/estrelasVisitaveis';
 import { radianciaVisivelDeCorpoNegro } from '../luzDaCasa';
 import { pesoDoFiltro } from '../world/stellarBody';
-import { MANCHA_DE_HAUBOIS, pesoDoPico } from '../world/forjaDaEstrela';
+import { BORDA_FORA_DO_DISCO, MANCHA_DE_HAUBOIS, pesoDoPico } from '../world/forjaDaEstrela';
+import { anoDoJd, faseDoDisco } from '../world/ventoDaEstrela';
 
 describe('toda estrela visitável vira parâmetros do MESMO motor, sem nome', () => {
   it('cada uma tem raio, período e atividade finitos', () => {
@@ -202,5 +204,55 @@ describe('a nomeada fora da lista à mão ganha piloto pelo foco', () => {
     passo('Vega');
     expect(quadro.candidatasAoClarao().map((c) => c.vaga)).toEqual([2 * vega]);
     passo(null);
+  });
+});
+
+describe('o Grande Escurecimento de Betelgeuse pelo relógio do app', () => {
+  const bet = estrelaVisitavelPorNome('Betelgeuse')!;
+  const x = escurecimentoDoMotor(bet.escurecimento!);
+  const em = (jd: number) => {
+    const ano = anoDoJd(jd);
+    return { c: faseDoDisco(x.borda, ano), k: faseDoDisco(x.razaoT, ano), pa: faseDoDisco(x.anguloGraus, ano) };
+  };
+  const jdDe = (iso: string) => Date.parse(iso) / 86400000 + 2440587.5;
+
+  it('só Betelgeuse tem escurecimento, e só ela leva a mancha aos parâmetros do motor', () => {
+    expect(ESTRELAS_VISITAVEIS.filter((e) => e.escurecimento).map((e) => e.nomeNoCatalogo)).toEqual(['Betelgeuse']);
+    for (const e of ESTRELAS_VISITAVEIS) {
+      expect(parametrosDoMotor(e).escurecimento !== undefined, e.id).toBe(e.nomeNoCatalogo === 'Betelgeuse');
+    }
+  });
+
+  it('nada fora da janela; as épocas medidas nas datas do SPHERE; sem salto entre elas', () => {
+    // a data padrão do app (jan/2026), a época de antes (jan/2019) e as pontas
+    for (const jd of [2461041.5008692136, jdDe('2019-01-01T01:58Z'), jdDe('2019-10-31T00:00Z'), jdDe('2020-04-02T00:00Z')]) {
+      const s = em(jd);
+      expect(s.k).toBe(1);
+      expect(s.c).toBeGreaterThanOrEqual(BORDA_FORA_DO_DISCO);
+    }
+    const dez = em(jdDe('2019-12-27T03:27Z'));
+    expect(dez.c).toBeCloseTo(0, 9);
+    expect(dez.k).toBeCloseTo(3400 / 3700, 9);
+    expect(dez.pa).toBeCloseTo(180, 9);
+    const jan = em(jdDe('2020-01-28T02:00Z'));
+    expect(jan.c).toBeCloseTo(-0.4, 9);
+    const mar = em(jdDe('2020-03-18T23:49Z'));
+    expect(mar.c).toBeCloseTo(0.2, 9);
+    expect(mar.k).toBeCloseTo(3200 / 3700, 9);
+    expect(mar.pa).toBeCloseTo(225, 9);
+    // o mínimo (fevereiro): entre janeiro e março, no sudoeste do sul
+    const fev = em(jdDe('2020-02-10T00:00Z'));
+    expect(fev.c).toBeGreaterThan(-0.4);
+    expect(fev.c).toBeLessThan(0.2);
+    expect(fev.pa).toBeGreaterThan(180);
+    expect(fev.pa).toBeLessThan(225);
+    // contínuo: um minuto não muda nada perceptível, de novembro a abril
+    for (let jd = jdDe('2019-10-30T00:00Z'); jd < jdDe('2020-04-03T00:00Z'); jd += 0.5) {
+      const a = em(jd);
+      const b = em(jd + 1 / 1440);
+      expect(Math.abs(a.c - b.c)).toBeLessThan(1e-4);
+      expect(Math.abs(a.k - b.k)).toBeLessThan(1e-4);
+      expect(Math.abs(a.pa - b.pa)).toBeLessThan(1e-3);
+    }
   });
 });

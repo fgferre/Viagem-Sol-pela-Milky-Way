@@ -1074,6 +1074,42 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     }
   });
 
+  it('o Grande Escurecimento de Betelgeuse: medido, o modelo de mancha fria com as épocas, e o desenho derivado; só nela', () => {
+    const de = (n: string) => montarFichaDeEstrela(n, starsMeta.named.find((s) => s.n === n))!;
+    const imagem = (f: Ficha) => new Map(f.secoes.find((x) => x.id === 'imagem')!.linhas.map((l) => [l.rotulo, l]));
+    const bet = de('Betelgeuse');
+    const g = linhasDe(bet).get('Grande Escurecimento')!;
+    expect(g.procedencia).toBe('medido');
+    expect(g.valor).toContain('1,614 ± 0,008 mag');
+    expect(g.valor).toContain('mais de 10×');
+    expect(g.fonte).toBe('Montargès et al. 2021, Nature 594, 365');
+    const m = linhasDe(bet).get('mancha fria (modelo)')!;
+    expect(m.procedencia).toBe('medido');
+    expect(m.valor).toContain('3.700 K');
+    expect(m.valor).toContain('27/12/2019, 62 % do disco aparente a 3.400 K');
+    expect(m.valor).toContain('18/03/2020, 43 % do disco aparente a 3.200 K');
+    expect(m.valor).toContain('não escolhe');
+    expect(m.valor).toContain('o app segue as imagens');
+    const d = imagem(bet).get('escurecimento')!;
+    expect(d.procedencia).toBe('derivado');
+    expect(d.valor).toContain('de 01/11/2019 a 01/04/2020');
+    expect(d.valor).toContain('a largura da borda (~0,3 raio) e o contorno que segue as células são escolha');
+    expect(d.valor).toContain('2,1× a 3.400/3.700 K e 3,5× a 3.200/3.700 K, e nada foi aumentado sem fonte');
+    for (const outra of ['Antares', 'Rigel', 'Aldebaran']) {
+      expect(linhasDe(de(outra)).has('Grande Escurecimento'), outra).toBe(false);
+      expect(imagem(de(outra)).has('escurecimento'), outra).toBe(false);
+    }
+    definirIdioma('en');
+    try {
+      const en = de('Betelgeuse');
+      expect(linhasDe(en).get('cool patch (model)')!.valor).toContain('2020-01-28, 79% of the apparent disk at 3,400 K');
+      expect(imagem(en).get('dimming')!.valor).toContain('from 2019-11-01 to 2020-04-01');
+      expect(imagem(en).get('dimming')!.valor).toContain('2.1× at 3,400/3,700 K and 3.5× at 3,200/3,700 K');
+    } finally {
+      definirIdioma('pt-BR');
+    }
+  });
+
   it('a mancha quente: a medida vence a regra (Betelgeuse, Antares com teto), a de Betelgeuse nas outras supergigantes', () => {
     const de = (n: string) => linhasDe(montarFichaDeEstrela(n, starsMeta.named.find((s) => s.n === n))!);
     const bet = de('Betelgeuse');

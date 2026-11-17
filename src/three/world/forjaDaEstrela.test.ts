@@ -2,6 +2,10 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { RAIO_DO_SOL_NA_CENA } from '../escala';
 import {
+  BORDA_FORA_DO_DISCO,
+  CORDA_SEM_MANCHA,
+  brilhoDasCelulasNaRegiaoFria,
+  direcaoNoCeu,
   celulaNaTelaEmRaios,
   celulaRealEmRaios,
   contrasteDaConveccao,
@@ -424,5 +428,97 @@ describe('a Forja desligada não muda nada', () => {
     const tier = { fbm: 5, seg: 128, simW: 768, simH: 384, simStep: 1 / 22, prom: 6, chromo: 1024, granFreq: 30, lic7: true, loops: 12, larc: 7, lseg: 36, cstep: 22, cmestep: 16, cmen: 1024 };
     expect(tierDaEstrela(tier, bet, r).chromo).toBe(r.assado);
     expect(tierDaEstrela(tier, bet).chromo).toBe(256);
+  });
+});
+
+describe('a região fria de um escurecimento — a borda, as células e o céu da Terra', () => {
+  it('sem região, nem a borda larga deslocada pelas células toca o disco (o ponto mais além é 1)', () => {
+    expect(BORDA_FORA_DO_DISCO).toBeCloseTo(1.27, 12);
+    expect(CORDA_SEM_MANCHA).toBeGreaterThan(BORDA_FORA_DO_DISCO);
+  });
+
+  it('dentro dela as células claras e a quente cedem, contínuas; as faixas ficam', () => {
+    const s = 0.04;
+    expect(brilhoDasCelulasNaRegiaoFria(-0.1, s)).toBe(-0.1);
+    expect(brilhoDasCelulasNaRegiaoFria(0, s)).toBe(0);
+    expect(brilhoDasCelulasNaRegiaoFria(s, s)).toBeCloseTo(s / 3, 12);
+    // a quente enorme (5σ) sai abaixo de σ/2, e nada passa de σ/2
+    expect(brilhoDasCelulasNaRegiaoFria(5 * s, s)).toBeCloseTo((5 * s) / 11, 12);
+    expect(brilhoDasCelulasNaRegiaoFria(1e3, s)).toBeLessThan(s / 2);
+    // contínua e crescente perto de zero
+    expect(brilhoDasCelulasNaRegiaoFria(1e-9, s)).toBeCloseTo(1e-9, 15);
+  });
+
+  it('o norte é a declinação crescente e o leste a ascensão reta crescente, vistos da Terra (Betelgeuse)', () => {
+    // ICRS cartesiano: x para α = 0, z para o polo norte
+    const versorEquatorial = (raDeg: number, decDeg: number) => {
+      const [a, d] = [(raDeg * Math.PI) / 180, (decDeg * Math.PI) / 180];
+      return [Math.cos(d) * Math.cos(a), Math.cos(d) * Math.sin(a), Math.sin(d)];
+    };
+    const ra = 88.79293899;
+    const dec = 7.407064;
+    // a base da cena é essa: o lugar de Betelgeuse no catálogo do app cai em (α, δ) a menos de 0,01°
+    const named = JSON.parse(readFileSync(new URL('../../../public/data/stars_meta.json', import.meta.url), 'utf8')).named;
+    const b = named.find((s: { n: string }) => s.n === 'Betelgeuse');
+    const u = [b.x, b.y, b.z].map((v: number) => v / Math.hypot(b.x, b.y, b.z));
+    const cosSep = u.reduce((s: number, v: number, i: number) => s + v * versorEquatorial(ra, dec)[i], 0);
+    expect((Math.acos(Math.min(1, cosSep)) * 180) / Math.PI).toBeLessThan(0.01);
+    const p = versorEquatorial(ra, dec).map((x) => x * 152) as [number, number, number];
+    const passo = 1e-4;
+    const dif = (a: readonly number[], b: readonly number[]) => {
+      const v = a.map((x, i) => x - b[i]);
+      const l = Math.hypot(...v);
+      return v.map((x) => x / l);
+    };
+    const norte = dif(versorEquatorial(ra, dec + passo), versorEquatorial(ra, dec));
+    const leste = dif(versorEquatorial(ra + passo, dec), versorEquatorial(ra, dec));
+    const casa = (a: readonly number[], b: readonly number[]) => a.reduce((s, x, i) => s + x * b[i], 0);
+    expect(casa(direcaoNoCeu(p, 0), norte)).toBeCloseTo(1, 7);
+    expect(casa(direcaoNoCeu(p, 90), leste)).toBeCloseTo(1, 7);
+    // o sul de dezembro e janeiro, e o sudoeste de março: entre o sul e o oeste
+    expect(casa(direcaoNoCeu(p, 180), norte)).toBeCloseTo(-1, 7);
+    const so = direcaoNoCeu(p, 225);
+    expect(casa(so, norte)).toBeCloseTo(-Math.SQRT1_2, 6);
+    expect(casa(so, leste)).toBeCloseTo(-Math.SQRT1_2, 6);
+    // no plano do céu (perpendicular à linha de visada) e unitária
+    for (const a of [0, 37, 180, 225]) {
+      const d = direcaoNoCeu(p, a);
+      expect(Math.hypot(...d)).toBeCloseTo(1, 12);
+      expect(casa(d, p) / 152).toBeCloseTo(0, 12);
+    }
+    // no polo não há norte: uma direção finita, nunca NaN
+    expect(direcaoNoCeu([0, 0, 5], 180).every(Number.isFinite)).toBe(true);
+  });
+
+  it('o texto da fotosfera só muda com o escurecimento, e só dentro de MANCHA_FRIA', () => {
+    const sunJs = readFileSync(new URL('./sol/sun.js', import.meta.url), 'utf8');
+    const bet: StellarParams = { ...SOL_PARAMS, teffK: 3600, dinamo: false, logG: -0.33, radiusPc: 764 * RAIO_DO_SOL_NA_CENA };
+    const r = forjaDe(bet)!;
+    const sem = cirurgiasDaFotosfera(sunJs, '', bet, r)!.fragment;
+    const esc = { borda: [[2019.8, 1.3]], razaoT: [[2019.8, 1]], anguloGraus: [[2019.8, 180]] } as const;
+    const com = cirurgiasDaFotosfera(sunJs, '', { ...bet, escurecimento: esc }, r)!.fragment;
+    expect(sem).not.toContain('uManchaFria');
+    // sem o define, o pré-processador devolve o texto de antes
+    expect(com.replace(/#ifdef MANCHA_FRIA\n[^#]*#endif\n/g, '')).toBe(sem);
+    expect(com.match(/#ifdef MANCHA_FRIA/g)).toHaveLength(3);
+    // a borda larga, deslocada pelo campo das células (±2σ)
+    expect(com).toContain('smoothstep(uManchaFria.w - 0.150000, uManchaFria.w + 0.150000, dot(N, uManchaFria.xyz) + 0.060000*clamp(dForja / ');
+    // a mesma conta de `brilhoDasCelulasNaRegiaoFria`
+    expect(com).toContain('dForja > 0.0 ? dForja / (1.0 + 2.0 * dForja / ');
+    // as células cedem antes da rampa; a razão das temperaturas entra depois, por Planck e pelo TiO
+    expect(com.indexOf('float mFria')).toBeLessThan(com.indexOf('float calorDaForja'));
+    expect(com.indexOf('float xTiOFria')).toBeGreaterThan(com.indexOf('float xTiO ='));
+    expect(com.indexOf('razaoDePlanck(vec3(')).toBeLessThan(com.indexOf('color *= (1.0-limbU) + limbU*mu;'));
+    // a razão de Planck é definida uma vez só
+    expect(com.match(/vec3 razaoDePlanck\(/g)).toHaveLength(1);
+    // o assado: a célula quente (o pico e o alisamento por dentro) some na região fria, só com o define
+    const assado = glslDoAssadoDaForja(r, undefined, true);
+    expect(glslDoAssadoDaForja(r, undefined, false)).toBe(glslDoAssadoDaForja(r));
+    expect(assado.replace(/#ifdef MANCHA_FRIA\n[^#]*#endif\n?/g, '')).toBe(glslDoAssadoDaForja(r));
+    expect(assado).toContain('quente *= 1.0 - smoothstep(uManchaFriaAssado.w - 0.150000, uManchaFriaAssado.w + 0.150000, dot(sp, uManchaFriaAssado.xyz));');
+    expect(assado.indexOf('quente *= 1.0 - smoothstep')).toBeLessThan(assado.indexOf('a.x = mix(a.x'));
+    // sem a Forja não há onde a mancha morar
+    const quente = { ...SOL_PARAMS, teffK: 9845, dinamo: false, contrasteRelativoAoSol: 0 };
+    expect(cirurgiasDaFotosfera(sunJs, '', { ...quente, escurecimento: esc }, null)!.fragment).not.toContain('MANCHA_FRIA');
   });
 });

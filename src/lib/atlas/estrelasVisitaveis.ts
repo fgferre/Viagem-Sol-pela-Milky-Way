@@ -129,6 +129,35 @@ export interface EstrelaVisitavel {
   readonly discoDeGas?: DiscoDeGas;
   /** a nuvem de poeira (e o hidrogênio) em volta de uma supergigante fria, medida no céu: só dado da ficha */
   readonly nuvem?: NuvemMedida;
+  /** um escurecimento medido por época (a mancha fria de Betelgeuse em 2019–20), pelo relógio do app */
+  readonly escurecimento?: EscurecimentoMedido;
+}
+
+/**
+ * UM ESCURECIMENTO POR ÉPOCA, como DADO: a região fria da fotosfera, vista
+ * da Terra, em cada data medida. Linear entre as épocas; antes da primeira
+ * e depois da última, nada (as pontas da janela são épocas com a borda além
+ * do disco). O desenho segue as IMAGENS: a região é a parte do disco além
+ * da borda `bordaNaImagemEmRaios`, medida ao longo da direção do lado escuro
+ * (`direcaoNoCeu`); a fração do modelo do artigo fica só na ficha.
+ */
+export interface EpocaDoEscurecimento {
+  /** a data, UT (ISO 8601) */
+  readonly data: string;
+  /** a fração do disco aparente coberta pela mancha no modelo do artigo (0 = nenhuma): só ficha */
+  readonly fracaoDoDisco: Numero;
+  /** onde a borda escura corta o disco nas imagens, em raios ao longo da direção do lado escuro (0 = o centro; > 1, nada) */
+  readonly bordaNaImagemEmRaios: Numero;
+  /** a temperatura da mancha no modelo do artigo, K (a da fotosfera nas pontas) */
+  readonly teffDaManchaK: Numero;
+  /** a direção do lado escuro no céu: ângulo de posição, do norte para o leste, em graus */
+  readonly anguloGraus: Numero;
+}
+
+export interface EscurecimentoMedido {
+  /** a fotosfera sem mancha no modelo do artigo, K: a mancha entra na estrela pela razão das duas */
+  readonly teffDaFotosferaK: Numero;
+  readonly epocas: readonly EpocaDoEscurecimento[];
 }
 
 /**
@@ -301,6 +330,78 @@ const NUVEM_DE_BETELGEUSE: NuvemMedida = {
   },
 };
 
+/**
+ * O GRANDE ESCURECIMENTO DE BETELGEUSE (17/11), lido no texto de Montargès
+ * et al. 2021 (Nature 594, 365; arXiv 2201.10551): "From November 2019 to
+ * March 2020 [...] Betelgeuse experienced a historic dimming"; SPHERE/ZIMPOL
+ * em 2019-01-01 (antes), 2019-12-27 03:27, 2020-01-28 02:00 e 2020-03-18
+ * 23:49 UT (o diário de observação do artigo); "In both December 2019 and
+ * January 2020 [...] the Southern hemisphere of the star has a peak
+ * brightness over 10 times less than the Northern hemisphere"; em março "the
+ * dark area remained in the South-Western quadrant". O modelo de mancha fria:
+ * "With the unperturbed photospheric temperature set to 3,700 K, we determine
+ * the best cool patch temperatures to be 3,400 K in December 2019 and January
+ * 2020, down to 3,200 K in March 2020. The cool region has a best-fit extent
+ * of 62 %, 79 % and 43 % of the apparent disk" (±50 K, o passo da grade). O
+ * artigo ajusta igualmente bem uma nuvem de poeira e não escolhe: o app
+ * desenha a mancha, a ficha diz a outra leitura. O círculo do modelo ("radius
+ * in the range 0 to 10 mas", no quadrante sudoeste) cobre no máximo ~22 % de
+ * um disco de 42 mas, e não os 62/79/43 % do próprio texto: o desenho segue
+ * as IMAGENS (Fig. 2, eso2109a).
+ * DERIVADOS, declarados: o sul exato (180°) em dezembro e janeiro e o meio do
+ * quadrante sudoeste (225°) em março — o artigo dá o hemisfério e o
+ * quadrante, não o ângulo; a borda nas imagens: perfil ao longo do lado
+ * escuro sobre o de janeiro de 2019, onde cruza o meio entre o claro e o
+ * escuro — dezembro no centro (0), janeiro em −0,4 (só a calota norte
+ * escapa); março a olho, um crescente a sudoeste (+0,2: o perfil é
+ * dominado pela mancha clara do centro); as pontas da janela, 1/11/2019
+ * ("November 2019") e 1/4/2020 (o fim de "March 2020" — a data exata da
+ * volta não está nos textos lidos), com a fotosfera inteira e a borda além do
+ * disco (1,3 raio: a borda larga inteira fora dele).
+ */
+const MONTARGES_2021 = 'Montargès et al. 2021, Nature 594, 365';
+const TEFF_DO_MODELO_DE_2021 = { v: 3700, p: 'medido', fonte: MONTARGES_2021 } as const;
+const ESCURECIMENTO_DE_BETELGEUSE: EscurecimentoMedido = {
+  teffDaFotosferaK: TEFF_DO_MODELO_DE_2021,
+  epocas: [
+    {
+      data: '2019-11-01T00:00Z',
+      fracaoDoDisco: { v: 0, p: 'derivado', fonte: MONTARGES_2021 },
+      bordaNaImagemEmRaios: { v: 1.3, p: 'derivado', fonte: MONTARGES_2021 },
+      teffDaManchaK: TEFF_DO_MODELO_DE_2021,
+      anguloGraus: { v: 180, p: 'derivado', fonte: MONTARGES_2021 },
+    },
+    {
+      data: '2019-12-27T03:27Z',
+      fracaoDoDisco: { v: 0.62, p: 'medido', fonte: MONTARGES_2021 },
+      bordaNaImagemEmRaios: { v: 0, p: 'derivado', fonte: MONTARGES_2021 },
+      teffDaManchaK: { v: 3400, p: 'medido', fonte: MONTARGES_2021 },
+      anguloGraus: { v: 180, p: 'derivado', fonte: MONTARGES_2021 }, // "Southern hemisphere"
+    },
+    {
+      data: '2020-01-28T02:00Z',
+      fracaoDoDisco: { v: 0.79, p: 'medido', fonte: MONTARGES_2021 },
+      bordaNaImagemEmRaios: { v: -0.4, p: 'derivado', fonte: MONTARGES_2021 },
+      teffDaManchaK: { v: 3400, p: 'medido', fonte: MONTARGES_2021 },
+      anguloGraus: { v: 180, p: 'derivado', fonte: MONTARGES_2021 }, // "Southern hemisphere"
+    },
+    {
+      data: '2020-03-18T23:49Z',
+      fracaoDoDisco: { v: 0.43, p: 'medido', fonte: MONTARGES_2021 },
+      bordaNaImagemEmRaios: { v: 0.2, p: 'derivado', fonte: MONTARGES_2021 },
+      teffDaManchaK: { v: 3200, p: 'medido', fonte: MONTARGES_2021 },
+      anguloGraus: { v: 225, p: 'derivado', fonte: MONTARGES_2021 }, // "South-Western quadrant"
+    },
+    {
+      data: '2020-04-01T00:00Z',
+      fracaoDoDisco: { v: 0, p: 'derivado', fonte: MONTARGES_2021 },
+      bordaNaImagemEmRaios: { v: 1.3, p: 'derivado', fonte: MONTARGES_2021 },
+      teffDaManchaK: TEFF_DO_MODELO_DE_2021,
+      anguloGraus: { v: 225, p: 'derivado', fonte: MONTARGES_2021 },
+    },
+  ],
+};
+
 const BETELGEUSE: EstrelaVisitavel = {
   id: 'betelgeuse',
   nomeNoCatalogo: 'Betelgeuse',
@@ -317,6 +418,7 @@ const BETELGEUSE: EstrelaVisitavel = {
     bordaU: { v: 0.8, p: 'derivado', fonte: CLARET },
   },
   nuvem: NUVEM_DE_BETELGEUSE,
+  escurecimento: ESCURECIMENTO_DE_BETELGEUSE,
 };
 
 /** uma mancha quente medida: a razão do brilho dela sobre o médio do disco, numa banda */

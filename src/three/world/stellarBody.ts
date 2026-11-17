@@ -65,9 +65,14 @@ import {
 } from '../luzDaCasa';
 import type { Achatamento } from '../../lib/atlas/estrelasVisitaveis';
 import {
+  BORDA_DA_MANCHA_FRIA,
+  BORDA_FORA_DO_DISCO,
+  BORDA_PELAS_CELULAS,
   CELULA_PROFUNDA_EM_RAIOS,
+  CORDA_SEM_MANCHA,
   LARGURA_DA_MANCHA_MAIOR_EM_RAIOS,
   TEFF_SEM_FILTRO_K,
+  type EscurecimentoDoMotor,
   type ManchaNaBanda,
   pesoDaLisa,
   pesoDasCelulasQuentes,
@@ -320,6 +325,8 @@ export function cirurgiasDaFotosfera(
     teffK: p.teffK,
     continuo: 1 - pesoDoFiltro(p.teffK),
     ...(forja ? { forja } : {}),
+    // a mancha fria de um escurecimento: só na temperatura local da Forja
+    ...(forja && p.escurecimento ? { manchaFria: true } : {}),
     // a ponta do pico (`PONTA_DO_PICO`): só quem tem peso do pico, e com o
     // peso da rampa em que a rede de convecção sai (`pesoDaLisa`) — a ponta
     // inteira sobre a rede a lavava (Fomalhaut: 0,89 % → 0,33 % na tela)
@@ -461,6 +468,12 @@ export interface StellarParams {
    * Hα (`O GÁS DAS QUENTES`). Omitido = o texto da casca de antes.
    */
   readonly gas?: GasDoMotor;
+  /**
+   * UM ESCURECIMENTO POR ÉPOCA (`EscurecimentoDoMotor`; Betelgeuse em
+   * 2019–20): a fotosfera da Forja ganha a mancha fria, que o director
+   * escreve pela data (`escreverManchaFria`). Omitido = o texto de antes.
+   */
+  readonly escurecimento?: EscurecimentoDoMotor;
 }
 
 /**
@@ -665,6 +678,8 @@ export function cirurgiaDaEstrela(
     forja?: RegraDaForja;
     /** a ponta do pico (`PONTA_DO_PICO`): o peso do pico e a luminância de `vGravidade` no polo */
     pontaDoPico?: { peso: number; lumPolo: number };
+    /** a mancha fria de um escurecimento (`uManchaFria`, `uManchaFriaK`): só com a Forja */
+    manchaFria?: boolean;
   }
 ): string {
   const quem = 'cirurgiaDaEstrela';
@@ -745,10 +760,47 @@ export function cirurgiaDaEstrela(
     // creme no topo); nas quentes, a razão de Planck do contínuo, como antes
     const d = o.forja.contrasteNaTela / 4;
     const wF = pesoDoFiltro(teff);
+    // A REGIÃO FRIA (`EscurecimentoDoMotor`): além da borda (`uManchaFria.w`)
+    // na direção do lado escuro no céu da Terra (`uManchaFria.xyz`, na base da
+    // cena, como a normal N), larga (`BORDA_DA_MANCHA_FRIA`) e deslocada pelo
+    // campo das células (`BORDA_PELAS_CELULAS`); dentro, o brilho das células
+    // cede (`brilhoDasCelulasNaRegiaoFria`) e a razão das temperaturas
+    // (`rFria`) entra depois, pela lei de Planck e pelo TiO — a rampa do
+    // instrumento vê só a convecção. Só com `MANCHA_FRIA` definido
+    // (`escreverManchaFria`, dentro da janela): fora dela o programa é o de
+    // antes, bit a bit — um fator 1 exato no texto compilado ainda mudava
+    // pixels em 1 nível (o compilador reassocia)
+    const D = literalGlsl(d);
+    const manchaFria = o.manchaFria
+      ? '#ifdef MANCHA_FRIA\n' +
+        '  float dForja = rForja - 1.0;\n' +
+        `  float mFria = smoothstep(uManchaFria.w - ${literalGlsl(BORDA_DA_MANCHA_FRIA)}, uManchaFria.w + ${literalGlsl(BORDA_DA_MANCHA_FRIA)}, dot(N, uManchaFria.xyz) + ${literalGlsl(BORDA_PELAS_CELULAS)}*clamp(dForja / ${D}, -2.0, 2.0));\n` +
+        `  rForja = 1.0 + mix(dForja, dForja > 0.0 ? dForja / (1.0 + 2.0 * dForja / ${D}) : dForja, mFria);\n` +
+        '  float rFria = mix(1.0, uManchaFriaK, mFria);\n' +
+        '#endif\n'
+      : '';
+    // a razão das temperaturas na cor e no brilho: Planck por canal e o TiO
+    // na temperatura local da região (a diferença sobre o TiO de antes)
+    const manchaFriaNaCor = o.manchaFria
+      ? '#ifdef MANCHA_FRIA\n' +
+        `  float xTiOAntes = clamp((4000.0 - ${literalGlsl(teff)}*rForja) / 1000.0, 0.0, 1.0);\n` +
+        `  float xTiOFria = clamp((4000.0 - ${literalGlsl(teff)}*rFria*rForja) / 1000.0, 0.0, 1.0);\n` +
+        `  color *= exp(-${literalGlsl(TIO_DA_FORJA)} * (xTiOFria * (2.0 - xTiOFria) - xTiOAntes * (2.0 - xTiOAntes)) * vec3(0.0, 1.0, 1.0));\n` +
+        `  color *= razaoDePlanck(${xDePlanckGlsl(teff)}, rFria);\n` +
+        '#endif\n'
+      : '';
+    if (o.manchaFria) {
+      f =
+        '#ifdef MANCHA_FRIA\nuniform vec4 uManchaFria;\nuniform float uManchaFriaK;\n' +
+        (planck ? '' : GLSL_RAZAO_DE_PLANCK) +
+        '#endif\n' +
+        f;
+    }
     f = trocarUma(
       f,
       '  heat = clamp(heat, 0.0, 1.24);',
       `  float rForja = max(0.5, 1.0 + ${literalGlsl(d)}*mu*conveccaoDoAssado(st, sp, t));\n` +
+        manchaFria +
         `  float calorDaForja = heat + ${literalGlsl(wF * GANHO_DO_INSTRUMENTO)}*(rForja - 1.0);\n` +
         '  heat = clamp(calorDaForja, 0.0, 1.24);',
       quem
@@ -768,7 +820,8 @@ export function cirurgiaDaEstrela(
     );
     const planckDaForja =
       (wF >= 1 ? '' : `  color *= mix(razaoDePlanck(${xDePlanckGlsl(teff)}, rForja), vec3(1.0), ${literalGlsl(wF)});\n`) +
-      glslDoTiONaForja(teff, d);
+      glslDoTiONaForja(teff, d) +
+      manchaFriaNaCor;
     const frente = frenteDaAtmosfera(o.forja.atmosferaEmRaios);
     // o piso de 1,5 px em μ² (`pisoDaBorda`) e a FUNDURA da queda: onde a
     // borda de verdade é mais fina que o piso, a queda desenhada é mais larga
@@ -986,7 +1039,8 @@ vec3 valorDaForja(vec3 p) {
 /** O fragment do assado da Forja: as funções e o `main` (ver acima). */
 export function glslDoAssadoDaForja(
   forja: RegraDaForja,
-  cal: CalibracaoDaForja = calibracaoDaForja(forja.fracaoEscura, forja.desordem)
+  cal: CalibracaoDaForja = calibracaoDaForja(forja.fracaoEscura, forja.desordem),
+  manchaFria = false
 ): string {
   const { sigma, espalhamento } = perfilDaForja(cal.k);
   const D = Math.min(1, Math.max(0, forja.desordem));
@@ -1031,11 +1085,22 @@ export function glslDoAssadoDaForja(
   tb = tb * tb * tb - ${L(MEDIA_DA_TURBULENCIA)};
   // dentro da célula quente as células comuns perdem parte do contraste
   // (ela sobe inteira): a mancha lê como UMA região clara, não como
-  // células mais claras
+  // células mais claras${
+    manchaFria
+      ? `
+#ifdef MANCHA_FRIA
+  // na REGIÃO FRIA de um escurecimento não há célula quente: nem o pico nem o
+  // alisamento por dentro — a rede comum de antes volta (uManchaFriaAssado:
+  // o lado escuro no referencial deste assado e a borda, como na fotosfera)
+  quente *= 1.0 - smoothstep(uManchaFriaAssado.w - ${L(BORDA_DA_MANCHA_FRIA)}, uManchaFriaAssado.w + ${L(BORDA_DA_MANCHA_FRIA)}, dot(sp, uManchaFriaAssado.xyz));
+#endif`
+      : ''
+  }
   a.x = mix(a.x, ${L(cal.m)}, ${L(0.6 * alisa * wq)} * quente) + ${L(cal.s)} * (${L(zQuente * wq)} * quente + ${L(TURBULENCIA_DAS_SUPERGIGANTES * w * 3)} * tb);
   a.w *= 1.0 - ${L(0.85 * alisa * wq)} * quente;`
       : '';
   return (
+    (manchaFria && wq > 0 ? '#ifdef MANCHA_FRIA\nuniform vec4 uManchaFriaAssado;\n#endif\n' : '') +
     GLSL_RUIDO_DA_FORJA +
     /* glsl */ `
 // a lente: o domínio aumentado (célula maior) ou encolhido de lugar para lugar
@@ -1142,10 +1207,10 @@ void main(){
  * (`sol/chromo.js`) dá lugar ao da convecção (`glslDoAssadoDaForja`); o que
  * vem antes (ruídos, uniforms, o retrato da simulação) fica.
  */
-export function cirurgiaDoAssado(fragment: string, forja: RegraDaForja): string {
+export function cirurgiaDoAssado(fragment: string, forja: RegraDaForja, manchaFria = false): string {
   const i = fragment.lastIndexOf('void main(){');
   if (i < 0) throw new Error('cirurgiaDoAssado: a âncora `void main(){` sumiu de sol/chromo.js');
-  return fragment.slice(0, i) + glslDoAssadoDaForja(forja);
+  return fragment.slice(0, i) + glslDoAssadoDaForja(forja, undefined, manchaFria);
 }
 
 /** Sem a passagem smear na Forja: o `main` dela vira uma cópia (só compila; não roda). */
@@ -2403,6 +2468,20 @@ export class StellarBody {
   private readonly brilhoDaVisita = { value: 1 };
   /** a luz do disco de gás (normal × a fase da data, `escreverDisco`) */
   private readonly luzDoDisco = { value: 0 };
+  /** a mancha fria pela data (`escreverManchaFria`): a direção do lado escuro e a corda; a razão das temperaturas */
+  private readonly manchaFria = {
+    uManchaFria: { value: new THREE.Vector4(0, 0, 1, CORDA_SEM_MANCHA) },
+    uManchaFriaK: { value: 1 },
+    /** o lado escuro no referencial do ASSADO (o do objeto com x trocado: a esfera do three) e a borda */
+    uManchaFriaAssado: { value: new THREE.Vector4(0, 0, 1, CORDA_SEM_MANCHA) },
+  };
+  /** o material do assado com a região fria (`makeFullscreenScene`), ou null */
+  private assadoComManchaFria: THREE.ShaderMaterial | null = null;
+  /** a região fria mudou desde o último assado: com o relógio parado, re-assar (`passoDoReassar`) */
+  private assadoDaManchaSujo = false;
+  private readonly manchaAssada = new THREE.Vector4(0, 0, 1, CORDA_SEM_MANCHA);
+  private readonly qManchaTmp = new THREE.Quaternion();
+  private readonly dManchaTmp = new THREE.Vector3();
   /** o piso do instrumento em unidades do gás (`PISO_DO_INSTRUMENTO` × o pico do vento + o do disco pela fase) */
   private readonly pisoDoGas = { value: 0 };
   /** o que sobra das asas do véu com o gás (`asaComGas`), pela fase do disco */
@@ -2617,6 +2696,12 @@ export class StellarBody {
         this.geoDosQuads.push(geometria);
         const mesh = new THREE.Mesh(geometria, material);
         mesh.frustumCulled = false;
+        // o assado da Forja com a região fria (`glslDoAssadoDaForja`): o corpo
+        // guarda o material para escrever a região e ligar o define
+        if (material instanceof THREE.ShaderMaterial && material.fragmentShader.includes('uManchaFriaAssado')) {
+          this.assadoComManchaFria = material;
+          material.uniforms.uManchaFriaAssado = this.manchaFria.uManchaFriaAssado;
+        }
         const s = new THREE.Scene();
         s.add(mesh);
         return s;
@@ -2655,7 +2740,7 @@ export class StellarBody {
     if (this.forja) {
       // o assado pinta a convecção (`cirurgiaDoAssado`) e a smear não roda
       const forja = this.forja;
-      ctx.cirurgiaDoAssado = (f: string) => cirurgiaDoAssado(f, forja);
+      ctx.cirurgiaDoAssado = (f: string) => cirurgiaDoAssado(f, forja, Boolean(this.params.escurecimento));
       ctx.cirurgiaDoSmear = cirurgiaDoSmear;
     }
     ctx.chromo = createChromo(ctx);
@@ -3194,6 +3279,7 @@ ${glslDoGas(gas, rGas, kAch, true)}
     mat.fragmentShader = cir.fragment;
     mat.vertexShader = cir.vertex;
     ctx.sunUniforms.uDispScale.value *= cir.relevo;
+    if (this.forja && p.escurecimento) Object.assign(mat.uniforms, this.manchaFria);
     if (a) {
       // a FORMA e a GRAVIDADE por vértice (`formaDeRoche`): o raio e a
       // normal de Roche; cor × brilho da Teff local (von Zeipel) relativos
@@ -3550,6 +3636,49 @@ ${glslDoGas(gas, rGas, kAch, true)}
   }
 
   /**
+   * A MANCHA FRIA DE UM ESCURECIMENTO pela data: quem tem o relógio e a
+   * linha de visada da Terra é o director; o corpo obedece. `direcao` é o
+   * lado escuro na base da cena (unitária), `corda` a borda nas imagens (raios),
+   * `razaoT` a T_mancha/T_fotosfera. Valor não finito: sem mancha.
+   */
+  escreverManchaFria(direcao: readonly [number, number, number], corda: number, razaoT: number) {
+    if (!this.params.escurecimento) return;
+    const ok = [...direcao, corda, razaoT].every(Number.isFinite) && razaoT > 0;
+    // nada não finito chega ao shader (um NaN + bloom branqueia a tela)
+    if (ok) this.manchaFria.uManchaFria.value.set(direcao[0], direcao[1], direcao[2], corda);
+    else this.manchaFria.uManchaFria.value.set(0, 0, 1, CORDA_SEM_MANCHA);
+    this.manchaFria.uManchaFriaK.value = ok ? razaoT : 1;
+    // o programa com a mancha só dentro da janela (`MANCHA_FRIA`): trocar
+    // recompila uma vez por variante (o three guarda as duas)
+    const ligada = ok && razaoT !== 1 && corda < BORDA_FORA_DO_DISCO;
+    const mesh = this.ctx?.sunMesh as THREE.Mesh | undefined;
+    if (!mesh) return;
+    // o lado escuro no referencial do ASSADO: o do objeto (sem o giro da
+    // malha), com o x trocado — a esfera do three põe x = −cos(lon), o
+    // assado x = +cos(lon)
+    const a = this.manchaFria.uManchaFriaAssado.value;
+    if (ligada) {
+      const d = this.dManchaTmp.set(direcao[0], direcao[1], direcao[2]).applyQuaternion(mesh.getWorldQuaternion(this.qManchaTmp).invert());
+      a.set(-d.x, d.y, d.z, corda);
+    } else a.set(0, 0, 1, CORDA_SEM_MANCHA);
+    // com o relógio parado o assado só se refaz a pedido: a região andou o bastante, re-assar
+    if (
+      Math.abs(a.x - this.manchaAssada.x) + Math.abs(a.y - this.manchaAssada.y) + Math.abs(a.z - this.manchaAssada.z) +
+        Math.abs(a.w - this.manchaAssada.w) >
+      0.01
+    ) {
+      this.assadoDaManchaSujo = true;
+    }
+    for (const mat of [mesh.material as THREE.ShaderMaterial, this.assadoComManchaFria]) {
+      if (!mat || ligada === Boolean(mat.defines && 'MANCHA_FRIA' in mat.defines)) continue;
+      mat.defines ??= {};
+      if (ligada) mat.defines.MANCHA_FRIA = 1;
+      else delete mat.defines.MANCHA_FRIA;
+      mat.needsUpdate = true;
+    }
+  }
+
+  /**
    * O RELÓGIO DO GIRO: a data do filme em cartaz, ou null fora dele.
    * Mesma divisão de trabalho do ciclo — quem tem o relógio é o director;
    * o corpo obedece (`anguloDoGiro`).
@@ -3727,6 +3856,13 @@ ${glslDoGas(gas, rGas, kAch, true)}
       Math.abs(ctx.tempoDoCiclo - this.cicloAssado) > LIMIAR_DE_REASSAR
     ) {
       this.reassar = { passos: 0, fatia: 0 };
+    }
+    // a região fria de um escurecimento entrou no assado (`uManchaFriaAssado`):
+    // com o relógio parado, re-assar uma vez (andando, o de 8 Hz a pega)
+    if (this.assadoDaManchaSujo && ctx.bakeStep < 0 && this.reassar === null) {
+      this.assadoDaManchaSujo = false;
+      this.manchaAssada.copy(this.manchaFria.uManchaFriaAssado.value);
+      if (delta === 0) this.reassar = { passos: 0, fatia: 0 };
     }
 
     // --- simulação de convecção, fatiada (guard-5 + dreno, como lá) ---
