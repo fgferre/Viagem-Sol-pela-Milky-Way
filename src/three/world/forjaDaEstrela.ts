@@ -1,5 +1,5 @@
 // ============================================================
-// A FORJA, botão GRAVIDADE (etapa 2, `?forja=1`): a camada de convecção de
+// A FORJA, botão GRAVIDADE (etapa 2): a camada de convecção de
 // toda estrela sem dínamo por uma regra só, de Teff e log g. A regra
 // decidida e as fontes estão em docs/LEI-DA-ESTRELA.md, seção 10; aqui só
 // as contas, puras. Quem desenha é `stellarBody.ts` (`conveccao`).

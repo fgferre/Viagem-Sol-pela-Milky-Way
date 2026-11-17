@@ -46,6 +46,7 @@ import {
   notaDeDistancia,
   UA_POR_PC,
 } from '../unidades';
+import { regraDaForja } from '../../three/world/forjaDaEstrela';
 import { NOMES_DOS_CORPOS, classeEmTexto, nomeDoCorpo } from '../../three/atlasConfig';
 import { decimalDoIdioma, idiomaAtual, t, type ChaveDeTexto } from '../idioma';
 import type { Procedencia } from '../../three/selo';
@@ -68,6 +69,8 @@ import {
   PISO_DO_CONTRASTE_NA_TELA,
   TEFF_DO_SOL_K,
   estrelaVisitavelPorNome,
+  logGravidade,
+  temDinamoSolar,
   type EstrelaVisitavel,
   type Numero,
 } from './estrelasVisitaveis';
@@ -1097,24 +1100,34 @@ function secaoDaCompanheira(e: EstrelaVisitavel, distanciaPc: number): SecaoDaFi
   return { id: 'companheira', titulo, linhas };
 }
 
+/** a lei do desenho da superfície na Forja (o tamanho da célula pela gravidade) */
+const LEI_DA_FORJA = 'Trampedach et al. 2013, arXiv 1303.1780';
+
 /** A SEÇÃO DA IMAGEM da estrela do piloto: o que é medida e o que é desenho. */
 function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
+  const daForja =
+    !temDinamoSolar(e) &&
+    regraDaForja(e.teffK.v, logGravidade(e.massaMsol.v, e.raioRsol.v), e.raioRsol.v).contraste > 0;
   return {
     id: 'imagem',
     titulo: TITULO('imagem'),
     linhas: [
-      linha(t('ficha.campo.corEBrilho'), t('ficha.estrela.corPelaTemperatura'), 'derivado'),
+      // na Forja (sem dínamo e com convecção, `forjaDe`) a cor é a de uma foto
+      // de banda estreita colorizada, como a do Sol; fora dela, o corpo negro
+      daForja
+        ? linha(t('ficha.campo.corEBrilho'), t('ficha.estrela.corDeFiltroColorizado'), 'artistico')
+        : linha(t('ficha.campo.corEBrilho'), t('ficha.estrela.corPelaTemperatura'), 'derivado'),
       linha(t('ficha.campo.tamanhoNaImagem'), t('ficha.estrela.tamanhoPeloRaio'), e.raioRsol.p, e.raioRsol.fonte),
       linha(
         t('ficha.campo.desenhoDaSuperficie'),
-        t('ficha.estrela.desenhoInventado', { lei: e.superficie.granuloEmRaios.fonte }),
+        t('ficha.estrela.desenhoInventado', { lei: daForja ? LEI_DA_FORJA : e.superficie.granuloEmRaios.fonte }),
         'artistico'
       ),
       // as concessões que a física da estrela liga (nenhuma no Sol, nenhuma
       // por nome): mais radiante que o Sol, véu; granulação abaixo do piso,
       // extrapolada; células gigantes, realçadas e com envelope desenhado
       e.teffK.v > TEFF_DO_SOL_K ? linha(t('ficha.campo.veu'), t('ficha.estrela.veu'), 'artistico') : null,
-      e.superficie.contrasteGranulos.v < PISO_DO_CONTRASTE_NA_TELA
+      !daForja && e.superficie.contrasteGranulos.v < PISO_DO_CONTRASTE_NA_TELA
         ? linha(
             t('ficha.campo.granulacao'),
             t('ficha.estrela.granulacaoExtrapolada', {
@@ -1125,7 +1138,7 @@ function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
             e.superficie.contrasteGranulos.fonte
           )
         : null,
-      e.superficie.celulasGigantesEmRaios
+      !daForja && e.superficie.celulasGigantesEmRaios
         ? linha(t('ficha.campo.celulasGigantes'), t('ficha.estrela.celulasRealcadas'), 'artistico')
         : null,
     ].filter((l): l is LinhaDaFicha => l !== null),

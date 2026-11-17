@@ -940,6 +940,11 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     expect(img.linhas.map((l) => l.rotulo).slice(3)).toEqual(['véu de luz', 'granulação']);
     const imgProx = prox.secoes.find((x) => x.id === 'imagem')!;
     expect(imgProx.linhas).toHaveLength(3);
+    // na Forja (Betelgeuse: sem dínamo, convecção) a cor é a do filtro colorizado, artística; a quente (Sirius) fica no corpo negro
+    const corBet = bet.secoes.find((x) => x.id === 'imagem')!.linhas.find((l) => l.rotulo === 'cor e brilho')!;
+    expect(corBet.procedencia).toBe('artistico');
+    expect(corBet.valor).toContain('filtro estreito colorizado');
+    expect(img.linhas.find((l) => l.rotulo === 'cor e brilho')!.valor).toContain('corpo negro');
 
     // a sem ficha física (nem à mão, nem pela regra única) fica como era
     const semFicha = starsMeta.named.find(

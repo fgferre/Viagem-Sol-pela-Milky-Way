@@ -192,8 +192,6 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
     contrasteRelativoAoSol: contrasteDosGranulos / CONTRASTE_REAL_DO_SOL,
     bordaU: s.bordaU.v,
     foraDaOrigem: true,
-    ...(gig ? { celulasGigantes: { tamanhoEmRaios: gig.v, contraste: s.contrasteGranulos.v } } : {}),
-    ...(s.bordaDifusaRaios.v > 1 ? { bordaDifusaRaios: s.bordaDifusaRaios.v } : {}),
     ...(veu > 0 ? { veu } : {}),
     ...(e.achatamento ? { achatamento: e.achatamento } : {}),
     ...(e.achatamento && eixo ? { eixoNaCena: [eixo.x, eixo.y, eixo.z] as const } : {}),

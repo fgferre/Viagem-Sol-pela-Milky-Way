@@ -761,6 +761,7 @@ export const PT = {
   'ficha.estrela.doTamanhoDaTerra': '≈ {km} km, do tamanho da Terra',
   'ficha.estrela.separacaoEmUa': '{ua} UA',
   'ficha.estrela.corPelaTemperatura': 'pela temperatura (corpo negro)',
+  'ficha.estrela.corDeFiltroColorizado': 'filtro estreito colorizado, como o do Sol, deslocado pela temperatura',
   'ficha.estrela.tamanhoPeloRaio': 'o raio da ficha',
   'ficha.campo.veu': 'véu de luz',
   'ficha.campo.granulacao': 'granulação',

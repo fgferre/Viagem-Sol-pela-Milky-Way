@@ -1243,7 +1243,7 @@ tem giro medido; o ciclo de 11 anos do Sol em todas.
 **Os quatro botões.** Entrada: Teff, log g, raio, período de giro,
 luminosidade. Cada camada do corpo é função contínua deles.
 
-1. **GRAVIDADE — a convecção (etapa 2, `?forja=1`).**
+1. **GRAVIDADE — a convecção (o padrão das estrelas sem dínamo desde 16/11).**
    - *Tamanho da célula:* log₁₀(A/Mm) = 1,3210 log₁₀ Teff − 1,0970 log g +
      0,0306 (Trampedach et al. 2013, arXiv 1303.1780, ajuste de 37 simulações
      3D). Conferência: Sol 1,35 Mm, ~2 milhões de grãos na face (ESO eso1741);
@@ -1366,9 +1366,10 @@ luminosidade. Cada camada do corpo é função contínua deles.
      1,2–1,7 R; fiapos claros que somem com a altura, sem nunca escurecer o
      fundo), com o brilho proporcional ao excesso de raio até 0,3 R
      (camada rasa, pouco gás na linha de visada; ARTÍSTICO).
-   - *Ponto da regra:* Betelgeuse deixa de ter caminho próprio (células de
-     0,6 R e contraste 0,25 à mão viram 0,12 R e 18 % pela regra). O visual
-     aprovado fica com o interruptor desligado até a prancha decidir.
+   - *Ponto da regra:* Betelgeuse deixa de ter caminho próprio (as células de
+     0,6 R, o contraste 0,25, o ganho 2,6× e o relevo escritos à mão saíram do
+     código em 16/11, junto com o interruptor; a ficha das estrelas da Forja
+     diz que a cor é de filtro estreito colorizado, como a do Sol).
 2. **GIRO — a forma (etapa 3).** Roche e escurecimento gravitacional de
    Espinosa Lara & Rieutord 2011 (arXiv 1109.3038) para toda estrela com
    ω conhecido; conferência Altair, Régulo, Vega (Monnier 2007/2012, Che 2011).

@@ -258,18 +258,14 @@ export function anguloDoGiro(
   return 2 * Math.PI * (voltas - Math.floor(voltas));
 }
 
-/** `?forja=1` liga a Forja (etapa 2); fora do navegador (testes em Node) fica desligada. */
-export const FORJA: boolean =
-  typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('forja') === '1';
-
 /**
  * A regra da Forja para esta instância, ou `null` (o caminho de hoje): só com
- * o interruptor, com `logG` e sem dínamo — o Sol e as de dínamo nunca. Nem a
+ * `logG` e sem dínamo — o Sol e as de dínamo nunca. Nem a
  * estrela quente: sem granulação pela regra (contraste zero acima de
  * ~9.300 K, a reta de Steffen 2005) ela fica com o desenho de hoje.
  */
-export function forjaDe(p: StellarParams, ligada: boolean = FORJA): RegraDaForja | null {
-  if (!ligada || p.logG === undefined || p.dinamo) return null;
+export function forjaDe(p: StellarParams): RegraDaForja | null {
+  if (p.logG === undefined || p.dinamo) return null;
   const regra = regraDaForja(p.teffK, p.logG, p.radiusPc / RAIO_DO_SOL_NA_CENA);
   return regra.contraste > 0 ? regra : null;
 }
@@ -300,7 +296,6 @@ export function cirurgiasDaFotosfera(
     semDinamo: !p.dinamo,
     gravidade: Boolean(a),
     avermelhamento: pesoDoFiltro(p.teffK),
-    gigantes: forja ? undefined : p.celulasGigantes,
     teffK: p.teffK,
     continuo: 1 - pesoDoFiltro(p.teffK),
     ...(forja ? { forja } : {}),
@@ -310,8 +305,7 @@ export function cirurgiasDaFotosfera(
     (o.bordaU === undefined || o.bordaU === 0.3) &&
     !o.semDinamo &&
     !a &&
-    o.avermelhamento === 1 &&
-    !o.gigantes
+    o.avermelhamento === 1
   ) {
     return null;
   }
@@ -323,7 +317,6 @@ export function cirurgiasDaFotosfera(
     const { a: k, norma } = termoZonalDaForma(a.raioPolarRsol.v, a.raioEquatorialRsol.v);
     v = cirurgiaDaForma(v, k, norma);
   }
-  if (o.gigantes) v = cirurgiaDoRelevoDasGigantes(v, o.gigantes.tamanhoEmRaios, RELEVO_DAS_GIGANTES);
   return { fragment: cirurgiaDaEstrela(fragment, o), vertex: v, relevo };
 }
 
@@ -364,7 +357,7 @@ export interface StellarParams {
   readonly dinamo: boolean;
   /**
    * A GRAVIDADE DA SUPERFÍCIE, log₁₀ g (cgs; omitido no Sol). Só a Forja
-   * (`?forja=1`, `forjaDe`) a lê: a convecção de quem não tem dínamo.
+   * (`forjaDe`) a lê: a convecção de quem não tem dínamo.
    */
   readonly logG?: number;
   /*
@@ -422,19 +415,6 @@ export interface StellarParams {
    * `group` — as coroas são billboards no referencial do group.
    */
   readonly eixoNaCena?: readonly [number, number, number];
-  /**
-   * AS CÉLULAS GIGANTES de uma supergigante (omitido = nenhuma): poucas
-   * células de convecção do tamanho da ordem do raio, como intensidade em
-   * log por cima da fotosfera (`cirurgiaDaEstrela`). `tamanhoEmRaios` e o
-   * `contraste` rms vêm dos dados (Chiavassa et al. 2010).
-   */
-  readonly celulasGigantes?: { readonly tamanhoEmRaios: number; readonly contraste: number };
-  /**
-   * A ATMOSFERA ESTENDIDA que borra a borda, em raios (omitido ou ≤ 1 = borda
-   * nítida, a camada nem nasce): uma casca aditiva até este raio
-   * (`criarABordaDifusa`) — a MOLsphere de Betelgeuse a ~1,3 R.
-   */
-  readonly bordaDifusaRaios?: number;
   /**
    * O VÉU de uma fotosfera mais radiante que o Sol (omitido ou 0 = nenhum):
    * a fração da radiância que a exposição da visita não põe no disco
@@ -587,11 +567,8 @@ function trocarUma(texto: string, ancora: string, novo: string, quem: string): s
  *  · `avermelhamento` (≠ 1): o avermelhamento do limbo da receita H-alfa
  *    (g × 0,7 e b × 0,5 na borda) é parte do FILTRO fotográfico do Sol, e
  *    esmaece com ele (`pesoDoFiltro`): a estrela quente fica azul até a borda;
- *  · `gigantes`: as células gigantes (`GLSL_CELULAS_GIGANTES`) como um campo
- *    de TEMPERATURA, T = Teff·(1 + δ·z), levado à cor e ao brilho de cada
- *    canal pela lei de Planck (`razaoDePlanck`), antes da borda;
  *  · `forja`: a convecção da Forja, lida do assado (`glslDaForjaNaFotosfera`),
- *    como temperatura, no lugar das gigantes e da granulação viva, sem a
+ *    como temperatura, no lugar da granulação viva, sem a
  *    fervura por ruído, vista pelo instrumento do Sol (`GANHO_DO_INSTRUMENTO`);
  *  · `continuo` (peso > 0): a borda do CONTÍNUO — a atmosfera cinza de
  *    Eddington, T(μ)⁴ ∝ μ + ⅔, pela lei de Planck por canal — no lugar da
@@ -606,8 +583,7 @@ export function cirurgiaDaEstrela(
     semDinamo?: boolean;
     gravidade?: boolean;
     avermelhamento?: number;
-    gigantes?: { tamanhoEmRaios: number; contraste: number };
-    /** a Teff média (K): a régua de Planck das gigantes e do contínuo */
+    /** a Teff média (K): a régua de Planck da Forja e do contínuo */
     teffK?: number;
     /** o peso da borda do contínuo (1 − `pesoDoFiltro`) */
     continuo?: number;
@@ -676,25 +652,9 @@ export function cirurgiaDaEstrela(
   }
   const teff = o.teffK ?? TEFF_SOL_K;
   const planck =
-    o.gigantes || (o.forja && pesoDoFiltro(teff) < 1) || (o.continuo ?? 0) > 0 ? GLSL_RAZAO_DE_PLANCK : '';
-  if (o.gigantes) {
-    const d = deltaTDasGigantes(o.gigantes.contraste);
-    f =
-      GLSL_CELULAS_GIGANTES +
-      GLSL_CELULAS_GIGANTES_NA_TELA +
-      trocarUma(
-        f,
-        '  color *= (1.0-limbU) + limbU*mu;',
-        `  float zGig = celulasGigantesNaTela(sp/${literalGlsl(o.gigantes.tamanhoEmRaios)} + 17.0, t*0.05);\n` +
-          `  float rGig = max(0.5, 1.0 + ${literalGlsl(d)}*(zGig > 0.0 ? zGig : ${literalGlsl(DESCIDA_DAS_GIGANTES)}*zGig));\n` +
-          `  color *= razaoDePlanck(${xDePlanckGlsl(teff)}, rGig) * exp(-${TIO_DAS_GIGANTES_GLSL} * max(0.0, 1.0 - rGig));\n` +
-          '  color *= (1.0-limbU) + limbU*mu;',
-        quem
-      );
-  }
+    (o.forja && pesoDoFiltro(teff) < 1) || (o.continuo ?? 0) > 0 ? GLSL_RAZAO_DE_PLANCK : '';
   if (o.forja) {
-    // a mesma temperatura das gigantes, sem o ganho de tela nem a assimetria
-    // (a forma da textura já é assimétrica), contraste ∝ μ para a borda.
+    // a temperatura local da convecção da Forja, contraste ∝ μ para a borda.
     // A BORDA MACIA (`bordaEmMu`): a intensidade cai a zero na espessura da
     // fotosfera, com um piso de ~1,5 px (em ρ: μ = √(3·pixel)) só para não
     // serrilhar — a forma (smoothstep) é ARTÍSTICA, a largura é a física. Não
@@ -825,7 +785,7 @@ float granulacaoViva(vec3 p, float t, float mu) {
 `;
 
 /**
- * A CONVECÇÃO DA FORJA (`?forja=1`, docs/LEI-DA-ESTRELA.md §10), ASSADA: o
+ * A CONVECÇÃO DA FORJA (docs/LEI-DA-ESTRELA.md §10), ASSADA: o
  * assado que o motor do Sol já tem (`sol/chromo.js`: equirretangular, em
  * fatias por quadro, três conjuntos e a troca suave `uBakeMix`) pinta a
  * convecção no lugar da cromosfera (`cirurgiaDoAssado`), sem a passagem
@@ -1260,36 +1220,6 @@ vec3 razaoDePlanck(vec3 x0, float r) {
 `;
 
 /**
- * δ = σ_T/T das células gigantes pelo contraste rms dos dados. O contraste
- * das simulações (Chiavassa et al. 2010) é de intensidade BOLOMÉTRICA, e
- * I ∝ T⁴ dá σ_T/T = contraste/4 (Betelgeuse: 0,0625, ~225 K); a lei de
- * Planck no visível faz o resto — no lado de Wien uma célula 20 % mais
- * quente é ~3× mais clara (o que o VLT/SPHERE vê). × o ganho de tela.
- */
-/**
- * As descidas esfriam MENOS do que as subidas esquentam: a distribuição de
- * intensidade das simulações tem a cauda do lado claro (Chiavassa et al.
- * 2010) — o lado frio do campo leva esta fração de δ. ARTÍSTICO, declarado.
- */
-export const DESCIDA_DAS_GIGANTES = 0.75;
-
-/**
- * O TiO NAS DESCIDAS (12/11: as regiões escuras da Betelgeuse liam
- * marrons — laranja escurecido, verde/vermelho 0,58 na tela). Abaixo de
- * ~3.800 K as bandas do TiO, quase todas no verde e no amarelo, crescem
- * depressa com o frio: de M0 a M6 o V − R sobe ~1 magnitude (Johnson 1966;
- * Lee 1970), e é isso que faz a gigante fria mais vermelha que o corpo
- * negro dela. Aqui, só no lado FRIO do campo (r = T/Teff < 1), os canais
- * G e B levam exp(−k·(1 − r)); com k = 8, 13 % de déficit (~470 K abaixo
- * dos 3.600 K) tiram ~1 magnitude do verde — o vermelho-escuro das
- * descidas. Forma e k ARTÍSTICOS, declarados (ancorados nas cores das M).
- * Com o TiO a fração fria de δ desceu de 0,9 para 0,75: o lado escuro
- * guarda o brilho de antes e muda a cor.
- */
-const TIO_DAS_GIGANTES = 8;
-const TIO_DAS_GIGANTES_GLSL = `vec3(0.0, ${literalGlsl(TIO_DAS_GIGANTES)}, ${literalGlsl(TIO_DAS_GIGANTES)})`;
-
-/**
  * O GANHO DO INSTRUMENTO da Forja: calor = 0,5 + G·(T/Teff − 1) na rampa
  * de cor e brilho do filtro do Sol (imagem de banda estreita colorizada,
  * como toda foto de telescópio solar; o mesmo para todas). Escolha de
@@ -1301,181 +1231,6 @@ const TIO_DAS_GIGANTES_GLSL = `vec3(0.0, ${literalGlsl(TIO_DAS_GIGANTES)}, ${lit
  * plage no Sol. (G = 3,5, a mancha bem no topo, deixava as faixas no marrom.)
  */
 export const GANHO_DO_INSTRUMENTO = 5;
-
-export function deltaTDasGigantes(contraste: number): number {
-  return (GANHO_DAS_GIGANTES_NA_TELA * Math.max(0, contraste)) / 4;
-}
-
-/**
- * O GANHO DE TELA das células gigantes sobre o δ = σ_T/T físico
- * (`deltaTDasGigantes`) — ARTÍSTICO, declarado. A conta bolométrica (¼ do
- * contraste) dá ~225 K; as simulações no VISÍVEL têm contraste maior que o
- * bolométrico (a opacidade do TiO, Chiavassa et al. 2011, A&A 535, A22), e
- * as imagens do VLT/SPHERE mostram manchas várias vezes mais claras que as
- * regiões escuras. Com 2,6 (12/11, Betelgeuse a 3 raios), as subidas mais
- * quentes chegam a ~5.000 K e saem branco-amareladas; as descidas, a ~3.000 K,
- * vermelho-escuras.
- */
-export const GANHO_DAS_GIGANTES_NA_TELA = 2.6;
-
-/**
- * AS CÉLULAS GIGANTES de uma supergigante (o que o VLT/SPHERE mostrou no
- * Grande Escurecimento — Montargès et al. 2021 — e as simulações 3D de
- * Chiavassa et al. 2010, A&A 515, A12): POUCAS manchas claras, grandes e
- * moles, com regiões escuras largas entre elas. Uma gaussiana por célula
- * (σ = 0,45 célula), somada nas 27 vizinhas — liso em todo lugar, sem a
- * aresta de F2 − F1 da rede de supergranulação. Amplitude BIMODAL COM SINAL
- * (artístico): ~45 % das células acendem (+1), o resto afunda (−0,6). Vindo
- * do motor simples do piloto (`celulaGigante`, sem mudança de número).
- *
- * DE PERTO (12/11) as simulações mostram mais que as manchas moles do VLT
- * (que é a mesma coisa borrada pela resolução): as células grandes se
- * quebram em células menores, com descidas escuras entre elas (Chiavassa et
- * al. 2010; Freytag et al. 2002). Uma SEGUNDA OITAVA do mesmo campo, 2,3×
- * menor e 1,7× mais rápida, somada com peso 0,6 contra 0,8 — ARTÍSTICO,
- * declarado. A soma é normalizada a média 0 e desvio 1 (Monte Carlo na
- * esfera, 2·10⁵ amostras, na escala de 0,6 R: média −0,22, desvio 0,81).
- */
-const GLSL_CELULAS_GIGANTES = /* glsl */ `
-vec3 hashDaGigante(vec3 p) {
-  p = fract(p * vec3(0.1031, 0.1030, 0.0973));
-  p += dot(p, p.yxz + 33.33);
-  return fract((p.xxy + p.yxx) * p.zyx);
-}
-float celulaGigante(vec3 p, float t) {
-  p = p + 0.1 * sin(p.yzx * 1.7 + t * 0.1);
-  vec3 c = floor(p);
-  vec3 f = p - c;
-  float G = 0.0;
-  for (int i = -1; i <= 1; i++)
-  for (int j = -1; j <= 1; j++)
-  for (int l = -1; l <= 1; l++) {
-    vec3 o = vec3(float(i), float(j), float(l));
-    vec3 h = hashDaGigante(c + o);
-    vec3 q = o + 0.5 + 0.45 * sin(6.2831853 * h + t * (0.5 + h)) - f;
-    float a = mix(-0.6, 1.0, smoothstep(0.43, 0.67, h.x));
-    G += a * exp(-dot(q, q) / (0.45 * 0.45));
-  }
-  return (G - 0.0092) / 0.3142;
-}
-float celulasGigantes(vec3 p, float t) {
-  return (0.8 * celulaGigante(p, t) + 0.6 * celulaGigante(p * 2.3 + 5.0, t * 1.7) + 0.22) / 0.81;
-}
-`;
-
-/**
- * AS CÉLULAS GIGANTES NA TELA, com detalhe até onde o pixel deixa (12/11: a
- * Betelgeuse de perto saía mole — o campo é uma soma de gaussianas, liso em
- * todo lugar, e nenhuma resolução de retrato o afia). Por cima das duas
- * oitavas de `celulasGigantes` (o mesmo campo, o mesmo número), A CASCATA:
- * a estrutura menor dentro das células — a turbulência que as simulações 3D
- * resolvem até a grade (Chiavassa et al. 2010; Freytag et al. 2002) —, o
- * mesmo campo 2,3× menor e 1,7× mais rápido a cada oitava, com peso
- * `PASSO_DA_CASCATA` × o da anterior, até `OITAVAS_FINAS` oitavas. Pelo
- * PIXEL (`fwidth`): a oitava esmaece quando a célula dela cai abaixo de
- * ~4 px e nem é calculada abaixo de ~2 px — de longe o disco é o de antes,
- * de perto ganha detalhe até a borda do pixel, como o LOD do Sol. Peso e
- * contagem ARTÍSTICOS, declarados. Só no fragment (`fwidth`).
- */
-const PASSO_DA_CASCATA = 0.65;
-const INGREMIDADE_DA_CASCATA = 2.0;
-const OITAVAS_FINAS = 5;
-
-/**
- * A REDE DE DESCIDAS (12/11: de perto a Betelgeuse lia como nuvem fervendo,
- * detalhe fino 1,07 contra 1,70 do Sol no mesmo enquadramento). As
- * simulações 3D de supergigantes vermelhas (Chiavassa et al. 2010, 2011;
- * Freytag et al. 2002) mostram, por cima das células gigantes, células
- * menores de borda clara e firme separadas por descidas ESTREITAS e
- * escuras, em rede — contorno filamentar, não névoa. Em cada uma das
- * primeiras `OITAVAS_DA_REDE` oitavas da cascata: um VALE em V ao longo da
- * curva de nível zero do campo (a borda das células claras),
- * exp(−|c|/`VALE_DAS_DESCIDAS`), e uma CRISTA clara mais fraca logo para
- * dentro, na curva `NIVEL_DA_CRISTA`. Os dois termos vão a média zero (o
- * Monte Carlo do campo, 2·10⁵ amostras: `MEDIA_DO_VALE`, `MEDIA_DA_CRISTA`)
- * — a rede REDESENHA o brilho, não escurece o disco. Um V tem a aresta fina
- * por construção, sem serrilhar: o vale de cada oitava some antes de ficar
- * mais fino que o pixel (célula abaixo de ~10–15 px).
- *
- * Só DE PERTO: a rede aparece quando uma faixa de `LARGURA_DAS_DESCIDAS`
- * (em unidades do campo, ~0,0024 R na escala de 0,6 R) cobre ~1 a 2,5 px —
- * a 1,5 raio do centro ela está inteira no meio do disco; a 3 raios, em
- * nenhum lugar (o retrato de antes, ponto a ponto na estrutura). Pesos,
- * níveis e larguras ARTÍSTICOS, declarados.
- */
-const LARGURA_DAS_DESCIDAS = 0.004;
-const PESO_DAS_DESCIDAS = 1.1;
-const VALE_DAS_DESCIDAS = 0.1;
-const MEDIA_DO_VALE = 0.1276;
-const NIVEL_DA_CRISTA = 0.5;
-const MEDIA_DA_CRISTA = 0.0657;
-const BRILHO_DA_CRISTA = 0.4;
-const PASSO_DA_REDE = 0.75;
-const OITAVAS_DA_REDE = 4;
-const GLSL_CELULAS_GIGANTES_NA_TELA = /* glsl */ `
-float celulasGigantesNaTela(vec3 p, float t) {
-  float px = length(fwidth(p));
-  float z0 = celulasGigantes(p, t);
-  float z = z0;
-  // o detalhe fino mora nas subidas: o contraste de uma célula pequena
-  // acompanha o brilho local (nas descidas frias ele quase some)
-  float local = 0.4 + 0.6 * smoothstep(-1.0, 1.5, z0);
-  float s = 2.3 * 2.3;
-  float v = 1.7 * 1.7;
-  float w = 0.6 / 0.81 * ${literalGlsl(PASSO_DA_CASCATA)};
-  float var = 1.0;
-  // a rede de descidas: só quando a faixa dela cobre o pixel
-  float rede = 0.0;
-  float aRede = smoothstep(0.7, 2.6, ${literalGlsl(LARGURA_DAS_DESCIDAS)} / px);
-  for (int k = 0; k < ${OITAVAS_FINAS}; k++) {
-    float fade = 1.0 - smoothstep(0.25, 0.5, px * s);
-    if (fade <= 0.0) break;
-    // a borda da célula fina NÍTIDA: o campo passa por uma sigmoide (as
-    // subidas viram platôs de contorno firme, a curva de nível do campo —
-    // nunca a aresta reta de um Voronoi), tão íngreme quanto o pixel deixa
-    float c = celulaGigante(p * s + 11.0 * float(k + 1), t * v);
-    float ing = min(${literalGlsl(INGREMIDADE_DA_CASCATA)}, 0.12 / (px * s));
-    z += fade * w * local * tanh(ing * c) / tanh(ing);
-    var += fade * fade * w * w;
-    if (k < ${OITAVAS_DA_REDE} && aRede > 0.0) {
-      float vale = exp(-abs(c) / ${literalGlsl(VALE_DAS_DESCIDAS)}) - ${literalGlsl(MEDIA_DO_VALE)};
-      float crista = exp(-abs(c - ${literalGlsl(NIVEL_DA_CRISTA)}) / ${literalGlsl(VALE_DAS_DESCIDAS)}) - ${literalGlsl(MEDIA_DA_CRISTA)};
-      rede += aRede * (1.0 - smoothstep(0.06, 0.12, px * s)) * (${literalGlsl(BRILHO_DA_CRISTA)} * crista - vale);
-      aRede *= ${literalGlsl(PASSO_DA_REDE)};
-    }
-    s *= 2.3;
-    v *= 1.7;
-    w *= ${literalGlsl(PASSO_DA_CASCATA)};
-  }
-  // o rms do campo é o dos dados: a cascata REPARTE o contraste, não soma
-  return z * inversesqrt(var) + ${literalGlsl(PESO_DAS_DESCIDAS)} * local * rede;
-}
-`;
-
-/**
- * O RELEVO DAS CÉLULAS GIGANTES no vertex de `sol/sun.js`: a superfície sobe
- * onde a célula é quente e desce nas faixas — a borda irregular, encaroçada,
- * das imagens e das simulações de uma supergigante (Montargès et al. 2021;
- * Chiavassa et al. 2010). O MESMO campo da cor (`celulasGigantes`, mesma
- * escala, semente e tempo; só a oitava grande — a pequena facetaria a malha),
- * somado ao deslocamento ao longo da normal que o
- * fbm e os modos p já usam: `amplitude` raios por desvio — ARTÍSTICO,
- * declarado. Compõe com `cirurgiaDaForma` (a âncora é comum às duas).
- */
-export function cirurgiaDoRelevoDasGigantes(vertex: string, tamanhoEmRaios: number, amplitude: number): string {
-  return (
-    GLSL_CELULAS_GIGANTES +
-    trocarUma(
-      vertex,
-      'n * uDispScale + pmSum',
-      `n * uDispScale + ${literalGlsl(amplitude)} * celulaGigante(normalize(position)/${literalGlsl(tamanhoEmRaios)} + 17.0, uTime*0.05) * length(position) + pmSum`,
-      'cirurgiaDoRelevoDasGigantes'
-    )
-  );
-}
-
-/** a amplitude do relevo das células gigantes, em raios por desvio */
-export const RELEVO_DAS_GIGANTES = 0.008;
 
 /**
  * A FORMA DE UMA ROTADORA RÁPIDA no vertex de `sol/sun.js`: o termo zonal
@@ -2028,7 +1783,7 @@ export function coroaOcultavel(material: THREE.ShaderMaterial, raioPc: number): 
  * da ESTRELA.
  */
 /** a ESCALA DE ALTURA das plumas da atmosfera estendida, × o excesso medido
- *  (`bordaDifusaRaios` − 1), de uma direção a outra — ARTÍSTICO, declarado:
+ *  (o raio da atmosfera − 1), de uma direção a outra — ARTÍSTICO, declarado:
  *  o raio medido fica no meio */
 const PLUMA_MIN = 0.3;
 const PLUMA_MAX = 1.6;
@@ -2234,9 +1989,9 @@ export class StellarBody {
    * coroa quente — essas camadas nem nascem. Sobra a fotosfera.
    */
   private readonly semDinamo: boolean;
-  /** a regra da Forja (`?forja=1`, `forjaDe`), ou null: o caminho de antes */
+  /** a regra da Forja (`forjaDe`), ou null: o caminho de antes */
   private readonly forja: RegraDaForja | null;
-  /** o raio da atmosfera estendida (`bordaDifusaRaios`, ou o da Forja) */
+  /** o raio da atmosfera estendida (o da Forja, ou 1) */
   private readonly raioDaBordaDifusa: number;
   /** a frequência das erupções relativa ao Sol (1 = a do Sol, pulada) */
   private readonly taxaDeErupcoes: number;
@@ -2264,7 +2019,7 @@ export class StellarBody {
     this.outraCor = params.teffK !== TEFF_SOL_K;
     this.semDinamo = !params.dinamo;
     this.forja = forjaDe(params);
-    this.raioDaBordaDifusa = this.forja ? this.forja.atmosferaEmRaios : (params.bordaDifusaRaios ?? 1);
+    this.raioDaBordaDifusa = this.forja ? this.forja.atmosferaEmRaios : 1;
     this.taxaDeErupcoes =
       !this.semDinamo && params.activityLevel !== 1 ? taxaDeErupcoesPelaAtividade(params.activityLevel) : 1;
     if (params.eixoNaCena) {
@@ -2597,7 +2352,7 @@ export class StellarBody {
    * TRÁS — atrás do disco a profundidade da fotosfera a apaga, fora dele
    * sobra o anel; vale com a câmera dentro dela. Duas coisas, cada uma só
    * para quem a física dá (o Sol não constrói a casca):
-   *  · A ATMOSFERA ESTENDIDA (`bordaDifusaRaios` > 1, a MOLsphere de uma
+   *  · A ATMOSFERA ESTENDIDA (raio > 1, a MOLsphere de uma
    *    supergigante): gás luminoso e translúcido, ADITIVO — exponencial na
    *    altura acima da borda, mais brilhante rente a ela (uma camada densa a
    *    `ESCALA_DA_CAMADA_RENTE` por cima), e levado a zero por uma cauda suave

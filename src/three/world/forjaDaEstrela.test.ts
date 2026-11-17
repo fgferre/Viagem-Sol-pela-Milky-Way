@@ -18,7 +18,6 @@ import {
 import {
   GANHO_DO_INSTRUMENTO,
   PONTA_DAS_CELULAS_QUENTES,
-  RELEVO_DAS_GIGANTES,
   SOL_PARAMS,
   TIO_DA_FORJA,
   calibracaoDaForja,
@@ -26,7 +25,6 @@ import {
   cirurgiaDoAssado,
   cirurgiaDoSmear,
   glslDoAssadoDaForja,
-  cirurgiaDoRelevoDasGigantes,
   cirurgiasDaFotosfera,
   forjaDe,
   frenteDaAtmosfera,
@@ -176,51 +174,49 @@ describe('a Forja desligada não muda nada', () => {
     logG: -0.5,
     contrasteRelativoAoSol: 0.4,
     bordaU: 0.5,
-    celulasGigantes: { tamanhoEmRaios: 0.6, contraste: 0.25 },
-    bordaDifusaRaios: 1.3,
   };
 
-  it('só vale com o interruptor, com log g e sem dínamo — nunca no Sol', () => {
-    expect(forjaDe(bet, false)).toBeNull();
-    expect(forjaDe(SOL_PARAMS, true)).toBeNull();
-    expect(forjaDe({ ...bet, dinamo: true }, true)).toBeNull();
-    expect(forjaDe(bet, true)).not.toBeNull();
+  it('só vale com log g e sem dínamo — nunca no Sol', () => {
+    expect(forjaDe({ ...bet, logG: undefined })).toBeNull();
+    expect(forjaDe(SOL_PARAMS)).toBeNull();
+    expect(forjaDe({ ...bet, dinamo: true })).toBeNull();
+    expect(forjaDe(bet)).not.toBeNull();
   });
 
   it('a estrela quente (contraste zero, acima de ~9.300 K) fica com o desenho de hoje', () => {
     for (const teffK of [9600, 9940, 12100, 25000]) {
-      expect(forjaDe({ ...bet, teffK, logG: 4.0 }, true)).toBeNull();
+      expect(forjaDe({ ...bet, teffK, logG: 4.0 })).toBeNull();
     }
-    expect(forjaDe({ ...bet, teffK: 7650, logG: 4.16 }, true)).not.toBeNull();
+    expect(forjaDe({ ...bet, teffK: 7650, logG: 4.16 })).not.toBeNull();
   });
 
-  it('o shader gerado sem a Forja é o texto do caminho de antes, cirurgia a cirurgia', () => {
-    // o que `operarAFotosfera` montava antes da Forja, literal
+  it('o shader gerado fora da Forja é o texto do caminho de antes, cirurgia a cirurgia', () => {
+    const fria = { ...bet, teffK: 9600, logG: 4.0 };
+    expect(forjaDe(fria)).toBeNull();
     const antes = {
       contraste: 0.4,
       bordaU: 0.5,
       semDinamo: true,
       gravidade: false,
-      avermelhamento: pesoDoFiltro(3600),
-      gigantes: { tamanhoEmRaios: 0.6, contraste: 0.25 },
-      teffK: 3600,
-      continuo: 1 - pesoDoFiltro(3600),
+      avermelhamento: pesoDoFiltro(9600),
+      teffK: 9600,
+      continuo: 1 - pesoDoFiltro(9600),
     };
-    expect(cirurgiasDaFotosfera(sunJs, sunJs, bet, forjaDe(bet, false))).toEqual({
+    expect(cirurgiasDaFotosfera(sunJs, sunJs, fria, forjaDe(fria))).toEqual({
       fragment: cirurgiaDaEstrela(sunJs, antes),
-      vertex: cirurgiaDoRelevoDasGigantes(sunJs, 0.6, RELEVO_DAS_GIGANTES),
+      vertex: sunJs,
       relevo: 0.4,
     });
-    // o Sol e uma estrela com dínamo, com o interruptor LIGADO: o mesmo de sem ele
-    expect(cirurgiasDaFotosfera(sunJs, sunJs, SOL_PARAMS, forjaDe(SOL_PARAMS, true))).toBeNull();
+    // o Sol e uma estrela com dínamo, fora da Forja: o caminho de antes
+    expect(cirurgiasDaFotosfera(sunJs, sunJs, SOL_PARAMS, forjaDe(SOL_PARAMS))).toBeNull();
     const comDinamo = { ...bet, dinamo: true };
-    expect(cirurgiasDaFotosfera(sunJs, sunJs, comDinamo, forjaDe(comDinamo, true))).toEqual(
+    expect(cirurgiasDaFotosfera(sunJs, sunJs, comDinamo, forjaDe(comDinamo))).toEqual(
       cirurgiasDaFotosfera(sunJs, sunJs, comDinamo, null)
     );
   });
 
-  it('ligada: bake plano, a convecção dela no lugar das gigantes e da granulação viva, sem relevo', () => {
-    const c = cirurgiasDaFotosfera(sunJs, sunJs, bet, forjaDe(bet, true))!;
+  it('bake plano, a convecção dela no lugar da granulação viva, sem relevo', () => {
+    const c = cirurgiasDaFotosfera(sunJs, sunJs, bet, forjaDe(bet))!;
     expect(c.relevo).toBe(0);
     expect(c.fragment).toContain('uMaxK*mix(0.39, 0.20, close))*0.000000;');
     expect(c.fragment.split('conveccaoDoAssado(st, sp, t)').length - 1).toBe(1);
@@ -241,26 +237,25 @@ describe('a Forja desligada não muda nada', () => {
     // Planck entra na mesma medida, sem corte
     const quente = { ...bet, teffK: 7650, logG: 4.16 };
     const w = pesoDoFiltro(7650);
-    const q = cirurgiasDaFotosfera(sunJs, sunJs, quente, forjaDe(quente, true))!.fragment;
+    const q = cirurgiasDaFotosfera(sunJs, sunJs, quente, forjaDe(quente))!.fragment;
     expect(q).toContain(`float calorDaForja = heat + ${literalGlsl(w * GANHO_DO_INSTRUMENTO)}*(rForja - 1.0);`);
     expect(q).toContain(`, rForja), vec3(1.0), ${literalGlsl(w)});`);
     expect(q).toContain(`, ${literalGlsl(1 - w)});`);
-    expect(c.fragment).not.toContain('celulasGigantesNaTela(sp');
     expect(c.fragment).not.toContain('granulacaoViva(sp');
     // a borda macia, na largura da regra, até o piso da frente da casca
-    const r = forjaDe(bet, true)!;
+    const r = forjaDe(bet)!;
     expect(c.fragment).toContain(
       `color *= mix(${literalGlsl(frenteDaAtmosfera(r.atmosferaEmRaios))}, 1.0, smoothstep(0.0, max(${literalGlsl(r.bordaEmMu)}, `
     );
     // sem atmosfera estendida (anã quente), a borda vai a zero
     const ana = { ...bet, teffK: 7650, logG: 4.16 };
-    expect(cirurgiasDaFotosfera(sunJs, sunJs, ana, forjaDe(ana, true))!.fragment).toContain('  color *= smoothstep(0.0, max(');
+    expect(cirurgiasDaFotosfera(sunJs, sunJs, ana, forjaDe(ana))!.fragment).toContain('  color *= smoothstep(0.0, max(');
     // sem relevo nenhum: o vertex é o de antes
     expect(c.vertex).toBe(sunJs);
   });
 
   it('o assado da Forja: o main da cromosfera dá lugar ao da convecção, levada pelo escoamento', () => {
-    const r = forjaDe(bet, true)!;
+    const r = forjaDe(bet)!;
     const cromosfera = 'uniform float uTime;\nfloat ajuda(){ return 1.0; }\nvoid main(){\n  gl_FragColor = vec4(uGranFreq*1.45);\n}\n';
     const f = cirurgiaDoAssado(cromosfera, r);
     expect(f.startsWith('uniform float uTime;\nfloat ajuda(){ return 1.0; }\n')).toBe(true);
@@ -279,13 +274,13 @@ describe('a Forja desligada não muda nada', () => {
   });
 
   it('as células quentes enormes só entram no assado de quem tem a escala profunda', () => {
-    const r = forjaDe(bet, true)!;
+    const r = forjaDe(bet)!;
     const sup = glslDoAssadoDaForja(r);
     expect(sup).toContain('float quente = 0.0;');
     // o pico na unidade de z: δ_quente/δ, com δ = contraste/4
     expect(sup).toContain(literalGlsl((r.picoQuente / (r.contraste / 4)) * r.pesoProfundo));
     const gig = { ...bet, logG: 1.19, teffK: 3900 };
-    expect(glslDoAssadoDaForja(forjaDe(gig, true)!)).not.toContain('quente');
+    expect(glslDoAssadoDaForja(forjaDe(gig)!)).not.toContain('quente');
   });
 
   it('o TiO pela temperatura local: 0 em 4.000 K, 1 em 3.000 K; a ponta HDR só com células quentes', () => {
@@ -296,12 +291,12 @@ describe('a Forja desligada não muda nada', () => {
     expect(pesoDoTiO(2500)).toBe(1);
     const tio = `exp(-${literalGlsl(TIO_DA_FORJA)} * xTiO * (2.0 - xTiO) * vec3(0.0, 1.0, 1.0))`;
     const ponta = 'smoothstep(' + literalGlsl(PONTA_DAS_CELULAS_QUENTES.de) + ', ' + literalGlsl(PONTA_DAS_CELULAS_QUENTES.ate) + ', calorDaForja)';
-    const fr = (p: StellarParams) => cirurgiasDaFotosfera(sunJs, sunJs, p, forjaDe(p, true))!.fragment;
+    const fr = (p: StellarParams) => cirurgiasDaFotosfera(sunJs, sunJs, p, forjaDe(p))!.fragment;
     // a supergigante: TiO por pixel e a ponta pesada pela escala profunda
     const f = fr(bet);
     expect(f).toContain(`float xTiO = clamp((4000.0 - ${literalGlsl(bet.teffK)}*rForja) / 1000.0, 0.0, 1.0);`);
     expect(f).toContain(tio);
-    const w = forjaDe(bet, true)!.pesoProfundo;
+    const w = forjaDe(bet)!.pesoProfundo;
     expect(f).toContain(`color *= 1.0 + ${literalGlsl(PONTA_DAS_CELULAS_QUENTES.ganho * w)} * ${ponta};`);
     // a gigante sem escala profunda: TiO sim, ponta não
     const gig = fr({ ...bet, logG: 1.19, teffK: 3900 });
@@ -314,7 +309,7 @@ describe('a Forja desligada não muda nada', () => {
   });
 
   it('o tier leva o assado da regra', () => {
-    const r = forjaDe(bet, true)!;
+    const r = forjaDe(bet)!;
     const tier = { fbm: 5, seg: 128, simW: 768, simH: 384, simStep: 1 / 22, prom: 6, chromo: 1024, granFreq: 30, lic7: true, loops: 12, larc: 7, lseg: 36, cstep: 22, cmestep: 16, cmen: 1024 };
     expect(tierDaEstrela(tier, bet, r).chromo).toBe(r.assado);
     expect(tierDaEstrela(tier, bet).chromo).toBe(256);

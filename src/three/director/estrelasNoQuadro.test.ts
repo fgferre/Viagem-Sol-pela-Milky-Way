@@ -26,11 +26,9 @@ describe('toda estrela visitável vira parâmetros do MESMO motor, sem nome', ()
       expect(p.foraDaOrigem).toBe(true);
     }
   });
-  it('Betelgeuse: sem dínamo, células gigantes e borda difusa dos dados; grânulos tênues', () => {
+  it('Betelgeuse: sem dínamo; grânulos tênues', () => {
     const b = parametrosDoMotor(estrelaVisitavelPorNome('Betelgeuse')!);
     expect(b.dinamo).toBe(false);
-    expect(b.celulasGigantes).toEqual({ tamanhoEmRaios: 0.6, contraste: 0.25 });
-    expect(b.bordaDifusaRaios).toBe(1.3);
     expect(b.contrasteRelativoAoSol).toBeCloseTo((0.25 * 0.2) / 0.15, 12);
     expect(b.veu).toBeUndefined();
   });
@@ -42,10 +40,8 @@ describe('toda estrela visitável vira parâmetros do MESMO motor, sem nome', ()
     // mais fria que o Sol (51 Peg, 5.761 K): nenhum véu
     expect(parametrosDoMotor(estrelaVisitavelPorNome('Helvetios')!).veu).toBeUndefined();
   });
-  it('as anãs não levam células gigantes nem borda difusa', () => {
+  it('as anãs são de dínamo', () => {
     const p = parametrosDoMotor(estrelaVisitavelPorNome('Proxima Centauri')!);
-    expect(p.celulasGigantes).toBeUndefined();
-    expect(p.bordaDifusaRaios).toBeUndefined();
     expect(p.dinamo).toBe(true);
   });
 });

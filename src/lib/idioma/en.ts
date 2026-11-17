@@ -727,6 +727,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.estrela.doTamanhoDaTerra': '≈ {km} km, Earth-sized',
   'ficha.estrela.separacaoEmUa': '{ua} au',
   'ficha.estrela.corPelaTemperatura': 'from the temperature (blackbody)',
+  'ficha.estrela.corDeFiltroColorizado': 'colorized narrowband filter, like the Sun\'s, shifted by temperature',
   'ficha.estrela.tamanhoPeloRaio': 'the radius in this card',
   'ficha.campo.veu': 'veil of light',
   'ficha.campo.granulacao': 'granulation',
