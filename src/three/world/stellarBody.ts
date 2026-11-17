@@ -709,27 +709,30 @@ export function cirurgiaDaEstrela(
     // creme no topo); nas quentes, a razão de Planck do contínuo, como antes
     const d = Math.max(0, o.forja.contraste) / 4;
     const wF = pesoDoFiltro(teff);
-    const tio = pesoDoTiO(teff);
     f = trocarUma(
       f,
       '  heat = clamp(heat, 0.0, 1.24);',
       `  float rForja = max(0.5, 1.0 + ${literalGlsl(d)}*mu*conveccaoDoAssado(st, sp, t));\n` +
-        `  heat = clamp(heat + ${literalGlsl(wF * GANHO_DO_INSTRUMENTO)}*(rForja - 1.0), 0.0, 1.24);`,
+        `  float calorDaForja = heat + ${literalGlsl(wF * GANHO_DO_INSTRUMENTO)}*(rForja - 1.0);\n` +
+        '  heat = clamp(calorDaForja, 0.0, 1.24);',
       quem
     );
-    // o creme do Sol (o da plage, que sem campo é 0) pelas regiões mais quentes
+    // o creme do Sol (o da plage, que sem campo é 0) pelas regiões mais
+    // quentes; e, onde há células quentes enormes, a ponta HDR da rampa
+    // (`PONTA_DAS_CELULAS_QUENTES`)
+    const ponta = PONTA_DAS_CELULAS_QUENTES.ganho * wF * Math.min(1, Math.max(0, o.forja.pesoProfundo));
     f = trocarUma(
       f,
       '  color = mix(color, vec3(1.0, 0.86, 0.62), 0.55 * smoothstep(0.55, 1.0, clamp(plage, 0.0, 1.0)) * smoothstep(0.72, 1.12, heat));',
-      `  color = mix(color, vec3(1.0, 0.86, 0.62), ${literalGlsl(0.55 * wF)} * smoothstep(0.72, 1.12, heat));`,
+      `  color = mix(color, vec3(1.0, 0.86, 0.62), ${literalGlsl(0.55 * wF)} * smoothstep(0.72, 1.12, heat));` +
+        (ponta > 0
+          ? `\n  color *= 1.0 + ${literalGlsl(ponta)} * smoothstep(${literalGlsl(PONTA_DAS_CELULAS_QUENTES.de)}, ${literalGlsl(PONTA_DAS_CELULAS_QUENTES.ate)}, calorDaForja);`
+          : ''),
       quem
     );
     const planckDaForja =
-      wF >= 1
-        ? ''
-        : `  color *= mix(razaoDePlanck(${xDePlanckGlsl(teff)}, rForja)` +
-          (tio > 0 ? ` * exp(-${literalGlsl(tio)} * ${TIO_DAS_GIGANTES_GLSL} * max(0.0, 1.0 - rForja))` : '') +
-          `, vec3(1.0), ${literalGlsl(wF)});\n`;
+      (wF >= 1 ? '' : `  color *= mix(razaoDePlanck(${xDePlanckGlsl(teff)}, rForja), vec3(1.0), ${literalGlsl(wF)});\n`) +
+      glslDoTiONaForja(teff, d);
     const frente = frenteDaAtmosfera(o.forja.atmosferaEmRaios);
     const borda = `smoothstep(0.0, max(${literalGlsl(o.forja.bordaEmMu)}, sqrt(3.0*fwidth(sqrt(max(0.0, 1.0 - mu*mu))))), mu)`;
     f = trocarUma(
@@ -1171,13 +1174,68 @@ export function calibracaoDaForja(fracao: number, desordem: number = 0): Calibra
 }
 
 /**
- * O PESO DO TiO nas descidas da Forja (`TIO_DAS_GIGANTES`): as bandas só
- * existem nas M — inteiro abaixo de 3.600 K, zero acima de 4.000 K, linear
- * entre (ARTÍSTICO, declarado).
+ * O TiO DA FORJA, CONTÍNUO NA TEMPERATURA LOCAL. Schiavon & Barbuy 1999
+ * (astro-ph/9807325): abaixo de ~4.000 K as bandas do TiO são a principal
+ * opacidade de 6.000 a 10.000 Å; o índice EW6000 (6.145–6.541 Å) cresce a
+ * partir de ~4.000 K e satura abaixo de ~3.000 K (o γ Δv = 0, ~7.150 Å,
+ * abaixo de ~3.200 K). O peso vai de 0 em 4.000 K a 1 em 3.000 K, com
+ * x = (4.000 − T)/1.000 e p = x(2 − x): cresce já em 4.000 K e chega
+ * deitado em 3.000 K (a saturação). A forma é ARTÍSTICA, declarada; as
+ * pontas são as da fonte. T é a temperatura LOCAL (Teff·r), então a mesma
+ * lei vale na média da estrela e nas faixas — mais frias, absorvem mais e
+ * ficam vermelho-escuras; as células quentes escapam dele.
  */
-export function pesoDoTiO(teffK: number): number {
-  return Math.min(1, Math.max(0, (4000 - teffK) / 400));
+export function pesoDoTiO(tK: number): number {
+  const x = Math.min(1, Math.max(0, (4000 - tK) / 1000));
+  return x * (2 - x);
 }
+
+/**
+ * A FORÇA DO TiO DA FORJA: os canais G e B levam exp(−k·p(T)). k = 1,1 é
+ * escolhido pelo resultado (ARTÍSTICO, declarado; o k = 8 das gigantes de
+ * antes não tinha âncora): na Teff, Aldebaran (3.900 K) 0,81 no verde
+ * (laranja), Antares (3.745 K) 0,61 e Betelgeuse (3.600 K) 0,49
+ * (vermelho-alaranjado; o Antares do ESO, eso1726, tem R/G ~1,86 na tela, e
+ * o nosso, medido na volta 6a, ~1,83); Arcturus (4.450 K) só nas faixas
+ * mais fundas. Os canais são os da tela: a banda do EW6000 cai no vermelho
+ * de 0,61 µm, mas a imagem colorizada perde o verde e o azul.
+ */
+export const TIO_DA_FORJA = 1.1;
+
+/**
+ * A EXPOSIÇÃO ACOMPANHA O TiO: a absorção no centro do disco (na Teff) é
+ * dividida de volta na luminância da tela, onde o verde e o azul pesam ~0,7
+ * numa gigante fria (Antares da volta 5: 0,7152·106 + 0,0722·30 contra
+ * 0,2126·161) — o disco guarda o brilho de antes e muda a cor, como uma
+ * foto exposta pelo disco. ARTÍSTICO, declarado.
+ */
+const VERDE_DA_LUMINANCIA_FRIA = 0.7;
+
+/** o TiO por pixel (`pesoDoTiO`, `TIO_DA_FORJA`), só onde algum pixel pode cair abaixo de 4.000 K */
+function glslDoTiONaForja(teffK: number, d: number): string {
+  // r ≥ 1 − 6δ (a descida mais funda do assado normalizado) e r ≥ 0,5
+  if (teffK * Math.max(0.5, 1 - 6 * d) >= 4000) return '';
+  const fTeff = Math.exp(-TIO_DA_FORJA * pesoDoTiO(teffK));
+  const exposicao = 1 / (1 - VERDE_DA_LUMINANCIA_FRIA + VERDE_DA_LUMINANCIA_FRIA * fTeff);
+  return (
+    `  float xTiO = clamp((4000.0 - ${literalGlsl(teffK)}*rForja) / 1000.0, 0.0, 1.0);\n` +
+    `  color *= ${literalGlsl(exposicao)} * exp(-${literalGlsl(TIO_DA_FORJA)} * xTiO * (2.0 - xTiO) * vec3(0.0, 1.0, 1.0));\n`
+  );
+}
+
+/**
+ * A PONTA HDR DA RAMPA, só onde há células quentes enormes (peso da escala
+ * profunda > 0): a rampa do instrumento satura no creme (calor 1,24), e a
+ * mancha de Haubois (δ ≈ 0,15, ~2,6× o brilho médio no visível) passa do
+ * topo; ali o calor sem o teto vira brilho a mais (×(1 + g·w·s), w o peso
+ * profundo, s = smoothstep(de, ate, calor)), como a plage e o máximo do Sol
+ * viram fonte HDR para o bloom da casa (limiar 0,82 de luma linear,
+ * `Post.setWarp`). Medido no assado (16/11): o calor das células comuns
+ * fica abaixo de ~1,0 em 99,9 % do disco, o miolo das manchas chega a
+ * 1,08 (Antares) e 1,19 (Betelgeuse) — só ele cruza o limiar. ARTÍSTICO
+ * (instrumento).
+ */
+export const PONTA_DAS_CELULAS_QUENTES = { de: 1.0, ate: 1.16, ganho: 1.8 } as const;
 
 /** os comprimentos de onda efetivos dos canais R, G, B (µm) e c₂ = hc/k (µm·K) */
 const LAMBDA_DOS_CANAIS_UM = [0.61, 0.55, 0.465] as const;

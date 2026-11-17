@@ -1336,6 +1336,17 @@ luminosidade. Cada camada do corpo é função contínua deles.
      filtro cai a 0 entre 5.772 e 8.000 K (`pesoDoFiltro`), e as quentes ficam
      no contínuo. O contínuo cru da volta 4 dava o laranja-pálido físico
      (a "bola bege"); o ganho G é escolha de instrumento, não de medida.
+   - *TiO contínuo:* as bandas de TiO são a principal opacidade abaixo de
+     ~4.000 K entre 6.000 e 10.000 Å, crescem com o frio e saturam perto de
+     3.000 K (Schiavon & Barbuy 1999, astro-ph/9807325). O verde e o azul
+     perdem exp(−1,1·p) pela temperatura LOCAL, p = x(2 − x), x de 0 a 4.000 K
+     até 1 a 3.000 K (forma e força ARTÍSTICAS, declaradas), na média e mais
+     nas faixas frias; o brilho médio do disco é reposto. Separa as frias:
+     R/G na tela Arcturus 1,46, Aldebaran 1,64, Antares 1,83 (o Antares do
+     ESO, 1,86), Betelgeuse 2,04; faixas vermelho-escuras.
+   - *Células quentes no bloom:* a ponta quente da rampa ganha ×(1 + 1,8·w)
+     onde só existem as células gigantes (w, a escala profunda), para o pico
+     cruzar o limiar do bloom da casa sem subir a média.
    - *Células quentes:* nas supergigantes, manchas grandes de δ ≈ 0,148 a
      3.600 K, resolvido pela lei de Planck na banda H a partir da mancha de
      Haubois et al. 2009 (8,5 % do fluxo em ~6 % da área, +42 %).

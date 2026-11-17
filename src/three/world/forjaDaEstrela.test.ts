@@ -17,8 +17,10 @@ import {
 } from './forjaDaEstrela';
 import {
   GANHO_DO_INSTRUMENTO,
+  PONTA_DAS_CELULAS_QUENTES,
   RELEVO_DAS_GIGANTES,
   SOL_PARAMS,
+  TIO_DA_FORJA,
   calibracaoDaForja,
   cirurgiaDaEstrela,
   cirurgiaDoAssado,
@@ -30,6 +32,7 @@ import {
   frenteDaAtmosfera,
   literalGlsl,
   pesoDoFiltro,
+  pesoDoTiO,
   tierDaEstrela,
   type StellarParams,
 } from './stellarBody';
@@ -229,7 +232,8 @@ describe('a Forja desligada não muda nada', () => {
     // brilho, o creme no topo), com o limbo do filtro; numa fria (peso 1)
     // sem a razão de Planck nem a borda do contínuo
     expect(c.fragment).toContain('  color *= mix(0.16, 1.42, smoothstep(0.04, 1.08, heat));');
-    expect(c.fragment).toContain(`heat = clamp(heat + ${literalGlsl(GANHO_DO_INSTRUMENTO)}*(rForja - 1.0), 0.0, 1.24);`);
+    expect(c.fragment).toContain(`float calorDaForja = heat + ${literalGlsl(GANHO_DO_INSTRUMENTO)}*(rForja - 1.0);`);
+    expect(c.fragment).toContain('  heat = clamp(calorDaForja, 0.0, 1.24);');
     expect(c.fragment).toContain('vec3(1.0, 0.86, 0.62), 0.550000 * smoothstep(0.72, 1.12, heat));');
     expect(c.fragment).toContain('  color.g *= 1.0 - edge*0.30;');
     expect(c.fragment).not.toContain('razaoDePlanck(');
@@ -238,7 +242,7 @@ describe('a Forja desligada não muda nada', () => {
     const quente = { ...bet, teffK: 7650, logG: 4.16 };
     const w = pesoDoFiltro(7650);
     const q = cirurgiasDaFotosfera(sunJs, sunJs, quente, forjaDe(quente, true))!.fragment;
-    expect(q).toContain(`heat = clamp(heat + ${literalGlsl(w * GANHO_DO_INSTRUMENTO)}*(rForja - 1.0)`);
+    expect(q).toContain(`float calorDaForja = heat + ${literalGlsl(w * GANHO_DO_INSTRUMENTO)}*(rForja - 1.0);`);
     expect(q).toContain(`, rForja), vec3(1.0), ${literalGlsl(w)});`);
     expect(q).toContain(`, ${literalGlsl(1 - w)});`);
     expect(c.fragment).not.toContain('celulasGigantesNaTela(sp');
@@ -282,6 +286,31 @@ describe('a Forja desligada não muda nada', () => {
     expect(sup).toContain(literalGlsl((r.picoQuente / (r.contraste / 4)) * r.pesoProfundo));
     const gig = { ...bet, logG: 1.19, teffK: 3900 };
     expect(glslDoAssadoDaForja(forjaDe(gig, true)!)).not.toContain('quente');
+  });
+
+  it('o TiO pela temperatura local: 0 em 4.000 K, 1 em 3.000 K; a ponta HDR só com células quentes', () => {
+    expect(pesoDoTiO(4450)).toBe(0);
+    expect(pesoDoTiO(4000)).toBe(0);
+    expect(pesoDoTiO(3500)).toBeCloseTo(0.75, 12);
+    expect(pesoDoTiO(3000)).toBe(1);
+    expect(pesoDoTiO(2500)).toBe(1);
+    const tio = `exp(-${literalGlsl(TIO_DA_FORJA)} * xTiO * (2.0 - xTiO) * vec3(0.0, 1.0, 1.0))`;
+    const ponta = 'smoothstep(' + literalGlsl(PONTA_DAS_CELULAS_QUENTES.de) + ', ' + literalGlsl(PONTA_DAS_CELULAS_QUENTES.ate) + ', calorDaForja)';
+    const fr = (p: StellarParams) => cirurgiasDaFotosfera(sunJs, sunJs, p, forjaDe(p, true))!.fragment;
+    // a supergigante: TiO por pixel e a ponta pesada pela escala profunda
+    const f = fr(bet);
+    expect(f).toContain(`float xTiO = clamp((4000.0 - ${literalGlsl(bet.teffK)}*rForja) / 1000.0, 0.0, 1.0);`);
+    expect(f).toContain(tio);
+    const w = forjaDe(bet, true)!.pesoProfundo;
+    expect(f).toContain(`color *= 1.0 + ${literalGlsl(PONTA_DAS_CELULAS_QUENTES.ganho * w)} * ${ponta};`);
+    // a gigante sem escala profunda: TiO sim, ponta não
+    const gig = fr({ ...bet, logG: 1.19, teffK: 3900 });
+    expect(gig).toContain(tio);
+    expect(gig).not.toContain(ponta);
+    // a anã quente: nenhum pixel abaixo de 4.000 K, nem um nem outro
+    const ana = fr({ ...bet, teffK: 7650, logG: 4.16 });
+    expect(ana).not.toContain('xTiO');
+    expect(ana).not.toContain(ponta);
   });
 
   it('o tier leva o assado da regra', () => {
