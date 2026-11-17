@@ -1069,6 +1069,63 @@ function linhasDoGas(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
   ];
 }
 
+/**
+ * A NUVEM MEDIDA no céu (`NuvemMedida`, Betelgeuse): onde estão as plumas e
+ * a casca (medido), o brilho projetado pelo perfil (o selo mais fraco dos
+ * pontos: a forma do infravermelho próximo usada no visível é derivada) e o
+ * hidrogênio (medido). Não é desenhada: no brilho medido ela não se vê, e
+ * a ficha diz. A fonte de cada linha: as citações dos números dela, uma vez cada.
+ */
+function linhasDaNuvem(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
+  const m = e.nuvem;
+  if (!m) return [];
+  const fontes = (ns: readonly Numero[]) => [...new Set(ns.filter((n) => n.fonte).map((n) => n.fonte))].join('; ');
+  const maior = m.pluma;
+  const k = m.casca;
+  const h = m.hidrogenio;
+  const doPerfil = m.perfil.flatMap((p) => [p.raioEmRaios, p.brilho]);
+  return [
+    linha(
+      t('ficha.campo.nuvemEmVolta'),
+      t('ficha.estrela.nuvemEmVolta', {
+        pa: numeroDoIdioma(maior.anguloGraus.v),
+        raios: numeroDoIdioma(maior.alcanceEmRaios.v),
+        extensoes: m.extensoesGraus.map((x) => `${numeroDoIdioma(x.v)}°`).join(t('ficha.estrela.eNuvem')),
+        de: numeroDoIdioma(k.deRaios.v),
+        ate: numeroDoIdioma(k.ateRaios.v),
+        paCasca: numeroDoIdioma(k.anguloGraus.v),
+      }),
+      'medido',
+      fontes([maior.anguloGraus, maior.alcanceEmRaios, ...m.extensoesGraus, k.deRaios, k.ateRaios, k.anguloGraus])
+    ),
+    linha(
+      t('ficha.campo.brilhoDaNuvem'),
+      t('ficha.estrela.brilhoDaNuvem', {
+        pontos: m.perfil
+          .map((p) =>
+            t('ficha.estrela.pontoDaNuvem', {
+              pct: numeroDoIdioma(p.brilho.v * 100),
+              raios: numeroDoIdioma(p.raioEmRaios.v),
+            })
+          )
+          .join(', '),
+      }),
+      oMaisFraco(doPerfil.map((n) => n.p)),
+      fontes(doPerfil)
+    ),
+    linha(
+      t('ficha.campo.hidrogenioEmVolta'),
+      t('ficha.estrela.hidrogenioEmVolta', {
+        max: numeroDoIdioma(h.maximoEmRaios.v),
+        ate: numeroDoIdioma(h.ateRaios.v),
+        pico: numeroDoIdioma(h.picoEmRaios.v),
+      }),
+      oMaisFraco([h.maximoEmRaios.p, h.ateRaios.p, h.picoEmRaios.p]),
+      fontes([h.maximoEmRaios, h.ateRaios, h.picoEmRaios])
+    ),
+  ];
+}
+
 /** Uma linha de número do piloto: o selo e a fonte vêm do próprio número. */
 function linhaDoNumero(rotulo: string, valor: string | null, n: Numero): LinhaDaFicha | null {
   return linha(rotulo, valor, n.p, n.fonte);
@@ -1170,6 +1227,7 @@ function linhasDoPiloto(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
         )
       : null,
     ...linhasDoGas(e),
+    ...linhasDaNuvem(e),
   ];
 }
 

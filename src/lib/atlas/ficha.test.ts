@@ -1045,6 +1045,35 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     expect(sir.secoes.find((x) => x.id === 'imagem')!.linhas.some((l) => l.rotulo === 'gás em volta')).toBe(false);
   });
 
+  it('a nuvem de Betelgeuse: onde está (medido), o brilho (derivado, não desenhada), o hidrogênio (medido); só nela', () => {
+    const de = (n: string) => montarFichaDeEstrela(n, starsMeta.named.find((s) => s.n === n))!;
+    const bet = linhasDe(de('Betelgeuse'));
+    const nuvem = bet.get('nuvem de poeira')!;
+    expect(nuvem.procedencia).toBe('medido');
+    expect(nuvem.valor).toContain('200°');
+    expect(nuvem.valor).toContain('2–3 raios');
+    expect(nuvem.fonte).toContain('Kervella et al. 2009');
+    expect(nuvem.fonte).toContain('Kervella et al. 2016');
+    const brilho = bet.get('brilho da nuvem')!;
+    expect(brilho.procedencia).toBe('derivado');
+    expect(brilho.valor).toContain('1 % a 2,5 raios, 0,4 % a 4 raios, 0,1 % a 6 raios');
+    expect(brilho.valor).toContain('teto');
+    expect(bet.get('hidrogênio em volta')!.procedencia).toBe('medido');
+    expect(brilho.valor).toContain('não é desenhada');
+    expect(nuvem.valor).toContain('75° e 310°');
+    for (const outra of ['Rigel', 'Achernar', 'Aldebaran', 'Antares', 'Arcturus']) {
+      expect(linhasDe(de(outra)).has('nuvem de poeira'), outra).toBe(false);
+    }
+    definirIdioma('en');
+    try {
+      const en = linhasDe(de('Betelgeuse'));
+      expect(en.get('dust cloud')!.valor).toContain('north through east');
+      expect(en.get('cloud brightness')!.valor).toContain('1% at 2.5 radii');
+    } finally {
+      definirIdioma('pt-BR');
+    }
+  });
+
   it('a nomeada fora da lista à mão traz a física da regra única, derivada ou artística, nunca medida', () => {
     const arc = starsMeta.named.find((s) => s.n === 'Arcturus')!;
     const l = linhasDe(montarFichaDeEstrela('Arcturus', arc)!);

@@ -743,6 +743,16 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.campo.regiaoDaLinha': 'Hα line region',
   'ficha.campo.brilhoDoGas': 'gas brightness',
   'ficha.campo.gasEmVolta': 'surrounding gas',
+  'ficha.campo.nuvemEmVolta': 'dust cloud',
+  'ficha.campo.brilhoDaNuvem': 'cloud brightness',
+  'ficha.campo.hidrogenioEmVolta': 'surrounding hydrogen',
+  'ficha.estrela.nuvemEmVolta':
+    'the largest plume leaves at {pa}° on the sky (north through east) and reaches at least {raios} radii; faint extensions at {extensoes}; an incomplete dust shell at {de}–{ate} radii, strongest at {paCasca}°',
+  'ficha.estrela.brilhoDaNuvem':
+    'seen from Earth, along the largest plume: {pontos} of the disk center; the innermost is a ceiling (the instrument\'s own wing is in it), and the outer ones are near infrared; it is not drawn: at this brightness it does not show on screen',
+  'ficha.estrela.eNuvem': ' and ',
+  'ficha.estrela.pontoDaNuvem': '{pct}% at {raios} radii',
+  'ficha.estrela.hidrogenioEmVolta': 'Hα is seen out to {max} radii, nearly all within {ate}, strongest near {pico}',
   'ficha.estrela.vento': 'loses {mdot} solar masses per year, in a wind of ~{v} km/s',
   'ficha.estrela.discoDeGas':
     'out to ~{raios} equatorial radii; measured from 2013 to the end of {ate}, and today\'s state has not been measured',

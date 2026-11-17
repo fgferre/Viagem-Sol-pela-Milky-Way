@@ -777,6 +777,16 @@ export const PT = {
   'ficha.campo.regiaoDaLinha': 'região da linha Hα',
   'ficha.campo.brilhoDoGas': 'brilho do gás',
   'ficha.campo.gasEmVolta': 'gás em volta',
+  'ficha.campo.nuvemEmVolta': 'nuvem de poeira',
+  'ficha.campo.brilhoDaNuvem': 'brilho da nuvem',
+  'ficha.campo.hidrogenioEmVolta': 'hidrogênio em volta',
+  'ficha.estrela.nuvemEmVolta':
+    'a pluma maior sai a {pa}° no céu (do norte para o leste) e vai até pelo menos {raios} raios; extensões fracas a {extensoes}; uma casca de poeira incompleta a {de}–{ate} raios, mais forte a {paCasca}°',
+  'ficha.estrela.brilhoDaNuvem':
+    'visto da Terra, ao longo da pluma maior: {pontos} do centro do disco; o mais perto é um teto (entra a asa do instrumento), e os de fora são do infravermelho próximo; não é desenhada: nesse brilho ela não aparece na tela',
+  'ficha.estrela.eNuvem': ' e ',
+  'ficha.estrela.pontoDaNuvem': '{pct} % a {raios} raios',
+  'ficha.estrela.hidrogenioEmVolta': 'o Hα é visto até {max} raios, quase todo dentro de {ate}, mais forte perto de {pico}',
   'ficha.estrela.vento': 'perde {mdot} massas do Sol por ano, num vento de ~{v} km/s',
   'ficha.estrela.discoDeGas':
     'até ~{raios} raios do equador; medido de 2013 ao fim de {ate}, e o estado de hoje não foi medido',

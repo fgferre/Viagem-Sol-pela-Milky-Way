@@ -126,6 +126,30 @@ export interface EstrelaVisitavel {
   readonly companheiraSemCorpo?: CompanheiraSemCorpo;
   /** o disco de gás de uma estrela Be, medido (`three/world/ventoDaEstrela.ts`) */
   readonly discoDeGas?: DiscoDeGas;
+  /** a nuvem de poeira (e o hidrogênio) em volta de uma supergigante fria, medida no céu: só dado da ficha */
+  readonly nuvem?: NuvemMedida;
+}
+
+/**
+ * A NUVEM EM VOLTA DE UMA SUPERGIGANTE FRIA, como DADO da ficha: medida no
+ * céu, vista da Terra, e NÃO desenhada (17/11): no brilho medido ela não se
+ * vê na tela (a própria foto do VLT/SPHERE no visível não a mostra), e um
+ * ganho só para aparecer seria exagero; o ensaio está no `PLAN-FORJA.md`.
+ * O perfil é o brilho de superfície projetado ao longo da pluma maior, sobre
+ * o centro do disco; os raios em raios da fotosfera; os ângulos no céu, do
+ * norte para o leste.
+ */
+export interface NuvemMedida {
+  /** pontos (raio, brilho sobre o centro do disco), em ordem de raio */
+  readonly perfil: readonly { readonly raioEmRaios: Numero; readonly brilho: Numero }[];
+  /** a pluma maior: a direção e até onde vai (pelo menos) */
+  readonly pluma: { readonly anguloGraus: Numero; readonly alcanceEmRaios: Numero };
+  /** as extensões fracas, pela direção */
+  readonly extensoesGraus: readonly Numero[];
+  /** a casca de poeira incompleta: de/até (raios) e o lado mais forte */
+  readonly casca: { readonly deRaios: Numero; readonly ateRaios: Numero; readonly anguloGraus: Numero };
+  /** o hidrogênio (Hα): quase todo dentro de `ateRaios`, mais forte em `picoEmRaios`, visto até `maximoEmRaios` */
+  readonly hidrogenio: { readonly ateRaios: Numero; readonly picoEmRaios: Numero; readonly maximoEmRaios: Numero };
 }
 
 /**
@@ -230,6 +254,51 @@ const SIRIUS: EstrelaVisitavel = {
   },
 };
 
+/**
+ * A NUVEM DE BETELGEUSE (17/11), lida no texto dos artigos. SPHERE/ZIMPOL
+ * no visível (Kervella et al. 2016, arXiv 1511.04451): o brilho cai a 1 % do
+ * centro do disco no diâmetro θ1%(V) = 107 mas, 2,53 raios da fotosfera de
+ * 42,28 mas (Montargès et al. 2014, banda K) — um TETO: a asa do próprio
+ * instrumento entra nele; a casca de poeira incompleta a 2–3 raios, mais
+ * forte a nordeste (≈ 60°); o Hα "detected up to a radius of 5 R*",
+ * "essentially contained within 3 R* with a particularly strong emission
+ * around 2 R*". NACO a 1,09 µm (Kervella et al. 2009, arXiv 0907.1843): a
+ * pluma a 200 ± 20°, até pelo menos 6 raios, "≈ 0.4 % of the center of the
+ * stellar disk" a 4 raios e "≈ 0.1 % at 6 R*"; duas extensões fracas a 75° e
+ * 310°. Os dois pontos de 1,09 µm são o infravermelho próximo: no perfil do
+ * visível entram como derivados.
+ */
+const KERVELLA_2016 = 'Kervella et al. 2016, A&A 585, A28';
+const KERVELLA_2009 = 'Kervella et al. 2009, A&A 504, 115';
+const NUVEM_DE_BETELGEUSE: NuvemMedida = {
+  perfil: [
+    {
+      raioEmRaios: { v: 107 / 42.28, p: 'medido', fonte: `${KERVELLA_2016}; Montargès et al. 2014` },
+      brilho: { v: 0.01, p: 'medido', fonte: KERVELLA_2016 }, // teto (a asa do instrumento)
+    },
+    { raioEmRaios: { v: 4, p: 'medido', fonte: KERVELLA_2009 }, brilho: { v: 0.004, p: 'derivado', fonte: KERVELLA_2009 } },
+    { raioEmRaios: { v: 6, p: 'medido', fonte: KERVELLA_2009 }, brilho: { v: 0.001, p: 'derivado', fonte: KERVELLA_2009 } },
+  ],
+  pluma: {
+    anguloGraus: { v: 200, p: 'medido', fonte: KERVELLA_2009 },
+    alcanceEmRaios: { v: 6, p: 'medido', fonte: KERVELLA_2009 },
+  },
+  extensoesGraus: [
+    { v: 75, p: 'medido', fonte: KERVELLA_2009 },
+    { v: 310, p: 'medido', fonte: KERVELLA_2009 },
+  ],
+  casca: {
+    deRaios: { v: 2, p: 'medido', fonte: KERVELLA_2016 },
+    ateRaios: { v: 3, p: 'medido', fonte: KERVELLA_2016 },
+    anguloGraus: { v: 60, p: 'medido', fonte: KERVELLA_2016 },
+  },
+  hidrogenio: {
+    ateRaios: { v: 3, p: 'medido', fonte: KERVELLA_2016 },
+    picoEmRaios: { v: 2, p: 'medido', fonte: KERVELLA_2016 },
+    maximoEmRaios: { v: 5, p: 'medido', fonte: KERVELLA_2016 },
+  },
+};
+
 const BETELGEUSE: EstrelaVisitavel = {
   id: 'betelgeuse',
   nomeNoCatalogo: 'Betelgeuse',
@@ -245,6 +314,7 @@ const BETELGEUSE: EstrelaVisitavel = {
     contrasteGranulos: { v: 0.25, p: 'derivado', fonte: 'Chiavassa et al. 2010, A&A 515, A12 (simulação 3D)' },
     bordaU: { v: 0.8, p: 'derivado', fonte: CLARET },
   },
+  nuvem: NUVEM_DE_BETELGEUSE,
 };
 
 /**
