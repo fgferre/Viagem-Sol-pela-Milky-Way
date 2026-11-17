@@ -13,7 +13,8 @@ import { describe, expect, it } from 'vitest';
 import { AU_KM } from '../../../lib/atlas/elementosOrbitais';
 import { AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
 import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
-import { LIMIAR_SISTEMA_SOLAR_PC, RAIO_ARTISTICO_DO_SOL_PC } from '../../escala';
+import { LIMIAR_SISTEMA_SOLAR_PC, RAIO_ARTISTICO_DO_SOL_PC, RAIO_DO_SOL_NA_CENA } from '../../escala';
+import { SOL_PARAMS } from '../../director/estrelasNoQuadro';
 import { repartir } from '../../estrela';
 import { cessaoDoSol } from '../../director/solNoQuadro';
 import { PISO_DO_NEAR_EM_RAIOS, nearPlanePc } from '../../core/engine';
@@ -295,8 +296,10 @@ describe('a lei do palco julgando o Sol (F2)', () => {
     const entraPc = distanciaParaPx(RAIO_ARTISTICO_DO_SOL_PC, LIMIAR_DO_GATE_PX, H_HARNESS);
     expect(entraPc).toBeCloseTo(8.5, 1);
     expect(RAIO_SOL_ARTISTICO_PC).toBe(RAIO_ARTISTICO_DO_SOL_PC);
+    // o raio do Sol sai do registro dele pela lei de toda estrela (`SOL_PARAMS`): o físico
+    expect(SOL_PARAMS.radiusPc).toBe(RAIO_DO_SOL_NA_CENA);
+    expect(RAIO_DO_SOL_NA_CENA).not.toBe(RAIO_ARTISTICO_DO_SOL_PC);
     const stellarBody = readFileSync(new URL('../stellarBody.ts', import.meta.url), 'utf8');
-    expect(stellarBody).toContain('radiusPc: RAIO_DO_SOL_NA_CENA,');
     expect(stellarBody).not.toMatch(/radiusPc:\s*(WORLD\.sunRadius|0\.011)/);
   });
 });

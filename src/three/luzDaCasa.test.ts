@@ -20,6 +20,7 @@
 // ============================================================
 import { readFileSync } from 'node:fs';
 import { describe, it, expect } from 'vitest';
+import { SOL } from '../lib/atlas/estrelasVisitaveis';
 import {
   ALTURA_DE_CALIBRACAO_DO_SIGMA_PX,
   ALTURA_DE_REFERENCIA_PX,
@@ -125,8 +126,8 @@ describe('1. a F1 é INERTE — a ponte devolve os números de hoje, bit a bit',
 
 // ------------------------------------------------------------
 describe('2. os espelhos batem com a fonte — quem mover o número move os dois', () => {
-  it('TEFF_SOL_K é o teffK da instância nº 1 (SOL_PARAMS)', () => {
-    expect(ler('src/three/world/stellarBody.ts')).toContain(`teffK: ${TEFF_SOL_K}`);
+  it('TEFF_SOL_K é a Teff do registro do Sol (`SOL`, de onde sai SOL_PARAMS)', () => {
+    expect(SOL.teffK.v).toBe(TEFF_SOL_K);
   });
 
   it('M_V_SOL_DO_CAMPO é o PONTO_ZERO_SOL_PC de planetas.ts, deslocado de 5 mag', () => {

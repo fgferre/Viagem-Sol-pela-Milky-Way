@@ -12,12 +12,14 @@ import {
   parametrosDaCompanheira,
   parametrosDoMotor,
   stopsDoPico,
+  SOL_PARAMS,
 } from './estrelasNoQuadro';
+import { RAIO_DO_SOL_NA_CENA } from '../escala';
 import type { NamedStar } from '../config';
 import type { StarField } from '../world/stars';
 import type { CorposResolvidos } from '../world/corpos/corpos';
 import { VAGAS_DE_VISITADAS } from '../world/clarao';
-import { ESTRELAS_VISITAVEIS, estrelaVisitavelPorNome, manchaQuenteDe } from '../../lib/atlas/estrelasVisitaveis';
+import { ESTRELAS_VISITAVEIS, estrelaVisitavelPorNome, celulaQuenteDe } from '../../lib/atlas/estrelasVisitaveis';
 import { radianciaVisivelDeCorpoNegro } from '../luzDaCasa';
 import { pesoDoFiltro } from '../world/stellarBody';
 import { BORDA_FORA_DO_DISCO, MANCHA_DE_HAUBOIS, pesoDoPico } from '../world/forjaDaEstrela';
@@ -30,21 +32,31 @@ describe('toda estrela visitável vira parâmetros do MESMO motor, sem nome', ()
       expect(p.radiusPc).toBeGreaterThan(0);
       expect(Number.isFinite(p.rotPeriodDays) && p.rotPeriodDays > 0).toBe(true);
       expect(Number.isFinite(p.activityLevel)).toBe(true);
-      expect(p.foraDaOrigem).toBe(true);
+      // fora da origem é de quem põe a estrela no céu, não da lei da estrela
+      expect(p.foraDaOrigem).toBeUndefined();
     }
+  });
+  it('o Sol sai da mesma lei, sobre o registro dele: os números do motor de antes', () => {
+    expect(SOL_PARAMS).toMatchObject({ nome: 'sol', radiusPc: RAIO_DO_SOL_NA_CENA, rotPeriodDays: 25.38, tiltRad: 0.1265 });
+    expect(SOL_PARAMS).toMatchObject({ activityLevel: 1, teffK: 5772, dinamo: true, seed: 20260803, knobPrefix: 'sol' });
+    expect(SOL_PARAMS).toMatchObject({ granuloRelativoAoSol: 1, contrasteRelativoAoSol: 1, bordaU: 0.3 });
+    expect(SOL_PARAMS.foraDaOrigem).toBeUndefined();
+    expect(SOL_PARAMS.veu).toBeUndefined();
+    expect(SOL_PARAMS.gas).toBeUndefined();
+    expect(SOL_PARAMS.achatamento).toBeUndefined();
   });
   it('Betelgeuse: sem dínamo', () => {
     const b = parametrosDoMotor(estrelaVisitavelPorNome('Betelgeuse')!);
     expect(b.dinamo).toBe(false);
     expect(b.veu).toBeUndefined();
     // a mancha quente medida (Haubois) vai ao motor; quem não tem medida vai pela regra, sem o campo
-    expect(b.manchaQuente).toEqual(MANCHA_DE_HAUBOIS);
-    expect(parametrosDoMotor(estrelaVisitavelPorNome('Aldebaran')!).manchaQuente).toBeUndefined();
+    expect(b.celulaQuente).toEqual(MANCHA_DE_HAUBOIS);
+    expect(parametrosDoMotor(estrelaVisitavelPorNome('Aldebaran')!).celulaQuente).toBeUndefined();
     // a tabela é por nome próprio: um nome que é chave do protótipo não acerta nada
     for (const nome of ['constructor', 'toString', '__proto__']) {
       const e = { ...estrelaVisitavelPorNome('Aldebaran')!, nomeNoCatalogo: nome };
-      expect(manchaQuenteDe(e).medida).toBe(false);
-      expect(parametrosDoMotor(e).manchaQuente).toBeUndefined();
+      expect(celulaQuenteDe(e).medida).toBe(false);
+      expect(parametrosDoMotor(e).celulaQuente).toBeUndefined();
     }
   });
   it('a quente leva o véu (a luz que a exposição não põe no disco) e é lisa: sem convecção na superfície', () => {

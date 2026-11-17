@@ -47,9 +47,11 @@ import {
   UA_POR_PC,
 } from '../unidades';
 import {
+  BORDA_DA_MANCHA_FRIA,
   LEI_DA_ATMOSFERA,
   LEI_DO_CONTRASTE,
   LAMBDA_DO_VISIVEL_UM,
+  escuroDaRegiaoFria,
   pesoDaLisa,
   pesoDoPico,
   razaoDePlanckNaBanda,
@@ -79,9 +81,10 @@ import {
   achatamentoDe,
   estrelaVisitavelPorNome,
   logGravidade,
-  manchaQuenteDe,
+  celulaQuenteDe,
   temDinamoSolar,
   type Achatamento,
+  type EscurecimentoMedido,
   type EstrelaVisitavel,
   type Numero,
 } from './estrelasVisitaveis';
@@ -1012,7 +1015,7 @@ function potenciaDeDez(v: number): string {
 function linhasDoGas(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
   const v = fracaoDesenhadaDoVento(e) > 0 ? ventoDaFicha(e) : null;
   const d = e.discoDeGas;
-  const linhaH = v ? raioDaLinhaDe(e.nomeNoCatalogo) : null;
+  const linhaH = v ? raioDaLinhaDe(e) : null;
   const mdot = v ? potenciaDeDez(v.mdotMsolAno) : '';
   // a velocidade medida ou do modelo como está; a da receita, em dezenas
   const vel = v ? inteiroDoIdioma(v.p === 'medido' ? v.vInfKms : Math.round(v.vInfKms / 10) * 10) : '';
@@ -1141,7 +1144,20 @@ function linhasDoEscurecimento(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
   if (!x) return [];
   const medidas = x.epocas.filter((p) => p.fracaoDoDisco.p === 'medido');
   return [
-    linha(t('ficha.campo.grandeEscurecimento'), t('ficha.estrela.grandeEscurecimento'), 'medido', x.teffDaFotosferaK.fonte),
+    linha(
+      t('ficha.campo.grandeEscurecimento'),
+      t('ficha.estrela.grandeEscurecimento', {
+        claro: decimalDoIdioma(x.costumeMag[0].toFixed(1)),
+        fraco: decimalDoIdioma(x.costumeMag[1].toFixed(1)),
+        mag: decimalDoIdioma(x.minimo.mag.v.toFixed(3)),
+        erro: decimalDoIdioma(x.minimo.erroMag.toFixed(3)),
+        de: dataDaEpoca(x.minimo.de),
+        ate: dataDaEpoca(x.minimo.ate),
+        razao: numeroDoIdioma(x.razaoDoLadoEscuro.v),
+      }),
+      oMaisFraco([x.minimo.mag.p, x.razaoDoLadoEscuro.p]),
+      [...new Set([x.minimo.mag.fonte, x.razaoDoLadoEscuro.fonte])].join('; ')
+    ),
     linha(
       t('ficha.campo.manchaFria'),
       t('ficha.estrela.manchaFria', {
@@ -1192,7 +1208,7 @@ const LEI_DA_LISA = 'Steffen et al. 2005; Cantiello et al. 2009';
 /** A regra da Forja quando é ela que desenha a estrela (sem dínamo e com convecção visível); senão null. */
 function forjaDaFicha(e: EstrelaVisitavel): ReturnType<typeof regraDaForja> | null {
   if (temDinamoSolar(e)) return null;
-  const m = manchaQuenteDe(e);
+  const m = celulaQuenteDe(e);
   const forja = regraDaForja(e.teffK.v, logGravidade(e.massaMsol.v, e.raioRsol.v), e.raioRsol.v, {
     razao: m.razao.v,
     lambdaUm: m.lambdaUm.v,
@@ -1207,7 +1223,7 @@ function forjaDaFicha(e: EstrelaVisitavel): ReturnType<typeof regraDaForja> | nu
  */
 function linhasDaMancha(e: EstrelaVisitavel, forja: ReturnType<typeof regraDaForja> | null): (LinhaDaFicha | null)[] {
   if (!forja || !(forja.pesoProfundo > 0) || !(forja.picoQuente > 0)) return [];
-  const m = manchaQuenteDe(e);
+  const m = celulaQuenteDe(e);
   const lambda = decimalDoIdioma(String(m.lambdaUm.v));
   const chave = !m.medida
     ? 'ficha.estrela.manchaQuenteDeBetelgeuse'
@@ -1387,6 +1403,47 @@ function linhasDoBrilho(teffK: number): (LinhaDaFicha | null)[] {
   ];
 }
 
+/**
+ * O ESCURECIMENTO NO DESENHO, pelos números do registro da estrela: o que o
+ * desenho deriva (o lado escuro por época, a lei de Planck e o TiO da Forja
+ * nas temperaturas do modelo, contra o piso medido) e, à parte, o que é
+ * escolha (a borda larga, o contorno pelas células, as células que cedem).
+ */
+function linhasDoEscurecimentoNoDesenho(e: EstrelaVisitavel, x: EscurecimentoMedido): (LinhaDaFicha | null)[] {
+  const t0 = x.teffDaFotosferaK.v;
+  const medidas = x.epocas.filter((p) => p.fracaoDoDisco.p === 'medido');
+  const frias = [...new Set(medidas.map((p) => p.teffDaManchaK.v))];
+  return [
+    linha(
+      t('ficha.campo.escurecimentoNoDesenho'),
+      t('ficha.estrela.escurecimentoNoDesenho', {
+        de: dataDaEpoca(x.epocas[0].data),
+        ate: dataDaEpoca(x.epocas[x.epocas.length - 1].data),
+        lados: medidas
+          .map((p) => t('ficha.estrela.ladoEscuroNaEpoca', { graus: inteiroDoIdioma(p.anguloGraus.v), data: dataDaEpoca(p.data) }))
+          .join(', '),
+        escuros: frias
+          .map((k) =>
+            t('ficha.estrela.escuroNaTemperatura', {
+              x: numeroDoIdioma(Math.round(escuroDaRegiaoFria(e.teffK.v, k / t0) * 10) / 10),
+              k: inteiroDoIdioma(k),
+              t0: inteiroDoIdioma(t0),
+            })
+          )
+          .join(t('ficha.estrela.eNuvem')),
+        razao: numeroDoIdioma(x.razaoDoLadoEscuro.v),
+      }),
+      'derivado',
+      x.teffDaFotosferaK.fonte
+    ),
+    linha(
+      t('ficha.campo.bordaDaRegiaoFria'),
+      t('ficha.estrela.bordaDaRegiaoFria', { largura: numeroDoIdioma(2 * BORDA_DA_MANCHA_FRIA) }),
+      'artistico'
+    ),
+  ];
+}
+
 /** A SEÇÃO DA IMAGEM da estrela do piloto: o que é medida e o que é desenho. */
 function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
   const forja = forjaDaFicha(e);
@@ -1419,17 +1476,7 @@ function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
         ? linha(t('ficha.campo.gasEmVolta'), t('ficha.estrela.gasEmVolta'), 'artistico')
         : null,
       // o escurecimento pelo relógio: a mancha fria do modelo, com o que o desenho deriva
-      e.escurecimento && daForja
-        ? linha(
-            t('ficha.campo.escurecimentoNoDesenho'),
-            t('ficha.estrela.escurecimentoNoDesenho', {
-              de: dataDaEpoca(e.escurecimento.epocas[0].data),
-              ate: dataDaEpoca(e.escurecimento.epocas[e.escurecimento.epocas.length - 1].data),
-            }),
-            'derivado',
-            e.escurecimento.teffDaFotosferaK.fonte
-          )
-        : null,
+      ...(e.escurecimento && daForja ? linhasDoEscurecimentoNoDesenho(e, e.escurecimento) : []),
       forja && forja.contraste < forja.contrasteNaTela
         ? linha(
             t('ficha.campo.granulacao'),

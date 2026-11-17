@@ -308,7 +308,7 @@ export function larguraDoAssado(celulaNaTelaEmRaios: number): number {
  * 2009 (A&A 508, 923; IOTA, banda H, 1,65 µm), 8,5 % do fluxo em ~6 % da área
  * — 1,42× o brilho médio na banda H, δ ≈ 0,15 a 3.600 K (~+540 K); no
  * visível o mesmo δ sai ~2,6× mais claro (a mancha quase branca das imagens
- * do ESO). A medida da estrela vence a regra (`manchaQuenteDe`).
+ * do ESO). A medida da estrela vence a regra (`celulaQuenteDe`).
  */
 export const FLUXO_DA_MANCHA_QUENTE = 0.085;
 export const AREA_DA_MANCHA_QUENTE = 0.06;
@@ -365,7 +365,7 @@ export interface RegraDaForja {
   /** o pico pela regra na mesma Teff (a mancha de Haubois): a régua do acabamento por dentro da célula */
   readonly picoDaRegra: number;
   /** a mancha é MEDIDA nesta estrela (não a regra): o peso por gravidade não a escala */
-  readonly manchaMedida: boolean;
+  readonly celulaMedida: boolean;
 }
 
 /**
@@ -373,8 +373,8 @@ export interface RegraDaForja {
  * ponta HDR): a mancha MEDIDA entra inteira; a da regra, pelo peso da escala
  * profunda (`pesoDaEscalaProfunda`), contínuo em log g.
  */
-export function pesoDasCelulasQuentes(r: Pick<RegraDaForja, 'manchaMedida' | 'pesoProfundo'>): number {
-  return r.manchaMedida ? 1 : Math.min(1, Math.max(0, r.pesoProfundo));
+export function pesoDasCelulasQuentes(r: Pick<RegraDaForja, 'celulaMedida' | 'pesoProfundo'>): number {
+  return r.celulaMedida ? 1 : Math.min(1, Math.max(0, r.pesoProfundo));
 }
 
 /** O botão GRAVIDADE inteiro, de Teff, log g e raio; a mancha quente medida, quando há. */
@@ -399,7 +399,7 @@ export function regraDaForja(
     assado: larguraDoAssado(celulaNaTelaEmRaios(a)),
     picoQuente: picoDasCelulasQuentes(teffK, mancha ?? MANCHA_DE_HAUBOIS),
     picoDaRegra: picoDasCelulasQuentes(teffK),
-    manchaMedida: mancha !== undefined,
+    celulaMedida: mancha !== undefined,
   };
 }
 
@@ -477,4 +477,54 @@ export function direcaoNoCeu(pos: readonly [number, number, number], anguloGraus
   const c = Math.cos(a);
   const n = Math.sin(a);
   return [c * norte[0] + n * leste[0], c * norte[1] + n * leste[1], c * norte[2] + n * leste[2]];
+}
+
+/**
+ * O TiO DA FORJA, CONTÍNUO NA TEMPERATURA LOCAL. Schiavon & Barbuy 1999
+ * (astro-ph/9807325): abaixo de ~4.000 K as bandas do TiO são a principal
+ * opacidade de 6.000 a 10.000 Å; o índice EW6000 (6.145–6.541 Å) cresce a
+ * partir de ~4.000 K e satura abaixo de ~3.000 K (o γ Δv = 0, ~7.150 Å,
+ * abaixo de ~3.200 K). O peso vai de 0 em 4.000 K a 1 em 3.000 K, com
+ * x = (4.000 − T)/1.000 e p = x(2 − x): cresce já em 4.000 K e chega
+ * deitado em 3.000 K (a saturação). A forma é ARTÍSTICA, declarada; as
+ * pontas são as da fonte. T é a temperatura LOCAL (Teff·r), então a mesma
+ * lei vale na média da estrela e nas faixas — mais frias, absorvem mais e
+ * ficam vermelho-escuras; as células quentes escapam dele.
+ */
+export function pesoDoTiO(tK: number): number {
+  const x = Math.min(1, Math.max(0, (4000 - tK) / 1000));
+  return x * (2 - x);
+}
+
+/**
+ * A FORÇA DO TiO DA FORJA: os canais G e B levam exp(−k·p(T)). k = 1,1 é
+ * escolhido pelo resultado (ARTÍSTICO, declarado; o k = 8 das gigantes de
+ * antes não tinha âncora): na Teff, Aldebaran (3.900 K) 0,81 no verde
+ * (laranja), Antares (3.745 K) 0,61 e Betelgeuse (3.600 K) 0,49
+ * (vermelho-alaranjado; o Antares do ESO, eso1726, tem R/G ~1,86 na tela, e
+ * o nosso, medido na volta 6a, ~1,83); Arcturus (4.450 K) só nas faixas
+ * mais fundas. Os canais são os da tela: a banda do EW6000 cai no vermelho
+ * de 0,61 µm, mas a imagem colorizada perde o verde e o azul.
+ */
+export const TIO_DA_FORJA = 1.1;
+
+/** os comprimentos de onda efetivos dos canais R, G, B (µm) e c₂ = hc/k (µm·K) */
+export const LAMBDA_DOS_CANAIS_UM = [0.61, 0.55, 0.465] as const;
+export const C2_UM_K = 14388;
+
+/**
+ * O ESCURO DA REGIÃO FRIA no visível: quantas vezes uma região a `razaoT`
+ * da temperatura local sai mais escura que a vizinhança, na luminância da
+ * tela (Rec. 709, antes da curva de tom) — a mesma lei que o desenho usa:
+ * Planck por canal e o TiO da Forja na temperatura local. É o número que a
+ * ficha diz; a curva de tom ainda o aperta na tela.
+ */
+export function escuroDaRegiaoFria(teffK: number, razaoT: number): number {
+  if (!(teffK > 0) || !(razaoT > 0)) return 1;
+  const fria = teffK * razaoT;
+  const tio = Math.exp(-TIO_DA_FORJA * (pesoDoTiO(fria) - pesoDoTiO(teffK)));
+  const canal = (l: number, i: number) =>
+    (Math.expm1(C2_UM_K / (l * teffK)) / Math.expm1(C2_UM_K / (l * fria))) * (i > 0 ? tio : 1);
+  const [r, g, b] = LAMBDA_DOS_CANAIS_UM.map(canal) as [number, number, number];
+  return 1 / (0.2126 * r + 0.7152 * g + 0.0722 * b);
 }

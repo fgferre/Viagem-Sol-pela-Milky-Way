@@ -8,11 +8,11 @@
 // é `gasDaEstrela`.
 //
 //  · VENTO: ρ(r) ∝ Ṁ / (4π r² v(r)), v(r) = v∞·max((1 − R/r)^β, piso).
-//    Ṁ e v∞: o MEDIDO vence (`VENTOS_MEDIDOS`); senão a receita de Vink,
+//    Ṁ e v∞: o MEDIDO no registro vence (`ventoMedido`); senão a receita de Vink,
 //    de Koter & Lamers 2001 (A&A 369, 574), só dentro da faixa dela
 //    (`ventoPelaReceita`). Abaixo de 12.500 K não há receita. O halo é
 //    LISO e CURTO: chega ao piso do instrumento no raio da região da linha
-//    (`raioDaLinhaDe`, medido em Rigel e Deneb).
+//    (`raioDaLinhaDe`: o `raioDaLinhaMedido` do registro, ou o da receita).
 //  · O BRILHO, sem limiar físico: a fração do fluxo do gás sobre o do disco
 //    é G·X/X_Rigel, X = (Ṁ/v∞)² / (R³·B656(Teff)) — a medida de emissão de
 //    um vento ∝ (Ṁ/v∞)²/R³ (a área do disco, R², divide o volume, R³ · R⁻⁴
@@ -26,7 +26,7 @@
 //    da densidade (Rivinius, Carciofi & Martayan 2013, A&ARv 21, 69); a
 //    época por lista medida (`faseDoDisco`), nunca por ciclo inventado.
 // ============================================================
-import { rotacaoDe, type DiscoDeGas, type EstrelaVisitavel } from '../../lib/atlas/estrelasVisitaveis';
+import { VENTO_DE_RIGEL, rotacaoDe, type DiscoDeGas, type EstrelaVisitavel, type Numero } from '../../lib/atlas/estrelasVisitaveis';
 
 /** GM do Sol (IAU 2015 B3, nominal), m³/s² */
 const GM_SOL = 1.3271244e20;
@@ -43,38 +43,19 @@ export interface Vento {
   readonly vInfDoModelo?: true;
 }
 
-const CHESNEAU_2014 = 'Chesneau et al. 2014, A&A 566, A125';
-const AUFDENBERG_2002 = 'Aufdenberg et al. 2002, ApJ 570, 344';
+
 export const CHESNEAU_2010 = 'Chesneau et al. 2010, A&A 521, A5';
 export const FONTE_DA_RECEITA = 'Vink, de Koter & Lamers 2001, A&A 369, 574';
 
 /**
- * OS VENTOS MEDIDOS, pelo nome no catálogo. Rigel: a média de 9,4 ± 0,9
- * (2006–07) e 7,6 ± 1,1 × 10⁻⁷ M☉/ano (2009–10), Chesneau et al. 2014; v∞
- * 230 km/s pelas linhas de ressonância de Mg II citadas ali ("The Mg II
- * resonance lines suggest terminal wind speeds of ∼230 km s⁻¹"). Deneb:
- * Ṁ 8 ± 3 × 10⁻⁷ medido; os 225 km/s são parâmetro do MODELO de Aufdenberg
- * et al. 2002, não medida direta (a ficha diz).
+ * O RAIO DA REGIÃO DA LINHA de quem não tem o seu medido: o de Rigel, 1,5
+ * raio do contínuo (Chesneau et al. 2010), declarado derivado.
  */
-export const VENTOS_MEDIDOS: Readonly<Record<string, Vento>> = {
-  Rigel: { mdotMsolAno: 8.5e-7, vInfKms: 230, p: 'medido', fonte: CHESNEAU_2014 },
-  Deneb: { mdotMsolAno: 8e-7, vInfKms: 225, p: 'medido', fonte: AUFDENBERG_2002, vInfDoModelo: true },
-};
+export const RAIO_DA_LINHA_DA_RECEITA = 1.5;
 
-/**
- * O TAMANHO DA REGIÃO DA LINHA Hα, em raios do contínuo, MEDIDO: "the
- * highest extension of the Hα line-forming regions are 4.1 ± 0.2 mas and
- * 4.2 ± 0.2 mas for Deneb and Rigel, representing 1.75 and 1.5 R⋆"
- * (Chesneau et al. 2010, A&A 521, A5). O halo desenhado chega ao piso do
- * instrumento NESTE raio. Nas estrelas da receita vale o de Rigel (1,5),
- * declarado derivado.
- */
-export const RAIOS_DA_LINHA_MEDIDOS: Readonly<Record<string, number>> = { Rigel: 1.5, Deneb: 1.75 };
-
-/** o raio da região da linha de uma estrela: o medido pelo nome, ou o de Rigel (derivado) */
-export function raioDaLinhaDe(nome: string): { v: number; p: 'medido' | 'derivado'; fonte: string } {
-  const m = RAIOS_DA_LINHA_MEDIDOS[nome];
-  return m !== undefined ? { v: m, p: 'medido', fonte: CHESNEAU_2010 } : { v: RAIOS_DA_LINHA_MEDIDOS.Rigel, p: 'derivado', fonte: CHESNEAU_2010 };
+/** o raio da região da linha de uma estrela: o medido pelo nome/** o raio da região da linha de uma estrela: o medido no registro dela, ou o da receita (derivado) */
+export function raioDaLinhaDe(e: EstrelaVisitavel): Numero {
+  return e.raioDaLinhaMedido ?? { v: RAIO_DA_LINHA_DA_RECEITA, p: 'derivado', fonte: CHESNEAU_2010 };
 }
 
 /** log⟨ρ⟩ na metalicidade do Sol (Vink et al. 2001, eq. 14) */
@@ -153,11 +134,6 @@ export function ventoPelaReceita(teffK: number, lumLsol: number, massaMsol: numb
   };
 }
 
-/** o vento de uma estrela: o medido pelo nome vence; senão a receita */
-export function ventoDe(nome: string, teffK: number, lumLsol: number, massaMsol: number, raioRsol: number): Vento | null {
-  return VENTOS_MEDIDOS[nome] ?? ventoPelaReceita(teffK, lumLsol, massaMsol, raioRsol);
-}
-
 /** Planck em 656,3 nm, sem as constantes (só a razão entre estrelas importa): 1/(e^(hc/λkT) − 1) */
 export function planck656(teffK: number): number {
   return 1 / Math.expm1(0.014387769 / 656.3e-9 / teffK);
@@ -175,7 +151,7 @@ export function medidaDoVento(v: Vento, raioRsol: number, teffK: number): number
  * teste confere a ficha contra estes números).
  */
 export const ANCORA_RIGEL = { teffK: 12100, raioRsol: 67.7 } as const;
-const X_RIGEL = medidaDoVento(VENTOS_MEDIDOS.Rigel, ANCORA_RIGEL.raioRsol, ANCORA_RIGEL.teffK);
+const X_RIGEL = medidaDoVento(VENTO_DE_RIGEL, ANCORA_RIGEL.raioRsol, ANCORA_RIGEL.teffK);
 
 /**
  * O GANHO DO GÁS — o único número de brilho, ARTÍSTICO, por imagem: a
@@ -468,9 +444,9 @@ export function discoDoMotor(d: DiscoDeGas, bordaU: number): DiscoDoMotor {
   };
 }
 
-/** o vento de uma estrela da ficha (o medido pelo nome vence), ou null */
+/** o vento de uma estrela da ficha: o medido no registro dela vence; senão a receita */
 export function ventoDaFicha(e: EstrelaVisitavel): Vento | null {
-  return ventoDe(e.nomeNoCatalogo, e.teffK.v, e.luminosidadeLsol.v, e.massaMsol.v, e.raioRsol.v);
+  return e.ventoMedido ?? ventoPelaReceita(e.teffK.v, e.luminosidadeLsol.v, e.massaMsol.v, e.raioRsol.v);
 }
 
 /** a fração do vento que o motor desenharia (0 se abaixo do limiar de desenho ou sem vento) */
@@ -491,7 +467,7 @@ export function gasDaEstrela(e: EstrelaVisitavel): GasDoMotor | null {
   const v = f > 0 ? ventoDaFicha(e) : null;
   let vento: GasDoMotor['vento'];
   if (v) {
-    const fim = fimDaCauda(raioDaLinhaDe(e.nomeNoCatalogo).v);
+    const fim = fimDaCauda(raioDaLinhaDe(e).v);
     const normal = (f * fluxoDoDisco(u)) / integralDoVento(fim);
     const giro = rotacaoDe(e);
     vento = {

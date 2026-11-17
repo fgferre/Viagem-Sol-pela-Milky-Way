@@ -42,8 +42,7 @@ import {
   logGravidade,
   superficiePelaTemperatura,
   type EstrelaVisitavel,
-  type Numero,
-} from './estrelasVisitaveis';
+  type Numero, comAsMedidas } from './estrelasVisitaveis';
 
 // ─── as escalas tipo → Teff, por classe ─────────────────────────────────────
 
@@ -408,10 +407,10 @@ export function estrelaDoCatalogo(n: NamedStar): EstrelaVisitavel | null {
   // para elas, fica ponto de luz (Sirius B tem a sua, escrita à mão).
   if (tipoLido?.spectralClass === 'WD') return null;
   const pelo = calcular(n, tipoLido);
-  if (pelo?.coerente) return pelo.ficha;
+  if (pelo?.coerente) return comAsMedidas(pelo.ficha);
   if (!tipoLido) return null;
   const semRotulo = calcular(n, null);
-  return semRotulo?.coerente ? semRotulo.ficha : null;
+  return semRotulo?.coerente ? comAsMedidas(semRotulo.ficha) : null;
 }
 
 /** a companheira de uma escrita à mão (Sirius B) já tem corpo, na órbita

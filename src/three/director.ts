@@ -55,7 +55,7 @@ import type { ParametrosDoContorno, RetanguloDoContorno } from './core/contornoD
 // vive na LEI §7.)
 import { StarField } from './world/stars';
 import { Nebula } from './world/nebula';
-import { StellarBody, SOL_PARAMS } from './world/stellarBody';
+import { StellarBody } from './world/stellarBody';
 import { Dust } from './world/dust';
 import type { OclusorDeRotulo, StarLabel } from './world/labels';
 // O CLARÃO DE ASAS (M2) e a LUZ ÚNICA (13/11): a camada única da óptica de
@@ -126,7 +126,7 @@ import { ligarGestos } from './director/gestos';
 import { distanciaAposEstalos } from './zoomDaRoda';
 import { Rotulos } from './director/rotulos';
 import { SolNoQuadro } from './director/solNoQuadro';
-import { EstrelasNoQuadro, lerPortaEstrelasComLugar } from './director/estrelasNoQuadro';
+import { EstrelasNoQuadro, SOL_PARAMS, lerPortaEstrelasComLugar } from './director/estrelasNoQuadro';
 import { faseDoCiclo, lerPortaSolQuadro } from './estrela';
 import type { CalibracaoDaCasa } from './estrela';
 import { BETA_DA_EMISSAO } from './shaders/starShaders';

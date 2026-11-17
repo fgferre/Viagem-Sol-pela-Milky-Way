@@ -784,13 +784,18 @@ export const PT = {
   'ficha.campo.manchaFria': 'mancha fria (modelo)',
   'ficha.campo.escurecimentoNoDesenho': 'escurecimento',
   'ficha.estrela.grandeEscurecimento':
-    'de novembro de 2019 a março de 2020 o brilho visível, normalmente entre 0,1 e 1,0, caiu a 1,614 ± 0,008 mag por volta de 7–13/2/2020; em dezembro e janeiro o hemisfério sul tinha pico de brilho mais de 10× menor que o norte, em todos os filtros do visível, e em março a área escura seguia no quadrante sudoeste; o diâmetro não mudou',
+    'o brilho visível, normalmente entre {claro} e {fraco}, caiu a {mag} ± {erro} mag entre {de} e {ate}; nas imagens do visível, o lado escuro teve pico de brilho mais de {razao}× menor que o lado oposto; o diâmetro não mudou',
   'ficha.estrela.manchaFria':
     'o ajuste de mancha fria do artigo, com a fotosfera a {t0} K: {epocas} (±50 K); uma nuvem de poeira na frente da estrela ajusta as imagens igualmente bem, e o artigo não escolhe — propõe que o resfriamento deixou a poeira se formar; o círculo do modelo (raio de 0 a 10 mas, no quadrante sudoeste) cobre no máximo ~22 % de um disco de 42 mas e não chega aos 62, 79 e 43 % que o próprio texto dá: o app segue as imagens',
   'ficha.estrela.epocaDaManchaFria': '{data}, {pct} % do disco aparente a {k} K',
   'ficha.estrela.dataDaEpoca': '{d}/{m}/{a}',
   'ficha.estrela.escurecimentoNoDesenho':
-    'pelo relógio do app, de {de} a {ate}: o desenho é a região fria (não a poeira), com a forma das imagens do SPHERE — o sul escuro em dezembro e janeiro, recuando para um crescente a sudoeste em março; dentro dela a temperatura é a do modelo, na razão sobre a fotosfera dele: o brilho e a cor caem pela lei de Planck e pelo TiO nessa temperatura, as células claras cedem e a célula quente some, voltando a rede comum de células; linear entre as datas; derivados: o sul exato e o sudoeste a 225° (o artigo dá o hemisfério e o quadrante), onde a borda corta o disco em cada época (lido nas imagens; em março, a olho), as pontas da janela (a data exata da volta não está nos textos lidos); a largura da borda (~0,3 raio) e o contorno que segue as células são escolha; o sul sai menos escuro que o medido (2 a 3× contra mais de 10× nas fotos do SPHERE): a lei de Planck e o TiO da Forja dão 2,1× a 3.400/3.700 K e 3,5× a 3.200/3.700 K, e nada foi aumentado sem fonte; o ponto de luz no céu não escurece (vem do catálogo)',
+    'pelo relógio do app, de {de} a {ate}: o desenho é a região fria (não a poeira), com a forma das imagens — o lado escuro {lados} (no céu, do norte para o leste); dentro dela a temperatura é a do modelo, na razão sobre a fotosfera dele: o brilho e a cor caem pela lei de Planck e pelo TiO nessa temperatura; linear entre as datas; derivados: a direção do lado escuro (o artigo dá o hemisfério e o quadrante), onde a borda corta o disco em cada época (lido nas imagens), as pontas da janela; a lei de Planck e o TiO da Forja dão {escuros}, contra mais de {razao}× nas imagens, e nada foi aumentado sem fonte; o ponto de luz no céu não escurece (vem do catálogo)',
+  'ficha.estrela.ladoEscuroNaEpoca': 'a {graus}° em {data}',
+  'ficha.estrela.escuroNaTemperatura': '{x}× mais escuro a {k}/{t0} K',
+  'ficha.campo.bordaDaRegiaoFria': 'borda da região fria',
+  'ficha.estrela.bordaDaRegiaoFria':
+    'larga (~{largura} raio) e irregular, seguindo as células, e dentro dela as células claras cedem e a célula quente some: escolha — as imagens não resolvem a borda',
   'ficha.campo.manchaQuente': 'mancha quente',
   'ficha.campo.manchaNoVisivel': 'mancha no visível',
   'ficha.estrela.nuvemEmVolta':
