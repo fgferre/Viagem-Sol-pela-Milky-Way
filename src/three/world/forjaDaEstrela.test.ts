@@ -251,14 +251,20 @@ describe('a Forja desligada não muda nada', () => {
     expect(q).toContain(`, rForja), vec3(1.0), ${literalGlsl(w)});`);
     expect(q).toContain(`, ${literalGlsl(1 - w)});`);
     expect(c.fragment).not.toContain('granulacaoViva(sp');
-    // a borda macia, na largura da regra, até o piso da frente da casca
+    // a borda macia, na largura da regra, até o piso da frente da casca — e,
+    // onde a borda de verdade é mais fina que o piso de 1,5 px, mais rasa na
+    // proporção (largura real / desenhada), para o pixel mostrar a média
     const r = forjaDe(bet)!;
-    expect(c.fragment).toContain(
-      `color *= mix(${literalGlsl(frenteDaAtmosfera(r.atmosferaEmRaios))}, 1.0, smoothstep(0.0, max(${literalGlsl(r.bordaEmMu)}, `
-    );
-    // sem atmosfera estendida (anã quente), a borda vai a zero
+    const bordaDe = (x: NonNullable<ReturnType<typeof forjaDe>>) =>
+      `  color *= mix(max(${literalGlsl(frenteDaAtmosfera(x.atmosferaEmRaios))}, 1.0 - min(1.0, ${literalGlsl(x.bordaEmMu * x.bordaEmMu)}/max(pisoDaBorda, 1e-9))), 1.0, ` +
+      `smoothstep(0.0, max(${literalGlsl(x.bordaEmMu)}, sqrt(pisoDaBorda)), mu));`;
+    expect(c.fragment).toContain('  float pisoDaBorda = 3.0*fwidth(sqrt(max(0.0, 1.0 - mu*mu)));\n' + bordaDe(r));
+    // sem atmosfera estendida (anã quente) a mesma linha, com a frente em
+    // zero: a queda inteira só de perto, onde a borda passa de 1,5 px
     const ana = { ...bet, teffK: 7650, logG: 4.16 };
-    expect(cirurgiasDaFotosfera(sunJs, sunJs, ana, forjaDe(ana))!.fragment).toContain('  color *= smoothstep(0.0, max(');
+    const ra = forjaDe(ana)!;
+    expect(frenteDaAtmosfera(ra.atmosferaEmRaios)).toBe(0);
+    expect(cirurgiasDaFotosfera(sunJs, sunJs, ana, ra)!.fragment).toContain(bordaDe(ra));
     // sem relevo nenhum: o vertex é o de antes
     expect(c.vertex).toBe(sunJs);
   });

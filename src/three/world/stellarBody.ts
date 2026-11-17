@@ -695,7 +695,16 @@ export function cirurgiaDaEstrela(
       (wF >= 1 ? '' : `  color *= mix(razaoDePlanck(${xDePlanckGlsl(teff)}, rForja), vec3(1.0), ${literalGlsl(wF)});\n`) +
       glslDoTiONaForja(teff, d);
     const frente = frenteDaAtmosfera(o.forja.atmosferaEmRaios);
-    const borda = `smoothstep(0.0, max(${literalGlsl(o.forja.bordaEmMu)}, sqrt(3.0*fwidth(sqrt(max(0.0, 1.0 - mu*mu))))), mu)`;
+    // o piso de 1,5 px em μ² (`pisoDaBorda`) e a FUNDURA da queda: onde a
+    // borda de verdade é mais fina que o piso, a queda desenhada é mais larga
+    // que a real e por isso mais rasa na mesma proporção (largura real /
+    // largura desenhada, em ρ: μw²/piso) — o pixel mostra a média. Sem isso a
+    // anã quente, de borda mil vezes mais fina que o pixel, ganhava um
+    // contorno preto de 1,5 px entre o disco e o véu (Fomalhaut, 16/11)
+    const mw2 = o.forja.bordaEmMu * o.forja.bordaEmMu;
+    const pisoDaBorda = '  float pisoDaBorda = 3.0*fwidth(sqrt(max(0.0, 1.0 - mu*mu)));\n';
+    const fundo = `max(${literalGlsl(frente)}, 1.0 - min(1.0, ${literalGlsl(mw2)}/max(pisoDaBorda, 1e-9)))`;
+    const borda = `smoothstep(0.0, max(${literalGlsl(o.forja.bordaEmMu)}, sqrt(pisoDaBorda)), mu)`;
     f = trocarUma(
       f,
       '  vec2 buv = vec2(fract(vUvV.x + boil.x*0.0035), clamp(vUvV.y + boil.y*0.0035, 0.0, 1.0));',
@@ -714,7 +723,8 @@ export function cirurgiaDaEstrela(
       '  color *= (1.0-limbU) + limbU*mu;',
       planckDaForja +
         '  color *= (1.0-limbU) + limbU*mu;\n' +
-        (frente > 0 ? `  color *= mix(${literalGlsl(frente)}, 1.0, ${borda});` : `  color *= ${borda};`),
+        pisoDaBorda +
+        `  color *= mix(${fundo}, 1.0, ${borda});`,
       quem
     );
     // a leitura do assado usa o `snoise` do vendorizado: entra antes do main
