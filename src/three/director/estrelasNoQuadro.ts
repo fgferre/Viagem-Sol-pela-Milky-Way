@@ -33,7 +33,8 @@ import type { OclusorDeRotulo } from '../world/labels';
 import { faseDoCiclo, repartir, type JanelaDoQuadro, type EstadoDaEstrela } from '../estrela';
 import { EXPO_M0, M_V_SOL_DO_CAMPO, SIGMA_PX, radianciaVisivelDeCorpoNegro } from '../luzDaCasa';
 import type { QualityLevel } from '../core/engine';
-import { SOL_PARAMS, StellarBody, pesoDoFiltro, type StellarParams } from '../world/stellarBody';
+import { SOL_PARAMS, StellarBody, pesoDoFiltro, rocheDe, type StellarParams } from '../world/stellarBody';
+import { semConveccaoNaSuperficie } from '../world/forjaDaEstrela';
 import { PontoDeEstrela } from '../world/pontoDeEstrela';
 import { RAIO_SOL_PC } from '../escala';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
@@ -46,7 +47,6 @@ import {
   CONTRASTE_REAL_DO_SOL,
   ESTRELAS_VISITAVEIS,
   GRANULO_SOL_EM_RAIOS,
-  PISO_DO_CONTRASTE_NA_TELA,
   achatamentoDe,
   atividadeDe,
   granuloNaTelaEmRaios,
@@ -96,34 +96,57 @@ export function eixoDeRotacao(e: EstrelaVisitavel, pos: THREE.Vector3, out: THRE
  * os planetas já têm (`lib/atlas/luzDaVisita.ts`), aplicada à fotosfera.
  *
  * Ele vale para quem o FILTRO fotográfico do Sol vale (`pesoDoFiltro`:
- * inteiro até 5.772 K) e passa, junto com o filtro, a ⅖ na estrela quente
- * (≥ 8.000 K): Sirius ~2,2×, Vega ~2,1× o Sol. História: com ¼ (1,6×) o
- * disco quente saía cinza; na radiância verdadeira (6,9×, a escolha de
- * 12/11 de manhã) o disco inteiro ficava no ombro da curva de tom — um
- * círculo lilás chapado, sem borda nem gravidade legíveis. Com ⅖ o centro
- * branqueia no ombro e a borda escurecida (Eddington, Planck por canal) e o
- * escurecimento gravitacional de Vega caem na parte da curva que se lê. A
- * luz que a exposição NÃO põe no disco vira o VÉU em volta dele
- * (`veu` = 1 − ganho, `StellarParams.veu`): o ofuscamento fica, fora do
- * disco, como numa câmera.
+ * inteiro até 5.772 K) e passa, junto com o filtro, à regra das quentes
+ * (≥ 8.000 K, `NIVEL_DO_PICO_DAS_QUENTES`).
  */
 export const EXPOENTE_DO_BRILHO_ASSISTIDO = 0.25;
-/** o expoente da estrela quente (sem o filtro do Sol) — ARTÍSTICO, ver acima */
-export const EXPOENTE_DAS_QUENTES = 0.4;
+
+/**
+ * O NÍVEL DO PICO DAS QUENTES — a exposição do INSTRUMENTO, um número só
+ * para toda estrela quente: o ponto mais quente do disco visto de frente (o
+ * polo de quem gira, o centro de uma redonda) aparece com esta luminância,
+ * na unidade da casa (a superfície do Sol = 1).
+ *
+ * POR QUÊ (17/11): a curva de tom da tela (Neutral) é reta até ~0,5 no
+ * canal mais forte e chapada acima de ~2. Com o expoente ⅖ de antes o azul
+ * do polo de Régulo caía em ~6: polo e equador, 1,9× um do outro na conta,
+ * saíam a 1 % um do outro na tela — a placa azul. Com o pico em 1,6 o azul
+ * do polo fica em ~2,7 e o do equador em ~1,4, onde a curva ainda distingue
+ * (14 % na tela). A BASE: é como o instrumento mostra essas estrelas, a
+ * intensidade normalizada pelo pico (as imagens do CHARA/MIRC e do
+ * VLTI/PIONIER: Monnier et al. 2007, Che et al. 2011, Dalla Vedova et al.
+ * 2017, "We normalized the dynamic range to 1"), e é o que um filtro neutro
+ * faz numa câmera medida pelo ponto mais claro. O VALOR é escolha, por
+ * imagem — ARTÍSTICO, declarado: mais alto e a estrela ofusca mas vira
+ * placa (acima de ~1,8 a rede de convecção de Fomalhaut lava); mais baixo e
+ * o contraste abre mas o disco acinzenta.
+ *
+ * A luz que a exposição NÃO põe no disco vira o VÉU em volta dele (`veuDe`,
+ * 1 − ganho): o ofuscamento fica, fora do disco, como numa câmera — uma
+ * fração da borda do disco como a tela a mostra, nunca mais clara que ela
+ * (o véu no nível de antes, ensaiado em 17/11, emendava com a borda e a
+ * estrela lisa parecia fora de foco).
+ */
+export const NIVEL_DO_PICO_DAS_QUENTES = 1.6;
 
 /**
  * O ganho que leva a radiância verdadeira de uma fotosfera ao nível da
- * visita: 1 no modo REAL; no ASSISTIDO, rad^(e − 1), com e = ¼ passando a
- * ⅖ junto com o filtro do Sol (ver acima). Propriedade do CORPO (a Teff
- * dele), não do foco da câmera. Quem o aplica é a rampa do filtro
- * (`ganho^(1 − g)`): com o disco pequeno (g = 1) a emissão é a verdadeira
- * e a troca com o ponto conserva a luz.
+ * visita: 1 no modo REAL; no ASSISTIDO, rad^(¼ − 1) para quem o filtro do
+ * Sol vale e, nas quentes, o que põe o pico do disco em
+ * `NIVEL_DO_PICO_DAS_QUENTES` — as duas pontas misturadas em stops pelo peso
+ * do filtro. `teffDoPicoK` é a temperatura do ponto mais quente (o polo de
+ * uma achatada); sem ela, a média. Propriedade do CORPO, não do foco da
+ * câmera. Quem o aplica é a rampa do filtro (`ganho^(1 − g)`): com o disco
+ * pequeno (g = 1) a emissão é a verdadeira e a troca com o ponto conserva a
+ * luz.
  */
-export function ganhoDaVisita(teffK: number, politica: PoliticaDeLuz): number {
+export function ganhoDaVisita(teffK: number, politica: PoliticaDeLuz, teffDoPicoK: number = teffK): number {
   if (politica === 'real') return 1;
   const w = pesoDoFiltro(teffK);
-  const e = w * EXPOENTE_DO_BRILHO_ASSISTIDO + (1 - w) * EXPOENTE_DAS_QUENTES;
-  return Math.pow(radianciaVisivelDeCorpoNegro(teffK), e - 1);
+  const comOFiltro = Math.pow(radianciaVisivelDeCorpoNegro(teffK), EXPOENTE_DO_BRILHO_ASSISTIDO - 1);
+  if (w >= 1) return comOFiltro;
+  const peloPico = NIVEL_DO_PICO_DAS_QUENTES / radianciaVisivelDeCorpoNegro(teffDoPicoK);
+  return Math.pow(comOFiltro, w) * Math.pow(peloPico, 1 - w);
 }
 
 /** A distância (pc) além da qual a estrela do motor do Sol, fora de foco, é
@@ -143,8 +166,8 @@ const RAIO_DE_DESMONTE_PC = 2 * RAIO_DE_PREPARO_PC;
  *  · contraste da textura quieta relativo ao do Sol (`contrasteGranulos`
  *    sobre o rms real do Sol, 0,15); com células gigantes, o contraste dos
  *    dados é o DELAS, e os grânulos levam só a fração declarada;
- *  · o PISO do contraste na tela (`PISO_DO_CONTRASTE_NA_TELA`, a anã M):
- *    a granulação das estrelas A, real mas invisível, extrapolada;
+ *  · sem convecção na superfície (`semConveccaoNaSuperficie`, acima de
+ *    ~9.300 K) a textura é nenhuma: a quente é lisa;
  *  · células gigantes e borda difusa quando os dados as têm (Betelgeuse);
  *  · o VÉU, a luz que a exposição da visita não põe no disco (1 − ganho,
  *    > 0 só para quem é mais radiante que o Sol);
@@ -174,8 +197,9 @@ function sementeDe(e: EstrelaVisitavel): number {
 export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): StellarParams {
   const s = e.superficie;
   const achatamento = achatamentoDe(e);
-  const contrasteDosGranulos = Math.max(s.contrasteGranulos.v, PISO_DO_CONTRASTE_NA_TELA);
-  const veu = veuDe(e.teffK.v);
+  const logG = logGravidade(e.massaMsol.v, e.raioRsol.v);
+  const contrasteDosGranulos = semConveccaoNaSuperficie(e.teffK.v, logG) ? 0 : s.contrasteGranulos.v;
+  const veu = veuDe(e.teffK.v, achatamento ? rocheDe(0, achatamento).teffK : e.teffK.v);
   return {
     ...SOL_PARAMS,
     nome: e.id,
@@ -186,7 +210,7 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
     activityLevel: atividadeDe(e).nivel,
     teffK: e.teffK.v,
     dinamo: temDinamoSolar(e),
-    logG: logGravidade(e.massaMsol.v, e.raioRsol.v),
+    logG,
     seed: (SOL_PARAMS.seed ^ sementeDe(e)) >>> 0,
     knobPrefix: e.id,
     granuloRelativoAoSol:
@@ -262,8 +286,8 @@ export function parametrosDaCompanheira(e: EstrelaVisitavel): StellarParams | nu
 
 /** O VÉU de uma fotosfera: a fração da radiância que a exposição da visita
  *  não põe no disco (1 − ganho; 0 no Sol e nas mais frias). */
-export function veuDe(teffK: number): number {
-  return Math.max(0, 1 - ganhoDaVisita(teffK, 'assistida'));
+export function veuDe(teffK: number, teffDoPicoK: number = teffK): number {
+  return Math.max(0, 1 - ganhoDaVisita(teffK, 'assistida', teffDoPicoK));
 }
 
 /** O que o motor do Sol precisa para nascer (o director empresta). */
@@ -278,7 +302,8 @@ export class EstrelaPeloMotorDoSol {
   readonly corpo: StellarBody;
   readonly group: THREE.Group;
   readonly raioPc: number;
-  readonly fotosfera: { readonly teffK: number };
+  /** a Teff média e a do ponto mais quente (o polo de uma achatada) */
+  readonly fotosfera: { readonly teffK: number; readonly teffDoPicoK: number };
   /** o custo da construção (prime: sim + bake + coroa), ms */
   readonly msDeConstrucao: number;
   /** o tier com que nasceu — trocar de tier REMONTA (`EstrelasNoQuadro`) */
@@ -292,7 +317,10 @@ export class EstrelaPeloMotorDoSol {
     this.msDeConstrucao = performance.now() - t0;
     this.group = this.corpo.group;
     this.raioPc = params.radiusPc;
-    this.fotosfera = { teffK: params.teffK };
+    this.fotosfera = {
+      teffK: params.teffK,
+      teffDoPicoK: params.achatamento ? rocheDe(0, params.achatamento).teffK : params.teffK,
+    };
   }
 
   /** o passo do quadro: a lei da repartição entra pelos mesmos fios do Sol */
@@ -901,7 +929,7 @@ export class EstrelasNoQuadro {
     const g = lei.overrideExpoente;
     // a exposição da visita entra pela MESMA rampa do filtro, ao contrário:
     // plena com o disco enchendo o quadro (g = 0), nenhuma no ponto (g = 1)
-    const plena = ganhoDaVisita(s.corpo.fotosfera.teffK, this.fios.politicaDeLuz());
+    const plena = ganhoDaVisita(s.corpo.fotosfera.teffK, this.fios.politicaDeLuz(), s.corpo.fotosfera.teffDoPicoK);
     s.corpo.escrever({
       posPc: pos,
       g,

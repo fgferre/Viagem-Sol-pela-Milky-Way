@@ -772,9 +772,11 @@ export const PT = {
   'ficha.campo.veu': 'véu de luz',
   'ficha.campo.granulacao': 'granulação',
   'ficha.estrela.veu':
-    'mais radiante que o Sol: o disco aparece numa exposição mais baixa e a luz que sobra vira um véu em volta dele, como numa câmera — a força e o alcance do véu são escolha',
+    'mais radiante que o Sol: o disco aparece numa exposição mais baixa (nas quentes, a que deixa o ponto mais quente do disco logo abaixo do branco, como um instrumento que mede pelo pico) e a luz que sobra vira um véu em volta dele, como numa câmera — o nível do pico, a força e o alcance do véu são escolha',
   'ficha.estrela.granulacaoExtrapolada':
     'a real tem ~{real} % de contraste, invisível; desenhada no piso de {piso} % para a superfície não sair lisa',
+  'ficha.estrela.superficieLisa':
+    'lisa: quente demais para ter granulação visível — a superfície não ferve como a do Sol',
   'ficha.estrela.desenhoInventado':
     'grânulos, células, manchas e erupções: o tamanho da célula segue a lei dos dados ({lei}), mas o desenho exato é inventado',
   'ficha.fonte.daEfemeride': 'da efeméride',

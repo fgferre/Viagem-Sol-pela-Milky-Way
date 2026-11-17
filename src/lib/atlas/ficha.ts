@@ -71,7 +71,6 @@ import { REGISTRO_ORBITAL } from './registroOrbital';
 import { designacaoDeBayer } from './constelacoes';
 import { temperatureFromBV } from './stellarPhysics';
 import {
-  PISO_DO_CONTRASTE_NA_TELA,
   TEFF_DO_SOL_K,
   achatamentoDe,
   estrelaVisitavelPorNome,
@@ -1005,6 +1004,8 @@ const kelvin = (n: Numero) => `${inteiroDoIdioma(n.v)} K`;
 /** As linhas físicas das estrelas do piloto (`estrelasVisitaveis.ts`). */
 /** a lei do desenho da superfície na Forja (o tamanho da célula pela gravidade) */
 const LEI_DA_FORJA = 'Trampedach et al. 2013, arXiv 1303.1780';
+/** por que a quente é lisa (`semConveccaoNaSuperficie`) */
+const LEI_DA_LISA = 'Steffen et al. 2005; Cantiello et al. 2009';
 
 /** A regra da Forja quando é ela que desenha a estrela (sem dínamo e com convecção visível); senão null. */
 function forjaDaFicha(e: EstrelaVisitavel): ReturnType<typeof regraDaForja> | null {
@@ -1140,10 +1141,8 @@ function secaoDaCompanheira(e: EstrelaVisitavel, distanciaPc: number): SecaoDaFi
 function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
   const forja = forjaDaFicha(e);
   const daForja = forja !== null;
-  // o piso de contraste na tela, o da Forja ou o de antes
-  const granulacao = forja
-    ? { real: forja.contraste, piso: PISO_DA_FORJA_NA_TELA, fonte: LEI_DO_CONTRASTE }
-    : { real: e.superficie.contrasteGranulos.v, piso: PISO_DO_CONTRASTE_NA_TELA, fonte: e.superficie.contrasteGranulos.fonte };
+  // sem dínamo e sem convecção na superfície (`semConveccaoNaSuperficie`): lisa
+  const lisa = !daForja && !temDinamoSolar(e);
   return {
     id: 'imagem',
     titulo: TITULO('imagem'),
@@ -1154,23 +1153,26 @@ function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
         ? linha(t('ficha.campo.corEBrilho'), t('ficha.estrela.corDeFiltroColorizado'), 'artistico')
         : linha(t('ficha.campo.corEBrilho'), t('ficha.estrela.corPelaTemperatura'), 'derivado'),
       linha(t('ficha.campo.tamanhoNaImagem'), t('ficha.estrela.tamanhoPeloRaio'), e.raioRsol.p, e.raioRsol.fonte),
-      linha(
-        t('ficha.campo.desenhoDaSuperficie'),
-        t('ficha.estrela.desenhoInventado', { lei: daForja ? LEI_DA_FORJA : e.superficie.granuloEmRaios.fonte }),
-        'artistico'
-      ),
+      lisa
+        ? linha(t('ficha.campo.desenhoDaSuperficie'), t('ficha.estrela.superficieLisa'), 'derivado', LEI_DA_LISA)
+        : linha(
+            t('ficha.campo.desenhoDaSuperficie'),
+            t('ficha.estrela.desenhoInventado', { lei: daForja ? LEI_DA_FORJA : e.superficie.granuloEmRaios.fonte }),
+            'artistico'
+          ),
       // as concessões que a física da estrela liga (nenhuma no Sol, nenhuma
-      // por nome): mais radiante que o Sol, véu; granulação abaixo do piso, extrapolada
+      // por nome): mais radiante que o Sol, véu; granulação abaixo do piso
+      // da Forja, extrapolada
       e.teffK.v > TEFF_DO_SOL_K ? linha(t('ficha.campo.veu'), t('ficha.estrela.veu'), 'artistico') : null,
-      granulacao.real < granulacao.piso
+      forja && forja.contraste < PISO_DA_FORJA_NA_TELA
         ? linha(
             t('ficha.campo.granulacao'),
             t('ficha.estrela.granulacaoExtrapolada', {
-              real: numeroDoIdioma(Math.round(granulacao.real * 1000) / 10),
-              piso: numeroDoIdioma(granulacao.piso * 100),
+              real: numeroDoIdioma(Math.round(forja.contraste * 1000) / 10),
+              piso: numeroDoIdioma(PISO_DA_FORJA_NA_TELA * 100),
             }),
             'artistico',
-            granulacao.fonte
+            LEI_DO_CONTRASTE
           )
         : null,
     ].filter((l): l is LinhaDaFicha => l !== null),

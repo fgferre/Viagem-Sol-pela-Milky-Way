@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import {
-  EXPOENTE_DAS_QUENTES,
+  NIVEL_DO_PICO_DAS_QUENTES,
   EXPOENTE_DO_BRILHO_ASSISTIDO,
   EstrelasNoQuadro,
   eixoDeRotacao,
@@ -31,11 +31,13 @@ describe('toda estrela visitável vira parâmetros do MESMO motor, sem nome', ()
     expect(b.dinamo).toBe(false);
     expect(b.veu).toBeUndefined();
   });
-  it('a quente leva o véu (a luz que a exposição não põe no disco) e o piso da granulação', () => {
+  it('a quente leva o véu (a luz que a exposição não põe no disco) e é lisa: sem convecção na superfície', () => {
     const s = parametrosDoMotor(estrelaVisitavelPorNome('Sirius')!);
     expect(s.veu).toBeCloseTo(1 - ganhoDaVisita(9845, 'assistida'), 12);
     expect(s.veu!).toBeGreaterThan(0.5);
-    expect(s.contrasteRelativoAoSol).toBeCloseTo(0.04 / 0.15, 12);
+    expect(s.contrasteRelativoAoSol).toBe(0);
+    // com envelope convectivo a textura é a dos dados (Proxima: 0,04 sobre 0,15)
+    expect(parametrosDoMotor(estrelaVisitavelPorNome('Proxima Centauri')!).contrasteRelativoAoSol).toBeCloseTo(0.04 / 0.15, 12);
     // mais fria que o Sol (51 Peg, 5.761 K): nenhum véu
     expect(parametrosDoMotor(estrelaVisitavelPorNome('Helvetios')!).veu).toBeUndefined();
   });
@@ -54,23 +56,40 @@ describe('o eixo de Vega (Monnier 2012)', () => {
   });
 });
 
-describe('a exposição da visita: o nível do Sol × (radiância / a do Sol)^e', () => {
-  it('no assistido a M sobe e a quente sobe a ⅖; no real nada muda', () => {
-    const nivel = (nome: string) => {
-      const e = estrelaVisitavelPorNome(nome)!;
-      return radianciaVisivelDeCorpoNegro(e.teffK.v) * ganhoDaVisita(e.teffK.v, 'assistida');
-    };
+describe('a exposição da visita: ¼ com o filtro do Sol, o pico do disco nas quentes', () => {
+  const nivel = (nome: string) => {
+    const e = estrelaVisitavelPorNome(nome)!;
+    return radianciaVisivelDeCorpoNegro(e.teffK.v) * ganhoDaVisita(e.teffK.v, 'assistida');
+  };
+  it('no assistido a M sobe; no real nada muda; até a Teff do Sol é o ¼ de sempre', () => {
     expect(EXPOENTE_DO_BRILHO_ASSISTIDO).toBe(0.25);
     expect(nivel('Proxima Centauri')).toBeCloseTo(0.372, 2);
     expect(nivel('Betelgeuse')).toBeCloseTo(0.51, 2);
-    // a quente sobe a ⅖: o ¼ passa a ⅖ junto com o filtro do Sol
-    expect(nivel('Sirius')).toBeCloseTo(radianciaVisivelDeCorpoNegro(9845) ** EXPOENTE_DAS_QUENTES, 12);
-    expect(EXPOENTE_DAS_QUENTES).toBe(0.4);
     expect(nivel('Proxima Centauri')).toBeLessThan(nivel('Betelgeuse'));
     expect(nivel('Betelgeuse')).toBeLessThan(1);
-    expect(nivel('Sirius')).toBeGreaterThan(2);
     expect(ganhoDaVisita(5772, 'assistida')).toBe(1);
     expect(ganhoDaVisita(3054, 'real')).toBe(1);
+    // até a Teff do Sol é o ¼ de sempre, bit a bit (o Sol e as frias não mudam)
+    for (const T of [2566, 3600, 4286, 5772]) {
+      expect(ganhoDaVisita(T, 'assistida')).toBe(Math.pow(radianciaVisivelDeCorpoNegro(T), EXPOENTE_DO_BRILHO_ASSISTIDO - 1));
+    }
+  });
+  it('na quente o ponto mais quente do disco cai no nível do pico', () => {
+    const pico = (T: number, Tp: number) => radianciaVisivelDeCorpoNegro(Tp) * ganhoDaVisita(T, 'assistida', Tp);
+    // redonda (Sirius): o pico é o centro; achatada (Régulo): o polo
+    expect(pico(9845, 9845)).toBeCloseTo(NIVEL_DO_PICO_DAS_QUENTES, 12);
+    expect(pico(12730, 14520)).toBeCloseTo(NIVEL_DO_PICO_DAS_QUENTES, 12);
+    // o disco de Régulo desce (era radiância^⅖ = 2,82), e o véu é o que sobra dele
+    expect(radianciaVisivelDeCorpoNegro(12730) * ganhoDaVisita(12730, 'assistida', 14520)).toBeLessThan(1.3);
+    // e nenhuma das quentes do piloto fica mais clara que antes (era radiância^⅖)
+    for (const T of [8039, 8590, 9600, 9845, 12730, 15539]) {
+      expect(radianciaVisivelDeCorpoNegro(T) * ganhoDaVisita(T, 'assistida')).toBeLessThan(radianciaVisivelDeCorpoNegro(T) ** 0.4);
+    }
+    const regulo = parametrosDoMotor(estrelaVisitavelPorNome('Regulus')!);
+    expect(regulo.veu).toBeCloseTo(1 - ganhoDaVisita(12730, 'assistida', 14520), 12);
+    // entre a Teff do Sol e os 8.000 K a passagem é contínua nas duas pontas
+    expect(ganhoDaVisita(5773, 'assistida')).toBeCloseTo(ganhoDaVisita(5772, 'assistida'), 2);
+    expect(pico(7999.9, 7999.9)).toBeCloseTo(NIVEL_DO_PICO_DAS_QUENTES, 3);
   });
 });
 

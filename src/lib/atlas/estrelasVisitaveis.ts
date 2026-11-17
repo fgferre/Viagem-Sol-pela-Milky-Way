@@ -841,17 +841,6 @@ export function granuloNaTelaEmRaios(granuloEmRaios: number): number {
 /** O contraste rms real da granulação do Sol (a régua do contraste relativo). */
 export const CONTRASTE_REAL_DO_SOL = 0.15;
 
-/**
- * O PISO DO CONTRASTE NA TELA — a concessão gêmea da do tamanho do grânulo,
- * ARTÍSTICA, declarada: nenhuma superfície com zona convectiva sai mais lisa
- * que a da anã M (0,04, Beeck et al. 2013). As estrelas A têm zonas finas de
- * ionização do H e do He que as simulações 3D e o "flicker" do Kepler dão
- * como granulação de baixo contraste (~1–2 %, Tremblay et al. 2013; Kallinger
- * & Matthews 2010) — invisível no disco; o piso a EXTRAPOLA para a tela.
- * Não vale para a anã branca (a companheira: contraste 0).
- */
-export const PISO_DO_CONTRASTE_NA_TELA = 0.04;
-
 const GRAU = Math.PI / 180;
 const JD_J2000 = 2451545;
 const DIAS_POR_ANO = 365.25;

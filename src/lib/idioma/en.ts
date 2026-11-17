@@ -738,9 +738,11 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.campo.veu': 'veil of light',
   'ficha.campo.granulacao': 'granulation',
   'ficha.estrela.veu':
-    'more radiant than the Sun: the disk is shown at a lower exposure and the leftover light becomes a veil around it, as in a camera — the veil\'s strength and reach are a choice',
+    'more radiant than the Sun: the disk is shown at a lower exposure (in hot stars, the one that leaves the hottest point of the disk just below white, like an instrument that scales to the peak) and the leftover light becomes a veil around it, as in a camera — the peak level and the veil\'s strength and reach are a choice',
   'ficha.estrela.granulacaoExtrapolada':
     'the real one has ~{real} % contrast, invisible; drawn at the {piso} % floor so the surface does not come out smooth',
+  'ficha.estrela.superficieLisa':
+    'smooth: too hot for visible granulation — the surface does not boil like the Sun\'s',
   'ficha.estrela.desenhoInventado':
     'granules, cells, spots and flares: the cell size follows the law in the data ({lei}), but the exact pattern is invented',
   'ficha.fonte.daEfemeride': 'from the ephemeris',

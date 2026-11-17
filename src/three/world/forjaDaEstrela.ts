@@ -96,9 +96,22 @@ export function contrasteDaConveccao(teffK: number, logG: number): number {
 }
 
 /**
- * O PISO NA TELA do contraste — a concessão das quentes que o caminho de
- * antes já declarava (`PISO_DO_CONTRASTE_NA_TELA`: a superfície não sai
- * lisa), agora na régua da Forja. Acima de ~7.800 K o contraste real cai
+ * A QUENTE É LISA: sem envelope convectivo (contraste zero pela regra, acima
+ * de ~9.300 K) não há granulação a desenhar — o que se vê é a borda, a forma
+ * e o gradiente do polo ao equador. A zona de convecção do ferro, abaixo da
+ * superfície das mais luminosas (acima de ~10^3,2 L☉ na Galáxia; Cantiello
+ * et al. 2009, A&A 499, 279), dá velocidade (1–10 km/s) e tamanho de célula
+ * (~1 escala de altura de pressão, ~1/130 do raio), mas nenhum contraste de
+ * brilho na fotosfera: sem esse número, nada é desenhado. Até 17/11 um piso
+ * artístico de 4 % punha nelas um mosqueado sem fonte.
+ */
+export function semConveccaoNaSuperficie(teffK: number, logG: number): boolean {
+  return contrasteDaConveccao(teffK, logG) <= 0;
+}
+
+/**
+ * O PISO NA TELA do contraste — a concessão das quentes com envelope fino
+ * (a superfície não sai lisa), na régua da Forja. Acima de ~7.800 K o contraste real cai
  * rumo a zero e, sem o filtro do Sol, a razão de Planck sozinha o deixa
  * invisível (Fomalhaut a 8.590 K: 0,46 % rms na tela contra 0,9 % do
  * caminho de antes). O desenho usa max(contraste, piso): contínuo na

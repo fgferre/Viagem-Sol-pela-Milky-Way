@@ -969,9 +969,11 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     const dist = comp.linhas.find((l) => l.rotulo === 'separação média')!;
     expect(dist.valor).toContain(`${Math.round(7.4957 * sirius.d * 10) / 10}`.replace('.', ','));
     const img = sir.secoes.find((x) => x.id === 'imagem')!;
-    // mais radiante que o Sol e com granulação abaixo do piso: véu e granulação confessados
-    expect(img.linhas.map((l) => l.procedencia)).toEqual(['derivado', 'derivado', 'artistico', 'artistico', 'artistico']);
-    expect(img.linhas.map((l) => l.rotulo).slice(3)).toEqual(['véu de luz', 'granulação']);
+    // mais radiante que o Sol: véu confessado; quente demais para convecção na superfície: lisa, com a fonte
+    expect(img.linhas.map((l) => l.procedencia)).toEqual(['derivado', 'derivado', 'derivado', 'artistico']);
+    expect(img.linhas.map((l) => l.rotulo).slice(3)).toEqual(['véu de luz']);
+    expect(img.linhas[2]!.valor).toContain('lisa');
+    expect(img.linhas[2]!.fonte).toContain('Cantiello');
     const imgProx = prox.secoes.find((x) => x.id === 'imagem')!;
     expect(imgProx.linhas).toHaveLength(3);
     // na Forja (Betelgeuse: sem dínamo, convecção) a cor é a do filtro colorizado, artística; a quente (Sirius) fica no corpo negro
