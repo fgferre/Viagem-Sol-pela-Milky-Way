@@ -1326,9 +1326,16 @@ luminosidade. Cada camada do corpo é função contínua deles.
      da simulação do Sol (`granulation.js`) transporta o campo, atenuado
      perto dos polos. A fotosfera só amostra e desenha a faixa por pixel
      (meia largura de 4–10 % da célula, mais estreita que a do Sol — Ludwig &
-     Kučinskas 2012); uma oitava fina por pixel só de perto. Cor do contínuo
-     puro (o tom do filtro do Sol tem peso 0 na Forja): Arcturus sai no
-     laranja-pálido do corpo negro dela, as M mais vermelhas pelo TiO.
+     Kučinskas 2012); uma oitava fina por pixel só de perto.
+   - *Instrumento (volta 5):* as gigantes são vistas pelo MESMO instrumento
+     do Sol — imagem de banda estreita colorizada, como toda foto de
+     telescópio solar e como as imagens reais de Betelgeuse, Antares e π¹ Gru:
+     a temperatura local entra no "calor" da rampa do Sol (calor += G·(r − 1),
+     G = 5, para que ±2,3σ dos 4,5 % de Ludwig & Kučinskas cubram a rampa),
+     com as pontas deslocadas pela Teff ao longo do corpo negro; o peso do
+     filtro cai a 0 entre 5.772 e 8.000 K (`pesoDoFiltro`), e as quentes ficam
+     no contínuo. O contínuo cru da volta 4 dava o laranja-pálido físico
+     (a "bola bege"); o ganho G é escolha de instrumento, não de medida.
    - *Células quentes:* nas supergigantes, manchas grandes de δ ≈ 0,148 a
      3.600 K, resolvido pela lei de Planck na banda H a partir da mancha de
      Haubois et al. 2009 (8,5 % do fluxo em ~6 % da área, +42 %).

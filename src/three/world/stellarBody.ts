@@ -279,8 +279,9 @@ export function forjaDe(p: StellarParams, ligada: boolean = FORJA): RegraDaForja
  * o fator do relevo fbm (`uDispScale`); `null` sem nada a fazer (o Sol).
  * Com a Forja (`forja` ≠ null) o calor H-alfa fica PLANO (contraste 0), o
  * assado é o da convecção (`cirurgiaDoAssado`) e a fotosfera o lê no lugar
- * das células gigantes e da granulação viva, a cor é a do contínuo (filtro
- * do Sol com peso 0), e SEM relevo
+ * das células gigantes e da granulação viva, vista pelo MESMO instrumento do
+ * Sol (a rampa de cor e brilho do filtro, com o peso de `pesoDoFiltro`, como
+ * sem a Forja), e SEM relevo
  * (nem o da convecção, nem o fbm de `uDispScale`): a estrela brilha por si,
  * e o relevo entortava a normal e fazia da lei de borda uma luz rasante — o
  * claro-escuro vem só da temperatura. Sem a Forja, o caminho de antes, texto
@@ -298,12 +299,10 @@ export function cirurgiasDaFotosfera(
     bordaU: p.bordaU,
     semDinamo: !p.dinamo,
     gravidade: Boolean(a),
-    // na Forja o filtro do Sol pesa 0: sem o avermelhamento H-alfa do limbo,
-    // com a lei de borda do contínuo inteira
-    avermelhamento: forja ? 0 : pesoDoFiltro(p.teffK),
+    avermelhamento: pesoDoFiltro(p.teffK),
     gigantes: forja ? undefined : p.celulasGigantes,
     teffK: p.teffK,
-    continuo: forja ? 1 : 1 - pesoDoFiltro(p.teffK),
+    continuo: 1 - pesoDoFiltro(p.teffK),
     ...(forja ? { forja } : {}),
   };
   if (
@@ -592,8 +591,8 @@ function trocarUma(texto: string, ancora: string, novo: string, quem: string): s
  *    de TEMPERATURA, T = Teff·(1 + δ·z), levado à cor e ao brilho de cada
  *    canal pela lei de Planck (`razaoDePlanck`), antes da borda;
  *  · `forja`: a convecção da Forja, lida do assado (`glslDaForjaNaFotosfera`),
- *    como temperatura, do mesmo jeito, no lugar das gigantes e da granulação
- *    viva, sem a fervura por ruído nem a rampa de brilho H-alfa;
+ *    como temperatura, no lugar das gigantes e da granulação viva, sem a
+ *    fervura por ruído, vista pelo instrumento do Sol (`GANHO_DO_INSTRUMENTO`);
  *  · `continuo` (peso > 0): a borda do CONTÍNUO — a atmosfera cinza de
  *    Eddington, T(μ)⁴ ∝ μ + ⅔, pela lei de Planck por canal — no lugar da
  *    lei linear, com o peso que o filtro H-alfa do Sol deixa (1 − w): zero
@@ -676,7 +675,8 @@ export function cirurgiaDaEstrela(
     f = trocarUma(f, '  color *= 1.0 - edge*0.15;', `  color *= 1.0 - edge*0.15*${w};`, quem);
   }
   const teff = o.teffK ?? TEFF_SOL_K;
-  const planck = (o.gigantes || o.forja || (o.continuo ?? 0) > 0) ? GLSL_RAZAO_DE_PLANCK : '';
+  const planck =
+    o.gigantes || (o.forja && pesoDoFiltro(teff) < 1) || (o.continuo ?? 0) > 0 ? GLSL_RAZAO_DE_PLANCK : '';
   if (o.gigantes) {
     const d = deltaTDasGigantes(o.gigantes.contraste);
     f =
@@ -703,11 +703,33 @@ export function cirurgiaDaEstrela(
     // zero abria um anel escuro entre o disco e a casca
     //
     // A convecção vem do ASSADO (`cirurgiaDoAssado`): duas leituras com a
-    // troca suave, sem a fervura por ruído do domínio (o assado já anda), e
-    // a cor sem a rampa de brilho H-alfa (contínuo puro: o claro e o escuro
-    // são só a temperatura)
+    // troca suave, sem a fervura por ruído do domínio (o assado já anda). A
+    // temperatura vira imagem pelo INSTRUMENTO do Sol com o peso do filtro
+    // (`pesoDoFiltro`): nas frias, o calor da rampa H-alfa (cor e brilho, o
+    // creme no topo); nas quentes, a razão de Planck do contínuo, como antes
     const d = Math.max(0, o.forja.contraste) / 4;
+    const wF = pesoDoFiltro(teff);
     const tio = pesoDoTiO(teff);
+    f = trocarUma(
+      f,
+      '  heat = clamp(heat, 0.0, 1.24);',
+      `  float rForja = max(0.5, 1.0 + ${literalGlsl(d)}*mu*conveccaoDoAssado(st, sp, t));\n` +
+        `  heat = clamp(heat + ${literalGlsl(wF * GANHO_DO_INSTRUMENTO)}*(rForja - 1.0), 0.0, 1.24);`,
+      quem
+    );
+    // o creme do Sol (o da plage, que sem campo é 0) pelas regiões mais quentes
+    f = trocarUma(
+      f,
+      '  color = mix(color, vec3(1.0, 0.86, 0.62), 0.55 * smoothstep(0.55, 1.0, clamp(plage, 0.0, 1.0)) * smoothstep(0.72, 1.12, heat));',
+      `  color = mix(color, vec3(1.0, 0.86, 0.62), ${literalGlsl(0.55 * wF)} * smoothstep(0.72, 1.12, heat));`,
+      quem
+    );
+    const planckDaForja =
+      wF >= 1
+        ? ''
+        : `  color *= mix(razaoDePlanck(${xDePlanckGlsl(teff)}, rForja)` +
+          (tio > 0 ? ` * exp(-${literalGlsl(tio)} * ${TIO_DAS_GIGANTES_GLSL} * max(0.0, 1.0 - rForja))` : '') +
+          `, vec3(1.0), ${literalGlsl(wF)});\n`;
     const frente = frenteDaAtmosfera(o.forja.atmosferaEmRaios);
     const borda = `smoothstep(0.0, max(${literalGlsl(o.forja.bordaEmMu)}, sqrt(3.0*fwidth(sqrt(max(0.0, 1.0 - mu*mu))))), mu)`;
     f = trocarUma(
@@ -723,13 +745,10 @@ export function cirurgiaDaEstrela(
       quem
     );
     f = trocarUma(f, '                mix(texture2D(uChromoFar,  buv), texture2D(uChromoTex,  buv), kNear), uBakeMix);', '', quem);
-    f = trocarUma(f, '  color *= mix(0.16, 1.42, smoothstep(0.04, 1.08, heat));', '', quem);
     f = trocarUma(
       f,
       '  color *= (1.0-limbU) + limbU*mu;',
-      `  float rForja = max(0.5, 1.0 + ${literalGlsl(d)}*mu*conveccaoDoAssado(st, sp, t));\n` +
-        `  color *= razaoDePlanck(${xDePlanckGlsl(teff)}, rForja)` +
-        (tio > 0 ? ` * exp(-${literalGlsl(tio)} * ${TIO_DAS_GIGANTES_GLSL} * max(0.0, 1.0 - rForja));\n` : ';\n') +
+      planckDaForja +
         '  color *= (1.0-limbU) + limbU*mu;\n' +
         (frente > 0 ? `  color *= mix(${literalGlsl(frente)}, 1.0, ${borda});` : `  color *= ${borda};`),
       quem
@@ -1212,6 +1231,19 @@ export const DESCIDA_DAS_GIGANTES = 0.75;
 const TIO_DAS_GIGANTES = 8;
 const TIO_DAS_GIGANTES_GLSL = `vec3(0.0, ${literalGlsl(TIO_DAS_GIGANTES)}, ${literalGlsl(TIO_DAS_GIGANTES)})`;
 
+/**
+ * O GANHO DO INSTRUMENTO da Forja: calor = 0,5 + G·(T/Teff − 1) na rampa
+ * de cor e brilho do filtro do Sol (imagem de banda estreita colorizada,
+ * como toda foto de telescópio solar; o mesmo para todas). Escolha de
+ * instrumento, ARTÍSTICA, como a exposição de uma foto: a faixa útil da
+ * rampa (calor 0 a 1,05, do pé vermelho-escuro ao topo creme) cobre δ de
+ * −0,10 a +0,11, ±2,3σ da flutuação de temperatura de uma gigante (4,5 %,
+ * Ludwig & Kučinskas 2012) — as faixas frias chegam ao pé, e a mancha
+ * quente de Haubois (δ ≈ 0,148) passa do topo e satura no creme, como a
+ * plage no Sol. (G = 3,5, a mancha bem no topo, deixava as faixas no marrom.)
+ */
+export const GANHO_DO_INSTRUMENTO = 5;
+
 export function deltaTDasGigantes(contraste: number): number {
   return (GANHO_DAS_GIGANTES_NA_TELA * Math.max(0, contraste)) / 4;
 }
@@ -1457,18 +1489,14 @@ export function pesoDoFiltro(T: number): number {
 
 /**
  * A COR DA ESTRELA: cor(T) = corpoNegro(T) × (C / corpoNegro(5772))^w(T),
- * com a luminância de C preservada; w = `pesoDoFiltro(T)` (0 na Forja: o
- * contínuo puro). Escreve em `out` (pode ser o próprio C).
+ * com a luminância de C preservada; w = `pesoDoFiltro(T)`. Escreve em `out`
+ * (pode ser o próprio C).
  */
-export function pelaTemperatura(
-  C: THREE.Vector3,
-  T: number,
-  out: THREE.Vector3,
-  w: number = pesoDoFiltro(T)
-): THREE.Vector3 {
+export function pelaTemperatura(C: THREE.Vector3, T: number, out: THREE.Vector3): THREE.Vector3 {
   const Y = Math.max(C.x * LUMA_R + C.y * LUMA_G + C.z * LUMA_B, 1e-6);
   const sol = corpoNegroUnitario(TEFF_SOL_K);
   const bb = corpoNegroUnitario(T);
+  const w = pesoDoFiltro(T);
   const c = [C.x, C.y, C.z].map((v, i) => bb[i] * Math.pow(Math.max(v / (Y * sol[i]), 1e-4), w));
   const yc = Math.max(c[0] * LUMA_R + c[1] * LUMA_G + c[2] * LUMA_B, 1e-6);
   return out.set((Y * c[0]) / yc, (Y * c[1]) / yc, (Y * c[2]) / yc);
@@ -3468,11 +3496,9 @@ export class StellarBody {
   private matizarPelaTemperatura(ctx: any) {
     const T = this.params.teffK;
     const P = ctx.paleta.value as THREE.Vector3;
-    // na Forja o peso do filtro do Sol é 0: a cor do contínuo, pura
-    const w = this.forja ? 0 : pesoDoFiltro(T);
     for (const u of [ctx.corFria, ctx.corQuente, ctx.corDoLimbo]) {
       const C = u.value as THREE.Vector3;
-      pelaTemperatura(this.corTmp.copy(C).multiply(P), T, this.corTmp, w);
+      pelaTemperatura(this.corTmp.copy(C).multiply(P), T, this.corTmp);
       C.set(this.corTmp.x / P.x, this.corTmp.y / P.y, this.corTmp.z / P.z);
     }
     const Pc = ctx.paletaDaCoroa.value as THREE.Vector3;

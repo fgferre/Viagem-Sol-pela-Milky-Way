@@ -16,6 +16,7 @@ import {
   ritmoDaFervura,
 } from './forjaDaEstrela';
 import {
+  GANHO_DO_INSTRUMENTO,
   RELEVO_DAS_GIGANTES,
   SOL_PARAMS,
   calibracaoDaForja,
@@ -224,12 +225,22 @@ describe('a Forja desligada não muda nada', () => {
     expect(c.fragment).toContain('vec4 st = mix(texture2D(uChromoFarP, buv), texture2D(uChromoFar, buv), uBakeMix);');
     expect(c.fragment).not.toContain('texture2D(uChromoTex,');
     expect(c.fragment).toContain('  vec2 buv = vUvV;');
-    // contínuo puro: sem a rampa de brilho H-alfa, sem o avermelhamento do
-    // limbo, com a borda do contínuo inteira
-    expect(c.fragment).not.toContain('color *= mix(0.16, 1.42,');
-    expect(c.fragment).toContain('color.g *= 1.0 - edge*0.30*0.000000;');
-    expect(c.fragment).toContain('razaoDePlanck(');
-    expect(c.fragment).toContain(', 1.000000);');
+    // o instrumento do Sol: a temperatura entra no calor da rampa (cor e
+    // brilho, o creme no topo), com o limbo do filtro; numa fria (peso 1)
+    // sem a razão de Planck nem a borda do contínuo
+    expect(c.fragment).toContain('  color *= mix(0.16, 1.42, smoothstep(0.04, 1.08, heat));');
+    expect(c.fragment).toContain(`heat = clamp(heat + ${literalGlsl(GANHO_DO_INSTRUMENTO)}*(rForja - 1.0), 0.0, 1.24);`);
+    expect(c.fragment).toContain('vec3(1.0, 0.86, 0.62), 0.550000 * smoothstep(0.72, 1.12, heat));');
+    expect(c.fragment).toContain('  color.g *= 1.0 - edge*0.30;');
+    expect(c.fragment).not.toContain('razaoDePlanck(');
+    // numa quente o peso do filtro desce (`pesoDoFiltro`) e o contínuo de
+    // Planck entra na mesma medida, sem corte
+    const quente = { ...bet, teffK: 7650, logG: 4.16 };
+    const w = pesoDoFiltro(7650);
+    const q = cirurgiasDaFotosfera(sunJs, sunJs, quente, forjaDe(quente, true))!.fragment;
+    expect(q).toContain(`heat = clamp(heat + ${literalGlsl(w * GANHO_DO_INSTRUMENTO)}*(rForja - 1.0)`);
+    expect(q).toContain(`, rForja), vec3(1.0), ${literalGlsl(w)});`);
+    expect(q).toContain(`, ${literalGlsl(1 - w)});`);
     expect(c.fragment).not.toContain('celulasGigantesNaTela(sp');
     expect(c.fragment).not.toContain('granulacaoViva(sp');
     // a borda macia, na largura da regra, até o piso da frente da casca
