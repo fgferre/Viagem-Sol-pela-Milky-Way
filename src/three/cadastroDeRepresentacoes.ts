@@ -487,30 +487,6 @@ export const CADASTRO_DE_REPRESENTACOES: readonly RepresentacaoDeclarada[] = [
       'declarado no shader',
   },
   {
-    // etapa 1 do relevo medido do anel (15/11), só com `?relevo=1`
-    id: 'picos-da-borda-do-anel-b',
-    nome: 'os picos verticais da borda externa do anel B de Saturno, com sombra (malha deslocada)',
-    arquivos: ['src/three/world/corpos/relevoDoAnel.ts'],
-    consomeL1: false,
-    leiVelhaApagada: false,
-    fatorDeBrilho: null,
-    destino: 'fora-da-lei',
-    migracao: null,
-    emiteGlPointSize: false,
-    razao:
-      'não é fonte estelar: é a MESMA camada de gelo do disco, iluminada pelo mesmo ' +
-      'modelo de luz, com a normal tirada do relevo. MEDIDO (Spitale & Porco 2010, ' +
-      'AJ 140, 1747): raio 117 547,6 km, arco ~10°, altura máxima 3,5 km pelas ' +
-      'sombras, giro de 758,986°/dia; a longitude 95° está ancorada numa época ' +
-      'DECLARADA (o equinócio, 11/08/2009), não lida no artigo; a faixa é desenhada ' +
-      'a 20,4 km da borda que o perfil do app desenha (~117 500 km), não no raio ' +
-      'absoluto, que cairia no vão. SORTEADO pelas ' +
-      'imagens do equinócio (PIA11668, PIA11677), semente fixa: 32 cortinas, cada ' +
-      'uma com um pico pontudo e um vizinho menor, meia largura de 90–240 km no ' +
-      'arco e 12 km no raio, alturas com cauda abaixo do teto, e o relevo igual ' +
-      'acima e abaixo do plano',
-  },
-  {
     // C6 do plano de motion (docs/PLANO-MOTION-UI.md), adotado: o halo
     // de contorno liga por padrão, `?contorno=css` desliga
     id: 'halo-do-contorno-da-ui',

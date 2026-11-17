@@ -85,7 +85,6 @@ import type { QuadroDosAneisTenues } from './aneisTenues';
 import type { QuadroDasPedras } from './pedrasDoAnel';
 import { ANEL_VERT_DAS_PEDRAS,GLSL_CESSAO_DAS_PEDRAS, GLSL_PROFUNDIDADE_DO_DISCO, FATIA_DA_CHEGADA_MS, FATIA_DO_ASSADO_MS, PedrasDoAnel, uniformesDaSombraNoDisco } from './pedrasDoAnel';
 import { ANEL_DE_SATURNO, regiaoDoAnelCpu } from './descricaoDoAnel';
-import { FitaDosPicos, GLSL_RELEVO_DO_ANEL, RELEVO_DO_ANEL, uniformesDoRelevo, vertDaFita } from './relevoDoAnel';
 import { posicaoKepler } from '../../../lib/atlas/kepler';
 import { cessaoAlvo, gateBinario, saltoGuardado } from './terra';
 import { CANAL_MAP, type Seguradores, TexturasDoCorpo, diametroPedidoPelaTela } from './texturas';
@@ -1438,13 +1437,8 @@ ${REGIOES_DO_ANEL.slice(1)
  * planetshine + sombra do planeta elipsoide. vPos está no frame da
  * RingGeometry (plano XY); o mesh aplica Rx(−π/2), então +Z deste frame
  * é o POLO (W5-B).
- *
- * Com `?relevo=1` (`relevoDoAnel.ts`) o disco cede a pegada da faixa dos
- * picos e leva a sombra deles; `fita` monta o MESMO fragmento para a malha
- * da faixa, com a normal do relevo e meia opacidade por folha. Sem o
- * parâmetro o texto do disco é byte a byte o de antes.
  */
-function fragmentoDoAnel(fita: boolean): string {
+function fragmentoDoAnel(): string {
   return /* glsl */ `
 uniform sampler2D uMapaAnel;
 uniform vec3 uDirSolLocal;
@@ -1464,39 +1458,21 @@ ${GLSL_SOMBRA_DO_PLANETA_NO_ANEL}
 ${GLSL_CAMADA_DO_ANEL}
 ${GLSL_PLANETSHINE_NO_ANEL}
 ${GLSL_RUIDO_DE_VALOR}
-${GLSL_ESPETACULO_DO_ANEL}${BRILHO_MEDIDO_DO_ANEL ? GLSL_BRILHO_MEDIDO_DO_ANEL : ''}${GLSL_CESSAO_DAS_PEDRAS}${!fita ? GLSL_PROFUNDIDADE_DO_DISCO : ''}${
-  RELEVO_DO_ANEL
-    ? `${GLSL_RELEVO_DO_ANEL}${fita ? 'varying vec3 vNormalDaFita;\nvarying float vAlturaKm;\n' : ''}`
-    : ''
-}
+${GLSL_ESPETACULO_DO_ANEL}${BRILHO_MEDIDO_DO_ANEL ? GLSL_BRILHO_MEDIDO_DO_ANEL : ''}${GLSL_CESSAO_DAS_PEDRAS}${GLSL_PROFUNDIDADE_DO_DISCO}
 void main() {
   float r = length(vPos.xy);
   float uBase = ((r - uAnelRaios.x) / max(uAnelRaios.y - uAnelRaios.x, 1.0e-6))
     * U_ESCALA + U_BASE;
-  float ang = atan(vPos.y, vPos.x);${
-    RELEVO_DO_ANEL && !fita
-      ? `
-  // a pegada da faixa dos picos é da fita (\`relevoDoAnel.ts\`)
-  if (naFitaPeloRelativo(vRelDasPedras)) discard;`
-      : RELEVO_DO_ANEL
-        ? `
-  // a fita desenha só a pegada; o resto da malha é folga
-  if (!naFitaPeloRelativo(vRelDasPedras)) discard;`
-        : ''
-  }
+  float ang = atan(vPos.y, vPos.x);
   // as ondas de Dáfnis mexem em ONDE se amostra o perfil, nunca na malha
   float u = clamp(uBase + ondasDeDafnis(uBase, ang, uDafnisLon), 0.0, 1.0);
   vec4 perfil = texture2D(uMapaAnel, vec2(clamp(u, 0.0, 1.0), 0.5));
   float alfa = perfil.a;
-  if (alfa < 0.004) discard;${
-    !fita
-      ? `
+  if (alfa < 0.004) discard;
   // a profundidade pelo raio do pixel e o globo na frente por conta (\`GLSL_PROFUNDIDADE_DO_DISCO\`)
   if (globoNaFrente(vPos)) discard;
-  profundidadeDoDisco();`
-      : ''
-  }
-  vec3 n = ${fita ? 'normSeguro(vNormalDaFita)' : 'vec3(0.0, 0.0, 1.0)'};
+  profundidadeDoDisco();
+  vec3 n = vec3(0.0, 0.0, 1.0);
   vec3 view = normSeguro(-vRelDasPedras);
   float nDotL = dot(n, uDirSolLocal);
   float nDotV = dot(n, view);
@@ -1535,30 +1511,15 @@ void main() {
   float ladoSuave = smoothstep(-0.03, 0.03, mesmoLado);
   vec3 direta = (tinta * IF_RETRO)
     * ((camada.x * (1.0 - raios * ladoSuave) + raios * 0.5 * alfa) * uLuzGanho)
-    * sombraDoPlaneta(vPos) * sombraDasPedras(tau)${
-      // a luz direta passa pelo topo do relevo ali (o disco tem altura 0)
-      RELEVO_DO_ANEL ? ` * sombraDosPicos(vPos.xy, ${fita ? 'vAlturaKm' : '0.0'})` : ''
-    };
+    * sombraDoPlaneta(vPos) * sombraDasPedras(tau);
   // o planetshine NÃO leva a sombra do planeta: o planeta é a FONTE
   vec3 doGlobo = (tinta * IF_RETRO)
-    * (planetshineNoAnel(vPos, r, view, mu, tau, nDotV) * uLuzGanho);${
-      fita
-        ? `
-  // duas folhas (em cima e embaixo), cada uma com metade da camada:
-  // compostas, devolvem o alfa do disco onde o relevo é zero
-  float alfaDaCamada = cederAsPedras(clamp(camada.y, 0.0, 1.0), tau);
-  gl_FragColor = vec4(direta + doGlobo, 1.0 - sqrt(max(1.0 - alfaDaCamada, 0.0)));
-}
-`
-        : `
+    * (planetshineNoAnel(vPos, r, view, mu, tau, nDotV) * uLuzGanho);
   gl_FragColor = vec4(direta + doGlobo, cederAsPedras(clamp(camada.y, 0.0, 1.0), tau));
 }
-`
-    }`;
+`;
 }
-export const ANEL_FRAG = fragmentoDoAnel(false);
-/** o fragmento da fita dos picos — só existe com `?relevo=1` */
-export const ANEL_FRAG_DA_FITA = RELEVO_DO_ANEL ? fragmentoDoAnel(true) : '';
+export const ANEL_FRAG = fragmentoDoAnel();
 
 /**
  * ANEL PROCEDURAL (F6) — Urano/Netuno/Quaoar/Haumea. Sem placa de missão.
@@ -1785,8 +1746,6 @@ export class GiganteResolvido {
   private quadroDaLajota: (Omit<QuadroDasPedras, 'jd'> & { nearRaios: number }) | null = null;
   /** as pedras 3D do anel (`pedrasDoAnel.ts`) */
   private pedras: PedrasDoAnel | null = null;
-  /** `?relevo=1`: a faixa dos picos da borda do B com relevo (`relevoDoAnel.ts`) */
-  private fita: FitaDosPicos | null = null;
   /** item 139: o CHÃO do anel para o palco (o ponto do plano mais próximo
    *  da câmera), REUSADO — nasce com as pedras, e só com elas */
   private chaoDoAnel: { raioPc: number; centroPc: THREE.Vector3 } | null = null;
@@ -2157,15 +2116,6 @@ export class GiganteResolvido {
           this.pedras.sombraNoDisco(ua);
         }
       }
-      if (this.fita) {
-        this.fita.fixarNoAnel(this.anel.matrix);
-        this.fita.atualizar(
-          this.jdEscrito,
-          ua.uDirSolLocal.value as THREE.Vector3,
-          ua.uCamLocal.value as THREE.Vector3,
-          this.tierVivo()
-        );
-      }
     }
   }
 
@@ -2283,8 +2233,6 @@ export class GiganteResolvido {
                 ...uniformesDaSombraNoDisco(),
               }
             : {}),
-          // com `?relevo=1`: os picos da borda do B, partilhados com a fita
-          ...(placa && RELEVO_DO_ANEL ? uniformesDoRelevo() : {}),
         },
         transparent: true,
         depthWrite: false,
@@ -2341,21 +2289,6 @@ export class GiganteResolvido {
           centroPc: new THREE.Vector3(),
         };
         this.group.add(this.pedras.malha);
-        if (RELEVO_DO_ANEL) {
-          // a fita lê OS MESMOS uniformes do disco (o mesmo objeto de cada um)
-          this.fita = new FitaDosPicos(
-            new THREE.ShaderMaterial({
-              vertexShader: vertDaFita(true),
-              fragmentShader: ANEL_FRAG_DA_FITA,
-              uniforms: { ...this.matAnel.uniforms },
-              transparent: true,
-              depthWrite: false,
-              depthTest: true,
-              side: THREE.DoubleSide,
-            })
-          );
-          this.group.add(this.fita.malha);
-        }
         void this.ligarPerfilDoAnel();
       }
     }
@@ -2405,7 +2338,6 @@ export class GiganteResolvido {
     this.matAnel?.dispose();
     this.tenues?.dispose();
     this.pedras?.dispose();
-    this.fita?.dispose();
     this.dummyAnel?.dispose();
     this.texturas.dispose();
   }
