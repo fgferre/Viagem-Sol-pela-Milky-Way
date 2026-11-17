@@ -17,12 +17,13 @@ Quem pede e decide é a coordenadora (conversa "Onde estamos no projeto"); parar
 - **Escurecimento de borda:** Sol em `sol/sun.js` ~829 (o comentário diz u = 0,72 e o código usa 0,30: conferir qual vale); as estrelas herdam por remendo de texto.
 - **Fora do motor das estrelas (não é desta frente; vai para a triagem do BACKLOG):** quatro arquivos para o anel de Saturno de perto (camada em `gigante.ts`, `lajotaDoAnel`, `pedrasDoAnel`, `relevoDoAnel` ✓) e uma cópia para o anel de Quaoar; `?relevo` com dois sentidos (anel × Terra); três motores de galáxia por `?galaxia=`; quatro desenhistas de ponto de luz sobre uma PSF comum; ruído/hash em GLSL em 12+ cópias. Achatamento de estrela (Roche) × planeta (eixos medidos) e atmosfera da Terra são físicas diferentes: não juntar.
 
-## Sobras da revisão do Grande Escurecimento (a próxima conversa faz PRIMEIRO, num commit pequeno)
-- O texto da ficha ficou preso a Betelgeuse em chaves genéricas (`ficha.estrela.grandeEscurecimento`, `escurecimentoNoDesenho` em `pt.ts`/`en.ts`): cita os 1,614 mag, "sul", 225° e um "2,1×/3,5×" escrito à mão, que não segue `TIO_DA_FORJA`. O texto tem de sair dos números do registro da estrela.
-- Selo: a linha do desenho sai como "derivado", mas a largura da borda, o recorte pela rede e o aperto da célula são artísticos no código. Separar ou trocar o selo.
-- Uma estrela com épocas e `contrasteNaTela` = 0 daria 0/0 (stellarBody.ts ~777): guardar com um mínimo.
-- Faltam testes de `escreverManchaFria` (limiar, liga-desliga do define, tempo não finito, o espelho do x no assado).
-- Sem conferir: custo por quadro dentro da janela, `npm run done` inteiro com a máquina calma (a rodada de 17/11 deu só estouros de tempo com carga 123), celular e níveis baixos.
+## Sobras da revisão do Grande Escurecimento — FEITAS em 17/11 (conversa 5, ramo claude/star-forge-5-2b6bf8)
+- A ficha sai dos números do registro: `EscurecimentoMedido` ganhou `costumeMag`, `minimo` (mag, incerteza, datas) e `razaoDoLadoEscuro` (o piso "mais de 10×"); o lado escuro por época sai dos ângulos das épocas; o "quantas vezes mais escuro" sai de `escuroDaRegiaoFria` (forjaDaEstrela.ts: Planck por canal + TiO da Forja na luminância antes da curva de tom), que dá 2,3× a 3.400/3.700 K e 4,1× a 3.200/3.700 K (o texto à mão dizia 2,1× e 3,5×). `TIO_DA_FORJA`, `pesoDoTiO`, `LAMBDA_DOS_CANAIS_UM` e `C2_UM_K` mudaram de stellarBody.ts para forjaDaEstrela.ts (a ficha não importa o three).
+- Selo em duas linhas: "escurecimento" (derivado: direção, borda por época, pontas, Planck e TiO) e "borda da região fria" (artístico: a largura ~0,3 raio, o contorno pelas células, as células que cedem).
+- Saíram do texto (ditos aqui): "em todos os filtros do visível" (ficou em comentário no registro), "em março, a olho", e o "2 a 3×" medido na foto.
+- 0/0 guardado (a régua σ da região fria nunca é menor que 1e-4; Betelgeuse não muda).
+- Testes de `escreverManchaFria` (limiar, liga-desliga nos dois programas, não finito, x espelhado e giro da malha no assado) e de `escuroDaRegiaoFria`.
+- AINDA DEVIDO: custo por quadro dentro da janela, `npm run done` inteiro com a máquina calma, celular e níveis baixos.
 
 ## O que já está no principal local (e1467577)
 - **GRAVIDADE** (adea5447): toda estrela sem dínamo com contraste > 0 (até ~9.300 K) é desenhada pela Forja — convecção assada, célula por Trampedach 2013, cor pelo filtro do Sol deslocado pela temperatura mais TiO, casca em fiapos. Regra em `docs/LEI-DA-ESTRELA.md` §10, contas em `src/three/world/forjaDaEstrela.ts`, desenho em `src/three/world/stellarBody.ts`.

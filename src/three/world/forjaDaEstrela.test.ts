@@ -29,12 +29,14 @@ import {
   TEFF_SEM_CONVECCAO_K,
   pesoDaLisa,
   pesoDoPico,
+  pesoDoTiO,
+  TIO_DA_FORJA,
+  escuroDaRegiaoFria,
 } from './forjaDaEstrela';
 import {
   GANHO_DO_INSTRUMENTO,
   PONTA_DAS_CELULAS_QUENTES,
   SOL_PARAMS,
-  TIO_DA_FORJA,
   calibracaoDaForja,
   cirurgiaDaEstrela,
   cirurgiaDoAssado,
@@ -45,7 +47,6 @@ import {
   frenteDaAtmosfera,
   literalGlsl,
   pesoDoFiltro,
-  pesoDoTiO,
   tierDaEstrela,
   type StellarParams,
 } from './stellarBody';
@@ -435,6 +436,18 @@ describe('a região fria de um escurecimento — a borda, as células e o céu d
   it('sem região, nem a borda larga deslocada pelas células toca o disco (o ponto mais além é 1)', () => {
     expect(BORDA_FORA_DO_DISCO).toBeCloseTo(1.27, 12);
     expect(CORDA_SEM_MANCHA).toBeGreaterThan(BORDA_FORA_DO_DISCO);
+  });
+
+  it('o escuro da região fria no visível é o da lei do desenho: 1 sem diferença, cresce com o frio, e nada não finito', () => {
+    expect(escuroDaRegiaoFria(3600, 1)).toBeCloseTo(1, 12);
+    const a = escuroDaRegiaoFria(3600, 3400 / 3700);
+    const b = escuroDaRegiaoFria(3600, 3200 / 3700);
+    // Planck por canal e o TiO na temperatura local, na luminância antes da curva de tom
+    expect(a).toBeCloseTo(2.35, 2);
+    expect(b).toBeCloseTo(4.07, 2);
+    // uma estrela sem TiO (quente) escurece só por Planck: menos
+    expect(escuroDaRegiaoFria(5772, 3400 / 3700)).toBeLessThan(a);
+    for (const [t, r] of [[0, 0.9], [3600, 0], [NaN, 0.9], [3600, NaN]]) expect(escuroDaRegiaoFria(t!, r!)).toBe(1);
   });
 
   it('dentro dela as células claras e a quente cedem, contínuas; as faixas ficam', () => {

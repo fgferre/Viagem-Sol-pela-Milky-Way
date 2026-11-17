@@ -66,6 +66,10 @@ import {
 import type { Achatamento } from '../../lib/atlas/estrelasVisitaveis';
 import {
   BORDA_DA_MANCHA_FRIA,
+  C2_UM_K,
+  LAMBDA_DOS_CANAIS_UM,
+  TIO_DA_FORJA,
+  pesoDoTiO,
   BORDA_FORA_DO_DISCO,
   BORDA_PELAS_CELULAS,
   CELULA_PROFUNDA_EM_RAIOS,
@@ -770,7 +774,10 @@ export function cirurgiaDaEstrela(
     // (`escreverManchaFria`, dentro da janela): fora dela o programa é o de
     // antes, bit a bit — um fator 1 exato no texto compilado ainda mudava
     // pixels em 1 nível (o compilador reassocia)
-    const D = literalGlsl(d);
+    // a régua σ da região fria nunca é zero: uma estrela lisa (contraste 0)
+    // com escurecimento daria 0/0 no shader (um NaN + bloom branqueia a tela);
+    // com dForja = 0 o piso não muda nada
+    const D = literalGlsl(Math.max(d, 1e-4));
     const manchaFria = o.manchaFria
       ? '#ifdef MANCHA_FRIA\n' +
         '  float dForja = rForja - 1.0;\n' +
@@ -1326,35 +1333,6 @@ export function calibracaoDaForja(fracao: number, desordem: number = 0): Calibra
 }
 
 /**
- * O TiO DA FORJA, CONTÍNUO NA TEMPERATURA LOCAL. Schiavon & Barbuy 1999
- * (astro-ph/9807325): abaixo de ~4.000 K as bandas do TiO são a principal
- * opacidade de 6.000 a 10.000 Å; o índice EW6000 (6.145–6.541 Å) cresce a
- * partir de ~4.000 K e satura abaixo de ~3.000 K (o γ Δv = 0, ~7.150 Å,
- * abaixo de ~3.200 K). O peso vai de 0 em 4.000 K a 1 em 3.000 K, com
- * x = (4.000 − T)/1.000 e p = x(2 − x): cresce já em 4.000 K e chega
- * deitado em 3.000 K (a saturação). A forma é ARTÍSTICA, declarada; as
- * pontas são as da fonte. T é a temperatura LOCAL (Teff·r), então a mesma
- * lei vale na média da estrela e nas faixas — mais frias, absorvem mais e
- * ficam vermelho-escuras; as células quentes escapam dele.
- */
-export function pesoDoTiO(tK: number): number {
-  const x = Math.min(1, Math.max(0, (4000 - tK) / 1000));
-  return x * (2 - x);
-}
-
-/**
- * A FORÇA DO TiO DA FORJA: os canais G e B levam exp(−k·p(T)). k = 1,1 é
- * escolhido pelo resultado (ARTÍSTICO, declarado; o k = 8 das gigantes de
- * antes não tinha âncora): na Teff, Aldebaran (3.900 K) 0,81 no verde
- * (laranja), Antares (3.745 K) 0,61 e Betelgeuse (3.600 K) 0,49
- * (vermelho-alaranjado; o Antares do ESO, eso1726, tem R/G ~1,86 na tela, e
- * o nosso, medido na volta 6a, ~1,83); Arcturus (4.450 K) só nas faixas
- * mais fundas. Os canais são os da tela: a banda do EW6000 cai no vermelho
- * de 0,61 µm, mas a imagem colorizada perde o verde e o azul.
- */
-export const TIO_DA_FORJA = 1.1;
-
-/**
  * A EXPOSIÇÃO ACOMPANHA O TiO: a absorção no centro do disco (na Teff) é
  * dividida de volta na luminância da tela, onde o verde e o azul pesam ~0,7
  * numa gigante fria (Antares da volta 5: 0,7152·106 + 0,0722·30 contra
@@ -1390,9 +1368,6 @@ function glslDoTiONaForja(teffK: number, d: number): string {
  */
 export const PONTA_DAS_CELULAS_QUENTES = { de: 1.0, ate: 1.16, ganho: 1.8 } as const;
 
-/** os comprimentos de onda efetivos dos canais R, G, B (µm) e c₂ = hc/k (µm·K) */
-const LAMBDA_DOS_CANAIS_UM = [0.61, 0.55, 0.465] as const;
-const C2_UM_K = 14388;
 
 /** x = c₂/(λT) por canal, como `vec3` GLSL — a régua de `razaoDePlanck` */
 export function xDePlanckGlsl(T: number): string {

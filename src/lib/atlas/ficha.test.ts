@@ -1080,7 +1080,7 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     const bet = de('Betelgeuse');
     const g = linhasDe(bet).get('Grande Escurecimento')!;
     expect(g.procedencia).toBe('medido');
-    expect(g.valor).toContain('1,614 ± 0,008 mag');
+    expect(g.valor).toContain('entre 0,1 e 1,0, caiu a 1,614 ± 0,008 mag entre 07/02/2020 e 13/02/2020');
     expect(g.valor).toContain('mais de 10×');
     expect(g.fonte).toBe('Montargès et al. 2021, Nature 594, 365');
     const m = linhasDe(bet).get('mancha fria (modelo)')!;
@@ -1093,18 +1093,25 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     const d = imagem(bet).get('escurecimento')!;
     expect(d.procedencia).toBe('derivado');
     expect(d.valor).toContain('de 01/11/2019 a 01/04/2020');
-    expect(d.valor).toContain('a largura da borda (~0,3 raio) e o contorno que segue as células são escolha');
-    expect(d.valor).toContain('2,1× a 3.400/3.700 K e 3,5× a 3.200/3.700 K, e nada foi aumentado sem fonte');
+    expect(d.valor).toContain('o lado escuro a 180° em 27/12/2019, a 180° em 28/01/2020, a 225° em 18/03/2020');
+    // o número sai da lei do desenho (`escuroDaRegiaoFria`), não da mão
+    expect(d.valor).toContain('dão 2,3× mais escuro a 3.400/3.700 K e 4,1× mais escuro a 3.200/3.700 K, contra mais de 10×');
+    // o que é escolha tem selo próprio
+    const b = imagem(bet).get('borda da região fria')!;
+    expect(b.procedencia).toBe('artistico');
+    expect(b.valor).toContain('~0,3 raio');
     for (const outra of ['Antares', 'Rigel', 'Aldebaran']) {
       expect(linhasDe(de(outra)).has('Grande Escurecimento'), outra).toBe(false);
       expect(imagem(de(outra)).has('escurecimento'), outra).toBe(false);
+      expect(imagem(de(outra)).has('borda da região fria'), outra).toBe(false);
     }
     definirIdioma('en');
     try {
       const en = de('Betelgeuse');
       expect(linhasDe(en).get('cool patch (model)')!.valor).toContain('2020-01-28, 79% of the apparent disk at 3,400 K');
       expect(imagem(en).get('dimming')!.valor).toContain('from 2019-11-01 to 2020-04-01');
-      expect(imagem(en).get('dimming')!.valor).toContain('2.1× at 3,400/3,700 K and 3.5× at 3,200/3,700 K');
+      expect(imagem(en).get('dimming')!.valor).toContain('2.3× darker at 3,400/3,700 K and 4.1× darker at 3,200/3,700 K');
+      expect(imagem(en).get("cool region's edge")!.procedencia).toBe('artistico');
     } finally {
       definirIdioma('pt-BR');
     }

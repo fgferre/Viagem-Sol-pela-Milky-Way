@@ -59,7 +59,7 @@ import {
 } from './stellarBody';
 import { uvMeshVertex } from './sol/common.js';
 import { estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
-import { pesoDaLisa } from './forjaDaEstrela';
+import { BORDA_FORA_DO_DISCO, CORDA_SEM_MANCHA, pesoDaLisa } from './forjaDaEstrela';
 import { gasDaEstrela } from './ventoDaEstrela';
 import { K_MIN_RAIOS } from '../cinematic/atlasRig';
 
@@ -898,5 +898,82 @@ describe('um motor, qualquer estrela — os parâmetros novos são neutros no So
     const g3 = 'out vec4 fragColor;\nvoid main(){\n  fragColor = vec4(1.0);\n}';
     expect(cirurgiaDaMatiz(g3)).toContain('fragColor.rgb *= uMatizDaCamada;');
     expect(cirurgiaDaMatiz('void main(){\n  gl_FragColor = vec4(1.0);\n}')).toContain('gl_FragColor.rgb *= uMatizDaCamada;');
+  });
+});
+
+// ============================================================
+// A REGIÃO FRIA PELA DATA (`escreverManchaFria`): o método real sobre um
+// `this` de mentira com os campos que ele toca (o construtor pede GPU).
+// ============================================================
+describe('a região fria pela data: limiar, liga-desliga, valores não finitos e o x do assado', () => {
+  const fingir = (comEscurecimento = true) => {
+    const mesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.ShaderMaterial());
+    return {
+      params: comEscurecimento ? { escurecimento: {} } : {},
+      manchaFria: {
+        uManchaFria: { value: new THREE.Vector4(0, 0, 1, CORDA_SEM_MANCHA) },
+        uManchaFriaK: { value: 1 },
+        uManchaFriaAssado: { value: new THREE.Vector4(0, 0, 1, CORDA_SEM_MANCHA) },
+      },
+      ctx: { sunMesh: mesh },
+      dManchaTmp: new THREE.Vector3(),
+      qManchaTmp: new THREE.Quaternion(),
+      manchaAssada: new THREE.Vector4(0, 0, 1, CORDA_SEM_MANCHA),
+      assadoDaManchaSujo: false,
+      assadoComManchaFria: new THREE.ShaderMaterial(),
+    };
+  };
+  type Falso = ReturnType<typeof fingir>;
+  const escrever = (alvo: Falso, d: readonly [number, number, number], corda: number, razaoT: number) =>
+    (StellarBody.prototype.escreverManchaFria as (this: unknown, ...a: unknown[]) => void).call(alvo, d, corda, razaoT);
+  const ligada = (s: Falso) =>
+    [s.ctx.sunMesh.material as THREE.ShaderMaterial, s.assadoComManchaFria].map((m) => Boolean(m.defines && 'MANCHA_FRIA' in m.defines));
+
+  it('sem escurecimento no registro, nada muda', () => {
+    const s = fingir(false);
+    escrever(s, [1, 0, 0], 0, 0.9);
+    expect(s.manchaFria.uManchaFria.value.w).toBe(CORDA_SEM_MANCHA);
+    expect(ligada(s)).toEqual([false, false]);
+  });
+
+  it('liga só com a temperatura diferente e a borda dentro do disco, nos dois programas; e desliga de volta', () => {
+    const s = fingir();
+    escrever(s, [0, 0, 1], 0, 1);
+    expect(ligada(s)).toEqual([false, false]);
+    escrever(s, [0, 0, 1], BORDA_FORA_DO_DISCO, 0.9);
+    expect(ligada(s)).toEqual([false, false]);
+    escrever(s, [0, 0, 1], BORDA_FORA_DO_DISCO - 0.01, 0.9);
+    expect(ligada(s)).toEqual([true, true]);
+    expect(s.manchaFria.uManchaFriaK.value).toBe(0.9);
+    expect(s.assadoDaManchaSujo).toBe(true);
+    escrever(s, [0, 0, 1], 1.3, 1);
+    expect(ligada(s)).toEqual([false, false]);
+  });
+
+  it('valor não finito (o relógio fora do ar) não chega ao shader: sem mancha', () => {
+    for (const [d, c, r] of [
+      [[NaN, 0, 1], 0, 0.9],
+      [[0, 0, 1], Infinity, 0.9],
+      [[0, 0, 1], 0, NaN],
+      [[0, 0, 1], 0, 0],
+    ] as const) {
+      const s = fingir();
+      escrever(s, d, c, r);
+      expect(s.manchaFria.uManchaFria.value.toArray()).toEqual([0, 0, 1, CORDA_SEM_MANCHA]);
+      expect(s.manchaFria.uManchaFriaK.value).toBe(1);
+      expect(ligada(s)).toEqual([false, false]);
+    }
+  });
+
+  it('no assado o lado escuro vai sem o giro da malha e com o x espelhado', () => {
+    const s = fingir();
+    escrever(s, [1, 0, 0], 0.2, 0.9);
+    expect(s.manchaFria.uManchaFriaAssado.value.toArray()).toEqual([-1, 0, 0, 0.2]);
+    // a malha girada 90° em y: o +x da cena é o +z do objeto
+    s.ctx.sunMesh.rotation.y = Math.PI / 2;
+    s.ctx.sunMesh.updateMatrixWorld(true);
+    escrever(s, [1, 0, 0], 0.2, 0.9);
+    const a = s.manchaFria.uManchaFriaAssado.value;
+    expect([a.x, a.y, a.z, a.w].map((v) => Math.round(v * 1e9) / 1e9 + 0)).toEqual([0, 0, 1, 0.2]);
   });
 });

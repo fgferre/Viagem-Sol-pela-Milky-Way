@@ -750,13 +750,18 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.campo.manchaFria': 'cool patch (model)',
   'ficha.campo.escurecimentoNoDesenho': 'dimming',
   'ficha.estrela.grandeEscurecimento':
-    'from November 2019 to March 2020 the visible brightness, usually between 0.1 and 1.0, fell to 1.614 ± 0.008 mag around 7–13 Feb 2020; in December and January the southern hemisphere peaked over 10× fainter than the northern one, in all visible filters, and in March the dark area stayed in the south-western quadrant; the diameter did not change',
+    'the visible brightness, usually between {claro} and {fraco}, fell to {mag} ± {erro} mag between {de} and {ate}; in the visible images the dark side peaked over {razao}× fainter than the opposite side; the diameter did not change',
   'ficha.estrela.manchaFria':
     'the paper\'s cool-patch fit, with the photosphere at {t0} K: {epocas} (±50 K); a dust cloud in front of the star fits the images equally well, and the paper does not choose — it proposes that the cooling let the dust form; the model\'s circle (radius 0 to 10 mas, in the south-western quadrant) covers at most ~22% of a 42 mas disk and cannot reach the 62, 79 and 43% the text itself gives: the app follows the images',
   'ficha.estrela.epocaDaManchaFria': '{data}, {pct}% of the apparent disk at {k} K',
   'ficha.estrela.dataDaEpoca': '{a}-{m}-{d}',
   'ficha.estrela.escurecimentoNoDesenho':
-    'by the app\'s clock, from {de} to {ate}: the drawing is the cool region (not the dust), shaped as in the SPHERE images — the south dark in December and January, receding to a south-western crescent in March; inside it the temperature is the model\'s, in its ratio to the model\'s photosphere: brightness and colour fall by Planck\'s law and by the TiO at that temperature, the bright cells give way and the hot cell disappears, bringing back the common cell network; linear between the dates; derived: due south and south-west at 225° (the paper gives the hemisphere and the quadrant), where the edge crosses the disk at each epoch (read from the images; in March, by eye), the ends of the window (the exact date of the recovery is not in the texts read); the edge\'s width (~0.3 radius) and its outline following the cells are a choice; the south comes out less dark than measured (2 to 3× against more than 10× in the SPHERE photos): Planck\'s law and the Forja\'s TiO give 2.1× at 3,400/3,700 K and 3.5× at 3,200/3,700 K, and nothing was raised without a source; the point of light in the sky does not dim (it comes from the catalogue)',
+    'by the app\'s clock, from {de} to {ate}: the drawing is the cool region (not the dust), shaped as in the images — the dark side {lados} (on the sky, north through east); inside it the temperature is the model\'s, in its ratio to the model\'s photosphere: brightness and colour fall by Planck\'s law and by the TiO at that temperature; linear between the dates; derived: the direction of the dark side (the paper gives the hemisphere and the quadrant), where the edge crosses the disk at each epoch (read from the images), the ends of the window; Planck\'s law and the Forja\'s TiO give {escuros}, against more than {razao}× in the images, and nothing was raised without a source; the point of light in the sky does not dim (it comes from the catalogue)',
+  'ficha.estrela.ladoEscuroNaEpoca': 'at {graus}° on {data}',
+  'ficha.estrela.escuroNaTemperatura': '{x}× darker at {k}/{t0} K',
+  'ficha.campo.bordaDaRegiaoFria': 'cool region\'s edge',
+  'ficha.estrela.bordaDaRegiaoFria':
+    'wide (~{largura} radius) and irregular, following the cells, and inside it the bright cells give way and the hot cell disappears: a choice — the images do not resolve the edge',
   'ficha.campo.manchaQuente': 'hot spot',
   'ficha.campo.manchaNoVisivel': 'hot spot in visible light',
   'ficha.estrela.nuvemEmVolta':

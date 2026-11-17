@@ -157,6 +157,12 @@ export interface EpocaDoEscurecimento {
 export interface EscurecimentoMedido {
   /** a fotosfera sem mancha no modelo do artigo, K: a mancha entra na estrela pela razão das duas */
   readonly teffDaFotosferaK: Numero;
+  /** o brilho visível de costume, mag: o mais claro e o mais fraco */
+  readonly costumeMag: readonly [number, number];
+  /** o mínimo: a magnitude visível, a incerteza dela (mag) e as datas em volta dele (UT, ISO 8601) */
+  readonly minimo: { readonly mag: Numero; readonly erroMag: number; readonly de: string; readonly ate: string };
+  /** quantas vezes o pico de brilho do lado escuro ficou abaixo do oposto, nas imagens do visível: um piso ("mais de") */
+  readonly razaoDoLadoEscuro: Numero;
   readonly epocas: readonly EpocaDoEscurecimento[];
 }
 
@@ -363,6 +369,9 @@ const MONTARGES_2021 = 'Montargès et al. 2021, Nature 594, 365';
 const TEFF_DO_MODELO_DE_2021 = { v: 3700, p: 'medido', fonte: MONTARGES_2021 } as const;
 const ESCURECIMENTO_DE_BETELGEUSE: EscurecimentoMedido = {
   teffDaFotosferaK: TEFF_DO_MODELO_DE_2021,
+  costumeMag: [0.1, 1.0],
+  minimo: { mag: { v: 1.614, p: 'medido', fonte: MONTARGES_2021 }, erroMag: 0.008, de: '2020-02-07', ate: '2020-02-13' },
+  razaoDoLadoEscuro: { v: 10, p: 'medido', fonte: MONTARGES_2021 }, // dez/2019 e jan/2020, em todos os filtros do visível
   epocas: [
     {
       data: '2019-11-01T00:00Z',
