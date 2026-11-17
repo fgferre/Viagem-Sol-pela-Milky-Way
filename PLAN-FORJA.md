@@ -9,6 +9,14 @@ Quem pede e decide é a coordenadora (conversa "Onde estamos no projeto"); parar
 3. Tabelas por NOME dentro do código (`VENTOS_MEDIDOS`, a das manchas medidas, `RAIOS_DA_LINHA_MEDIDOS`): devem ser campos do registro da estrela, lidos como qualquer parâmetro.
 4. Limiares secos que sobraram e classes sem corpo (anãs brancas, Wolf-Rayet, pulsantes, binárias próximas).
 
+### Inventário de 17/11: o que hoje tem mais de uma máquina para a mesma coisa física (leitor Haiku; conferi por amostra só os pontos marcados ✓)
+- **Como o motor é montado:** `stellarBody.ts` (4.167 linhas ✓) faz a estrela reescrevendo o TEXTO do shader do Sol (`sol/sun.js`) por substituição de âncoras — 28 chamadas de `trocarUma` ✓. É a forma concreta dos "dois ramos": não é um motor que lê parâmetros, é o Sol remendado. Raiz dos itens abaixo.
+- **Região fria ou quente na superfície — três máquinas:** manchas do Sol (`sol/activity.js`, `sol/sun.js`; a estrela já importa `createActivity` ✓); mancha quente medida (`MANCHA_DE_HAUBOIS`, `picoDasCelulasQuentes` em `forjaDaEstrela.ts`); região fria do Escurecimento (`uManchaFria` em `stellarBody.ts`, `EscurecimentoDoMotor`).
+- **Gás em volta da estrela — três máquinas:** coroa do Sol (`sol/coronaRays.js`, `coronaVolume.js`, `cme.js`, que a estrela importa ✓); vento e disco (`glslDoGas`, `rosaDoGas` em `stellarBody.ts`, densidade em `ventoDaEstrela.ts`); casca da Forja (`garantirCasca`, `raioDaAtmosferaEmRaios`).
+- **Granulação — duas fontes:** `sol/granulation.js` (viva) e o assado da Forja (`glslDoAssadoDaForja`, `conveccaoDoAssado`, `granulacaoViva` só com `ag > 0`). Não conferido: se o Sol passa pelas duas.
+- **Escurecimento de borda:** Sol em `sol/sun.js` ~829 (o comentário diz u = 0,72 e o código usa 0,30: conferir qual vale); as estrelas herdam por remendo de texto.
+- **Fora do motor das estrelas (não é desta frente; vai para a triagem do BACKLOG):** quatro arquivos para o anel de Saturno de perto (camada em `gigante.ts`, `lajotaDoAnel`, `pedrasDoAnel`, `relevoDoAnel` ✓) e uma cópia para o anel de Quaoar; `?relevo` com dois sentidos (anel × Terra); três motores de galáxia por `?galaxia=`; quatro desenhistas de ponto de luz sobre uma PSF comum; ruído/hash em GLSL em 12+ cópias. Achatamento de estrela (Roche) × planeta (eixos medidos) e atmosfera da Terra são físicas diferentes: não juntar.
+
 ## Sobras da revisão do Grande Escurecimento (a próxima conversa faz PRIMEIRO, num commit pequeno)
 - O texto da ficha ficou preso a Betelgeuse em chaves genéricas (`ficha.estrela.grandeEscurecimento`, `escurecimentoNoDesenho` em `pt.ts`/`en.ts`): cita os 1,614 mag, "sul", 225° e um "2,1×/3,5×" escrito à mão, que não segue `TIO_DA_FORJA`. O texto tem de sair dos números do registro da estrela.
 - Selo: a linha do desenho sai como "derivado", mas a largura da borda, o recorte pela rede e o aperto da célula são artísticos no código. Separar ou trocar o selo.
