@@ -43,12 +43,12 @@ O que falta para ser parte do anel: hoje é uma FITA própria (2048×16 segmento
 
 ### Outras inconsistências achadas (não consertadas no Passo 0)
 - P:42 diz "agitação medida"; P:712–718 diz não medida (equipartição). Corrigir a palavra na J1.
-- Espessura da divisão de Cassini: código 10 m (Tiscareno 2007, faixa 2–20 m); a pesquisa de 15/11 achou 3–6 m. Conferir a fonte antes de mexer (muda imagem; pede prancha).
+- Espessura da divisão de Cassini: código 10 m (Tiscareno 2007, faixa 2–20 m); a pesquisa de 15/11 achou 3–6 m. Decisão da coordenadora (17/11): não mexer; antes, ler o artigo direto (não resumo) e só então propor, com prancha.
 - O relógio dos pedaços é INTEGRADO quadro a quadro (P:5014–5027) e tem teto por quadro (`tetoDoPasso`, tanh): com o relógio rápido o cisalhamento anda mais devagar que o relógio, e um salto (seek do filme, troca de data) dá outro arranjo do que tocar até lá. Isto é do Passo 2.
 
 ## A descrição única proposta
 
-Um módulo só, `src/three/world/corpos/anelDeSaturno.ts`, que NASCE POR MUDANÇA, não por invenção: recebe o que hoje está espalhado em G, P, R e T, e todos passam a importar dele (G já importa de P; P e R não importam de G — por isso a descrição não pode morar em G sem criar ciclo). Ele não desenha nada.
+Um módulo só, `src/three/world/corpos/descricaoDoAnel.ts` (feito na J1: tipo `DescricaoDeAnel`, Saturno como primeiro valor), que NASCE POR MUDANÇA, não por invenção: recebe o que hoje está espalhado em G, P, R e T, e todos passam a importar dele (G já importa de P; P e R não importam de G — por isso a descrição não pode morar em G sem criar ciclo). Ele não desenha nada.
 
 | parâmetro | unidade | valor / faixa | fonte (a do comentário de hoje) | hoje em |
 |---|---|---|---|---|
@@ -64,7 +64,6 @@ Um módulo só, `src/three/world/corpos/anelDeSaturno.ts`, que NASCE POR MUDANÇ
 | agitação (velocidade aleatória) | mm/s | 1 (não medido, equipartição) | P:712 | P:719 |
 | giro: Ω(ρ) = √(GM/ρ³) | rad/s | GM = 37 931 207 km³/s² | (fonte a escrever no comentário) | P:70, P:626 |
 | corotação dos raios do B | h | 10,66 | G:181 | G:181 |
-| picos da borda do B: raio, arco, altura máxima, taxa, época, longitude | km, °, km, °/dia | 117 547,6; ~10; 3,5; 758,986; JD 2455054,5; 95 | Spitale & Porco 2010 (contagem, forma e alturas abaixo do teto: sorteadas e confessadas) | R:30–82 |
 | ondas de Dáfnis | — | o que G já desenha | — | G (`uDafnisLon`) |
 | véus F e E (só referência nesta conversa) | km | F 140 180, 3 fios, dobra 100, excentricidade 40; E 170 000–330 000, pico 238 000 | projeto dele `fRing.ts`/`eRing.ts`, Murray 2008 | T:42–67 |
 
@@ -74,22 +73,25 @@ O nível de detalhe NÃO entra na descrição: é a máquina que decide, pela di
 
 Prova de cada junção: as fotos padrão antes e depois — `?atlas=1&foco=saturn` (longe), `?atlas=1&foco=saturn&ver=aneis` (perto) e a tomada do filme que atravessa o anel (fotos a t = 241,4 s e vizinhas, sem gravar o filme) — iguais (md5 ou |Δ| por pixel ≈ 0); mais `npm run typecheck`, lint e os testes tocados.
 
-- **J1 — a descrição.** Criar `anelDeSaturno.ts` movendo para ele as duas tabelas de região fundidas numa (todos os campos), um leitor na CPU e um no GLSL, `KM_POR_RAIO`, GM, os números dos pedaços e das esteiras. G e P passam a ler dela; somem `REGIOES_DAS_PEDRAS`, `regiaoDasPedras` (vira o leitor único), o gêmeo GLSL de P e o teste de igualdade das duas tabelas. Imagem: idêntica.
-- **J2 — a lajota sai.** Apagar `lajotaDoAnel.ts` e o teste, o `else` de G, `PEDRAS_3D` e a leitura de `?pedras` (inclusive o `?pedras=3d` que nada faz), o ramo de 12 km do chão (o chão hoje usa a janela `VOLUME_DA_LAJOTA`, 55 000–160 000 km, G:2235, e nasce com 12 km, G:2481: a janela passa para a descrição como "onde há pedaços", a mesma de P:2919), as linhas de escala e do censo, o teste do chão refeito com a espessura medida. Deixa de existir: `?pedras=0` (o anel de antes de 15/11, com os grãos de 4–14 km). Imagem padrão: idêntica.
-- **J3 — o protótipo do relevo sai do jeito que está.** Apagar a fita e `?relevo=1` (some a colisão com a Terra); os números medidos dos picos já moram na descrição desde J1. Deixa de existir: a fita dos picos por URL. Imagem padrão: idêntica. O relevo VOLTA como etapa 4, lido pela mesma máquina.
+- **J1 — FEITA (9acae86f).** `descricaoDoAnel.ts`: tipo `DescricaoDeAnel` e o valor `ANEL_DE_SATURNO` (raio equatorial, GM, raios do desenho, perfil e brilho, as regiões fundidas numa tabela com todos os campos, pedaços com a janela de 55 000–160 000 km e a agitação, corotação dos raios do B, véus F e E) e um leitor na CPU, `regiaoDoAnelCpu`. Sumiram `REGIOES_DAS_PEDRAS`, `regiaoDasPedras` da CPU, o teste de igualdade das tabelas e as cópias de `KM_POR_RAIO`. Dump de todos os GLSL e dos leitores antes/depois: idêntico. Ficou: os dois leitores GLSL (`regiaoDoAnel` vec3 com toFixed(4), `regiaoDasPedras` vec2 com toExponential(9)) agora gerados da mesma tabela, mas ainda duas funções (fundir muda o texto do shader; fazer junto com uma mudança que já mude a imagem); comprimento de onda e inclinação das esteiras não são constantes nomeadas (saem do ladrilho), não foram movidos; Keeler, `COR_B`, `ALBEDO_GEO` seguem em G; comentários velhos citando `PERFIL_DO_ANEL` em `texturas.ts:169` e num script de dados.
+- **J2 — FEITA (0bf78f02).** Saíram `lajotaDoAnel.ts` e o teste, `PEDRAS_3D` e a leitura de `?pedras`, as linhas de escala e do censo; o chão do anel lê a janela da descrição (55 000–160 000 km, a mesma) e sempre a meia-espessura medida; o teste do chão refeito com ela. Deixou de existir: `?pedras=0` (o anel de antes de 15/11, com os grãos de 4–14 km). Para a coordenadora ver na junção: `scripts/visual/retrato-de-familia.mjs:261` esconde uma chave de página `lajota` que não existe mais (inofensivo; não editei `scripts/visual/`); `docs/reference/saturn-colheita.md:50,117` cita a lajota como história.
+- **J3 — FEITA (079d31b7).** Saíram `relevoDoAnel.ts` e o teste, a fita e seus ramos no shader, a linha `picos-da-borda-do-anel-b` do censo e `?relevo=1`; a chave `relevo` é só da Terra. Os shaders padrão do anel batem com os hashes que o teste do protótipo fixava. Deixou de existir: a fita dos picos por URL.
 - **J4 (Passo 2) — o giro.** Ver abaixo.
 
 Se a coordenadora preferir manter o protótipo do relevo vivo até a etapa 4, J3 vira só a troca do nome da chave; recomendo apagar, porque nunca foi aprovado e reaparece melhor por dentro.
 
-## Passo 2 — o anel dá a volta com o relógio (proposta, a fazer depois de J1–J3)
+## Passo 2 — o anel dá a volta com o relógio (J4, depois que a coordenadora conferir J1–J3)
+Decisões da coordenadora (17/11): posição pela DATA, teto por quadro sai; o mundo gira e a câmera escolhe — na vista "Anéis" a câmera acompanha a órbita local do raio onde está; levantar antes o que a câmera faz hoje ali (longitude fixa, `pontoDoAnel.ts`) e como a tomada do filme que atravessa o anel está presa; se o giro mudar a tomada, fotos antes/depois e NÃO mexer no roteiro sem avisar; prova: Δt pequeno com deslocamento Ω·ρ·Δt + teste de posição em t e t+Δt + foto de longe mostrando que raios do B e Dáfnis andam como hoje.
+
 - Cada pedaço tem ângulo θ₀ + Ω(ρ)·(t − t₀), com t do relógio do app em dupla precisão na CPU; o que o vértice recebe são fases por oitava e por fileira do ladrilho já reduzidas ao período (o ladrilho é periódico, então qualquer deslocamento é válido). Calculado a partir da data e não somado quadro a quadro: o mesmo instante dá o mesmo arranjo, tocando ou saltando (filme, seek, fotos).
 - O teto por quadro sai: o mundo anda com o relógio inteiro. Com o relógio rápido o pedaço anda vários ladrilhos por quadro e vira estroboscópio; isto é verdade do que se vê com aquele relógio, não defeito (a câmera que quiser ver parado entra em órbita junto — escolha de câmera, não do mundo; a vista "Anéis" é candidata, pergunta ao dono).
 - O disco gira junto onde ele tem desenho que não é igual em toda volta (esteiras lidas do ladrilho); o perfil é simétrico e não muda.
 - Prova pedida: duas fotos com a câmera parada em horas diferentes do relógio. Cuidado: com horas inteiras de diferença o material que passa é outro e as duas fotos ficam estatisticamente iguais; a prova legível é Δt pequeno (fração de segundo a poucos segundos, perto) com o desenho deslocado de Ω·ρ·Δt, mais um teste que confere a posição de um pedaço em t e t + Δt.
 
 ## Depois (fora do que cabe nesta conversa, em ordem)
+Provas desta rodada: `capturas/aneis-um-jeito-so/` (roteiro `rodar.sh <porta> <pasta>`; `antes/` é o app em 6b01d3e6; Atlas com `jd=` e `shot=1`, filme com `shot=2` e seek; cada vista sai igual pixel a pixel em duas tomadas).
 3. Os quadradinhos claros nos pedaços a ≤ 5 m (também no filme a 241,4 s).
-4. Relevo pela máquina: h(ρ, θ, t) na descrição; pedaços, camada, disco e sombra leem a mesma h; picos do B primeiro, depois Dáfnis e a onda de Mimas 5:3 (Sega 2024). O dono vê com Sol de hoje e com Sol rasante antes de virar padrão.
+4. Relevo pela máquina: h(ρ, θ, t) na descrição (só quando houver leitor); pedaços, camada, disco e sombra leem a mesma h; picos do B primeiro, depois Dáfnis e a onda de Mimas 5:3 (Sega 2024). O dono vê com Sol de hoje e com Sol rasante antes de virar padrão. Números dos picos da borda do B (Spitale & Porco 2010, AJ 140, 1747; arXiv:0912.3489): raio 117 547,6 km; ~10° de arco; até 3,5 km de altura pelas sombras (a legenda PIA11668 diz 2,5); giram na taxa orbital local 758,986°/dia; época JD 2455054,5 com a faixa a 95° de longitude; contagem, espaçamento, forma e alturas abaixo do teto NÃO medidos (sorteados e confessados; o protótipo usava 64 picos em 32 células). O perfil do app põe a borda do B em ~117 500 km, não em 117 568: a faixa ia a ~20 km da borda do app. Protótipo e pranchas em `capturas/aneis-relevo-15-11/` e no commit e6e4d3d1.
 5. Os véus F e E com os números da descrição.
 6. Urano, Netuno, Quaoar e Haumea pela mesma descrição (perfil em parâmetro no lugar do `uModo` à mão); Haumea na lista do eclipse; modo `quaoar` morto em G.
 7. WebGPU para os pedaços (decisão do dono de 14/11: depois da imagem).
