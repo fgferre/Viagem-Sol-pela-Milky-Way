@@ -22,3 +22,7 @@ Provas em `capturas/estrelas-lugar/star-forge/etapa-a/` e `prancha-etapa-a.png`.
 ## Fora (ficam para o botão BRILHO)
 - A nuvem irregular em volta de Betelgeuse que sumiu do filme (volta por dado: pluma e poeira medidas).
 - As duas manchas enormes quase brancas do Antares do ESO.
+- A companheira de Capella branca (decisão da coordenadora, 16/11: fica como está; ela trata junto do brilho). Causa: a lei do filtro pelo tamanho do disco vale igual para todas; abaixo de ~90 px de disco o filtro sai e fica a radiância verdadeira, e a companheira é sempre menor no quadro que a principal. Junto: o crescente escuro pequeno na borda dela (`etapa-a/capella/recorte-b.png`).
+
+## Fora (para depois do giro)
+- O vidro craquelado das quentes: faixa mais larga não tem fonte. O que as figuras (Beeck 2013 F3V, Magic 2013) têm e nós não: faixa de largura variável, com nós mais grossos, e miolo da célula sombreado em vez de chapado.
