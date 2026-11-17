@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { NamedStar } from '../config';
 import { estrelaComCorpo } from '../../lib/atlas/estrelaDoCatalogo';
-import { estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
+import { VENTO_DE_RIGEL, estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
 import {
   ANCORA_RIGEL,
   BRACOS_DO_VENTO,
@@ -21,7 +21,6 @@ import {
   LIMIAR_DE_DESENHO,
   TEFF_DO_SALTO_K,
   TETO_DO_GAS,
-  VENTOS_MEDIDOS,
   anoDoJd,
   emissividadeDoVento,
   faseDoDisco,
@@ -30,7 +29,7 @@ import {
   fracaoDoVento,
   gasDaEstrela,
   velocidadeDeEscape,
-  ventoDe,
+  ventoDaFicha,
   ventoPelaReceita,
 } from './ventoDaEstrela';
 
@@ -64,16 +63,19 @@ describe('o vento das quentes — Vink, de Koter & Lamers 2001', () => {
   });
 
   it('o medido vence a receita (Rigel e Deneb)', () => {
-    expect(ventoDe('Rigel', 30000, 1e5, 30, 20)).toBe(VENTOS_MEDIDOS.Rigel);
-    expect(VENTOS_MEDIDOS.Rigel.mdotMsolAno).toBe(8.5e-7);
-    expect(ventoDe('Deneb', 8500, 46000, 20, 99)?.vInfKms).toBe(225);
+    // o medido mora no registro (`ventoMedido`); o motor não conhece o nome
+    expect(ventoDaFicha(doCatalogo('Rigel'))).toBe(VENTO_DE_RIGEL);
+    expect(VENTO_DE_RIGEL.mdotMsolAno).toBe(8.5e-7);
+    expect(ventoDaFicha(doCatalogo('Deneb'))?.vInfKms).toBe(225);
+    // a mesma ficha sem o campo medido cai na receita, que não cobre os 12.100 K de Rigel
+    expect(ventoDaFicha({ ...doCatalogo('Rigel'), ventoMedido: undefined })).toBeNull();
   });
 
   it('o brilho é relativo a Rigel: na ficha dela vale G', () => {
     const rigel = doCatalogo('Rigel');
     expect(rigel.teffK.v).toBe(ANCORA_RIGEL.teffK);
     expect(Math.abs(rigel.raioRsol.v / ANCORA_RIGEL.raioRsol - 1)).toBeLessThan(0.005);
-    expect(Math.abs(fracaoDoVento(VENTOS_MEDIDOS.Rigel, rigel.raioRsol.v, rigel.teffK.v) / GANHO_DO_GAS - 1)).toBeLessThan(0.02);
+    expect(Math.abs(fracaoDoVento(VENTO_DE_RIGEL, rigel.raioRsol.v, rigel.teffK.v) / GANHO_DO_GAS - 1)).toBeLessThan(0.02);
   });
 
   it('o limiar de desenho: Deneb e Naos ganham gás; Régulo, Sírius, Vega e o Sol nem o constroem', () => {
@@ -89,7 +91,7 @@ describe('o vento das quentes — Vink, de Koter & Lamers 2001', () => {
   });
 
   it('o gás tem teto: acima do vento de Rigel cresce com o logaritmo e nunca passa do fluxo do disco', () => {
-    const rigel = VENTOS_MEDIDOS.Rigel!;
+    const rigel = VENTO_DE_RIGEL;
     const f = (k: number) => fracaoDoVento({ ...rigel, mdotMsolAno: rigel.mdotMsolAno * k }, ANCORA_RIGEL.raioRsol, ANCORA_RIGEL.teffK);
     // linear até a âncora (a medida de emissão vai com Ṁ²)...
     expect(f(0.5)).toBeCloseTo(GANHO_DO_GAS / 4, 12);
@@ -157,9 +159,9 @@ describe('a imagem do gás: o halo curto, o piso e os braços', () => {
   });
 
   it('o halo chega ao piso no raio da linha: 1,5 em Rigel e 1,75 em Deneb (medidos), 1,5 na receita (o de Rigel)', () => {
-    expect(raioDaLinhaDe('Rigel')).toMatchObject({ v: 1.5, p: 'medido' });
-    expect(raioDaLinhaDe('Deneb')).toMatchObject({ v: 1.75, p: 'medido' });
-    expect(raioDaLinhaDe('Naos')).toMatchObject({ v: 1.5, p: 'derivado' });
+    expect(raioDaLinhaDe(doCatalogo('Rigel'))).toMatchObject({ v: 1.5, p: 'medido' });
+    expect(raioDaLinhaDe(doCatalogo('Deneb'))).toMatchObject({ v: 1.75, p: 'medido' });
+    expect(raioDaLinhaDe(doCatalogo('Naos'))).toMatchObject({ v: 1.5, p: 'derivado' });
     for (const [nome, raio] of [['Rigel', 1.5], ['Deneb', 1.75], ['Naos', 1.5]] as const) {
       const g = gasDaEstrela(doCatalogo(nome))!.vento!;
       const piso = PISO_DO_INSTRUMENTO * g.pico;
@@ -182,7 +184,7 @@ describe('a imagem do gás: o halo curto, o piso e os braços', () => {
     expect(gasDaEstrela(rigel)!.vento!.enrolamento).toBeUndefined();
     const medido = { ...rigel, rotacaoDias: { v: 40, p: 'medido' as const, fonte: 'teste' } };
     expect(gasDaEstrela(medido)!.vento!.enrolamento).toBeCloseTo(
-      enrolamentoDosBracos(rigel.raioRsol.v, 40, VENTOS_MEDIDOS.Rigel.vInfKms),
+      enrolamentoDosBracos(rigel.raioRsol.v, 40, VENTO_DE_RIGEL.vInfKms),
       12
     );
     const derivado = { ...rigel, rotacaoDias: { v: 40, p: 'derivado' as const, fonte: 'teste' } };

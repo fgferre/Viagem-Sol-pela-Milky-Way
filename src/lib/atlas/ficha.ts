@@ -1015,7 +1015,7 @@ function potenciaDeDez(v: number): string {
 function linhasDoGas(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
   const v = fracaoDesenhadaDoVento(e) > 0 ? ventoDaFicha(e) : null;
   const d = e.discoDeGas;
-  const linhaH = v ? raioDaLinhaDe(e.nomeNoCatalogo) : null;
+  const linhaH = v ? raioDaLinhaDe(e) : null;
   const mdot = v ? potenciaDeDez(v.mdotMsolAno) : '';
   // a velocidade medida ou do modelo como está; a da receita, em dezenas
   const vel = v ? inteiroDoIdioma(v.p === 'medido' ? v.vInfKms : Math.round(v.vInfKms / 10) * 10) : '';

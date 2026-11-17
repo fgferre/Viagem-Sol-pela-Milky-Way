@@ -23,6 +23,7 @@ import { RAIO_SOL_PC } from '../../three/escala';
 import { AU_PARA_PC } from './frameGalactico';
 import { giroDe, periodoDoGiroDias, wDaVelocidade, wDoPeriodo } from '../../three/world/giroDaEstrela';
 import { MANCHA_DE_HAUBOIS } from '../../three/world/forjaDaEstrela';
+import type { Vento } from '../../three/world/ventoDaEstrela';
 
 export interface Numero {
   readonly v: number;
@@ -135,6 +136,12 @@ export interface EstrelaVisitavel {
   readonly nuvem?: NuvemMedida;
   /** um escurecimento medido por época (a mancha fria de Betelgeuse em 2019–20), pelo relógio do app */
   readonly escurecimento?: EscurecimentoMedido;
+  /** o vento medido (Ṁ e v∞): vence a receita de Vink (`ventoDaFicha`) */
+  readonly ventoMedido?: Vento;
+  /** o raio medido da região da linha Hα, em raios do contínuo (`raioDaLinhaDe`) */
+  readonly raioDaLinhaMedido?: Numero;
+  /** a mancha quente medida: vence a regra no pico das células quentes (`manchaQuenteDe`) */
+  readonly manchaQuente?: ManchaQuenteMedida;
 }
 
 /**
@@ -415,6 +422,42 @@ const ESCURECIMENTO_DE_BETELGEUSE: EscurecimentoMedido = {
   ],
 };
 
+/** uma mancha quente medida: a razão do brilho dela sobre o médio do disco, numa banda */
+export interface ManchaQuenteMedida {
+  readonly razao: Numero;
+  /** a banda, µm */
+  readonly lambdaUm: Numero;
+  /** a razão é um TETO: pode ser em parte artefato da reconstrução */
+  readonly teto?: boolean;
+}
+
+const HAUBOIS_2009 = 'Haubois et al. 2009, A&A 508, 923';
+/**
+ * AS MANCHAS QUENTES MEDIDAS (`manchaQuente` do registro); a medida vence a regra
+ * no pico das células quentes (`picoDasCelulasQuentes`), como o giro medido
+ * vence o da lei (`achatamentoDe`).
+ *  · Betelgeuse: "One spot has a diameter of about 11 mas and accounts for
+ *    about 8.5% of the total flux" (Haubois et al. 2009, IOTA, banda H,
+ *    1,65 µm): 8,5 % do fluxo em ~6 % da área, 1,42× o médio
+ *    (`MANCHA_DE_HAUBOIS`, a mesma conta de antes).
+ *  · Antares: o contínuo a 2,28–2,31 µm "show a nearly smooth surface with
+ *    a weak, large spot at the centre with an intensity contrast of 3–4%", e
+ *    ela "is partially due to the reconstruction artifact but may also
+ *    partially show a real structure" (Ohnaka et al. 2017, AMBER): um TETO;
+ *    vale o meio, 3,5 %. Confere com a banda H de Montargès et al. 2017
+ *    (arXiv 1705.07829): no melhor modelo as manchas grandes (17 mas) levam
+ *    3 % da intensidade, que no visível dá quase o mesmo (o teste).
+ */
+const MANCHA_QUENTE_DE_BETELGEUSE: ManchaQuenteMedida = {
+  razao: { v: MANCHA_DE_HAUBOIS.razao, p: 'medido', fonte: HAUBOIS_2009 },
+  lambdaUm: { v: MANCHA_DE_HAUBOIS.lambdaUm, p: 'medido', fonte: HAUBOIS_2009 },
+};
+const MANCHA_QUENTE_DE_ANTARES: ManchaQuenteMedida = {
+  razao: { v: 1.035, p: 'medido', fonte: 'Ohnaka et al. 2017, Nature 548, 310' },
+  lambdaUm: { v: 2.3, p: 'medido', fonte: 'Ohnaka et al. 2017, Nature 548, 310' },
+  teto: true,
+};
+
 const BETELGEUSE: EstrelaVisitavel = {
   id: 'betelgeuse',
   nomeNoCatalogo: 'Betelgeuse',
@@ -432,57 +475,62 @@ const BETELGEUSE: EstrelaVisitavel = {
   },
   nuvem: NUVEM_DE_BETELGEUSE,
   escurecimento: ESCURECIMENTO_DE_BETELGEUSE,
+  manchaQuente: MANCHA_QUENTE_DE_BETELGEUSE,
 };
 
-/** uma mancha quente medida: a razão do brilho dela sobre o médio do disco, numa banda */
-export interface ManchaQuenteMedida {
-  readonly razao: Numero;
-  /** a banda, µm */
-  readonly lambdaUm: Numero;
-  /** a razão é um TETO: pode ser em parte artefato da reconstrução */
-  readonly teto?: boolean;
-}
-
-const HAUBOIS_2009 = 'Haubois et al. 2009, A&A 508, 923';
-/**
- * AS MANCHAS QUENTES MEDIDAS, pelo nome no catálogo; a medida vence a regra
- * no pico das células quentes (`picoDasCelulasQuentes`), como o giro medido
- * vence o da lei (`achatamentoDe`).
- *  · Betelgeuse: "One spot has a diameter of about 11 mas and accounts for
- *    about 8.5% of the total flux" (Haubois et al. 2009, IOTA, banda H,
- *    1,65 µm): 8,5 % do fluxo em ~6 % da área, 1,42× o médio
- *    (`MANCHA_DE_HAUBOIS`, a mesma conta de antes).
- *  · Antares: o contínuo a 2,28–2,31 µm "show a nearly smooth surface with
- *    a weak, large spot at the centre with an intensity contrast of 3–4%", e
- *    ela "is partially due to the reconstruction artifact but may also
- *    partially show a real structure" (Ohnaka et al. 2017, AMBER): um TETO;
- *    vale o meio, 3,5 %. Confere com a banda H de Montargès et al. 2017
- *    (arXiv 1705.07829): no melhor modelo as manchas grandes (17 mas) levam
- *    3 % da intensidade, que no visível dá quase o mesmo (o teste).
- */
-export const MANCHAS_QUENTES_MEDIDAS: Readonly<Record<string, ManchaQuenteMedida>> = {
-  Betelgeuse: {
-    razao: { v: MANCHA_DE_HAUBOIS.razao, p: 'medido', fonte: HAUBOIS_2009 },
-    lambdaUm: { v: MANCHA_DE_HAUBOIS.lambdaUm, p: 'medido', fonte: HAUBOIS_2009 },
-  },
-  Antares: {
-    razao: { v: 1.035, p: 'medido', fonte: 'Ohnaka et al. 2017, Nature 548, 310' },
-    lambdaUm: { v: 2.3, p: 'medido', fonte: 'Ohnaka et al. 2017, Nature 548, 310' },
-    teto: true,
-  },
-};
 
 /**
- * A mancha quente de uma estrela: a medida pelo nome, ou a REGRA — a de
+ * A mancha quente de uma estrela: a medida no registro, ou a REGRA — a de
  * Betelgeuse (Haubois), derivada, levada a δ pela Teff de cada uma.
  */
 export function manchaQuenteDe(e: EstrelaVisitavel): ManchaQuenteMedida & { readonly medida: boolean } {
-  if (Object.hasOwn(MANCHAS_QUENTES_MEDIDAS, e.nomeNoCatalogo)) return { ...MANCHAS_QUENTES_MEDIDAS[e.nomeNoCatalogo], medida: true };
+  if (e.manchaQuente) return { ...e.manchaQuente, medida: true };
   return {
     razao: { v: MANCHA_DE_HAUBOIS.razao, p: 'derivado', fonte: HAUBOIS_2009 },
     lambdaUm: { v: MANCHA_DE_HAUBOIS.lambdaUm, p: 'derivado', fonte: HAUBOIS_2009 },
     medida: false,
   };
+}
+
+const CHESNEAU_2014 = 'Chesneau et al. 2014, A&A 566, A125';
+const AUFDENBERG_2002 = 'Aufdenberg et al. 2002, ApJ 570, 344';
+
+/**
+ * OS VENTOS MEDIDOS (`ventoMedido` do registro; o motor não conhece nomes). Rigel: a média de 9,4 ± 0,9
+ * (2006–07) e 7,6 ± 1,1 × 10⁻⁷ M☉/ano (2009–10), Chesneau et al. 2014; v∞
+ * 230 km/s pelas linhas de ressonância de Mg II citadas ali ("The Mg II
+ * resonance lines suggest terminal wind speeds of ∼230 km s⁻¹"). Deneb:
+ * Ṁ 8 ± 3 × 10⁻⁷ medido; os 225 km/s são parâmetro do MODELO de Aufdenberg
+ * et al. 2002, não medida direta (a ficha diz).
+ */
+export const VENTO_DE_RIGEL: Vento = { mdotMsolAno: 8.5e-7, vInfKms: 230, p: 'medido', fonte: CHESNEAU_2014 };
+const VENTO_DE_DENEB: Vento = { mdotMsolAno: 8e-7, vInfKms: 225, p: 'medido', fonte: AUFDENBERG_2002, vInfDoModelo: true };
+
+/**
+ * O TAMANHO DA REGIÃO DA LINHA Hα, em raios do contínuo, MEDIDO: "the
+ * highest extension of the Hα line-forming regions are 4.1 ± 0.2 mas and
+ * 4.2 ± 0.2 mas for Deneb and Rigel, representing 1.75 and 1.5 R⋆"
+ * (Chesneau et al. 2010, A&A 521, A5). O halo desenhado chega ao piso do
+ * instrumento NESTE raio (`raioDaLinhaMedido`). Nas estrelas da receita
+ * vale o de Rigel (`RAIO_DA_LINHA_DA_RECEITA`), declarado derivado.
+ */
+const CHESNEAU_2010 = 'Chesneau et al. 2010, A&A 521, A5';
+
+/**
+ * AS MEDIDAS DE QUEM NÃO TEM REGISTRO ESCRITO À MÃO (Rigel, Deneb e Antares
+ * nascem da regra única, `estrelaDoCatalogo`): os campos medidos entram no
+ * registro dela pelo nome do catálogo, como os registros escritos à mão —
+ * aqui, na camada de dados; o motor lê só campos.
+ */
+const MEDIDAS_SEM_REGISTRO: Readonly<Record<string, Pick<EstrelaVisitavel, 'ventoMedido' | 'raioDaLinhaMedido' | 'manchaQuente'>>> = {
+  Rigel: { ventoMedido: VENTO_DE_RIGEL, raioDaLinhaMedido: { v: 1.5, p: 'medido', fonte: CHESNEAU_2010 } },
+  Deneb: { ventoMedido: VENTO_DE_DENEB, raioDaLinhaMedido: { v: 1.75, p: 'medido', fonte: CHESNEAU_2010 } },
+  Antares: { manchaQuente: MANCHA_QUENTE_DE_ANTARES },
+};
+
+/** o registro da regra única com as medidas que ela não tem (`MEDIDAS_SEM_REGISTRO`) */
+export function comAsMedidas(e: EstrelaVisitavel): EstrelaVisitavel {
+  return Object.hasOwn(MEDIDAS_SEM_REGISTRO, e.nomeNoCatalogo) ? { ...e, ...MEDIDAS_SEM_REGISTRO[e.nomeNoCatalogo] } : e;
 }
 
 /**
