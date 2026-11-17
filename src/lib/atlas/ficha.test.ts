@@ -1013,10 +1013,14 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     const naos = linhasDe(de('Naos')).get('vento')!;
     expect(naos.procedencia).toBe('derivado');
     expect(naos.fonte).toContain('Vink');
+    const estrutura = linhasDe(de('Rigel')).get('estrutura do vento')!;
+    expect(estrutura.procedencia).toBe('derivado');
+    expect(estrutura.fonte).toContain('Puls');
     // Alnilam: a massa típica do catálogo a põe fora da grade da receita, sem vento
     expect(linhasDe(de('Alnilam')).has('vento')).toBe(false);
     const ach = de('Achernar');
     expect(linhasDe(ach).has('vento')).toBe(false);
+    expect(linhasDe(ach).has('estrutura do vento')).toBe(false);
     const disco = linhasDe(ach).get('disco de gás')!;
     expect(disco.procedencia).toBe('medido');
     expect(disco.valor).toContain('o estado de hoje não foi medido');

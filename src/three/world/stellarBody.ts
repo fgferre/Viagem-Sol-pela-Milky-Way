@@ -72,7 +72,22 @@ import {
   type RegraDaForja,
 } from './forjaDaEstrela';
 import { perfilDeELR, wDaRazaoDosRaios } from './giroDaEstrela';
-import { BRACOS_DO_VENTO, CAUDA_DO_DISCO, PERFIL_DO_VENTO, type GasDoMotor } from './ventoDaEstrela';
+import {
+  BRACOS_DO_VENTO,
+  CAUDA_DO_DISCO,
+  GRUMOS_DO_VENTO,
+  NORMAL_DOS_BRACOS,
+  PERFIL_DO_VENTO,
+  GANHO_DO_GAS,
+  PISO_DO_INSTRUMENTO,
+  alfaDoGrumo,
+  fatorNaImagem,
+  fluxoDoDisco,
+  momentoDaCelula,
+  momentoDoGrumo,
+  tempoDeVoo,
+  type GasDoMotor,
+} from './ventoDaEstrela';
 import type { EstadoDaEstrela, FaseDoCiclo } from '../estrela';
 import { UNIDADES_POR_CICLO, tempoDoCiclo } from '../estrela';
 import { GLSL_COMPRESSAO } from '../shaders/common';
@@ -2035,8 +2050,11 @@ export function tomDoVeu(teffK: number, pesoDoPico: number): [number, number, nu
  * vento pela emissividade no meio de cada segmento; o disco, fino demais
  * para a marcha, pela gaussiana em z integrada exata no segmento (erf) com
  * o raio do ponto em que a linha cruza o plano. A linha que bate na estrela
- * para nela; o gás NA FRENTE do disco da estrela não é desenhado (a casca é
- * de trás e a fotosfera a apaga ali) — declarado. A luz é a fração do fluxo
+ * para nela; o DISCO de gás na frente da estrela vai numa malha própria
+ * (`criarOGasDaFrente`), o vento ali não (Hα de um vento é absorção sobre o
+ * disco). Os BRAÇOS entram na marcha (`BRACOS_DO_VENTO`); os GRUMOS, uma vez
+ * por pixel, na imagem (`GRUMOS_DO_VENTO`); no fim, o PISO DO INSTRUMENTO
+ * (`joelhoDoPiso`). A luz é a fração do fluxo
  * do disco que a regra dá (G·X/X_Rigel no vento, G × a fase no disco),
  * sobre o centro do disco já COMPRIMIDO, como a tela o mostra (a mesma
  * razão do véu: uma fração da radiância de uma estrela quente lavava o
@@ -2065,11 +2083,53 @@ export function raioDoGas(gas: GasDoMotor | undefined): number {
     d ? Math.hypot(CAUDA_DO_DISCO.ate * d.raioExterno, 4 * d.h0 * (CAUDA_DO_DISCO.ate * d.raioExterno) ** 1.5) : 1
   );
 }
-/** o GLSL do gás: soma em `gas` a luz dele na linha de visada (unidades da intensidade do centro do disco) */
-function glslDoGas(gas: GasDoMotor, rGas: number, kAch: number): string {
-  const v = gas.vento;
+/**
+ * A ASA LONGA DO VÉU COM GÁS (17/11, a cor): a asa longa devolve em volta do
+ * disco a luz que a regra do pico tirou dele (`VEU_POR_STOP`), e ela é
+ * AZUL (o tom do véu). Onde a estrela tem gás desenhado, a luz do gás é parte
+ * desse mesmo orçamento: o gás TOMA O LUGAR de parte da asa, na mesma luz —
+ * a asa fica com o que sobra, max(0, 1 − luz do gás ÷ luz da asa). Sem isso o
+ * azul da asa somava por cima do rosa e a tela media violeta (112, 51, 121).
+ * As duas luzes na unidade do centro do disco comprimido, a borda tomada como
+ * (1 − u) dele (aproximação declarada); a do gás é a fração da regra × o
+ * fluxo do disco (o vento, e o disco pela fase).
+ */
+export function asaComGas(gas: GasDoMotor, pesoDaAsa: number, bordaU: number, faseDoDisco: number): number {
+  if (!(pesoDaAsa > 0)) return 1;
+  let asa = 0;
+  const n = 2000;
+  for (let i = 0; i < n; i++) {
+    const b = 1 + ((i + 0.5) / n) * (RAIO_DO_VEU_QUENTE - 1);
+    asa += Math.exp(-(b - 1) / VEU_ASA_LONGA) * caudaDoVeu(b, RAIO_DO_VEU_QUENTE) * 2 * Math.PI * b;
+  }
+  asa *= (pesoDaAsa * (1 - bordaU) * (RAIO_DO_VEU_QUENTE - 1)) / n;
+  const luzDoGas = ((gas.vento?.fracao ?? 0) + (gas.disco ? GANHO_DO_GAS * faseDoDisco : 0)) * fluxoDoDisco(bordaU);
+  return Math.max(0, 1 - luzDoGas / asa);
+}
+/** x^e em GLSL para x ≥ 0 sem pow (1,5: x·√x; senão exp2·log2 com x ≥ 1e-6) */
+function glslPotencia(x: string, e: number): string {
+  if (e === 1) return x;
+  if (e === 1.5) return `(${x} * sqrt(${x}))`;
+  if (e === 2) return `(${x} * ${x})`;
+  return `exp2(${literalGlsl(e)} * log2(max(${x}, 1e-6)))`;
+}
+/** o raio (em raios) em que a lei de velocidade dos grumos sai do piso: 1/(1 − piso) */
+const R_DO_PISO_DOS_GRUMOS = 1 / (1 - GRUMOS_DO_VENTO.pisoDaVelocidade);
+/**
+ * o GLSL do gás: soma em `gas` a luz dele na linha de visada (unidades da
+ * intensidade do centro do disco) e aplica o piso do instrumento. `frente`:
+ * só o disco de gás, só a parte da linha ANTES da estrela, e só onde a linha
+ * bate nela (a malha da frente, `criarOGasDaFrente`).
+ */
+function glslDoGas(gas: GasDoMotor, rGas: number, kAch: number, frente = false): string {
+  const v = frente ? undefined : gas.vento;
   const d = gas.disco;
   const n = PASSOS_DO_GAS;
+  const g = GRUMOS_DO_VENTO;
+  // o tempo de voo acima de r*: τ(r) = C + r + ln(r − 1), C = τ(2) − 2 (`tempoDeVoo`)
+  const rS = R_DO_PISO_DOS_GRUMOS;
+  const tauC = tempoDeVoo(2) - 2;
+  const piso = d ? 'uPisoDoGas' : literalGlsl(PISO_DO_INSTRUMENTO * (v?.pico ?? 0));
   return `
           // O GÁS (\`O GÁS DAS QUENTES\`): no referencial da estrela, em raios
           mat3 gR = uSunInvRot * transpose(mat3(viewMatrix));
@@ -2087,9 +2147,15 @@ function glslDoGas(gas: GasDoMotor, rGas: number, kAch: number): string {
           vec3 gDE = vec3(gD.x, gD.y * ${literalGlsl(kAch)}, gD.z);
           float gA = dot(gDE, gDE);
           float gBq = dot(gOE, gDE);
-          float gDisc = gBq * gBq - gA * (dot(gOE, gOE) - ${literalGlsl(OCLUSOR_DO_GAS * OCLUSOR_DO_GAS)});
+          float gDisc = gBq * gBq - gA * (dot(gOE, gOE) - ${literalGlsl(frente ? 1 : OCLUSOR_DO_GAS * OCLUSOR_DO_GAS)});${
+            frente
+              ? `
+          // a frente: só onde a linha bate na estrela (o resto é da casca de trás)
+          if (gDisc <= 0.0) discard;`
+              : ''
+          }
           if (gDisc > 0.0) gFim = min(gFim, max((-gBq - sqrt(gDisc)) / gA, 0.0));
-          float gas = 0.0;
+          float gas = 0.0;${v ? '\n          float gasV = 0.0;' : ''}
           for (int i = 0; i < ${n}; i++) {
             float s0 = -1.0 + ${literalGlsl(2 / n)} * float(i);
             float s1 = s0 + ${literalGlsl(2 / n)};
@@ -2100,12 +2166,16 @@ function glslDoGas(gas: GasDoMotor, rGas: number, kAch: number): string {
               v
                 ? `
             vec3 pm = gO + gD * (0.5 * (ta + tb));
-            float r = max(length(pm), 1.0);
+            float rr = max(length(pm), 1e-4);
+            float r = max(rr, 1.0);
+            vec3 dr = pm / rr;
             float w = max(pow(max(1.0 - 1.0 / r, 1e-6), ${literalGlsl(PERFIL_DO_VENTO.beta)}), ${literalGlsl(PERFIL_DO_VENTO.piso)});
-            float sl = pm.y / r;
-            float br = 1.0 + ${literalGlsl(BRACOS_DO_VENTO.amplitude)} * (1.0 - sl * sl)
-              * cos(2.0 * atan(pm.z, pm.x + 1e-7) - ${literalGlsl(BRACOS_DO_VENTO.enrolamento)} * (r - 1.0));
-            gas += ${literalGlsl(v.normal)} * br * br * (1.0 - smoothstep(${literalGlsl(PERFIL_DO_VENTO.caudaDe)}, ${literalGlsl(PERFIL_DO_VENTO.fim)}, r))
+            // os BRAÇOS (\`BRACOS_DO_VENTO\`): dois, a 180°, enrolados para trás do giro
+            float bS = exp(${literalGlsl(BRACOS_DO_VENTO.concentracao)} * (cos(2.0 * (atan(pm.z, pm.x + 1e-7) - ${literalGlsl(v.enrolamento)} * (r - 1.0))) - 1.0)
+              - dr.y * dr.y * ${literalGlsl(1 / BRACOS_DO_VENTO.latitude)});
+            float bD = 1.0 + ${literalGlsl(BRACOS_DO_VENTO.contraste - 1)} * bS;
+            gasV += ${literalGlsl(v.normal * NORMAL_DOS_BRACOS)} * bD * bD
+              * (1.0 - smoothstep(${literalGlsl(PERFIL_DO_VENTO.caudaDe)}, ${literalGlsl(PERFIL_DO_VENTO.fim)}, r))
               / (r * r * r * r * w * w) * dt;`
                 : ''
             }${
@@ -2124,14 +2194,55 @@ function glslDoGas(gas: GasDoMotor, rGas: number, kAch: number): string {
               * (1.0 - smoothstep(${literalGlsl(CAUDA_DO_DISCO.de * d.raioExterno)}, ${literalGlsl(CAUDA_DO_DISCO.ate * d.raioExterno)}, rc)) * col;`
                 : ''
             }
+          }
+${
+            v
+              ? `
+          // os GRUMOS (\`GRUMOS_DO_VENTO\`), na IMAGEM: pela direção no céu e pelo
+          // b do ponto de maior aproximação (onde a emissão se concentra); um grumo
+          // por célula da grade na direção (um fiapo radial), contas que saem
+          // pelo tempo de voo; o contraste é o que a linha de visada deixa
+          {
+            float gBT = max(sqrt(gB2), 1.0);
+            // a direção NO PLANO DO CÉU (a do ponto de maior aproximação sem a
+            // componente rumo à câmera): constante ao longo do raio na tela
+            vec3 gCam = normalize(gO);
+            vec3 gT = gO + gD * gTc;
+            vec3 gP = normalize(gT - dot(gT, gCam) * gCam + vec3(1e-6, 0.0, 0.0)) * ${literalGlsl(g.escala)};
+            vec3 gC = floor(gP);
+            vec3 gH = fract(sin(vec3(dot(gC, vec3(127.1, 311.7, 74.7)), dot(gC, vec3(269.5, 183.3, 246.1)),
+              dot(gC, vec3(113.5, 271.9, 124.6)))) * 43758.5453);
+            vec3 gU = fract(gP) - 0.5 - ${literalGlsl(2 * g.folga)} * (gH - 0.5);
+            float gS = clamp(1.0 - dot(gU, gU) * ${literalGlsl(1 / (g.raio * g.raio))}, 0.0, 1.0);
+            float gB = (${literalGlsl(g.alturaMin)} + ${literalGlsl(1 - g.alturaMin)} * fract(gH.x * 7.13 + gH.y * 3.71 + gH.z * 5.29))
+              * ${glslPotencia('gS', g.perfil)};
+            float gTau = gBT < ${literalGlsl(rS)} ? (gBT - 1.0) * ${literalGlsl(1 / g.pisoDaVelocidade)} : ${literalGlsl(tauC)} + gBT + log(gBT - 1.0);
+            // duas fases sem razão simples, período sorteado por fiapo (0,75 a 1,25)
+            float gV = (gTau - uTime * ${literalGlsl(1 / g.segundosPorRaio)}) * ${literalGlsl(1 / g.periodoEmTau)} / (0.75 + 0.5 * gH.z);
+            float gQ = (0.5 + 0.5 * sin(6.2831853 * (gV + gH.y))) * (0.5 + 0.5 * sin(6.2831853 * (gV * 0.618034 + gH.x)));
+            // α ∝ √(F − 1), F − 1 = (f(b) − 1)/N (\`fatorNaImagem\`)
+            float gAl = ${literalGlsl(alfaDoGrumo(fatorNaImagem(0)))} * sqrt(1.0 - smoothstep(${literalGlsl(g.ateRaio)}, ${literalGlsl(g.semGrumosEm)}, gBT));
+            gas += gasV * (1.0 - gAl + gAl * ${literalGlsl(1 / (momentoDaCelula(1) * momentoDoGrumo(g.expoenteDasContas) ** 2))} * gB * ${glslPotencia('gQ', g.expoenteDasContas)});
+          }`
+              : ''
+          }
+          // o PISO DO INSTRUMENTO (\`joelhoDoPiso\`): preto abaixo de 1 % do pico
+          {
+            float gP = max(${piso}, 1e-9);
+            float gX = gas - gP;
+            gas = gX <= 0.0 ? 0.0 : (gX < 2.0 * gP ? gX * gX / (4.0 * gP) : gX - gP);
           }`;
 }
 /** erf aproximada (Winitzki, a = 0,147), sem NaN: o argumento do sqrt é ≥ 0 */
+/** a malha do gás da frente, × o raio equatorial: por fora do esferoide, rente a ele */
+const RAIO_DA_FRENTE_DO_GAS = 1.02;
 const GLSL_ERF_DO_GAS = /* glsl */ `
         float erfDoGas(float x) {
           float x2 = x * x;
           return sign(x) * sqrt(max(1.0 - exp(-x2 * (1.2732395 + 0.147 * x2) / (1.0 + 0.147 * x2)), 0.0));
         }`;
+/** os uniforms do disco de gás (a luz e o piso pela fase) e a erf */
+const UNIFORMS_DO_DISCO = '\n        uniform float uLuzDoDisco;\n        uniform float uPisoDoGas;' + GLSL_ERF_DO_GAS;
 
 export const SOL_PARAMS: StellarParams = {
   nome: 'Sol',
@@ -2229,6 +2340,12 @@ export class StellarBody {
   private readonly brilhoDaVisita = { value: 1 };
   /** a luz do disco de gás (normal × a fase da data, `escreverDisco`) */
   private readonly luzDoDisco = { value: 0 };
+  /** o piso do instrumento em unidades do gás (`PISO_DO_INSTRUMENTO` × o pico do vento + o do disco pela fase) */
+  private readonly pisoDoGas = { value: 0 };
+  /** o que sobra da asa longa do véu com o gás (`asaComGas`), pela fase do disco */
+  private readonly asaDoGas = { value: 1 };
+  /** o peso da asa longa do véu desta estrela (força × `pesoDaAsaLonga`; 0 = sem asa) */
+  private pesoDaAsa = 0;
   /** a fase do ciclo VIVA (a da data), escrita pelo director por quadro */
   private faseDoCicloViva: FaseDoCiclo;
   /** a data do filme em cartaz (JD TDB) ou null — o relógio do giro
@@ -2707,6 +2824,20 @@ export class StellarBody {
       ? ` * vec3(${tomDoVeu(p.teffK, p.pesoDoPico ?? 0).map((x) => literalGlsl(x)).join(', ')})`
       : '';
     const u = p.bordaU ?? 0.3;
+    // a cor do gás (os dois candidatos), sobre k, o centro do disco antes de comprimir
+    const corDoGas = gas
+      ? CANDIDATO_DO_GAS === 'azul'
+        ? // CANDIDATO gas=azul: a cor da estrela, a do véu
+          `comprimir3(k, ${literalGlsl(BETA_DA_EMISSAO)})${tomDoVeuGlsl} * gas`
+        : // CANDIDATO gas=rosa: o hidrogênio que brilha (Hα + Hβ)
+          `vec3(${COR_DO_HIDROGENIO.map((x) => literalGlsl(x)).join(', ')}) * dot(comprimir3(k, ${literalGlsl(BETA_DA_EMISSAO)}), vec3(${[
+            LUMA_R,
+            LUMA_G,
+            LUMA_B,
+          ]
+            .map((x) => literalGlsl(x))
+            .join(', ')})) * gas`
+      : '';
     // A BORDA DE UMA ESTRELA ACHATADA (`achatamento`): o perfil começa no
     // contorno dela, não no círculo do raio equatorial — senão sobra, entre o
     // polo e o círculo, uma faixa com o véu na força da borda. Duas contas:
@@ -2721,6 +2852,14 @@ export class StellarBody {
     //    na colatitude do ponto mais próximo, com o raio de Roche na forma
     //    fechada r/Rp = 3/(ω·senθ)·cos((π + acos(ω·senθ))/3), ω = Ω/Ω_c
     //    (perto do eixo, a série 1 + (4/27)·(ω·senθ)²).
+    const corDaCasca = `vec3 c = mix(uCorFria, uCorQuente, ${literalGlsl(CALOR_DO_MEIO_DO_DISCO)});
+          ${
+            tomDaLisa <= 0
+              ? ''
+              : tomDaLisa >= 1
+              ? `c *= ${TOM_DA_CASCA_LISA};`
+              : `c *= mix(1.0, ${TOM_DA_CASCA_LISA}, ${literalGlsl(tomDaLisa)});`
+          }`;
     const ach = p.achatamento;
     const eixo = p.eixoNaCena ?? [0, 1, 0];
     const kAch = ach ? ach.raioEquatorialRsol.v / ach.raioPolarRsol.v : 1;
@@ -2775,7 +2914,7 @@ export class StellarBody {
         varying vec3 vPosObj;
         varying vec3 vCamObj;`
             : ''
-        }${gas && !fj ? '\n        uniform mat3 uSunInvRot;' : ''}${gas?.disco ? '\n        uniform float uLuzDoDisco;' + GLSL_ERF_DO_GAS : ''}
+        }${gas && !fj ? '\n        uniform mat3 uSunInvRot;' : ''}${gas?.disco ? UNIFORMS_DO_DISCO + '\n        uniform float uAsaDoGas;' : ''}
         void main() {
           vec3 d = normalize(vPosV);
           // dentro do disco a profundidade da fotosfera apaga a casca: o perfil
@@ -2794,14 +2933,7 @@ export class StellarBody {
           float b = max(length(tE * dE - cE) / uRaio * rElip / rRoche, 1.0);`
               : 'float b = max(length(vCentroV - dot(vCentroV, d) * d) / uRaio, 1.0);'
           }
-          vec3 c = mix(uCorFria, uCorQuente, ${literalGlsl(CALOR_DO_MEIO_DO_DISCO)});
-          ${
-            tomDaLisa <= 0
-              ? ''
-              : tomDaLisa >= 1
-              ? `c *= ${TOM_DA_CASCA_LISA};`
-              : `c *= mix(1.0, ${TOM_DA_CASCA_LISA}, ${literalGlsl(tomDaLisa)});`
-          }
+          ${corDaCasca}
           vec3 luz = vec3(0.0);
           ${
             rEnv > 1 && fj
@@ -2856,7 +2988,9 @@ export class StellarBody {
           }${
             asaLonga > 0
               ? `
-          veu += ${literalGlsl(forcaDoVeu(veu) * asaLonga)} * exp(-(b - 1.0) / ${literalGlsl(VEU_ASA_LONGA)})
+          veu += ${literalGlsl(forcaDoVeu(veu) * asaLonga)}${
+            gas ? (gas.disco ? ' * uAsaDoGas' : ` * ${literalGlsl(asaComGas(gas, forcaDoVeu(veu) * asaLonga, u, 0))}`) : ''
+          } * exp(-(b - 1.0) / ${literalGlsl(VEU_ASA_LONGA)})
             * (1.0 - smoothstep(${literalGlsl(0.5 * (RAIO_DO_VEU_QUENTE + 1))}, ${literalGlsl(RAIO_DO_VEU_QUENTE)}, b));`
               : ''
           }
@@ -2864,21 +2998,7 @@ ${gas ? glslDoGas(gas, rGas, kAch) : ''}
           vec3 k = c * uPaleta * uTransmitancia * uBrilhoDaVisita;
           // o véu sobre a borda do disco como a tela a mostra (comprimida)
           vec3 borda = comprimir3(k * ${literalGlsl(1 - u)}, ${literalGlsl(BETA_DA_EMISSAO)});
-          gl_FragColor = vec4((comprimir3(k * luz, ${literalGlsl(BETA_DA_EMISSAO)}) + borda * veu${tomDoVeuGlsl}${
-            gas
-              ? CANDIDATO_DO_GAS === 'azul'
-                ? // CANDIDATO gas=azul: a cor da estrela, a do véu
-                  ` + comprimir3(k, ${literalGlsl(BETA_DA_EMISSAO)})${tomDoVeuGlsl} * gas`
-                : // CANDIDATO gas=rosa: o hidrogênio que brilha (Hα + Hβ)
-                  ` + vec3(${COR_DO_HIDROGENIO.map((x) => literalGlsl(x)).join(', ')}) * dot(comprimir3(k, ${literalGlsl(BETA_DA_EMISSAO)}), vec3(${[
-                    LUMA_R,
-                    LUMA_G,
-                    LUMA_B,
-                  ]
-                    .map((x) => literalGlsl(x))
-                    .join(', ')})) * gas`
-              : ''
-          }) * uWorldFade, 1.0);
+          gl_FragColor = vec4((comprimir3(k * luz, ${literalGlsl(BETA_DA_EMISSAO)}) + borda * veu${tomDoVeuGlsl}${gas ? ` + ${corDoGas}` : ''}) * uWorldFade, 1.0);
         }`,
       uniforms: {
         uCorFria: ctx.corFria,
@@ -2890,7 +3010,7 @@ ${gas ? glslDoGas(gas, rGas, kAch) : ''}
         uTime: su.uTime,
         uRaio: { value: p.radiusPc },
         ...(fj || gas ? { uSunInvRot: { value: ctx.sunInvRot } } : {}),
-        ...(gas?.disco ? { uLuzDoDisco: this.luzDoDisco } : {}),
+        ...(gas?.disco ? { uLuzDoDisco: this.luzDoDisco, uPisoDoGas: this.pisoDoGas, uAsaDoGas: this.asaDoGas } : {}),
       },
       side: THREE.BackSide,
       blending: THREE.AdditiveBlending,
@@ -2901,6 +3021,76 @@ ${gas ? glslDoGas(gas, rGas, kAch) : ''}
     casca.frustumCulled = false;
     casca.renderOrder = 1;
     this.group.add(casca);
+    if (gas) this.pisoDoGas.value = PISO_DO_INSTRUMENTO * (gas.vento?.pico ?? 0);
+    this.pesoDaAsa = forcaDoVeu(veu) * asaLonga;
+    if (gas) this.asaDoGas.value = asaComGas(gas, this.pesoDaAsa, u, 0);
+    if (gas?.disco) this.criarOGasDaFrente(ctx, gas, rGas, kAch, corDaCasca, corDoGas);
+  }
+
+  /**
+   * O GÁS NA FRENTE DA ESTRELA (só o disco de gás): a casca é de trás e a
+   * fotosfera a apaga sobre o disco da estrela, então a parte do disco de gás
+   * que passa NA FRENTE dela — a que dá a leitura de anel em volta do corpo —
+   * vai numa malha própria, uma esfera rente por fora da estrela (1,02 Re,
+   * de frente: passa no teste de profundidade sobre a fotosfera e some atrás
+   * de quem estiver na frente). Só onde a linha bate na estrela (o resto é
+   * da casca), e só o trecho antes dela. O vento na frente do disco não é
+   * desenhado: ali a linha de Hα de um vento é de absorção (perfil P Cygni).
+   */
+  private criarOGasDaFrente(ctx: any, gas: GasDoMotor, rGas: number, kAch: number, corDaCasca: string, corDoGas: string) {
+    const p = this.params;
+    const su = ctx.sunUniforms;
+    const mat = new THREE.ShaderMaterial({
+      vertexShader: /* glsl */ `
+        varying vec3 vPosV;
+        varying vec3 vCentroV;
+        void main() {
+          vec4 mv = modelViewMatrix * vec4(position, 1.0);
+          vPosV = mv.xyz;
+          vCentroV = (modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+          gl_Position = projectionMatrix * mv;
+        }`,
+      fragmentShader:
+        GLSL_COMPRESSAO +
+        /* glsl */ `
+        uniform vec3 uCorFria;
+        uniform vec3 uCorQuente;
+        uniform vec3 uPaleta;
+        uniform vec3 uTransmitancia;
+        uniform float uBrilhoDaVisita;
+        uniform float uWorldFade;
+        uniform float uRaio;
+        uniform mat3 uSunInvRot;${UNIFORMS_DO_DISCO}
+        varying vec3 vPosV;
+        varying vec3 vCentroV;
+        void main() {
+          vec3 d = normalize(vPosV);
+${glslDoGas(gas, rGas, kAch, true)}
+          ${corDaCasca}
+          vec3 k = c * uPaleta * uTransmitancia * uBrilhoDaVisita;
+          gl_FragColor = vec4(${corDoGas} * uWorldFade, 1.0);
+        }`,
+      uniforms: {
+        uCorFria: ctx.corFria,
+        uCorQuente: ctx.corQuente,
+        uPaleta: ctx.paleta,
+        uTransmitancia: su.uTransmitancia,
+        uBrilhoDaVisita: this.brilhoDaVisita,
+        uWorldFade: su.uWorldFade,
+        uRaio: { value: p.radiusPc },
+        uSunInvRot: { value: ctx.sunInvRot },
+        uLuzDoDisco: this.luzDoDisco,
+        uPisoDoGas: this.pisoDoGas,
+      },
+      side: THREE.FrontSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+      transparent: true,
+    });
+    const frente = new THREE.Mesh(new THREE.SphereGeometry(DONOR_RADIUS * RAIO_DA_FRENTE_DO_GAS, 96, 48), mat);
+    frente.frustumCulled = false;
+    frente.renderOrder = 1;
+    this.group.add(frente);
   }
 
   /**
@@ -3281,7 +3471,10 @@ ${gas ? glslDoGas(gas, rGas, kAch) : ''}
   escreverDisco(fase: number) {
     const d = this.params.gas?.disco;
     if (!d || !Number.isFinite(fase)) return;
-    this.luzDoDisco.value = d.normal * Math.min(1, Math.max(0, fase));
+    const f = Math.min(1, Math.max(0, fase));
+    this.luzDoDisco.value = d.normal * f;
+    this.pisoDoGas.value = PISO_DO_INSTRUMENTO * ((this.params.gas?.vento?.pico ?? 0) + d.pico * f);
+    this.asaDoGas.value = asaComGas(this.params.gas!, this.pesoDaAsa, this.params.bordaU ?? 0.3, f);
   }
 
   escreverCiclo(fase: FaseDoCiclo) {

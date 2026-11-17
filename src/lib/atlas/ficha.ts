@@ -53,7 +53,7 @@ import {
   pesoDoPico,
   regraDaForja,
 } from '../../three/world/forjaDaEstrela';
-import { fracaoDesenhadaDoVento, ventoDaFicha } from '../../three/world/ventoDaEstrela';
+import { FONTE_DA_ESTRUTURA_DO_VENTO, fracaoDesenhadaDoVento, ventoDaFicha } from '../../three/world/ventoDaEstrela';
 import { NOMES_DOS_CORPOS, classeEmTexto, nomeDoCorpo } from '../../three/atlasConfig';
 import { decimalDoIdioma, idiomaAtual, t, type ChaveDeTexto } from '../idioma';
 import type { Procedencia } from '../../three/selo';
@@ -1018,6 +1018,10 @@ function linhasDoGas(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
           v.p,
           v.fonte
         )
+      : null,
+    // a estrutura que o motor desenha no vento: o fator de grumo e os braços têm fonte
+    v
+      ? linha(t('ficha.campo.estruturaDoVento'), t('ficha.estrela.estruturaDoVento'), 'derivado', FONTE_DA_ESTRUTURA_DO_VENTO)
       : null,
     d
       ? linha(

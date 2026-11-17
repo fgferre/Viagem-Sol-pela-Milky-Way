@@ -236,7 +236,7 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
   const teffDoPicoK = achatamento ? rocheDe(0, achatamento).teffK : e.teffK.v;
   const veu = veuDe(e.teffK.v, teffDoPicoK);
   // o gás das quentes (o vento medido pelo nome, ou a receita; o disco da ficha)
-  const gas = gasDaEstrela(e);
+  const gas = gasDaEstrela(e, rotacaoDe(e).v);
   return {
     ...SOL_PARAMS,
     nome: e.id,
