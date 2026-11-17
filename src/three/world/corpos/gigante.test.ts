@@ -1059,8 +1059,8 @@ describe('o chão do anel: Saturno publica a segunda superfície (item 139)', ()
     const desvio = chao.centroPc.clone().sub(cam);
     expect((desvio.length() / AU_PARA_PC) * AU_KM).toBeCloseTo(40, 3);
     expect(desvio.dot(polo)).toBeLessThan(0);
-    // e o "raio" é a meia-espessura da CAMADA de pedaços ali (metros), não
-    // os 12 km da lajota: o anteparo do near não corta os pedaços rente à lente
+    // e o "raio" é a meia-espessura da CAMADA de pedaços ali (metros): o
+    // anteparo do near não corta os pedaços rente à lente
     expect((chao.raioPc / AU_PARA_PC) * AU_KM).toBeCloseTo(0.5 * regiaoDoAnelCpu(110_000).espessura, 6);
     corpo.dispose();
   });

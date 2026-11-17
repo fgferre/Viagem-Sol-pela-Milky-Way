@@ -39,6 +39,7 @@ import {
 // a tabela de quem tem relevo MEDIDO mora com os rochosos; aqui ela é a
 // régua da regra "uma fonte de relevo por corpo" (itens 140/141)
 import { NORMAL_MEDIDA } from './rochoso';
+import { regiaoDoAnelCpu } from './descricaoDoAnel';
 
 /** raio equatorial de Júpiter em pc, DERIVADO da fonte única (BODY_AXES
  *  em km → UA pelo `AU_KM` → pc pelo `AU_PARA_PC`) — nenhum literal
@@ -533,8 +534,13 @@ const kmParaPc = (km: number) => (km / AU_KM) * AU_PARA_PC;
 const pcParaKm = (pc: number) => (pc / AU_PARA_PC) * AU_KM;
 
 const RAIO_SATURNO_PC = kmParaPc(BODY_AXES.saturn[0]);
-/** a meia-espessura da lajota (12 km), que é o "raio" do chão do anel */
-const MEIA_ESPESSURA_PC = kmParaPc(12);
+/**
+ * a meia-espessura MEDIDA da camada do anel a 110 000 km do centro (a mesma
+ * conta do corpo: `regiaoDoAnelCpu(km).espessura / 2`), que é o "raio" do
+ * chão do anel — metros, não os 12 km da lajota que este teste já usou
+ */
+const MEIA_ESPESSURA_KM = 0.5 * regiaoDoAnelCpu(110_000).espessura;
+const MEIA_ESPESSURA_PC = kmParaPc(MEIA_ESPESSURA_KM);
 /** Saturno a ~9,5 UA do Sol — o `distFromSun` do quadro */
 const SATURNO_UA = 9.5;
 
@@ -559,17 +565,17 @@ describe('o chão do anel: a SEGUNDA superfície do mesmo corpo (item 139)', () 
   it('com os dois registrados, a superfície mais próxima é a do ANEL', () => {
     const { c, cam } = palcoDaCena();
     const s = c.superficieMaisProxima(cam);
-    // d = 40 km de altura menos os 12 km de meia-espessura
-    expect(pcParaKm(s.dSuperficiePc)).toBeCloseTo(28, 6);
+    // d = 40 km de altura menos a meia-espessura da camada
+    expect(pcParaKm(s.dSuperficiePc)).toBeCloseTo(40 - MEIA_ESPESSURA_KM, 6);
     expect(s.raioPc).toBe(MEIA_ESPESSURA_PC);
   });
 
-  it('e o near sai nos 0,4% DELA: 0,112 km, não os 199 km do globo', () => {
+  it('e o near sai nos 0,4% DELA: ~0,16 km, não os 199 km do globo', () => {
     const { c, cam } = palcoDaCena();
     const s = c.superficieMaisProxima(cam);
     const near = nearPlanePc(SATURNO_UA * AU_PARA_PC, s.dSuperficiePc, s.raioPc);
-    expect(pcParaKm(near)).toBeCloseTo(0.112, 3);
-    // é o REGIME proporcional, nunca o anteparo (12 km × 1e-3 = 12 m)
+    expect(pcParaKm(near)).toBeCloseTo(0.004 * (40 - MEIA_ESPESSURA_KM), 6);
+    // é o REGIME proporcional, nunca o anteparo (meia-espessura × 1e-3)
     expect(near).toBeGreaterThan(s.raioPc * PISO_DO_NEAR_EM_RAIOS);
   });
 
@@ -580,20 +586,20 @@ describe('o chão do anel: a SEGUNDA superfície do mesmo corpo (item 139)', () 
     const near = nearPlanePc(SATURNO_UA * AU_PARA_PC, s.dSuperficiePc, s.raioPc);
     expect(pcParaKm(near)).toBeCloseTo(198.9, 1);
     // ...e é isso que cortava o chão de gelo: 1 700 vezes mais longe
-    expect(pcParaKm(near) / 0.112).toBeGreaterThan(1000);
+    expect(pcParaKm(near) / (0.004 * (40 - MEIA_ESPESSURA_KM))).toBeGreaterThan(1000);
   });
 
-  it('DENTRO da lajota o anteparo é de 12 m — e só ele segura', () => {
+  it('DENTRO da camada o anteparo é a meia-espessura × 1e-3 — e só ele segura', () => {
     const c = new CorposResolvidos();
     c.ligado = true;
-    // a câmera a 2 km do plano: dentro dos ±12 km, d fica negativo
-    const cam = new THREE.Vector3(kmParaPc(110_000), 0, kmParaPc(2));
+    // a câmera a meia altura da meia-espessura: dentro da camada, d fica negativo
+    const cam = new THREE.Vector3(kmParaPc(110_000), 0, kmParaPc(0.5 * MEIA_ESPESSURA_KM));
     c.registrar('saturn', RAIO_SATURNO_PC, new THREE.Vector3(0, 0, 0));
     c.registrar('saturn-anel', MEIA_ESPESSURA_PC, new THREE.Vector3(cam.x, cam.y, 0));
     const s = c.superficieMaisProxima(cam);
-    expect(pcParaKm(s.dSuperficiePc)).toBeCloseTo(-10, 6);
+    expect(pcParaKm(s.dSuperficiePc)).toBeCloseTo(-0.5 * MEIA_ESPESSURA_KM, 9);
     const near = nearPlanePc(SATURNO_UA * AU_PARA_PC, s.dSuperficiePc, s.raioPc);
-    expect(pcParaKm(near) * 1000).toBeCloseTo(12, 3);
+    expect(pcParaKm(near)).toBeCloseTo(MEIA_ESPESSURA_KM * PISO_DO_NEAR_EM_RAIOS, 9);
   });
 });
 
@@ -650,7 +656,7 @@ describe('o passo do palco publica o chão do anel como `<id>-anel`', () => {
     const palco = cenaDoPasso(chao());
     expect(palco.tamanho).toBe(2);
     const cam = new THREE.Vector3(kmParaPc(110_000), 0, kmParaPc(40));
-    expect(pcParaKm(palco.superficieMaisProxima(cam).dSuperficiePc)).toBeCloseTo(28, 6);
+    expect(pcParaKm(palco.superficieMaisProxima(cam).dSuperficiePc)).toBeCloseTo(40 - MEIA_ESPESSURA_KM, 6);
   });
 
   it('sem chão (`null`), só o globo entra — e o posto do anel SAI do palco', () => {

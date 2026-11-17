@@ -1,5 +1,5 @@
 // ============================================================
-// AS PEDRAS DO ANEL EM 3D (14/11, o padrão; `?pedras=0` volta à lajota) — de perto, o anel de
+// AS PEDRAS DO ANEL EM 3D (14/11) — de perto, o anel de
 // Saturno se desfaz nos pedaços de gelo que ele é, e o disco liso cede a
 // luz que eles passam a carregar.
 //
@@ -10,10 +10,6 @@
 // `pedras-do-anel-de-saturno`). NADA NO MUNDO DEPENDE DA CÂMERA: o pedaço
 // de id i tem o mesmo lugar, tamanho e forma de onde quer que se olhe — a
 // câmera só ESCOLHE quais pedaços desenhar.
-//
-// O DE ANTES FICA AO LADO: com `?pedras=0` a casa monta a lajota
-// volumétrica de antes (`lajotaDoAnel.ts`) e o `ANEL_FRAG` sai byte a byte
-// o de antes.
 //
 // O DESENHO:
 //
@@ -45,7 +41,7 @@
 //     oitavas resolvidas ali (`cessaoDoDisco`); de dentro da camada o disco
 //     vira a névoa dos pedaços não resolvidos (`tauDaNevoa`).
 //
-// O FRAME é o do anel (o mesmo da lajota): plano XY, +Z o polo, unidade =
+// O FRAME é o do anel : plano XY, +Z o polo, unidade =
 // raio equatorial; a matriz vem copiada do mesh do anel. O sentido orbital
 // é +θ (o cisalhamento do código: as de dentro ultrapassam para +s).
 // ============================================================
@@ -53,16 +49,6 @@ import * as THREE from 'three';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { QualityLevel } from '../../core/engine';
 import { ANEL_DE_SATURNO, regiaoDoAnelCpu } from './descricaoDoAnel';
-
-/**
- * O interruptor — as pedras 3D são o padrão desde que o dono as aprovou
- * pela prancha (`capturas/aneis-de-perto-14-11/`). `?pedras=0` devolve a
- * lajota e o disco de antes, byte a byte; `?pedras=3d` segue aceito. Fora
- * do navegador (testes em Node, sem `window`) vale o padrão: as pedras.
- */
-export const PEDRAS_3D: boolean =
-  typeof window === 'undefined' ||
-  new URLSearchParams(window.location.search).get('pedras') !== '0';
 
 const KM_POR_RAIO = ANEL_DE_SATURNO.raioEquatorialKm;
 
@@ -1184,7 +1170,7 @@ const glslRegioes = (campo: 'espessura' | 'esteira') =>
 
 /**
  * AS CONTAS PURAS DOS PEDAÇOS EM GLSL (sem uniforme): a região, a cessão
- * pela distância, o peso e a profundidade óptica da névoa. Entram nas pedras e, sem `?pedras=0`, no `ANEL_FRAG`.
+ * pela distância, o peso e a profundidade óptica da névoa. Entram nas pedras e no `ANEL_FRAG`.
  */
 const GLSL_PURO_DAS_PEDRAS = /* glsl */ `
 const float P_R0 = ${glslF(R0_KM)};
@@ -2513,7 +2499,7 @@ void main() {
 `;
 
 /**
- * A CESSÃO DO DISCO EM GLSL — entra no `ANEL_FRAG` salvo com `?pedras=0`.
+ * A CESSÃO DO DISCO EM GLSL — entra no `ANEL_FRAG`.
  * `uCamDasPedras` = (ρ da câmera em km, θ dela, altura em km, a fração do
  * campo que o tier desenha — 0 com os pedaços fora do desenho). A distância
  * é a da régua do ladrilho, como no vértice. O disco cede só o que os
@@ -2598,7 +2584,7 @@ export function uniformesDaSombraNoDisco(): Record<string, THREE.IUniform> {
 }
 
 /**
- * O VÉRTICE DO DISCO com as pedras (sem `?pedras=0`): o de sempre (`ANEL_VERT`) mais o
+ * O VÉRTICE DO DISCO com as pedras: o de sempre (`ANEL_VERT`) mais o
  * ponto relativo à câmera em km, com a câmera em duas partes (a parte
  * float32 e o resto, da CPU em dupla precisão) — a cessão lê a distância
  * à câmera sem os ~15 m de grão do vPos.
@@ -2844,7 +2830,7 @@ void main() {
 }
 `;
 
-/** O que o corpo entrega por quadro — o quadro da lajota, mais o relógio. */
+/** O que o corpo entrega por quadro — o quadro do corpo, mais o relógio. */
 export interface QuadroDasPedras {
   dirSolLocal: THREE.Vector3;
   /** a câmera no frame do anel, em raios equatoriais */

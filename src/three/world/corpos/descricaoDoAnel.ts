@@ -210,7 +210,7 @@ export const ANEL_DE_SATURNO: DescricaoDeAnel = {
      */
     raioMinKm: 0.5e-5,
     raioMaxKm: 0.01,
-    /** a faixa de raio em que os pedaços podem existir (a da lajota) */
+    /** a faixa de raio em que os pedaços podem existir (o anel principal inteiro) */
     rhoMinKm: 55_000,
     rhoMaxKm: 160_000,
     /**

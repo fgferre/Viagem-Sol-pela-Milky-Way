@@ -51,7 +51,7 @@ import * as THREE from 'three';
 import { CAMADA_DOS_OCULTADORES } from '../../core/post';
 import { fetchBinary } from '../../config';
 // o NEAR do quadro pelo MESMO escritor que o engine usa (item 135): a
-// lajota do anel (139) apaga o grão que o plano de corte cortaria ao meio
+// pedras do anel (139) apagam o grão que o plano de corte cortaria ao meio
 import { PISO_DO_NEAR_EM_RAIOS, nearPlanePc } from '../../core/engine';
 import { AU_KM } from '../../../lib/atlas/elementosOrbitais';
 import {
@@ -82,9 +82,8 @@ import { RAMP_DURATION_MS, stepRampToward } from '../lodStellar';
 import { GLSL_FACE_DO_EXOPLANETA, GLSL_RUIDO_DE_VALOR, diametroAparentePx } from './corpos';
 import { AneisTenuesDeSaturno } from './aneisTenues';
 import type { QuadroDosAneisTenues } from './aneisTenues';
-import { LajotaDoAnel, VOLUME_DA_LAJOTA } from './lajotaDoAnel';
-import type { QuadroDaLajota } from './lajotaDoAnel';
-import { ANEL_VERT_DAS_PEDRAS, GLSL_CESSAO_DAS_PEDRAS, GLSL_PROFUNDIDADE_DO_DISCO, FATIA_DA_CHEGADA_MS, FATIA_DO_ASSADO_MS, PEDRAS_3D, PedrasDoAnel, uniformesDaSombraNoDisco } from './pedrasDoAnel';
+import type { QuadroDasPedras } from './pedrasDoAnel';
+import { ANEL_VERT_DAS_PEDRAS,GLSL_CESSAO_DAS_PEDRAS, GLSL_PROFUNDIDADE_DO_DISCO, FATIA_DA_CHEGADA_MS, FATIA_DO_ASSADO_MS, PedrasDoAnel, uniformesDaSombraNoDisco } from './pedrasDoAnel';
 import { ANEL_DE_SATURNO, regiaoDoAnelCpu } from './descricaoDoAnel';
 import { FitaDosPicos, GLSL_RELEVO_DO_ANEL, RELEVO_DO_ANEL, uniformesDoRelevo, vertDaFita } from './relevoDoAnel';
 import { posicaoKepler } from '../../../lib/atlas/kepler';
@@ -112,8 +111,8 @@ export const GIGANTES: readonly { readonly id: string }[] = [
   { id: 'neptune' },
 ];
 
-/** os raios do desenho do anel de Saturno (`ANEL_DE_SATURNO.desenho`); exportado só para `lajotaDoAnel.test.ts`, que sai na J2 */
-export const ANEL_SATURNO = ANEL_DE_SATURNO.desenho;
+/** os raios do desenho do anel de Saturno (`ANEL_DE_SATURNO.desenho`) */
+const ANEL_SATURNO = ANEL_DE_SATURNO.desenho;
 
 /**
  * A PONTE ENTRE AS DUAS RÉGUAS. O `u` desta casa corre de `rInt` a
@@ -1354,8 +1353,8 @@ float ondasDeDafnis(float uBase, float ang, float dafnisLon) {
 
 /**
  * AS CONSTANTES DO ANEL EM GLSL — a régua do perfil (`U_ESCALA`/`U_BASE`),
- * a âncora de I/F e as duas cores. Vivem num pedaço só porque a LAJOTA
- * VOLUMÉTRICA (item 139, `lajotaDoAnel.ts`) amostra o MESMO perfil com a
+ * a âncora de I/F e as duas cores. Vivem num pedaço só porque as PEDRAS
+ * (item 139, `pedrasDoAnel.ts`) amostram o MESMO perfil com a
  * MESMA croma relativa: redigitá-las lá seria a segunda fonte de verdade
  * de sempre — e ela é passada por parâmetro, não importada, para não
  * abrir aresta de volta a este arquivo.
@@ -1465,7 +1464,7 @@ ${GLSL_SOMBRA_DO_PLANETA_NO_ANEL}
 ${GLSL_CAMADA_DO_ANEL}
 ${GLSL_PLANETSHINE_NO_ANEL}
 ${GLSL_RUIDO_DE_VALOR}
-${GLSL_ESPETACULO_DO_ANEL}${BRILHO_MEDIDO_DO_ANEL ? GLSL_BRILHO_MEDIDO_DO_ANEL : ''}${PEDRAS_3D ? GLSL_CESSAO_DAS_PEDRAS : ''}${PEDRAS_3D && !fita ? GLSL_PROFUNDIDADE_DO_DISCO : ''}${
+${GLSL_ESPETACULO_DO_ANEL}${BRILHO_MEDIDO_DO_ANEL ? GLSL_BRILHO_MEDIDO_DO_ANEL : ''}${GLSL_CESSAO_DAS_PEDRAS}${!fita ? GLSL_PROFUNDIDADE_DO_DISCO : ''}${
   RELEVO_DO_ANEL
     ? `${GLSL_RELEVO_DO_ANEL}${fita ? 'varying vec3 vNormalDaFita;\nvarying float vAlturaKm;\n' : ''}`
     : ''
@@ -1478,11 +1477,11 @@ void main() {
     RELEVO_DO_ANEL && !fita
       ? `
   // a pegada da faixa dos picos é da fita (\`relevoDoAnel.ts\`)
-  if (${PEDRAS_3D ? 'naFitaPeloRelativo(vRelDasPedras)' : 'naFitaDosPicos(vPos.xy)'}) discard;`
+  if (naFitaPeloRelativo(vRelDasPedras)) discard;`
       : RELEVO_DO_ANEL
         ? `
   // a fita desenha só a pegada; o resto da malha é folga
-  if (!${PEDRAS_3D ? 'naFitaPeloRelativo(vRelDasPedras)' : 'naFitaDosPicos(vPos.xy)'}) discard;`
+  if (!naFitaPeloRelativo(vRelDasPedras)) discard;`
         : ''
   }
   // as ondas de Dáfnis mexem em ONDE se amostra o perfil, nunca na malha
@@ -1490,7 +1489,7 @@ void main() {
   vec4 perfil = texture2D(uMapaAnel, vec2(clamp(u, 0.0, 1.0), 0.5));
   float alfa = perfil.a;
   if (alfa < 0.004) discard;${
-    PEDRAS_3D && !fita
+    !fita
       ? `
   // a profundidade pelo raio do pixel e o globo na frente por conta (\`GLSL_PROFUNDIDADE_DO_DISCO\`)
   if (globoNaFrente(vPos)) discard;
@@ -1498,11 +1497,7 @@ void main() {
       : ''
   }
   vec3 n = ${fita ? 'normSeguro(vNormalDaFita)' : 'vec3(0.0, 0.0, 1.0)'};
-  vec3 view = normSeguro(${
-    // com as pedras a câmera chega a metros do disco, e o vPos (~15 m de
-    // grão, que a GPU interpola por ladrilho de tela) desenhava um xadrez
-    PEDRAS_3D ? '-vRelDasPedras' : 'uCamLocal - vPos'
-  });
+  vec3 view = normSeguro(-vRelDasPedras);
   float nDotL = dot(n, uDirSolLocal);
   float nDotV = dot(n, view);
   float mu0 = max(abs(nDotL), 0.02);
@@ -1540,10 +1535,7 @@ void main() {
   float ladoSuave = smoothstep(-0.03, 0.03, mesmoLado);
   vec3 direta = (tinta * IF_RETRO)
     * ((camada.x * (1.0 - raios * ladoSuave) + raios * 0.5 * alfa) * uLuzGanho)
-    * sombraDoPlaneta(vPos)${
-      // com as pedras, a sombra de cada pedaço resolvido tira só a luz direta
-      PEDRAS_3D ? ' * sombraDasPedras(tau)' : ''
-    }${
+    * sombraDoPlaneta(vPos) * sombraDasPedras(tau)${
       // a luz direta passa pelo topo do relevo ali (o disco tem altura 0)
       RELEVO_DO_ANEL ? ` * sombraDosPicos(vPos.xy, ${fita ? 'vAlturaKm' : '0.0'})` : ''
     };
@@ -1554,16 +1546,12 @@ void main() {
         ? `
   // duas folhas (em cima e embaixo), cada uma com metade da camada:
   // compostas, devolvem o alfa do disco onde o relevo é zero
-  float alfaDaCamada = ${
-    PEDRAS_3D ? 'cederAsPedras(clamp(camada.y, 0.0, 1.0), tau)' : 'clamp(camada.y, 0.0, 1.0)'
-  };
+  float alfaDaCamada = cederAsPedras(clamp(camada.y, 0.0, 1.0), tau);
   gl_FragColor = vec4(direta + doGlobo, 1.0 - sqrt(max(1.0 - alfaDaCamada, 0.0)));
 }
 `
         : `
-  gl_FragColor = vec4(direta + doGlobo, ${
-    PEDRAS_3D ? 'cederAsPedras(clamp(camada.y, 0.0, 1.0), tau)' : 'clamp(camada.y, 0.0, 1.0)'
-  });
+  gl_FragColor = vec4(direta + doGlobo, cederAsPedras(clamp(camada.y, 0.0, 1.0), tau));
 }
 `
     }`;
@@ -1793,18 +1781,16 @@ export class GiganteResolvido {
   private tenues: AneisTenuesDeSaturno | null = null;
   /** o quadro dos dois véus, REUSADO (zero alocação por tick, M4 da casa) */
   private quadroDosTenues: QuadroDosAneisTenues | null = null;
-  /** item 139: a lajota volumétrica — só Saturno, só com `?pedras=0` (`lajotaDoAnel.ts`) */
-  private lajota: LajotaDoAnel | null = null;
-  /** o quadro da lajota, REUSADO (zero alocação por tick, M4 da casa) */
-  private quadroDaLajota: QuadroDaLajota | null = null;
-  /** as pedras 3D (o padrão) no lugar da lajota (`pedrasDoAnel.ts`) */
+  /** o quadro das pedras, REUSADO (zero alocação por tick, M4 da casa) */
+  private quadroDaLajota: (Omit<QuadroDasPedras, 'jd'> & { nearRaios: number }) | null = null;
+  /** as pedras 3D do anel (`pedrasDoAnel.ts`) */
   private pedras: PedrasDoAnel | null = null;
   /** `?relevo=1`: a faixa dos picos da borda do B com relevo (`relevoDoAnel.ts`) */
   private fita: FitaDosPicos | null = null;
   /** item 139: o CHÃO do anel para o palco (o ponto do plano mais próximo
-   *  da câmera), REUSADO — nasce com a lajota, e só com ela */
+   *  da câmera), REUSADO — nasce com as pedras, e só com elas */
   private chaoDoAnel: { raioPc: number; centroPc: THREE.Vector3 } | null = null;
-  /** o tier VIVO, lido na hora: a contagem de grãos da lajota é alocação,
+  /** o tier VIVO, lido na hora: a contagem de grãos das pedras é alocação,
    *  e alocação lê o tier antes de alocar (a regra das plumas) */
   private readonly tierVivo: OpcoesDoGigante['tier'];
   /** a LUT de latitudes do ringshine — só Saturno tem uma */
@@ -2107,12 +2093,12 @@ export class GiganteResolvido {
       // dela não é o globo a 54 mil km, é o gelo debaixo dos pés. O corpo
       // publica o PONTO DO PLANO mais próximo da câmera — a projeção dela
       // no plano do anel, que dista |altura| — com "raio" = a meia-espessura
-      // da lajota; daí o palco tira d = |altura| − 12 km e o `nearPlanePc`
+      // da camada; daí o palco tira d = |altura| − meia-espessura e o `nearPlanePc`
       // os 0,4% de sempre. Sem isto o near valia 193 km a 40 km do plano e
       // cortava todo o primeiro plano do enxame (o defeito que sobrou do
       // item 135, uma altura abaixo).
       //
-      // A JANELA é a da própria lajota (`VOLUME_DA_LAJOTA`, 55 000–160 000
+      // A JANELA é a dos pedaços (`ANEL_DE_SATURNO.pedacos`, 55 000–160 000
       // km, que contém o anel principal inteiro): fora dela a projeção da
       // câmera cai onde não há chão nenhum, e o plano não é superfície.
       // `this.vAnelY` é o POLO — a normal do plano do anel.
@@ -2123,27 +2109,24 @@ export class GiganteResolvido {
       const chao = this.chaoDoAnel;
       const noAnel =
         chao !== null &&
-        rProjPc > VOLUME_DA_LAJOTA.rMin &&
-        rProjPc < VOLUME_DA_LAJOTA.rMax;
+        rProjPc > ANEL_DE_SATURNO.pedacos.rhoMinKm / ANEL_DE_SATURNO.raioEquatorialKm &&
+        rProjPc < ANEL_DE_SATURNO.pedacos.rhoMaxKm / ANEL_DE_SATURNO.raioEquatorialKm;
       if (noAnel) {
-        // com os pedaços o chão é a CAMADA DE VERDADE (metros, `regiaoDoAnelCpu`
-        // no raio da câmera), não os 12 km da lajota: senão o anteparo do near
-        // ficava em 12 m e cortava os pedaços rente à lente dentro da camada
-        if (this.pedras) {
-          const kmPorRaio = ANEL_DE_SATURNO.raioEquatorialKm;
-          chao.raioPc = ((0.5 * regiaoDoAnelCpu(rProjPc * kmPorRaio).espessura) / kmPorRaio) * this.raioA;
-        }
+        // o chão é a CAMADA DE VERDADE (metros, `regiaoDoAnelCpu` no raio da
+        // câmera): o anteparo do near não corta os pedaços rente à lente
+        const kmPorRaio = ANEL_DE_SATURNO.raioEquatorialKm;
+        chao.raioPc = ((0.5 * regiaoDoAnelCpu(rProjPc * kmPorRaio).espessura) / kmPorRaio) * this.raioA;
         chao.centroPc.copy(q.camPosPc).addScaledVector(this.vAnelY, -alturaPc);
         this.estado.superficieDoAnel = chao;
       }
 
-      // A LAJOTA VOLUMÉTRICA (139). O NEAR sai do MESMO escritor que o
+      // AS PEDRAS (139). O NEAR sai do MESMO escritor que o
       // engine usa para o quadro (`nearPlanePc`), com os mesmos três
       // argumentos — e, desde o chão acima, com a MESMA escolha de
       // superfície que o palco faz: a de menor distância. Sem isso a
       // soleira do grão colado na lente seria uma segunda conta do plano
       // de corte, livre para divergir da primeira.
-      if ((this.lajota || this.pedras) && this.quadroDaLajota) {
+      if (this.pedras && this.quadroDaLajota) {
         const l = this.quadroDaLajota;
         l.dirSolLocal.copy(ua.uDirSolLocal.value as THREE.Vector3);
         l.camLocal.copy(ua.uCamLocal.value as THREE.Vector3);
@@ -2172,9 +2155,6 @@ export class GiganteResolvido {
           (ua.uCamAltaDasPedras!.value as THREE.Vector3).copy(this.pedras.camAlta);
           (ua.uCamRestoDasPedras!.value as THREE.Vector3).copy(this.pedras.camResto);
           this.pedras.sombraNoDisco(ua);
-        } else if (this.lajota) {
-          this.lajota.fixarNoAnel(this.anel.matrix);
-          this.lajota.atualizar(l);
         }
       }
       if (this.fita) {
@@ -2269,7 +2249,7 @@ export class GiganteResolvido {
       const modo = this.idCorpo === 'neptune' ? 1 : this.idCorpo === 'quaoar' ? 2 : 0;
       this.geoAnel = new THREE.RingGeometry(anel.rInt, anel.rExt, 192);
       this.matAnel = new THREE.ShaderMaterial({
-        vertexShader: placa && PEDRAS_3D ? ANEL_VERT_DAS_PEDRAS : ANEL_VERT,
+        vertexShader: placa ? ANEL_VERT_DAS_PEDRAS : ANEL_VERT,
         fragmentShader: placa ? ANEL_FRAG : ANEL_PROC_FRAG,
         uniforms: {
           uMapaAnel: { value: this.dummyAnel },
@@ -2292,8 +2272,8 @@ export class GiganteResolvido {
                 uMediasDoBrilho: { value: new Float32Array(REGIOES_DO_ANEL.length * 3).fill(1) },
               }
             : {}),
-          // com as pedras (sem `?pedras=0`): a cessão do disco a elas
-          ...(placa && PEDRAS_3D
+          // a cessão do disco a elas
+          ...(placa
             ? {
                 uCamDasPedras: { value: new THREE.Vector4() },
                 uCamAltaDasPedras: { value: new THREE.Vector3() },
@@ -2313,7 +2293,7 @@ export class GiganteResolvido {
       });
       this.anel = new THREE.Mesh(this.geoAnel, this.matAnel);
       this.anel.matrixAutoUpdate = false;
-      if (placa && PEDRAS_3D) {
+      if (placa) {
         const tela = this.matAnel.uniforms.uTelaDoDisco!.value as THREE.Vector4;
         this.anel.onBeforeRender = (renderer) => renderer.getCurrentViewport(tela);
       }
@@ -2332,31 +2312,19 @@ export class GiganteResolvido {
           fase: 0,
         };
         this.group.add(this.tenues.grupo);
-        // item 139 — a lajota volumétrica: as partículas e pedras de gelo
-        // de DENTRO do anel. Nasce com o anel e vive escondida: só entra
-        // no desenho com a câmera rente ao plano (ver `atualizar` dela).
-        // Hoje quem mora ali são as pedras 3D, no lugar dela; `?pedras=0`
-        // devolve a lajota.
-        if (PEDRAS_3D) {
-          this.pedras = new PedrasDoAnel({
-            glslSombraDoPlaneta: GLSL_SOMBRA_DO_PLANETA_NO_ANEL,
-            glslConstantesDoAnel: GLSL_CONSTANTES_DO_ANEL,
-            glslRegiaoDoAnel: GLSL_REGIAO_DO_ANEL,
-            glslCamadaDoAnel: GLSL_CAMADA_DO_ANEL,
-            rInt: anel.rInt,
-            rExt: anel.rExt,
-            uEscala: U_PERFIL_ESCALA,
-            uBase: U_PERFIL_BASE,
-            fatorTau: (km) => regiaoDoAnelCpu(km).fatorTau,
-          });
-        } else {
-          this.lajota = new LajotaDoAnel({
-            glslSombraDoPlaneta: GLSL_SOMBRA_DO_PLANETA_NO_ANEL,
-            glslConstantesDoAnel: GLSL_CONSTANTES_DO_ANEL,
-            rInt: anel.rInt,
-            rExt: anel.rExt,
-          });
-        }
+        // as pedras 3D do anel: nascem com o anel e vivem escondidas, só
+        // entram no desenho com a câmera rente ao plano (ver `atualizar`)
+        this.pedras = new PedrasDoAnel({
+          glslSombraDoPlaneta: GLSL_SOMBRA_DO_PLANETA_NO_ANEL,
+          glslConstantesDoAnel: GLSL_CONSTANTES_DO_ANEL,
+          glslRegiaoDoAnel: GLSL_REGIAO_DO_ANEL,
+          glslCamadaDoAnel: GLSL_CAMADA_DO_ANEL,
+          rInt: anel.rInt,
+          rExt: anel.rExt,
+          uEscala: U_PERFIL_ESCALA,
+          uBase: U_PERFIL_BASE,
+          fatorTau: (km) => regiaoDoAnelCpu(km).fatorTau,
+        });
         this.quadroDaLajota = {
           dirSolLocal: new THREE.Vector3(),
           camLocal: new THREE.Vector3(),
@@ -2366,18 +2334,18 @@ export class GiganteResolvido {
           nearRaios: PISO_DO_NEAR_EM_RAIOS,
           tier: 'cinema',
         };
-        // o "raio" do chão é a MEIA-ESPESSURA da lajota: o palco tira
-        // d = |altura| − 12 km, e o anteparo (raio × 1e-3) fica em 12 m
+        // o "raio" do chão é a MEIA-ESPESSURA medida da camada; `atualizar`
+        // o reescreve a cada quadro no raio da câmera
         this.chaoDoAnel = {
-          raioPc: VOLUME_DA_LAJOTA.meiaEspessura * this.raioA,
+          raioPc: 0,
           centroPc: new THREE.Vector3(),
         };
-        this.group.add((this.pedras ?? this.lajota!).malha);
+        this.group.add(this.pedras.malha);
         if (RELEVO_DO_ANEL) {
           // a fita lê OS MESMOS uniformes do disco (o mesmo objeto de cada um)
           this.fita = new FitaDosPicos(
             new THREE.ShaderMaterial({
-              vertexShader: vertDaFita(PEDRAS_3D),
+              vertexShader: vertDaFita(true),
               fragmentShader: ANEL_FRAG_DA_FITA,
               uniforms: { ...this.matAnel.uniforms },
               transparent: true,
@@ -2417,7 +2385,6 @@ export class GiganteResolvido {
         this.matAnel.uniforms.uMediasDoBrilho!.value = medias;
       }
     }
-    this.lajota?.ligarPerfil(textura);
     this.pedras?.ligarPerfil(textura);
     if (this.matSuperficie) {
       this.matSuperficie.uniforms.uMapaAnel.value = textura;
@@ -2437,7 +2404,6 @@ export class GiganteResolvido {
     this.geoAnel?.dispose();
     this.matAnel?.dispose();
     this.tenues?.dispose();
-    this.lajota?.dispose();
     this.pedras?.dispose();
     this.fita?.dispose();
     this.dummyAnel?.dispose();

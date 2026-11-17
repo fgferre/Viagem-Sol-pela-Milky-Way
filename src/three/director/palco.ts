@@ -91,7 +91,7 @@ export interface EstadoNoPalco {
    * mais próxima está a metros, mas o palco só conhecia o globo, a 54
    * mil km — e o near de 0,4% daquilo cortava o chão de gelo inteiro.
    * O corpo entrega aqui o PONTO DO PLANO mais próximo da câmera (com
-   * "raio" = a meia-espessura da lajota) e o palco o registra como
+   * "raio" = a meia-espessura medida da camada do anel) e o palco o registra como
    * `<id>-anel`; `null` = não vale neste quadro, e o posto sai do
    * registro. Só Saturno a preenche; para todo o resto é `undefined` e
    * o par (near, far) fica bit a bit no vigente.

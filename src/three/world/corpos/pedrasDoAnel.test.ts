@@ -1,4 +1,4 @@
-// Serve: lei — as pedras 3D do anel (o padrão; `?pedras=0` volta à lajota) só mostram o que o anel tem, em lugar que não depende da câmera, e o disco cede só o que elas carregam
+// Serve: lei — as pedras 3D do anel (sempre ligadas) só mostram o que o anel tem, em lugar que não depende da câmera, e o disco cede só o que elas carregam
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import {
@@ -16,7 +16,6 @@ import {
   K_JANELA,
   K_LADRILHO,
   OITAVAS,
-  PEDRAS_3D,
   PEDRAS_POR_TIER,
   PedrasDoAnel,
   R0_KM,
@@ -95,26 +94,8 @@ function quadro(rKm: number, alturaKm: number, jd = 2446471) {
 }
 
 describe('pedras 3D do anel', () => {
-  it('as pedras são o padrão: sem parâmetro (e fora do navegador) o disco carrega a cessão', () => {
-    expect(PEDRAS_3D).toBe(true);
+  it('o disco carrega a cessão às pedras', () => {
     expect(ANEL_FRAG).toContain('cederAsPedras(clamp(camada.y, 0.0, 1.0), tau)');
-  });
-
-  it('com ?pedras=0 nada muda do de antes: o disco não carrega a cessão', async () => {
-    vi.stubGlobal('window', { location: { search: '?pedras=0' } });
-    vi.resetModules();
-    try {
-      const volta = await import('./pedrasDoAnel');
-      const giganteDeAntes = await import('./gigante');
-      expect(volta.PEDRAS_3D).toBe(false);
-      expect(giganteDeAntes.ANEL_FRAG).not.toContain('cederAsPedras');
-      expect(giganteDeAntes.ANEL_FRAG).toContain(
-        'gl_FragColor = vec4(direta + doGlobo, clamp(camada.y, 0.0, 1.0));'
-      );
-    } finally {
-      vi.unstubAllGlobals();
-      vi.resetModules();
-    }
   });
 
   it('cada pedaço entra com opacidade zero na borda da janela, opaco uma oitava dentro, e não sai de perto', () => {
