@@ -21,6 +21,7 @@
 import type { Procedencia } from '../../three/selo';
 import { RAIO_SOL_PC } from '../../three/escala';
 import { AU_PARA_PC } from './frameGalactico';
+import { giroDe, periodoDoGiroDias, wDaVelocidade, wDoPeriodo } from '../../three/world/giroDaEstrela';
 
 export interface Numero {
   readonly v: number;
@@ -57,6 +58,8 @@ export interface Companheira {
   readonly massaMsol: Numero;
   /** só onde há medida; sem ela, a lei única (`rotacaoDe`) */
   readonly rotacaoDias?: Numero;
+  /** v·sen i, km/s — o giro mínimo (`achatamentoDe`) */
+  readonly vSenIKms?: Numero;
   readonly orbita: Orbita;
 }
 
@@ -77,10 +80,15 @@ export interface Achatamento {
   readonly raioEquatorialRsol: Numero;
   readonly teffPoloK: Numero;
   readonly teffEquadorK: Numero;
-  /** ângulo entre o eixo de rotação e a linha de visada da Terra */
-  readonly inclinacaoGraus: Numero;
+  /** ângulo entre o eixo de rotação e a linha de visada da Terra (ausente:
+   *  eixo desconhecido, o +Y do motor) */
+  readonly inclinacaoGraus?: Numero;
   /** expoente de von Zeipel, T ∝ g^β */
   readonly betaGravidade: Numero;
+  /** derivado de v·sen i com i = 90°: o achatamento MÍNIMO */
+  readonly limiteInferior?: true;
+  /** o giro derivado passou de Ω/Ω_c = 0,96 e foi grampeado (`TETO_DO_GIRO`) */
+  readonly noTeto?: true;
 }
 
 export interface Superficie {
@@ -105,6 +113,8 @@ export interface EstrelaVisitavel {
   readonly massaMsol: Numero;
   readonly luminosidadeLsol: Numero;
   readonly rotacaoDias?: Numero;
+  /** v·sen i, km/s (espectro): sem período, o giro MÍNIMO (`achatamentoDe`) */
+  readonly vSenIKms?: Numero;
   /** idade, em bilhões de anos — só onde há medida (asterossismologia) */
   readonly idadeGa?: Numero;
   readonly achatamento?: Achatamento;
@@ -359,6 +369,99 @@ const VEGA: EstrelaVisitavel = {
 };
 
 /**
+ * AS OUTRAS TRÊS ROTADORAS COM FORMA MEDIDA (16/11/2026), pelo molde de Vega:
+ * os raios, as temperaturas de polo e equador e a inclinação são os do modelo
+ * de interferometria de cada uma. O tipo é o do catálogo do app. A Teff da
+ * ficha é a MÉDIA DA SUPERFÍCIE do modelo (∫T⁴dS sobre a forma de Roche com
+ * T ∝ g^β entre as duas pontas), e o período sai do giro do modelo
+ * (w² = 2(Re/Rp − 1), Ω = w·√(GM/Re³)): Altair 8,6 h, Régulo 15,0 h,
+ * Achernar 37,6 h. Conferência das contas: a luminosidade integrada do
+ * modelo dá 10,4 L☉ em Altair e 342 em Régulo (os artigos: 10,6 e 341), e
+ * Ω/Ω_c dá 0,923, 0,964 e 0,98 (os artigos: 0,923, 0,962 e 0,98).
+ */
+// as fontes só como citação (a ficha sai nas duas línguas); o que cada
+// número é está no comentário ao lado
+const TIPO_DO_CATALOGO = 'HYG 4.4';
+// arXiv 0706.0867, o modelo de β livre
+const MONNIER_2007 = 'Monnier et al. 2007, Science 317, 342 (CHARA/MIRC)';
+const ALTAIR: EstrelaVisitavel = {
+  id: 'altair',
+  nomeNoCatalogo: 'Altair',
+  hip: 97649,
+  tipo: { texto: 'A7IV-V', v: 0, p: 'medido', fonte: TIPO_DO_CATALOGO },
+  teffK: { v: 7570, p: 'derivado', fonte: MONNIER_2007 }, // média da superfície do modelo
+  raioRsol: { v: 2.029, p: 'medido', fonte: MONNIER_2007 }, // raio equatorial
+  massaMsol: { v: 1.791, p: 'derivado', fonte: MONNIER_2007 },
+  luminosidadeLsol: { v: 10.4, p: 'derivado', fonte: MONNIER_2007 }, // integrada sobre a superfície do modelo
+  rotacaoDias: { v: 0.3598, p: 'derivado', fonte: MONNIER_2007 }, // o giro do modelo, Ω/Ω_c = 0,923
+  achatamento: {
+    raioPolarRsol: { v: 1.634, p: 'medido', fonte: MONNIER_2007 },
+    raioEquatorialRsol: { v: 2.029, p: 'medido', fonte: MONNIER_2007 },
+    teffPoloK: { v: 8450, p: 'medido', fonte: MONNIER_2007 },
+    teffEquadorK: { v: 6860, p: 'medido', fonte: MONNIER_2007 },
+    inclinacaoGraus: { v: 57.2, p: 'medido', fonte: MONNIER_2007 },
+    betaGravidade: { v: 0.19, p: 'medido', fonte: MONNIER_2007 },
+  },
+  superficie: superficiePelaTemperatura(7570, 2.029, 1.791),
+};
+
+// arXiv 1105.0740
+const CHE_2011 = 'Che et al. 2011, ApJ 732, 68 (CHARA/MIRC)';
+const REGULUS: EstrelaVisitavel = {
+  id: 'regulus',
+  nomeNoCatalogo: 'Regulus',
+  hip: 49669,
+  tipo: { texto: 'B7V', v: 0, p: 'medido', fonte: TIPO_DO_CATALOGO },
+  teffK: { v: 12730, p: 'derivado', fonte: CHE_2011 }, // média da superfície do modelo
+  raioRsol: { v: 4.21, p: 'medido', fonte: CHE_2011 }, // raio equatorial
+  massaMsol: { v: 4.15, p: 'derivado', fonte: CHE_2011 },
+  luminosidadeLsol: { v: 341, p: 'derivado', fonte: CHE_2011 },
+  rotacaoDias: { v: 0.6264, p: 'derivado', fonte: CHE_2011 }, // o giro do modelo, Ω/Ω_c = 0,962
+  achatamento: {
+    raioPolarRsol: { v: 3.22, p: 'medido', fonte: CHE_2011 },
+    raioEquatorialRsol: { v: 4.21, p: 'medido', fonte: CHE_2011 },
+    teffPoloK: { v: 14520, p: 'medido', fonte: CHE_2011 },
+    teffEquadorK: { v: 11010, p: 'medido', fonte: CHE_2011 },
+    inclinacaoGraus: { v: 86.3, p: 'medido', fonte: CHE_2011 },
+    betaGravidade: { v: 0.188, p: 'medido', fonte: CHE_2011 },
+  },
+  superficie: superficiePelaTemperatura(12730, 4.21, 4.15),
+};
+
+// Achernar: a forma, a inclinação e o β são de Domiciano de Souza et al. 2014
+// (A&A 569, A10; VLTI/PIONIER), lidos em Kervella et al. 2022, que os cita
+// (a página do artigo de 2014 não abriu); a massa (dinâmica, da órbita da
+// companheira), a luminosidade e a Teff média são de Kervella 2022. As
+// temperaturas de polo e equador NÃO foram lidas no artigo: saem do β medido
+// e da luminosidade sobre a forma de Roche (a Teff média que a conta devolve,
+// 15.544 K, bate com os 15.539 K medidos). Ficou de fora o conjunto anterior
+// (Domiciano de Souza et al. 2012, VLTI/AMBER), mais antigo. O disco de gás
+// da estrela Be não é daqui.
+// arXiv 2209.07537
+const KERVELLA_2022 = 'Kervella et al. 2022, A&A 667, A111';
+const DOMICIANO_2014 = `Domiciano de Souza et al. 2014, A&A 569, A10 (VLTI/PIONIER); ${KERVELLA_2022}`;
+const ACHERNAR: EstrelaVisitavel = {
+  id: 'achernar',
+  nomeNoCatalogo: 'Achernar',
+  hip: 7588,
+  tipo: { texto: 'B3Vp', v: 0, p: 'medido', fonte: TIPO_DO_CATALOGO },
+  teffK: { v: 15539, p: 'derivado', fonte: KERVELLA_2022 },
+  raioRsol: { v: 9.16, p: 'medido', fonte: DOMICIANO_2014 }, // raio equatorial
+  massaMsol: { v: 5.99, p: 'medido', fonte: KERVELLA_2022 },
+  luminosidadeLsol: { v: 3493, p: 'derivado', fonte: KERVELLA_2022 },
+  rotacaoDias: { v: 1.568, p: 'derivado', fonte: DOMICIANO_2014 }, // o giro da forma medida
+  achatamento: {
+    raioPolarRsol: { v: 6.785, p: 'derivado', fonte: DOMICIANO_2014 }, // Re/Rp = 1,35 ± 0,07
+    raioEquatorialRsol: { v: 9.16, p: 'medido', fonte: DOMICIANO_2014 },
+    teffPoloK: { v: 17740, p: 'derivado', fonte: DOMICIANO_2014 }, // β medido e luminosidade sobre a forma de Roche
+    teffEquadorK: { v: 13150, p: 'derivado', fonte: DOMICIANO_2014 }, // β medido e luminosidade sobre a forma de Roche
+    inclinacaoGraus: { v: 60.6, p: 'medido', fonte: DOMICIANO_2014 },
+    betaGravidade: { v: 0.166, p: 'medido', fonte: DOMICIANO_2014 },
+  },
+  superficie: superficiePelaTemperatura(15539, 9.16, 5.99),
+};
+
+/**
  * AS ANFITRIÃS DOS EXOPLANETAS (`lib/exoplanetas.ts`, 12/11/2026): as
  * estrelas dos primeiros sistemas planetários entram pelo MESMO motor das
  * quatro do piloto. A ficha física é a da tabela PSCompPars do NASA
@@ -371,8 +474,9 @@ const VEGA: EstrelaVisitavel = {
  *     F 0,55 · A 0,5);
  * A atividade (manchas, ciclo, erupções, laços) sai da rotação pela lei de
  * Rossby (`atividadeDe`); sem período medido, a rotação é a da lei única
- * `rotacaoDe`. Achatamento não entra: β Pic gira rápido (v sen i ≈ 130 km/s)
- * mas o arquivo não guarda v sen i nem a inclinação — fica redonda.
+ * `rotacaoDe`. O achatamento sai da regra única (`achatamentoDe`): β Pic
+ * gira rápido, e a v·sen i medida (130 km/s, Royer et al. 2007) dá o giro
+ * MÍNIMO, com o eixo a 90° da linha de visada.
  */
 // a data em ISO: "12/11/2026" lê 11 de dezembro em inglês
 const PSCOMP = 'NASA Exoplanet Archive, PSCompPars (2026-11-12)';
@@ -390,6 +494,7 @@ function anfitria(c: {
   lum: number;
   fonte?: string;
   rotacaoDias?: Numero;
+  vSenIKms?: Numero;
 }): EstrelaVisitavel {
   const fonte = c.fonte ?? PSCOMP;
   const T = c.teffK;
@@ -403,6 +508,7 @@ function anfitria(c: {
     massaMsol: { v: c.massaMsol, p: 'derivado', fonte },
     luminosidadeLsol: { v: c.lum, p: 'derivado', fonte },
     ...(c.rotacaoDias ? { rotacaoDias: c.rotacaoDias } : {}),
+    ...(c.vSenIKms ? { vSenIKms: c.vSenIKms } : {}),
     superficie: superficiePelaTemperatura(T, c.raioRsol, c.massaMsol),
   };
 }
@@ -442,7 +548,10 @@ const ANFITRIAS: readonly EstrelaVisitavel[] = [
     // números transcritos de memória do artigo — falta conferir no PDF
     fonte: 'Mamajek 2012, ApJL 754, L20',
   }),
-  anfitria({ id: 'bet-pic', nome: 'β Pic', hip: 27321, tipo: 'A6 V', teffK: 8039, raioRsol: 1.544, massaMsol: 1.789, lum: 10 ** 0.95282 }),
+  anfitria({
+    id: 'bet-pic', nome: 'β Pic', hip: 27321, tipo: 'A6 V', teffK: 8039, raioRsol: 1.544, massaMsol: 1.789, lum: 10 ** 0.95282,
+    vSenIKms: { v: 130, p: 'medido', fonte: 'Royer et al. 2007, A&A 463, 671; Hoeijmakers et al. 2018, A&A 617, A144' },
+  }),
 ];
 
 /**
@@ -457,6 +566,9 @@ export const ESTRELAS_VISITAVEIS: readonly EstrelaVisitavel[] = [
   ALDEBARAN,
   CAPELLA,
   DUBHE,
+  ALTAIR,
+  REGULUS,
+  ACHERNAR,
 ];
 
 export function estrelaVisitavelPorNome(nomeNoCatalogo: string): EstrelaVisitavel | null {
@@ -570,6 +682,16 @@ export function atividadeMagnetica(
  */
 export function rotacaoDe(e: EstrelaVisitavel): Numero {
   if (e.rotacaoDias) return e.rotacaoDias;
+  // só v·sen i: P = 2πRe/v com i = 90°, um LIMITE SUPERIOR do período (com
+  // o w grampeado no teto, o período do giro desenhado)
+  if (e.vSenIKms && e.vSenIKms.v > 0) {
+    const w = giroDaFicha(e)?.w ?? wDaVelocidade(e.vSenIKms.v, e.massaMsol.v, e.raioRsol.v);
+    return {
+      v: periodoDoGiroDias(w, e.massaMsol.v, e.raioRsol.v),
+      p: 'derivado',
+      fonte: e.vSenIKms.fonte,
+    };
+  }
   const tau = e.teffK.v < TEFF_SEM_ENVELOPE_K ? tempoConvectivoDias(e.massaMsol.v) : null;
   if (tau !== null) {
     return {
@@ -588,8 +710,60 @@ export function rotacaoDe(e: EstrelaVisitavel): Numero {
  */
 export function atividadeDe(e: EstrelaVisitavel): AtividadeMagnetica {
   const r = rotacaoDe(e);
-  if (!e.rotacaoDias && r.p === 'derivado') return { rossby: RO_SOL, razao: 1, nivel: 1, regime: 'nao saturado' };
-  return atividadeMagnetica(e.teffK.v, e.massaMsol.v, e.rotacaoDias?.v);
+  if (!e.rotacaoDias && !e.vSenIKms && r.p === 'derivado') return { rossby: RO_SOL, razao: 1, nivel: 1, regime: 'nao saturado' };
+  // com só v·sen i, o período é um limite superior: a atividade, um mínimo
+  return atividadeMagnetica(e.teffK.v, e.massaMsol.v, e.rotacaoDias?.v ?? (e.vSenIKms ? r.v : undefined));
+}
+
+/** o giro derivado dos dados (`giroDaEstrela.ts`): o período da ficha ou a v·sen i */
+function giroDaFicha(e: EstrelaVisitavel) {
+  const M = e.massaMsol.v;
+  const R = e.raioRsol.v;
+  // a âncora é a Teff MÉDIA da ficha (a que dá a cor e o brilho do corpo): a
+  // luminosidade que entra é a de Stefan-Boltzmann do raio e da Teff, não a
+  // da ficha — medidas em separado, as três nem sempre fecham, e a sobra
+  // escurecia ou clareava o disco inteiro (Betelgeuse, 1 %)
+  const L = luminosidadeDe(R, e.teffK.v);
+  if (e.rotacaoDias) return giroDe(wDoPeriodo(e.rotacaoDias.v, M, R), R, L);
+  if (e.vSenIKms && e.vSenIKms.v > 0) return giroDe(wDaVelocidade(e.vSenIKms.v, M, R), R, L);
+  return null;
+}
+
+/**
+ * O ACHATAMENTO DE UMA ESTRELA VISITÁVEL — a regra ÚNICA (16/11):
+ *  · o MODELO MEDIDO (interferometria: `achatamento`) vale como está (Vega);
+ *  · senão o giro DOS DADOS, pela forma de Roche e as temperaturas de
+ *    Espinosa Lara & Rieutord 2011 (`giroDaEstrela.ts`), sobre a massa e o
+ *    raio médio da ficha: (b) o período da ficha (`rotacaoDias`, qualquer
+ *    procedência — NUNCA a lei `rotacaoDe`, que inventa um período para a
+ *    atividade e achataria gigantes à toa), eixo desconhecido (o +Y do
+ *    motor, o de sempre); (c) só v·sen i: i = 90°, o achatamento MÍNIMO;
+ *  · abaixo do limiar (`LIMIAR_DO_ACHATAMENTO`) ou sem giro: redonda.
+ */
+export function achatamentoDe(e: EstrelaVisitavel): Achatamento | undefined {
+  if (e.achatamento) return e.achatamento;
+  const g = giroDaFicha(e);
+  if (!g) return undefined;
+  const entrada = e.rotacaoDias ? e.rotacaoDias.fonte : (e.vSenIKms?.fonte ?? '');
+  const d = (v: number): Numero => ({
+    v,
+    p: 'derivado',
+    fonte: `Espinosa Lara & Rieutord 2011, A&A 533, A43; ${entrada}`,
+  });
+  return {
+    raioPolarRsol: d(g.raioPolarRsol),
+    raioEquatorialRsol: d(g.raioEquatorialRsol),
+    teffPoloK: d(g.teffPoloK),
+    teffEquadorK: d(g.teffEquadorK),
+    betaGravidade: d(g.betaGravidade),
+    ...(e.rotacaoDias
+      ? {}
+      : {
+          inclinacaoGraus: { v: 90, p: 'artistico', fonte: '' },
+          limiteInferior: true,
+        }),
+    ...(g.noTeto ? { noTeto: true } : {}),
+  };
 }
 
 /**

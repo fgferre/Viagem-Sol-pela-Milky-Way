@@ -73,9 +73,11 @@ import { temperatureFromBV } from './stellarPhysics';
 import {
   PISO_DO_CONTRASTE_NA_TELA,
   TEFF_DO_SOL_K,
+  achatamentoDe,
   estrelaVisitavelPorNome,
   logGravidade,
   temDinamoSolar,
+  type Achatamento,
   type EstrelaVisitavel,
   type Numero,
 } from './estrelasVisitaveis';
@@ -1011,8 +1013,26 @@ function forjaDaFicha(e: EstrelaVisitavel): ReturnType<typeof regraDaForja> | nu
   return forja.contraste > 0 ? forja : null;
 }
 
+/** O achatamento (Re/Rp − 1) em %; só um piso quando a inclinação não foi medida. */
+function achatamentoEmTexto(a: Achatamento): string {
+  const v = Number((((a.raioEquatorialRsol.v / a.raioPolarRsol.v) - 1) * 100).toPrecision(2));
+  const pct = decimalDoIdioma(String(v));
+  const base = a.limiteInferior
+    ? t('ficha.estrela.achatamentoPeloMenos', { v: pct })
+    : t('ficha.estrela.achatamentoEmPct', { v: pct });
+  return a.noTeto ? base + t('ficha.estrela.giroPreso') : base;
+}
+
+/** A inclinação do eixo dita pelo ângulo: perto do polo, perto do equador ou só o número. */
+function inclinacaoEmTexto(graus: number): string {
+  const g = numeroDoIdioma(graus);
+  if (graus < 20) return t('ficha.estrela.vistaPeloPolo', { graus: g });
+  if (graus > 70) return t('ficha.estrela.vistaPeloEquador', { graus: g });
+  return t('ficha.estrela.inclinacaoEntreEixoESol', { graus: g });
+}
+
 function linhasDoPiloto(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
-  const a = e.achatamento;
+  const a = achatamentoDe(e);
   const atmosfera = forjaDaFicha(e)?.atmosferaEmRaios ?? 1;
   const lum = e.luminosidadeLsol.v;
   return [
@@ -1043,6 +1063,7 @@ function linhasDoPiloto(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
       : null,
     ...(a
       ? [
+          linhaDoNumero(t('ficha.campo.achatamento'), achatamentoEmTexto(a), a.raioPolarRsol),
           linhaDoNumero(t('ficha.campo.raioPolar'), raioEmTexto(a.raioPolarRsol.v), a.raioPolarRsol),
           linhaDoNumero(
             t('ficha.campo.raioEquatorial'),
@@ -1051,11 +1072,9 @@ function linhasDoPiloto(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
           ),
           linhaDoNumero(t('ficha.campo.temperaturaPolo'), kelvin(a.teffPoloK), a.teffPoloK),
           linhaDoNumero(t('ficha.campo.temperaturaEquador'), kelvin(a.teffEquadorK), a.teffEquadorK),
-          linhaDoNumero(
-            t('ficha.campo.inclinacaoDoEixo'),
-            t('ficha.estrela.vistaPeloPolo', { graus: numeroDoIdioma(a.inclinacaoGraus.v) }),
-            a.inclinacaoGraus
-          ),
+          a.inclinacaoGraus && !a.limiteInferior
+            ? linhaDoNumero(t('ficha.campo.inclinacaoDoEixo'), inclinacaoEmTexto(a.inclinacaoGraus.v), a.inclinacaoGraus)
+            : null,
         ]
       : []),
     // a casca que o motor desenha, pela mesma regra

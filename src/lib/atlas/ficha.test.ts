@@ -916,6 +916,36 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     expect(comp.linhas.find((x) => x.rotulo === 'massa')!.procedencia).toBe('derivado');
   });
 
+  it('o achatamento vale para qualquer estrela com giro, e o ângulo do eixo dita o texto', () => {
+    const da = (n: string) => linhasDe(montarFichaDeEstrela(n, starsMeta.named.find((s) => s.n === n))!);
+    const vega = da('Vega');
+    expect(vega.get('achatamento')!.valor).toMatch(/^\d+ %$/);
+    expect(vega.get('inclinação do eixo')!.valor).toContain('vista quase pelo polo');
+    const altair = da('Altair');
+    expect(altair.get('achatamento')).toBeDefined();
+    expect(altair.get('inclinação do eixo')!.valor).toContain('entre o eixo e a linha até o Sol');
+    expect(da('Regulus').get('inclinação do eixo')!.valor).toContain('vista quase pelo equador');
+    const proxima = da('Proxima Centauri');
+    expect(proxima.has('achatamento')).toBe(false);
+    expect(proxima.has('raio polar')).toBe(false);
+  });
+
+  it('só com v sin i o achatamento é um piso e a inclinação não aparece, nas duas línguas', () => {
+    const bet = estrelaVisitavelPorNome('β Pic')!;
+    const montar = () => montarFichaDeEstrela(bet.nomeNoCatalogo, comAnfitrias(starsMeta.named).find((s) => s.n === bet.nomeNoCatalogo))!;
+    const pt = linhasDe(montar());
+    expect(pt.get('achatamento')!.valor).toMatch(/^pelo menos .+ % \(inclinação não medida\)$/);
+    expect(pt.has('inclinação do eixo')).toBe(false);
+    definirIdioma('en');
+    try {
+      const en = linhasDe(montar());
+      expect(en.get('flattening')!.valor).toMatch(/^at least .+ % \(tilt not measured\)$/);
+      expect(en.has('axis tilt')).toBe(false);
+    } finally {
+      definirIdioma('pt-BR');
+    }
+  });
+
   it('as quatro do piloto trazem a física com selo; as outras ficam como eram', () => {
     const bet = montarFichaDeEstrela('Betelgeuse', starsMeta.named.find((s) => s.n === 'Betelgeuse'))!;
     const raio = linhasDe(bet).get('raio')!;
@@ -1255,10 +1285,10 @@ describe('a ficha nas duas línguas', () => {
   // chave das tabelas de idioma. A prova é de ESTRUTURA, não de prosa:
   // monta as fichas de lugar, de estrela visitável e de exoplaneta nas
   // duas línguas e, onde a fonte saiu IGUAL, não admite palavra em caixa
-  // baixa além do "et al." e das partículas de sobrenome ("van der") —
+  // baixa além do "et al." e das partículas de sobrenome ("van der", "de") —
   // nome próprio, sigla e número passam.
   it('a fonte que sai igual nas duas línguas é só citação', () => {
-    const NA_CITACAO = new Set(['et', 'al', 'van', 'der']);
+    const NA_CITACAO = new Set(['et', 'al', 'van', 'der', 'de']);
     const catalogo = comAnfitrias(starsMeta.named);
     const fontes = () =>
       [

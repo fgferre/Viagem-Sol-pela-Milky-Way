@@ -47,6 +47,7 @@ import {
   ESTRELAS_VISITAVEIS,
   GRANULO_SOL_EM_RAIOS,
   PISO_DO_CONTRASTE_NA_TELA,
+  achatamentoDe,
   atividadeDe,
   granuloNaTelaEmRaios,
   logGravidade,
@@ -70,17 +71,20 @@ export function lerPortaEstrelasComLugar(bruto: string | null): boolean {
 const GRAU = Math.PI / 180;
 
 /**
- * O EIXO DE ROTAÇÃO na base da cena. Vega: 6,2° da linha até o Sol
- * (medido — vemos quase o polo, como da Terra); o ÂNGULO DE POSIÇÃO da
- * inclinação é ARTÍSTICO (para o norte celeste). As outras não têm eixo
- * medido: o polo celeste norte, escolha artística declarada (o motor só o
- * usa para a forma achatada; sem ela, o +Y do motor).
+ * O EIXO DE ROTAÇÃO na base da cena, pela inclinação do achatamento
+ * (`achatamentoDe`). Vega: 6,2° da linha até o Sol (medido — vemos quase o
+ * polo, como da Terra); só v·sen i (β Pic): 90°, o eixo de lado. O ÂNGULO
+ * DE POSIÇÃO da inclinação é ARTÍSTICO (para o norte celeste). Sem
+ * inclinação conhecida (o giro de um período, ou redonda): o polo celeste
+ * norte, escolha artística declarada — que o motor só usa com inclinação
+ * (`parametrosDoMotor`); sem ela o eixo é o +Y do motor, como sempre foi.
  */
 export function eixoDeRotacao(e: EstrelaVisitavel, pos: THREE.Vector3, out: THREE.Vector3): THREE.Vector3 {
-  if (!e.achatamento) return out.set(0, 0, 1);
+  const inclinacao = achatamentoDe(e)?.inclinacaoGraus;
+  if (!inclinacao) return out.set(0, 0, 1);
   const r = pos.clone().normalize();
   const norte = new THREE.Vector3(0, 0, 1).addScaledVector(r, -r.z).normalize();
-  const i = e.achatamento.inclinacaoGraus.v * GRAU;
+  const i = inclinacao.v * GRAU;
   return out.copy(r).multiplyScalar(-Math.cos(i)).addScaledVector(norte, Math.sin(i)).normalize();
 }
 
@@ -147,9 +151,10 @@ const RAIO_DE_DESMONTE_PC = 2 * RAIO_DE_PREPARO_PC;
  *  · borda pelo u linear de Claret (`bordaU`);
  *  · atividade pelo número de Rossby (`atividadeDe`, Wright 2011): ela move
  *    manchas, ciclo, a frequência das erupções e a contagem de laços;
- *  · rotadora rápida (Vega): forma achatada + escurecimento gravitacional
- *    (`achatamento`), com o eixo na base da cena (`eixo`, o do piloto:
- *    6,2° da linha até o Sol medido, ângulo de posição ARTÍSTICO);
+ *  · rotadora rápida: forma achatada + escurecimento gravitacional pela
+ *    regra única (`achatamentoDe`: o modelo medido de Vega, ou o giro dos
+ *    dados), com o eixo na base da cena (`eixo`, `eixoDeRotacao`); o raio
+ *    do motor é então o EQUATORIAL;
  *  · eixo das outras: o +Y do motor sem inclinação (ARTÍSTICO — nenhuma tem
  *    eixo medido);
  *  · semente: a do Sol ⊕ HIP (outra superfície, mesma receita);
@@ -168,12 +173,14 @@ function sementeDe(e: EstrelaVisitavel): number {
 
 export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): StellarParams {
   const s = e.superficie;
+  const achatamento = achatamentoDe(e);
   const contrasteDosGranulos = Math.max(s.contrasteGranulos.v, PISO_DO_CONTRASTE_NA_TELA);
   const veu = veuDe(e.teffK.v);
   return {
     ...SOL_PARAMS,
     nome: e.id,
-    radiusPc: raioDaEstrelaPc(e),
+    // o EQUATORIAL quando achatada (o de Vega é o próprio raio da ficha)
+    radiusPc: achatamento ? achatamento.raioEquatorialRsol.v * RAIO_SOL_PC : raioDaEstrelaPc(e),
     rotPeriodDays: rotacaoDe(e).v,
     tiltRad: 0,
     activityLevel: atividadeDe(e).nivel,
@@ -188,8 +195,10 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
     bordaU: s.bordaU.v,
     foraDaOrigem: true,
     ...(veu > 0 ? { veu } : {}),
-    ...(e.achatamento ? { achatamento: e.achatamento } : {}),
-    ...(e.achatamento && eixo ? { eixoNaCena: [eixo.x, eixo.y, eixo.z] as const } : {}),
+    ...(achatamento ? { achatamento } : {}),
+    // sem inclinação (o giro de um período) o eixo segue o +Y do motor: a
+    // estrela achata em volta do eixo em que já girava
+    ...(achatamento?.inclinacaoGraus && eixo ? { eixoNaCena: [eixo.x, eixo.y, eixo.z] as const } : {}),
   };
 }
 
@@ -207,24 +216,27 @@ export function parametrosDaCompanheira(e: EstrelaVisitavel): StellarParams | nu
   const seed = (SOL_PARAMS.seed ^ sementeDe(e) ^ 0x0b0b0b0b) >>> 0;
   // A COMPANHEIRA QUE NÃO É ANÃ BRANCA (Capella Ab, 16/11) é uma estrela
   // como qualquer outra: a MESMA lei da principal (`parametrosDoMotor`),
-  // sobre a ficha que os números medidos dela dão. Sem eixo medido.
+  // sobre a ficha que os números medidos dela dão — o achatamento também
+  // (`achatamentoDe`: Capella Ab gira em 8,5 d). Sem eixo medido.
   if (!c.tipo.startsWith('D')) {
+    const ficha: EstrelaVisitavel = {
+      id: nome,
+      nomeNoCatalogo: c.nome,
+      tipo: { texto: c.tipo, v: 0, p: 'medido', fonte: c.orbita.fonte },
+      teffK: c.teffK,
+      raioRsol: c.raioRsol,
+      massaMsol: c.massaMsol,
+      luminosidadeLsol: {
+        v: luminosidadeDe(c.raioRsol.v, c.teffK.v),
+        p: 'derivado',
+        fonte: 'Stefan-Boltzmann',
+      },
+      ...(c.rotacaoDias ? { rotacaoDias: c.rotacaoDias } : {}),
+      ...(c.vSenIKms ? { vSenIKms: c.vSenIKms } : {}),
+      superficie: superficiePelaTemperatura(c.teffK.v, c.raioRsol.v, c.massaMsol.v),
+    };
     return {
-      ...parametrosDoMotor({
-        id: nome,
-        nomeNoCatalogo: c.nome,
-        tipo: { texto: c.tipo, v: 0, p: 'medido', fonte: c.orbita.fonte },
-        teffK: c.teffK,
-        raioRsol: c.raioRsol,
-        massaMsol: c.massaMsol,
-        luminosidadeLsol: {
-          v: luminosidadeDe(c.raioRsol.v, c.teffK.v),
-          p: 'derivado',
-          fonte: 'Stefan-Boltzmann',
-        },
-        ...(c.rotacaoDias ? { rotacaoDias: c.rotacaoDias } : {}),
-        superficie: superficiePelaTemperatura(c.teffK.v, c.raioRsol.v, c.massaMsol.v),
-      }),
+      ...parametrosDoMotor(ficha),
       seed,
       knobPrefix: `${e.id}b`,
     };
@@ -385,9 +397,10 @@ interface Piloto {
 /**
  * A VAGA DE QUEM NASCE PELO FOCO: a última do cadastro do clarão (a sob
  * demanda não tem companheira, uma vaga basta). As da lista à mão ficam com
- * 2 × índice, como sempre: 16 estrelas, vagas 0–30 — a de Dubhe, a 16ª, é a
- * 30, e a 31 seria a da companheira dela, que não tem corpo. O CADASTRO
- * ESTÁ CHEIO: a 17ª escrita à mão pede `VAGAS_DE_VISITADAS` maior. Toda
+ * 2 × índice, como sempre: 19 estrelas, vagas 0–36 — a de Achernar, a 19ª, é
+ * a 36, e a 37 seria a da companheira dela, que não tem corpo. Cabe mais uma
+ * escrita à mão (vagas 38 e 39 não: a 39 é esta); a 21ª pede
+ * `VAGAS_DE_VISITADAS` maior, e o teste do cadastro acusa. Toda
  * estrela sob demanda é NOMEADA, e o clarão escreve a nomeada na vaga da
  * nomeada (não nesta) — esta só precisa caber e não repetir a de outra.
  */

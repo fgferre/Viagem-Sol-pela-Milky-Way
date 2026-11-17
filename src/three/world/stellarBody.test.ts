@@ -40,13 +40,13 @@ import {
   cirurgiaDaMatiz,
   coroaOcultavel,
   epsilonDeSegmentoGlsl,
+  formaDeRoche,
   literalGlsl,
   pesoDoFiltro,
   rocheDe,
   rotSpeedFromPeriod,
   taxaDeErupcoesPelaAtividade,
   forcaDoVeu,
-  termoZonalDaForma,
   tierDaEstrela,
 } from './stellarBody';
 import { uvMeshVertex } from './sol/common.js';
@@ -688,10 +688,27 @@ describe('um motor, qualquer estrela — os parâmetros novos são neutros no So
     expect(eq.raio).toBeCloseTo(1, 12);
   });
 
-  it('o termo zonal de grau 2 põe polo e equador nos raios medidos (Vega)', () => {
-    const { a, norma } = termoZonalDaForma(2.418, 2.726);
-    expect((1 + a * -0.5) * norma).toBeCloseTo(1, 12);
-    expect((1 + a) * norma).toBeCloseTo(2.418 / 2.726, 12);
+  it('a forma de Roche por vértice (Vega): polo e equador nos raios medidos, a normal ⟂ à superfície', () => {
+    const a = estrelaVisitavelPorNome('Vega')!.achatamento!;
+    const eq = formaDeRoche(1, 0, 0, a);
+    expect(eq.raio).toBeCloseTo(1, 12);
+    expect(eq.normal[0]).toBeCloseTo(1, 12);
+    // o polo exato da malha (ρ = 0): a normal radial, sem NaN
+    const polo = formaDeRoche(0, 1, 0, a);
+    expect(polo.raio).toBeCloseTo(2.418 / 2.726, 12);
+    expect(polo.normal).toEqual([0, 1, 0]);
+    // nas latitudes médias, a normal é unitária e perpendicular ao meridiano
+    for (const th of [0.3, 0.8, 1.2, 2.4]) {
+      const ponto = (t: number) => {
+        const r = formaDeRoche(Math.sin(t) * 0.6, Math.cos(t), Math.sin(t) * 0.8, a).raio;
+        return [r * Math.sin(t) * 0.6, r * Math.cos(t), r * Math.sin(t) * 0.8];
+      };
+      const [p1, p0] = [ponto(th + 1e-6), ponto(th - 1e-6)];
+      const tg = p1.map((v, k) => v - p0[k]!);
+      const n = formaDeRoche(Math.sin(th) * 0.6, Math.cos(th), Math.sin(th) * 0.8, a).normal;
+      expect(Math.hypot(...n)).toBeCloseTo(1, 10);
+      expect(Math.abs(n[0] * tg[0]! + n[1] * tg[1]! + n[2] * tg[2]!) / Math.hypot(...tg)).toBeLessThan(1e-6);
+    }
   });
 
   it('as âncoras da fotosfera existem UMA vez no vendorizado real; sem pedido, nada muda', () => {
@@ -700,7 +717,7 @@ describe('um motor, qualquer estrela — os parâmetros novos são neutros no So
     expect(f).toContain('float limbU = 0.500000;');
     expect(f).toContain('float plage = 0.0 * st.b');
     expect(f).toContain('color *= vGravidade;');
-    expect(() => cirurgiaDaForma(sunJs, -0.078, 1.04)).not.toThrow();
+    expect(() => cirurgiaDaForma(sunJs)).not.toThrow();
     // avermelhamento 1: nada muda
     expect(cirurgiaDaEstrela(sunJs, { avermelhamento: 1 })).toBe(sunJs);
     expect(cirurgiaDaEstrela(sunJs, { avermelhamento: 0 })).toContain('color.b *= 1.0 - edge*0.50*0.000000;');

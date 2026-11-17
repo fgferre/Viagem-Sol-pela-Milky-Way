@@ -98,6 +98,6 @@ describe('a regra confere com as fichas escritas à mão', () => {
       if (g.massaMsol.p === 'derivado') confere('massaMsol', Math.abs(g.massaMsol.v / a.massaMsol.v - 1) <= 0.25);
       conferidas++;
     }
-    expect(conferidas).toBe(13);
+    expect(conferidas).toBe(16);
   });
 });

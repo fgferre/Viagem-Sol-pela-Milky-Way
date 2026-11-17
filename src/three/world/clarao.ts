@@ -453,7 +453,7 @@ export interface QuadroDoClarao {
 
 /** Quantas vagas de visitada o cadastro reserva (duas por estrela: a
  *  principal e a companheira) — guarda de memória, não lei. */
-export const VAGAS_DE_VISITADAS = 32;
+export const VAGAS_DE_VISITADAS = 40;
 
 /**
  * Uma estrela visitada candidata ao clarão, por quadro. Os números são os

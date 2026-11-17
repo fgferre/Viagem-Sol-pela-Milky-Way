@@ -312,12 +312,7 @@ export function cirurgiasDaFotosfera(
   // o RELEVO da fotosfera (o fbm do vertex, `uDispScale`) é o da mesma
   // convecção: escala com o contraste dela (A: quase liso)
   const relevo = forja ? 0 : o.contraste !== undefined && o.contraste !== 1 ? Math.max(0, o.contraste) : 1;
-  let v = vertex;
-  if (a) {
-    const { a: k, norma } = termoZonalDaForma(a.raioPolarRsol.v, a.raioEquatorialRsol.v);
-    v = cirurgiaDaForma(v, k, norma);
-  }
-  return { fragment: cirurgiaDaEstrela(fragment, o), vertex: v, relevo };
+  return { fragment: cirurgiaDaEstrela(fragment, o), vertex: a ? cirurgiaDaForma(vertex) : vertex, relevo };
 }
 
 /** O que descreve UMA estrela procedural desta casa. */
@@ -402,11 +397,11 @@ export interface StellarParams {
   /** O u da lei linear de borda (omitido = o 0,30 de `sol/sun.js`). */
   readonly bordaU?: number;
   /**
-   * ROTADORA RÁPIDA (omitido = esfera): a forma por um termo zonal ESTÁTICO
-   * de grau 2 no deslocamento do vertex (o P20 dos modos p), com polo e
-   * equador nos raios medidos e a normal da forma; e o escurecimento
-   * gravitacional, a Teff local de von Zeipel (`rocheDe`) na cor e no
-   * brilho de cada ponto. `radiusPc` é o raio EQUATORIAL.
+   * ROTADORA RÁPIDA (omitido = esfera): a superfície de Roche EXATA por
+   * vértice (`formaDeRoche`: o raio e a normal no deslocamento do vertex);
+   * e o escurecimento gravitacional, a Teff local de von Zeipel
+   * (`rocheDe`) na cor e no brilho de cada ponto. `radiusPc` é o raio
+   * EQUATORIAL.
    */
   readonly achatamento?: Achatamento;
   /**
@@ -468,16 +463,36 @@ export function rocheDe(colatRad: number, a: Achatamento): Roche {
 }
 
 /**
- * O TERMO ZONAL DE GRAU 2 da forma achatada: r(μ) = R₀·(1 + a·P20(μ)), com
- * P20 = 1,5μ² − 0,5 e μ = sen(latitude). Polo (P20 = 1) e equador
- * (P20 = −½) caem exatamente nos raios medidos: a = 2(q − 1)/(2 + q), com
- * q = Rp/Re. Devolve `a` e o fator que põe o EQUADOR no raio da malha
- * (`1/(1 − a/2)`), porque `radiusPc` é o raio equatorial.
+ * A SUPERFÍCIE DE ROCHE num ponto da malha (x, y, z no objeto, eixo +Y):
+ * o raio relativo ao EQUATORIAL (`rocheDe`), a Teff local e a normal
+ * externa no objeto, nr·û + nt·θ̂, com θ̂ = (cosθ·x/ρ, −senθ, cosθ·z/ρ) e
+ * ρ = √(x² + z²). No eixo (ρ = 0) θ̂ não existe, mas lá nt = 0 e a normal
+ * é a radial. Substitui o termo P20 de antes, gordo demais nas latitudes
+ * médias (1 % do raio em Vega, 3 % em Altair, 5 % em Regulus).
  */
-export function termoZonalDaForma(raioPolar: number, raioEquatorial: number): { a: number; norma: number } {
-  const q = raioPolar / raioEquatorial;
-  const a = (2 * (q - 1)) / (2 + q);
-  return { a, norma: 1 / (1 - a / 2) };
+export function formaDeRoche(
+  x: number,
+  y: number,
+  z: number,
+  a: Achatamento
+): { raio: number; teffK: number; normal: [number, number, number] } {
+  const rho = Math.hypot(x, z);
+  const len = Math.hypot(rho, y);
+  const R = rocheDe(Math.atan2(rho, y), a);
+  const ux = x / len;
+  const uy = y / len;
+  const uz = z / len;
+  if (!(rho > 0)) return { raio: R.raio, teffK: R.teffK, normal: [R.nr * ux, R.nr * uy, R.nr * uz] };
+  const s = rho / len;
+  return {
+    raio: R.raio,
+    teffK: R.teffK,
+    normal: [
+      R.nr * ux + R.nt * uy * (x / rho),
+      R.nr * uy - R.nt * s,
+      R.nr * uz + R.nt * uy * (z / rho),
+    ],
+  };
 }
 
 /** O tier de uma estrela SEM DÍNAMO: o menor retrato que ainda desenha uma
@@ -1244,36 +1259,31 @@ vec3 razaoDePlanck(vec3 x0, float r) {
 export const GANHO_DO_INSTRUMENTO = 5;
 
 /**
- * A FORMA DE UMA ROTADORA RÁPIDA no vertex de `sol/sun.js`: o termo zonal
- * estático (`termoZonalDaForma`) entra no MESMO deslocamento ao longo da
- * normal que os modos p usam, e a normal passa a ser a da forma —
- * n ∝ û − (r'/r)(ŷ − μû), com r'/r = 3aμ/(1 + a·P20). O eixo é o +Y do
+ * A FORMA DE UMA ROTADORA RÁPIDA no vertex de `sol/sun.js`: a superfície de
+ * Roche exata, por vértice (`formaDeRoche`, escrita na CPU em
+ * `operarAFotosfera`): o raio relativo ao equatorial (`aRaioDeRoche`) entra
+ * no MESMO deslocamento ao longo da normal que os modos p usam, e a normal
+ * passa a ser a da forma (`aNormalDeRoche`, no objeto). O eixo é o +Y do
  * objeto (o do giro). Leva junto o fator da gravidade (`aGravidade`).
  */
-export function cirurgiaDaForma(vertex: string, a: number, norma: number): string {
+export function cirurgiaDaForma(vertex: string): string {
   const quem = 'cirurgiaDaForma';
-  const A = literalGlsl(a);
-  const N = literalGlsl(norma);
   let v = trocarUma(
     vertex,
     '  vec3 displaced = position + normal * (n * uDispScale + pmSum * 0.008 * length(position));',
     [
-      '  vec3 uAch = normalize(position);',
-      '  float muAch = uAch.y;',
-      '  float p20Ach = 1.5*muAch*muAch - 0.5;',
-      `  float fAch = (1.0 + ${A}*p20Ach) * ${N};`,
       '  vGravidade = aGravidade;',
-      '  vec3 displaced = position + normal * ((fAch - 1.0) * length(position) + n * uDispScale + pmSum * 0.008 * length(position));',
+      '  vec3 displaced = position + normal * ((aRaioDeRoche - 1.0) * length(position) + n * uDispScale + pmSum * 0.008 * length(position));',
     ].join('\n'),
     quem
   );
   v = trocarUma(
     v,
     '  vNormalW = normalize(mat3(modelMatrix) * normal);',
-    `  vNormalW = normalize(mat3(modelMatrix) * normalize(uAch - (3.0*${A}*muAch/(1.0 + ${A}*p20Ach)) * (vec3(0.0, 1.0, 0.0) - muAch*uAch)));`,
+    '  vNormalW = normalize(mat3(modelMatrix) * aNormalDeRoche);',
     quem
   );
-  return 'attribute vec3 aGravidade;\nvarying vec3 vGravidade;\n' + v;
+  return 'attribute vec3 aGravidade;\nattribute float aRaioDeRoche;\nattribute vec3 aNormalDeRoche;\nvarying vec3 vGravidade;\n' + v;
 }
 
 // ============================================================
@@ -2396,11 +2406,29 @@ export class StellarBody {
     const brilho = fj ? CASCA_DA_FORJA.brilho : BRILHO_DA_ATMOSFERA;
     const rCasca = Math.max(1 + (rEnv - 1) * plumaMax * alcance, veu > 0 ? RAIO_DO_VEU : 1);
     const u = p.bordaU ?? 0.3;
+    // A BORDA DE UMA ESTRELA ACHATADA (`achatamento`): o perfil começa no
+    // contorno dela, não no círculo do raio equatorial — senão sobra, entre o
+    // polo e o círculo, uma faixa com o véu na força da borda. Duas contas:
+    //  · o ESFEROIDE dos dois raios, EXATO sob perspectiva: no espaço
+    //    esticado ao longo do eixo por k = Re/Rp ele é a esfera de raio Re, e
+    //    esticar preserva a tangência — o parâmetro de impacto de lá é a
+    //    distância ao centro sobre o raio do esferoide naquela direção (a
+    //    elipse do contorno visto de longe deixava, a 3 raios e de eixo
+    //    inclinado, uma faixa só do lado do polo de trás: Régulo, 16/11);
+    //  · a superfície de ROCHE fica por dentro do esferoide nas latitudes
+    //    médias (até 2,5 % do raio em Régulo): a razão entre os dois raios
+    //    na colatitude do ponto mais próximo, com o raio de Roche na forma
+    //    fechada r/Rp = 3/(ω·senθ)·cos((π + acos(ω·senθ))/3), ω = Ω/Ω_c
+    //    (perto do eixo, a série 1 + (4/27)·(ω·senθ)²).
+    const ach = p.achatamento;
+    const eixo = p.eixoNaCena ?? [0, 1, 0];
+    const kAch = ach ? ach.raioEquatorialRsol.v / ach.raioPolarRsol.v : 1;
+    const omegaAch = Math.min(1, Math.sqrt((27 * (kAch - 1)) / (4 * kAch ** 3)));
     const mat = new THREE.ShaderMaterial({
       vertexShader: /* glsl */ `
         varying vec3 vPosV;
         varying vec3 vCentroV;
-        varying vec3 vDirObj;${
+        varying vec3 vDirObj;${ach ? '\n        varying vec3 vEixoV;' : ''}${
           fj
             ? `
         varying vec3 vPosObj;
@@ -2410,7 +2438,12 @@ export class StellarBody {
         void main() {
           vec4 mv = modelViewMatrix * vec4(position, 1.0);
           vPosV = mv.xyz;
-          vCentroV = (modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+          vCentroV = (modelViewMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;${
+            ach
+              ? `
+          vEixoV = normalize(mat3(modelViewMatrix) * vec3(${eixo.map((x) => literalGlsl(x)).join(', ')}));`
+              : ''
+          }
           vDirObj = normalize(position);${
             fj
               ? `
@@ -2434,7 +2467,7 @@ export class StellarBody {
         uniform float uTime;
         varying vec3 vPosV;
         varying vec3 vCentroV;
-        varying vec3 vDirObj;${
+        varying vec3 vDirObj;${ach ? '\n        varying vec3 vEixoV;' : ''}${
           fj
             ? `
         uniform mat3 uSunInvRot;
@@ -2446,7 +2479,20 @@ export class StellarBody {
           vec3 d = normalize(vPosV);
           // dentro do disco a profundidade da fotosfera apaga a casca: o perfil
           // começa na borda (b ≥ 1), sem fresta entre a malha e a conta
-          float b = max(length(vCentroV - dot(vCentroV, d) * d) / uRaio, 1.0);
+          ${
+            ach
+              ? `vec3 cE = vCentroV + ${literalGlsl(kAch - 1)} * dot(vCentroV, vEixoV) * vEixoV;
+          vec3 dE = d + ${literalGlsl(kAch - 1)} * dot(d, vEixoV) * vEixoV;
+          float tE = dot(cE, dE) / dot(dE, dE);
+          vec3 pR = tE * d - vCentroV;
+          float cT = dot(pR, vEixoV) / max(length(pR), 1e-30);
+          float sT = sqrt(max(1.0 - cT * cT, 0.0));
+          float xR = ${literalGlsl(omegaAch)} * sT;
+          float rRoche = xR > 1e-3 ? 3.0 / xR * cos((3.14159265 + acos(min(xR, 1.0))) / 3.0) : 1.0 + 0.148148 * xR * xR;
+          float rElip = inversesqrt(cT * cT + sT * sT * ${literalGlsl(1 / (kAch * kAch))});
+          float b = max(length(tE * dE - cE) / uRaio * rElip / rRoche, 1.0);`
+              : 'float b = max(length(vCentroV - dot(vCentroV, d) * d) / uRaio, 1.0);'
+          }
           vec3 c = mix(uCorFria, uCorQuente, ${literalGlsl(CALOR_DO_MEIO_DO_DISCO)});
           ${fj ? '' : 'c *= mix(0.16, 1.42, smoothstep(0.04, 1.08, 0.5));'}
           vec3 luz = vec3(0.0);
@@ -2567,26 +2613,31 @@ export class StellarBody {
     mat.vertexShader = cir.vertex;
     ctx.sunUniforms.uDispScale.value *= cir.relevo;
     if (a) {
-      // a GRAVIDADE por vértice: cor × brilho da Teff local (von Zeipel,
-      // `rocheDe`) relativos à média da estrela (`teffK`, a que a matiz e o
-      // brilho de CPU já usam) — interpolada por fragmento
+      // a FORMA e a GRAVIDADE por vértice (`formaDeRoche`): o raio e a
+      // normal de Roche; cor × brilho da Teff local (von Zeipel) relativos
+      // à média da estrela (`teffK`, a que a matiz e o brilho de CPU já
+      // usam) — interpolada por fragmento
       const geo = ctx.sunMesh.geometry as THREE.BufferGeometry;
       const pos = geo.getAttribute('position') as THREE.BufferAttribute;
       const fator = new Float32Array(pos.count * 3);
+      const raio = new Float32Array(pos.count);
+      const normal = new Float32Array(pos.count * 3);
       const Tm = p.teffK;
       const cm = corpoNegroUnitario(Tm);
       const rm = radianciaVisivelDeCorpoNegro(Tm);
       for (let i = 0; i < pos.count; i++) {
-        const x = pos.getX(i);
-        const y = pos.getY(i);
-        const z = pos.getZ(i);
-        const colat = Math.acos(Math.max(-1, Math.min(1, y / Math.hypot(x, y, z))));
-        const T = rocheDe(colat, a).teffK;
-        const c = corpoNegroUnitario(T);
-        const b = radianciaVisivelDeCorpoNegro(T) / rm;
-        for (let k2 = 0; k2 < 3; k2++) fator[i * 3 + k2] = (c[k2] / cm[k2]) * b;
+        const f = formaDeRoche(pos.getX(i), pos.getY(i), pos.getZ(i), a);
+        const c = corpoNegroUnitario(f.teffK);
+        const b = radianciaVisivelDeCorpoNegro(f.teffK) / rm;
+        for (let k2 = 0; k2 < 3; k2++) {
+          fator[i * 3 + k2] = (c[k2] / cm[k2]) * b;
+          normal[i * 3 + k2] = f.normal[k2];
+        }
+        raio[i] = f.raio;
       }
       geo.setAttribute('aGravidade', new THREE.BufferAttribute(fator, 3));
+      geo.setAttribute('aRaioDeRoche', new THREE.BufferAttribute(raio, 1));
+      geo.setAttribute('aNormalDeRoche', new THREE.BufferAttribute(normal, 3));
     }
     mat.needsUpdate = true;
   }
