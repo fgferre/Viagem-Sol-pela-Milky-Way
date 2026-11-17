@@ -46,7 +46,12 @@ import {
   notaDeDistancia,
   UA_POR_PC,
 } from '../unidades';
-import { LEI_DA_ATMOSFERA, regraDaForja } from '../../three/world/forjaDaEstrela';
+import {
+  LEI_DA_ATMOSFERA,
+  LEI_DO_CONTRASTE,
+  PISO_DA_FORJA_NA_TELA,
+  regraDaForja,
+} from '../../three/world/forjaDaEstrela';
 import { NOMES_DOS_CORPOS, classeEmTexto, nomeDoCorpo } from '../../three/atlasConfig';
 import { decimalDoIdioma, idiomaAtual, t, type ChaveDeTexto } from '../idioma';
 import type { Procedencia } from '../../three/selo';
@@ -1114,7 +1119,12 @@ function secaoDaCompanheira(e: EstrelaVisitavel, distanciaPc: number): SecaoDaFi
 
 /** A SEÇÃO DA IMAGEM da estrela do piloto: o que é medida e o que é desenho. */
 function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
-  const daForja = forjaDaFicha(e) !== null;
+  const forja = forjaDaFicha(e);
+  const daForja = forja !== null;
+  // o piso de contraste na tela, o da Forja ou o de antes
+  const granulacao = forja
+    ? { real: forja.contraste, piso: PISO_DA_FORJA_NA_TELA, fonte: LEI_DO_CONTRASTE }
+    : { real: e.superficie.contrasteGranulos.v, piso: PISO_DO_CONTRASTE_NA_TELA, fonte: e.superficie.contrasteGranulos.fonte };
   return {
     id: 'imagem',
     titulo: TITULO('imagem'),
@@ -1133,15 +1143,15 @@ function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
       // as concessões que a física da estrela liga (nenhuma no Sol, nenhuma
       // por nome): mais radiante que o Sol, véu; granulação abaixo do piso, extrapolada
       e.teffK.v > TEFF_DO_SOL_K ? linha(t('ficha.campo.veu'), t('ficha.estrela.veu'), 'artistico') : null,
-      !daForja && e.superficie.contrasteGranulos.v < PISO_DO_CONTRASTE_NA_TELA
+      granulacao.real < granulacao.piso
         ? linha(
             t('ficha.campo.granulacao'),
             t('ficha.estrela.granulacaoExtrapolada', {
-              real: numeroDoIdioma(e.superficie.contrasteGranulos.v * 100),
-              piso: numeroDoIdioma(PISO_DO_CONTRASTE_NA_TELA * 100),
+              real: numeroDoIdioma(Math.round(granulacao.real * 1000) / 10),
+              piso: numeroDoIdioma(granulacao.piso * 100),
             }),
             'artistico',
-            e.superficie.contrasteGranulos.fonte
+            granulacao.fonte
           )
         : null,
     ].filter((l): l is LinhaDaFicha => l !== null),

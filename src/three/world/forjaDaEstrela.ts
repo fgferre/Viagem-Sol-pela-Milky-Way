@@ -96,6 +96,24 @@ export function contrasteDaConveccao(teffK: number, logG: number): number {
 }
 
 /**
+ * O PISO NA TELA do contraste — a concessão das quentes que o caminho de
+ * antes já declarava (`PISO_DO_CONTRASTE_NA_TELA`: a superfície não sai
+ * lisa), agora na régua da Forja. Acima de ~7.800 K o contraste real cai
+ * rumo a zero e, sem o filtro do Sol, a razão de Planck sozinha o deixa
+ * invisível (Fomalhaut a 8.590 K: 0,46 % rms na tela contra 0,9 % do
+ * caminho de antes). O desenho usa max(contraste, piso): contínuo na
+ * temperatura, nenhuma estrela fria nem Altair (0,148) muda. O valor é o
+ * que devolve a Fomalhaut a visibilidade de antes — ARTÍSTICO, declarado na
+ * ficha. Contraste zero (sem envelope, acima de ~9.300 K) segue zero.
+ */
+export const PISO_DA_FORJA_NA_TELA = 0.14;
+export function contrasteNaTela(contraste: number): number {
+  return contraste > 0 ? Math.max(contraste, PISO_DA_FORJA_NA_TELA) : 0;
+}
+/** as fontes do contraste real (`contrasteDaConveccao`), para o selo da ficha */
+export const LEI_DO_CONTRASTE = 'Beeck et al. 2013; Steffen et al. 2005';
+
+/**
  * A DESORDEM DA CONVECÇÃO, 0 a 1, por log g: o escoamento fica mais violento
  * quando a gravidade cai — Mach horizontal máximo de ~1,8 no Sol e ~6,0 na
  * gigante de log g 1 (Ludwig & Kučinskas 2012, arXiv 1211.7304), linear em
@@ -227,6 +245,8 @@ export interface RegraDaForja {
   readonly celulaRealEmRaios: number;
   readonly celulaNaTelaEmRaios: number;
   readonly contraste: number;
+  /** o contraste que o desenho usa (`contrasteNaTela`) */
+  readonly contrasteNaTela: number;
   readonly atmosferaEmRaios: number;
   readonly fracaoEscura: number;
   readonly ritmo: number;
@@ -249,6 +269,7 @@ export function regraDaForja(teffK: number, logG: number, raioRsol: number): Reg
     celulaRealEmRaios: a,
     celulaNaTelaEmRaios: celulaNaTelaEmRaios(a),
     contraste: contrasteDaConveccao(teffK, logG),
+    contrasteNaTela: contrasteNaTela(contrasteDaConveccao(teffK, logG)),
     atmosferaEmRaios: raioDaAtmosferaEmRaios(teffK, logG),
     fracaoEscura: fracaoEscura(teffK),
     ritmo: ritmoDaFervura(a),

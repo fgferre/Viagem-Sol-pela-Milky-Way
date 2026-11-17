@@ -668,7 +668,7 @@ export function cirurgiaDaEstrela(
     // temperatura vira imagem pelo INSTRUMENTO do Sol com o peso do filtro
     // (`pesoDoFiltro`): nas frias, o calor da rampa H-alfa (cor e brilho, o
     // creme no topo); nas quentes, a razão de Planck do contínuo, como antes
-    const d = Math.max(0, o.forja.contraste) / 4;
+    const d = o.forja.contrasteNaTela / 4;
     const wF = pesoDoFiltro(teff);
     f = trocarUma(
       f,
@@ -877,7 +877,7 @@ export function glslDoAssadoDaForja(
   const w = Math.min(1, Math.max(0, forja.pesoProfundo));
   const L = (x: number) => literalGlsl(x);
   const cel = forja.celulaNaTelaEmRaios;
-  const delta = Math.max(0, forja.contraste) / 4;
+  const delta = forja.contrasteNaTela / 4;
   const zQuente = delta > 0 ? forja.picoQuente / delta : 0;
   const passo = Math.min(TETO_DA_ADVECCAO, ADVECCAO_DA_FORJA * cel * (0.5 + D));
   const quentes =

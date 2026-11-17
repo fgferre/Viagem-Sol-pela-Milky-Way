@@ -5,6 +5,7 @@ import {
   celulaNaTelaEmRaios,
   celulaRealEmRaios,
   contrasteDaConveccao,
+  contrasteNaTela,
   desordemDaConveccao,
   fracaoEscura,
   larguraDaBordaEmMu,
@@ -86,6 +87,14 @@ describe('a Forja, botão GRAVIDADE — a regra', () => {
     ] as const;
     for (const [t, c] of pontos) expect(contrasteDaConveccao(t, 4.6)).toBeCloseTo(c, 10);
     expect(contrasteDaConveccao(9500, 4.0)).toBe(0);
+  });
+
+  it('o piso na tela: Fomalhaut (8.590 K) sobe ao piso; Altair, as frias e o zero ficam como são', () => {
+    expect(contrasteNaTela(contrasteDaConveccao(8590, 4.19))).toBe(0.14);
+    const altair = contrasteDaConveccao(7700, 4.18);
+    expect(contrasteNaTela(altair)).toBe(altair);
+    expect(contrasteNaTela(contrasteDaConveccao(3900, 1.19))).toBe(contrasteDaConveccao(3900, 1.19));
+    expect(contrasteNaTela(0)).toBe(0);
   });
 
   it('a atmosfera estendida: 1 na anã, 1,3 na supergigante fria, 1 a 5.000 K', () => {
