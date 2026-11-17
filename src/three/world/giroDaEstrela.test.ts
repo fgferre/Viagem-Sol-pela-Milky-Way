@@ -6,6 +6,7 @@ import {
   W_NO_TETO,
   giroDe,
   giroSobreCritico,
+  perfilDeELR,
   periodoDoGiroDias,
   razaoDosRaios,
   temperaturasDeELR,
@@ -47,8 +48,45 @@ describe('o giro da estrela — Roche + Espinosa Lara & Rieutord 2011', () => {
     const g = giroDe(wLimiar * 1.001, 1, 1)!;
     expect(g.raioEquatorialRsol / g.raioPolarRsol - 1).toBeGreaterThan(LIMIAR_DO_ACHATAMENTO);
     // sem NaN logo acima do limiar, e o polo mais quente que o equador
-    expect(Number.isFinite(g.betaGravidade)).toBe(true);
+    expect(Number.isFinite(g.teffPoloK) && Number.isFinite(g.teffEquadorK)).toBe(true);
     expect(g.teffPoloK).toBeGreaterThan(g.teffEquadorK);
+  });
+
+  it('a temperatura por latitude de ELR: fecha nas duas pontas, cai do polo ao equador e é igual nos dois hemisférios', () => {
+    for (const re of [1.0005, 1.1274, 1.3075]) {
+      const w = wDaRazaoDosRaios(re);
+      const { polo, equador } = temperaturasDeELR(w, 1, 1); // T0 = 5.772 K
+      expect(perfilDeELR(w, 0, 1 / re) * 5772).toBeCloseTo(polo, 6);
+      expect(perfilDeELR(w, Math.PI / 2, 1) * 5772).toBeCloseTo(equador, 6);
+      // o raio de Roche em cada latitude, pela forma fechada (r/Rp)
+      const raio = (th: number) => {
+        const x = giroSobreCritico(w) * Math.sin(th);
+        return (x > 1e-3 ? (3 / x) * Math.cos((Math.PI + Math.acos(x)) / 3) : 1 + (4 / 27) * x * x) / re;
+      };
+      let antes = Infinity;
+      for (let g = 0; g <= 90; g += 0.5) {
+        const th = (g * Math.PI) / 180;
+        const t = perfilDeELR(w, th, raio(th));
+        expect(t).toBeLessThanOrEqual(antes * (1 + 1e-9));
+        expect(perfilDeELR(w, Math.PI - th, raio(th))).toBeCloseTo(t, 12);
+        antes = t;
+      }
+    }
+  });
+
+  it('dado faltando é estrela redonda, nunca o teto: massa, raio, período ou velocidade zero, negativos ou NaN', () => {
+    for (const ruim of [0, -1, NaN]) {
+      expect(wDoPeriodo(ruim, 1, 1)).toBe(0);
+      expect(wDoPeriodo(1, ruim, 1)).toBe(0);
+      expect(wDoPeriodo(1, 1, ruim)).toBe(0);
+      expect(wDaVelocidade(ruim, 1, 1)).toBe(0);
+      expect(wDaVelocidade(100, ruim, 1)).toBe(0);
+      expect(wDaVelocidade(100, 1, ruim)).toBe(0);
+    }
+    expect(giroDe(NaN, 1, 1)).toBeNull();
+    expect(giroDe(0.5, 1, NaN)).toBeNull();
+    // o giro de verdade além da quebra continua indo ao teto, marcado
+    expect(giroDe(wDoPeriodo(0.01, 1, 1), 1, 1)?.noTeto).toBe(true);
   });
 
   it('o teto: Ω/Ω_c ≤ 0,96, grampeado e marcado (Regulus passa; Vega não)', () => {

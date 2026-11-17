@@ -83,8 +83,11 @@ export interface Achatamento {
   /** ângulo entre o eixo de rotação e a linha de visada da Terra (ausente:
    *  eixo desconhecido, o +Y do motor) */
   readonly inclinacaoGraus?: Numero;
-  /** expoente de von Zeipel, T ∝ g^β */
-  readonly betaGravidade: Numero;
+  /** expoente de von Zeipel, T ∝ g^β — o do MODELO MEDIDO, que liga o polo
+   *  ao equador pela lei do próprio artigo. Ausente no achatamento derivado:
+   *  lá a temperatura por latitude é a de Espinosa Lara & Rieutord 2011, sem
+   *  expoente (`perfilDeELR`) */
+  readonly betaGravidade?: Numero;
   /** derivado de v·sen i com i = 90°: o achatamento MÍNIMO */
   readonly limiteInferior?: true;
   /** o giro derivado passou de Ω/Ω_c = 0,96 e foi grampeado (`TETO_DO_GIRO`) */
@@ -376,13 +379,17 @@ const VEGA: EstrelaVisitavel = {
  * T ∝ g^β entre as duas pontas), e o período sai do giro do modelo
  * (w² = 2(Re/Rp − 1), Ω = w·√(GM/Re³)): Altair 8,6 h, Régulo 15,0 h,
  * Achernar 37,6 h. Conferência das contas: a luminosidade integrada do
- * modelo dá 10,4 L☉ em Altair e 342 em Régulo (os artigos: 10,6 e 341), e
- * Ω/Ω_c dá 0,923, 0,964 e 0,98 (os artigos: 0,923, 0,962 e 0,98).
+ * modelo dá 342 L☉ em Régulo (o artigo: 341; o de Altair não dá a
+ * luminosidade, e os 10,4 L☉ da ficha são os da integral), e Ω/Ω_c dá
+ * 0,923, 0,964 e 0,98 (os artigos: 0,923, 0,962 e 0,98).
  */
 // as fontes só como citação (a ficha sai nas duas línguas); o que cada
 // número é está no comentário ao lado
 const TIPO_DO_CATALOGO = 'HYG 4.4';
-// arXiv 0706.0867, o modelo de β livre
+// arXiv 0706.0867, Tabela 1, a coluna do modelo de β livre: inclinação
+// 57,2 ± 1,9°, Rp 1,634 ± 0,011, Re 2,029 ± 0,007 R☉, polo 8.450 ± 140 K,
+// equador 6.860 ± 150 K, β 0,190 ± 0,012, ω 0,923 (conferida em 16/11; a
+// coluna de β fixo em 0,25 dá 62,7°, 1,661/2,022 R☉ e 8.710/6.850 K)
 const MONNIER_2007 = 'Monnier et al. 2007, Science 317, 342 (CHARA/MIRC)';
 const ALTAIR: EstrelaVisitavel = {
   id: 'altair',
@@ -755,7 +762,6 @@ export function achatamentoDe(e: EstrelaVisitavel): Achatamento | undefined {
     raioEquatorialRsol: d(g.raioEquatorialRsol),
     teffPoloK: d(g.teffPoloK),
     teffEquadorK: d(g.teffEquadorK),
-    betaGravidade: d(g.betaGravidade),
     ...(e.rotacaoDias
       ? {}
       : {
@@ -796,9 +802,14 @@ export function temDinamoSolar(e: { teffK: Numero; massaMsol: Numero; raioRsol: 
 
 // ─── AS PARTES PURAS DO CORPO (vindas do motor simples, apagado em 12/11) ──
 
-/** O raio físico de enquadramento (o EQUATORIAL, o maior), em pc. */
+/**
+ * O raio físico de enquadramento e de piso da câmera, em pc: o EQUATORIAL, o
+ * maior. Numa achatada pela regra (`achatamentoDe`) o raio da ficha é o
+ * médio, e o equatorial sai do achatamento — senão a câmera parava até 12 %
+ * para dentro do equador (no teto do giro).
+ */
 export function raioDaEstrelaPc(e: EstrelaVisitavel): number {
-  return e.raioRsol.v * RAIO_SOL_PC;
+  return (achatamentoDe(e)?.raioEquatorialRsol.v ?? e.raioRsol.v) * RAIO_SOL_PC;
 }
 
 /**

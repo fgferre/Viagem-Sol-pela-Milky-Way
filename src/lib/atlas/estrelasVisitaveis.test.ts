@@ -9,6 +9,7 @@ import {
   estrelaVisitavelPorNome,
   granuloNaTelaEmRaios,
   posicaoDaCompanheira,
+  achatamentoDe,
   raioDaEstrelaPc,
   rotacaoDe,
   temDinamoSolar,
@@ -120,10 +121,16 @@ describe('Sirius B pela órbita de Bond et al. 2017', () => {
 
 describe('o enquadramento do corpo é o raio físico', () => {
   it('raio equatorial em pc, Betelgeuse ~4.950× Proxima', () => {
-    for (const e of ESTRELAS_VISITAVEIS) expect(raioDaEstrelaPc(e)).toBe(e.raioRsol.v * RAIO_SOL_PC);
+    // o equatorial: o da ficha, ou o do achatamento que a regra do giro dá
+    for (const e of ESTRELAS_VISITAVEIS) {
+      const re = achatamentoDe(e)?.raioEquatorialRsol.v ?? e.raioRsol.v;
+      expect(raioDaEstrelaPc(e)).toBe(re * RAIO_SOL_PC);
+      expect(re).toBeGreaterThanOrEqual(e.raioRsol.v);
+    }
     const b = raioDaEstrelaPc(estrelaVisitavelPorNome('Betelgeuse')!);
     const p = raioDaEstrelaPc(estrelaVisitavelPorNome('Proxima Centauri')!);
-    expect(b / p).toBeCloseTo(764 / 0.1542, 6);
+    // Betelgeuse gira devagar, mas acima do limiar: o equatorial é 0,03 % maior que os 764 R☉ da ficha
+    expect(b / p).toBeCloseTo(764 / 0.1542, -1);
   });
 });
 

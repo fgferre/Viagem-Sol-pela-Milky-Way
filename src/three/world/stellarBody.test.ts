@@ -33,6 +33,7 @@ import {
   anguloDoGiro,
   cirurgiaDaCoroaOcultavel,
   cirurgiaDasFitas,
+  cirurgiaDaNormalDasEspiculas,
   cirurgiaDasParticulas,
   cirurgiaDaEstrela,
   cirurgiaDaForma,
@@ -625,6 +626,16 @@ describe('as fitas dos laços na régua do doador (o piso de w de 0,01 pegava se
     expect(src.split(laco)).toHaveLength(2);
     expect(src.indexOf(laco)).toBeGreaterThan(src.indexOf('createLoops(ctx);'));
     expect(src).toContain('m.vertexShader = cirurgiaDasFitas(m.vertexShader, this.scale);');
+  });
+});
+
+describe('a normal da casca das espículas numa estrela achatada', () => {
+  it('a âncora do vendorizado existe uma vez, e o y da normal sai ÷ k² (a inversa-transposta da escala no +Y)', () => {
+    const js = readFileSync(new URL('./sol/spicules.js', import.meta.url), 'utf8');
+    const novo = cirurgiaDaNormalDasEspiculas(js, 0.5);
+    expect(novo).toContain('vNormalW = normalize(mat3(modelMatrix) * (normal * vec3(1.0, 4.000000, 1.0)));');
+    expect(novo).not.toContain('vNormalW = normalize(mat3(modelMatrix) * normal);');
+    expect(() => cirurgiaDaNormalDasEspiculas(novo, 0.5)).toThrow(/cirurgiaDaNormalDasEspiculas/);
   });
 });
 

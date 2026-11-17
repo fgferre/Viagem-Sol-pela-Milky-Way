@@ -2,8 +2,11 @@
 // O GIRO DA ESTRELA: o achatamento de rotação e o escurecimento
 // gravitacional de QUALQUER estrela por uma regra só, do giro, da massa e
 // do raio. Antes era um caso escrito à mão (Vega). Modelo de Roche (massa
-// central, rotação rígida) com as temperaturas de polo e equador de
-// Espinosa Lara & Rieutord 2011 (A&A 533, A43; arXiv 1109.3038, "ELR").
+// central, rotação rígida) com a temperatura por latitude de Espinosa Lara
+// & Rieutord 2011 (A&A 533, A43; arXiv 1109.3038, "ELR"), sem expoente
+// livre: a equação implícita deles resolvida em cada latitude
+// (`perfilDeELR`). Uma estrela com MODELO MEDIDO fica com a lei do próprio
+// artigo dela (von Zeipel, T ∝ g^β, entre o polo e o equador medidos).
 // Aqui só as contas, puras; quem decide a fonte do giro é `achatamentoDe`
 // (`lib/atlas/estrelasVisitaveis.ts`) e quem desenha é `stellarBody.ts`.
 //
@@ -74,9 +77,12 @@ export const W_NO_TETO = (() => {
  * q ≥ ⅔) devolve 1; quem grampeia é `giroDe`.
  */
 export function wDoPeriodo(periodoDias: number, massaMsol: number, raioRsol: number): number {
+  // dado faltando (zero, negativo, NaN) é "sem giro": redonda, nunca o teto
+  if (!(periodoDias > 0) || !(massaMsol > 0) || !(raioRsol > 0)) return 0;
   const omega = (2 * Math.PI) / (periodoDias * DIA_S);
   const R = raioRsol * RAIO_SOL_M;
   const q = (omega * omega * R * R * R) / (massaMsol * GM_SOL);
+  if (!Number.isFinite(q)) return 0;
   if (!(q < 2 / 3)) return 1;
   return Math.sqrt(q / (1 - q / 2));
 }
@@ -87,8 +93,11 @@ export function wDoPeriodo(periodoDias: number, massaMsol: number, raioRsol: num
  * w² = v²R/GM; contrai bem abaixo da quebra). Além dela devolve 1.
  */
 export function wDaVelocidade(vKms: number, massaMsol: number, raioRsol: number): number {
+  // dado faltando (zero, negativo, NaN) é "sem giro": redonda, nunca o teto
+  if (!(vKms > 0) || !(massaMsol > 0) || !(raioRsol > 0)) return 0;
   const v = vKms * 1e3;
   const k = (v * v * raioRsol * RAIO_SOL_M) / (massaMsol * GM_SOL);
+  if (!Number.isFinite(k)) return 0;
   let w2 = k;
   for (let i = 0; i < 200; i++) {
     if (!(w2 < 1)) return 1;
@@ -131,6 +140,42 @@ export function temperaturasDeELR(
   };
 }
 
+/**
+ * A TEMPERATURA POR LATITUDE de ELR 2011, T(θ)/T0, sem expoente livre:
+ * T/T0 = (g̃·F)^¼, com g̃ = √(1/r̃⁴ + w⁴r̃²sen²θ − 2w²sen²θ/r̃) (a gravidade
+ * efetiva em GM/Re², r̃ = r/Re) e F = tan²ϑ/tan²θ, onde ϑ resolve
+ * cosϑ + ln tan(ϑ/2) = ⅓w²r̃³cos³θ + cosθ + ln tan(θ/2).
+ * O lado esquerdo cresce em (0, π/2) e a raiz fica entre θ e π/2: bisseção
+ * (o Newton degenera no equador, onde a derivada é zero). Rente ao polo e ao
+ * equador, os limites fechados: F → exp(⅔w²r̃³) e F → (1 − w²r̃³)^(−⅔). Os
+ * dois hemisférios são iguais.
+ */
+export function perfilDeELR(w: number, colatRad: number, raioSobreEquatorial: number): number {
+  const w2 = w * w;
+  const rt = raioSobreEquatorial;
+  const th = colatRad > Math.PI / 2 ? Math.PI - colatRad : colatRad;
+  const s = Math.sin(th);
+  const c = Math.cos(th);
+  const g = Math.sqrt(Math.max(0, 1 / rt ** 4 + w2 * w2 * rt * rt * s * s - (2 * w2 * s * s) / rt));
+  const k = w2 * rt ** 3;
+  let f: number;
+  if (th < 1e-3) f = Math.exp((2 / 3) * k);
+  else if (Math.PI / 2 - th < 1e-3) f = Math.pow(Math.max(1 - k, 1e-12), -2 / 3);
+  else {
+    const alvo = (k * c ** 3) / 3 + c + Math.log(Math.tan(th / 2));
+    let lo = th;
+    let hi = Math.PI / 2;
+    for (let i = 0; i < 60; i++) {
+      const m = (lo + hi) / 2;
+      if (Math.cos(m) + Math.log(Math.tan(m / 2)) < alvo) lo = m;
+      else hi = m;
+    }
+    const razao = Math.tan((lo + hi) / 2) / Math.tan(th);
+    f = razao * razao;
+  }
+  return Math.pow(g * f, 0.25);
+}
+
 /** O giro derivado de uma estrela, pronto para a forma e a cor. */
 export interface Giro {
   readonly w: number;
@@ -142,8 +187,6 @@ export interface Giro {
   readonly raioPolarRsol: number;
   readonly teffPoloK: number;
   readonly teffEquadorK: number;
-  /** o β de von Zeipel (T ∝ g^β) que liga as duas pontas */
-  readonly betaGravidade: number;
 }
 
 /**
@@ -152,15 +195,13 @@ export interface Giro {
  * limiar (abaixo dele, `null`: redonda) e a forma e as temperaturas.
  */
 export function giroDe(wPedido: number, raioRsol: number, luminosidadeLsol: number): Giro | null {
+  if (!Number.isFinite(wPedido) || !(raioRsol > 0) || !(luminosidadeLsol > 0)) return null;
   const noTeto = wPedido > W_NO_TETO;
   const w = noTeto ? W_NO_TETO : Math.max(0, wPedido);
   const razao = razaoDosRaios(w);
   if (!(razao - 1 >= LIMIAR_DO_ACHATAMENTO)) return null;
   const re = raioEquatorialDe(w, raioRsol);
   const { polo, equador } = temperaturasDeELR(w, re, luminosidadeLsol);
-  // g_eq/g_polo = (Rp/Re)²·(1 − w²): os dois logaritmos são negativos
-  // e longe de zero acima do limiar
-  const gEqSobrePolo = (1 - w * w) / (razao * razao);
   return {
     w,
     giroSobreCritico: giroSobreCritico(w),
@@ -169,6 +210,5 @@ export function giroDe(wPedido: number, raioRsol: number, luminosidadeLsol: numb
     raioPolarRsol: re / razao,
     teffPoloK: polo,
     teffEquadorK: equador,
-    betaGravidade: Math.log(equador / polo) / Math.log(gEqSobrePolo),
   };
 }

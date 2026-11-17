@@ -65,6 +65,7 @@ import {
 } from '../luzDaCasa';
 import type { Achatamento } from '../../lib/atlas/estrelasVisitaveis';
 import { CELULA_PROFUNDA_EM_RAIOS, regraDaForja, type RegraDaForja } from './forjaDaEstrela';
+import { perfilDeELR, wDaRazaoDosRaios } from './giroDaEstrela';
 import type { EstadoDaEstrela, FaseDoCiclo } from '../estrela';
 import { UNIDADES_POR_CICLO, tempoDoCiclo } from '../estrela';
 import { GLSL_COMPRESSAO } from '../shaders/common';
@@ -424,10 +425,15 @@ export interface StellarParams {
  * fixa Ω² = 2(1 − Rp/Re)/Re²; a superfície r(θ) sai de
  * 1/r + ½Ω²r²sin²θ = 1 (Newton), e g_eff é o gradiente do potencial.
  *
- * A temperatura é von Zeipel, T ∝ g_eff^β, NORMALIZADA nas duas pontas
- * medidas (polo e equador de Monnier 2012): o β efetivo que faz isso com
- * esta forma é 0,2307 contra os 0,231 publicados (0,1 %), porque o
- * modelo do artigo também ajusta a lei de escurecimento de borda.
+ * A temperatura, por duas leis conforme a origem do achatamento:
+ *  · MODELO MEDIDO (com `betaGravidade`): a lei do próprio artigo, von
+ *    Zeipel, T ∝ g_eff^β, NORMALIZADA nas duas pontas medidas — em Vega o β
+ *    efetivo que faz isso com esta forma é 0,2307 contra os 0,231
+ *    publicados (0,1 %), porque o modelo do artigo também ajusta a lei de
+ *    escurecimento de borda;
+ *  · DERIVADO do giro (sem `betaGravidade`): Espinosa Lara & Rieutord 2011,
+ *    sem expoente livre — a equação implícita deles em cada latitude
+ *    (`perfilDeELR`), sobre a temperatura do equador.
  * (Mora aqui desde que o motor do Sol desenha Vega.)
  */
 export interface Roche {
@@ -456,10 +462,18 @@ export function rocheDe(colatRad: number, a: Achatamento): Roche {
   const gr = 1 / (r * r) - w2 * r * s * s;
   const gt = -w2 * r * s * c;
   const g = Math.hypot(gr, gt);
-  const gEq = 1 / (re * re) - w2 * re;
-  const tp = a.teffPoloK.v;
-  const beta = Math.log(a.teffEquadorK.v / tp) / Math.log(gEq);
-  return { raio: r / re, teffK: tp * Math.pow(g, beta), nr: gr / g, nt: gt / g };
+  let teffK: number;
+  if (a.betaGravidade) {
+    const gEq = 1 / (re * re) - w2 * re;
+    const tp = a.teffPoloK.v;
+    teffK = tp * Math.pow(g, Math.log(a.teffEquadorK.v / tp) / Math.log(gEq));
+  } else {
+    // T0 pela ponta do equador: Te = T0·(1 − w²)^(1/12), com w² = 2(Re/Rp − 1)
+    const w = wDaRazaoDosRaios(re);
+    const t0 = a.teffEquadorK.v / Math.pow(1 - w * w, 1 / 12);
+    teffK = t0 * perfilDeELR(w, colatRad, r / re);
+  }
+  return { raio: r / re, teffK, nr: gr / g, nt: gt / g };
 }
 
 /**
@@ -1740,6 +1754,25 @@ export function cirurgiaDasFitas(vertexShader: string, escala: number): string {
   );
 }
 
+/**
+ * A NORMAL DA CASCA DAS ESPÍCULAS NUMA ESTRELA ACHATADA: `sol/spicules.js`
+ * leva a normal ao mundo por `mat3(modelMatrix)`, certo só com escala
+ * uniforme. Com a casca escalada por `k` = Rp/Re no +Y (ver
+ * `criarAAtmosfera`), a normal certa é a inversa-transposta: R·S⁻¹·n =
+ * (R·S)·(S⁻²·n), isto é, o y da normal ÷ k² antes da mesma matriz. Sem
+ * isso o μ da franja errava até ~0,03 nas latitudes médias de Capella Ab.
+ * Âncora ausente ou repetida LANÇA.
+ */
+const ANCORA_DA_NORMAL_DAS_ESPICULAS = '  vNormalW = normalize(mat3(modelMatrix) * normal);';
+export function cirurgiaDaNormalDasEspiculas(vertexShader: string, k: number): string {
+  return trocarUma(
+    vertexShader,
+    ANCORA_DA_NORMAL_DAS_ESPICULAS,
+    `  vNormalW = normalize(mat3(modelMatrix) * (normal * vec3(1.0, ${literalGlsl(1 / (k * k))}, 1.0)));`,
+    'cirurgiaDaNormalDasEspiculas'
+  );
+}
+
 // ============================================================
 // AS PARTÍCULAS DA EJEÇÃO NA RÉGUA DO DOADOR, por cirurgia de texto.
 //
@@ -2366,6 +2399,25 @@ export class StellarBody {
     ctx.prominenceGroup.rotation.z = params.tiltRad;
     ctx.spiculeMesh.rotation.z = params.tiltRad;
     ctx.loopGroup.rotation.z = params.tiltRad;
+
+    // AS CAMADAS PRESAS À SUPERFÍCIE SEGUEM A FORMA ACHATADA (`achatamento`):
+    // espículas, proeminências (com os filamentos) e laços nasceram numa
+    // esfera de raio R; a fotosfera segue Roche. A MESMA escala no eixo de
+    // rotação — o +Y do objeto, o mesmo da fotosfera (`formaDeRoche`), antes
+    // do giro e da inclinação, porque a escala de uma malha vem antes da
+    // rotação dela — leva a esfera ao esferoide Rp × Re. A superfície de
+    // Roche difere desse esferoide pelo quadrado do achatamento: 0,026 % do
+    // raio em Capella Ab (2,6 %), invisível. Os cartões cisalham no máximo
+    // o próprio achatamento; as fitas medem a largura em pixels, sem
+    // cisalhar. Coroa, CME, halo e brilho não estão na superfície: ficam.
+    // Sem achatamento (o Sol) nada aqui roda.
+    const a = params.achatamento;
+    if (a) {
+      const k = a.raioPolarRsol.v / a.raioEquatorialRsol.v;
+      for (const m of [ctx.prominenceGroup, ctx.spiculeMesh, ctx.loopGroup]) m.scale.y = k;
+      const esp = ctx.spiculeMesh.material as THREE.ShaderMaterial;
+      esp.vertexShader = cirurgiaDaNormalDasEspiculas(esp.vertexShader, k);
+    }
   }
 
   /**

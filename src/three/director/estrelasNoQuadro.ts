@@ -179,8 +179,8 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
   return {
     ...SOL_PARAMS,
     nome: e.id,
-    // o EQUATORIAL quando achatada (o de Vega é o próprio raio da ficha)
-    radiusPc: achatamento ? achatamento.raioEquatorialRsol.v * RAIO_SOL_PC : raioDaEstrelaPc(e),
+    // o EQUATORIAL (`raioDaEstrelaPc`): o mesmo do piso da câmera
+    radiusPc: raioDaEstrelaPc(e),
     rotPeriodDays: rotacaoDe(e).v,
     tiltRad: 0,
     activityLevel: atividadeDe(e).nivel,
@@ -397,10 +397,13 @@ interface Piloto {
 /**
  * A VAGA DE QUEM NASCE PELO FOCO: a última do cadastro do clarão (a sob
  * demanda não tem companheira, uma vaga basta). As da lista à mão ficam com
- * 2 × índice, como sempre: 19 estrelas, vagas 0–36 — a de Achernar, a 19ª, é
- * a 36, e a 37 seria a da companheira dela, que não tem corpo. Cabe mais uma
- * escrita à mão (vagas 38 e 39 não: a 39 é esta); a 21ª pede
- * `VAGAS_DE_VISITADAS` maior, e o teste do cadastro acusa. Toda
+ * 2 × índice, como sempre, e a companheira com corpo com a seguinte: 19
+ * estrelas, vagas 0–36 — a de Achernar, a 19ª, é a 36, e a 37 seria a da
+ * companheira dela, que não tem corpo. A 20ª escrita à mão fica com a 38 e
+ * cabe se NÃO tiver companheira com corpo; com ela, a companheira cairia na
+ * 39, que é esta vaga sob demanda, e as duas se atropelariam no clarão. A
+ * 21ª não cabe de jeito nenhum. Nos dois casos `VAGAS_DE_VISITADAS` tem de
+ * crescer, e o teste do cadastro acusa antes. Toda
  * estrela sob demanda é NOMEADA, e o clarão escreve a nomeada na vaga da
  * nomeada (não nesta) — esta só precisa caber e não repetir a de outra.
  */
