@@ -780,12 +780,20 @@ export const PT = {
   'ficha.campo.nuvemEmVolta': 'nuvem de poeira',
   'ficha.campo.brilhoDaNuvem': 'brilho da nuvem',
   'ficha.campo.hidrogenioEmVolta': 'hidrogênio em volta',
+  'ficha.campo.manchaQuente': 'mancha quente',
+  'ficha.campo.manchaNoVisivel': 'mancha no visível',
   'ficha.estrela.nuvemEmVolta':
     'a pluma maior sai a {pa}° no céu (do norte para o leste) e vai até pelo menos {raios} raios; extensões fracas a {extensoes}; uma casca de poeira incompleta a {de}–{ate} raios, mais forte a {paCasca}°',
   'ficha.estrela.brilhoDaNuvem':
     'visto da Terra, ao longo da pluma maior: {pontos} do centro do disco; o mais perto é um teto (entra a asa do instrumento), e os de fora são do infravermelho próximo; não é desenhada: nesse brilho ela não aparece na tela',
   'ficha.estrela.eNuvem': ' e ',
   'ficha.estrela.pontoDaNuvem': '{pct} % a {raios} raios',
+  'ficha.estrela.manchaQuente': '{x}× o brilho médio do disco, a {lambda} µm',
+  'ficha.estrela.manchaQuenteTeto':
+    'no máximo ~{pct} % acima do brilho médio do disco, a {lambda} µm: um teto, porque parte pode ser artefato da reconstrução da imagem',
+  'ficha.estrela.manchaQuenteDeBetelgeuse':
+    'sem medida própria: a de Betelgeuse, {x}× o brilho médio a {lambda} µm, levada à temperatura desta estrela',
+  'ficha.estrela.manchaNoVisivel': '~{x}× o brilho médio no visível, ~{kelvin} K mais quente (o mesmo calor, pela lei de Planck)',
   'ficha.estrela.hidrogenioEmVolta': 'o Hα é visto até {max} raios, quase todo dentro de {ate}, mais forte perto de {pico}',
   'ficha.estrela.vento': 'perde {mdot} massas do Sol por ano, num vento de ~{v} km/s',
   'ficha.estrela.discoDeGas':

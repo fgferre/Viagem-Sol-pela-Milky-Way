@@ -53,6 +53,7 @@ import {
   granuloNaTelaEmRaios,
   logGravidade,
   luminosidadeDe,
+  manchaQuenteDe,
   posicaoDaCompanheira,
   raioDaEstrelaPc,
   rotacaoDe,
@@ -203,6 +204,8 @@ const RAIO_DE_DESMONTE_PC = 2 * RAIO_DE_PREPARO_PC;
  *  · sem convecção na superfície (`semConveccaoNaSuperficie`, acima de
  *    ~9.300 K) a textura é nenhuma: a quente é lisa;
  *  · células gigantes e borda difusa quando os dados as têm (Betelgeuse);
+ *  · a mancha quente medida pelo nome (`manchaQuenteDe`), que vence a regra
+ *    no pico das células quentes das supergigantes;
  *  · o VÉU, a luz que a exposição da visita não põe no disco (1 − ganho,
  *    > 0 só para quem é mais radiante que o Sol);
  *  · borda pelo u linear de Claret (`bordaU`);
@@ -237,6 +240,8 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
   const veu = veuDe(e.teffK.v, teffDoPicoK);
   // o gás das quentes (o vento medido pelo nome, ou a receita; o disco da ficha; os braços só com giro medido)
   const gas = gasDaEstrela(e);
+  // a mancha quente medida (Betelgeuse, Antares) vence a regra no pico das células quentes
+  const mancha = manchaQuenteDe(e);
   return {
     ...SOL_PARAMS,
     nome: e.id,
@@ -263,6 +268,7 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
     // estrela achata em volta do eixo em que já girava
     ...(achatamento?.inclinacaoGraus && eixo ? { eixoNaCena: [eixo.x, eixo.y, eixo.z] as const } : {}),
     ...(gas ? { gas } : {}),
+    ...(mancha.medida ? { manchaQuente: { razao: mancha.razao.v, lambdaUm: mancha.lambdaUm.v } } : {}),
   };
 }
 

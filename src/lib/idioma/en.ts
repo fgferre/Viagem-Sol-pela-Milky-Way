@@ -746,12 +746,20 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.campo.nuvemEmVolta': 'dust cloud',
   'ficha.campo.brilhoDaNuvem': 'cloud brightness',
   'ficha.campo.hidrogenioEmVolta': 'surrounding hydrogen',
+  'ficha.campo.manchaQuente': 'hot spot',
+  'ficha.campo.manchaNoVisivel': 'hot spot in visible light',
   'ficha.estrela.nuvemEmVolta':
     'the largest plume leaves at {pa}° on the sky (north through east) and reaches at least {raios} radii; faint extensions at {extensoes}; an incomplete dust shell at {de}–{ate} radii, strongest at {paCasca}°',
   'ficha.estrela.brilhoDaNuvem':
     'seen from Earth, along the largest plume: {pontos} of the disk center; the innermost is a ceiling (the instrument\'s own wing is in it), and the outer ones are near infrared; it is not drawn: at this brightness it does not show on screen',
   'ficha.estrela.eNuvem': ' and ',
   'ficha.estrela.pontoDaNuvem': '{pct}% at {raios} radii',
+  'ficha.estrela.manchaQuente': '{x}× the mean brightness of the disc, at {lambda} µm',
+  'ficha.estrela.manchaQuenteTeto':
+    'at most ~{pct}% above the mean brightness of the disc, at {lambda} µm: an upper limit, since part of it may be an artefact of the image reconstruction',
+  'ficha.estrela.manchaQuenteDeBetelgeuse':
+    'not measured: Betelgeuse’s, {x}× the mean brightness at {lambda} µm, carried to this star’s temperature',
+  'ficha.estrela.manchaNoVisivel': '~{x}× the mean brightness in visible light, ~{kelvin} K hotter (the same heat, by Planck’s law)',
   'ficha.estrela.hidrogenioEmVolta': 'Hα is seen out to {max} radii, nearly all within {ate}, strongest near {pico}',
   'ficha.estrela.vento': 'loses {mdot} solar masses per year, in a wind of ~{v} km/s',
   'ficha.estrela.discoDeGas':

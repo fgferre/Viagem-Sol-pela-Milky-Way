@@ -19,7 +19,7 @@ import { VAGAS_DE_VISITADAS } from '../world/clarao';
 import { ESTRELAS_VISITAVEIS, estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
 import { radianciaVisivelDeCorpoNegro } from '../luzDaCasa';
 import { pesoDoFiltro } from '../world/stellarBody';
-import { pesoDoPico } from '../world/forjaDaEstrela';
+import { MANCHA_DE_HAUBOIS, pesoDoPico } from '../world/forjaDaEstrela';
 
 describe('toda estrela visitável vira parâmetros do MESMO motor, sem nome', () => {
   it('cada uma tem raio, período e atividade finitos', () => {
@@ -35,6 +35,9 @@ describe('toda estrela visitável vira parâmetros do MESMO motor, sem nome', ()
     const b = parametrosDoMotor(estrelaVisitavelPorNome('Betelgeuse')!);
     expect(b.dinamo).toBe(false);
     expect(b.veu).toBeUndefined();
+    // a mancha quente medida (Haubois) vai ao motor; quem não tem medida vai pela regra, sem o campo
+    expect(b.manchaQuente).toEqual(MANCHA_DE_HAUBOIS);
+    expect(parametrosDoMotor(estrelaVisitavelPorNome('Aldebaran')!).manchaQuente).toBeUndefined();
   });
   it('a quente leva o véu (a luz que a exposição não põe no disco) e é lisa: sem convecção na superfície', () => {
     const s = parametrosDoMotor(estrelaVisitavelPorNome('Sirius')!);

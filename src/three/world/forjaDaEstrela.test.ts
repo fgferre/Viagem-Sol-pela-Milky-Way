@@ -7,7 +7,12 @@ import {
   contrasteDaConveccao,
   contrasteNaTela,
   desordemDaConveccao,
+  fracaoDoFluxoNaBanda,
   fracaoEscura,
+  LAMBDA_DO_VISIVEL_UM,
+  LARGURA_DA_MANCHA_MAIOR_EM_RAIOS,
+  MANCHA_DE_HAUBOIS,
+  razaoDePlanckNaBanda,
   larguraDaBordaEmMu,
   larguraDoAssado,
   pesoDaEscalaProfunda,
@@ -188,6 +193,43 @@ describe('a Forja, botão GRAVIDADE — a regra', () => {
     expect(Math.expm1(x) / Math.expm1(x / (1 + d))).toBeCloseTo(0.085 / 0.06, 6);
   });
 
+  it('a mancha medida numa banda, por Planck: Antares (Ohnaka, 2,3 µm) e Montargès 2017 (1,65 µm) dão o mesmo no visível', () => {
+    const v = (T: number, d: number) => razaoDePlanckNaBanda(T, d, LAMBDA_DO_VISIVEL_UM);
+    // a conta escrita à mão, a 3.745 K
+    const k3 = picoDasCelulasQuentes(3745, { razao: 1.03, lambdaUm: 2.3 });
+    expect(k3).toBeCloseTo(0.0145, 3);
+    expect(v(3745, k3)).toBeCloseTo(1.105, 2);
+    const k4 = picoDasCelulasQuentes(3745, { razao: 1.04, lambdaUm: 2.3 });
+    expect(k4).toBeCloseTo(0.0194, 3);
+    expect(v(3745, k4)).toBeCloseTo(1.142, 2);
+    const h3 = picoDasCelulasQuentes(3745, { razao: 1.03, lambdaUm: 1.65 });
+    expect(h3).toBeCloseTo(0.0116, 3);
+    expect(v(3745, h3)).toBeCloseTo(1.083, 2);
+    // Betelgeuse pela de Haubois: a mesma conta de antes, bit a bit
+    const bet = picoDasCelulasQuentes(3600, MANCHA_DE_HAUBOIS);
+    expect(bet).toBe(picoDasCelulasQuentes(3600));
+    expect(bet).toBeCloseTo(0.148, 3);
+    expect(v(3600, bet)).toBeCloseTo(2.55, 1);
+    // a de Antares (o meio do teto de Ohnaka) e a conferência de Montargès 2017: as duas entre 1,05× e 1,15×
+    for (const d of [picoDasCelulasQuentes(3745, { razao: 1.035, lambdaUm: 2.3 }), h3]) {
+      expect(v(3745, d)).toBeGreaterThan(1.05);
+      expect(v(3745, d)).toBeLessThan(1.15);
+    }
+    // a guarda: razão ≤ 1 ou não finita dá δ = 0 (nunca NaN)
+    for (const razao of [1, 0.9, 0, -1, NaN, Infinity]) {
+      expect(picoDasCelulasQuentes(3600, { razao, lambdaUm: 2.3 })).toBe(0);
+    }
+    expect(picoDasCelulasQuentes(3600, { razao: 1.03, lambdaUm: 0 })).toBe(0);
+  });
+
+  it('a maior célula quente, 1 R a meio brilho no pico de Haubois, leva parte do fluxo H dentro dos 3–19 % de Montargès 2016', () => {
+    const f = fracaoDoFluxoNaBanda(LARGURA_DA_MANCHA_MAIOR_EM_RAIOS, MANCHA_DE_HAUBOIS.razao);
+    expect(f).toBeGreaterThan(0.03);
+    expect(f).toBeLessThan(0.19);
+    // as de hoje, no tamanho da de Haubois, levam menos que a média das épocas (8,75 %)
+    expect(fracaoDoFluxoNaBanda(0.675, MANCHA_DE_HAUBOIS.razao)).toBeLessThan(0.0875);
+  });
+
   it('a borda macia: μ_w = √(2·Hp/R), Hp = A/10 — Betelgeuse ~0,15, Arcturus ~0,08', () => {
     expect(larguraDaBordaEmMu(0.12)).toBeCloseTo(Math.sqrt(0.024), 12);
     expect(regraDaForja(3600, -0.07, 764).bordaEmMu).toBeCloseTo(0.155, 2);
@@ -322,6 +364,12 @@ describe('a Forja desligada não muda nada', () => {
     expect(sup).toContain(literalGlsl((r.picoQuente / (r.contraste / 4)) * r.pesoProfundo));
     const gig = { ...bet, logG: 1.19, teffK: 3900 };
     expect(glslDoAssadoDaForja(forjaDe(gig)!)).not.toContain('quente');
+    // a regra alisa por dentro inteira; a mancha medida fraca (Antares), na proporção do pico
+    expect(r.picoQuente).toBe(r.picoDaRegra);
+    expect(sup).toContain(`${literalGlsl(0.6)} * quente)`);
+    const fraca = forjaDe({ ...bet, manchaQuente: { razao: 1.035, lambdaUm: 2.3 } })!;
+    expect(fraca.picoQuente / fraca.picoDaRegra).toBeLessThan(0.15);
+    expect(glslDoAssadoDaForja(fraca)).toContain(`${literalGlsl((0.6 * fraca.picoQuente) / fraca.picoDaRegra)} * quente)`);
   });
 
   it('o TiO pela temperatura local: 0 em 4.000 K, 1 em 3.000 K; a ponta HDR só com células quentes', () => {

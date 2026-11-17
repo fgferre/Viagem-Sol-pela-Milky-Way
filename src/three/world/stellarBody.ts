@@ -66,7 +66,9 @@ import {
 import type { Achatamento } from '../../lib/atlas/estrelasVisitaveis';
 import {
   CELULA_PROFUNDA_EM_RAIOS,
+  LARGURA_DA_MANCHA_MAIOR_EM_RAIOS,
   TEFF_SEM_FILTRO_K,
+  type ManchaNaBanda,
   pesoDaLisa,
   regraDaForja,
   type RegraDaForja,
@@ -283,7 +285,7 @@ export function anguloDoGiro(
  */
 export function forjaDe(p: StellarParams): RegraDaForja | null {
   if (p.logG === undefined || p.dinamo) return null;
-  const regra = regraDaForja(p.teffK, p.logG, p.radiusPc / RAIO_DO_SOL_NA_CENA);
+  const regra = regraDaForja(p.teffK, p.logG, p.radiusPc / RAIO_DO_SOL_NA_CENA, p.manchaQuente);
   return regra.contraste > 0 ? regra : null;
 }
 
@@ -377,6 +379,12 @@ export interface StellarParams {
    * (`forjaDe`) a lê: a convecção de quem não tem dínamo.
    */
   readonly logG?: number;
+  /**
+   * A MANCHA QUENTE MEDIDA (razão sobre o brilho médio numa banda, µm), que
+   * vence a regra no pico das células quentes (`manchaQuenteDe`); omitida, a
+   * regra (`MANCHA_DE_HAUBOIS`). Só a Forja a lê.
+   */
+  readonly manchaQuente?: ManchaNaBanda;
   /*
    * (A DRAMATURGIA POR TORÇÃO DE FASE morreu em 21/08 — item 5. Eram
    * quatro números aqui — as fases do arranque e do pico, mais a janela
@@ -924,9 +932,13 @@ float granulacaoViva(vec3 p, float t, float mu) {
  *  · SUPERGIGANTE (`pesoProfundo` > 0): seis células quentes enormes, de
  *    0,25 a 0,375 rad de raio, platô até a metade e meio-brilho a ~0,9
  *    raio (5 % a 11 % do disco cada, de frente; a mancha de Haubois, 6 %;
- *    a escala profunda de 0,5 R de diâmetro; de uma a três no disco), no
- *    pico `picoQuente` (Haubois et al. 2009), com 60 % menos contraste das
- *    células comuns por dentro, levadas pelo
+ *    a escala profunda de 0,5 R de diâmetro; de uma a três no disco), menos
+ *    as duas opostas de g0, as MAIORES, de 1 R a meio brilho e pico inteiro
+ *    (`LARGURA_DA_MANCHA_MAIOR_EM_RAIOS`, Montargès et al. 2016: de qualquer
+ *    lado uma delas está no disco), no pico `picoQuente` (o da mancha medida
+ *    da estrela ou a regra de Haubois et al. 2009), com 60 % menos contraste
+ *    das células comuns por dentro na proporção do pico sobre o da regra
+ *    (`picoDaRegra`), levadas pelo
  *    mesmo escoamento, e uma turbulência fina enrolada por cima (Antares do
  *    ESO, eso1726) com desvio de ~0,5 em z.
  * O σ do domo e a largura das faixas saem de UM botão `k`,
@@ -982,6 +994,10 @@ export function glslDoAssadoDaForja(
   const cel = forja.celulaNaTelaEmRaios;
   const delta = forja.contrasteNaTela / 4;
   const zQuente = delta > 0 ? forja.picoQuente / delta : 0;
+  // o acabamento por dentro (as células comuns que perdem contraste) na
+  // proporção do pico sobre o da regra, onde ele foi acertado: uma mancha
+  // medida fraca (Antares) não alisa o que não aquece
+  const alisa = forja.picoDaRegra > 0 ? Math.min(1, Math.max(0, forja.picoQuente / forja.picoDaRegra)) : 0;
   const passo = Math.min(TETO_DA_ADVECCAO, ADVECCAO_DA_FORJA * cel * (0.5 + D));
   const quentes =
     w > 0
@@ -997,9 +1013,12 @@ export function glslDoAssadoDaForja(
     vec3 e = i < 2 ? g0 : (i < 4 ? g1 : g2);
     vec3 dir = (mod(float(i), 2.0) < 0.5 ? e : -e);
     // o meio-brilho em ~0,9 raio: cada uma cobre 5 % a 11 % do disco de
-    // frente (a mancha de Haubois, 6 %), com um platô no pico
-    float raio = ${L(0.5 * CELULA_PROFUNDA_EM_RAIOS)} + ${L(0.25 * CELULA_PROFUNDA_EM_RAIOS)} * h.x;
-    quente = max(quente, (0.7 + 0.3 * h.y) * (1.0 - smoothstep(0.5 * raio, 1.3 * raio, length(q - dir))));
+    // frente (a mancha de Haubois, 6 %), com um platô no pico; a MAIOR, nos
+    // dois polos de g0 (de qualquer lado, uma no disco), tem 1 R a meio
+    // brilho e o pico inteiro (Montargès 2016)
+    bool maior = i < 2;
+    float raio = maior ? ${L(LARGURA_DA_MANCHA_MAIOR_EM_RAIOS / 1.8)} : ${L(0.5 * CELULA_PROFUNDA_EM_RAIOS)} + ${L(0.25 * CELULA_PROFUNDA_EM_RAIOS)} * h.x;
+    quente = max(quente, (maior ? 1.0 : 0.7 + 0.3 * h.y) * (1.0 - smoothstep(0.5 * raio, 1.3 * raio, length(q - dir))));
   }
   // a turbulência fina, enrolada por um domínio torcido
   vec3 tq = q * ${L(1.2 / cel)} + 5.0;
@@ -1009,8 +1028,8 @@ export function glslDoAssadoDaForja(
   // dentro da célula quente as células comuns perdem parte do contraste
   // (ela sobe inteira): a mancha lê como UMA região clara, não como
   // células mais claras
-  a.x = mix(a.x, ${L(cal.m)}, 0.6 * quente) + ${L(cal.s)} * (${L(zQuente * w)} * quente + ${L(TURBULENCIA_DAS_SUPERGIGANTES * w * 3)} * tb);
-  a.w *= 1.0 - 0.85 * quente;`
+  a.x = mix(a.x, ${L(cal.m)}, ${L(0.6 * alisa)} * quente) + ${L(cal.s)} * (${L(zQuente * w)} * quente + ${L(TURBULENCIA_DAS_SUPERGIGANTES * w * 3)} * tb);
+  a.w *= 1.0 - ${L(0.85 * alisa)} * quente;`
       : '';
   return (
     GLSL_RUIDO_DA_FORJA +
@@ -1296,7 +1315,8 @@ function glslDoTiONaForja(teffK: number, d: number): string {
  * viram fonte HDR para o bloom da casa (limiar 0,82 de luma linear,
  * `Post.setWarp`). Medido no assado (16/11): o calor das células comuns
  * fica abaixo de ~1,0 em 99,9 % do disco, o miolo das manchas chega a
- * 1,08 (Antares) e 1,19 (Betelgeuse) — só ele cruza o limiar. ARTÍSTICO
+ * 1,08 (Antares, então pela regra) e 1,19 (Betelgeuse) — só ele cruza o
+ * limiar; a mancha medida de Antares (δ ≈ 0,017) fica abaixo dele. ARTÍSTICO
  * (instrumento).
  */
 export const PONTA_DAS_CELULAS_QUENTES = { de: 1.0, ate: 1.16, ganho: 1.8 } as const;

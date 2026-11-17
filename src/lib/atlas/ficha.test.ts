@@ -1074,6 +1074,35 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     }
   });
 
+  it('a mancha quente: a medida vence a regra (Betelgeuse, Antares com teto), a de Betelgeuse nas outras supergigantes', () => {
+    const de = (n: string) => linhasDe(montarFichaDeEstrela(n, starsMeta.named.find((s) => s.n === n))!);
+    const bet = de('Betelgeuse');
+    expect(bet.get('mancha quente')!.procedencia).toBe('medido');
+    expect(bet.get('mancha quente')!.valor).toContain('1,42×');
+    expect(bet.get('mancha quente')!.valor).toContain('1,65 µm');
+    expect(bet.get('mancha quente')!.fonte).toContain('Haubois');
+    expect(bet.get('mancha no visível')!.procedencia).toBe('derivado');
+    expect(bet.get('mancha no visível')!.valor).toContain('2,5');
+    const ant = de('Antares');
+    expect(ant.get('mancha quente')!.procedencia).toBe('medido');
+    expect(ant.get('mancha quente')!.valor).toContain('3,5 %');
+    expect(ant.get('mancha quente')!.valor).toContain('2,3 µm');
+    expect(ant.get('mancha quente')!.valor).toContain('teto');
+    expect(ant.get('mancha quente')!.fonte).toContain('Ohnaka');
+    expect(ant.get('mancha no visível')!.valor).toMatch(/~1,1\d?×/);
+    const ras = de('Rasalgethi');
+    expect(ras.get('mancha quente')!.procedencia).toBe('derivado');
+    expect(ras.get('mancha quente')!.valor).toContain('Betelgeuse');
+    for (const sem of ['Arcturus', 'Aldebaran', 'Rigel', 'Vega']) expect(de(sem).has('mancha quente'), sem).toBe(false);
+    definirIdioma('en');
+    try {
+      expect(de('Antares').get('hot spot')!.valor).toContain('upper limit');
+      expect(de('Rasalgethi').get('hot spot in visible light')!.valor).toContain('hotter');
+    } finally {
+      definirIdioma('pt-BR');
+    }
+  });
+
   it('a nomeada fora da lista à mão traz a física da regra única, derivada ou artística, nunca medida', () => {
     const arc = starsMeta.named.find((s) => s.n === 'Arcturus')!;
     const l = linhasDe(montarFichaDeEstrela('Arcturus', arc)!);

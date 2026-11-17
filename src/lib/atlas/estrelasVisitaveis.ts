@@ -22,6 +22,7 @@ import type { Procedencia } from '../../three/selo';
 import { RAIO_SOL_PC } from '../../three/escala';
 import { AU_PARA_PC } from './frameGalactico';
 import { giroDe, periodoDoGiroDias, wDaVelocidade, wDoPeriodo } from '../../three/world/giroDaEstrela';
+import { MANCHA_DE_HAUBOIS } from '../../three/world/forjaDaEstrela';
 
 export interface Numero {
   readonly v: number;
@@ -316,6 +317,58 @@ const BETELGEUSE: EstrelaVisitavel = {
   },
   nuvem: NUVEM_DE_BETELGEUSE,
 };
+
+/** uma mancha quente medida: a razão do brilho dela sobre o médio do disco, numa banda */
+export interface ManchaQuenteMedida {
+  readonly razao: Numero;
+  /** a banda, µm */
+  readonly lambdaUm: Numero;
+  /** a razão é um TETO: pode ser em parte artefato da reconstrução */
+  readonly teto?: boolean;
+}
+
+const HAUBOIS_2009 = 'Haubois et al. 2009, A&A 508, 923';
+/**
+ * AS MANCHAS QUENTES MEDIDAS, pelo nome no catálogo; a medida vence a regra
+ * no pico das células quentes (`picoDasCelulasQuentes`), como o giro medido
+ * vence o da lei (`achatamentoDe`).
+ *  · Betelgeuse: "One spot has a diameter of about 11 mas and accounts for
+ *    about 8.5% of the total flux" (Haubois et al. 2009, IOTA, banda H,
+ *    1,65 µm): 8,5 % do fluxo em ~6 % da área, 1,42× o médio
+ *    (`MANCHA_DE_HAUBOIS`, a mesma conta de antes).
+ *  · Antares: o contínuo a 2,28–2,31 µm "show a nearly smooth surface with
+ *    a weak, large spot at the centre with an intensity contrast of 3–4%", e
+ *    ela "is partially due to the reconstruction artifact but may also
+ *    partially show a real structure" (Ohnaka et al. 2017, AMBER): um TETO;
+ *    vale o meio, 3,5 %. Confere com a banda H de Montargès et al. 2017
+ *    (arXiv 1705.07829): no melhor modelo as manchas grandes (17 mas) levam
+ *    3 % da intensidade, que no visível dá quase o mesmo (o teste).
+ */
+export const MANCHAS_QUENTES_MEDIDAS: Readonly<Record<string, ManchaQuenteMedida>> = {
+  Betelgeuse: {
+    razao: { v: MANCHA_DE_HAUBOIS.razao, p: 'medido', fonte: HAUBOIS_2009 },
+    lambdaUm: { v: MANCHA_DE_HAUBOIS.lambdaUm, p: 'medido', fonte: HAUBOIS_2009 },
+  },
+  Antares: {
+    razao: { v: 1.035, p: 'medido', fonte: 'Ohnaka et al. 2017, Nature 548, 310' },
+    lambdaUm: { v: 2.3, p: 'medido', fonte: 'Ohnaka et al. 2017, Nature 548, 310' },
+    teto: true,
+  },
+};
+
+/**
+ * A mancha quente de uma estrela: a medida pelo nome, ou a REGRA — a de
+ * Betelgeuse (Haubois), derivada, levada a δ pela Teff de cada uma.
+ */
+export function manchaQuenteDe(e: EstrelaVisitavel): ManchaQuenteMedida & { readonly medida: boolean } {
+  const m = MANCHAS_QUENTES_MEDIDAS[e.nomeNoCatalogo];
+  if (m) return { ...m, medida: true };
+  return {
+    razao: { v: MANCHA_DE_HAUBOIS.razao, p: 'derivado', fonte: HAUBOIS_2009 },
+    lambdaUm: { v: MANCHA_DE_HAUBOIS.lambdaUm, p: 'derivado', fonte: HAUBOIS_2009 },
+    medida: false,
+  };
+}
 
 /**
  * ALDEBARAN (14/11/2026, o Ato 4 do filme estelar): a gigante laranja no

@@ -49,8 +49,10 @@ import {
 import {
   LEI_DA_ATMOSFERA,
   LEI_DO_CONTRASTE,
+  LAMBDA_DO_VISIVEL_UM,
   pesoDaLisa,
   pesoDoPico,
+  razaoDePlanckNaBanda,
   regraDaForja,
 } from '../../three/world/forjaDaEstrela';
 import { fracaoDesenhadaDoVento, raioDaLinhaDe, razaoARigel, ventoDaFicha } from '../../three/world/ventoDaEstrela';
@@ -77,6 +79,7 @@ import {
   achatamentoDe,
   estrelaVisitavelPorNome,
   logGravidade,
+  manchaQuenteDe,
   temDinamoSolar,
   type Achatamento,
   type EstrelaVisitavel,
@@ -1150,8 +1153,50 @@ const LEI_DA_LISA = 'Steffen et al. 2005; Cantiello et al. 2009';
 /** A regra da Forja quando é ela que desenha a estrela (sem dínamo e com convecção visível); senão null. */
 function forjaDaFicha(e: EstrelaVisitavel): ReturnType<typeof regraDaForja> | null {
   if (temDinamoSolar(e)) return null;
-  const forja = regraDaForja(e.teffK.v, logGravidade(e.massaMsol.v, e.raioRsol.v), e.raioRsol.v);
+  const m = manchaQuenteDe(e);
+  const forja = regraDaForja(e.teffK.v, logGravidade(e.massaMsol.v, e.raioRsol.v), e.raioRsol.v, {
+    razao: m.razao.v,
+    lambdaUm: m.lambdaUm.v,
+  });
   return forja.contraste > 0 ? forja : null;
+}
+
+/**
+ * A MANCHA QUENTE das supergigantes (só onde o motor desenha as células
+ * quentes, peso profundo > 0): a medida da estrela na banda dela, ou a de
+ * Betelgeuse pela regra; e o que ela dá no visível pela lei de Planck.
+ */
+function linhasDaMancha(e: EstrelaVisitavel, forja: ReturnType<typeof regraDaForja> | null): (LinhaDaFicha | null)[] {
+  if (!forja || !(forja.pesoProfundo > 0) || !(forja.picoQuente > 0)) return [];
+  const m = manchaQuenteDe(e);
+  const lambda = decimalDoIdioma(String(m.lambdaUm.v));
+  const chave = !m.medida
+    ? 'ficha.estrela.manchaQuenteDeBetelgeuse'
+    : m.teto
+      ? 'ficha.estrela.manchaQuenteTeto'
+      : 'ficha.estrela.manchaQuente';
+  const visivel = razaoDePlanckNaBanda(e.teffK.v, forja.picoQuente, LAMBDA_DO_VISIVEL_UM);
+  return [
+    linha(
+      t('ficha.campo.manchaQuente'),
+      t(chave, {
+        x: tresSignificativos(m.razao.v),
+        pct: numeroDoIdioma(Math.round((m.razao.v - 1) * 1000) / 10),
+        lambda,
+      }),
+      m.razao.p,
+      m.razao.fonte
+    ),
+    linha(
+      t('ficha.campo.manchaNoVisivel'),
+      t('ficha.estrela.manchaNoVisivel', {
+        x: tresSignificativos(visivel),
+        kelvin: inteiroDoIdioma(Math.round((forja.picoQuente * e.teffK.v) / 10) * 10),
+      }),
+      'derivado',
+      `Planck; ${m.razao.fonte}`
+    ),
+  ];
 }
 
 /** O achatamento (Re/Rp − 1) em %; só um piso quando a inclinação não foi medida. */
@@ -1174,7 +1219,8 @@ function inclinacaoEmTexto(graus: number): string {
 
 function linhasDoPiloto(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
   const a = achatamentoDe(e);
-  const atmosfera = forjaDaFicha(e)?.atmosferaEmRaios ?? 1;
+  const forja = forjaDaFicha(e);
+  const atmosfera = forja?.atmosferaEmRaios ?? 1;
   const lum = e.luminosidadeLsol.v;
   return [
     linhaDoNumero(t('ficha.campo.tipoEspectral'), e.tipo.texto, e.tipo),
@@ -1226,6 +1272,7 @@ function linhasDoPiloto(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
           { v: atmosfera, p: 'derivado', fonte: LEI_DA_ATMOSFERA }
         )
       : null,
+    ...linhasDaMancha(e, forja),
     ...linhasDoGas(e),
     ...linhasDaNuvem(e),
   ];

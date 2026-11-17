@@ -237,6 +237,34 @@ export function ritmoDaFervura(aR: number): number {
 export const CELULA_PROFUNDA_EM_RAIOS = 0.5;
 
 /**
+ * A MAIOR CÉLULA QUENTE, largura a meio brilho em raios: a mancha de
+ * Betelgeuse de Montargès et al. 2016 (arXiv 1602.05108), "a hot spot on the
+ * photosphere that has a characteristic width of one stellar radius" (uma
+ * gaussiana de 18–29 mas num disco de ~42 mas), com 7 %, 3 %, 19 % e 6 % do
+ * fluxo nas quatro épocas. No pico de Haubois e com o perfil do desenho, ela
+ * carrega ~10 % do fluxo na banda H (`fracaoDoFluxoNaBanda`), dentro do
+ * medido; as outras células ficam no tamanho da de Haubois (0,5 R).
+ */
+export const LARGURA_DA_MANCHA_MAIOR_EM_RAIOS = 1;
+
+/**
+ * A FRAÇÃO DO FLUXO a mais que uma célula quente põe na banda, de frente e
+ * plana: (razão − 1)·∫p·2πr dr / π, com o perfil do desenho p(d) =
+ * 1 − smoothstep(0,5·a, 1,3·a, d) (meio brilho em 0,9·a, a = largura/1,8).
+ */
+export function fracaoDoFluxoNaBanda(larguraEmRaios: number, razao: number): number {
+  const a = larguraEmRaios / 1.8;
+  const n = 2000;
+  let soma = 0;
+  for (let i = 0; i < n; i++) {
+    const d = ((i + 0.5) / n) * 1.3 * a;
+    const x = Math.min(1, Math.max(0, (d - 0.5 * a) / (0.8 * a)));
+    soma += (1 - x * x * (3 - 2 * x)) * d * ((1.3 * a) / n);
+  }
+  return (razao - 1) * 2 * soma;
+}
+
+/**
  * O PESO DA ESCALA PROFUNDA por log g: zero a log g ≥ 1,0, onde a grade de
  * Trampedach ainda vale (Ludwig & Kučinskas 2012: só grânulos, ~400, a
  * log g 1), inteiro a log g ≤ −0,3 (as supergigantes vermelhas), smoothstep
@@ -270,25 +298,44 @@ export function larguraDoAssado(celulaNaTelaEmRaios: number): number {
 }
 
 /**
- * O PICO DAS CÉLULAS QUENTES ENORMES das supergigantes, δ = ΔT/T: a mancha de
- * Betelgeuse de Haubois et al. 2009 (A&A 508, 923; IOTA, banda H, 1,65 µm)
- * carrega 8,5 % do fluxo em ~6 % da área — 1,42× o brilho médio
- * NA BANDA H. Pela lei de Planck naquela banda, B(T(1+δ))/B(T) = 1,42 dá
- * δ ≈ 0,15 a 3.600 K (~+540 K); no visível o mesmo δ sai ~2,6× mais claro
- * (a mancha quase branca das imagens do ESO). Resolvido por bisseção.
+ * O PICO DAS CÉLULAS QUENTES ENORMES das supergigantes, δ = ΔT/T, de UMA
+ * mancha medida numa banda: a razão do brilho da mancha sobre o médio NAQUELA
+ * banda, levada a δ pela lei de Planck, B(T(1+δ))/B(T) = razão, resolvida por
+ * bisseção. Razão ≤ 1 (ou não finita) dá δ = 0. A REGRA, para quem não tem a
+ * sua medida (`MANCHA_DE_HAUBOIS`): a mancha de Betelgeuse de Haubois et al.
+ * 2009 (A&A 508, 923; IOTA, banda H, 1,65 µm), 8,5 % do fluxo em ~6 % da área
+ * — 1,42× o brilho médio na banda H, δ ≈ 0,15 a 3.600 K (~+540 K); no
+ * visível o mesmo δ sai ~2,6× mais claro (a mancha quase branca das imagens
+ * do ESO). A medida da estrela vence a regra (`manchaQuenteDe`).
  */
 export const FLUXO_DA_MANCHA_QUENTE = 0.085;
 export const AREA_DA_MANCHA_QUENTE = 0.06;
-const LAMBDA_DA_BANDA_H_UM = 1.65;
-export function picoDasCelulasQuentes(teffK: number): number {
-  const alvo = FLUXO_DA_MANCHA_QUENTE / AREA_DA_MANCHA_QUENTE;
-  const x = 14388 / (LAMBDA_DA_BANDA_H_UM * teffK);
-  const razao = (d: number) => Math.expm1(x) / Math.expm1(x / (1 + d));
+/** uma mancha quente numa banda: a razão sobre o brilho médio e o comprimento de onda (µm) */
+export interface ManchaNaBanda {
+  readonly razao: number;
+  readonly lambdaUm: number;
+}
+export const MANCHA_DE_HAUBOIS: ManchaNaBanda = {
+  razao: FLUXO_DA_MANCHA_QUENTE / AREA_DA_MANCHA_QUENTE,
+  lambdaUm: 1.65,
+};
+/** o comprimento de onda do visível (V), µm, para dizer a mancha na ficha */
+export const LAMBDA_DO_VISIVEL_UM = 0.55;
+
+/** B(T(1+δ))/B(T) no comprimento de onda λ (µm): o brilho de quem é δ mais quente */
+export function razaoDePlanckNaBanda(teffK: number, delta: number, lambdaUm: number): number {
+  const x = 14388 / (lambdaUm * teffK);
+  return Math.expm1(x) / Math.expm1(x / (1 + delta));
+}
+
+export function picoDasCelulasQuentes(teffK: number, mancha: ManchaNaBanda = MANCHA_DE_HAUBOIS): number {
+  const alvo = mancha.razao;
+  if (!(alvo > 1) || !Number.isFinite(alvo) || !(teffK > 0) || !(mancha.lambdaUm > 0)) return 0;
   let lo = 0;
   let hi = 1;
   for (let i = 0; i < 60; i++) {
     const m = (lo + hi) / 2;
-    if (razao(m) < alvo) lo = m;
+    if (razaoDePlanckNaBanda(teffK, m, mancha.lambdaUm) < alvo) lo = m;
     else hi = m;
   }
   return (lo + hi) / 2;
@@ -311,12 +358,19 @@ export interface RegraDaForja {
   readonly desordem: number;
   /** a largura do assado em texels (`larguraDoAssado`) */
   readonly assado: number;
-  /** o pico δ das células quentes enormes (`picoDasCelulasQuentes`) */
+  /** o pico δ das células quentes enormes (`picoDasCelulasQuentes`): o da mancha medida, ou a regra */
   readonly picoQuente: number;
+  /** o pico pela regra na mesma Teff (a mancha de Haubois): a régua do acabamento por dentro da célula */
+  readonly picoDaRegra: number;
 }
 
-/** O botão GRAVIDADE inteiro, de Teff, log g e raio. */
-export function regraDaForja(teffK: number, logG: number, raioRsol: number): RegraDaForja {
+/** O botão GRAVIDADE inteiro, de Teff, log g e raio; a mancha quente medida, quando há. */
+export function regraDaForja(
+  teffK: number,
+  logG: number,
+  raioRsol: number,
+  mancha: ManchaNaBanda = MANCHA_DE_HAUBOIS
+): RegraDaForja {
   const a = celulaRealEmRaios(teffK, logG, raioRsol);
   return {
     celulaRealEmRaios: a,
@@ -330,6 +384,7 @@ export function regraDaForja(teffK: number, logG: number, raioRsol: number): Reg
     bordaEmMu: larguraDaBordaEmMu(a),
     desordem: desordemDaConveccao(logG),
     assado: larguraDoAssado(celulaNaTelaEmRaios(a)),
-    picoQuente: picoDasCelulasQuentes(teffK),
+    picoQuente: picoDasCelulasQuentes(teffK, mancha),
+    picoDaRegra: picoDasCelulasQuentes(teffK),
   };
 }
