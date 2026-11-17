@@ -150,7 +150,7 @@ const TIER_FOR: Record<QualityLevel, keyof typeof TIERS> = {
 
 // Defaults de fábrica do modo normal de lá (CONTROL_SCHEMA) — os knobs
 // que o NÚCLEO lê. Congelados: o painel/URL de lá não viaja.
-const SOL_KNOBS: Record<string, number> = {
+export const SOL_KNOBS: Record<string, number> = {
   spots: 1, cycle: 1, lapse: 0, speed: 1, pmode: 0,
   plageglow: 0.35, halo: 0.55, ray: 0.9, cact: 0.5,
   // cme 1,4 (doador: 0,9): a casca foi calibrada contra a exposição
@@ -2347,24 +2347,12 @@ const GLSL_ERF_DO_GAS = /* glsl */ `
 /** os uniforms do disco de gás (a luz e o piso pela fase) e a erf */
 const UNIFORMS_DO_DISCO = '\n        uniform float uLuzDoDisco;\n        uniform float uPisoDoGas;' + GLSL_ERF_DO_GAS;
 
-export const SOL_PARAMS: StellarParams = {
-  nome: 'Sol',
-  // O RAIO FÍSICO DA FOTOSFERA (F3), pela fonte única do cadastro — não
-  // um 2,2567e-8 redigitado, e não mais o `WORLD.sunRadius` artístico
-  // que ficou aqui da Onda 3 até 2026-08-13. É esta linha que faz o
-  // fator do cadastro sair 1: `RAIO_DO_SOL_NA_CENA` é o MESMO símbolo
-  // que `escala.ts` divide por `RAIO_SOL_PC` para acusar quem infla.
-  radiusPc: RAIO_DO_SOL_NA_CENA,
-  rotPeriodDays: SOL_ROT_PERIOD_DAYS,
-  // inclinação real do eixo solar (~7,25°), como no original
-  tiltRad: 0.1265,
-  activityLevel: 1,
-  teffK: 5772,
-  dinamo: true,
-  seed: 20260803,
-  knobPrefix: 'sol',
-  knobs: SOL_KNOBS,
-};
+/**
+ * A SEMENTE DA CASA: a do Sol aprovado; a de outra estrela é ela ⊕ o HIP ou
+ * o id (`sementeDe`). Os parâmetros do Sol saem do registro dele pela mesma
+ * lei de toda estrela (`SOL_PARAMS`, em `director/estrelasNoQuadro.ts`).
+ */
+export const SEMENTE_DA_CASA = 20260803;
 
 /**
  * AS FAMÍLIAS DE VIDA. Cada linhagem de estrutura efêmera do corpo tem um

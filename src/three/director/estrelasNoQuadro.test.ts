@@ -12,7 +12,9 @@ import {
   parametrosDaCompanheira,
   parametrosDoMotor,
   stopsDoPico,
+  SOL_PARAMS,
 } from './estrelasNoQuadro';
+import { RAIO_DO_SOL_NA_CENA } from '../escala';
 import type { NamedStar } from '../config';
 import type { StarField } from '../world/stars';
 import type { CorposResolvidos } from '../world/corpos/corpos';
@@ -30,8 +32,18 @@ describe('toda estrela visitável vira parâmetros do MESMO motor, sem nome', ()
       expect(p.radiusPc).toBeGreaterThan(0);
       expect(Number.isFinite(p.rotPeriodDays) && p.rotPeriodDays > 0).toBe(true);
       expect(Number.isFinite(p.activityLevel)).toBe(true);
-      expect(p.foraDaOrigem).toBe(true);
+      // fora da origem é de quem põe a estrela no céu, não da lei da estrela
+      expect(p.foraDaOrigem).toBeUndefined();
     }
+  });
+  it('o Sol sai da mesma lei, sobre o registro dele: os números do motor de antes', () => {
+    expect(SOL_PARAMS).toMatchObject({ nome: 'sol', radiusPc: RAIO_DO_SOL_NA_CENA, rotPeriodDays: 25.38, tiltRad: 0.1265 });
+    expect(SOL_PARAMS).toMatchObject({ activityLevel: 1, teffK: 5772, dinamo: true, seed: 20260803, knobPrefix: 'sol' });
+    expect(SOL_PARAMS).toMatchObject({ granuloRelativoAoSol: 1, contrasteRelativoAoSol: 1, bordaU: 0.3 });
+    expect(SOL_PARAMS.foraDaOrigem).toBeUndefined();
+    expect(SOL_PARAMS.veu).toBeUndefined();
+    expect(SOL_PARAMS.gas).toBeUndefined();
+    expect(SOL_PARAMS.achatamento).toBeUndefined();
   });
   it('Betelgeuse: sem dínamo', () => {
     const b = parametrosDoMotor(estrelaVisitavelPorNome('Betelgeuse')!);

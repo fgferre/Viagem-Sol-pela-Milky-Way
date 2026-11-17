@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { SOL_PARAMS } from '../director/estrelasNoQuadro';
 import { RAIO_DO_SOL_NA_CENA } from '../escala';
 import {
   BORDA_FORA_DO_DISCO,
@@ -36,7 +37,6 @@ import {
 import {
   GANHO_DO_INSTRUMENTO,
   PONTA_DAS_CELULAS_QUENTES,
-  SOL_PARAMS,
   calibracaoDaForja,
   cirurgiaDaEstrela,
   cirurgiaDoAssado,

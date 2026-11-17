@@ -18,6 +18,7 @@
 // ============================================================
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import { SOL_PARAMS } from '../director/estrelasNoQuadro';
 import * as THREE from 'three';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_DO_SOL_NA_CENA, RAIO_SOL_PC } from '../escala';
 import { EPOCA_JD_TDB } from './planetas/retrato2026';
@@ -27,7 +28,6 @@ import {
   radianciaDeTela,
 } from '../luzDaCasa';
 import {
-  SOL_PARAMS,
   SOL_ROT_PERIOD_DAYS,
   StellarBody,
   anguloDoGiro,

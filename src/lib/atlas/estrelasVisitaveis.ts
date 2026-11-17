@@ -121,6 +121,10 @@ export interface EstrelaVisitavel {
   readonly vSenIKms?: Numero;
   /** idade, em bilhões de anos — só onde há medida (asterossismologia) */
   readonly idadeGa?: Numero;
+  /** a inclinação do eixo sobre o +Y do motor, rad — só onde medida (o Sol, sobre a eclíptica); sem ela, 0 */
+  readonly inclinacaoDoEixoRad?: Numero;
+  /** a semente do desenho quando a superfície já foi aprovada por foto (o Sol: 0, a da casa); sem ela, o HIP ou o id */
+  readonly semente?: number;
   readonly achatamento?: Achatamento;
   readonly superficie: Superficie;
   readonly companheira?: Companheira;
@@ -1177,3 +1181,31 @@ export function posicaoDaCompanheira(
     norte * nz + fundo * rz,
   ];
 }
+
+/**
+ * O SOL COMO ESTRELA ENTRE AS OUTRAS (motor único, 17/11): o mesmo registro,
+ * lido pelo mesmo `parametrosDoMotor` — o desenho dele é o de antes, byte a
+ * byte (o que era literal no motor agora é dado aqui). Fora de
+ * `ESTRELAS_VISITAVEIS`: o Sol mora na origem da cena, não no céu. A borda
+ * u = 0,30 é a do núcleo de H-alfa, a banda em que o Sol é desenhado (não
+ * o contínuo V de Claret das outras: diferença anotada no `PLAN-FORJA.md`).
+ */
+const IAU_2015_B3 = 'IAU 2015, Resolução B3 (valores nominais)';
+export const SOL: EstrelaVisitavel = {
+  id: 'sol',
+  nomeNoCatalogo: 'Sol',
+  tipo: { texto: 'G2V', v: 0, p: 'medido', fonte: 'Gray & Corbally 2009, Stellar Spectral Classification' },
+  teffK: { v: TEFF_SOL_K, p: 'medido', fonte: IAU_2015_B3 },
+  raioRsol: { v: 1, p: 'medido', fonte: IAU_2015_B3 },
+  massaMsol: { v: 1, p: 'medido', fonte: IAU_2015_B3 },
+  luminosidadeLsol: { v: 1, p: 'medido', fonte: IAU_2015_B3 },
+  rotacaoDias: { v: ROTACAO_SOL_DIAS, p: 'medido', fonte: 'Carrington 1863 (período sideral)' },
+  // 7,25° sobre a eclíptica, como no motor de origem (0,1265 rad)
+  inclinacaoDoEixoRad: { v: 0.1265, p: 'medido', fonte: 'Carrington 1863' },
+  semente: 0,
+  superficie: {
+    granuloEmRaios: { v: GRANULO_SOL_EM_RAIOS, p: 'derivado', fonte: 'Tremblay et al. 2013, A&A 557, A7' },
+    contrasteGranulos: { v: CONTRASTE_REAL_DO_SOL, p: 'derivado', fonte: 'Beeck et al. 2013, arXiv 1308.4874' },
+    bordaU: { v: 0.3, p: 'artistico', fonte: '' }, // o núcleo de H-alfa, sem fonte aberta
+  },
+};

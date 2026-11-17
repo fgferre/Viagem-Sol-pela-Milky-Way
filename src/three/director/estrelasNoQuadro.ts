@@ -33,7 +33,7 @@ import type { OclusorDeRotulo } from '../world/labels';
 import { faseDoCiclo, repartir, type JanelaDoQuadro, type EstadoDaEstrela } from '../estrela';
 import { EXPO_M0, M_V_SOL_DO_CAMPO, SIGMA_PX, radianciaVisivelDeCorpoNegro } from '../luzDaCasa';
 import type { QualityLevel } from '../core/engine';
-import { SOL_PARAMS, StellarBody, pesoDoFiltro, rocheDe, type StellarParams } from '../world/stellarBody';
+import { SEMENTE_DA_CASA, SOL_KNOBS, StellarBody, pesoDoFiltro, rocheDe, type StellarParams } from '../world/stellarBody';
 import {
   direcaoNoCeu,
   pesoDoPico,
@@ -59,6 +59,7 @@ import {
   logGravidade,
   luminosidadeDe,
   manchaQuenteDe,
+  SOL,
   posicaoDaCompanheira,
   raioDaEstrelaPc,
   rotacaoDe,
@@ -230,6 +231,7 @@ const RAIO_DE_DESMONTE_PC = 2 * RAIO_DE_PREPARO_PC;
  * (TRAPPIST-1, Kepler-186), um hash do id — estável entre sessões.
  */
 function sementeDe(e: EstrelaVisitavel): number {
+  if (e.semente !== undefined) return e.semente;
   if (e.hip !== undefined) return e.hip;
   let h = 2166136261;
   for (let i = 0; i < e.id.length; i++) h = Math.imul(h ^ e.id.charCodeAt(i), 16777619);
@@ -248,23 +250,22 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
   // a mancha quente medida (Betelgeuse, Antares) vence a regra no pico das células quentes
   const mancha = manchaQuenteDe(e);
   return {
-    ...SOL_PARAMS,
     nome: e.id,
     // o EQUATORIAL (`raioDaEstrelaPc`): o mesmo do piso da câmera
     radiusPc: raioDaEstrelaPc(e),
     rotPeriodDays: rotacaoDe(e).v,
-    tiltRad: 0,
+    tiltRad: e.inclinacaoDoEixoRad?.v ?? 0,
     activityLevel: atividadeDe(e).nivel,
     teffK: e.teffK.v,
     dinamo: temDinamoSolar(e),
     logG,
-    seed: (SOL_PARAMS.seed ^ sementeDe(e)) >>> 0,
+    seed: (SEMENTE_DA_CASA ^ sementeDe(e)) >>> 0,
     knobPrefix: e.id,
+    knobs: SOL_KNOBS,
     granuloRelativoAoSol:
       granuloNaTelaEmRaios(s.granuloEmRaios.v) / granuloNaTelaEmRaios(GRANULO_SOL_EM_RAIOS),
     contrasteRelativoAoSol: contrasteDosGranulos / CONTRASTE_REAL_DO_SOL,
     bordaU: s.bordaU.v,
-    foraDaOrigem: true,
     ...(veu > 0 ? { veu } : {}),
     // a regra do pico (a ponta, a asa e o tom do véu no motor): só nas quentes
     ...camposDoPico(e.teffK.v, teffDoPicoK),
@@ -277,6 +278,12 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
     ...(e.escurecimento ? { escurecimento: escurecimentoDoMotor(e.escurecimento) } : {}),
   };
 }
+
+/**
+ * O SOL pela MESMA lei de toda estrela, sobre o registro dele (`SOL`): o
+ * motor não tem mais um ramo de parâmetros só do Sol. Na origem da cena.
+ */
+export const SOL_PARAMS: StellarParams = parametrosDoMotor(SOL);
 
 /** as épocas do escurecimento da ficha em números de desenho: o ano pela data UT, a borda das imagens e a razão das temperaturas */
 export function escurecimentoDoMotor(x: NonNullable<EstrelaVisitavel['escurecimento']>): EscurecimentoDoMotor {
@@ -300,7 +307,7 @@ export function parametrosDaCompanheira(e: EstrelaVisitavel): StellarParams | nu
   const c = e.companheira;
   if (!c) return null;
   const nome = `${e.id}-b`;
-  const seed = (SOL_PARAMS.seed ^ sementeDe(e) ^ 0x0b0b0b0b) >>> 0;
+  const seed = (SEMENTE_DA_CASA ^ sementeDe(e) ^ 0x0b0b0b0b) >>> 0;
   // A COMPANHEIRA QUE NÃO É ANÃ BRANCA (Capella Ab, 16/11) é uma estrela
   // como qualquer outra: a MESMA lei da principal (`parametrosDoMotor`),
   // sobre a ficha que os números medidos dela dão — o achatamento também
@@ -326,10 +333,11 @@ export function parametrosDaCompanheira(e: EstrelaVisitavel): StellarParams | nu
       ...parametrosDoMotor(ficha),
       seed,
       knobPrefix: `${e.id}b`,
+      foraDaOrigem: true,
     };
   }
   return {
-    ...SOL_PARAMS,
+    knobs: SOL_KNOBS,
     nome,
     radiusPc: c.raioRsol.v * RAIO_SOL_PC,
     rotPeriodDays: SOL_PARAMS.rotPeriodDays,
@@ -695,7 +703,7 @@ export class EstrelasNoQuadro {
   private criar(p: Piloto, jd: number) {
     const meios = this.fios.motorDoSol();
     const d = p.dados;
-    const corpo = new EstrelaPeloMotorDoSol(parametrosDoMotor(d, p.eixo), meios, jd);
+    const corpo = new EstrelaPeloMotorDoSol({ ...parametrosDoMotor(d, p.eixo), foraDaOrigem: true }, meios, jd);
     corpo.group.position.copy(p.pos);
     this.group.add(corpo.group);
     const stars = this.fios.stars();
