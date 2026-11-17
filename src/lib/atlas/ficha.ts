@@ -46,7 +46,7 @@ import {
   notaDeDistancia,
   UA_POR_PC,
 } from '../unidades';
-import { regraDaForja } from '../../three/world/forjaDaEstrela';
+import { LEI_DA_ATMOSFERA, regraDaForja } from '../../three/world/forjaDaEstrela';
 import { NOMES_DOS_CORPOS, classeEmTexto, nomeDoCorpo } from '../../three/atlasConfig';
 import { decimalDoIdioma, idiomaAtual, t, type ChaveDeTexto } from '../idioma';
 import type { Procedencia } from '../../three/selo';
@@ -996,8 +996,19 @@ function raioEmTexto(rsol: number): string {
 const kelvin = (n: Numero) => `${inteiroDoIdioma(n.v)} K`;
 
 /** As linhas físicas das estrelas do piloto (`estrelasVisitaveis.ts`). */
+/** a lei do desenho da superfície na Forja (o tamanho da célula pela gravidade) */
+const LEI_DA_FORJA = 'Trampedach et al. 2013, arXiv 1303.1780';
+
+/** A regra da Forja quando é ela que desenha a estrela (sem dínamo e com convecção visível); senão null. */
+function forjaDaFicha(e: EstrelaVisitavel): ReturnType<typeof regraDaForja> | null {
+  if (temDinamoSolar(e)) return null;
+  const forja = regraDaForja(e.teffK.v, logGravidade(e.massaMsol.v, e.raioRsol.v), e.raioRsol.v);
+  return forja.contraste > 0 ? forja : null;
+}
+
 function linhasDoPiloto(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
   const a = e.achatamento;
+  const atmosfera = forjaDaFicha(e)?.atmosferaEmRaios ?? 1;
   const lum = e.luminosidadeLsol.v;
   return [
     linhaDoNumero(t('ficha.campo.tipoEspectral'), e.tipo.texto, e.tipo),
@@ -1042,11 +1053,12 @@ function linhasDoPiloto(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
           ),
         ]
       : []),
-    e.superficie.bordaDifusaRaios.v > 1
+    // a casca que o motor desenha, pela mesma regra
+    atmosfera > 1
       ? linhaDoNumero(
           t('ficha.campo.bordaDifusa'),
-          t('ficha.estrela.bordaDifusa', { raios: numeroDoIdioma(e.superficie.bordaDifusaRaios.v) }),
-          e.superficie.bordaDifusaRaios
+          t('ficha.estrela.bordaDifusa', { raios: numeroDoIdioma(Math.round(atmosfera * 100) / 100) }),
+          { v: atmosfera, p: 'derivado', fonte: LEI_DA_ATMOSFERA }
         )
       : null,
   ];
@@ -1100,14 +1112,9 @@ function secaoDaCompanheira(e: EstrelaVisitavel, distanciaPc: number): SecaoDaFi
   return { id: 'companheira', titulo, linhas };
 }
 
-/** a lei do desenho da superfície na Forja (o tamanho da célula pela gravidade) */
-const LEI_DA_FORJA = 'Trampedach et al. 2013, arXiv 1303.1780';
-
 /** A SEÇÃO DA IMAGEM da estrela do piloto: o que é medida e o que é desenho. */
 function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
-  const daForja =
-    !temDinamoSolar(e) &&
-    regraDaForja(e.teffK.v, logGravidade(e.massaMsol.v, e.raioRsol.v), e.raioRsol.v).contraste > 0;
+  const daForja = forjaDaFicha(e) !== null;
   return {
     id: 'imagem',
     titulo: TITULO('imagem'),
@@ -1124,8 +1131,7 @@ function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
         'artistico'
       ),
       // as concessões que a física da estrela liga (nenhuma no Sol, nenhuma
-      // por nome): mais radiante que o Sol, véu; granulação abaixo do piso,
-      // extrapolada; células gigantes, realçadas e com envelope desenhado
+      // por nome): mais radiante que o Sol, véu; granulação abaixo do piso, extrapolada
       e.teffK.v > TEFF_DO_SOL_K ? linha(t('ficha.campo.veu'), t('ficha.estrela.veu'), 'artistico') : null,
       !daForja && e.superficie.contrasteGranulos.v < PISO_DO_CONTRASTE_NA_TELA
         ? linha(
@@ -1137,9 +1143,6 @@ function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
             'artistico',
             e.superficie.contrasteGranulos.fonte
           )
-        : null,
-      !daForja && e.superficie.celulasGigantesEmRaios
-        ? linha(t('ficha.campo.celulasGigantes'), t('ficha.estrela.celulasRealcadas'), 'artistico')
         : null,
     ].filter((l): l is LinhaDaFicha => l !== null),
   };

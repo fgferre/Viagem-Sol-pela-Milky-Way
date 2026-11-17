@@ -26,10 +26,9 @@ describe('toda estrela visitável vira parâmetros do MESMO motor, sem nome', ()
       expect(p.foraDaOrigem).toBe(true);
     }
   });
-  it('Betelgeuse: sem dínamo; grânulos tênues', () => {
+  it('Betelgeuse: sem dínamo', () => {
     const b = parametrosDoMotor(estrelaVisitavelPorNome('Betelgeuse')!);
     expect(b.dinamo).toBe(false);
-    expect(b.contrasteRelativoAoSol).toBeCloseTo((0.25 * 0.2) / 0.15, 12);
     expect(b.veu).toBeUndefined();
   });
   it('a quente leva o véu (a luz que a exposição não põe no disco) e o piso da granulação', () => {

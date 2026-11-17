@@ -922,7 +922,11 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     expect(raio.procedencia).toBe('derivado');
     expect(raio.valor).toContain('764');
     expect(raio.fonte).toContain('Joyce');
-    expect(linhasDe(bet).get('borda')!.procedencia).toBe('medido');
+    // a casca que o motor desenha, pela regra da Forja
+    const borda = linhasDe(bet).get('borda')!;
+    expect(borda.procedencia).toBe('derivado');
+    expect(borda.valor).toBe('difusa até 1,3 raios');
+    expect(borda.fonte).toContain('Ohnaka');
 
     const sir = montarFichaDeEstrela('Sirius', sirius)!;
     // três algarismos significativos, a precisão das medidas

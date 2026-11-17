@@ -731,13 +731,10 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.estrela.tamanhoPeloRaio': 'the radius in this card',
   'ficha.campo.veu': 'veil of light',
   'ficha.campo.granulacao': 'granulation',
-  'ficha.campo.celulasGigantes': 'giant cells',
   'ficha.estrela.veu':
     'more radiant than the Sun: the disk is shown at a lower exposure and the leftover light becomes a veil around it, as in a camera — the veil\'s strength and reach are a choice',
   'ficha.estrela.granulacaoExtrapolada':
     'the real one has ~{real} % contrast, invisible; drawn at the {piso} % floor so the surface does not come out smooth',
-  'ficha.estrela.celulasRealcadas':
-    "the cells' temperature becomes color and brightness through Planck's law; the contrast is boosted, and the smaller scales of cells (which appear up close), the lumpy edge and the envelope plumes are drawn",
   'ficha.estrela.desenhoInventado':
     'granules, cells, spots and flares: the cell size follows the law in the data ({lei}), but the exact pattern is invented',
   'ficha.fonte.daEfemeride': 'from the ephemeris',

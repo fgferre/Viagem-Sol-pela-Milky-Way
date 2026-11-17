@@ -45,7 +45,6 @@ import { estrelaComCorpo } from '../../lib/atlas/estrelaDoCatalogo';
 import {
   CONTRASTE_REAL_DO_SOL,
   ESTRELAS_VISITAVEIS,
-  FRACAO_DOS_GRANULOS_SOB_AS_GIGANTES,
   GRANULO_SOL_EM_RAIOS,
   PISO_DO_CONTRASTE_NA_TELA,
   atividadeDe,
@@ -169,11 +168,7 @@ function sementeDe(e: EstrelaVisitavel): number {
 
 export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): StellarParams {
   const s = e.superficie;
-  const gig = s.celulasGigantesEmRaios;
-  const contrasteDosGranulos = Math.max(
-    s.contrasteGranulos.v * (gig ? FRACAO_DOS_GRANULOS_SOB_AS_GIGANTES : 1),
-    PISO_DO_CONTRASTE_NA_TELA
-  );
+  const contrasteDosGranulos = Math.max(s.contrasteGranulos.v, PISO_DO_CONTRASTE_NA_TELA);
   const veu = veuDe(e.teffK.v);
   return {
     ...SOL_PARAMS,

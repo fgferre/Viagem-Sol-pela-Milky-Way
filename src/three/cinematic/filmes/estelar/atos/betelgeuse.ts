@@ -42,7 +42,7 @@ const DE_CASA = versor(new THREE.Vector3().sub(BETELGEUSE));
 // ================= A2–A4 — PONTO, DISCO, TAMANHO =================
 // A chegada curva do rumo de casa para o lado (110°), onde começa a órbita
 // curta: 30° em 12 s, rente — a 3,2 e 2,9 raios, fora da borda difusa
-// (1,3 raio, `bordaDifusaRaios` da ficha) com folga. Daí a câmera recua no
+// (1,3 raio, a atmosfera da Forja na ficha) com folga. Daí a câmera recua no
 // mesmo rumo (80°) até 9 raios: a estrela inteira, redonda, no quadro.
 // Em 80° o rumo da nebulosa já é um pouco à frente da câmera: a travessia do
 // Ato 2 parte dali sem passar por Betelgeuse.

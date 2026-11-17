@@ -530,7 +530,8 @@ export function tierDaEstrela(tier: Tier, p: StellarParams, forja: RegraDaForja 
     ...tier,
     ...(granulo ? { granFreq: tier.granFreq / g } : {}),
     ...(!p.dinamo ? TIER_SEM_DINAMO : lacos !== 1 ? { loops: Math.max(1, Math.round(tier.loops * lacos)) } : {}),
-    ...(forja ? { chromo: forja.assado } : {}),
+    // o assado pela célula, com o teto do nível de qualidade (o do Sol)
+    ...(forja ? { chromo: Math.min(forja.assado, tier.chromo) } : {}),
   };
 }
 
@@ -1053,17 +1054,17 @@ function glslDaForjaNaFotosfera(forja: RegraDaForja, cal: CalibracaoDaForja): st
 float conveccaoDoAssado(vec4 a, vec3 sp, float t) {
   // as derivadas antes de qualquer desvio (fora dele são indefinidas)
   float pxCel = length(fwidth(sp)) / ${L(cel)};
+  // onde a segunda célula mais perto troca dentro de uma célula, os vetores
+  // dos dois lados apontam para bordas opostas e a leitura bilinear passa
+  // por zero sem borda nenhuma: lá o vetor muda ~2·distância por texel, numa
+  // borda de verdade ~1 por célula — a faixa só onde a taxa é a de uma borda
+  float taxa = length(fwidth(a.yz)) / max(pxCel, 1e-6);
   float filtro = 1.0 - smoothstep(0.25, 0.5, pxCel);
   if (filtro <= 0.0) return 0.0;
   float hw = ${L(fx * MEIA_FAIXA_DA_FORJA.base)} + ${L(fx * MEIA_FAIXA_DA_FORJA.porEscuridao)} * a.w;
   float hwE = max(hw, 0.6 * pxCel);
   float x = length(a.yz) / hwE;
   float x2 = x * x;
-  // onde a segunda célula mais perto troca dentro de uma célula, os vetores
-  // dos dois lados apontam para bordas opostas e a leitura bilinear passa
-  // por zero sem borda nenhuma: lá o vetor muda ~2·distância por texel, numa
-  // borda de verdade ~1 por célula — a faixa só onde a taxa é a de uma borda
-  float taxa = length(fwidth(a.yz)) / max(pxCel, 1e-6);
   float faixa = hw / hwE * exp(-x2 - x2 * x2) * (1.0 - smoothstep(3.0, 6.0, taxa));
   float v = a.x * (1.0 - a.w * faixa);
   float perto = 1.0 - smoothstep(0.0625, 0.125, pxCel);
@@ -2524,11 +2525,16 @@ export class StellarBody {
    * largura × largura/2 × 8 bytes (RGBA de meia precisão) × 3.
    */
   private assadoSoDaConveccao(ctx: any) {
+    const u = ctx.sunUniforms;
     for (const set of ctx.bakeSets) {
-      if (set.s !== set.c) {
-        set.s.dispose();
-        set.s = set.c;
+      if (set.s === set.c) continue;
+      // a primeira passada (`bakeChromo`) já ligou o disco ao alvo da smear:
+      // religar ao da convecção ANTES de descartá-lo
+      for (const k of ['uChromoTex', 'uChromoTexP']) {
+        if (u[k].value === set.s.texture) u[k].value = set.c.texture;
       }
+      set.s.dispose();
+      set.s = set.c;
     }
     const fatia = ctx.chromo.bakeChromoSlice;
     ctx.chromo.bakeChromoSlice = (passo: number, t: number) => {
@@ -3342,7 +3348,8 @@ export class StellarBody {
     for (const rt of ctx.simRTs ?? []) rt.dispose();
     for (const set of ctx.bakeSets ?? []) {
       set.c?.dispose?.();
-      set.s?.dispose?.();
+      // na Forja o alvo da smear é o próprio da convecção: um descarte só
+      if (set.s !== set.c) set.s?.dispose?.();
     }
     // OS DOIS RTs QUE NÃO ESTAVAM EM LISTA NENHUMA: o do PIL (readback do
     // Br para as âncoras de proeminência) e o snapshot do sim que a

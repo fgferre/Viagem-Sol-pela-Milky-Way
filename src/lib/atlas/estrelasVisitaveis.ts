@@ -88,15 +88,8 @@ export interface Superficie {
   readonly granuloEmRaios: Numero;
   /** contraste de intensidade dos grânulos (rms, fração) */
   readonly contrasteGranulos: Numero;
-  /**
-   * Células gigantes de convecção (supergigantes vermelhas): poucas
-   * células com tamanho da ordem do raio, por cima dos grânulos.
-   */
-  readonly celulasGigantesEmRaios?: Numero;
   /** escurecimento de borda linear na banda V: I(μ)/I(1) = 1 − u(1 − μ) */
   readonly bordaU: Numero;
-  /** atmosfera estendida que borra a borda, em raios (1 = borda nítida) */
-  readonly bordaDifusaRaios: Numero;
 }
 
 export interface EstrelaVisitavel {
@@ -165,7 +158,6 @@ const PROXIMA: EstrelaVisitavel = {
     // A&A 558, A48, simulações MURaM de 3000–4000 K)
     contrasteGranulos: { v: 0.04, p: 'derivado', fonte: 'Beeck et al. 2013, A&A 558, A48 (simulação)' },
     bordaU: { v: 0.7, p: 'derivado', fonte: CLARET },
-    bordaDifusaRaios: { v: 1, p: 'derivado', fonte: 'fotosfera de anã: borda nítida' },
   },
 };
 
@@ -183,7 +175,6 @@ const SIRIUS: EstrelaVisitavel = {
     // estrelas A: zona de convecção rasa, quase sem granulação visível
     contrasteGranulos: { v: 0.015, p: 'derivado', fonte: 'Tremblay et al. 2013, A&A 557, A7' },
     bordaU: { v: 0.5, p: 'derivado', fonte: CLARET },
-    bordaDifusaRaios: { v: 1, p: 'derivado', fonte: 'fotosfera de anã: borda nítida' },
   },
   companheira: {
     nome: 'Sirius B',
@@ -216,17 +207,8 @@ const BETELGEUSE: EstrelaVisitavel = {
   rotacaoDias: { v: 36 * 365.25, p: 'derivado', fonte: 'Kervella et al. 2018, A&A 609, A67 (ALMA)' }, // v sin i 5,5 km/s
   superficie: {
     granuloEmRaios: granulo(3600, 764, 18),
-    // poucas células do tamanho da estrela: previstas por Schwarzschild
-    // (1975), reproduzidas nas simulações 3D (Freytag et al. 2002;
-    // Chiavassa et al. 2010, A&A 515, A12) e vistas como 2–3 manchas
-    // claras nas imagens interferométricas (Haubois et al. 2009, A&A
-    // 508, 923; Montargès et al. 2021, Nature 594, 365)
-    celulasGigantesEmRaios: { v: 0.6, p: 'derivado', fonte: 'Chiavassa et al. 2010, A&A 515, A12 (simulação 3D)' },
     contrasteGranulos: { v: 0.25, p: 'derivado', fonte: 'Chiavassa et al. 2010, A&A 515, A12 (simulação 3D)' },
     bordaU: { v: 0.8, p: 'derivado', fonte: CLARET },
-    // a camada molecular (MOLsphere) a ~1,3 raio borra a borda no
-    // infravermelho (Perrin et al. 2004, A&A 418, 675)
-    bordaDifusaRaios: { v: 1.3, p: 'medido', fonte: 'Perrin et al. 2004, A&A 418, 675' }, // interferometria
   },
 };
 
@@ -373,7 +355,6 @@ const VEGA: EstrelaVisitavel = {
     granuloEmRaios: granulo(9600, 2.6, 2.15),
     contrasteGranulos: { v: 0.015, p: 'derivado', fonte: 'Tremblay et al. 2013, A&A 557, A7' },
     bordaU: { v: 0.5, p: 'derivado', fonte: CLARET },
-    bordaDifusaRaios: { v: 1, p: 'derivado', fonte: 'fotosfera de anã: borda nítida' },
   },
 };
 
@@ -440,7 +421,6 @@ export function superficiePelaTemperatura(T: number, raioRsol: number, massaMsol
     granuloEmRaios: granulo(T, raioRsol, massaMsol),
     contrasteGranulos: contraste,
     bordaU: { v: u, p: 'derivado', fonte: CLARET },
-    bordaDifusaRaios: { v: 1, p: 'derivado', fonte: 'fotosfera sem atmosfera estendida medida: borda nítida' },
   };
 }
 
@@ -686,14 +666,6 @@ export const CONTRASTE_REAL_DO_SOL = 0.15;
  * Não vale para a anã branca (a companheira: contraste 0).
  */
 export const PISO_DO_CONTRASTE_NA_TELA = 0.04;
-
-/**
- * Sob as CÉLULAS GIGANTES, os grânulos pequenos são TÊNUES: o contraste
- * medido nas simulações (0,25 em Betelgeuse) é o das gigantes, que dominam a
- * imagem; os grânulos por cima levam 20 % dele — ARTÍSTICO, declarado
- * (a segunda escala, visível de perto sem cobrir as células).
- */
-export const FRACAO_DOS_GRANULOS_SOB_AS_GIGANTES = 0.2;
 
 const GRAU = Math.PI / 180;
 const JD_J2000 = 2451545;

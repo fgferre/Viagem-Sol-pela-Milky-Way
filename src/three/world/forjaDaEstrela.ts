@@ -1,8 +1,8 @@
 // ============================================================
-// A FORJA, botão GRAVIDADE (etapa 2): a camada de convecção de
-// toda estrela sem dínamo por uma regra só, de Teff e log g. A regra
-// decidida e as fontes estão em docs/LEI-DA-ESTRELA.md, seção 10; aqui só
-// as contas, puras. Quem desenha é `stellarBody.ts` (`conveccao`).
+// A FORJA, botão GRAVIDADE: a camada de convecção de toda estrela
+// sem dínamo por uma regra só, de Teff e log g. A regra decidida e as
+// fontes estão em docs/LEI-DA-ESTRELA.md, seção 10; aqui só as contas,
+// puras. Quem desenha é `stellarBody.ts` (o assado e `conveccaoDoAssado`).
 // ============================================================
 
 /** O raio do Sol, em Mm (IAU 2015 B3: 695.700 km). */
@@ -122,6 +122,8 @@ const ATMOSFERA_POR_LOG_G: readonly (readonly [number, number])[] = [
   [1.66, 1.04],
   [LOG_G_SOL, 1.0],
 ];
+/** as fontes da regra acima, para o selo da ficha */
+export const LEI_DA_ATMOSFERA = 'Ohnaka & Morales Marín 2018; Montargès et al. 2014; Ohnaka et al. 2009';
 export function raioDaAtmosferaEmRaios(teffK: number, logG: number): number {
   const r = porPontos(ATMOSFERA_POR_LOG_G, logG);
   const peso = Math.min(1, Math.max(0, (5000 - teffK) / 500));
@@ -230,8 +232,6 @@ export interface RegraDaForja {
   readonly ritmo: number;
   /** o peso da escala profunda (`pesoDaEscalaProfunda`), 0 a 1 */
   readonly pesoProfundo: number;
-  /** o ritmo da fervura da escala profunda */
-  readonly ritmoProfundo: number;
   /** a largura da borda em μ (`larguraDaBordaEmMu`) */
   readonly bordaEmMu: number;
   /** a desordem do escoamento (`desordemDaConveccao`), 0 a 1 */
@@ -253,7 +253,6 @@ export function regraDaForja(teffK: number, logG: number, raioRsol: number): Reg
     fracaoEscura: fracaoEscura(teffK),
     ritmo: ritmoDaFervura(a),
     pesoProfundo: pesoDaEscalaProfunda(logG),
-    ritmoProfundo: ritmoDaFervura(CELULA_PROFUNDA_EM_RAIOS),
     bordaEmMu: larguraDaBordaEmMu(a),
     desordem: desordemDaConveccao(logG),
     assado: larguraDoAssado(celulaNaTelaEmRaios(a)),

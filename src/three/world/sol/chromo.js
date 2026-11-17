@@ -311,6 +311,5 @@ export function createChromo(ctx){
     for (var i=0;i<charges.length;i++) bakeCharges[i].copy(charges[i]);
   }
   ctx.bakeSets = bakeSets;
-  ctx.chromoMaterial = chromoMaterial;
   return { bakeChromoSlice: bakeChromoSlice, snapshotBakeInputs: snapshotBakeInputs };
 }
