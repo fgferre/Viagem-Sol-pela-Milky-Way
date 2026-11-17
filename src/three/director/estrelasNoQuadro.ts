@@ -388,12 +388,15 @@ interface Piloto {
 }
 
 /**
- * A VAGA DE QUEM NASCE PELO FOCO: o último par do cadastro do clarão. As da
- * lista à mão ficam com 2 × índice (14 estrelas, vagas 0–27), como sempre.
- * Toda estrela sob demanda é NOMEADA, e o clarão escreve a nomeada na vaga
- * da nomeada (não nesta) — esta só precisa caber no cadastro.
+ * A VAGA DE QUEM NASCE PELO FOCO: a última do cadastro do clarão (a sob
+ * demanda não tem companheira, uma vaga basta). As da lista à mão ficam com
+ * 2 × índice, como sempre: 16 estrelas, vagas 0–30 — a de Dubhe, a 16ª, é a
+ * 30, e a 31 seria a da companheira dela, que não tem corpo. O CADASTRO
+ * ESTÁ CHEIO: a 17ª escrita à mão pede `VAGAS_DE_VISITADAS` maior. Toda
+ * estrela sob demanda é NOMEADA, e o clarão escreve a nomeada na vaga da
+ * nomeada (não nesta) — esta só precisa caber e não repetir a de outra.
  */
-const VAGA_SOB_DEMANDA = VAGAS_DE_VISITADAS - 2;
+const VAGA_SOB_DEMANDA = VAGAS_DE_VISITADAS - 1;
 
 function novoPiloto(
   named: readonly NamedStar[],

@@ -881,7 +881,7 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
       // + 1 para quem tem ficha física (a escrita à mão ou a da regra única): a seção da imagem
       const fisica = estrelaVisitavelPorNome(estrela.n) ?? estrelaDoCatalogo(estrela);
       // + 1 para quem tem companheira (Sirius, Capella): a seção dela
-      const daCompanheira = fisica?.companheira ? 1 : 0;
+      const daCompanheira = fisica?.companheira || fisica?.companheiraSemCorpo ? 1 : 0;
       expect(f.secoes.length, estrela.n).toBe((fisica ? 2 : 1) + daCompanheira + doSistema);
       for (const l of f.secoes.flatMap((x) => x.linhas)) {
         expect(l.valor.length, `${estrela.n}/${l.rotulo}`).toBeGreaterThan(0);
@@ -903,6 +903,17 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     expect(lc.get('raio')!.valor).toContain('8,83');
     expect(lc.get('raio')!.valor).not.toMatch(/Terra/);
     expect(lc.get('período orbital')!.valor).toContain('104');
+  });
+
+  it('Dubhe: a principal medida, e a companheira só com o que foi medido (órbita e massa), sem raio nem temperatura', () => {
+    const f = montarFichaDeEstrela('Dubhe', starsMeta.named.find((s) => s.n === 'Dubhe'))!;
+    const l = linhasDe(f);
+    expect(l.get('tipo espectral')!.valor).toBe('K0 III');
+    expect(l.get('raio')!.valor).toContain('27,3');
+    const comp = f.secoes.find((x) => x.id === 'companheira')!;
+    expect(comp.titulo).toBe('Dubhe B (a outra estrela do par)');
+    expect(comp.linhas.map((x) => x.rotulo)).toEqual(['massa', 'período orbital', 'separação média']);
+    expect(comp.linhas.find((x) => x.rotulo === 'massa')!.procedencia).toBe('derivado');
   });
 
   it('as quatro do piloto trazem a física com selo; as outras ficam como eram', () => {

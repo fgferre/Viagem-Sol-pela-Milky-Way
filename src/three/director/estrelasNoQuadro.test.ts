@@ -130,12 +130,17 @@ describe('a nomeada fora da lista à mão ganha piloto pelo foco', () => {
     expect(quadro.posicaoDe('Arcturus')?.toArray()).toEqual([0, Math.fround(11.26), 0]);
     expect(quadro.group.children).toHaveLength(1);
     const [c] = quadro.candidatasAoClarao();
-    expect(c.vaga).toBe(VAGAS_DE_VISITADAS - 2);
+    expect(c.vaga).toBe(VAGAS_DE_VISITADAS - 1);
     expect(c.nomeada).toBe(named.length - 1);
     passo(null);
     expect(quadro.group.children).toHaveLength(0);
     expect(quadro.posicaoDe('Arcturus')).toBeNull();
     expect(cedencias.get(named.length - 1) ?? 0).toBe(0);
+  });
+
+  it('o cadastro do clarão cabe: a lista à mão (2 × índice, + 1 se há companheira com corpo) não chega à vaga sob demanda', () => {
+    const maior = Math.max(...ESTRELAS_VISITAVEIS.map((e, i) => 2 * i + (e.companheira ? 1 : 0)));
+    expect(maior).toBeLessThan(VAGAS_DE_VISITADAS - 1);
   });
 
   it('as da lista à mão ficam na vaga de sempre (2 × índice)', () => {

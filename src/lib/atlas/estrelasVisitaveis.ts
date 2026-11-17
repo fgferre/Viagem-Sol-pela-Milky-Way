@@ -60,6 +60,17 @@ export interface Companheira {
   readonly orbita: Orbita;
 }
 
+/**
+ * A companheira com a ÓRBITA medida mas sem tamanho nem temperatura medidos
+ * (Dubhe B: o tipo dela vai de A3 a F7 conforme o autor). Entra na ficha;
+ * não ganha corpo — desenhá-la pediria inventar o raio e a cor.
+ */
+export interface CompanheiraSemCorpo {
+  readonly nome: string;
+  readonly massaMsol?: Numero;
+  readonly orbita: Orbita;
+}
+
 /** Forma de rotação rápida: elipsoide de Roche + escurecimento gravitacional. */
 export interface Achatamento {
   readonly raioPolarRsol: Numero;
@@ -106,6 +117,7 @@ export interface EstrelaVisitavel {
   readonly achatamento?: Achatamento;
   readonly superficie: Superficie;
   readonly companheira?: Companheira;
+  readonly companheiraSemCorpo?: CompanheiraSemCorpo;
 }
 
 /** a Teff do Sol (K): a régua das concessões que só a física liga */
@@ -293,6 +305,51 @@ const CAPELLA: EstrelaVisitavel = {
   },
 };
 
+/**
+ * DUBHE É UMA GIGANTE LARANJA com uma companheira a ~22 UA, uma volta a cada
+ * 44 anos. O catálogo a traz como "F7V comp" (o tipo é o da MISTURA das
+ * duas luzes), e a regra única a relia como supergigante. Lidos nos artigos
+ * em 16/11/2026:
+ *   - raio, temperatura e luminosidade da principal: Baines et al. 2025 (AJ
+ *     169, 293; arXiv:2506.02912), tabela 7 — diâmetro angular medido no
+ *     NPOI (θ_LD 6,749 ± 0,008 mas) + paralaxe Hipparcos;
+ *   - tipo, massas e a órbita: Gray 2018 (ApJ 869, 81). O tipo K0 III é o
+ *     de uso (Gray prefere K0 II–III); as massas são as astrométricas de
+ *     Gontcharov & Kiyaeva 2002 que ele cita (3,7 ± 0,4 e 2,5 ± 0,4 M☉), e
+ *     ele mesmo as chama de incertas; a órbita é a visual de Scardia et al.
+ *     2011 (speckle), copiada da tabela 2 dele com os valores PUBLICADOS.
+ * A companheira não tem tamanho nem temperatura medidos (Gray não acha o
+ * espectro dela; o tipo vai de A3 a F7 conforme o autor): fica só na ficha.
+ * A rotação da principal tem só limite superior (< 1,35 ano): vale a lei.
+ */
+const BAINES_2025 = 'Baines et al. 2025, AJ 169, 293';
+const GRAY_2018 = 'Gray 2018, ApJ 869, 81';
+const DUBHE: EstrelaVisitavel = {
+  id: 'dubhe',
+  nomeNoCatalogo: 'Dubhe',
+  hip: 54061,
+  tipo: { texto: 'K0 III', v: 0, p: 'medido', fonte: GRAY_2018 },
+  teffK: { v: 4810, p: 'derivado', fonte: BAINES_2025 }, // diâmetro + fluxo bolométrico (±22 K)
+  raioRsol: { v: 27.33, p: 'medido', fonte: BAINES_2025 }, // +0,49 −0,50
+  massaMsol: { v: 3.7, p: 'derivado', fonte: `Gontcharov & Kiyaeva 2002; ${GRAY_2018}` }, // ±0,4, astrometria
+  luminosidadeLsol: { v: 360.8, p: 'derivado', fonte: BAINES_2025 },
+  superficie: superficiePelaTemperatura(4810, 27.33, 3.7),
+  companheiraSemCorpo: {
+    nome: 'Dubhe B',
+    massaMsol: { v: 2.5, p: 'derivado', fonte: `Gontcharov & Kiyaeva 2002; ${GRAY_2018}` }, // ±0,4
+    orbita: {
+      periodoAnos: 44.45,
+      periastroAno: 2002.17,
+      aSegArco: 0.59,
+      e: 0.439,
+      iGraus: 159.9,
+      nodoGraus: 9.3,
+      argPeriastroGraus: 232.8,
+      fonte: `Scardia et al. 2011; ${GRAY_2018}`,
+    },
+  },
+};
+
 const VEGA: EstrelaVisitavel = {
   id: 'vega',
   nomeNoCatalogo: 'Vega',
@@ -419,6 +476,7 @@ export const ESTRELAS_VISITAVEIS: readonly EstrelaVisitavel[] = [
   // no fim, para não mudar a vaga de clarão de quem já estava (`2 × índice`)
   ALDEBARAN,
   CAPELLA,
+  DUBHE,
 ];
 
 export function estrelaVisitavelPorNome(nomeNoCatalogo: string): EstrelaVisitavel | null {

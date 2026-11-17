@@ -75,6 +75,9 @@ const FORA: Record<string, readonly string[]> = {
   // o catálogo a traz como uma estrela só, "M1: comp" (o tipo e o brilho são
   // do PAR); a escrita à mão é a componente Aa, medida (Torres et al. 2015)
   Capella: ['teffK', 'raioRsol', 'luminosidadeLsol', 'massaMsol'],
+  // "F7V comp": o tipo e a cor são da MISTURA da gigante K0 com a companheira
+  // A–F; a regra a relê pelo brilho e a classe sai errada (Baines et al. 2025)
+  Dubhe: ['teffK', 'raioRsol', 'luminosidadeLsol', 'massaMsol'],
 };
 
 describe('a regra confere com as fichas escritas à mão', () => {
@@ -95,6 +98,6 @@ describe('a regra confere com as fichas escritas à mão', () => {
       if (g.massaMsol.p === 'derivado') confere('massaMsol', Math.abs(g.massaMsol.v / a.massaMsol.v - 1) <= 0.25);
       conferidas++;
     }
-    expect(conferidas).toBe(12);
+    expect(conferidas).toBe(13);
   });
 });
