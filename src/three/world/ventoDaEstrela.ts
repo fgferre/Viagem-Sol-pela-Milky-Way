@@ -10,7 +10,9 @@
 //  · VENTO: ρ(r) ∝ Ṁ / (4π r² v(r)), v(r) = v∞·max((1 − R/r)^β, piso).
 //    Ṁ e v∞: o MEDIDO vence (`VENTOS_MEDIDOS`); senão a receita de Vink,
 //    de Koter & Lamers 2001 (A&A 369, 574), só dentro da faixa dela
-//    (`ventoPelaReceita`). Abaixo de 12.500 K não há receita.
+//    (`ventoPelaReceita`). Abaixo de 12.500 K não há receita. O halo é
+//    LISO e CURTO: chega ao piso do instrumento no raio da região da linha
+//    (`raioDaLinhaDe`, medido em Rigel e Deneb).
 //  · O BRILHO, sem limiar físico: a fração do fluxo do gás sobre o do disco
 //    é G·X/X_Rigel, X = (Ṁ/v∞)² / (R³·B656(Teff)) — a medida de emissão de
 //    um vento ∝ (Ṁ/v∞)²/R³ (a área do disco, R², divide o volume, R³ · R⁻⁴
@@ -19,11 +21,12 @@
 //    linha de Hα o diâmetro dela é 1,5× o do contínuo (Chesneau et al. 2010,
 //    A&A 521, A5), o envelope pesa tanto quanto o disco num filtro estreito.
 //    Abaixo de `LIMIAR_DE_DESENHO` o gás nem é construído.
-//  · DISCO (dado da estrela, `discoDeGas`): ρ = ρ0·(r/R)^−n·exp(−z²/2H²),
-//    H = H0·(r/R)^1,5 (Rivinius, Carciofi & Martayan 2013, A&ARv 21, 69); a
+//  · DISCO (dado da estrela, `discoDeGas`): ρ = ρ0·(r/R)^−n·exp(−z²/H²),
+//    H = H0·(r/R)^1,5, H0 = tan(meia abertura) — a meia espessura em 1/e
+//    da densidade (Rivinius, Carciofi & Martayan 2013, A&ARv 21, 69); a
 //    época por lista medida (`faseDoDisco`), nunca por ciclo inventado.
 // ============================================================
-import type { DiscoDeGas, EstrelaVisitavel } from '../../lib/atlas/estrelasVisitaveis';
+import { rotacaoDe, type DiscoDeGas, type EstrelaVisitavel } from '../../lib/atlas/estrelasVisitaveis';
 
 /** GM do Sol (IAU 2015 B3, nominal), m³/s² */
 const GM_SOL = 1.3271244e20;
@@ -36,24 +39,43 @@ export interface Vento {
   readonly vInfKms: number;
   readonly p: 'medido' | 'derivado';
   readonly fonte: string;
+  /** a velocidade é parâmetro de um MODELO ajustado, não medida direta (Deneb) */
+  readonly vInfDoModelo?: true;
 }
 
-const CHESNEAU_2014 = 'Chesneau et al. 2014, A&A 566, A125; Kaufer et al. 1996';
+const CHESNEAU_2014 = 'Chesneau et al. 2014, A&A 566, A125';
 const AUFDENBERG_2002 = 'Aufdenberg et al. 2002, ApJ 570, 344';
+export const CHESNEAU_2010 = 'Chesneau et al. 2010, A&A 521, A5';
 export const FONTE_DA_RECEITA = 'Vink, de Koter & Lamers 2001, A&A 369, 574';
-/** a fonte da estrutura do vento (grumos e braços) na ficha */
-export const FONTE_DA_ESTRUTURA_DO_VENTO =
-  'Puls et al. 2006, A&A 454, 625; Eversberg, Lépine & Moffat 1998, ApJ 494, 799; Cranmer & Owocki 1996, ApJ 462, 469';
 
 /**
  * OS VENTOS MEDIDOS, pelo nome no catálogo. Rigel: a média de 9,4 ± 0,9
- * (2006–07) e 7,6 ± 1,1 × 10⁻⁷ M☉/ano (2009–10), v∞ 230 km/s (Kaufer et
- * al. 1996, citado ali). Deneb: 8 ± 3 × 10⁻⁷, 225 km/s.
+ * (2006–07) e 7,6 ± 1,1 × 10⁻⁷ M☉/ano (2009–10), Chesneau et al. 2014; v∞
+ * 230 km/s pelas linhas de ressonância de Mg II citadas ali ("The Mg II
+ * resonance lines suggest terminal wind speeds of ∼230 km s⁻¹"). Deneb:
+ * Ṁ 8 ± 3 × 10⁻⁷ medido; os 225 km/s são parâmetro do MODELO de Aufdenberg
+ * et al. 2002, não medida direta (a ficha diz).
  */
 export const VENTOS_MEDIDOS: Readonly<Record<string, Vento>> = {
   Rigel: { mdotMsolAno: 8.5e-7, vInfKms: 230, p: 'medido', fonte: CHESNEAU_2014 },
-  Deneb: { mdotMsolAno: 8e-7, vInfKms: 225, p: 'medido', fonte: AUFDENBERG_2002 },
+  Deneb: { mdotMsolAno: 8e-7, vInfKms: 225, p: 'medido', fonte: AUFDENBERG_2002, vInfDoModelo: true },
 };
+
+/**
+ * O TAMANHO DA REGIÃO DA LINHA Hα, em raios do contínuo, MEDIDO: "the
+ * highest extension of the Hα line-forming regions are 4.1 ± 0.2 mas and
+ * 4.2 ± 0.2 mas for Deneb and Rigel, representing 1.75 and 1.5 R⋆"
+ * (Chesneau et al. 2010, A&A 521, A5). O halo desenhado chega ao piso do
+ * instrumento NESTE raio. Nas estrelas da receita vale o de Rigel (1,5),
+ * declarado derivado.
+ */
+export const RAIOS_DA_LINHA_MEDIDOS: Readonly<Record<string, number>> = { Rigel: 1.5, Deneb: 1.75 };
+
+/** o raio da região da linha de uma estrela: o medido pelo nome, ou o de Rigel (derivado) */
+export function raioDaLinhaDe(nome: string): { v: number; p: 'medido' | 'derivado'; fonte: string } {
+  const m = RAIOS_DA_LINHA_MEDIDOS[nome];
+  return m !== undefined ? { v: m, p: 'medido', fonte: CHESNEAU_2010 } : { v: RAIOS_DA_LINHA_MEDIDOS.Rigel, p: 'derivado', fonte: CHESNEAU_2010 };
+}
 
 /** log⟨ρ⟩ na metalicidade do Sol (Vink et al. 2001, eq. 14) */
 const LOG_RHO_MEDIO = -13.636;
@@ -155,9 +177,10 @@ const X_RIGEL = medidaDoVento(VENTOS_MEDIDOS.Rigel, ANCORA_RIGEL.raioRsol, ANCOR
  * instrumento (1 = o gás inteiro com o mesmo fluxo do disco). O disco de
  * uma Be usa o mesmo G × a fase. A faixa que a medida sustenta é ~0,3 a ~1
  * (o pico de Hα de Achernar ativa ≲ 1,3–1,5 do contínuo; Deneb, 1,3 Å de
- * absorção líquida). 0,3, a ponta baixa, reescolhido por imagem na segunda
- * volta (17/11, com o piso e os grumos): de perto Rigel já tem o gás até ~2
- * raios, e Naos, no teto, já enche o quadro; acima disso volta a névoa.
+ * absorção líquida). 0,3, a ponta baixa, mantido no fechamento (17/11, com o
+ * halo curto e liso): o halo de Rigel já tem a borda acesa e o de Naos, no
+ * teto, já clareia para o rosa-claro; de perto (a 2 raios) o halo de 1,5
+ * raio já chega perto das laterais do quadro — mais ganho só o espalharia.
  */
 export const GANHO_DO_GAS = 0.3;
 /** o limiar de DESENHO (não físico): abaixo de 1/400 do fluxo do disco, meio degrau de tela, o gás nem nasce */
@@ -181,20 +204,29 @@ export const TETO_DO_GAS = 1;
  * com a mesma inclinação em x = 1; teto em `TETO_DO_GAS`.
  */
 export function fracaoDoVento(v: Vento, raioRsol: number, teffK: number): number {
-  const x = medidaDoVento(v, raioRsol, teffK) / X_RIGEL;
+  const x = razaoARigel(v, raioRsol, teffK);
   return Math.min(TETO_DO_GAS, GANHO_DO_GAS * (x <= 1 ? x : 1 + Math.log(x)));
 }
 
+/** a medida de emissão do vento relativa à de Rigel (X/X_Rigel): o brilho DERIVADO, antes do ganho */
+export function razaoARigel(v: Vento, raioRsol: number, teffK: number): number {
+  return medidaDoVento(v, raioRsol, teffK) / X_RIGEL;
+}
+
 /**
- * O PERFIL DO VENTO, ARTÍSTICO, declarado: β e o piso da lei de
- * velocidade, e a cauda que leva a emissão a zero até 3,2 raios (a linha
- * sonda até 3). Com ρ² a emissão de um vento com velocidade constante cai
- * como b⁻³ na tela, e o raio de meia altura não passa de 2^⅓ ≈ 1,26 —
- * qualquer β; os 1,5 raio medidos em Rigel (1,75 em Deneb) são de uma
- * linha opticamente espessa perto da base. β = 3 com piso de 0,1 v∞ é o
- * mais perto que a lei chega (meia altura em ~1,24 raio).
+ * O PERFIL DO VENTO — LISO e CURTO. A lei de velocidade (β e o piso dela,
+ * em v∞) faz a emissão ∝ ρ² ∝ 1/(r⁴v²) concentrar-se rente à base; a CAUDA,
+ * 1 − smoothstep(1, fim, r) desde a superfície, leva a coluna ao piso do
+ * instrumento EXATAMENTE no raio da região da linha (`raioDaLinhaDe`: 1,5
+ * em Rigel, 1,75 em Deneb, medidos): `fim` sai da conta (`fimDaCauda`), não
+ * de escolha. Sem degrau: a coluna desce lisa até o piso e o joelho
+ * (`joelhoDoPiso`) a leva ao preto. ARTÍSTICOS: β = 1 e o piso de 0,15 v∞
+ * (a forma do halo dentro do raio medido: a luz rente à borda, a 24 % do
+ * pico em 1,2 raio e 8 % em 1,3 em Rigel; a lei sem cauda já chega a 1 % em
+ * ~2 raios, então a cauda só encurta, e o fim dela fica perto: 1,8 raio em
+ * Rigel, 2,7 em Deneb) e a cauda smoothstep.
  */
-export const PERFIL_DO_VENTO = { beta: 3, piso: 0.1, caudaDe: 2.2, fim: 3.2 } as const;
+export const PERFIL_DO_VENTO = { beta: 1, piso: 0.15 } as const;
 /**
  * O PISO DO INSTRUMENTO: toda imagem tem uma faixa dinâmica, e abaixo dela o
  * gás é preto. Nas imagens do VLTI/PIONIER do disco de Achernar os contornos
@@ -217,120 +249,6 @@ export function joelhoDoPiso(x: number, f: number): number {
 }
 
 /**
- * OS GRUMOS — os ventos de O/B são grumosos: fator de grumo ⟨ρ²⟩/⟨ρ⟩² ≈ 4,1
- * ± 1,4 na região interna dos ventos densos, máximo perto de 2 raios ou
- * abaixo (Puls et al. 2006, A&A 454, 625); em ζ Pup as subestruturas saem da
- * fotosfera até ~2 raios com β = 1,0–1,2 (Eversberg, Lépine & Moffat 1998,
- * ApJ 494, 799). A média da emissão não muda (o Ṁ medido por Hα já é o do
- * vento grumoso): é redistribuição. O fator vale `fator` até `ateRaio` e
- * desce a 1 em `semGrumosEm` (a descida é ARTÍSTICA).
- * NA IMAGEM, não no volume: a linha de visada soma ~N grumos, e o contraste
- * que sobra na coluna é ⟨I²⟩/⟨I⟩² = 1 + (f − 1)/N (`fatorNaImagem`) — os
- * grumos dominam a EMISSÃO (×f), não a textura. Marchar grumos menores que o
- * passo da marcha dava bolinhas (cada passo corta os fiapos num ponto); o
- * campo vai então uma vez por pixel, pela direção e pelo b do ponto de maior
- * aproximação, onde a emissão se concentra, como modulação de média 1:
- *   m = (1 − α) + α · (h/⟨h⟩) · (q^p/⟨q^p⟩),
- *  · h: um grumo por célula de uma grade na DIREÇÃO (a direção × `escala`),
- *    a·(1 − s²/ρ²)₊^m, centro sorteado na célula (folga `folga`), altura a
- *    uniforme em [`alturaMin`, 1]: constante ao longo do raio, um FIAPO;
- *  · q = q1·q2, qi = (1 + sen φi)/2, φi = 2π((τ(b) − t/T)/Pi + sorteio):
- *    contas ao longo do fiapo que SAEM pela lei de velocidade (β = 1, τ o
- *    tempo de voo) e se esticam no raio ao acelerar; dois períodos sem razão
- *    simples (P e P·φ áureo, × um sorteio por fiapo de 0,75 a 1,25) para as
- *    contas não virarem tracejado regular;
- *  · α tal que ⟨m²⟩ = F (`alfaDoGrumo`; a média sobre a célula e sobre uma
- *    volta de φ é exata: a grade e a fase são uniformes).
- * MEDIDOS: o fator e o β; ARTÍSTICOS: a forma (escala — que fixa N = π·escala/2
- * e com ele o contraste na tela —, raio, perfil, folga, alturas, o período P
- * em τ), o ritmo (`segundosPorRaio`: segundos de tela para um grumo a v∞
- * cruzar um raio, no relógio rápido da superfície) e o piso da velocidade (o
- * grumo nasce devagar, não parado).
- */
-export const GRUMOS_DO_VENTO = {
-  fator: 4,
-  beta: 1,
-  pisoDaVelocidade: 0.1,
-  ateRaio: 2,
-  semGrumosEm: 3,
-  escala: 16,
-  raio: 0.4,
-  perfil: 1,
-  folga: 0.1,
-  alturaMin: 0.2,
-  expoenteDasContas: 1,
-  periodoEmTau: 1.2,
-  segundosPorRaio: 9,
-} as const;
-
-/** ⟨q^p⟩ com q = (1 + sen φ)/2 e φ uniforme (a média sobre uma volta) */
-export function momentoDoGrumo(p: number): number {
-  let s = 0;
-  const n = 4096;
-  for (let i = 0; i < n; i++) s += ((1 + Math.sin((2 * Math.PI * (i + 0.5)) / n)) / 2) ** p;
-  return s / n;
-}
-
-/** ⟨b^k⟩ do grumo na célula unitária: ⟨a^k⟩ · 4πρ³ ∫₀¹ (1 − x²)^(km) x² dx */
-export function momentoDaCelula(k: number): number {
-  const g = GRUMOS_DO_VENTO;
-  const a0 = g.alturaMin;
-  const ak = (1 - a0 ** (k + 1)) / ((k + 1) * (1 - a0));
-  let s = 0;
-  const n = 4096;
-  for (let i = 0; i < n; i++) {
-    const x = (i + 0.5) / n;
-    s += (1 - x * x) ** (k * g.perfil) * x * x;
-  }
-  return ak * 4 * Math.PI * g.raio ** 3 * (s / n);
-}
-
-/** os momentos da grade e das contas, uma vez: R = ⟨x²⟩/⟨x⟩² de cada parte (as contas, duas fases: ao quadrado) e a normal ⟨h⟩·⟨q^p⟩² */
-const MOMENTOS_DO_GRUMO = (() => {
-  const p = GRUMOS_DO_VENTO.expoenteDasContas;
-  const rb = momentoDaCelula(2) / momentoDaCelula(1) ** 2;
-  const rq = (momentoDoGrumo(2 * p) / momentoDoGrumo(p) ** 2) ** 2;
-  return { rbRq: rb * rq, normal: momentoDaCelula(1) * momentoDoGrumo(p) ** 2 };
-})();
-
-/** α para um fator F: ⟨m²⟩ = 1 − α² + α²·Rb·Rq = F */
-export function alfaDoGrumo(fator: number): number {
-  return Math.sqrt(Math.max(fator - 1, 0) / (MOMENTOS_DO_GRUMO.rbRq - 1));
-}
-
-/** o fator de grumo a r raios: `fator` até `ateRaio`, descendo (smoothstep) a 1 em `semGrumosEm` */
-export function fatorDeGrumo(r: number): number {
-  const g = GRUMOS_DO_VENTO;
-  return 1 + (g.fator - 1) * (1 - suave(g.ateRaio, g.semGrumosEm, r));
-}
-
-/**
- * O FATOR NA IMAGEM a b raios: a linha de visada soma N grumos
- * independentes, e a variância relativa da coluna cai por N —
- * ⟨I²⟩/⟨I⟩² = 1 + (f − 1)/N. N = (comprimento efetivo da linha, πb/2 para
- * uma emissão ∝ r⁻⁴) ÷ (o tamanho do grumo, b/`escala`) = π·escala/2. Em b ≤
- * `ateRaio`, com b = 0, o máximo.
- */
-export function fatorNaImagem(b: number): number {
-  return 1 + (fatorDeGrumo(b) - 1) / ((Math.PI * GRUMOS_DO_VENTO.escala) / 2);
-}
-
-/** a modulação da IMAGEM pelos grumos a b raios (média 1, ⟨m²⟩ = `fatorNaImagem`), pela altura na célula (h) e pelas duas fases (q1, q2) */
-export function modulacaoDoGrumo(altura: number, q1: number, q2: number, b: number): number {
-  const p = GRUMOS_DO_VENTO.expoenteDasContas;
-  const alfa = alfaDoGrumo(fatorNaImagem(b));
-  return 1 - alfa + (alfa * altura * (q1 * q2) ** p) / MOMENTOS_DO_GRUMO.normal;
-}
-
-/** o tempo de voo τ(r) (em R/v∞) na lei v = v∞·max((1 − 1/r)^β, piso) com β = `GRUMOS_DO_VENTO.beta` = 1: linear até r* = 1/(1 − piso), r + ln(r − 1) depois (o shader usa a mesma conta, com a constante daqui) */
-export function tempoDeVoo(r: number): number {
-  const piso = GRUMOS_DO_VENTO.pisoDaVelocidade;
-  const rEstrela = 1 / (1 - piso);
-  if (r <= rEstrela) return (Math.max(r, 1) - 1) / piso;
-  return (rEstrela - 1) / piso + r + Math.log(r - 1) - rEstrela - Math.log(rEstrela - 1);
-}
-
-/**
  * OS BRAÇOS QUE GIRAM — regiões de interação corrotantes. No modelo de
  * Cranmer & Owocki 1996 (ApJ 462, 469) duas manchas a 180° dão braços com
  * densidade até ~2,6–3,7× a do vento liso, em espiral de Arquimedes
@@ -341,7 +259,12 @@ export function tempoDeVoo(r: number): number {
  * baixa) e o enrolamento; ARTÍSTICOS: a largura (von Mises em 2Δφ,
  * `concentracao`) e o envelope em latitude (`latitude`, em sen² da
  * latitude). ρ × (1 + (c − 1)·S); a emissão, (1 + (c − 1)S)²/⟨…⟩: a luz
- * total do vento fica a da regra (redistribuição, como os grumos).
+ * total do vento fica a da regra (redistribuição).
+ * SÓ COM GIRO MEDIDO: o enrolamento sai do período, e um período derivado
+ * ou artístico (o do Sol em Rigel, Deneb e Naos) daria uma espiral
+ * inventada — sem giro medido, sem braços (`gasDaEstrela`). Os de ζ Pup
+ * (1,78 dia, Ramiaramanantsoa et al. 2018) voltam quando o giro entrar
+ * como dado da estrela.
  */
 export const BRACOS_DO_VENTO = { contraste: 2.6, concentracao: 5, latitude: 0.12 } as const;
 
@@ -379,37 +302,56 @@ function suave(a: number, b: number, x: number): number {
   return t * t * (3 - 2 * t);
 }
 
-/** a emissividade do vento (sem os braços) a r raios do centro, na unidade do desenho */
-export function emissividadeDoVento(r: number): number {
+/** a emissividade do vento liso (sem os braços) a r raios do centro, com a cauda até `fim`, na unidade do desenho */
+export function emissividadeDoVento(r: number, fim: number): number {
   const rr = Math.max(r, 1);
   const w = Math.max(Math.pow(Math.max(1 - 1 / rr, 0), PERFIL_DO_VENTO.beta), PERFIL_DO_VENTO.piso);
-  return (1 - suave(PERFIL_DO_VENTO.caudaDe, PERFIL_DO_VENTO.fim, rr)) / (rr ** 4 * w * w);
+  return (1 - suave(1, fim, rr)) / (rr ** 4 * w * w);
 }
 
 /** a coluna do vento liso a b raios do centro, ∫ ε(√(b² + t²)) dt (b ≥ 1: a linha não bate na estrela) */
-export function colunaDoVento(b: number): number {
-  const fim = Math.sqrt(Math.max(PERFIL_DO_VENTO.fim ** 2 - b * b, 0));
+export function colunaDoVento(b: number, fim: number, n = 4000): number {
+  const meia = Math.sqrt(Math.max(fim * fim - b * b, 0));
   let s = 0;
-  const n = 4000;
   for (let i = 0; i < n; i++) {
-    // t = fim·u², mais denso rente ao ponto de maior aproximação
+    // t = meia·u², mais denso rente ao ponto de maior aproximação
     const u0 = i / n;
     const u1 = (i + 1) / n;
     const um = 0.5 * (u0 + u1);
-    const t = fim * um * um;
-    s += 2 * emissividadeDoVento(Math.hypot(b, t)) * fim * (u1 * u1 - u0 * u0);
+    const t = meia * um * um;
+    s += 2 * emissividadeDoVento(Math.hypot(b, t), fim) * meia * (u1 * u1 - u0 * u0);
   }
   return s;
 }
 
+const FINS_DA_CAUDA = new Map<number, number>();
+/**
+ * O FIM DA CAUDA para um raio da linha: a coluna em `raioDaLinha` vale o
+ * piso do instrumento × a coluna rente à borda (bisseção; uma vez por raio).
+ */
+export function fimDaCauda(raioDaLinha: number): number {
+  const memo = FINS_DA_CAUDA.get(raioDaLinha);
+  if (memo !== undefined) return memo;
+  let lo = raioDaLinha;
+  let hi = 4 * raioDaLinha;
+  for (let k = 0; k < 40; k++) {
+    const m = 0.5 * (lo + hi);
+    if (colunaDoVento(raioDaLinha, m, 1500) / colunaDoVento(1, m, 1500) > PISO_DO_INSTRUMENTO) hi = m;
+    else lo = m;
+  }
+  const fim = 0.5 * (lo + hi);
+  FINS_DA_CAUDA.set(raioDaLinha, fim);
+  return fim;
+}
+
 /** ∫ 4π r² ε(r) dr de 1 até o fim: a luz inteira do vento na unidade do desenho */
-export function integralDoVento(): number {
+export function integralDoVento(fim: number): number {
   let s = 0;
   const n = 8000;
-  const h = (PERFIL_DO_VENTO.fim - 1) / n;
+  const h = (fim - 1) / n;
   for (let i = 0; i < n; i++) {
     const r = 1 + (i + 0.5) * h;
-    s += 4 * Math.PI * r * r * emissividadeDoVento(r) * h;
+    s += 4 * Math.PI * r * r * emissividadeDoVento(r, fim) * h;
   }
   return s;
 }
@@ -420,7 +362,7 @@ export function fluxoDoDisco(bordaU: number): number {
 }
 
 /** a cauda do disco de gás em volta do raio externo: de 0,85 a 1,15 × ele (ARTÍSTICO) */
-export const CAUDA_DO_DISCO = { de: 0.85, ate: 1.15 } as const;
+export const CAUDA_DO_DISCO = { de: 0.95, ate: 1.0 } as const;
 
 /** o disco em números de desenho */
 export interface DiscoDoMotor {
@@ -447,8 +389,10 @@ export interface GasDoMotor {
     readonly normal: number;
     /** o PICO: a coluna do vento liso rente à borda (normal × `colunaDoVento(1)`) — a base do piso */
     readonly pico: number;
-    /** o enrolamento dos braços, rad por raio (`enrolamentoDosBracos`) */
-    readonly enrolamento: number;
+    /** o fim da cauda, em raios (`fimDaCauda` do raio da linha) */
+    readonly fim: number;
+    /** o enrolamento dos braços, rad por raio (`enrolamentoDosBracos`): só com giro MEDIDO; sem ele, sem braços */
+    readonly enrolamento?: number;
   };
   readonly disco?: DiscoDoMotor;
 }
@@ -528,21 +472,25 @@ export function fracaoDesenhadaDoVento(e: EstrelaVisitavel): number {
 
 /**
  * o gás de uma estrela em números de desenho, ou null (o texto do shader fica
- * o de antes); o período do giro (`rotacaoDe`, no diretor) enrola os braços
+ * o de antes); os braços só com o giro MEDIDO da ficha (`rotacaoDe`)
  */
-export function gasDaEstrela(e: EstrelaVisitavel, periodoDias?: number): GasDoMotor | null {
+export function gasDaEstrela(e: EstrelaVisitavel): GasDoMotor | null {
   const u = e.superficie.bordaU.v;
   const f = fracaoDesenhadaDoVento(e);
   const v = f > 0 ? ventoDaFicha(e) : null;
-  const normal = (f * fluxoDoDisco(u)) / integralDoVento();
-  const vento = v
-    ? {
-        fracao: f,
-        normal,
-        pico: normal * colunaDoVento(1),
-        enrolamento: enrolamentoDosBracos(e.raioRsol.v, periodoDias, v.vInfKms),
-      }
-    : undefined;
+  let vento: GasDoMotor['vento'];
+  if (v) {
+    const fim = fimDaCauda(raioDaLinhaDe(e.nomeNoCatalogo).v);
+    const normal = (f * fluxoDoDisco(u)) / integralDoVento(fim);
+    const giro = rotacaoDe(e);
+    vento = {
+      fracao: f,
+      normal,
+      pico: normal * colunaDoVento(1, fim),
+      fim,
+      ...(giro.p === 'medido' ? { enrolamento: enrolamentoDosBracos(e.raioRsol.v, giro.v, v.vInfKms) } : {}),
+    };
+  }
   const disco = e.discoDeGas && GANHO_DO_GAS >= LIMIAR_DE_DESENHO ? discoDoMotor(e.discoDeGas, u) : undefined;
   if (!vento && !disco) return null;
   return { ...(vento ? { vento } : {}), ...(disco ? { disco } : {}) };

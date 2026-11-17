@@ -1013,14 +1013,27 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     const naos = linhasDe(de('Naos')).get('vento')!;
     expect(naos.procedencia).toBe('derivado');
     expect(naos.fonte).toContain('Vink');
-    const estrutura = linhasDe(de('Rigel')).get('estrutura do vento')!;
-    expect(estrutura.procedencia).toBe('derivado');
-    expect(estrutura.fonte).toContain('Puls');
+    // a estrutura do vento (grumos) saiu: o halo é liso
+    expect(linhasDe(de('Rigel')).has('estrutura do vento')).toBe(false);
+    // a região da linha: medida em Rigel e Deneb, a de Rigel (derivada) na receita
+    const linhaRig = linhasDe(de('Rigel')).get('região da linha Hα')!;
+    expect(linhaRig.procedencia).toBe('medido');
+    expect(linhaRig.valor).toContain('1,5');
+    expect(linhaRig.fonte).toContain('Chesneau et al. 2010');
+    expect(linhasDe(de('Deneb')).get('região da linha Hα')!.valor).toContain('1,75');
+    expect(linhasDe(de('Naos')).get('região da linha Hα')!.procedencia).toBe('derivado');
+    // Deneb: a perda de massa é medida, a velocidade é do modelo
+    const deneb = linhasDe(de('Deneb')).get('vento')!;
+    expect(deneb.procedencia).toBe('medido');
+    expect(deneb.valor).toContain('do modelo');
+    // o brilho relativo a Rigel: derivado, e não na própria Rigel
+    expect(linhasDe(de('Naos')).get('brilho do gás')!.procedencia).toBe('derivado');
+    expect(linhasDe(de('Rigel')).has('brilho do gás')).toBe(false);
     // Alnilam: a massa típica do catálogo a põe fora da grade da receita, sem vento
     expect(linhasDe(de('Alnilam')).has('vento')).toBe(false);
     const ach = de('Achernar');
     expect(linhasDe(ach).has('vento')).toBe(false);
-    expect(linhasDe(ach).has('estrutura do vento')).toBe(false);
+    expect(linhasDe(ach).has('região da linha Hα')).toBe(false);
     const disco = linhasDe(ach).get('disco de gás')!;
     expect(disco.procedencia).toBe('medido');
     expect(disco.valor).toContain('o estado de hoje não foi medido');

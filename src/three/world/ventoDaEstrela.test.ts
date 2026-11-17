@@ -7,23 +7,17 @@ import { estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
 import {
   ANCORA_RIGEL,
   BRACOS_DO_VENTO,
-  GRUMOS_DO_VENTO,
   NORMAL_DOS_BRACOS,
   PISO_DO_INSTRUMENTO,
-  alfaDoGrumo,
   colunaDoVento,
   enrolamentoDosBracos,
-  fatorNaImagem,
+  fimDaCauda,
   joelhoDoPiso,
-  modulacaoDoGrumo,
-  momentoDaCelula,
-  momentoDoGrumo,
   perfilDoBraco,
-  tempoDeVoo,
+  raioDaLinhaDe,
   GAMA_MAXIMO_DA_RECEITA,
   GANHO_DO_GAS,
   LIMIAR_DE_DESENHO,
-  PERFIL_DO_VENTO,
   TEFF_DO_SALTO_K,
   TETO_DO_GAS,
   VENTOS_MEDIDOS,
@@ -90,7 +84,7 @@ describe('o vento das quentes — Vink, de Koter & Lamers 2001', () => {
     // Achernar tem a receita (B3, 15,5 kK), mas o vento fica abaixo do limiar: só o disco
     const ach = gasDaEstrela(estrelaVisitavelPorNome('Achernar')!)!;
     expect(ach.vento).toBeUndefined();
-    expect(ach.disco?.raioExterno).toBe(2);
+    expect(ach.disco?.raioExterno).toBe(1.7);
   });
 
   it('o gás tem teto: acima do vento de Rigel cresce com o logaritmo e nunca passa do fluxo do disco', () => {
@@ -117,11 +111,12 @@ describe('o vento das quentes — Vink, de Koter & Lamers 2001', () => {
     expect(gasDaEstrela(doCatalogo('Naos'))).not.toBeNull();
   });
 
-  it('a emissividade é finita e cai para fora (sem NaN rente à borda)', () => {
-    expect(Number.isFinite(emissividadeDoVento(1))).toBe(true);
-    expect(emissividadeDoVento(0.5)).toBe(emissividadeDoVento(1));
-    expect(emissividadeDoVento(1.5)).toBeLessThan(emissividadeDoVento(1.1));
-    expect(emissividadeDoVento(PERFIL_DO_VENTO.fim)).toBe(0);
+  it('a emissividade é finita e cai para fora (sem NaN rente à borda), e zera no fim da cauda', () => {
+    const fim = fimDaCauda(1.5);
+    expect(Number.isFinite(emissividadeDoVento(1, fim))).toBe(true);
+    expect(emissividadeDoVento(0.5, fim)).toBe(emissividadeDoVento(1, fim));
+    expect(emissividadeDoVento(1.3, fim)).toBeLessThan(emissividadeDoVento(1.1, fim));
+    expect(emissividadeDoVento(fim, fim)).toBe(0);
   });
 });
 
@@ -137,8 +132,8 @@ describe('a época do disco de Achernar, pela lista medida', () => {
   });
 });
 
-describe('a imagem do gás: piso, grumos e braços', () => {
-  it('o piso do instrumento: preto até 1 % do pico, sem degrau nem quina, e o vento de Rigel zera antes de 2,5 raios', () => {
+describe('a imagem do gás: o halo curto, o piso e os braços', () => {
+  it('o piso do instrumento: preto até 1 % do pico, sem degrau nem quina', () => {
     const f = 0.01;
     expect(joelhoDoPiso(0.5 * f, f)).toBe(0);
     expect(joelhoDoPiso(f, f)).toBe(0);
@@ -148,66 +143,39 @@ describe('a imagem do gás: piso, grumos e braços', () => {
     expect(d(3 * f)).toBeCloseTo(1, 4);
     expect(d(f + 1e-6)).toBeLessThan(1e-3);
     expect(joelhoDoPiso(1, f)).toBeCloseTo(1 - 2 * f, 12);
-    // o vento liso de Rigel: a coluna cai abaixo do piso entre 2 e 2,5 raios
-    const g = gasDaEstrela(doCatalogo('Rigel'))!.vento!;
-    const piso = PISO_DO_INSTRUMENTO * g.pico;
-    expect(joelhoDoPiso(g.normal * colunaDoVento(2), piso)).toBeGreaterThan(0);
-    expect(joelhoDoPiso(g.normal * colunaDoVento(2.5), piso)).toBe(0);
   });
 
-  it('os grumos redistribuem: a modulação tem média 1 e ⟨m²⟩ = 1 + (f − 1)/N; o fator é o medido', () => {
-    const G = GRUMOS_DO_VENTO;
-    expect(G.fator).toBe(4);
-    // o grumo na célula como o shader o desenha, na grade (centro deslocado pela folga, altura uniforme)
-    const n = 40;
-    let h1 = 0;
-    let h2 = 0;
-    const c = [G.folga, -G.folga, 0.5 * G.folga];
-    for (let ia = 0; ia < 8; ia++) {
-      const a = G.alturaMin + (1 - G.alturaMin) * ((ia + 0.5) / 8);
-      for (let i = 0; i < n; i++)
-        for (let j = 0; j < n; j++)
-          for (let k = 0; k < n; k++) {
-            const u = [(i + 0.5) / n - 0.5 - c[0], (j + 0.5) / n - 0.5 - c[1], (k + 0.5) / n - 0.5 - c[2]];
-            const s = Math.max(0, 1 - (u[0] ** 2 + u[1] ** 2 + u[2] ** 2) / G.raio ** 2);
-            const h = a * s ** G.perfil;
-            h1 += h;
-            h2 += h * h;
-          }
-    }
-    const N = 8 * n ** 3;
-    expect(h1 / N / momentoDaCelula(1)).toBeCloseTo(1, 2);
-    expect(h2 / N / momentoDaCelula(2)).toBeCloseTo(1, 2);
-    // a média e o segundo momento da modulação, pela célula e por uma volta da fase das contas
-    const b = 1.5;
-    let m1 = 0;
-    let m2 = 0;
-    const nq = 128;
-    const hs = [
-      [0, 1 - momentoDaCelula(1) ** 2 / momentoDaCelula(2)],
-      [momentoDaCelula(2) / momentoDaCelula(1), momentoDaCelula(1) ** 2 / momentoDaCelula(2)],
-    ] as const;
-    for (let i = 0; i < nq; i++) {
-      const q1 = (1 + Math.sin((2 * Math.PI * (i + 0.5)) / nq)) / 2;
-      for (let j = 0; j < nq; j++) {
-        const q2 = (1 + Math.sin((2 * Math.PI * (j + 0.5)) / nq)) / 2;
-        for (const [h, peso] of hs) {
-          const m = modulacaoDoGrumo(h, q1, q2, b);
-          m1 += peso * m;
-          m2 += peso * m * m;
-        }
+  it('o halo chega ao piso no raio da linha: 1,5 em Rigel e 1,75 em Deneb (medidos), 1,5 na receita (o de Rigel)', () => {
+    expect(raioDaLinhaDe('Rigel')).toMatchObject({ v: 1.5, p: 'medido' });
+    expect(raioDaLinhaDe('Deneb')).toMatchObject({ v: 1.75, p: 'medido' });
+    expect(raioDaLinhaDe('Naos')).toMatchObject({ v: 1.5, p: 'derivado' });
+    for (const [nome, raio] of [['Rigel', 1.5], ['Deneb', 1.75], ['Naos', 1.5]] as const) {
+      const g = gasDaEstrela(doCatalogo(nome))!.vento!;
+      const piso = PISO_DO_INSTRUMENTO * g.pico;
+      expect(g.fim).toBe(fimDaCauda(raio));
+      // aceso logo antes do raio, preto a partir dele, e a coluna desce lisa (sem degrau)
+      expect(joelhoDoPiso(g.normal * colunaDoVento(raio - 0.05, g.fim), piso)).toBeGreaterThan(0);
+      expect(joelhoDoPiso(g.normal * colunaDoVento(raio + 0.005, g.fim), piso)).toBe(0);
+      let antes = Infinity;
+      for (let b = 1; b <= raio; b += 0.01) {
+        const c = colunaDoVento(b, g.fim, 1500);
+        expect(c).toBeLessThan(antes);
+        expect(antes === Infinity || c / antes > 0.85).toBe(true);
+        antes = c;
       }
     }
-    expect(m1 / nq ** 2).toBeCloseTo(1, 6);
-    expect(m2 / nq ** 2).toBeCloseTo(fatorNaImagem(b), 6);
-    expect(fatorNaImagem(b) - 1).toBeCloseTo(3 / ((Math.PI * G.escala) / 2), 9);
-    // o tempo de voo é contínuo no piso da velocidade e cresce como r + ln(r − 1) depois
-    const rS = 1 / (1 - G.pisoDaVelocidade);
-    expect(tempoDeVoo(rS - 1e-9)).toBeCloseTo(tempoDeVoo(rS + 1e-9), 6);
-    expect(tempoDeVoo(3) - tempoDeVoo(2)).toBeCloseTo(1 + Math.log(2), 12);
-    // fora de 3 raios, sem grumos: α = 0
-    expect(alfaDoGrumo(fatorNaImagem(3))).toBe(0);
-    expect(momentoDoGrumo(0)).toBeCloseTo(1, 12);
+  });
+
+  it('os braços só com giro MEDIDO: Rigel (período artístico) não tem; a mesma ficha com giro medido tem', () => {
+    const rigel = doCatalogo('Rigel');
+    expect(gasDaEstrela(rigel)!.vento!.enrolamento).toBeUndefined();
+    const medido = { ...rigel, rotacaoDias: { v: 40, p: 'medido' as const, fonte: 'teste' } };
+    expect(gasDaEstrela(medido)!.vento!.enrolamento).toBeCloseTo(
+      enrolamentoDosBracos(rigel.raioRsol.v, 40, VENTOS_MEDIDOS.Rigel.vInfKms),
+      12
+    );
+    const derivado = { ...rigel, rotacaoDias: { v: 40, p: 'derivado' as const, fonte: 'teste' } };
+    expect(gasDaEstrela(derivado)!.vento!.enrolamento).toBeUndefined();
   });
 
   it('os braços: contraste de densidade 2,6 (emissão 2,6² entre o centro do braço e o vão), luz total a da regra', () => {

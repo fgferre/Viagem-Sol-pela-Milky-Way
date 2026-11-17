@@ -53,7 +53,7 @@ import {
   pesoDoPico,
   regraDaForja,
 } from '../../three/world/forjaDaEstrela';
-import { FONTE_DA_ESTRUTURA_DO_VENTO, fracaoDesenhadaDoVento, ventoDaFicha } from '../../three/world/ventoDaEstrela';
+import { fracaoDesenhadaDoVento, raioDaLinhaDe, razaoARigel, ventoDaFicha } from '../../three/world/ventoDaEstrela';
 import { NOMES_DOS_CORPOS, classeEmTexto, nomeDoCorpo } from '../../three/atlasConfig';
 import { decimalDoIdioma, idiomaAtual, t, type ChaveDeTexto } from '../idioma';
 import type { Procedencia } from '../../three/selo';
@@ -1002,33 +1002,53 @@ function potenciaDeDez(v: number): string {
 /**
  * O GÁS que o motor desenha (`gasDaEstrela`, `ventoDaEstrela.ts`): o vento
  * (medido pelo nome, ou a receita de Vink 2001), só de quem o tem acima do
- * limiar de desenho; o disco de gás da ficha (Achernar), com a época medida.
+ * limiar de desenho, com o tamanho da região da linha (medido em Rigel e
+ * Deneb; o de Rigel nas outras) e o brilho relativo a Rigel (derivado); o
+ * disco de gás da ficha (Achernar), com a época medida.
  */
 function linhasDoGas(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
   const v = fracaoDesenhadaDoVento(e) > 0 ? ventoDaFicha(e) : null;
   const d = e.discoDeGas;
+  const linhaH = v ? raioDaLinhaDe(e.nomeNoCatalogo) : null;
+  const mdot = v ? potenciaDeDez(v.mdotMsolAno) : '';
+  // a velocidade medida ou do modelo como está; a da receita, em dezenas
+  const vel = v ? inteiroDoIdioma(v.p === 'medido' ? v.vInfKms : Math.round(v.vInfKms / 10) * 10) : '';
   return [
     v
       ? linha(
           t('ficha.campo.vento'),
-          t('ficha.estrela.vento', {
-            mdot: potenciaDeDez(v.mdotMsolAno),
-            v: inteiroDoIdioma(Math.round(v.vInfKms / 10) * 10),
-          }),
+          t(v.vInfDoModelo ? 'ficha.estrela.ventoDoModelo' : 'ficha.estrela.vento', { mdot, v: vel }),
           v.p,
           v.fonte
         )
       : null,
-    // a estrutura que o motor desenha no vento: o fator de grumo e os braços têm fonte
-    v
-      ? linha(t('ficha.campo.estruturaDoVento'), t('ficha.estrela.estruturaDoVento'), 'derivado', FONTE_DA_ESTRUTURA_DO_VENTO)
+    linhaH
+      ? linha(
+          t('ficha.campo.regiaoDaLinha'),
+          t(linhaH.p === 'medido' ? 'ficha.estrela.regiaoDaLinha' : 'ficha.estrela.regiaoDaLinhaDeRigel', {
+            raios: tresSignificativos(linhaH.v),
+          }),
+          linhaH.p,
+          linhaH.fonte
+        )
+      : null,
+    // o brilho do vento relativo ao de Rigel (a âncora): a medida de emissão, derivada
+    v && e.nomeNoCatalogo !== 'Rigel'
+      ? linha(
+          t('ficha.campo.brilhoDoGas'),
+          t('ficha.estrela.brilhoDoGas', {
+            x: tresSignificativos(Number(razaoARigel(v, e.raioRsol.v, e.teffK.v).toPrecision(2))),
+          }),
+          'derivado'
+        )
       : null,
     d
       ? linha(
           t('ficha.campo.discoDeGas'),
           t('ficha.estrela.discoDeGas', {
             raios: numeroDoIdioma(d.raioExternoEmRaios.v),
-            ate: inteiroDoIdioma(Math.floor(d.medidoAte)),
+            // o ano, sem separador de milhar ("2.015")
+            ate: String(Math.floor(d.medidoAte)),
           }),
           'medido',
           d.fonteDasEpocas

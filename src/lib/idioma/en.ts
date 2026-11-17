@@ -739,15 +739,19 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.campo.granulacao': 'granulation',
   'ficha.campo.vento': 'wind',
   'ficha.campo.discoDeGas': 'gas disk',
-  'ficha.campo.estruturaDoVento': 'wind structure',
+  'ficha.campo.regiaoDaLinha': 'Hα line region',
+  'ficha.campo.brilhoDoGas': 'gas brightness',
   'ficha.campo.gasEmVolta': 'surrounding gas',
   'ficha.estrela.vento': 'loses {mdot} solar masses per year, in a wind of ~{v} km/s',
   'ficha.estrela.discoDeGas':
     'out to ~{raios} equatorial radii; measured from 2013 to the end of {ate}, and today\'s state has not been measured',
-  'ficha.estrela.estruturaDoVento':
-    'clumped (≈4× in ρ², redistributed), the clumps moving out at the wind\'s speed, with two arms turning with the star',
+  'ficha.estrela.ventoDoModelo':
+    'loses {mdot} solar masses per year (measured); the speed, ~{v} km/s, is that of the fitted model, not a direct measurement',
+  'ficha.estrela.regiaoDaLinha': 'the hydrogen glows out to ~{raios} stellar radii',
+  'ficha.estrela.regiaoDaLinhaDeRigel': 'out to ~{raios} stellar radii, the size measured in Rigel',
+  'ficha.estrela.brilhoDoGas': 'the wind\'s emission measure, (Ṁ/v∞)²/R³, is {x} times Rigel\'s',
   'ficha.estrela.gasEmVolta':
-    'shown as through a narrow hydrogen filter (Hα), which brings it out, with an instrument\'s 1% floor; the gas\'s brightness and color, the clumps\' shape and pace are a choice',
+    'shown as through a narrow hydrogen filter (Hα), which brings it out, with an instrument\'s 1% floor; the brightness, the halo\'s shape and the color brought onto the screen are a choice',
   'ficha.campo.pontoMaisQuente': 'hottest point',
   'ficha.estrela.veu':
     'more radiant than the Sun: the disk is shown at a lower exposure and the leftover light becomes a veil around it, as in a camera — the veil\'s strength and reach are a choice',

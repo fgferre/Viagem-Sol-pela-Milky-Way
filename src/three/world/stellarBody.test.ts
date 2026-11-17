@@ -53,6 +53,8 @@ import {
   pesoDaAsaLonga,
   tierDaEstrela,
   tomDoVeu,
+  COR_DO_HIDROGENIO,
+  corDeLinhas,
 } from './stellarBody';
 import { uvMeshVertex } from './sol/common.js';
 import { estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
@@ -809,6 +811,43 @@ describe('um motor, qualquer estrela — os parâmetros novos são neutros no So
     }
     expect(az(15500)).toBeCloseTo(az(40000), 12);
     expect(az(40000)).toBeGreaterThan(1);
+  });
+
+  it('o gás: halo liso sem braços em Rigel, braços só com giro medido; a cor do hidrogênio, dentro do gamut sem corte', () => {
+    // um vento de desenho como o de Rigel (sem giro medido: sem `enrolamento`)
+    const vento = { fracao: 0.3, normal: 1, pico: 1, fim: 1.8 };
+    const casca = (gas: object) => {
+      const alvo = {
+        params: { ...SOL_PARAMS, teffK: 12100, veu: 0.9, pesoDoPico: 1, stopsDoPico: 0.9, gas },
+        raioDaBordaDifusa: 1,
+        forja: null,
+        brilhoDaVisita: { value: 1 },
+        group: new THREE.Group(),
+        luzDoDisco: { value: 0 },
+        pisoDoGas: { value: 0 },
+        asaDoGas: { value: 1 },
+      };
+      const v = { value: 1 };
+      const ctx = { sunUniforms: { uTransmitancia: v, uWorldFade: v, uTime: v }, NOISE_GLSL: '', corFria: v, corQuente: v, paleta: v };
+      (StellarBody.prototype as unknown as { criarABordaDifusa(c: unknown): void }).criarABordaDifusa.call(alvo, ctx);
+      return ((alvo.group.children[0] as THREE.Mesh).material as THREE.ShaderMaterial).fragmentShader;
+    };
+    const liso = casca({ vento });
+    expect(liso).not.toContain('atan(');
+    expect(liso).toContain('rosaDoGas(');
+    expect(liso).not.toMatch(/uTime \*/);
+    expect(casca({ vento: { ...vento, enrolamento: 0.2 } })).toContain('atan(');
+    // a cor: luminância 1, vermelho acima do azul acima do verde, nenhum canal negativo
+    const [r, g, b] = COR_DO_HIDROGENIO;
+    expect(0.2126 * r + 0.7152 * g + 0.0722 * b).toBeCloseTo(1, 3);
+    expect(r).toBeGreaterThan(b);
+    expect(b).toBeGreaterThan(g);
+    expect(g).toBeGreaterThan(0);
+    // Hα sozinha sai fora do gamut (verde negativo) e entra pelo cinza de mesma luminância: o verde vai a 0, não é cortado
+    const ha = corDeLinhas([1], [[0.20493, 0.07633, 0]]);
+    expect(Math.min(...ha)).toBeCloseTo(0, 12);
+    expect(0.2126 * ha[0] + 0.7152 * ha[1] + 0.0722 * ha[2]).toBeCloseTo(1, 3);
+    expect(ha[2]).toBeGreaterThan(0);
   });
 
   it('a matiz escreve na saída GLSL3 quando ela existe (as partículas da CME)', () => {

@@ -130,7 +130,7 @@ export interface EstrelaVisitavel {
 
 /**
  * O DISCO DE GÁS de uma estrela Be, como DADO: outra estrela com disco
- * medido entra sem código novo. ρ = ρ0·(r/R)^−n·exp(−z²/2H²), H = H0·(r/R)^1,5
+ * medido entra sem código novo. ρ = ρ0·(r/R)^−n·exp(−z²/H²), H = H0·(r/R)^1,5
  * (Rivinius, Carciofi & Martayan 2013, A&ARv 21, 69); a época pela lista
  * medida, linear entre os pontos e presa à ponta mais próxima fora deles.
  */
@@ -495,9 +495,9 @@ const ACHERNAR: EstrelaVisitavel = {
   // setembro de 2014; sem disco em 2011–12, Hα em emissão desde o começo de
   // 2013, quase estacionário depois de ~1,6 ano, claro até o fim de 2015
   discoDeGas: {
-    raioExternoEmRaios: { v: 2.0, p: 'medido', fonte: DALLA_VEDOVA_2017 },
-    meiaAberturaGraus: { v: 3, p: 'derivado', fonte: RIVINIUS_2013 },
-    expoenteDaDensidade: { v: 3.5, p: 'derivado', fonte: RIVINIUS_2013 },
+    raioExternoEmRaios: { v: 1.7, p: 'medido', fonte: DALLA_VEDOVA_2017 }, // a ponta de dentro de 1,7–2,3
+    meiaAberturaGraus: { v: 2.6, p: 'derivado', fonte: RIVINIUS_2013 }, // √2·c_s/v_K na base, T do disco ≈ 0,6 Teff: 1/e em ρ
+    expoenteDaDensidade: { v: 4, p: 'derivado', fonte: RIVINIUS_2013 },
     epocas: [
       { ano: 2010.0, fase: 0 },
       { ano: 2013.0, fase: 0 },

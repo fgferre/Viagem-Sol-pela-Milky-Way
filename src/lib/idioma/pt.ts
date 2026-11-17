@@ -773,15 +773,19 @@ export const PT = {
   'ficha.campo.granulacao': 'granulação',
   'ficha.campo.vento': 'vento',
   'ficha.campo.discoDeGas': 'disco de gás',
-  'ficha.campo.estruturaDoVento': 'estrutura do vento',
+  'ficha.campo.regiaoDaLinha': 'região da linha Hα',
+  'ficha.campo.brilhoDoGas': 'brilho do gás',
   'ficha.campo.gasEmVolta': 'gás em volta',
   'ficha.estrela.vento': 'perde {mdot} massas do Sol por ano, num vento de ~{v} km/s',
   'ficha.estrela.discoDeGas':
     'até ~{raios} raios do equador; medido de 2013 ao fim de {ate}, e o estado de hoje não foi medido',
-  'ficha.estrela.estruturaDoVento':
-    'em grumos (≈4× em ρ², redistribuídos) que saem com a velocidade do vento, e dois braços que giram com a estrela',
+  'ficha.estrela.ventoDoModelo':
+    'perde {mdot} massas do Sol por ano (medido); a velocidade, ~{v} km/s, é a do modelo ajustado, não medida direta',
+  'ficha.estrela.regiaoDaLinha': 'o hidrogênio brilha até ~{raios} raios da estrela',
+  'ficha.estrela.regiaoDaLinhaDeRigel': 'até ~{raios} raios da estrela, o tamanho medido em Rigel',
+  'ficha.estrela.brilhoDoGas': 'a medida de emissão do vento, (Ṁ/v∞)²/R³, vale {x} vez(es) a de Rigel',
   'ficha.estrela.gasEmVolta':
-    'mostrado como num filtro estreito do hidrogênio (Hα), que o realça, com o piso de 1 % de um instrumento; o brilho, a cor, a forma dos grumos e o ritmo deles são escolha',
+    'mostrado como num filtro estreito do hidrogênio (Hα), que o realça, com o piso de 1 % de um instrumento; o brilho, a forma do halo e a cor trazida para a tela são escolha',
   'ficha.campo.pontoMaisQuente': 'ponto mais quente',
   'ficha.estrela.veu':
     'mais radiante que o Sol: o disco aparece numa exposição mais baixa e a luz que sobra vira um véu em volta dele, como numa câmera — a força e o alcance do véu são escolha',
