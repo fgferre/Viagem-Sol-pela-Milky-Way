@@ -6,16 +6,17 @@ import { estrelaComCorpo } from '../../lib/atlas/estrelaDoCatalogo';
 import { estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
 import {
   ANCORA_RIGEL,
+  GAMA_MAXIMO_DA_RECEITA,
   GANHO_DO_GAS,
   LIMIAR_DE_DESENHO,
   PERFIL_DO_VENTO,
   TEFF_DO_SALTO_K,
-  TETO_DE_GAMA,
   TETO_DO_GAS,
   VENTOS_MEDIDOS,
   anoDoJd,
   emissividadeDoVento,
   faseDoDisco,
+  fatorDeEddington,
   fracaoDesenhadaDoVento,
   fracaoDoVento,
   gasDaEstrela,
@@ -66,9 +67,9 @@ describe('o vento das quentes — Vink, de Koter & Lamers 2001', () => {
     expect(Math.abs(fracaoDoVento(VENTOS_MEDIDOS.Rigel, rigel.raioRsol.v, rigel.teffK.v) / GANHO_DO_GAS - 1)).toBeLessThan(0.02);
   });
 
-  it('o limiar de desenho: Deneb e Alnilam ganham gás; Régulo, Sírius, Vega e o Sol nem o constroem', () => {
+  it('o limiar de desenho: Deneb e Naos ganham gás; Régulo, Sírius, Vega e o Sol nem o constroem', () => {
     expect(fracaoDesenhadaDoVento(doCatalogo('Deneb'))).toBeGreaterThan(LIMIAR_DE_DESENHO);
-    expect(fracaoDesenhadaDoVento(doCatalogo('Alnilam'))).toBeGreaterThan(LIMIAR_DE_DESENHO);
+    expect(fracaoDesenhadaDoVento(doCatalogo('Naos'))).toBeGreaterThan(LIMIAR_DE_DESENHO);
     for (const nome of ['Regulus', 'Sirius', 'Vega', 'Altair', 'Betelgeuse', 'Fomalhaut', 'Spica']) {
       expect(gasDaEstrela(doCatalogo(nome))).toBeNull();
     }
@@ -92,8 +93,14 @@ describe('o vento das quentes — Vink, de Koter & Lamers 2001', () => {
       const e = estrelaComCorpo(n.n, named);
       if (e) expect(fracaoDesenhadaDoVento(e)).toBeLessThanOrEqual(TETO_DO_GAS);
     }
-    // a massa típica do catálogo não leva a velocidade de escape a zero (Γe com teto)
-    expect(velocidadeDeEscape(800000, 6, 20)).toBeCloseTo(velocidadeDeEscape(0, 6, 20) * Math.sqrt(1 - TETO_DE_GAMA), 9);
+    // fora da grade da receita em Γe (0,041 a 0,434): sem vento, e nenhum NaN nem com Γe ≥ 1
+    expect(fatorDeEddington(800000, 15)).toBeGreaterThan(1);
+    expect(ventoPelaReceita(33300, 800000, 15, 27)).toBeNull();
+    expect(velocidadeDeEscape(800000, 15, 27)).toBe(0);
+    expect(ventoPelaReceita(33300, 800000, 60, 27)).not.toBeNull();
+    expect(fatorDeEddington(800000, 60)).toBeLessThan(GAMA_MAXIMO_DA_RECEITA);
+    for (const nome of ['τ CMa', 'Alnilam', 'α Cam']) expect(gasDaEstrela(doCatalogo(nome))).toBeNull();
+    expect(gasDaEstrela(doCatalogo('Naos'))).not.toBeNull();
   });
 
   it('a emissividade é finita e cai para fora (sem NaN rente à borda)', () => {

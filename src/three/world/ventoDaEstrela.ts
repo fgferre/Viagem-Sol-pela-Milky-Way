@@ -58,17 +58,25 @@ const LOG_RHO_MEDIO = -13.636;
 export const TEFF_DO_SALTO_K = (61.2 + 2.59 * LOG_RHO_MEDIO) * 1000;
 
 /**
- * O teto de Γe — ARTÍSTICO, sem fonte aberta: as gigantes e supergigantes do
- * catálogo levam uma massa TÍPICA declarada (`estrelaDoCatalogo`), baixa
- * para as mais luminosas; com ela Γe ia a 1, a velocidade de escape a zero e
- * o brilho do gás a milhares de vezes o do disco (τ CMa, ι Ori). Com o teto
- * a velocidade de escape nunca cai abaixo de 71 % da que a massa dá.
+ * O fator de Eddington, Γe = 2,6e-5·(L/L☉)/(M/M☉), e a FAIXA DA RECEITA: a
+ * grade de modelos de Vink et al. cobre Γe de 0,041 a 0,434 (Vink, de Koter
+ * & Lamers 2000, A&A 362, 295, Tab. 1; 2001, Tab. 2), e "for values of
+ * Γe > 0.5, the stars approach their Eddington limit". As gigantes e
+ * supergigantes do catálogo levam uma massa TÍPICA declarada
+ * (`estrelaDoCatalogo`), e a receita roda com ela (a ficha confessa); mas
+ * quando essa massa põe a estrela FORA da grade, o defeito é a massa, e a
+ * estrela fica SEM vento pela receita até ter massa melhor (Alnilam, α Cam,
+ * τ CMa, ι Ori, ο Cas, λ Cep, 17/11). Nenhum teto inventado.
  */
-export const TETO_DE_GAMA = 0.5;
+export const GAMA_MAXIMO_DA_RECEITA = 0.434;
+export function fatorDeEddington(lumLsol: number, massaMsol: number): number {
+  return (2.6e-5 * lumLsol) / massaMsol;
+}
 
-/** a velocidade de escape efetiva, km/s: √(2GM(1 − Γe)/R), Γe = 2,6e-5·L/M (com teto, `TETO_DE_GAMA`) */
+/** a velocidade de escape efetiva, km/s: √(2GM(1 − Γe)/R); NaN-livre: 0 com Γe ≥ 1 */
 export function velocidadeDeEscape(lumLsol: number, massaMsol: number, raioRsol: number): number {
-  const gama = Math.min(TETO_DE_GAMA, (2.6e-5 * lumLsol) / massaMsol);
+  const gama = fatorDeEddington(lumLsol, massaMsol);
+  if (!(gama < 1)) return 0;
   return Math.sqrt((2 * GM_SOL * massaMsol * (1 - gama)) / (raioRsol * RAIO_SOL_M)) / 1000;
 }
 
@@ -76,10 +84,12 @@ export function velocidadeDeEscape(lumLsol: number, massaMsol: number, raioRsol:
  * A RECEITA de Vink et al. 2001 (Z = Z☉), só na faixa dela: 12.500 a
  * 50.000 K; entre 22.500 e 27.500 K o lado é o da temperatura do salto
  * (`TEFF_DO_SALTO_K`); v∞/v_esc = 2,6 no lado quente e 1,3 no frio.
- * Fora da faixa, null.
+ * Fora da faixa, em Teff ou em Γe (`GAMA_MAXIMO_DA_RECEITA`), null.
  */
 export function ventoPelaReceita(teffK: number, lumLsol: number, massaMsol: number, raioRsol: number): Vento | null {
   if (!(teffK >= 12500 && teffK <= 50000) || !(lumLsol > 0) || !(massaMsol > 0) || !(raioRsol > 0)) return null;
+  // fora da grade da receita em Γe (a massa típica do catálogo não serve): sem vento
+  if (!(fatorDeEddington(lumLsol, massaMsol) <= GAMA_MAXIMO_DA_RECEITA)) return null;
   if (teffK > 22500 && teffK <= 27500 ? teffK > TEFF_DO_SALTO_K : teffK > 27500) {
     const razao = 2.6;
     const lt = Math.log10(teffK / 40000);
