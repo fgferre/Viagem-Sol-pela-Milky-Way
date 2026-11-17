@@ -70,6 +70,7 @@ import {
   TEFF_SEM_FILTRO_K,
   type ManchaNaBanda,
   pesoDaLisa,
+  pesoDasCelulasQuentes,
   regraDaForja,
   type RegraDaForja,
 } from './forjaDaEstrela';
@@ -755,7 +756,7 @@ export function cirurgiaDaEstrela(
     // o creme do Sol (o da plage, que sem campo é 0) pelas regiões mais
     // quentes; e, onde há células quentes enormes, a ponta HDR da rampa
     // (`PONTA_DAS_CELULAS_QUENTES`)
-    const ponta = PONTA_DAS_CELULAS_QUENTES.ganho * wF * Math.min(1, Math.max(0, o.forja.pesoProfundo));
+    const ponta = PONTA_DAS_CELULAS_QUENTES.ganho * wF * pesoDasCelulasQuentes(o.forja);
     f = trocarUma(
       f,
       '  color = mix(color, vec3(1.0, 0.86, 0.62), 0.55 * smoothstep(0.55, 1.0, clamp(plage, 0.0, 1.0)) * smoothstep(0.72, 1.12, heat));',
@@ -998,9 +999,12 @@ export function glslDoAssadoDaForja(
   // proporção do pico sobre o da regra, onde ele foi acertado: uma mancha
   // medida fraca (Antares) não alisa o que não aquece
   const alisa = forja.picoDaRegra > 0 ? Math.min(1, Math.max(0, forja.picoQuente / forja.picoDaRegra)) : 0;
+  // o peso das células quentes: a mancha medida inteira; a da regra pelo
+  // peso da escala profunda, que também leva o alisamento (sem degrau em log g 1)
+  const wq = pesoDasCelulasQuentes(forja);
   const passo = Math.min(TETO_DA_ADVECCAO, ADVECCAO_DA_FORJA * cel * (0.5 + D));
   const quentes =
-    w > 0
+    wq > 0
       ? `
   // as células quentes enormes, levadas pelo mesmo escoamento
   // nos seis vértices de um octaedro girado: de qualquer lado, uma a três no disco
@@ -1028,8 +1032,8 @@ export function glslDoAssadoDaForja(
   // dentro da célula quente as células comuns perdem parte do contraste
   // (ela sobe inteira): a mancha lê como UMA região clara, não como
   // células mais claras
-  a.x = mix(a.x, ${L(cal.m)}, ${L(0.6 * alisa)} * quente) + ${L(cal.s)} * (${L(zQuente * w)} * quente + ${L(TURBULENCIA_DAS_SUPERGIGANTES * w * 3)} * tb);
-  a.w *= 1.0 - ${L(0.85 * alisa)} * quente;`
+  a.x = mix(a.x, ${L(cal.m)}, ${L(0.6 * alisa * wq)} * quente) + ${L(cal.s)} * (${L(zQuente * wq)} * quente + ${L(TURBULENCIA_DAS_SUPERGIGANTES * w * 3)} * tb);
+  a.w *= 1.0 - ${L(0.85 * alisa * wq)} * quente;`
       : '';
   return (
     GLSL_RUIDO_DA_FORJA +

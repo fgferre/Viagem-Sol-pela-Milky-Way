@@ -16,6 +16,7 @@ import {
   larguraDaBordaEmMu,
   larguraDoAssado,
   pesoDaEscalaProfunda,
+  pesoDasCelulasQuentes,
   picoDasCelulasQuentes,
   raioDaAtmosferaEmRaios,
   regraDaForja,
@@ -222,10 +223,31 @@ describe('a Forja, botão GRAVIDADE — a regra', () => {
     expect(picoDasCelulasQuentes(3600, { razao: 1.03, lambdaUm: 0 })).toBe(0);
   });
 
+  it('a mancha MEDIDA entra inteira; a da regra, pelo peso da gravidade, sem degrau em log g 1', () => {
+    // medida: peso 1 em qualquer log g; regra: o peso da escala profunda
+    expect(pesoDasCelulasQuentes(regraDaForja(3745, 0.2, 680, MANCHA_DE_HAUBOIS))).toBe(1);
+    expect(pesoDasCelulasQuentes(regraDaForja(3745, 0.2, 680))).toBeCloseTo(pesoDaEscalaProfunda(0.2), 12);
+    // a regra a peso 1 e a medida igual à regra saem com o MESMO texto (só o peso as separa)
+    const raio = 700;
+    expect(glslDoAssadoDaForja(regraDaForja(3600, -0.5, raio))).toBe(glslDoAssadoDaForja(regraDaForja(3600, -0.5, raio, MANCHA_DE_HAUBOIS)));
+    // logo abaixo de log g 1 as células quentes nascem quase sem nada: alisamento e pico ~0
+    const r = regraDaForja(3900, 0.999, 60);
+    expect(pesoDasCelulasQuentes(r)).toBeLessThan(1e-5);
+    const txt = glslDoAssadoDaForja(r);
+    const coef = /mix\(a\.x, [^,]+, ([^ ]+) \* quente\)/.exec(txt);
+    expect(coef).not.toBeNull();
+    expect(Math.abs(parseFloat(coef![1]))).toBeLessThan(1e-4);
+    // e acima de log g 1 o bloco nem existe
+    expect(glslDoAssadoDaForja(regraDaForja(3900, 1.01, 60))).not.toContain('float quente');
+  });
+
   it('a maior célula quente, 1 R a meio brilho no pico de Haubois, leva parte do fluxo H dentro dos 3–19 % de Montargès 2016', () => {
     const f = fracaoDoFluxoNaBanda(LARGURA_DA_MANCHA_MAIOR_EM_RAIOS, MANCHA_DE_HAUBOIS.razao);
     expect(f).toBeGreaterThan(0.03);
     expect(f).toBeLessThan(0.19);
+    // o valor: ~10 % (entre os pesos 0,08 e 0,13 da Tabela 3 de Montargès 2016)
+    expect(f).toBeGreaterThan(0.09);
+    expect(f).toBeLessThan(0.115);
     // as de hoje, no tamanho da de Haubois, levam menos que a média das épocas (8,75 %)
     expect(fracaoDoFluxoNaBanda(0.675, MANCHA_DE_HAUBOIS.razao)).toBeLessThan(0.0875);
   });

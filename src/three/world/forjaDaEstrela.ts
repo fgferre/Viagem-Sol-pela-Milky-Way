@@ -239,9 +239,11 @@ export const CELULA_PROFUNDA_EM_RAIOS = 0.5;
 /**
  * A MAIOR CÉLULA QUENTE, largura a meio brilho em raios: a mancha de
  * Betelgeuse de Montargès et al. 2016 (arXiv 1602.05108), "a hot spot on the
- * photosphere that has a characteristic width of one stellar radius" (uma
- * gaussiana de 18–29 mas num disco de ~42 mas), com 7 %, 3 %, 19 % e 6 % do
- * fluxo nas quatro épocas. No pico de Haubois e com o perfil do desenho, ela
+ * photosphere that has a characteristic width of one stellar radius": na
+ * Tabela 3, gaussianas de 21,76 ± 2,02, 18,42 ± 2,42 e 29,48 ± 6,26 mas de
+ * largura a meio brilho em discos de 42,94–44,06 mas (0,84 a 1,34 raio), com
+ * peso de 0,13, 0,08 e 0,22 do fluxo (jan/2012, fev/2013, jan/2014; o texto
+ * dá 7 %, 3 %, 19 % e 6 % em quatro épocas). No pico de Haubois e com o perfil do desenho, ela
  * carrega ~10 % do fluxo na banda H (`fracaoDoFluxoNaBanda`), dentro do
  * medido; as outras células ficam no tamanho da de Haubois (0,5 R).
  */
@@ -362,6 +364,17 @@ export interface RegraDaForja {
   readonly picoQuente: number;
   /** o pico pela regra na mesma Teff (a mancha de Haubois): a régua do acabamento por dentro da célula */
   readonly picoDaRegra: number;
+  /** a mancha é MEDIDA nesta estrela (não a regra): o peso por gravidade não a escala */
+  readonly manchaMedida: boolean;
+}
+
+/**
+ * O PESO DAS CÉLULAS QUENTES no desenho (o pico, o alisamento por dentro e a
+ * ponta HDR): a mancha MEDIDA entra inteira; a da regra, pelo peso da escala
+ * profunda (`pesoDaEscalaProfunda`), contínuo em log g.
+ */
+export function pesoDasCelulasQuentes(r: Pick<RegraDaForja, 'manchaMedida' | 'pesoProfundo'>): number {
+  return r.manchaMedida ? 1 : Math.min(1, Math.max(0, r.pesoProfundo));
 }
 
 /** O botão GRAVIDADE inteiro, de Teff, log g e raio; a mancha quente medida, quando há. */
@@ -369,7 +382,7 @@ export function regraDaForja(
   teffK: number,
   logG: number,
   raioRsol: number,
-  mancha: ManchaNaBanda = MANCHA_DE_HAUBOIS
+  mancha?: ManchaNaBanda
 ): RegraDaForja {
   const a = celulaRealEmRaios(teffK, logG, raioRsol);
   return {
@@ -384,7 +397,8 @@ export function regraDaForja(
     bordaEmMu: larguraDaBordaEmMu(a),
     desordem: desordemDaConveccao(logG),
     assado: larguraDoAssado(celulaNaTelaEmRaios(a)),
-    picoQuente: picoDasCelulasQuentes(teffK, mancha),
+    picoQuente: picoDasCelulasQuentes(teffK, mancha ?? MANCHA_DE_HAUBOIS),
     picoDaRegra: picoDasCelulasQuentes(teffK),
+    manchaMedida: mancha !== undefined,
   };
 }

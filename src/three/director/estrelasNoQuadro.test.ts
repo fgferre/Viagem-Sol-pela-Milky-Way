@@ -16,7 +16,7 @@ import type { NamedStar } from '../config';
 import type { StarField } from '../world/stars';
 import type { CorposResolvidos } from '../world/corpos/corpos';
 import { VAGAS_DE_VISITADAS } from '../world/clarao';
-import { ESTRELAS_VISITAVEIS, estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
+import { ESTRELAS_VISITAVEIS, estrelaVisitavelPorNome, manchaQuenteDe } from '../../lib/atlas/estrelasVisitaveis';
 import { radianciaVisivelDeCorpoNegro } from '../luzDaCasa';
 import { pesoDoFiltro } from '../world/stellarBody';
 import { MANCHA_DE_HAUBOIS, pesoDoPico } from '../world/forjaDaEstrela';
@@ -38,6 +38,12 @@ describe('toda estrela visitável vira parâmetros do MESMO motor, sem nome', ()
     // a mancha quente medida (Haubois) vai ao motor; quem não tem medida vai pela regra, sem o campo
     expect(b.manchaQuente).toEqual(MANCHA_DE_HAUBOIS);
     expect(parametrosDoMotor(estrelaVisitavelPorNome('Aldebaran')!).manchaQuente).toBeUndefined();
+    // a tabela é por nome próprio: um nome que é chave do protótipo não acerta nada
+    for (const nome of ['constructor', 'toString', '__proto__']) {
+      const e = { ...estrelaVisitavelPorNome('Aldebaran')!, nomeNoCatalogo: nome };
+      expect(manchaQuenteDe(e).medida).toBe(false);
+      expect(parametrosDoMotor(e).manchaQuente).toBeUndefined();
+    }
   });
   it('a quente leva o véu (a luz que a exposição não põe no disco) e é lisa: sem convecção na superfície', () => {
     const s = parametrosDoMotor(estrelaVisitavelPorNome('Sirius')!);

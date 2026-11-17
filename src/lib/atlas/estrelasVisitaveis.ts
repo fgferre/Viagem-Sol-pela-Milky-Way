@@ -274,7 +274,8 @@ const KERVELLA_2009 = 'Kervella et al. 2009, A&A 504, 115';
 const NUVEM_DE_BETELGEUSE: NuvemMedida = {
   perfil: [
     {
-      raioEmRaios: { v: 107 / 42.28, p: 'medido', fonte: `${KERVELLA_2016}; Montargès et al. 2014` },
+      // a razão entre o diâmetro a 1 % na banda V e o da fotosfera na banda K: derivada
+      raioEmRaios: { v: 107 / 42.28, p: 'derivado', fonte: `${KERVELLA_2016}; Montargès et al. 2014` },
       brilho: { v: 0.01, p: 'medido', fonte: KERVELLA_2016 }, // teto (a asa do instrumento)
     },
     { raioEmRaios: { v: 4, p: 'medido', fonte: KERVELLA_2009 }, brilho: { v: 0.004, p: 'derivado', fonte: KERVELLA_2009 } },
@@ -361,8 +362,7 @@ export const MANCHAS_QUENTES_MEDIDAS: Readonly<Record<string, ManchaQuenteMedida
  * Betelgeuse (Haubois), derivada, levada a δ pela Teff de cada uma.
  */
 export function manchaQuenteDe(e: EstrelaVisitavel): ManchaQuenteMedida & { readonly medida: boolean } {
-  const m = MANCHAS_QUENTES_MEDIDAS[e.nomeNoCatalogo];
-  if (m) return { ...m, medida: true };
+  if (Object.hasOwn(MANCHAS_QUENTES_MEDIDAS, e.nomeNoCatalogo)) return { ...MANCHAS_QUENTES_MEDIDAS[e.nomeNoCatalogo], medida: true };
   return {
     razao: { v: MANCHA_DE_HAUBOIS.razao, p: 'derivado', fonte: HAUBOIS_2009 },
     lambdaUm: { v: MANCHA_DE_HAUBOIS.lambdaUm, p: 'derivado', fonte: HAUBOIS_2009 },
