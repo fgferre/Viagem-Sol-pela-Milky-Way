@@ -739,7 +739,9 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.campo.granulacao': 'granulation',
   'ficha.campo.pontoMaisQuente': 'hottest point',
   'ficha.estrela.veu':
-    'more radiant than the Sun: the disk is shown at a lower exposure (in hot stars, the one that leaves the hottest point of the disk just below white, like an instrument that scales to the peak) and the leftover light becomes a veil around it, as in a camera, stronger and bluer in hot stars — the peak level and the veil\'s strength, reach and blue are a choice',
+    'more radiant than the Sun: the disk is shown at a lower exposure and the leftover light becomes a veil around it, as in a camera — the veil\'s strength and reach are a choice',
+  'ficha.estrela.veuDaQuente':
+    'the disk is shown at the exposure that leaves its hottest point just below white, like an instrument that scales to the peak; the leftover light becomes a veil around it, longer and bluish, as in a camera — the peak level and the veil\'s strength, reach and blue are a choice',
   'ficha.estrela.granulacaoExtrapolada':
     'the real one has ~{real} % contrast, invisible; drawn at the {piso} % floor so the surface does not come out smooth',
   'ficha.estrela.pontaDoPico':

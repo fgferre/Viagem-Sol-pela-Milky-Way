@@ -49,7 +49,8 @@ import {
 import {
   LEI_DA_ATMOSFERA,
   LEI_DO_CONTRASTE,
-  PISO_DA_FORJA_NA_TELA,
+  pesoDaLisa,
+  pesoDoPico,
   regraDaForja,
 } from '../../three/world/forjaDaEstrela';
 import { NOMES_DOS_CORPOS, classeEmTexto, nomeDoCorpo } from '../../three/atlasConfig';
@@ -1132,9 +1133,30 @@ function secaoDaCompanheira(e: EstrelaVisitavel, distanciaPc: number): SecaoDaFi
       'medido',
       o.fonte
     ),
+    // a companheira com corpo é desenhada pela mesma lei: confessa o mesmo
+    ...(c && pesoDoPico(c.teffK.v) > 0 ? linhasDoBrilho(c.teffK.v) : []),
   ].filter((l): l is LinhaDaFicha => l !== null);
   const titulo = t(anaBranca ? 'ficha.secao.companheira' : 'ficha.secao.companheiraDoPar', { nome: base.nome });
   return { id: 'companheira', titulo, linhas };
+}
+
+/**
+ * As concessões do BRILHO que a temperatura liga, as mesmas para a principal
+ * e para a companheira: mais radiante que o Sol, o véu (o texto das quentes
+ * só de quem a regra do pico alcança, `pesoDoPico`); e a ponta branca no
+ * ponto mais quente, só de quem a tem (`pesoDaLisa`).
+ */
+function linhasDoBrilho(teffK: number): (LinhaDaFicha | null)[] {
+  return [
+    teffK > TEFF_DO_SOL_K
+      ? linha(
+          t('ficha.campo.veu'),
+          t(pesoDoPico(teffK) > 0 ? 'ficha.estrela.veuDaQuente' : 'ficha.estrela.veu'),
+          'artistico'
+        )
+      : null,
+    pesoDaLisa(teffK) > 0 ? linha(t('ficha.campo.pontoMaisQuente'), t('ficha.estrela.pontaDoPico'), 'artistico') : null,
+  ];
 }
 
 /** A SEÇÃO DA IMAGEM da estrela do piloto: o que é medida e o que é desenho. */
@@ -1163,15 +1185,13 @@ function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
       // as concessões que a física da estrela liga (nenhuma no Sol, nenhuma
       // por nome): mais radiante que o Sol, véu; granulação abaixo do piso
       // da Forja, extrapolada
-      e.teffK.v > TEFF_DO_SOL_K ? linha(t('ficha.campo.veu'), t('ficha.estrela.veu'), 'artistico') : null,
-      // a lisa (toda pela regra do pico): a ponta branca no ponto mais quente do disco
-      lisa ? linha(t('ficha.campo.pontoMaisQuente'), t('ficha.estrela.pontaDoPico'), 'artistico') : null,
-      forja && forja.contraste < PISO_DA_FORJA_NA_TELA
+      ...linhasDoBrilho(e.teffK.v),
+      forja && forja.contraste < forja.contrasteNaTela
         ? linha(
             t('ficha.campo.granulacao'),
             t('ficha.estrela.granulacaoExtrapolada', {
               real: numeroDoIdioma(Math.round(forja.contraste * 1000) / 10),
-              piso: numeroDoIdioma(PISO_DA_FORJA_NA_TELA * 100),
+              piso: numeroDoIdioma(Math.round(forja.contrasteNaTela * 1000) / 10),
             }),
             'artistico',
             LEI_DO_CONTRASTE

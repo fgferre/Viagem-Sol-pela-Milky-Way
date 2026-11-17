@@ -8,7 +8,6 @@ import {
   EstrelasNoQuadro,
   eixoDeRotacao,
   ganhoDaVisita,
-  pesoDoPico,
   parametrosDaCompanheira,
   parametrosDoMotor,
   stopsDoPico,
@@ -20,6 +19,7 @@ import { VAGAS_DE_VISITADAS } from '../world/clarao';
 import { ESTRELAS_VISITAVEIS, estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
 import { radianciaVisivelDeCorpoNegro } from '../luzDaCasa';
 import { pesoDoFiltro } from '../world/stellarBody';
+import { pesoDoPico } from '../world/forjaDaEstrela';
 
 describe('toda estrela visitável vira parâmetros do MESMO motor, sem nome', () => {
   it('cada uma tem raio, período e atividade finitos', () => {

@@ -972,6 +972,16 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     // mais radiante que o Sol: véu confessado; quente demais para convecção na superfície: lisa, com a fonte
     expect(img.linhas.map((l) => l.procedencia)).toEqual(['derivado', 'derivado', 'derivado', 'artistico', 'artistico']);
     expect(img.linhas.map((l) => l.rotulo).slice(3)).toEqual(['véu de luz', 'ponto mais quente']);
+    // a ficha diz o que a estrela de fato tem: a quente (pela regra do pico) confessa o véu azulado...
+    expect(img.linhas[3]!.valor).toContain('azulado');
+    // ...a anã branca, desenhada pela mesma lei, confessa o mesmo na seção dela...
+    expect(comp.linhas.map((l) => l.rotulo).slice(-2)).toEqual(['véu de luz', 'ponto mais quente']);
+    expect(comp.linhas.slice(-2).map((l) => l.procedencia)).toEqual(['artistico', 'artistico']);
+    // ...e Altair (7.570 K, fora da regra do pico) não fala do que não tem
+    const alt = montarFichaDeEstrela('Altair', starsMeta.named.find((s) => s.n === 'Altair'))!;
+    const imgAlt = alt.secoes.find((x) => x.id === 'imagem')!;
+    expect(imgAlt.linhas.find((l) => l.rotulo === 'véu de luz')!.valor).not.toContain('azul');
+    expect(imgAlt.linhas.some((l) => l.rotulo === 'ponto mais quente')).toBe(false);
     expect(img.linhas[2]!.valor).toContain('lisa');
     expect(img.linhas[2]!.fonte).toContain('Cantiello');
     const imgProx = prox.secoes.find((x) => x.id === 'imagem')!;

@@ -56,6 +56,7 @@ import {
 } from './stellarBody';
 import { uvMeshVertex } from './sol/common.js';
 import { estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
+import { pesoDaLisa } from './forjaDaEstrela';
 
 describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
   it('raio: é o FÍSICO, pela fonte única do cadastro (F3)', () => {
@@ -182,8 +183,8 @@ describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
     const src = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
     // o estado da lei, o avermelhamento do limbo, a régua de Planck e a
     // borda do contínuo, a média da gravidade (`operarAFotosfera`) e a regra
-    // da Forja (`forjaDe`), o polo da ponta do pico e o tom do véu
-    expect(src.match(/p\.teffK/g)).toHaveLength(8);
+    // da Forja (`forjaDe`), o peso e o polo da ponta do pico e o tom do véu
+    expect(src.match(/p\.teffK/g)).toHaveLength(9);
     // sem envelope convectivo não há dínamo: o construtor (`semDinamo`) e
     // o tier da estrela (`tierDaEstrela`) leem o campo
     expect(src).toContain('this.semDinamo = !params.dinamo;');
@@ -755,6 +756,14 @@ describe('um motor, qualquer estrela — os parâmetros novos são neutros no So
     // com a rede de convecção da Forja para ler (Fomalhaut), a ponta não entra
     const fomalhaut = { ...SOL_PARAMS, teffK: 8590, dinamo: false, logG: 4.3, pesoDoPico: 0.42, stopsDoPico: 0.1 };
     expect(cirurgiasDaFotosfera(sunJs, '', fomalhaut, forjaDe(fomalhaut))!.fragment).not.toContain('quenteDoPico');
+    // e entra por rampa, junto com a saída da rede: a 9.200 K (ainda com a Forja) quase inteira,
+    // sem salto para a lisa de 9.400 K (peso 1)
+    const quase = { ...SOL_PARAMS, teffK: 9200, dinamo: false, logG: 4.3, pesoDoPico: 0.98, stopsDoPico: 0.3 };
+    const comRede = cirurgiasDaFotosfera(sunJs, '', quase, forjaDe(quase))!.fragment;
+    expect(forjaDe(quase)).not.toBeNull();
+    expect(pesoDaLisa(9200)).toBeGreaterThan(0.85);
+    expect(pesoDaLisa(9200)).toBeLessThan(1);
+    expect(comRede).toContain(`color *= 1.0 + ${literalGlsl(3.5 * pesoDaLisa(9200))} * quenteDoPico;`);
   });
 
   it('a asa longa e o tom do véu: só nas quentes; o tom é contínuo na Teff e tem teto', () => {
@@ -776,18 +785,23 @@ describe('um motor, qualquer estrela — os parâmetros novos são neutros no So
     expect(fria).toContain('+ borda * veu) * uWorldFade');
     const quente = casca({ pesoDoPico: 1, stopsDoPico: 0.9 });
     expect(quente.match(/veu \+= /g)).toHaveLength(1);
-    expect(quente).toContain(`borda * veu * vec3(${tomDoVeu(12730).map((x) => literalGlsl(x)).join(', ')})`);
+    expect(quente).toContain(`borda * veu * vec3(${tomDoVeu(12730, 1).map((x) => literalGlsl(x)).join(', ')})`);
     // a asa: proporcional aos stops, zero sem eles
     expect(pesoDaAsaLonga(0)).toBe(0);
     expect(pesoDaAsaLonga(2)).toBeCloseTo(2 * pesoDaAsaLonga(1), 12);
     // o tom: luminância 1, Rayleigh inteiro até 12.800 K, contínuo, e o azul/vermelho
     // não sobe com a Teff e para no piso
-    const az = (T: number) => tomDoVeu(T)[2] / tomDoVeu(T)[0];
+    const az = (T: number, q = 1) => tomDoVeu(T, q)[2] / tomDoVeu(T, q)[0];
     for (const T of [9000, 12730, 14000, 20000]) {
-      const t = tomDoVeu(T);
+      const t = tomDoVeu(T, 1);
       expect(0.2126 * t[0] + 0.7152 * t[1] + 0.0722 * t[2]).toBeCloseTo(1, 12);
     }
     expect(az(12800)).toBeCloseTo(1.957 / 0.661, 9);
+    // sem degrau nos 8.000 K: o tom cresce com o peso do pico, de nenhum (1, 1, 1) ao inteiro
+    expect(tomDoVeu(8000, 0)).toEqual([1, 1, 1]);
+    expect(az(8590, 0.42)).toBeGreaterThan(1);
+    expect(az(8590, 0.42)).toBeLessThan(az(8590, 1));
+    for (let q = 0; q < 1; q += 0.01) expect(az(9000, q + 0.01) - az(9000, q)).toBeLessThan(0.04);
     for (let T = 9000; T < 30000; T += 50) {
       expect(az(T + 50)).toBeLessThanOrEqual(az(T) + 1e-12);
       expect(Math.abs(az(T + 50) - az(T))).toBeLessThan(0.05);

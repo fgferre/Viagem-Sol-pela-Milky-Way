@@ -64,7 +64,13 @@ import {
   radianciaVisivelDeCorpoNegro,
 } from '../luzDaCasa';
 import type { Achatamento } from '../../lib/atlas/estrelasVisitaveis';
-import { CELULA_PROFUNDA_EM_RAIOS, regraDaForja, type RegraDaForja } from './forjaDaEstrela';
+import {
+  CELULA_PROFUNDA_EM_RAIOS,
+  TEFF_SEM_FILTRO_K,
+  pesoDaLisa,
+  regraDaForja,
+  type RegraDaForja,
+} from './forjaDaEstrela';
 import { perfilDeELR, wDaRazaoDosRaios } from './giroDaEstrela';
 import type { EstadoDaEstrela, FaseDoCiclo } from '../estrela';
 import { UNIDADES_POR_CICLO, tempoDoCiclo } from '../estrela';
@@ -291,6 +297,7 @@ export function cirurgiasDaFotosfera(
   forja: RegraDaForja | null
 ): { fragment: string; vertex: string; relevo: number } | null {
   const a = p.achatamento;
+  const lisa = (p.pesoDoPico ?? 0) > 0 ? pesoDaLisa(p.teffK) : 0;
   const o = {
     contraste: forja ? 0 : p.contrasteRelativoAoSol,
     bordaU: p.bordaU,
@@ -300,12 +307,10 @@ export function cirurgiasDaFotosfera(
     teffK: p.teffK,
     continuo: 1 - pesoDoFiltro(p.teffK),
     ...(forja ? { forja } : {}),
-    // a ponta do pico: só quem tem peso do pico E é lisa (`PONTA_DO_PICO`) —
-    // com a Forja há uma rede de convecção para ler, e a ponta a lavava
-    // (Fomalhaut: 0,89 % → 0,33 % na tela)
-    ...((p.pesoDoPico ?? 0) > 0 && !forja
-      ? { pontaDoPico: { peso: p.pesoDoPico!, lumPolo: a ? lumDoPolo(p.teffK, a) : 1 } }
-      : {}),
+    // a ponta do pico (`PONTA_DO_PICO`): só quem tem peso do pico, e com o
+    // peso da rampa em que a rede de convecção sai (`pesoDaLisa`) — a ponta
+    // inteira sobre a rede a lavava (Fomalhaut: 0,89 % → 0,33 % na tela)
+    ...(lisa > 0 ? { pontaDoPico: { peso: lisa, lumPolo: a ? lumDoPolo(p.teffK, a) : 1 } } : {}),
   };
   if (
     (o.contraste === undefined || o.contraste === 1) &&
@@ -1354,9 +1359,7 @@ export function cirurgiaDaForma(vertex: string): string {
 //  · REFERENCIAL LOCAL (`foraDaOrigem`, ausente no Sol).
 // ============================================================
 
-/** Acima desta temperatura o filtro fotográfico do Sol já esmaeceu
- *  inteiro (ver `pelaTemperatura`) — artístico, declarado. */
-export const TEFF_SEM_FILTRO_K = 8000;
+export { TEFF_SEM_FILTRO_K };
 
 const LUMA_R = 0.2126;
 const LUMA_G = 0.7152;
@@ -1960,9 +1963,9 @@ export function forcaDoVeu(veu: number): number {
  *    mais claro que a borda faz a estrela lisa parecer fora de foco. Em stops
  *    porque a tela é logarítmica; a luz total na tela volta à de antes da
  *    regra (±7 %). ARTÍSTICO: a escala, o raio e a luz por stop;
- *  · A PONTA DO PICO, na fotosfera (`cirurgiaDaEstrela`), só da estrela
- *    LISA (sem a Forja: onde há rede de convecção ela a lavava): um sensor
- *    que estoura. Com o calor local h = (g/g_polo)⁶ · (0,4 + 0,6μ)⁴ — g o brilho
+ *  · A PONTA DO PICO, na fotosfera (`cirurgiaDaEstrela`), com o peso q da
+ *    rampa em que a rede de convecção sai (`pesoDaLisa`: sobre a rede
+ *    inteira ela a lavava): um sensor que estoura. Com o calor local h = (g/g_polo)⁶ · (0,4 + 0,6μ)⁴ — g o brilho
  *    de von Zeipel (`vGravidade`, 1 numa redonda), a borda cinza de Eddington
  *    —, a emissão vai a 1 + `ganho`·q·h e a cor desce ao branco de mesma
  *    luminância na fração min(1, `branco`·q·h): o polo (ou o centro) estoura
@@ -1970,7 +1973,8 @@ export function forcaDoVeu(veu: number): number {
  *    gravidade segue o polo mesmo quando ele está perto da borda (Achernar a
  *    29°); sem degrau (um smoothstep abria anel). ARTÍSTICO: os números;
  *  · O TOM DO VÉU: o espalhamento de Rayleigh, (550/λ)⁴ em 610/550/465 nm,
- *    elevado a k e normalizado à luminância 1 — k = 1 até `inteiroAte` e
+ *    elevado a k × o peso do pico (o tom cresce com a regra, sem degrau nos
+ *    8.000 K) e normalizado à luminância 1 — k = 1 até `inteiroAte` e
  *    descendo suave até `piso` em `pisoDesde`: nas mais quentes, que já são
  *    azuis, o tom cede à cor da própria estrela (o miolo estoura para o
  *    branco, o que sobra em volta guarda a cor da estrela, como numa imagem
@@ -2002,10 +2006,11 @@ export function pesoDaAsaLonga(stopsDoPico: number): number {
   }
   return (VEU_POR_STOP * stopsDoPico * deSempre) / asa;
 }
-/** o tom do véu de uma quente (luminância 1): Rayleigh^k, k contínuo na Teff, com piso */
-export function tomDoVeu(teffK: number): [number, number, number] {
+/** o tom do véu de uma quente (luminância 1): Rayleigh^(k·peso do pico), k
+ *  contínuo na Teff, com piso; peso 0 = sem tom (1, 1, 1): cresce com o pico */
+export function tomDoVeu(teffK: number, pesoDoPico: number): [number, number, number] {
   const u = Math.min(1, Math.max(0, (teffK - TOM_DO_VEU.inteiroAte) / (TOM_DO_VEU.pisoDesde - TOM_DO_VEU.inteiroAte)));
-  const k = 1 - (1 - TOM_DO_VEU.piso) * u * u * (3 - 2 * u);
+  const k = (1 - (1 - TOM_DO_VEU.piso) * u * u * (3 - 2 * u)) * Math.min(1, Math.max(0, pesoDoPico));
   const t = COR_DO_ESPALHAMENTO.map((x) => Math.pow(x, k));
   const y = LUMA_R * t[0] + LUMA_G * t[1] + LUMA_B * t[2];
   return [t[0] / y, t[1] / y, t[2] / y];
@@ -2723,7 +2728,7 @@ export class StellarBody {
           // o véu sobre a borda do disco como a tela a mostra (comprimida)
           vec3 borda = comprimir3(k * ${literalGlsl(1 - u)}, ${literalGlsl(BETA_DA_EMISSAO)});
           gl_FragColor = vec4((comprimir3(k * luz, ${literalGlsl(BETA_DA_EMISSAO)}) + borda * veu${
-            quente ? ` * vec3(${tomDoVeu(p.teffK).map((x) => literalGlsl(x)).join(', ')})` : ''
+            quente ? ` * vec3(${tomDoVeu(p.teffK, p.pesoDoPico ?? 0).map((x) => literalGlsl(x)).join(', ')})` : ''
           }) * uWorldFade, 1.0);
         }`,
       uniforms: {

@@ -117,6 +117,36 @@ export const TEFF_SEM_CONVECCAO_K = (() => {
   return xb + (yb * (xb - xa)) / (ya - yb);
 })();
 
+/** Acima desta temperatura o filtro fotográfico do Sol já esmaeceu inteiro
+ *  (`pesoDoFiltro`, no motor) — artístico, declarado. */
+export const TEFF_SEM_FILTRO_K = 8000;
+
+/** O peso da regra do pico da exposição (no diretor): 0 até 8.000 K, 1 de
+ *  `TEFF_SEM_CONVECCAO_K` em diante. */
+export function pesoDoPico(teffK: number): number {
+  const t = Math.min(1, Math.max(0, (teffK - TEFF_SEM_FILTRO_K) / (TEFF_SEM_CONVECCAO_K - TEFF_SEM_FILTRO_K)));
+  return t * t * (3 - 2 * t);
+}
+
+/**
+ * A SAÍDA DA REDE E A ENTRADA DA PONTA, uma rampa só: 0 até
+ * `TEFF_DA_SAIDA_DA_REDE_K`, 1 de `TEFF_SEM_CONVECCAO_K` em diante. Com ela
+ * o piso da granulação sai (`contrasteNaTela`) e a ponta branca do pico
+ * entra (no motor), sem degrau nenhum nos ~9.320 K. Começa na segunda metade
+ * da entrada do pico porque as duas juntas se anulam: a ponta inteira sobre
+ * a rede inteira a lavava (Fomalhaut, 8.590 K: 0,89 % → 0,33 % na tela);
+ * primeiro o disco desce com a rede ainda legível, depois a rede sai e a
+ * ponta entra. ARTÍSTICO: onde começa.
+ */
+export const TEFF_DA_SAIDA_DA_REDE_K = 8700;
+export function pesoDaLisa(teffK: number): number {
+  const t = Math.min(
+    1,
+    Math.max(0, (teffK - TEFF_DA_SAIDA_DA_REDE_K) / (TEFF_SEM_CONVECCAO_K - TEFF_DA_SAIDA_DA_REDE_K))
+  );
+  return t * t * (3 - 2 * t);
+}
+
 /**
  * O PISO NA TELA do contraste — a concessão das quentes com envelope fino
  * (a superfície não sai lisa), na régua da Forja. Acima de ~7.800 K o contraste real cai
@@ -125,11 +155,13 @@ export const TEFF_SEM_CONVECCAO_K = (() => {
  * caminho de antes). O desenho usa max(contraste, piso): contínuo na
  * temperatura, nenhuma estrela fria nem Altair (0,148) muda. O valor é o
  * que devolve a Fomalhaut a visibilidade de antes — ARTÍSTICO, declarado na
- * ficha. Contraste zero (sem envelope, acima de ~9.300 K) segue zero.
+ * ficha. O piso SAI pela rampa `pesoDaLisa` (de 8.700 K até a convecção
+ * sumir): o desenho chega a zero junto com o contraste real, sem cair de
+ * 14 % a nada de uma estrela para a vizinha.
  */
 export const PISO_DA_FORJA_NA_TELA = 0.14;
-export function contrasteNaTela(contraste: number): number {
-  return contraste > 0 ? Math.max(contraste, PISO_DA_FORJA_NA_TELA) : 0;
+export function contrasteNaTela(contraste: number, teffK: number): number {
+  return contraste > 0 ? Math.max(contraste, PISO_DA_FORJA_NA_TELA * (1 - pesoDaLisa(teffK))) : 0;
 }
 /** as fontes do contraste real (`contrasteDaConveccao`), para o selo da ficha */
 export const LEI_DO_CONTRASTE = 'Beeck et al. 2013; Steffen et al. 2005';
@@ -290,7 +322,7 @@ export function regraDaForja(teffK: number, logG: number, raioRsol: number): Reg
     celulaRealEmRaios: a,
     celulaNaTelaEmRaios: celulaNaTelaEmRaios(a),
     contraste: contrasteDaConveccao(teffK, logG),
-    contrasteNaTela: contrasteNaTela(contrasteDaConveccao(teffK, logG)),
+    contrasteNaTela: contrasteNaTela(contrasteDaConveccao(teffK, logG), teffK),
     atmosferaEmRaios: raioDaAtmosferaEmRaios(teffK, logG),
     fracaoEscura: fracaoEscura(teffK),
     ritmo: ritmoDaFervura(a),

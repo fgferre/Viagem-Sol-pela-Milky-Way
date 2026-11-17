@@ -15,6 +15,10 @@ import {
   raioDaAtmosferaEmRaios,
   regraDaForja,
   ritmoDaFervura,
+  TEFF_DA_SAIDA_DA_REDE_K,
+  TEFF_SEM_CONVECCAO_K,
+  pesoDaLisa,
+  pesoDoPico,
 } from './forjaDaEstrela';
 import {
   GANHO_DO_INSTRUMENTO,
@@ -90,11 +94,33 @@ describe('a Forja, botão GRAVIDADE — a regra', () => {
   });
 
   it('o piso na tela: Fomalhaut (8.590 K) sobe ao piso; Altair, as frias e o zero ficam como são', () => {
-    expect(contrasteNaTela(contrasteDaConveccao(8590, 4.19))).toBe(0.14);
+    expect(contrasteNaTela(contrasteDaConveccao(8590, 4.19), 8590)).toBe(0.14);
     const altair = contrasteDaConveccao(7700, 4.18);
-    expect(contrasteNaTela(altair)).toBe(altair);
-    expect(contrasteNaTela(contrasteDaConveccao(3900, 1.19))).toBe(contrasteDaConveccao(3900, 1.19));
-    expect(contrasteNaTela(0)).toBe(0);
+    expect(contrasteNaTela(altair, 7700)).toBe(altair);
+    expect(contrasteNaTela(contrasteDaConveccao(3900, 1.19), 3900)).toBe(contrasteDaConveccao(3900, 1.19));
+    expect(contrasteNaTela(0, 9500)).toBe(0);
+  });
+
+  it('sem degrau: o piso sai por rampa de 8.700 K até a convecção sumir, e a regra do pico e a lisa entram de zero', () => {
+    const naTela = (T: number) => contrasteNaTela(contrasteDaConveccao(T, 4.2), T);
+    expect(naTela(8700)).toBe(0.14);
+    // contínuo e nunca crescente até o zero em `TEFF_SEM_CONVECCAO_K`: nenhum salto de uma estrela à vizinha
+    for (let T = 8700; T < TEFF_SEM_CONVECCAO_K + 20; T += 5) {
+      expect(naTela(T + 5)).toBeLessThanOrEqual(naTela(T));
+      expect(naTela(T) - naTela(T + 5)).toBeLessThan(0.004);
+      expect(naTela(T)).toBeGreaterThanOrEqual(contrasteDaConveccao(T, 4.2));
+    }
+    expect(naTela(TEFF_SEM_CONVECCAO_K - 1)).toBeLessThan(0.001);
+    expect(naTela(TEFF_SEM_CONVECCAO_K + 1)).toBe(0);
+    // as duas rampas: 0 nas pontas de baixo, 1 de `TEFF_SEM_CONVECCAO_K` em diante, sem salto
+    expect(pesoDoPico(8000)).toBe(0);
+    expect(pesoDaLisa(8590)).toBe(0); // Fomalhaut guarda a rede inteira
+    expect(pesoDaLisa(TEFF_DA_SAIDA_DA_REDE_K)).toBe(0);
+    for (const f of [pesoDoPico, pesoDaLisa]) {
+      expect(f(TEFF_SEM_CONVECCAO_K)).toBe(1);
+      expect(f(30000)).toBe(1);
+      for (let T = 7900; T < 9400; T += 5) expect(Math.abs(f(T + 5) - f(T))).toBeLessThan(0.02);
+    }
   });
 
   it('a atmosfera estendida: 1 na anã, 1,3 na supergigante fria, 1 a 5.000 K', () => {

@@ -33,8 +33,8 @@ import type { OclusorDeRotulo } from '../world/labels';
 import { faseDoCiclo, repartir, type JanelaDoQuadro, type EstadoDaEstrela } from '../estrela';
 import { EXPO_M0, M_V_SOL_DO_CAMPO, SIGMA_PX, radianciaVisivelDeCorpoNegro } from '../luzDaCasa';
 import type { QualityLevel } from '../core/engine';
-import { SOL_PARAMS, StellarBody, TEFF_SEM_FILTRO_K, pesoDoFiltro, rocheDe, type StellarParams } from '../world/stellarBody';
-import { TEFF_SEM_CONVECCAO_K, semConveccaoNaSuperficie } from '../world/forjaDaEstrela';
+import { SOL_PARAMS, StellarBody, pesoDoFiltro, rocheDe, type StellarParams } from '../world/stellarBody';
+import { pesoDoPico, semConveccaoNaSuperficie } from '../world/forjaDaEstrela';
 import { PontoDeEstrela } from '../world/pontoDeEstrela';
 import { RAIO_SOL_PC } from '../escala';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
@@ -139,12 +139,6 @@ export const EXPOENTE_SEM_O_FILTRO = 0.4;
  * estrela lisa parecia fora de foco).
  */
 export const NIVEL_DO_PICO_DAS_QUENTES = 1.6;
-
-/** O peso da regra do pico: 0 até 8.000 K, 1 de `TEFF_SEM_CONVECCAO_K` em diante. */
-export function pesoDoPico(teffK: number): number {
-  const t = Math.min(1, Math.max(0, (teffK - TEFF_SEM_FILTRO_K) / (TEFF_SEM_CONVECCAO_K - TEFF_SEM_FILTRO_K)));
-  return t * t * (3 - 2 * t);
-}
 
 /**
  * O ganho que leva a radiância verdadeira de uma fotosfera ao nível da

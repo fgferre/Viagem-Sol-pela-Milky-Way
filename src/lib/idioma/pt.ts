@@ -773,7 +773,9 @@ export const PT = {
   'ficha.campo.granulacao': 'granulação',
   'ficha.campo.pontoMaisQuente': 'ponto mais quente',
   'ficha.estrela.veu':
-    'mais radiante que o Sol: o disco aparece numa exposição mais baixa (nas quentes, a que deixa o ponto mais quente do disco logo abaixo do branco, como um instrumento que mede pelo pico) e a luz que sobra vira um véu em volta dele, como numa câmera, mais forte e mais azul nas quentes — o nível do pico e a força, o alcance e o azul do véu são escolha',
+    'mais radiante que o Sol: o disco aparece numa exposição mais baixa e a luz que sobra vira um véu em volta dele, como numa câmera — a força e o alcance do véu são escolha',
+  'ficha.estrela.veuDaQuente':
+    'o disco aparece na exposição que deixa o ponto mais quente logo abaixo do branco, como um instrumento que mede pelo pico; a luz que sobra vira um véu em volta dele, mais longo e azulado, como numa câmera — o nível do pico e a força, o alcance e o azul do véu são escolha',
   'ficha.estrela.granulacaoExtrapolada':
     'a real tem ~{real} % de contraste, invisível; desenhada no piso de {piso} % para a superfície não sair lisa',
   'ficha.estrela.pontaDoPico':
