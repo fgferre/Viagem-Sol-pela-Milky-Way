@@ -308,7 +308,7 @@ export function larguraDoAssado(celulaNaTelaEmRaios: number): number {
  * 2009 (A&A 508, 923; IOTA, banda H, 1,65 µm), 8,5 % do fluxo em ~6 % da área
  * — 1,42× o brilho médio na banda H, δ ≈ 0,15 a 3.600 K (~+540 K); no
  * visível o mesmo δ sai ~2,6× mais claro (a mancha quase branca das imagens
- * do ESO). A medida da estrela vence a regra (`manchaQuenteDe`).
+ * do ESO). A medida da estrela vence a regra (`celulaQuenteDe`).
  */
 export const FLUXO_DA_MANCHA_QUENTE = 0.085;
 export const AREA_DA_MANCHA_QUENTE = 0.06;
@@ -365,7 +365,7 @@ export interface RegraDaForja {
   /** o pico pela regra na mesma Teff (a mancha de Haubois): a régua do acabamento por dentro da célula */
   readonly picoDaRegra: number;
   /** a mancha é MEDIDA nesta estrela (não a regra): o peso por gravidade não a escala */
-  readonly manchaMedida: boolean;
+  readonly celulaMedida: boolean;
 }
 
 /**
@@ -373,8 +373,8 @@ export interface RegraDaForja {
  * ponta HDR): a mancha MEDIDA entra inteira; a da regra, pelo peso da escala
  * profunda (`pesoDaEscalaProfunda`), contínuo em log g.
  */
-export function pesoDasCelulasQuentes(r: Pick<RegraDaForja, 'manchaMedida' | 'pesoProfundo'>): number {
-  return r.manchaMedida ? 1 : Math.min(1, Math.max(0, r.pesoProfundo));
+export function pesoDasCelulasQuentes(r: Pick<RegraDaForja, 'celulaMedida' | 'pesoProfundo'>): number {
+  return r.celulaMedida ? 1 : Math.min(1, Math.max(0, r.pesoProfundo));
 }
 
 /** O botão GRAVIDADE inteiro, de Teff, log g e raio; a mancha quente medida, quando há. */
@@ -399,7 +399,7 @@ export function regraDaForja(
     assado: larguraDoAssado(celulaNaTelaEmRaios(a)),
     picoQuente: picoDasCelulasQuentes(teffK, mancha ?? MANCHA_DE_HAUBOIS),
     picoDaRegra: picoDasCelulasQuentes(teffK),
-    manchaMedida: mancha !== undefined,
+    celulaMedida: mancha !== undefined,
   };
 }
 

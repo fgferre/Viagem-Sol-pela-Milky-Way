@@ -295,7 +295,7 @@ export function anguloDoGiro(
  */
 export function forjaDe(p: StellarParams): RegraDaForja | null {
   if (p.logG === undefined || p.dinamo) return null;
-  const regra = regraDaForja(p.teffK, p.logG, p.radiusPc / RAIO_DO_SOL_NA_CENA, p.manchaQuente);
+  const regra = regraDaForja(p.teffK, p.logG, p.radiusPc / RAIO_DO_SOL_NA_CENA, p.celulaQuente);
   return regra.contraste > 0 ? regra : null;
 }
 
@@ -392,11 +392,12 @@ export interface StellarParams {
    */
   readonly logG?: number;
   /**
-   * A MANCHA QUENTE MEDIDA (razão sobre o brilho médio numa banda, µm), que
-   * vence a regra no pico das células quentes (`manchaQuenteDe`); omitida, a
+   * A CÉLULA QUENTE MEDIDA, o pico da célula gigante de convecção (a "mancha
+   * quente" das imagens; razão sobre o brilho médio numa banda, µm), que
+   * vence a regra no pico das células quentes (`celulaQuenteDe`); omitida, a
    * regra (`MANCHA_DE_HAUBOIS`). Só a Forja a lê.
    */
-  readonly manchaQuente?: ManchaNaBanda;
+  readonly celulaQuente?: ManchaNaBanda;
   /*
    * (A DRAMATURGIA POR TORÇÃO DE FASE morreu em 21/08 — item 5. Eram
    * quatro números aqui — as fases do arranque e do pico, mais a janela

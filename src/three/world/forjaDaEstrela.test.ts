@@ -394,7 +394,7 @@ describe('a Forja desligada não muda nada', () => {
     // a regra alisa por dentro inteira; a mancha medida fraca (Antares), na proporção do pico
     expect(r.picoQuente).toBe(r.picoDaRegra);
     expect(sup).toContain(`${literalGlsl(0.6)} * quente)`);
-    const fraca = forjaDe({ ...bet, manchaQuente: { razao: 1.035, lambdaUm: 2.3 } })!;
+    const fraca = forjaDe({ ...bet, celulaQuente: { razao: 1.035, lambdaUm: 2.3 } })!;
     expect(fraca.picoQuente / fraca.picoDaRegra).toBeLessThan(0.15);
     expect(glslDoAssadoDaForja(fraca)).toContain(`${literalGlsl((0.6 * fraca.picoQuente) / fraca.picoDaRegra)} * quente)`);
   });

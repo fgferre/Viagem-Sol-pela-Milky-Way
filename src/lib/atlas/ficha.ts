@@ -81,7 +81,7 @@ import {
   achatamentoDe,
   estrelaVisitavelPorNome,
   logGravidade,
-  manchaQuenteDe,
+  celulaQuenteDe,
   temDinamoSolar,
   type Achatamento,
   type EscurecimentoMedido,
@@ -1208,7 +1208,7 @@ const LEI_DA_LISA = 'Steffen et al. 2005; Cantiello et al. 2009';
 /** A regra da Forja quando é ela que desenha a estrela (sem dínamo e com convecção visível); senão null. */
 function forjaDaFicha(e: EstrelaVisitavel): ReturnType<typeof regraDaForja> | null {
   if (temDinamoSolar(e)) return null;
-  const m = manchaQuenteDe(e);
+  const m = celulaQuenteDe(e);
   const forja = regraDaForja(e.teffK.v, logGravidade(e.massaMsol.v, e.raioRsol.v), e.raioRsol.v, {
     razao: m.razao.v,
     lambdaUm: m.lambdaUm.v,
@@ -1223,7 +1223,7 @@ function forjaDaFicha(e: EstrelaVisitavel): ReturnType<typeof regraDaForja> | nu
  */
 function linhasDaMancha(e: EstrelaVisitavel, forja: ReturnType<typeof regraDaForja> | null): (LinhaDaFicha | null)[] {
   if (!forja || !(forja.pesoProfundo > 0) || !(forja.picoQuente > 0)) return [];
-  const m = manchaQuenteDe(e);
+  const m = celulaQuenteDe(e);
   const lambda = decimalDoIdioma(String(m.lambdaUm.v));
   const chave = !m.medida
     ? 'ficha.estrela.manchaQuenteDeBetelgeuse'

@@ -103,6 +103,12 @@ export interface Superficie {
   readonly contrasteGranulos: Numero;
   /** escurecimento de borda linear na banda V: I(μ)/I(1) = 1 − u(1 − μ) */
   readonly bordaU: Numero;
+  /**
+   * a CÉLULA QUENTE medida — o pico da célula gigante de convecção, a "mancha
+   * quente" das imagens (`celulaQuenteDe`): vence a regra no pico das células
+   * quentes; sem ela, a regra (a de Betelgeuse levada à Teff de cada uma)
+   */
+  readonly celulaQuente?: CelulaQuenteMedida;
 }
 
 export interface EstrelaVisitavel {
@@ -140,8 +146,6 @@ export interface EstrelaVisitavel {
   readonly ventoMedido?: Vento;
   /** o raio medido da região da linha Hα, em raios do contínuo (`raioDaLinhaDe`) */
   readonly raioDaLinhaMedido?: Numero;
-  /** a mancha quente medida: vence a regra no pico das células quentes (`manchaQuenteDe`) */
-  readonly manchaQuente?: ManchaQuenteMedida;
 }
 
 /**
@@ -423,7 +427,7 @@ const ESCURECIMENTO_DE_BETELGEUSE: EscurecimentoMedido = {
 };
 
 /** uma mancha quente medida: a razão do brilho dela sobre o médio do disco, numa banda */
-export interface ManchaQuenteMedida {
+export interface CelulaQuenteMedida {
   readonly razao: Numero;
   /** a banda, µm */
   readonly lambdaUm: Numero;
@@ -433,7 +437,8 @@ export interface ManchaQuenteMedida {
 
 const HAUBOIS_2009 = 'Haubois et al. 2009, A&A 508, 923';
 /**
- * AS MANCHAS QUENTES MEDIDAS (`manchaQuente` do registro); a medida vence a regra
+ * AS MANCHAS QUENTES MEDIDAS — o pico da célula gigante de convecção
+ * (`superficie.celulaQuente` do registro); a medida vence a regra
  * no pico das células quentes (`picoDasCelulasQuentes`), como o giro medido
  * vence o da lei (`achatamentoDe`).
  *  · Betelgeuse: "One spot has a diameter of about 11 mas and accounts for
@@ -448,11 +453,11 @@ const HAUBOIS_2009 = 'Haubois et al. 2009, A&A 508, 923';
  *    (arXiv 1705.07829): no melhor modelo as manchas grandes (17 mas) levam
  *    3 % da intensidade, que no visível dá quase o mesmo (o teste).
  */
-const MANCHA_QUENTE_DE_BETELGEUSE: ManchaQuenteMedida = {
+const CELULA_QUENTE_DE_BETELGEUSE: CelulaQuenteMedida = {
   razao: { v: MANCHA_DE_HAUBOIS.razao, p: 'medido', fonte: HAUBOIS_2009 },
   lambdaUm: { v: MANCHA_DE_HAUBOIS.lambdaUm, p: 'medido', fonte: HAUBOIS_2009 },
 };
-const MANCHA_QUENTE_DE_ANTARES: ManchaQuenteMedida = {
+const CELULA_QUENTE_DE_ANTARES: CelulaQuenteMedida = {
   razao: { v: 1.035, p: 'medido', fonte: 'Ohnaka et al. 2017, Nature 548, 310' },
   lambdaUm: { v: 2.3, p: 'medido', fonte: 'Ohnaka et al. 2017, Nature 548, 310' },
   teto: true,
@@ -472,10 +477,10 @@ const BETELGEUSE: EstrelaVisitavel = {
     granuloEmRaios: granulo(3600, 764, 18),
     contrasteGranulos: { v: 0.25, p: 'derivado', fonte: 'Chiavassa et al. 2010, A&A 515, A12 (simulação 3D)' },
     bordaU: { v: 0.8, p: 'derivado', fonte: CLARET },
+    celulaQuente: CELULA_QUENTE_DE_BETELGEUSE,
   },
   nuvem: NUVEM_DE_BETELGEUSE,
   escurecimento: ESCURECIMENTO_DE_BETELGEUSE,
-  manchaQuente: MANCHA_QUENTE_DE_BETELGEUSE,
 };
 
 
@@ -483,8 +488,9 @@ const BETELGEUSE: EstrelaVisitavel = {
  * A mancha quente de uma estrela: a medida no registro, ou a REGRA — a de
  * Betelgeuse (Haubois), derivada, levada a δ pela Teff de cada uma.
  */
-export function manchaQuenteDe(e: EstrelaVisitavel): ManchaQuenteMedida & { readonly medida: boolean } {
-  if (e.manchaQuente) return { ...e.manchaQuente, medida: true };
+export function celulaQuenteDe(e: EstrelaVisitavel): CelulaQuenteMedida & { readonly medida: boolean } {
+  const c = e.superficie.celulaQuente;
+  if (c) return { ...c, medida: true };
   return {
     razao: { v: MANCHA_DE_HAUBOIS.razao, p: 'derivado', fonte: HAUBOIS_2009 },
     lambdaUm: { v: MANCHA_DE_HAUBOIS.lambdaUm, p: 'derivado', fonte: HAUBOIS_2009 },
@@ -522,15 +528,19 @@ const CHESNEAU_2010 = 'Chesneau et al. 2010, A&A 521, A5';
  * registro dela pelo nome do catálogo, como os registros escritos à mão —
  * aqui, na camada de dados; o motor lê só campos.
  */
-const MEDIDAS_SEM_REGISTRO: Readonly<Record<string, Pick<EstrelaVisitavel, 'ventoMedido' | 'raioDaLinhaMedido' | 'manchaQuente'>>> = {
+const MEDIDAS_SEM_REGISTRO: Readonly<
+  Record<string, Pick<EstrelaVisitavel, 'ventoMedido' | 'raioDaLinhaMedido'> & Pick<Superficie, 'celulaQuente'>>
+> = {
   Rigel: { ventoMedido: VENTO_DE_RIGEL, raioDaLinhaMedido: { v: 1.5, p: 'medido', fonte: CHESNEAU_2010 } },
   Deneb: { ventoMedido: VENTO_DE_DENEB, raioDaLinhaMedido: { v: 1.75, p: 'medido', fonte: CHESNEAU_2010 } },
-  Antares: { manchaQuente: MANCHA_QUENTE_DE_ANTARES },
+  Antares: { celulaQuente: CELULA_QUENTE_DE_ANTARES },
 };
 
 /** o registro da regra única com as medidas que ela não tem (`MEDIDAS_SEM_REGISTRO`) */
 export function comAsMedidas(e: EstrelaVisitavel): EstrelaVisitavel {
-  return Object.hasOwn(MEDIDAS_SEM_REGISTRO, e.nomeNoCatalogo) ? { ...e, ...MEDIDAS_SEM_REGISTRO[e.nomeNoCatalogo] } : e;
+  if (!Object.hasOwn(MEDIDAS_SEM_REGISTRO, e.nomeNoCatalogo)) return e;
+  const { celulaQuente, ...resto } = MEDIDAS_SEM_REGISTRO[e.nomeNoCatalogo]!;
+  return { ...e, ...resto, ...(celulaQuente ? { superficie: { ...e.superficie, celulaQuente } } : {}) };
 }
 
 /**

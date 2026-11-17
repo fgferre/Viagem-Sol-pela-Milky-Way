@@ -19,7 +19,7 @@ import type { NamedStar } from '../config';
 import type { StarField } from '../world/stars';
 import type { CorposResolvidos } from '../world/corpos/corpos';
 import { VAGAS_DE_VISITADAS } from '../world/clarao';
-import { ESTRELAS_VISITAVEIS, estrelaVisitavelPorNome, manchaQuenteDe } from '../../lib/atlas/estrelasVisitaveis';
+import { ESTRELAS_VISITAVEIS, estrelaVisitavelPorNome, celulaQuenteDe } from '../../lib/atlas/estrelasVisitaveis';
 import { radianciaVisivelDeCorpoNegro } from '../luzDaCasa';
 import { pesoDoFiltro } from '../world/stellarBody';
 import { BORDA_FORA_DO_DISCO, MANCHA_DE_HAUBOIS, pesoDoPico } from '../world/forjaDaEstrela';
@@ -50,13 +50,13 @@ describe('toda estrela visitável vira parâmetros do MESMO motor, sem nome', ()
     expect(b.dinamo).toBe(false);
     expect(b.veu).toBeUndefined();
     // a mancha quente medida (Haubois) vai ao motor; quem não tem medida vai pela regra, sem o campo
-    expect(b.manchaQuente).toEqual(MANCHA_DE_HAUBOIS);
-    expect(parametrosDoMotor(estrelaVisitavelPorNome('Aldebaran')!).manchaQuente).toBeUndefined();
+    expect(b.celulaQuente).toEqual(MANCHA_DE_HAUBOIS);
+    expect(parametrosDoMotor(estrelaVisitavelPorNome('Aldebaran')!).celulaQuente).toBeUndefined();
     // a tabela é por nome próprio: um nome que é chave do protótipo não acerta nada
     for (const nome of ['constructor', 'toString', '__proto__']) {
       const e = { ...estrelaVisitavelPorNome('Aldebaran')!, nomeNoCatalogo: nome };
-      expect(manchaQuenteDe(e).medida).toBe(false);
-      expect(parametrosDoMotor(e).manchaQuente).toBeUndefined();
+      expect(celulaQuenteDe(e).medida).toBe(false);
+      expect(parametrosDoMotor(e).celulaQuente).toBeUndefined();
     }
   });
   it('a quente leva o véu (a luz que a exposição não põe no disco) e é lisa: sem convecção na superfície', () => {
