@@ -1004,15 +1004,17 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     ]);
   });
 
-  it('o gás em volta: vento medido em Rigel, pela receita em Alnilam, disco com a época em Achernar; nada em Sírius', () => {
+  it('o gás em volta: vento medido em Rigel, pela receita em Naos, disco com a época em Achernar; nada em Sírius nem em Alnilam', () => {
     const de = (n: string) => montarFichaDeEstrela(n, starsMeta.named.find((s) => s.n === n))!;
     const rig = linhasDe(de('Rigel')).get('vento')!;
     expect(rig.procedencia).toBe('medido');
     expect(rig.valor).toBe('perde 8,5 × 10⁻⁷ massas do Sol por ano, num vento de ~230 km/s');
     expect(rig.fonte).toContain('Chesneau');
-    const aln = linhasDe(de('Alnilam')).get('vento')!;
-    expect(aln.procedencia).toBe('derivado');
-    expect(aln.fonte).toContain('Vink');
+    const naos = linhasDe(de('Naos')).get('vento')!;
+    expect(naos.procedencia).toBe('derivado');
+    expect(naos.fonte).toContain('Vink');
+    // Alnilam: a massa típica do catálogo a põe fora da grade da receita, sem vento
+    expect(linhasDe(de('Alnilam')).has('vento')).toBe(false);
     const ach = de('Achernar');
     expect(linhasDe(ach).has('vento')).toBe(false);
     const disco = linhasDe(ach).get('disco de gás')!;
