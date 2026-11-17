@@ -1,4 +1,4 @@
-# Forja da estrela: botão BRILHO — plano para a próxima conversa — 16/11/2026, atualizado 17/11 (itens 1–3 fechados; próximo: item 4, só a imagem de Capella, sem codar; depois item 5)
+# Forja da estrela — plano — 16/11/2026, atualizado 17/11 (conversa 5: motor único; passo 1 feito, passo 0 escrito e esperando a coordenadora antes dos passos 2–3; o passo 4 é só proposta; itens 4 e 5 do brilho ficam para depois)
 
 Quem pede e decide é a coordenadora (conversa "Onde estamos no projeto"); parar ao fim de cada item e relatar curto. Ao dono só vai gosto visual com imagem, gerar dado e publicar. Nada aqui está publicado.
 
@@ -24,6 +24,37 @@ Quem pede e decide é a coordenadora (conversa "Onde estamos no projeto"); parar
 - 0/0 guardado (a régua σ da região fria nunca é menor que 1e-4; Betelgeuse não muda).
 - Testes de `escreverManchaFria` (limiar, liga-desliga nos dois programas, não finito, x espelhado e giro da malha no assado) e de `escuroDaRegiaoFria`.
 - AINDA DEVIDO: custo por quadro dentro da janela, `npm run done` inteiro com a máquina calma, celular e níveis baixos.
+
+## Motor único — a lista de parâmetros de toda estrela (conversa 5, passo 0, 17/11; dois leitores Haiku, conferido por amostra)
+Hoje o Sol NÃO tem registro: ele é `SOL_PARAMS` (stellarBody.ts) mais os literais de `sol/*.js`; as outras estrelas espalham `...SOL_PARAMS` e sobrescrevem (`parametrosDoMotor`, estrelasNoQuadro.ts). "Dínamo" = ramo do Sol (Teff < 7.000 K, fora as gigantes frias: Sol, Próxima, Capella…); "Forja" = sem dínamo com convecção (quentes até ~9.300 K e gigantes frias).
+
+| # | parâmetro | unidade | faixa (0 = desligado) | de onde vem | Sol hoje | outras hoje | máquinas |
+|---|---|---|---|---|---|---|---|
+| 1 | Teff | K | > 0 | medida (registro) | 5.772 literal em `SOL_PARAMS` | `teffK` | 1 |
+| 2 | raio | R☉ | > 0 | medida/derivado | `RAIO_DO_SOL_NA_CENA` | `raioDaEstrelaPc` (equatorial) | 1 (a cena é 2,2 literal nas duas) |
+| 3 | log g (massa) | cgs | — | derivado | não lê | só a Forja (`forjaDe`) | 1 |
+| 4 | luminosidade | L☉ | > 0 | registro | não lê | vento (Vink), giro | 1 |
+| 5 | período de giro | dias | ∞ = parado | medida > v·sen i > Rossby (`rotacaoDe`) | 25,38 | `rotPeriodDays` | 1 |
+| 6 | giro diferencial | °/dia (Snodgrass) | 0 = rígido | só o do Sol, medido | `granulation.js` literal | o do Sol herdado no dínamo; nenhum na Forja | 1, sem botão |
+| 7 | eixo (inclinação, ângulo no céu) | ° | — | medido (Vega…) senão 0 | 7,25° literal | `eixoDeRotacao`/0 | 1 |
+| 8 | achatamento + escurecimento gravitacional | ω, β | 0 = redonda | medido > regra (`giroDaEstrela.ts`) | 0 | `achatamentoDe` | 1 ✓ (modelo do que queremos) |
+| 9 | escurecimento de borda u | — | 0–1 | Claret (registro) | 0,30 literal (valor H-alfa; o comentário de sun.js diz 0,72, velho) | `bordaU` por troca de texto | 1, por remendo |
+| 10 | convecção: tamanho da célula | R* | 0 = sem | dínamo: `granuloEmRaios` do registro → `uGranFreq`÷g; Forja: Trampedach (`celulaNaTelaEmRaios`) | `uGranFreq` 30/34 por nível | as duas ao lado | **2** |
+| 11 | convecção: contraste rms | fração | 0 = lisa | dínamo: `contrasteGranulos` do registro (÷0,15); Forja: Beeck/Steffen (`contrasteDaConveccao`) | 0,31/0,26 literal no sun.js | as duas ao lado | **2** (mais 2 texturas: bake vivo e assado) |
+| 12 | convecção: escala profunda (célula gigante) e o pico dela | peso 0–1, δ | 0 abaixo de log g 1 | regra (`pesoDaEscalaProfunda`) + medida por NOME (`MANCHAS_QUENTES_MEDIDAS`) | 0 | só Forja | 1 + tabela por nome |
+| 13 | região fria na superfície (lugar, área, ΔT/T, borda, tempo) | — | nenhuma | Sol: regra do dínamo (cargas + 10 manchas virtuais, faixa de Spörer pelo ciclo); Betelgeuse: épocas medidas no registro | `activity.js` + umbra/penumbra em sun.js, que multiplica o "calor" (×0,96/0,44), NÃO uma temperatura | `uManchaFria` (Planck + TiO na razão de T, preso ao céu) | **2** |
+| 14 | atividade magnética | nível ≥ 0 | 0 = sem dínamo | Rossby (`atividadeDe`; sem giro medido = 1, "igual ao Sol") | 1 | escala manchas/ciclo/laços/erupções, MAS o liga-desliga `dinamo` corta fibrilas, plage, filamentos, ciclo, limbo | contínuo + liga-desliga |
+| 15 | ciclo (período, fase, amplitude) | anos | 0 = sem ciclo | só o do Sol (11 a, âncora 12/2019) | `cicloDeAtividade.ts` | o do Sol herdado (Próxima declarada) | 1, sem botão por estrela |
+| 16 | cromosfera (rede, plage, fibrilas, filamentos), espículas, proeminências, laços, erupções, CME | contagens, ritmos | segue o nível | Sol (literais em sol/*.js) | sol/*.js | criados sempre; nível × botões | 1 (do Sol) |
+| 17 | gás em volta: coroa quente | brilho | 0 = sem | Sol | `coronaVolume.js`, `coronaRays.js`, `cme.js` | herdada pelas do dínamo | **3** com 18–19 |
+| 18 | gás em volta: vento (Ṁ, v∞, raio da linha) e disco | M☉/ano, km/s, R* | 0 = sem | medida por NOME (`VENTOS_MEDIDOS`, `RAIOS_DA_LINHA_MEDIDOS`) > Vink; disco do registro (`discoDeGas`) | não tem | `ventoDaEstrela.ts`, `glslDoGas` | (idem) |
+| 19 | gás em volta: atmosfera estendida (fiapos) | R* | 0 = sem | regra (`raioDaAtmosferaEmRaios`) | não tem | `garantirCasca` | (idem) |
+| 20 | oscilações (modos p) | período, amplitude | 0 | Sol, exagerado | `uPmode` = 0 (desligado) | nada | 1, desligada |
+| — | do INSTRUMENTO, não da estrela: peso do filtro H-alfa, véu/ofuscamento, ponta do pico, exposição | — | — | regra pela Teff | filtro 1 | `pesoDoFiltro`, `veu`, `pesoDoPico` | ficam fora da lista da estrela |
+
+**Leitura crítica:** (a) a "mancha quente medida" (12) não é região: é o pico da célula gigante de convecção, e o número medido calibra o contraste da escala profunda; proponho que vá para a convecção, não para o botão de região — o botão de região junta 13 (Sol + Escurecimento). (b) O Sol não tem registro: dar a ele um registro como qualquer estrela e montar `SOL_PARAMS` pelo mesmo `parametrosDoMotor` é o que torna "o Sol é uma estrela com valores" verdadeiro. (c) Rigel é âncora do brilho do vento (`X_RIGEL`): vira constante com fonte, não chave. (d) `BV_MEDIDO` (clarao.ts) é do ponto de luz, fora do motor do corpo.
+
+**Ordem proposta:** 2a o Sol ganha registro e `SOL_PARAMS` sai dele (sha256 do Sol igual); 2b `VENTOS_MEDIDOS`, `RAIOS_DA_LINHA_MEDIDOS` e `MANCHAS_QUENTES_MEDIDAS` viram campos (`vento`, `manchaQuente`) que a camada de dados junta ao registro pelo nome do catálogo (Rigel, Deneb e Antares não têm registro escrito à mão: o nome fica na junção do catálogo, como os registros escritos já fazem; o motor lê só campos); fotos iguais byte a byte das seis; 3a a mancha quente medida passa a ser o pico da escala profunda da convecção (nenhuma imagem muda); 3b UM tipo de região na superfície (lugar no referencial da estrela, raio angular, razão de T no miolo e na penumbra, borda, tempo: população pela regra do dínamo no Sol, épocas no Escurecimento) e UMA função de máscara no shader, a da mancha do Sol estendida (borda larga e contorno pelas células como opções); o INSTRUMENTO decide como ΔT vira imagem — no filtro H-alfa a razão de T entra pela rampa (calibrada para o Sol sair idêntico), no contínuo por Planck + TiO; 3c apaga `uManchaFria`/`uManchaFriaAssado`. Risco maior: o Sol idêntico exige que o "calor ×0,04" da umbra saia de uma razão de T medida (umbra ~0,7 T, penumbra ~0,9 T, a abrir na fonte) por uma conversão do filtro, e o Escurecimento passa do céu para o referencial da estrela (Betelgeuse gira 2,5° em 3 meses; o director converte na data). Depois desta conversa: 10/11 (convecção, duas máquinas), 14–15 (atividade contínua e ciclo por estrela), 6 e 9 (giro diferencial, u do Sol), gás (passo 4).
 
 ## O que já está no principal local (e1467577)
 - **GRAVIDADE** (adea5447): toda estrela sem dínamo com contraste > 0 (até ~9.300 K) é desenhada pela Forja — convecção assada, célula por Trampedach 2013, cor pelo filtro do Sol deslocado pela temperatura mais TiO, casca em fiapos. Regra em `docs/LEI-DA-ESTRELA.md` §10, contas em `src/three/world/forjaDaEstrela.ts`, desenho em `src/three/world/stellarBody.ts`.
