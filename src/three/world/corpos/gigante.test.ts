@@ -30,7 +30,7 @@ import { orientacaoInercialDoAnelNaCena } from './orientacaoNaCena';
 import { RAIO_SOL_KM } from '../../escala';
 import { EPOCA_JD_TDB } from '../planetas/retrato2026';
 import { eixosDoMesh } from './terra';
-import { regiaoDasPedras } from './pedrasDoAnel';
+import { ANEL_DE_SATURNO, regiaoDoAnelCpu } from './descricaoDoAnel';
 import type { ManifestDeTexturas } from './terra';
 import {
   COR_DO_VEU,
@@ -46,18 +46,15 @@ import {
   ANEIS_CITADOS,
   ANEL_FRAG,
   ANEL_PROC_FRAG,
-  ANEL_SATURNO,
   G_DO_ANEL,
   GIGANTE_LAMBERT_FRAG,
   GIGANTES,
   GiganteResolvido,
   K_DIFRACAO,
-  PERFIL_DO_ANEL,
   QUANTIS_DO_TAU,
   ancoraDoBrilhoDoAnel,
   fronteiraDoAnelCpu,
   posicaoDoGiganteUA,
-  regiaoDoAnelCpu,
   raiosDoGigantePc,
 } from './gigante';
 
@@ -423,8 +420,8 @@ describe('3. a figura — BODY_AXES e o gradiente EXATO', () => {
 
 describe('4. o anel de Saturno (D6 / W5-B)', () => {
   it('os raios são 1,110–2,326 contra o raio equatorial', () => {
-    expect(ANEL_SATURNO.rInt).toBeCloseTo(66_900 / 60_268, 3);
-    expect(ANEL_SATURNO.rExt).toBeCloseTo(140_180 / 60_268, 3);
+    expect(ANEL_DE_SATURNO.desenho.rInt).toBeCloseTo(66_900 / 60_268, 3);
+    expect(ANEL_DE_SATURNO.desenho.rExt).toBeCloseTo(140_180 / 60_268, 3);
     expect(FONTE).toContain('66 900');
     expect(FONTE).toContain('140 180');
   });
@@ -443,7 +440,7 @@ describe('4. o anel de Saturno (D6 / W5-B)', () => {
   });
 
   it('âncora do brilho medido: cada região pesa as caixas com o peso da fronteira do shader; as fatias guardam o τ médio, o D sem dado copia o C', () => {
-    const { caixas, kmInterno, kmExterno } = PERFIL_DO_ANEL;
+    const { caixas, kmInterno, kmExterno } = ANEL_DE_SATURNO.perfil;
     const km = (i: number) => kmInterno + ((i + 0.5) * (kmExterno - kmInterno)) / caixas;
     const perfil = Uint8Array.from({ length: caixas * 4 }, (_, k) => (k % 4 === 3 ? (k * 7) % 250 : 0));
     const brilho = Uint16Array.from({ length: caixas * 4 }, (_, k) =>
@@ -1064,7 +1061,7 @@ describe('o chão do anel: Saturno publica a segunda superfície (item 139)', ()
     expect(desvio.dot(polo)).toBeLessThan(0);
     // e o "raio" é a meia-espessura da CAMADA de pedaços ali (metros), não
     // os 12 km da lajota: o anteparo do near não corta os pedaços rente à lente
-    expect((chao.raioPc / AU_PARA_PC) * AU_KM).toBeCloseTo(0.5 * regiaoDasPedras(110_000).espessura, 6);
+    expect((chao.raioPc / AU_PARA_PC) * AU_KM).toBeCloseTo(0.5 * regiaoDoAnelCpu(110_000).espessura, 6);
     corpo.dispose();
   });
 

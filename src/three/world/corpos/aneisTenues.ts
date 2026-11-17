@@ -10,7 +10,7 @@
 // são os DELE, letra por letra.
 //
 // POR QUE NÃO ENTRAM NO PERFIL MEDIDO DO ANEL PRINCIPAL: o dado do Björn
-// Jónsson (`gigante.ts`, `PERFIL_DO_ANEL`) é RADIAL e simétrico em azimute.
+// Jónsson (`ANEL_DE_SATURNO.perfil`, descricaoDoAnel.ts) é RADIAL e simétrico em azimute.
 // O F é três fitas EXCÊNTRICAS com dobras e grumos, e o E é um toro cem mil
 // quilômetros mais largo que a malha do anel principal — nenhum dos dois
 // cabe numa tabela de raio. (Conferido no binário: os dois únicos texels de
@@ -27,44 +27,30 @@
 // copiada do mesh do anel, então as três fitas e o toro giram com ele.
 // ============================================================
 import * as THREE from 'three';
-import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
 import { GLSL_RUIDO_DE_VALOR } from './corpos';
+import { ANEL_DE_SATURNO } from './descricaoDoAnel';
 
 /** 1 raio equatorial de Saturno em km — a régua deste arquivo. */
-const KM_POR_RAIO = BODY_AXES.saturn[0]!;
+const KM_POR_RAIO = ANEL_DE_SATURNO.raioEquatorialKm;
 
-/**
- * O ANEL F, os números dele (`fRing.ts`): raio 140 180 km e três fitas com
- * deslocamento, largura e brilho próprios. A largura desenhada é 8× a
- * declarada porque o perfil transversal dele é uma gaussiana que já apaga
- * as bordas (`across`), e não uma faixa chapada.
- */
-const RAIO_DO_F_KM = 140180;
-const FITAS = [
-  { desvioKm: 0, larguraKm: 45, brilho: 1.0 },
-  { desvioKm: -180, larguraKm: 25, brilho: 0.45 },
-  { desvioKm: 210, larguraKm: 20, brilho: 0.35 },
-] as const;
-
-/** A dobra e a excentricidade das fitas, em km (0,10 e 0,04 na régua dele,
- *  que é de 1 000 km por unidade de cena). */
-const DOBRA_KM = 100;
-const EXCENTRICIDADE_KM = 40;
+/** O ANEL F, os números dele (`ANEL_DE_SATURNO.veus.f`): o raio, as três fitas, a dobra e a excentricidade. */
+const {
+  raioKm: RAIO_DO_F_KM,
+  fitas: FITAS,
+  dobraKm: DOBRA_KM,
+  excentricidadeKm: EXCENTRICIDADE_KM,
+} = ANEL_DE_SATURNO.veus.f;
 
 /** Quantos segmentos em azimute — o `PlaneGeometry(1, 1, 1024, 1)` dele. */
 const SEGMENTOS_DO_F = 1024;
 
-/**
- * O ANEL E, os números dele (`eRing.ts`): toro de 170 000 a 330 000 km com
- * densidade gaussiana em torno da órbita de Encélado (238 000 km, meia
- * largura 38 000 km). Grão de mícron espalha quase só PARA A FRENTE — o
- * anel some visto de frente e acende em contraluz, que é a razão de as
- * fotos dele existirem só contra o Sol.
- */
-const E_INTERNO_KM = 170000;
-const E_EXTERNO_KM = 330000;
-const E_PICO_KM = 238000;
-const E_SIGMA_KM = 38000;
+/** O ANEL E, os números dele (`ANEL_DE_SATURNO.veus.e`): o toro e a gaussiana em torno da órbita de Encélado. */
+const {
+  internoKm: E_INTERNO_KM,
+  externoKm: E_EXTERNO_KM,
+  picoKm: E_PICO_KM,
+  sigmaKm: E_SIGMA_KM,
+} = ANEL_DE_SATURNO.veus.e;
 
 const VERT_DO_F = /* glsl */ `
 attribute float aTheta;

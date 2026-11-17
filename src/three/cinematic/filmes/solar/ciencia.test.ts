@@ -19,7 +19,7 @@ import { AU_KM } from '../../../../lib/atlas/elementosOrbitais';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../../../lib/atlas/frameGalactico';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../../../lib/atlas/iauOrientation';
 import { baseCorpoEquatorial } from '../../../../lib/atlas/orientacao';
-import { ANEL_SATURNO } from '../../../world/corpos/gigante';
+import { ANEL_DE_SATURNO } from '../../../world/corpos/descricaoDoAnel';
 import { RELEVO_DA_LUA } from '../../../world/corpos/rochoso';
 import { RAIO_SOL_KM } from '../../../escala';
 import { faseDoCiclo } from '../../../estrela';
@@ -248,7 +248,7 @@ describe('os números das legendas batem com a conta', () => {
   });
 
   it('os anéis: gelo, 280 mil km de ponta a ponta (o anel desenhado, até o F), dezenas de metros de espessura e talvez menos de 100 milhões de anos', () => {
-    const milKm = Math.round((2 * ANEL_SATURNO.rExt * BODY_AXES.saturn[0]) / 1000);
+    const milKm = Math.round((2 * ANEL_DE_SATURNO.desenho.rExt * BODY_AXES.saturn[0]) / 1000);
     const c = legenda('de ponta a ponta');
     // mais de 95 % gelo de água (Cuzzi et al. 2010, Science 327, 1470)
     expect(c.text.startsWith('Gelo:')).toBe(true);

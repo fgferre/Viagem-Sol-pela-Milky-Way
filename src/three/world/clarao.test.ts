@@ -53,7 +53,8 @@ import {
 } from '../estrela';
 import { EXPO_M0, SIGMA_PX, picoDaPsf, sigmaDaPsfPx } from '../luzDaCasa';
 import { RAMP_DURATION_MS } from './lodStellar';
-import { U_PERFIL_BASE, U_PERFIL_ESCALA, regiaoDoAnelCpu } from './corpos/gigante';
+import { U_PERFIL_BASE, U_PERFIL_ESCALA } from './corpos/gigante';
+import { regiaoDoAnelCpu } from './corpos/descricaoDoAnel';
 import {
   AMOSTRAS_DO_FATOR_TAU,
   LARGURA_DA_TABELA_DO_ANEL,

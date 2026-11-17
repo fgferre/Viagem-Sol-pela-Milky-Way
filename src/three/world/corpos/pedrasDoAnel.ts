@@ -34,12 +34,12 @@
 //     vizinhas do mesmo ladrilho (`IMAGENS`).
 //
 //  3. A CAMADA E AS ESTEIRAS. A espessura total é a medida em cada região
-//     (`REGIOES_DAS_PEDRAS`); nos anéis A e B os pedaços se juntam nas
+//     (`ANEL_DE_SATURNO.regioes`, descricaoDoAnel.ts); nos anéis A e B os pedaços se juntam nas
 //     esteiras de autogravidade (`densidadeDaEsteira`).
 //
 //  4. O MOVIMENTO. O cisalhamento de Kepler no relógio do app, medido no
 //     raio da câmera (relógio parado, pedra parada), e o giro próprio pela
-//     agitação medida (`V_AGITACAO_KM_S`).
+//     agitação, que não é medida (equipartição, `V_AGITACAO_KM_S`).
 //
 //  5. A LUZ SE CONSERVA. O disco cede, em cada ponto, a fração de τ das
 //     oitavas resolvidas ali (`cessaoDoDisco`); de dentro da camada o disco
@@ -51,8 +51,8 @@
 // ============================================================
 import * as THREE from 'three';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
-import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
 import type { QualityLevel } from '../../core/engine';
+import { ANEL_DE_SATURNO, regiaoDoAnelCpu } from './descricaoDoAnel';
 
 /**
  * O interruptor — as pedras 3D são o padrão desde que o dono as aprovou
@@ -64,22 +64,17 @@ export const PEDRAS_3D: boolean =
   typeof window === 'undefined' ||
   new URLSearchParams(window.location.search).get('pedras') !== '0';
 
-const KM_POR_RAIO = BODY_AXES.saturn[0]!;
+const KM_POR_RAIO = ANEL_DE_SATURNO.raioEquatorialKm;
 
-/** GM de Saturno, km³/s² (JPL) — só para Ω(ρ) do cisalhamento. */
-const GM_SATURNO = 37_931_207;
+/** GM de Saturno (`ANEL_DE_SATURNO.gmKm3s2`) — só para Ω(ρ) do cisalhamento. */
+const GM_SATURNO = ANEL_DE_SATURNO.gmKm3s2;
 
 /** O RAIO DE REFERÊNCIA DO ARCO: s = R0·θ, logo além da borda do A (136 775 km). */
 export const R0_KM = 138_600;
 
-/**
- * OS TAMANHOS: o raio vai de `A_MIN_KM` = 0,5 cm a `A_MAX_KM` = 10 m, com
- * n(a) ∝ a⁻³ (Zebker, Marouf & Tyler 1985; Cuzzi et al. 2009; Harbison,
- * Thomas & Nicholson 2013). Nada maior existe no anel fora as luazinhas das
- * hélices, que não entram aqui.
- */
-export const A_MIN_KM = 0.5e-5;
-export const A_MAX_KM = 0.01;
+/** OS TAMANHOS medidos (`ANEL_DE_SATURNO.pedacos`): o raio vai de `A_MIN_KM` = 0,5 cm a `A_MAX_KM` = 10 m, n(a) ∝ a⁻³ */
+const A_MIN_KM = ANEL_DE_SATURNO.pedacos.raioMinKm;
+const A_MAX_KM = ANEL_DE_SATURNO.pedacos.raioMaxKm;
 const LN_FAIXA = Math.log(A_MAX_KM / A_MIN_KM);
 /** quantas oitavas de diâmetro se desenham: 10–20 m até 1,95–3,9 cm */
 export const OITAVAS = 10;
@@ -241,39 +236,6 @@ export function aceitaPedra(tau: number, rhoKm: number, sorteio: number): boolea
 }
 
 /**
- * AS REGIÕES DOS PEDAÇOS, nas fronteiras de `REGIOES_DO_ANEL` (gigante.ts;
- * o teste cobra a igualdade): a ESPESSURA TOTAL da camada, km — A ~6–10 m
- * (Colwell et al. 2006; Hedman et al. 2007): 8 m; C 1,9–5,6 m (Baillié et
- * al. 2011): 4 m; divisão de Cassini 2–20 m (Tiscareno et al. 2007): 10 m;
- * o B não foi medido: 8 m, o do A, adotado — e a FORÇA DAS ESTEIRAS, só
- * no A e no B (ausentes no C e na divisão: Colwell 2006, Hedman 2007): 1 no
- * A e 1,05 no B, o que dá ao campo do ladrilho as razões pico:vale do campo
- * de antes (o B era mais contrastado).
- */
-export const REGIOES_DAS_PEDRAS: readonly { km: number; meia: number; espessura: number; esteira: number }[] = [
-  { km: 0, meia: 0, espessura: 0.004, esteira: 0 },
-  { km: 74490, meia: 150, espessura: 0.004, esteira: 0 },
-  { km: 91980, meia: 300, espessura: 0.008, esteira: 1.05 },
-  { km: 117580, meia: 60, espessura: 0.01, esteira: 0 },
-  { km: 121450, meia: 650, espessura: 0.008, esteira: 1 },
-  { km: 136775, meia: 60, espessura: 0.008, esteira: 0 },
-];
-
-/** a espessura total da camada (km) e a força das esteiras em `km` — o gêmeo de `regiaoDasPedras` no GLSL */
-export function regiaoDasPedras(km: number): { espessura: number; esteira: number } {
-  let espessura = REGIOES_DAS_PEDRAS[0]!.espessura;
-  let esteira = REGIOES_DAS_PEDRAS[0]!.esteira;
-  for (let k = 1; k < REGIOES_DAS_PEDRAS.length; k++) {
-    const r = REGIOES_DAS_PEDRAS[k]!;
-    const a = REGIOES_DAS_PEDRAS[k - 1]!;
-    const s = suave(r.km - r.meia, r.km + r.meia, km);
-    espessura += (r.espessura - a.espessura) * s;
-    esteira += (r.esteira - a.esteira) * s;
-  }
-  return { espessura, esteira };
-}
-
-/**
  * A ALTURA DO CENTRO do pedaço de raio `aKm` na camada de espessura `hKm`,
  * pelo sorteio z0 ∈ [−1, 1] (triangular, mais denso no plano): o centro fica
  * dentro da camada, e o pedaço maior que ela fica centrado no plano.
@@ -348,7 +310,7 @@ const PISO_DA_AMPLITUDE = 0.3;
  */
 const GAMA_DA_ESTEIRA = 0.66;
 /** a maior força das esteiras (a do B) */
-const FORCA_MAXIMA_DA_ESTEIRA = Math.max(...REGIOES_DAS_PEDRAS.map((r) => r.esteira));
+const FORCA_MAXIMA_DA_ESTEIRA = Math.max(...ANEL_DE_SATURNO.regioes.map((r) => r.esteira));
 /** o deslocamento máximo de um pedaço pela esteira, km (|arg 1/(1 − w)| ≤ asen γ) */
 const DESLOCAMENTO_MAXIMO_KM =
   (FORCA_MAXIMA_DA_ESTEIRA * 2 * Math.asin(GAMA_DA_ESTEIRA) * LAMBDA_DA_ESTEIRA_KM) / (2 * Math.PI) + 0.0005;
@@ -580,7 +542,7 @@ function lerLadrilho(u: number, v: number): [number, number] {
 
 /** (δ, ∂δ/∂n) da esteira no ponto (ρ, s = R0·θ), km, com a força da região */
 function esteiraEm(rhoKm: number, sKm: number): [number, number] {
-  const amp = regiaoDasPedras(rhoKm).esteira;
+  const amp = regiaoDoAnelCpu(rhoKm).esteira;
   if (amp <= 0) return [0, 0];
   const [u, v] = noLadrilho(rhoKm, sKm);
   const [d, dn] = lerLadrilho(u, v);
@@ -610,7 +572,7 @@ export function deslocamentoDaEsteira(sKm: number, rhoKm: number): [number, numb
  * do A e do B.
  */
 export function densidadeDaEsteira(sKm: number, rhoKm: number): number {
-  if (regiaoDasPedras(rhoKm).esteira <= 0) return 1;
+  if (regiaoDoAnelCpu(rhoKm).esteira <= 0) return 1;
   const nr = NORMAL_DA_ESTEIRA[0];
   const ns = arcoDaNormal(rhoKm);
   let u = 0;
@@ -706,17 +668,17 @@ export function lugarDaPedra(
   let sKm = R0_KM * cam.theta + sig * t.ladoNoArco;
   const [eR, eS] = deslocamentoDaEsteira(sKm, rhoKm);
   sKm = (((sKm + eS) % volta) + volta) % volta;
-  return { rhoKm: rhoKm + eR, sKm, zKm: alturaNaCamada(z0, raioKm, regiaoDasPedras(rhoKm).espessura), raioKm };
+  return { rhoKm: rhoKm + eR, sKm, zKm: alturaNaCamada(z0, raioKm, regiaoDoAnelCpu(rhoKm).espessura), raioKm };
 }
 
 /**
  * O GIRO PRÓPRIO: não medido; supõe-se equipartição com a agitação — a
- * velocidade aleatória entre vizinhos, ~1 mm/s, a mesma que dá a camada de
- * ~8 m (H ~ v/Ω). Velocidade angular ≈ v/a em torno de um eixo sorteado,
+ * velocidade aleatória entre vizinhos, ~1 mm/s (`ANEL_DE_SATURNO.pedacos`).
+ * Velocidade angular ≈ v/a em torno de um eixo sorteado,
  * contada em voltas inteiras por `PERIODO_DO_GIRO_S` (o relógio fica preciso
  * no float32; o erro da contagem é < 3 % no pedaço de 10 m).
  */
-export const V_AGITACAO_KM_S = 1e-6;
+const V_AGITACAO_KM_S = ANEL_DE_SATURNO.pedacos.agitacaoKmS;
 const PERIODO_DO_GIRO_S = 2 ** 20;
 
 /** a velocidade angular do giro próprio do pedaço de raio `aKm`, rad/s */
@@ -1213,9 +1175,9 @@ ASSADOS_DAS_PEDRAS
 `;
 
 const glslRegioes = (campo: 'espessura' | 'esteira') =>
-  REGIOES_DAS_PEDRAS.slice(1)
+  ANEL_DE_SATURNO.regioes.slice(1)
     .map((r, k) => {
-      const a = REGIOES_DAS_PEDRAS[k]!;
+      const a = ANEL_DE_SATURNO.regioes[k]!;
       return `${glslF(r[campo] - a[campo])} * smoothstep(${glslF(r.km - r.meia)}, ${glslF(r.km + r.meia)}, km)`;
     })
     .join(' + ');
@@ -1233,8 +1195,8 @@ const float P_FRACAO = ${glslF(FRACAO_POR_OITAVA)};
 const float P_TAU_TETO = ${glslF(TAU_TETO)};
 // (espessura total da camada km, força das esteiras) — \`regiaoDasPedras\` na CPU
 vec2 regiaoDasPedras(float km) {
-  return vec2(${glslF(REGIOES_DAS_PEDRAS[0]!.espessura)} + ${glslRegioes('espessura')},
-    ${glslF(REGIOES_DAS_PEDRAS[0]!.esteira)} + ${glslRegioes('esteira')});
+  return vec2(${glslF(ANEL_DE_SATURNO.regioes[0]!.espessura)} + ${glslRegioes('espessura')},
+    ${glslF(ANEL_DE_SATURNO.regioes[0]!.esteira)} + ${glslRegioes('esteira')});
 }
 // \`cessaoDoDisco\` na CPU: a parte de τ das oitavas resolvidas a d km
 float cessaoDasPedras(float d) {
@@ -2915,9 +2877,9 @@ export interface OpcoesDasPedras {
   fatorTau: (km: number) => number;
 }
 
-/** a faixa de raio em que os pedaços podem existir (a da lajota) */
-const RAIO_MIN_KM = 55_000;
-const RAIO_MAX_KM = 160_000;
+/** a faixa de raio em que os pedaços podem existir (`ANEL_DE_SATURNO.pedacos`) */
+const RAIO_MIN_KM = ANEL_DE_SATURNO.pedacos.rhoMinKm;
+const RAIO_MAX_KM = ANEL_DE_SATURNO.pedacos.rhoMaxKm;
 /**
  * O GATILHO DO ASSADO (nível de detalhe): a câmera a menos disto da faixa
  * de raio dos pedaços (~11 raios de Saturno). As esteiras do disco acendem
@@ -4980,7 +4942,7 @@ const float R_EXT = ${opcoes.rExt};`;
     const rhoKm = Math.hypot(c.x, c.y) * KM_POR_RAIO;
     const zKm = c.z * KM_POR_RAIO;
     const noAnel = rhoKm > RAIO_MIN_KM && rhoKm < RAIO_MAX_KM;
-    const espessura = regiaoDasPedras(rhoKm).espessura;
+    const espessura = regiaoDoAnelCpu(rhoKm).espessura;
     const ativas = noAnel ? PedrasDoAnel.oitavasAtivas(zKm) : 0;
     const forca = noAnel ? forcaDaEsteiraNoDisco(zKm, espessura) : 0;
     const peso = noAnel ? pesoDaNevoa(zKm, espessura) : 0;
@@ -5034,7 +4996,7 @@ const float R_EXT = ${opcoes.rExt};`;
     this.lerLente(theta);
     // a maior espessura que a janela (≤ 1,5 ladrilho da maior oitava) alcança
     const alcance = 1.5 * TABELA_DE_OITAVAS[0]!.ladoRadial;
-    const espessuraKm = Math.max(espessura, regiaoDasPedras(rhoKm - alcance).espessura, regiaoDasPedras(rhoKm + alcance).espessura);
+    const espessuraKm = Math.max(espessura, regiaoDoAnelCpu(rhoKm - alcance).espessura, regiaoDoAnelCpu(rhoKm + alcance).espessura);
     faixa.acenderPontos({ ativas, porOitava, rhoKm, zKm, espessuraKm, lente: this.lente, fr: this.fr, fs: this.fs, gi: this.gi, gf: this.gf });
     faixa.escolherDePerto(ativas, porOitava, rhoKm, R0_KM * theta, zKm, espessura, this.lente, this.fr, this.fs, this.gi, this.gf, this.tauMaximo, q.tier === 'performance' ? 1 : 0);
     const u = this.uniforms;

@@ -63,12 +63,8 @@ import { alcanceDoEspinhoPx, ganhoDeEntradaDoFlare, raioVisivelDaAsaPx } from '.
 import { M_V_SOL_DO_CAMPO, picoDaPsf, psfPointSizePx, sigmaDaPsfPx } from '../luzDaCasa';
 import { RAMP_DURATION_MS, stepRampToward } from './lodStellar';
 import { SondaDeOclusao } from './sondaDeOclusao';
-import {
-  U_PERFIL_BASE,
-  U_PERFIL_ESCALA,
-  regiaoDoAnelCpu,
-  type AnelComPerfil,
-} from './corpos/gigante';
+import { U_PERFIL_BASE, U_PERFIL_ESCALA, type AnelComPerfil } from './corpos/gigante';
+import { regiaoDoAnelCpu } from './corpos/descricaoDoAnel';
 
 // ─── O ORÇAMENTO E A HISTERESE (puros, testados sem three) ───────────────
 

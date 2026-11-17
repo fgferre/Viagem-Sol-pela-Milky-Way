@@ -84,7 +84,8 @@ import { AneisTenuesDeSaturno } from './aneisTenues';
 import type { QuadroDosAneisTenues } from './aneisTenues';
 import { LajotaDoAnel, VOLUME_DA_LAJOTA } from './lajotaDoAnel';
 import type { QuadroDaLajota } from './lajotaDoAnel';
-import { ANEL_VERT_DAS_PEDRAS, GLSL_CESSAO_DAS_PEDRAS, GLSL_PROFUNDIDADE_DO_DISCO, FATIA_DA_CHEGADA_MS, FATIA_DO_ASSADO_MS, PEDRAS_3D, PedrasDoAnel, regiaoDasPedras, uniformesDaSombraNoDisco } from './pedrasDoAnel';
+import { ANEL_VERT_DAS_PEDRAS, GLSL_CESSAO_DAS_PEDRAS, GLSL_PROFUNDIDADE_DO_DISCO, FATIA_DA_CHEGADA_MS, FATIA_DO_ASSADO_MS, PEDRAS_3D, PedrasDoAnel, uniformesDaSombraNoDisco } from './pedrasDoAnel';
+import { ANEL_DE_SATURNO, regiaoDoAnelCpu } from './descricaoDoAnel';
 import { FitaDosPicos, GLSL_RELEVO_DO_ANEL, RELEVO_DO_ANEL, uniformesDoRelevo, vertDaFita } from './relevoDoAnel';
 import { posicaoKepler } from '../../../lib/atlas/kepler';
 import { cessaoAlvo, gateBinario, saltoGuardado } from './terra';
@@ -111,43 +112,8 @@ export const GIGANTES: readonly { readonly id: string }[] = [
   { id: 'neptune' },
 ];
 
-/**
- * Raios do anel de Saturno em unidades do raio EQUATORIAL
- * (BODY_AXES.saturn[0] = 60 268 km). D-ring interno 66 900 / 60 268
- * = 1,110; F-ring externo 140 180 / 60 268 = 2,326. Cicatriz W5-B.
- */
-export const ANEL_SATURNO = { rInt: 1.11, rExt: 2.326 } as const;
-
-/**
- * O PERFIL RADIAL MEDIDO DO ANEL — o dado que aposentou a placa.
- *
- * 13.177 amostras a 5 km do modelo de anéis de Björn Jónsson (Voyager
- * PPS + Cassini, via o PDS Ring-Moon Systems Node), reamostradas em
- * 2.048 caixas de 36 km sobre 66 900–140 500 km. Dois arquivos, 14 KB:
- *
- *  - `anel-saturno-perfil.bin` — 2048 × RGBA8: **RGB** = cor da
- *    partícula (relativa, cada canal normalizado ao próprio máximo pela
- *    fonte), **A** = opacidade `1 − transparência`, que é `1 − e^{−τ}`
- *    visto de cima. É ele que entra em `uMapaAnel`.
-
- *
- * O QUE A PLACA NÃO SABIA e este dado sabe: a divisão de ENCKE (α 0,008
- * contra 0,401 do anel A ao lado), o C translúcido de verdade, e o
- * LADO ESCURO medido — o número que o item 133 teve de adivinhar.
- *
- * O LIMITE DECLARADO É O BYTE: com α em 8 bits, os 22 texels em 255
- * saem de `tauDaOpacidade` com τ ≈ 6,9 em vez do τ ≈ 2 real do anel B.
- * Em reflexão os dois saturam igual; em transmissão os dois dão zero. É
- * por isso que o cinza do lado escuro do B vem do PLANETSHINE, não daqui.
- *
- * Crédito e licença: `docs/reference/ASSETS.md`.
- */
-export const PERFIL_DO_ANEL = {
-  perfil: 'data/atlas/anel-saturno-perfil.bin',
-  caixas: 2048,
-  kmInterno: 66900,
-  kmExterno: 140500,
-} as const;
+/** os raios do desenho do anel de Saturno (`ANEL_DE_SATURNO.desenho`); exportado só para `lajotaDoAnel.test.ts`, que sai na J2 */
+export const ANEL_SATURNO = ANEL_DE_SATURNO.desenho;
 
 /**
  * A PONTE ENTRE AS DUAS RÉGUAS. O `u` desta casa corre de `rInt` a
@@ -156,9 +122,10 @@ export const PERFIL_DO_ANEL = {
  * uma caixa), mas quase não é igual — a conta fica derivada aqui em vez
  * de virar número solto no GLSL.
  */
+const PERFIL_DO_ANEL = ANEL_DE_SATURNO.perfil;
 const KM_DO_ANEL = {
-  int: ANEL_SATURNO.rInt * BODY_AXES.saturn[0]!,
-  ext: ANEL_SATURNO.rExt * BODY_AXES.saturn[0]!,
+  int: ANEL_SATURNO.rInt * ANEL_DE_SATURNO.raioEquatorialKm,
+  ext: ANEL_SATURNO.rExt * ANEL_DE_SATURNO.raioEquatorialKm,
 };
 const VAO_DO_PERFIL = PERFIL_DO_ANEL.kmExterno - PERFIL_DO_ANEL.kmInterno;
 export const U_PERFIL_ESCALA = (KM_DO_ANEL.ext - KM_DO_ANEL.int) / VAO_DO_PERFIL;
@@ -172,13 +139,6 @@ export const U_PERFIL_BASE = (KM_DO_ANEL.int - PERFIL_DO_ANEL.kmInterno) / VAO_D
  */
 export const U_DO_VAO_DE_KEELER =
   ((136485 + 136522) / 2 - PERFIL_DO_ANEL.kmInterno) / VAO_DO_PERFIL;
-
-/**
- * O PERÍODO DE COROTAÇÃO DA MAGNETOSFERA, em horas — o relógio dos raios
- * do anel B (a poeira erguida corotaciona com o campo, não com Kepler).
- * É o 10,66 h dele (`SaturnSystem.ts`).
- */
-export const HORAS_DA_COROTACAO = 10.66;
 
 /**
  * A COR DO ANEL B NO DADO — média dos 712 texels entre 92 000 e
@@ -199,58 +159,11 @@ export const COR_B_DO_PERFIL = [0.9996, 0.9589, 0.9424] as const;
 export const ALBEDO_GEO_SATURNO = 0.499;
 
 /**
- * O QUE O PERFIL MEDIDO NÃO SABE, POR REGIÃO (12/11/2026, pilar 4).
- *
- * MEDIDO NO APP, antes desta tabela: com o τ certo do dado mas a MESMA
- * partícula em todo raio, a face iluminada saía B : divisão : A ≈
- * 1 : 0,62 : 0,8 (vista de alta abertura, fase baixa, luz linear) — a
- * divisão de Cassini e o C quase tão claros quanto o B. As fotos dizem
- * ~1 : 0,2 : 0,7. A causa é a CROMA do dado: cada canal foi normalizado ao
- * próprio máximo na fonte, então o nível do brilho se perdeu e só a cor
- * relativa ficou ({@link COR_B_DO_PERFIL}). O albedo da partícula tinha de
- * voltar de algum lugar, e volta daqui.
- *
- * TRÊS COLUNAS, todas DERIVADAS da literatura (de memória do assistente,
- * não de arquivo do repositório — o selo diz "derivado"), por região, com
- * fronteiras nos raios clássicos (km):
- *  - `albedo`: ϖ₀ RELATIVO ao do B. A e B ≈ 0,5–0,6; C e divisão ≈ 0,2–0,3
- *    (Cuzzi et al. 2009, "Ring particle composition and size
- *    distribution", em Saturn from Cassini-Huygens; Porco et al. 2005,
- *    Science 307, 1226): partículas sujas pela poeira de meteoróides.
- *  - `poeira`: a fração do LOBO PARA A FRENTE ({@link K_DIFRACAO}). Grão de
- *    mícron espalha para a frente; pedra de cm–m não (o lobo dela tem
- *    segundos de arco). O D, a borda de fora do A e os vãos são poeirentos
- *    — é o que acende na contraluz; o miolo do B e do A, não. Antes desta
- *    tabela o lobo valia o mesmo no anel inteiro, e o B ACENDIA contra o
- *    Sol, o oposto da foto da Cassini (PIA08329, "In Saturn's Shadow").
- *  - `fatorTau`: o τ do B no dado sai de opacidade em 8 bits de um
- *    fotômetro da Voyager (média ≈ 1,9, e 0,7–0,9 no B1); as ocultações da
- *    Cassini dão B1 ≈ 1–2, B2 ≈ 2–3, B3 > 5 (Colwell et al. 2009, no mesmo
- *    livro). Dobrar o τ do B preserva a estrutura medida e põe a média na
- *    ordem certa — é o que deixa o B ESCURO visto por trás.
- *
- * O VALOR NUM RAIO é a linha 0 mais os degraus suaves de cada fronteira:
- * `v = v₀ + Σ (vᵢ − vᵢ₋₁)·smoothstep(kmᵢ − meiaᵢ, kmᵢ + meiaᵢ, km)`, a
- * mesma conta na CPU ({@link regiaoDoAnelCpu}, o ringshine) e no GLSL
- * ({@link GLSL_REGIAO_DO_ANEL}), gerado desta tabela — uma fonte só.
+ * AS REGIÕES DO ANEL (`ANEL_DE_SATURNO.regioes`, descricaoDoAnel.ts): albedo,
+ * poeira e fator de τ — o que o perfil medido não sabe, por região — lidas na
+ * CPU por `regiaoDoAnelCpu` e no GLSL por {@link GLSL_REGIAO_DO_ANEL}.
  */
-export const REGIOES_DO_ANEL: readonly {
-  readonly nome: string;
-  readonly km: number;
-  readonly meia: number;
-  readonly albedo: number;
-  readonly poeira: number;
-  readonly fatorTau: number;
-}[] = [
-  { nome: 'D', km: 0, meia: 0, albedo: 0.4, poeira: 1, fatorTau: 1 },
-  { nome: 'C', km: 74490, meia: 150, albedo: 0.42, poeira: 0.25, fatorTau: 1 },
-  // a borda de dentro do B é uma rampa de ~600 km, a de fora é afiada
-  { nome: 'B', km: 91980, meia: 300, albedo: 1, poeira: 0, fatorTau: 2 },
-  { nome: 'divisão de Cassini', km: 117580, meia: 60, albedo: 0.48, poeira: 0.4, fatorTau: 1 },
-  // a RAMPA de fora da divisão (~120 800–122 100 km) já é o A subindo
-  { nome: 'A', km: 121450, meia: 650, albedo: 0.85, poeira: 0.1, fatorTau: 1 },
-  { nome: 'além do A', km: 136775, meia: 60, albedo: 0.6, poeira: 1, fatorTau: 1 },
-];
+const REGIOES_DO_ANEL = ANEL_DE_SATURNO.regioes;
 
 /**
  * O SURTO DE OPOSIÇÃO: perto da fase zero o anel acende — sombras mútuas
@@ -274,31 +187,14 @@ const suaveCpu = (a: number, b: number, x: number): number => {
   return t * t * (3 - 2 * t);
 };
 
-/** {@link REGIOES_DO_ANEL} num raio, na CPU — o gêmeo do GLSL. */
-export function regiaoDoAnelCpu(km: number): { albedo: number; poeira: number; fatorTau: number } {
-  const [r0, ...resto] = REGIOES_DO_ANEL;
-  let albedo = r0!.albedo;
-  let poeira = r0!.poeira;
-  let fatorTau = r0!.fatorTau;
-  let antes = r0!;
-  for (const r of resto) {
-    const s = suaveCpu(r.km - r.meia, r.km + r.meia, km);
-    albedo += (r.albedo - antes.albedo) * s;
-    poeira += (r.poeira - antes.poeira) * s;
-    fatorTau += (r.fatorTau - antes.fatorTau) * s;
-    antes = r;
-  }
-  return { albedo, poeira, fatorTau };
-}
-
 const glslNum = (x: number): string => {
   const curto = String(Number(x.toFixed(4)));
   return curto.includes('.') ? curto : `${curto}.0`;
 };
 
-/** A tabela em GLSL: `regiaoDoAnel(km)` devolve (albedo, poeira, fatorTau). */
+/** As regiões em GLSL: `regiaoDoAnel(km)` devolve (albedo, poeira, fatorTau) — a conta de `regiaoDoAnelCpu`. */
 export const GLSL_REGIAO_DO_ANEL = /* glsl */ `
-const float KM_POR_RAIO = ${glslNum(BODY_AXES.saturn[0]!)};
+const float KM_POR_RAIO = ${glslNum(ANEL_DE_SATURNO.raioEquatorialKm)};
 vec3 regiaoDoAnel(float km) {
   vec3 v = vec3(${[REGIOES_DO_ANEL[0]!.albedo, REGIOES_DO_ANEL[0]!.poeira, REGIOES_DO_ANEL[0]!.fatorTau].map(glslNum).join(', ')});
 ${REGIOES_DO_ANEL.slice(1)
@@ -349,11 +245,6 @@ ${REGIOES_DO_ANEL.slice(1)
 export const BRILHO_MEDIDO_DO_ANEL: boolean =
   typeof window !== 'undefined' &&
   new URLSearchParams(window.location.search).get('anelb') !== '0';
-export const BRILHO_DO_ANEL = {
-  arquivo: 'data/atlas/anel-saturno-brilho.bin',
-  /** a fase do perfil de frente (Voyager 1), em radianos */
-  faseDaFrenteRad: (139 * Math.PI) / 180,
-} as const;
 export const QUANTIS_DO_TAU = 8;
 
 /**
@@ -818,7 +709,7 @@ class RingshineDoAnel {
       );
       const alfa = (perfil[idx * 4 + 3] ?? 0) / 255;
       const r = ANEL_SATURNO.rInt + t * (ANEL_SATURNO.rExt - ANEL_SATURNO.rInt);
-      const regiao = regiaoDoAnelCpu(r * BODY_AXES.saturn[0]!);
+      const regiao = regiaoDoAnelCpu(r * ANEL_DE_SATURNO.raioEquatorialKm);
       aneis.push({
         r,
         tau: -Math.log(Math.max(1 - alfa, 1e-3)) * regiao.fatorTau,
@@ -909,7 +800,7 @@ async function pedirBrilhoDoAnel(
   base: string
 ): Promise<{ textura: THREE.DataTexture; dados: Uint16Array } | null> {
   try {
-    const cru = await fetchBinary(`${base}${BRILHO_DO_ANEL.arquivo}`);
+    const cru = await fetchBinary(`${base}${ANEL_DE_SATURNO.brilho.arquivo}`);
     const esperado = PERFIL_DO_ANEL.caixas * 4 * 2;
     if (cru.byteLength !== esperado) {
       throw new Error(`${cru.byteLength} B, esperado ${esperado}`);
@@ -962,7 +853,7 @@ async function pedirPerfilDoAnel(base: string): Promise<void> {
     // pelo MESMO caminho de rede dos outros .bin da casa: `fetchBinary`
     // prefere o irmão .gz e descomprime no cliente (o Pages serve o cru
     // opaco); só o .gz é publicado
-    const bytes = new Uint8Array(await fetchBinary(`${base}${PERFIL_DO_ANEL.perfil}`));
+    const bytes = new Uint8Array(await fetchBinary(`${base}${PERFIL_DO_ANEL.arquivo}`));
     const esperado = PERFIL_DO_ANEL.caixas * 4;
     if (bytes.length !== esperado) {
       throw new Error(`perfil do anel: ${bytes.length} B, esperado ${esperado}`);
@@ -1501,7 +1392,7 @@ const GLSL_BRILHO_MEDIDO_DO_ANEL = /* glsl */ `
 uniform sampler2D uMapaBrilho;
 uniform vec4 uQuantisDoTau[${REGIOES_DO_ANEL.length * 2}];
 uniform vec3 uMediasDoBrilho[${REGIOES_DO_ANEL.length}];
-const float FASE_DA_FRENTE = ${glslNum(BRILHO_DO_ANEL.faseDaFrenteRad)};
+const float FASE_DA_FRENTE = ${glslNum(ANEL_DE_SATURNO.brilho.faseDaFrenteRad)};
 float iFDaCamada(float tau, float mu0, float mu, float fase, float mesmoLado) {
   vec2 c = camadaDeParticulas(tau, mu0, mu, fase, mesmoLado);
   return c.x * max(c.y, 1.0e-4);
@@ -1961,7 +1852,7 @@ export class GiganteResolvido {
       raioPc: this.raioA,
       rInt: raios.x,
       rExt: raios.y,
-      kmPorRaio: BODY_AXES.saturn[0]!,
+      kmPorRaio: ANEL_DE_SATURNO.raioEquatorialKm,
       perfil: vivo.bytes,
     };
     return this.descricaoDoAnel;
@@ -2195,7 +2086,7 @@ export class GiganteResolvido {
       // época juliana não cabem num float32 de uniform.
       if (this.tenues && this.quadroDosTenues) {
         const fase =
-          -(((this.jdEscrito * 24) / HORAS_DA_COROTACAO) * (Math.PI * 2)) %
+          -(((this.jdEscrito * 24) / ANEL_DE_SATURNO.horasDaCorotacao) * (Math.PI * 2)) %
           (Math.PI * 2);
         ua.uFaseDosRaios.value = fase;
         ua.uDafnisLon.value = this.azimuteDaLuaNoAnel('daphnis');
@@ -2235,12 +2126,12 @@ export class GiganteResolvido {
         rProjPc > VOLUME_DA_LAJOTA.rMin &&
         rProjPc < VOLUME_DA_LAJOTA.rMax;
       if (noAnel) {
-        // com os pedaços o chão é a CAMADA DE VERDADE (metros, `regiaoDasPedras`
+        // com os pedaços o chão é a CAMADA DE VERDADE (metros, `regiaoDoAnelCpu`
         // no raio da câmera), não os 12 km da lajota: senão o anteparo do near
         // ficava em 12 m e cortava os pedaços rente à lente dentro da camada
         if (this.pedras) {
-          const kmPorRaio = BODY_AXES.saturn[0]!;
-          chao.raioPc = ((0.5 * regiaoDasPedras(rProjPc * kmPorRaio).espessura) / kmPorRaio) * this.raioA;
+          const kmPorRaio = ANEL_DE_SATURNO.raioEquatorialKm;
+          chao.raioPc = ((0.5 * regiaoDoAnelCpu(rProjPc * kmPorRaio).espessura) / kmPorRaio) * this.raioA;
         }
         chao.centroPc.copy(q.camPosPc).addScaledVector(this.vAnelY, -alturaPc);
         this.estado.superficieDoAnel = chao;

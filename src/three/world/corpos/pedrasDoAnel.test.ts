@@ -1,10 +1,8 @@
 // Serve: lei — as pedras 3D do anel (o padrão; `?pedras=0` volta à lajota) só mostram o que o anel tem, em lugar que não depende da câmera, e o disco cede só o que elas carregam
 import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
-import { BODY_AXES } from '../../../lib/atlas/iauOrientation';
 import {
   ANEL_FRAG,
-  ANEL_SATURNO,
   GLSL_CAMADA_DO_ANEL,
   GLSL_CONSTANTES_DO_ANEL,
   GLSL_REGIAO_DO_ANEL,
@@ -12,7 +10,6 @@ import {
 } from './gigante';
 import {
   ALCANCE_DA_NEVOA_KM,
-  A_MAX_KM,
   FRACAO_NAO_RESOLVIDA,
   FRACAO_POR_OITAVA,
   IMAGENS,
@@ -23,7 +20,6 @@ import {
   PEDRAS_POR_TIER,
   PedrasDoAnel,
   R0_KM,
-  REGIOES_DAS_PEDRAS,
   TABELA_DE_OITAVAS,
   TAU_TETO,
   TEXEL_DA_ESTEIRA_KM,
@@ -49,7 +45,6 @@ import {
   luzDaFace,
   pedacosPorArea,
   presencaDaOitava,
-  regiaoDasPedras,
   solAberto,
   tauDaNevoa,
   ESCALA_DO_MONTE,
@@ -66,9 +61,11 @@ import {
   SOMBRA_PX_SOME,
   SOMBRA_PX_INTEIRA,
 } from './pedrasDoAnel';
-import { REGIOES_DO_ANEL, U_PERFIL_BASE, U_PERFIL_ESCALA, regiaoDoAnelCpu } from './gigante';
+import { U_PERFIL_BASE, U_PERFIL_ESCALA } from './gigante';
+import { ANEL_DE_SATURNO, regiaoDoAnelCpu } from './descricaoDoAnel';
 
-const KM_POR_RAIO = BODY_AXES.saturn[0]!;
+const KM_POR_RAIO = ANEL_DE_SATURNO.raioEquatorialKm;
+const A_MAX_KM = ANEL_DE_SATURNO.pedacos.raioMaxKm;
 
 function pedrasDeTeste(Classe: typeof PedrasDoAnel = PedrasDoAnel) {
   return new Classe({
@@ -76,8 +73,8 @@ function pedrasDeTeste(Classe: typeof PedrasDoAnel = PedrasDoAnel) {
     glslConstantesDoAnel: GLSL_CONSTANTES_DO_ANEL,
     glslRegiaoDoAnel: GLSL_REGIAO_DO_ANEL,
     glslCamadaDoAnel: GLSL_CAMADA_DO_ANEL,
-    rInt: ANEL_SATURNO.rInt,
-    rExt: ANEL_SATURNO.rExt,
+    rInt: ANEL_DE_SATURNO.desenho.rInt,
+    rExt: ANEL_DE_SATURNO.desenho.rExt,
     uEscala: U_PERFIL_ESCALA,
     uBase: U_PERFIL_BASE,
     fatorTau: (km) => regiaoDoAnelCpu(km).fatorTau,
@@ -278,7 +275,7 @@ describe('pedras 3D do anel', () => {
       x = Math.imul(x, 0x846ca68b) >>> 0;
       return (x ^ (x >>> 16)) >>> 0;
     };
-    const des = (Math.max(...REGIOES_DAS_PEDRAS.map((r) => r.esteira)) * 2 * Math.asin(0.66) * LAMBDA_DA_ESTEIRA_KM) / (2 * Math.PI) + 0.0005;
+    const des = (Math.max(...ANEL_DE_SATURNO.regioes.map((r) => r.esteira)) * 2 * Math.asin(0.66) * LAMBDA_DA_ESTEIRA_KM) / (2 * Math.PI) + 0.0005;
     // (altura km, mergulho e azimute da visada em graus, cisalhamento g, tier): de cima, rasante, dentro da camada
     const cameras = [
       [0.1, 30, 200, 0, 'cinema'],
@@ -329,7 +326,7 @@ describe('pedras 3D do anel', () => {
             if (dR * dR + dS * dS >= alcance2) continue;
             const raio = (0.5 * t.s) / Math.sqrt(1 - (0.75 * (h0 >>> 16)) / 65536);
             const h2 = mis((base ^ 0x7a3f91c5) >>> 0);
-            const dz = alturaNaCamada(((h2 & 0xffff) + (h2 >>> 16) + 1) / 65536 - 1, raio, regiaoDasPedras(rho + dR).espessura) - zKm;
+            const dz = alturaNaCamada(((h2 & 0xffff) + (h2 >>> 16) + 1) / 65536 - 1, raio, regiaoDoAnelCpu(rho + dR).espessura) - zKm;
             const x = Math.log2(Math.hypot(dR, dS, dz) / t.s);
             const p = Math.min(Math.max(X_ENTRA - x, 0), 1);
             if (p <= 0) continue;
@@ -356,7 +353,7 @@ describe('pedras 3D do anel', () => {
     // conta as violações e cobra uma vez: 200 mil `expect` no laço estouravam 5 s com a máquina carregada
     let fora = 0;
     for (const rho of [80_000, 100_000, 119_000, 128_000]) {
-      const esp = regiaoDasPedras(rho).espessura;
+      const esp = regiaoDoAnelCpu(rho).espessura;
       for (let o = 0; o < OITAVAS; o++) {
         for (let i = 0; i < 2000; i++) {
           const p = lugarDaPedra(o, i, { rhoKm: rho, theta: 1, zKm: 0 });
@@ -370,11 +367,6 @@ describe('pedras 3D do anel', () => {
   });
 
   it('as esteiras: média 1, contraste forte no A, e 1 no C e na divisão de Cassini', () => {
-    // as fronteiras das regiões são as do disco
-    for (let k = 1; k < REGIOES_DAS_PEDRAS.length; k++) {
-      expect(REGIOES_DO_ANEL[k]!.km).toBe(REGIOES_DAS_PEDRAS[k]!.km);
-      expect(REGIOES_DO_ANEL[k]!.meia).toBe(REGIOES_DAS_PEDRAS[k]!.meia);
-    }
     let soma = 0;
     let n = 0;
     let max = 0;

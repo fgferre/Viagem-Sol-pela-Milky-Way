@@ -40,7 +40,8 @@ import { raiosDoRochosoPc } from '../world/corpos/rochoso';
 import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalactico';
 import { EPOCA_JD_TDB } from '../world/planetas/retrato2026';
 import { RAIO_EQ_TERRA_PC, posicaoDaTerraUA } from '../world/corpos/terra';
-import { ANEL_SATURNO, posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
+import { posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
+import { ANEL_DE_SATURNO } from '../world/corpos/descricaoDoAnel';
 import { AtlasRig, K_MIN_RAIOS, K_PISO_DO_CORPO } from '../cinematic/atlasRig';
 import { IDS_ESCULPIDOS, criaGeometriaEsculpida } from '../world/corpos/esculpido';
 import { LUGARES_DA_BUSCA, poseDePertoDaEstrelaS, poseDoLugar } from '../world/lugaresDoCeu';
@@ -260,7 +261,7 @@ describe('o degrau `corpo` de um corpo que não é a Terra', () => {
     const d = camera.position.distanceTo(SATURNO);
     // o anel inteiro cabe na meia-altura da lente, com folga
     const meiaV = THREE.MathUtils.degToRad(camera.fov) / 2;
-    expect(Math.asin((ANEL_SATURNO.rExt * R) / d)).toBeLessThan(meiaV * 0.8);
+    expect(Math.asin((ANEL_DE_SATURNO.desenho.rExt * R) / d)).toBeLessThan(meiaV * 0.8);
     // a régua do link não mudou de sentido
     expect(atlas.raioDoAlvo).toBe(R);
     expect(atlas.distanciaEmRaios).toBeCloseTo(d / R, 6);
