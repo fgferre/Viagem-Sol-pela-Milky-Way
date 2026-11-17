@@ -54,11 +54,14 @@ import {
   tierDaEstrela,
   tomDoVeu,
   COR_DO_HIDROGENIO,
+  RAIO_DA_FRENTE_DO_GAS,
   corDeLinhas,
 } from './stellarBody';
 import { uvMeshVertex } from './sol/common.js';
 import { estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
 import { pesoDaLisa } from './forjaDaEstrela';
+import { gasDaEstrela } from './ventoDaEstrela';
+import { K_MIN_RAIOS } from '../cinematic/atlasRig';
 
 describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
   it('raio: é o FÍSICO, pela fonte única do cadastro (F3)', () => {
@@ -848,6 +851,47 @@ describe('um motor, qualquer estrela — os parâmetros novos são neutros no So
     expect(Math.min(...ha)).toBeCloseTo(0, 12);
     expect(0.2126 * ha[0] + 0.7152 * ha[1] + 0.0722 * ha[2]).toBeCloseTo(1, 3);
     expect(ha[2]).toBeGreaterThan(0);
+  });
+
+  it('o gás não mexe em quem não o tem, nem estica os fiapos; a malha da frente fica fora do alcance da câmera', () => {
+    const malhas = (extra: object, forja: object | null) => {
+      const alvo = {
+        params: { ...SOL_PARAMS, teffK: 8500, veu: 0.9, ...extra },
+        raioDaBordaDifusa: 1.3,
+        forja,
+        brilhoDaVisita: { value: 1 },
+        group: new THREE.Group(),
+        luzDoDisco: { value: 0 },
+        pisoDoGas: { value: 0 },
+        asaDoGas: { value: 1 },
+        criarOGasDaFrente: (StellarBody.prototype as unknown as { criarOGasDaFrente: unknown }).criarOGasDaFrente,
+      };
+      const v = { value: 1 };
+      const ctx = { sunUniforms: { uTransmitancia: v, uWorldFade: v, uTime: v }, NOISE_GLSL: '', corFria: v, corQuente: v, paleta: v, sunInvRot: new THREE.Matrix3() };
+      (StellarBody.prototype as unknown as { criarABordaDifusa(c: unknown): void }).criarABordaDifusa.call(alvo, ctx);
+      return alvo.group.children as THREE.Mesh[];
+    };
+    const frag = (m: THREE.Mesh) => (m.material as THREE.ShaderMaterial).fragmentShader;
+    // sem gás: uma malha só, e nada do gás no texto
+    for (const forja of [null, {}]) {
+      const sem = malhas({}, forja);
+      expect(sem).toHaveLength(1);
+      for (const k of ['rosaDoGas', 'erfDoGas', 'uLuzDoDisco', 'uPisoDoGas', 'gas +=']) expect(frag(sem[0])).not.toContain(k);
+      expect(frag(sem[0])).toBe(frag(malhas({ gas: undefined }, forja)[0]));
+    }
+    // os fiapos da Forja (só nas frias) somem na mesma altura com ou sem vento: o vento não estica a atmosfera
+    const vento = { fracao: 0.2, normal: 1, pico: 1, fim: 1.8 };
+    const queda = (m: THREE.Mesh) => frag(m).match(/smoothstep\(0\.5, 1\.0, alt \/ ([^)]+)\)/)![1];
+    expect(queda(malhas({ gas: { vento } }, {})[0])).toBe(queda(malhas({}, {})[0]));
+    expect(queda(malhas({ gas: { vento } }, {})[0])).not.toBe(literalGlsl(vento.fim - 1));
+    // o disco (Achernar): a casca e a malha da frente, de frente, rente à estrela, e a câmera nunca chega a ela
+    const gas = gasDaEstrela(estrelaVisitavelPorNome('Achernar')!)!;
+    const com = malhas({ teffK: 15539, gas }, null);
+    expect(com).toHaveLength(2);
+    expect((com[1].material as THREE.ShaderMaterial).side).toBe(THREE.FrontSide);
+    expect((com[1].geometry as THREE.SphereGeometry).parameters.radius).toBeCloseTo(2.2 * RAIO_DA_FRENTE_DO_GAS, 9);
+    expect(RAIO_DA_FRENTE_DO_GAS).toBeGreaterThan(1);
+    expect(RAIO_DA_FRENTE_DO_GAS).toBeLessThan(K_MIN_RAIOS);
   });
 
   it('a matiz escreve na saída GLSL3 quando ela existe (as partículas da CME)', () => {

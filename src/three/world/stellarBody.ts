@@ -75,7 +75,7 @@ import { perfilDeELR, wDaRazaoDosRaios } from './giroDaEstrela';
 import {
   BRACOS_DO_VENTO,
   CAUDA_DO_DISCO,
-  NORMAL_DOS_BRACOS,
+  normalDosBracos,
   PERFIL_DO_VENTO,
   GANHO_DO_GAS,
   PISO_DO_INSTRUMENTO,
@@ -2227,7 +2227,7 @@ function glslDoGas(gas: GasDoMotor, rGas: number, kAch: number, frente = false):
             float bS = exp(${literalGlsl(BRACOS_DO_VENTO.concentracao)} * (cos(2.0 * (atan(pm.z, pm.x + 1e-7) - ${literalGlsl(v.enrolamento)} * (r - 1.0))) - 1.0)
               - dr.y * dr.y * ${literalGlsl(1 / BRACOS_DO_VENTO.latitude)});
             float bD = 1.0 + ${literalGlsl(BRACOS_DO_VENTO.contraste - 1)} * bS;
-            gas += ${literalGlsl(v.normal * NORMAL_DOS_BRACOS)} * bD * bD`
+            gas += ${literalGlsl(v.normal * normalDosBracos())} * bD * bD`
                 : `
             gas += ${literalGlsl(v.normal)}`
             }
@@ -2268,9 +2268,13 @@ function glslDoGas(gas: GasDoMotor, rGas: number, kAch: number, frente = false):
             gas = gX <= 0.0 ? 0.0 : (gX < 2.0 * gP ? gX * gX / (4.0 * gP) : gX - gP);
           }`;
 }
+/**
+ * a malha do gás da frente, × o raio equatorial: por fora do esferoide, rente
+ * a ele. A câmera nunca entra nela: o piso do zoom numa estrela é 2 raios
+ * (`K_MIN_RAIOS`, `atlasRig.ts`), e de dentro a face da frente sumiria.
+ */
+export const RAIO_DA_FRENTE_DO_GAS = 1.02;
 /** erf aproximada (Winitzki, a = 0,147), sem NaN: o argumento do sqrt é ≥ 0 */
-/** a malha do gás da frente, × o raio equatorial: por fora do esferoide, rente a ele */
-const RAIO_DA_FRENTE_DO_GAS = 1.02;
 const GLSL_ERF_DO_GAS = /* glsl */ `
         float erfDoGas(float x) {
           float x2 = x * x;
@@ -2846,12 +2850,14 @@ export class StellarBody {
     // o gás das quentes (`O GÁS DAS QUENTES`): só de quem o tem
     const gas = p.gas;
     const rGas = raioDoGas(gas);
-    const rCasca = Math.max(
+    // a casca SEM o gás é a régua dos fiapos e das plumas (eles somem
+    // antes do fim dela): o vento não estica a atmosfera da estrela
+    const rSemGas = Math.max(
       1 + (rEnv - 1) * plumaMax * alcance,
       veu > 0 ? RAIO_DO_VEU : 1,
-      asaLonga > 0 ? RAIO_DO_VEU_QUENTE : 1,
-      rGas
+      asaLonga > 0 ? RAIO_DO_VEU_QUENTE : 1
     );
+    const rCasca = Math.max(rSemGas, rGas);
     // o fator tonal da casca lisa entra na da Forja pela rampa em que a
     // convecção sai (`pesoDaLisa`): sem degrau no nível do véu na fronteira;
     // abaixo de 8.700 K (peso 0) o texto é o de antes
@@ -2987,7 +2993,7 @@ export class StellarBody {
           float pl = smoothstep(0.3, 0.9, 0.5 + 0.6 * fbmLight(dS * 1.1 + vec3(3.1, 7.7, uTime * 0.004)));
           float hEsc = ${literalGlsl(rEnv - 1)}*mix(${literalGlsl(plumaMin)}, ${literalGlsl(plumaMax)}, pl);
           float fe = exp(-alt / hEsc) * (1.0 + 0.6*exp(-alt / ${literalGlsl(ESCALA_DA_CAMADA_RENTE)}))
-            * (1.0 - smoothstep(0.5, 1.0, alt / ${literalGlsl(rCasca - 1)}));
+            * (1.0 - smoothstep(0.5, 1.0, alt / ${literalGlsl(rSemGas - 1)}));
           float altN = alt / ${literalGlsl(rEnv - 1)};
           vec3 wq = dS * 6.0 + vec3(0.0, 0.0, uTime * 0.004);
           wq += 0.8 * altN * vec3(snoise(dS * 1.7 + 1.7), snoise(dS * 1.7 + 5.3), snoise(dS * 1.7 + 9.1));
@@ -3007,7 +3013,7 @@ export class StellarBody {
           // borda, com a camada rente (a MOLsphere, a ~0,1 R da fotosfera) mais
           // densa por cima; a cauda leva tudo a ZERO antes do fim da casca
           float fe = exp(-(b - 1.0) / hEsc) * (1.0 + 0.6*exp(-(b - 1.0) / ${literalGlsl(ESCALA_DA_CAMADA_RENTE)}))
-            * (1.0 - smoothstep(0.5, 1.0, (b - 1.0) / ${literalGlsl(rCasca - 1)}));
+            * (1.0 - smoothstep(0.5, 1.0, (b - 1.0) / ${literalGlsl(rSemGas - 1)}));
           // estrias ao longo do raio (o ruído só da direção): filamento, não caroço
           float fio = 0.8 + 0.4*fbmLight(vDirObj*5.0 + vec3(0.0, 0.0, uTime*0.01));
           luz += ${literalGlsl(1 - u)} * vec3(1.0, 0.85, 0.7) * ${literalGlsl(brilho * Math.min(1, (rEnv - 1) / EXCESSO_DA_ATMOSFERA_PLENA))} * fe * mix(0.5, 1.5, pl) * fio;`
@@ -3497,6 +3503,15 @@ ${glslDoGas(gas, rGas, kAch, true)}
    * Escrever é BARATO e idempotente: enquanto a data não mover o
    * bastante (`LIMIAR_DE_REASSAR`), nada é re-assado.
    */
+  escreverCiclo(fase: FaseDoCiclo) {
+    if (!Number.isFinite(fase.fase01) || !Number.isFinite(fase.ciclo)) return;
+    this.faseDoCicloViva = fase;
+    const ctx = this.ctx;
+    ctx.cyclePhase01 = fase.fase01;
+    ctx.cycleN = fase.ciclo;
+    ctx.tempoDoCiclo = tempoDoCiclo(fase);
+  }
+
   /**
    * A FASE DO DISCO DE GÁS (`faseDoDisco`, pela data do app): quem tem o
    * relógio é o director; o corpo obedece. Sem disco, nada.
@@ -3508,15 +3523,6 @@ ${glslDoGas(gas, rGas, kAch, true)}
     this.luzDoDisco.value = d.normal * f;
     this.pisoDoGas.value = PISO_DO_INSTRUMENTO * ((this.params.gas?.vento?.pico ?? 0) + d.pico * f);
     this.asaDoGas.value = asaComGas(this.params.gas!, this.forcaDoVeuComGas, this.asaLongaComGas, this.params.bordaU ?? 0.3, f);
-  }
-
-  escreverCiclo(fase: FaseDoCiclo) {
-    if (!Number.isFinite(fase.fase01) || !Number.isFinite(fase.ciclo)) return;
-    this.faseDoCicloViva = fase;
-    const ctx = this.ctx;
-    ctx.cyclePhase01 = fase.fase01;
-    ctx.cycleN = fase.ciclo;
-    ctx.tempoDoCiclo = tempoDoCiclo(fase);
   }
 
   /**

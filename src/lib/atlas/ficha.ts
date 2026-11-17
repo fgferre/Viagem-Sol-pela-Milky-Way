@@ -1054,6 +1054,18 @@ function linhasDoGas(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
           d.fonteDasEpocas
         )
       : null,
+    // a espessura e a queda do disco: da física de um disco Be, não medidas nesta estrela
+    d
+      ? linha(
+          t('ficha.campo.formaDoDisco'),
+          t('ficha.estrela.formaDoDisco', {
+            graus: numeroDoIdioma(d.meiaAberturaGraus.v),
+            n: numeroDoIdioma(d.expoenteDaDensidade.v),
+          }),
+          d.meiaAberturaGraus.p,
+          d.meiaAberturaGraus.fonte
+        )
+      : null,
   ];
 }
 

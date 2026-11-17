@@ -738,6 +738,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.campo.veu': 'veil of light',
   'ficha.campo.granulacao': 'granulation',
   'ficha.campo.vento': 'wind',
+  'ficha.campo.formaDoDisco': 'disk thickness',
   'ficha.campo.discoDeGas': 'gas disk',
   'ficha.campo.regiaoDaLinha': 'Hα line region',
   'ficha.campo.brilhoDoGas': 'gas brightness',
@@ -745,6 +746,8 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.estrela.vento': 'loses {mdot} solar masses per year, in a wind of ~{v} km/s',
   'ficha.estrela.discoDeGas':
     'out to ~{raios} equatorial radii; measured from 2013 to the end of {ate}, and today\'s state has not been measured',
+  'ficha.estrela.formaDoDisco':
+    'half-opening of ~{graus}° at the base, flaring outward; the density falls with distance to the power {n}',
   'ficha.estrela.ventoDoModelo':
     'loses {mdot} solar masses per year (measured); the speed, ~{v} km/s, is that of the fitted model, not a direct measurement',
   'ficha.estrela.regiaoDaLinha': 'the hydrogen glows out to ~{raios} stellar radii',

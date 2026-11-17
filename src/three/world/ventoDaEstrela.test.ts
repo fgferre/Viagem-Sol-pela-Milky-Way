@@ -7,7 +7,7 @@ import { estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
 import {
   ANCORA_RIGEL,
   BRACOS_DO_VENTO,
-  NORMAL_DOS_BRACOS,
+  normalDosBracos,
   PISO_DO_INSTRUMENTO,
   colunaDoVento,
   enrolamentoDosBracos,
@@ -16,6 +16,7 @@ import {
   perfilDoBraco,
   raioDaLinhaDe,
   GAMA_MAXIMO_DA_RECEITA,
+  GAMA_MINIMO_DA_RECEITA,
   GANHO_DO_GAS,
   LIMIAR_DE_DESENHO,
   TEFF_DO_SALTO_K,
@@ -99,7 +100,8 @@ describe('o vento das quentes — Vink, de Koter & Lamers 2001', () => {
     expect(f(1000)).toBe(TETO_DO_GAS);
     for (const n of named) {
       const e = estrelaComCorpo(n.n, named);
-      if (e) expect(fracaoDesenhadaDoVento(e)).toBeLessThanOrEqual(TETO_DO_GAS);
+      // o teto é só guarda: quem chegar nele tem de ser dito na ficha (`TETO_DO_GAS`)
+      if (e) expect(fracaoDesenhadaDoVento(e)).toBeLessThan(TETO_DO_GAS);
     }
     // fora da grade da receita em Γe (0,041 a 0,434): sem vento, e nenhum NaN nem com Γe ≥ 1
     expect(fatorDeEddington(800000, 15)).toBeGreaterThan(1);
@@ -107,6 +109,11 @@ describe('o vento das quentes — Vink, de Koter & Lamers 2001', () => {
     expect(velocidadeDeEscape(800000, 15, 27)).toBe(0);
     expect(ventoPelaReceita(33300, 800000, 60, 27)).not.toBeNull();
     expect(fatorDeEddington(800000, 60)).toBeLessThan(GAMA_MAXIMO_DA_RECEITA);
+    // e abaixo da grade (Γe < 0,041), também sem vento: Espiga (Γe 0,038) sai da receita
+    expect(fatorDeEddington(3000, 10)).toBeLessThan(GAMA_MINIMO_DA_RECEITA);
+    expect(ventoPelaReceita(26000, 3000, 10, 5)).toBeNull();
+    expect(ventoPelaReceita(26000, 30000, 10, 5)).not.toBeNull();
+    expect(gasDaEstrela(doCatalogo('Spica'))).toBeNull();
     for (const nome of ['τ CMa', 'Alnilam', 'α Cam']) expect(gasDaEstrela(doCatalogo(nome))).toBeNull();
     expect(gasDaEstrela(doCatalogo('Naos'))).not.toBeNull();
   });
@@ -129,6 +136,10 @@ describe('a época do disco de Achernar, pela lista medida', () => {
     expect(faseDoDisco(ep, anoDoJd(2456921.5))).toBeCloseTo(1, 2); // 23/09/2014
     expect(faseDoDisco(ep, anoDoJd(2461041.5))).toBe(1); // jan/2026
     expect(faseDoDisco([], 2014)).toBe(0);
+  });
+  it('a fase é contínua nas fronteiras de época (sem salto de um dia para o outro)', () => {
+    const dia = 1 / 365.25;
+    for (const [ano] of ep) expect(Math.abs(faseDoDisco(ep, ano + dia) - faseDoDisco(ep, ano - dia))).toBeLessThan(0.01);
   });
 });
 
@@ -189,7 +200,7 @@ describe('a imagem do gás: o halo curto, o piso e os braços', () => {
     const n = 400;
     for (let i = 0; i < n; i++)
       for (let j = 0; j < n; j++) s += (1 + (c - 1) * perfilDoBraco((2 * Math.PI * (j + 0.5)) / n, -1 + (2 * (i + 0.5)) / n)) ** 2;
-    expect((s / (n * n)) * NORMAL_DOS_BRACOS).toBeCloseTo(1, 3);
+    expect((s / (n * n)) * normalDosBracos()).toBeCloseTo(1, 3);
     // o enrolamento é v_eq/v∞: 1 R☉ em 1 dia a 50,6 km/s dá 1 rad por raio
     expect(enrolamentoDosBracos(1, 1, (2 * Math.PI * 695700) / 86400)).toBeCloseTo(1, 9);
     expect(enrolamentoDosBracos(10, undefined, 300)).toBe(0);

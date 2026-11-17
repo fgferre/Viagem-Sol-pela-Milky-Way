@@ -91,8 +91,12 @@ export const TEFF_DO_SALTO_K = (61.2 + 2.59 * LOG_RHO_MEDIO) * 1000;
  * (`estrelaDoCatalogo`), e a receita roda com ela (a ficha confessa); mas
  * quando essa massa põe a estrela FORA da grade, o defeito é a massa, e a
  * estrela fica SEM vento pela receita até ter massa melhor (Alnilam, α Cam,
- * τ CMa, ι Ori, ο Cas, λ Cep, 17/11). Nenhum teto inventado.
+ * τ CMa, ι Ori, ο Cas, λ Cep, 17/11). Nenhum teto inventado. Abaixo da
+ * grade (Γe < 0,041) também sem vento: ali a receita daria perdas
+ * ínfimas, abaixo do limiar de desenho em todo o catálogo (17/11), e a
+ * ficha não estende a receita para onde ela não foi ajustada.
  */
+export const GAMA_MINIMO_DA_RECEITA = 0.041;
 export const GAMA_MAXIMO_DA_RECEITA = 0.434;
 export function fatorDeEddington(lumLsol: number, massaMsol: number): number {
   return (2.6e-5 * lumLsol) / massaMsol;
@@ -109,12 +113,14 @@ export function velocidadeDeEscape(lumLsol: number, massaMsol: number, raioRsol:
  * A RECEITA de Vink et al. 2001 (Z = Z☉), só na faixa dela: 12.500 a
  * 50.000 K; entre 22.500 e 27.500 K o lado é o da temperatura do salto
  * (`TEFF_DO_SALTO_K`); v∞/v_esc = 2,6 no lado quente e 1,3 no frio.
- * Fora da faixa, em Teff ou em Γe (`GAMA_MAXIMO_DA_RECEITA`), null.
+ * Fora da faixa, em Teff ou em Γe (`GAMA_MINIMO_DA_RECEITA` a
+ * `GAMA_MAXIMO_DA_RECEITA`), null.
  */
 export function ventoPelaReceita(teffK: number, lumLsol: number, massaMsol: number, raioRsol: number): Vento | null {
   if (!(teffK >= 12500 && teffK <= 50000) || !(lumLsol > 0) || !(massaMsol > 0) || !(raioRsol > 0)) return null;
   // fora da grade da receita em Γe (a massa típica do catálogo não serve): sem vento
-  if (!(fatorDeEddington(lumLsol, massaMsol) <= GAMA_MAXIMO_DA_RECEITA)) return null;
+  const gamaE = fatorDeEddington(lumLsol, massaMsol);
+  if (!(gamaE >= GAMA_MINIMO_DA_RECEITA && gamaE <= GAMA_MAXIMO_DA_RECEITA)) return null;
   if (teffK > 22500 && teffK <= 27500 ? teffK > TEFF_DO_SALTO_K : teffK > 27500) {
     const razao = 2.6;
     const lt = Math.log10(teffK / 40000);
@@ -191,7 +197,9 @@ export const LIMIAR_DE_DESENHO = 1 / 400;
  * a medida que existe do pico da linha: em Achernar ativa o pico de Hα fica
  * sempre ≲ 1,3–1,5 do contínuo (Kervella et al. 2022; Rivinius et al. 2013),
  * ou seja, a emissão do gás no centro da linha não passa de ~1 vez o
- * contínuo da estrela.
+ * contínuo da estrela. Hoje é só guarda: nenhuma estrela do catálogo chega
+ * nele (Naos, a mais alta, fica em 0,99; 17/11); o teste barra a primeira
+ * que chegar, e aí a ficha passa a dizer que o brilho dela foi cortado.
  */
 export const TETO_DO_GAS = 1;
 
@@ -200,7 +208,7 @@ export const TETO_DO_GAS = 1;
  * âncora, x = 1) é linear na medida de emissão: G·x. Acima, cresce com o
  * LOGARITMO, G·(1 + ln x): uma linha que já é opticamente espessa não fica
  * mais brilhante na proporção de ρ² (a parte chata da curva de crescimento);
- * sem isso Alnilam saía com 5× e ζ Pup com 10× o gás de Rigel. Contínua e
+ * sem isso ζ Pup (Naos) saía com ~10× o gás de Rigel. Contínua e
  * com a mesma inclinação em x = 1; teto em `TETO_DO_GAS`.
  */
 export function fracaoDoVento(v: Vento, raioRsol: number, teffK: number): number {
@@ -288,8 +296,11 @@ function mediaDosBracos(): number {
   }
   return s / (n * n);
 }
-/** a emissão dos braços: (1 + (c − 1)S)² × isto (média 1 na esfera) */
-export const NORMAL_DOS_BRACOS = 1 / mediaDosBracos();
+let normalDosBracosGuardada: number | null = null;
+/** a emissão dos braços: (1 + (c − 1)S)² × isto (média 1 na esfera); conta na primeira estrela com braços, não na carga do módulo (a ficha o importa) */
+export function normalDosBracos(): number {
+  return (normalDosBracosGuardada ??= 1 / mediaDosBracos());
+}
 
 /** o enrolamento dos braços em radianos por raio: Ω·R/v∞ = 2πR/(P·v∞); 0 sem período */
 export function enrolamentoDosBracos(raioRsol: number, periodoDias: number | undefined, vInfKms: number): number {
@@ -361,7 +372,7 @@ export function fluxoDoDisco(bordaU: number): number {
   return Math.PI * (1 - bordaU / 3);
 }
 
-/** a cauda do disco de gás em volta do raio externo: de 0,85 a 1,15 × ele (ARTÍSTICO) */
+/** a cauda do disco de gás em volta do raio externo: de 0,95 a 1,0 × ele, borda definida (ARTÍSTICO) */
 export const CAUDA_DO_DISCO = { de: 0.95, ate: 1.0 } as const;
 
 /** o disco em números de desenho */

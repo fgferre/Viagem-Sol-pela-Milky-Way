@@ -772,6 +772,7 @@ export const PT = {
   'ficha.campo.veu': 'véu de luz',
   'ficha.campo.granulacao': 'granulação',
   'ficha.campo.vento': 'vento',
+  'ficha.campo.formaDoDisco': 'espessura do disco',
   'ficha.campo.discoDeGas': 'disco de gás',
   'ficha.campo.regiaoDaLinha': 'região da linha Hα',
   'ficha.campo.brilhoDoGas': 'brilho do gás',
@@ -779,6 +780,8 @@ export const PT = {
   'ficha.estrela.vento': 'perde {mdot} massas do Sol por ano, num vento de ~{v} km/s',
   'ficha.estrela.discoDeGas':
     'até ~{raios} raios do equador; medido de 2013 ao fim de {ate}, e o estado de hoje não foi medido',
+  'ficha.estrela.formaDoDisco':
+    'meia abertura de ~{graus}° na base, alargando para fora; a densidade cai com a distância à potência {n}',
   'ficha.estrela.ventoDoModelo':
     'perde {mdot} massas do Sol por ano (medido); a velocidade, ~{v} km/s, é a do modelo ajustado, não medida direta',
   'ficha.estrela.regiaoDaLinha': 'o hidrogênio brilha até ~{raios} raios da estrela',
