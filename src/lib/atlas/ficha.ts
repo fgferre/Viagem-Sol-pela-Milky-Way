@@ -53,6 +53,7 @@ import {
   pesoDoPico,
   regraDaForja,
 } from '../../three/world/forjaDaEstrela';
+import { fracaoDesenhadaDoVento, ventoDaFicha } from '../../three/world/ventoDaEstrela';
 import { NOMES_DOS_CORPOS, classeEmTexto, nomeDoCorpo } from '../../three/atlasConfig';
 import { decimalDoIdioma, idiomaAtual, t, type ChaveDeTexto } from '../idioma';
 import type { Procedencia } from '../../three/selo';
@@ -987,6 +988,51 @@ function tresSignificativos(v: number): string {
   return r >= 1000 ? inteiroDoIdioma(r) : decimalDoIdioma(String(r));
 }
 
+/** Uma potência de dez com dois algarismos (8,5 × 10⁻⁷). */
+function potenciaDeDez(v: number): string {
+  const [mantissa, expoente] = v.toExponential(1).split('e');
+  const n = Number(expoente);
+  const digitos = String(Math.abs(n))
+    .split('')
+    .map((d) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[Number(d)])
+    .join('');
+  return `${decimalDoIdioma(mantissa!)} × 10${n < 0 ? '⁻' : ''}${digitos}`;
+}
+
+/**
+ * O GÁS que o motor desenha (`gasDaEstrela`, `ventoDaEstrela.ts`): o vento
+ * (medido pelo nome, ou a receita de Vink 2001), só de quem o tem acima do
+ * limiar de desenho; o disco de gás da ficha (Achernar), com a época medida.
+ */
+function linhasDoGas(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
+  const v = fracaoDesenhadaDoVento(e) > 0 ? ventoDaFicha(e) : null;
+  const d = e.discoDeGas;
+  return [
+    v
+      ? linha(
+          t('ficha.campo.vento'),
+          t('ficha.estrela.vento', {
+            mdot: potenciaDeDez(v.mdotMsolAno),
+            v: inteiroDoIdioma(Math.round(v.vInfKms / 10) * 10),
+          }),
+          v.p,
+          v.fonte
+        )
+      : null,
+    d
+      ? linha(
+          t('ficha.campo.discoDeGas'),
+          t('ficha.estrela.discoDeGas', {
+            raios: numeroDoIdioma(d.raioExternoEmRaios.v),
+            ate: inteiroDoIdioma(Math.floor(d.medidoAte)),
+          }),
+          'medido',
+          d.fonteDasEpocas
+        )
+      : null,
+  ];
+}
+
 /** Uma linha de número do piloto: o selo e a fonte vêm do próprio número. */
 function linhaDoNumero(rotulo: string, valor: string | null, n: Numero): LinhaDaFicha | null {
   return linha(rotulo, valor, n.p, n.fonte);
@@ -1087,6 +1133,7 @@ function linhasDoPiloto(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
           { v: atmosfera, p: 'derivado', fonte: LEI_DA_ATMOSFERA }
         )
       : null,
+    ...linhasDoGas(e),
   ];
 }
 
@@ -1186,6 +1233,10 @@ function secaoImagemDaEstrela(e: EstrelaVisitavel): SecaoDaFicha {
       // por nome): mais radiante que o Sol, véu; granulação abaixo do piso
       // da Forja, extrapolada
       ...linhasDoBrilho(e.teffK.v),
+      // o gás em volta (vento, disco): visto como num filtro estreito de hidrogênio
+      fracaoDesenhadaDoVento(e) > 0 || e.discoDeGas
+        ? linha(t('ficha.campo.gasEmVolta'), t('ficha.estrela.gasEmVolta'), 'artistico')
+        : null,
       forja && forja.contraste < forja.contrasteNaTela
         ? linha(
             t('ficha.campo.granulacao'),

@@ -124,6 +124,28 @@ export interface EstrelaVisitavel {
   readonly superficie: Superficie;
   readonly companheira?: Companheira;
   readonly companheiraSemCorpo?: CompanheiraSemCorpo;
+  /** o disco de gás de uma estrela Be, medido (`three/world/ventoDaEstrela.ts`) */
+  readonly discoDeGas?: DiscoDeGas;
+}
+
+/**
+ * O DISCO DE GÁS de uma estrela Be, como DADO: outra estrela com disco
+ * medido entra sem código novo. ρ = ρ0·(r/R)^−n·exp(−z²/2H²), H = H0·(r/R)^1,5
+ * (Rivinius, Carciofi & Martayan 2013, A&ARv 21, 69); a época pela lista
+ * medida, linear entre os pontos e presa à ponta mais próxima fora deles.
+ */
+export interface DiscoDeGas {
+  /** o raio externo, em raios equatoriais */
+  readonly raioExternoEmRaios: Numero;
+  /** a meia abertura na base, em graus (alarga para fora) */
+  readonly meiaAberturaGraus: Numero;
+  /** o expoente n da densidade */
+  readonly expoenteDaDensidade: Numero;
+  /** a função da época: (ano decimal, fase 0–1), em ordem */
+  readonly epocas: readonly { readonly ano: number; readonly fase: number }[];
+  /** até quando a época foi medida (ano decimal) e a fonte dela */
+  readonly medidoAte: number;
+  readonly fonteDasEpocas: string;
 }
 
 /** a Teff do Sol (K): a régua das concessões que só a física liga */
@@ -443,10 +465,13 @@ const REGULUS: EstrelaVisitavel = {
 // e da luminosidade sobre a forma de Roche (a Teff média que a conta devolve,
 // 15.544 K, bate com os 15.539 K medidos). Ficou de fora o conjunto anterior
 // (Domiciano de Souza et al. 2012, VLTI/AMBER), mais antigo. O disco de gás
-// da estrela Be não é daqui.
+// da estrela Be é o campo `discoDeGas`, abaixo.
 // arXiv 2209.07537
 const KERVELLA_2022 = 'Kervella et al. 2022, A&A 667, A111';
 const DOMICIANO_2014 = `Domiciano de Souza et al. 2014, A&A 569, A10 (VLTI/PIONIER); ${KERVELLA_2022}`;
+// arXiv 1703.02839; arXiv 1310.3962
+const DALLA_VEDOVA_2017 = 'Dalla Vedova et al. 2017, A&A 601, A118';
+const RIVINIUS_2013 = 'Rivinius, Carciofi & Martayan 2013, A&ARv 21, 69';
 const ACHERNAR: EstrelaVisitavel = {
   id: 'achernar',
   nomeNoCatalogo: 'Achernar',
@@ -466,6 +491,22 @@ const ACHERNAR: EstrelaVisitavel = {
     betaGravidade: { v: 0.166, p: 'medido', fonte: DOMICIANO_2014 },
   },
   superficie: superficiePelaTemperatura(15539, 9.16, 5.99),
+  // o disco de gás: excesso na banda H até 1,7–2,3 raios equatoriais em
+  // setembro de 2014; sem disco em 2011–12, Hα em emissão desde o começo de
+  // 2013, quase estacionário depois de ~1,6 ano, claro até o fim de 2015
+  discoDeGas: {
+    raioExternoEmRaios: { v: 2.0, p: 'medido', fonte: DALLA_VEDOVA_2017 },
+    meiaAberturaGraus: { v: 3, p: 'derivado', fonte: RIVINIUS_2013 },
+    expoenteDaDensidade: { v: 3.5, p: 'derivado', fonte: RIVINIUS_2013 },
+    epocas: [
+      { ano: 2010.0, fase: 0 },
+      { ano: 2013.0, fase: 0 },
+      { ano: 2014.72, fase: 1 },
+      { ano: 2015.99, fase: 1 },
+    ],
+    medidoAte: 2015.99,
+    fonteDasEpocas: `${DALLA_VEDOVA_2017}; Faes 2015`,
+  },
 };
 
 /**

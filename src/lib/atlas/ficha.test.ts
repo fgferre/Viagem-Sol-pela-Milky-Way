@@ -1004,6 +1004,28 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     ]);
   });
 
+  it('o gás em volta: vento medido em Rigel, pela receita em Alnilam, disco com a época em Achernar; nada em Sírius', () => {
+    const de = (n: string) => montarFichaDeEstrela(n, starsMeta.named.find((s) => s.n === n))!;
+    const rig = linhasDe(de('Rigel')).get('vento')!;
+    expect(rig.procedencia).toBe('medido');
+    expect(rig.valor).toBe('perde 8,5 × 10⁻⁷ massas do Sol por ano, num vento de ~230 km/s');
+    expect(rig.fonte).toContain('Chesneau');
+    const aln = linhasDe(de('Alnilam')).get('vento')!;
+    expect(aln.procedencia).toBe('derivado');
+    expect(aln.fonte).toContain('Vink');
+    const ach = de('Achernar');
+    expect(linhasDe(ach).has('vento')).toBe(false);
+    const disco = linhasDe(ach).get('disco de gás')!;
+    expect(disco.procedencia).toBe('medido');
+    expect(disco.valor).toContain('o estado de hoje não foi medido');
+    expect(disco.fonte).toContain('Dalla Vedova');
+    const img = ach.secoes.find((x) => x.id === 'imagem')!;
+    expect(img.linhas.find((l) => l.rotulo === 'gás em volta')!.procedencia).toBe('artistico');
+    const sir = de('Sirius');
+    expect(linhasDe(sir).has('vento')).toBe(false);
+    expect(sir.secoes.find((x) => x.id === 'imagem')!.linhas.some((l) => l.rotulo === 'gás em volta')).toBe(false);
+  });
+
   it('a nomeada fora da lista à mão traz a física da regra única, derivada ou artística, nunca medida', () => {
     const arc = starsMeta.named.find((s) => s.n === 'Arcturus')!;
     const l = linhasDe(montarFichaDeEstrela('Arcturus', arc)!);

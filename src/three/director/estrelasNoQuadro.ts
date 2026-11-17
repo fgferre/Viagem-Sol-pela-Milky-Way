@@ -36,6 +36,7 @@ import type { QualityLevel } from '../core/engine';
 import { SOL_PARAMS, StellarBody, pesoDoFiltro, rocheDe, type StellarParams } from '../world/stellarBody';
 import { pesoDoPico, semConveccaoNaSuperficie } from '../world/forjaDaEstrela';
 import { PontoDeEstrela } from '../world/pontoDeEstrela';
+import { anoDoJd, faseDoDisco, gasDaEstrela } from '../world/ventoDaEstrela';
 import { RAIO_SOL_PC } from '../escala';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
 import { bvToColor } from '../shaders/common';
@@ -234,6 +235,8 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
   const contrasteDosGranulos = semConveccaoNaSuperficie(e.teffK.v, logG) ? 0 : s.contrasteGranulos.v;
   const teffDoPicoK = achatamento ? rocheDe(0, achatamento).teffK : e.teffK.v;
   const veu = veuDe(e.teffK.v, teffDoPicoK);
+  // o gás das quentes (o vento medido pelo nome, ou a receita; o disco da ficha)
+  const gas = gasDaEstrela(e);
   return {
     ...SOL_PARAMS,
     nome: e.id,
@@ -259,6 +262,7 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
     // sem inclinação (o giro de um período) o eixo segue o +Y do motor: a
     // estrela achata em volta do eixo em que já girava
     ...(achatamento?.inclinacaoGraus && eixo ? { eixoNaCena: [eixo.x, eixo.y, eixo.z] as const } : {}),
+    ...(gas ? { gas } : {}),
   };
 }
 
@@ -347,8 +351,10 @@ export class EstrelaPeloMotorDoSol {
   /** o tier com que nasceu — trocar de tier REMONTA (`EstrelasNoQuadro`) */
   readonly quality: QualityLevel;
   private readonly meios: MeiosDoMotor;
+  private readonly epocasDoDisco: readonly (readonly [number, number])[] | null;
   constructor(params: StellarParams, meios: MeiosDoMotor, jd: number) {
     this.meios = meios;
+    this.epocasDoDisco = params.gas?.disco?.epocas ?? null;
     this.quality = meios.quality;
     const t0 = performance.now();
     this.corpo = new StellarBody(params, meios.renderer, meios.camera, meios.quality, faseDoCiclo(jd));
@@ -384,6 +390,8 @@ export class EstrelaPeloMotorDoSol {
     // Proxima tem ciclo próprio de ~7 anos (Wargelin et al. 2017) que o
     // motor ainda não conhece — declarado
     this.corpo.escreverCiclo(faseDoCiclo(q.jd));
+    // a fase do disco de gás (Achernar) é a da DATA, pela lista medida
+    if (this.epocasDoDisco) this.corpo.escreverDisco(faseDoDisco(this.epocasDoDisco, anoDoJd(q.jd)));
     this.corpo.update(q.tempoS, this.meios.camera);
   }
 

@@ -771,6 +771,14 @@ export const PT = {
   'ficha.estrela.tamanhoPeloRaio': 'o raio da ficha',
   'ficha.campo.veu': 'véu de luz',
   'ficha.campo.granulacao': 'granulação',
+  'ficha.campo.vento': 'vento',
+  'ficha.campo.discoDeGas': 'disco de gás',
+  'ficha.campo.gasEmVolta': 'gás em volta',
+  'ficha.estrela.vento': 'perde {mdot} massas do Sol por ano, num vento de ~{v} km/s',
+  'ficha.estrela.discoDeGas':
+    'até ~{raios} raios do equador; medido de 2013 ao fim de {ate}, e o estado de hoje não foi medido',
+  'ficha.estrela.gasEmVolta':
+    'mostrado como num filtro estreito do hidrogênio (Hα), que o realça; o brilho e a cor do gás são escolha',
   'ficha.campo.pontoMaisQuente': 'ponto mais quente',
   'ficha.estrela.veu':
     'mais radiante que o Sol: o disco aparece numa exposição mais baixa e a luz que sobra vira um véu em volta dele, como numa câmera — a força e o alcance do véu são escolha',

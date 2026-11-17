@@ -183,8 +183,9 @@ describe('SOL_PARAMS — a instância 1 reproduz os literais de antes', () => {
     const src = readFileSync(new URL('./stellarBody.ts', import.meta.url), 'utf8');
     // o estado da lei, o avermelhamento do limbo, a régua de Planck e a
     // borda do contínuo, a média da gravidade (`operarAFotosfera`) e a regra
-    // da Forja (`forjaDe`), o peso e o polo da ponta do pico e o tom do véu
-    expect(src.match(/p\.teffK/g)).toHaveLength(9);
+    // da Forja (`forjaDe`), o peso e o polo da ponta do pico, o tom do véu e
+    // o fator tonal da casca pela rampa da lisa (`criarABordaDifusa`)
+    expect(src.match(/p\.teffK/g)).toHaveLength(10);
     // sem envelope convectivo não há dínamo: o construtor (`semDinamo`) e
     // o tier da estrela (`tierDaEstrela`) leem o campo
     expect(src).toContain('this.semDinamo = !params.dinamo;');
