@@ -26,7 +26,7 @@ O que NÃO convence e fica aberto:
 - Altair tem a rede de convecção igual do polo ao equador; a regra por temperatura local (polo a 8.450 K, quase sem convecção) seria o próximo passo honesto.
 - O ângulo de posição do eixo no céu segue artístico, embora medido para Altair, Régulo e Achernar (não abri os números).
 - O enquadramento da câmera usa o raio médio (1,3 % menor que o equatorial em β Pic).
-- A ferramenta de fotografar por latitude ficou só no scratchpad da conversa (`latitude.mjs`): a escrita do trabalhador na pasta de provas foi barrada por um hook e não a copiei por ele.
+- A ferramenta de fotografar por latitude está em `capturas/estrelas-lugar/star-forge/etapa-b/latitude.mjs` (o uso está no cabeçalho dela).
 
 ## Etapa B — o pedido original
 - Achatamento e polos claros para QUALQUER estrela, pela conta que hoje só Vega usa: Roche + Espinosa Lara & Rieutord 2011 (`rocheDe`, `achatamento` em `estrelasVisitaveis.ts`, `operarAFotosfera` em stellarBody). Vega vira um ponto da regra, não caso à mão.
