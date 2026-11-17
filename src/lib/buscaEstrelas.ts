@@ -465,7 +465,8 @@ export function buscar(
   const alvo = normalizarConsulta(consulta);
   if (!alvo) return [];
 
-  const catalogo = /^(hd|hip) ?0*(\d+)$/.exec(alvo);
+  // "hip-69673" também: é como o número sai num link escrito à mão
+  const catalogo = /^(hd|hip)[ -]?0*(\d+)$/.exec(alvo);
   if (catalogo) {
     const achado = indice.porCatalogo.get(`${catalogo[1]} ${catalogo[2]}`);
     if (achado === undefined) return [];

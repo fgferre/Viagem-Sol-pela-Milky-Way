@@ -15,7 +15,7 @@
  *   3. massa: anãs e subgigantes pela relação massa-luminosidade de Eker et
  *      al. (2018); gigantes e supergigantes por um valor típico DECLARADO
  *      (artístico — cor e brilho não fixam a massa de uma estrela evoluída);
- *      anã branca 0,6 M☉ (artístico);
+ *      anã branca não entra (sem lei de superfície: fica ponto de luz);
  *   4. coerência: a gravidade (log g) tem de caber na classe que o rótulo
  *      diz; se não cabe, o rótulo é descartado e a estrela é refeita como se
  *      não o tivesse; se ainda não cabe, null;
@@ -54,45 +54,53 @@ const tp = (tipo: string): number => LETRAS_MK.indexOf(tipo[0]) * 10 + Number(ti
 
 /**
  * ANÃS (V, IV, VI): Pecaut & Mamajek 2013 (ApJS 208, 9), a tabela de anãs
- * mantida por Mamajek, O3–M9. Âncoras TRANSCRITAS DE MEMÓRIA — conferir na
- * tabela. Também serve às gigantes mais quentes que F5 e às supergigantes
- * mais quentes que B0, onde as escalas de gigante não existem e a diferença
- * de classe é pequena.
+ * mantida por Mamajek, O3–M9 — coluna Teff CONFERIDA em 16/11/2026 contra a
+ * versão 2022.04.16 do arquivo (EEM_dwarf_UBVIJHK_colors_Teff.txt). Também
+ * serve às gigantes mais quentes que G5 e às supergigantes mais quentes que
+ * B0, onde as escalas de gigante não existem e a diferença de classe é
+ * pequena.
  */
 const ESCALA_ANAS: Escala = [
-  [tp('O3'), 44900], [tp('O5'), 41400], [tp('O7'), 37100], [tp('O9'), 32500],
+  [tp('O3'), 44900], [tp('O5'), 41400], [tp('O7'), 37100], [tp('O9'), 33300],
   [tp('B0'), 31400], [tp('B1'), 26000], [tp('B2'), 20600], [tp('B3'), 17000],
   [tp('B5'), 15700], [tp('B8'), 12300], [tp('B9'), 10700], [tp('A0'), 9700],
-  [tp('A2'), 8800], [tp('A3'), 8600], [tp('A5'), 8100], [tp('A7'), 7650],
-  [tp('F0'), 7220], [tp('F2'), 6810], [tp('F5'), 6510], [tp('F8'), 6170],
-  [tp('G0'), 5920], [tp('G2'), 5770], [tp('G5'), 5660], [tp('G8'), 5490],
-  [tp('K0'), 5280], [tp('K2'), 5040], [tp('K5'), 4440], [tp('K7'), 4050],
+  [tp('A2'), 8800], [tp('A3'), 8600], [tp('A5'), 8100], [tp('A7'), 7760],
+  [tp('F0'), 7220], [tp('F2'), 6820], [tp('F5'), 6550], [tp('F8'), 6180],
+  [tp('G0'), 5930], [tp('G2'), 5770], [tp('G5'), 5660], [tp('G8'), 5480],
+  [tp('K0'), 5270], [tp('K2'), 5100], [tp('K5'), 4440], [tp('K7'), 4100],
   [tp('M0'), 3850], [tp('M1'), 3660], [tp('M2'), 3560], [tp('M3'), 3430],
   [tp('M4'), 3210], [tp('M5'), 3060], [tp('M6'), 2810], [tp('M7'), 2680],
   [tp('M8'), 2570], [tp('M9'), 2380],
 ];
 
 /**
- * GIGANTES (III, II), F5–M8: G e K de Alonso et al. 1999 (A&AS 140, 261),
- * M de van Belle et al. 1999 (AJ 117, 521). Âncoras arredondadas e
- * TRANSCRITAS DE MEMÓRIA — conferir. Mais quente que F5: a escala de anãs.
+ * GIGANTES (III, II), G5–M6: van Belle et al. 2021 (ApJ 922, 163), tabela
+ * 12 — a temperatura MEDIDA por interferometria, média por tipo. CONFERIDA
+ * em 16/11/2026. Entram as linhas com 4 estrelas ou mais (G0, G1 e K3 têm
+ * uma só e ficam de fora; no lugar de K3 entram K3,25 e K3,5), M0 pelo
+ * ajuste do próprio artigo (3.816 K, a linha medida está vazia) e M6 com
+ * duas estrelas, a última: depois dela a tabela tem uma estrela por tipo e
+ * deixa de cair. Entre F5 e G5 não há medida: a reta entre a anã F5 e a
+ * gigante G5, declarado. Mais quente que F5: a escala de anãs.
  */
 const ESCALA_GIGANTES: Escala = [
-  [tp('F5'), 6510], [tp('G0'), 5600], [tp('G5'), 5100], [tp('G8'), 4900],
-  [tp('K0'), 4750], [tp('K1'), 4600], [tp('K2'), 4450], [tp('K3'), 4300],
-  [tp('K4'), 4150], [tp('K5'), 3950], [tp('M0'), 3850], [tp('M1'), 3750],
-  [tp('M2'), 3650], [tp('M3'), 3550], [tp('M4'), 3450], [tp('M5'), 3350],
-  [tp('M6'), 3250], [tp('M7'), 3150], [tp('M8'), 3050],
+  [tp('F5'), 6550], [tp('G5'), 4963], [tp('G8'), 4781], [tp('K0'), 4715],
+  [tp('K1'), 4634], [tp('K1.25'), 4528], [tp('K1.5'), 4424], [tp('K2'), 4387],
+  [tp('K3.25'), 4183], [tp('K3.5'), 4063], [tp('K4'), 3951], [tp('K5'), 3911],
+  [tp('M0'), 3816], [tp('M1'), 3777], [tp('M2'), 3617], [tp('M3'), 3559],
+  [tp('M4'), 3466], [tp('M5'), 3381], [tp('M5.5'), 3301], [tp('M6'), 3112],
 ];
 
 /**
- * SUPERGIGANTES (0, Ia, Ib, I), B0–M5: K1–M5 de Levesque et al. 2005 (ApJ
- * 628, 973); B de Crowther et al. 2006 (A&A 446, 279); A–G interpolando
- * supergigantes medidas (Deneb A2 8.500 K, Canopus F0 7.350 K, Polaris F7
- * 6.000 K). TRANSCRITAS DE MEMÓRIA — conferir. Mais quente que B0: anãs.
+ * SUPERGIGANTES (0, Ia, Ib, I), B0–M5. CONFERIDAS em 16/11/2026: B0–B3 de
+ * Crowther, Lennon & Walborn 2006 (A&A 446, 279, tabela 4, média adotada das
+ * Ia); K1–M5 de Levesque et al. 2005 (ApJ 628, 973, tabela 5). NÃO
+ * CONFERIDAS, de memória: B5 e B8 (fora da tabela de Crowther) e o trecho
+ * A–G, que interpola supergigantes medidas (Deneb A2 8.500 K, Canopus F0
+ * 7.350 K, Polaris F7 6.000 K). Mais quente que B0: a escala de anãs.
  */
 const ESCALA_SUPERGIGANTES: Escala = [
-  [tp('B0'), 27500], [tp('B1'), 21500], [tp('B2'), 18500], [tp('B3'), 16500],
+  [tp('B0'), 27500], [tp('B1'), 21500], [tp('B2'), 18500], [tp('B3'), 15500],
   [tp('B5'), 13600], [tp('B8'), 12100], [tp('A0'), 9700], [tp('A2'), 8500],
   [tp('F0'), 7350], [tp('F5'), 6400], [tp('F8'), 5800], [tp('G0'), 5500],
   [tp('G5'), 4900], [tp('G8'), 4600], [tp('K1'), 4100], [tp('K3'), 4015],
@@ -126,7 +134,7 @@ function teffPeloTipo(c: SpectralClass, sub: number, classe: LuminosityClass): {
     if (t !== null) return { v: t, fonte: LEVESQUE_CROWTHER };
   } else if (GIGANTES.has(classe)) {
     const t = naEscala(ESCALA_GIGANTES, i);
-    if (t !== null) return { v: t, fonte: ALONSO_VAN_BELLE };
+    if (t !== null) return { v: t, fonte: VAN_BELLE };
   }
   return { v: naEscala(ESCALA_ANAS, i) ?? ESCALA_ANAS[0][1], fonte: PECAUT_MAMAJEK };
 }
@@ -154,7 +162,7 @@ const BC_FLOWER_TORRES: readonly (readonly number[])[] = [
 ];
 const TEFF_MIN_DA_BC_K = 3000;
 const TEFF_MAX_DA_BC_K = 50000;
-export const M_BOL_DO_SOL = 4.73;
+const M_BOL_DO_SOL = 4.73;
 
 function bcFlowerTorres(teffK: number): number {
   const l = Math.log10(Math.min(TEFF_MAX_DA_BC_K, Math.max(TEFF_MIN_DA_BC_K, teffK)));
@@ -167,18 +175,18 @@ function bcFlowerTorres(teffK: number): number {
 /**
  * AS ANÃS FRIAS: a parte fria de Flower vem de gigantes e sai forte demais
  * para anã M (~1 mag a 3.100 K). Abaixo de 4.400 K, nas anãs (V, VI), a
- * coluna BC_V de Pecaut & Mamajek 2013 (ApJS 208, 9; M0V–M8V, TRANSCRITA DE
- * MEMÓRIA — conferir), com a primeira âncora no valor de Flower em 4.400 K
+ * coluna BC_V de Pecaut & Mamajek 2013 (ApJS 208, 9; M0V–M9V, CONFERIDA em
+ * 16/11/2026 contra a versão 2022.04.16), com a primeira âncora no valor de Flower em 4.400 K
  * para a emenda ser contínua (as duas escalas já concordam em K5V).
  */
 const TEFF_DA_EMENDA_K = 4400;
 const BC_ANAS_FRIAS: readonly (readonly [teffK: number, bc: number])[] = [
   [TEFF_DA_EMENDA_K, bcFlowerTorres(TEFF_DA_EMENDA_K)],
-  [3850, -1.15], [3660, -1.42], [3560, -1.62], [3430, -1.97], [3210, -2.59],
-  [3060, -3.27], [2810, -4.1], [2570, -4.86],
+  [3850, -1.15], [3660, -1.42], [3560, -1.62], [3430, -1.93], [3210, -2.51],
+  [3060, -3.11], [2810, -4.13], [2680, -4.99], [2570, -5.65], [2380, -5.86],
 ];
 
-export function correcaoBolometrica(teffK: number, classe: LuminosityClass = 'III'): number {
+function correcaoBolometrica(teffK: number, classe: LuminosityClass = 'III'): number {
   if (!(teffK < TEFF_DA_EMENDA_K && (classe === 'V' || classe === 'VI'))) return bcFlowerTorres(teffK);
   for (let k = 1; k < BC_ANAS_FRIAS.length; k++) {
     const [t1, b1] = BC_ANAS_FRIAS[k];
@@ -210,7 +218,7 @@ const MLR_EKER: readonly { readonly ate: number; readonly a: number; readonly b:
 ];
 const MASSA_MIN_MSOL = 0.075;
 
-export function massaPelaLuminosidade(lumLsol: number): number {
+function massaPelaLuminosidade(lumLsol: number): number {
   const logL = Math.log10(lumLsol);
   let de = MASSA_MIN_MSOL;
   for (const f of MLR_EKER) {
@@ -242,7 +250,6 @@ const MASSA_TIPICA: Partial<Record<LuminosityClass, readonly [fria: number, quen
   Ia: [20, 25],
   '0': [25, 40],
 };
-const MASSA_DA_ANA_BRANCA = 0.6;
 
 // ─── a coerência ────────────────────────────────────────────────────────────
 
@@ -285,7 +292,7 @@ const RAIO_MAX_RSOL = 2000;
 
 const ALLEN = 'Allen 2000, Astrophysical Quantities (4th ed.)';
 const PECAUT_MAMAJEK = 'Pecaut & Mamajek 2013, ApJS 208, 9';
-const ALONSO_VAN_BELLE = 'Alonso et al. 1999, A&AS 140, 261; van Belle et al. 1999, AJ 117, 521';
+const VAN_BELLE = 'van Belle et al. 2021, ApJ 922, 163';
 const LEVESQUE_CROWTHER = 'Levesque et al. 2005, ApJ 628, 973; Crowther et al. 2006, A&A 446, 279';
 const BALLESTEROS = 'Ballesteros 2012, EPL 97, 34008';
 const BC_FONTES = 'Flower 1996, ApJ 469, 355; Torres 2010, AJ 140, 1158; Pecaut & Mamajek 2013, ApJS 208, 9';
@@ -341,11 +348,9 @@ function calcular(
   // o tipo só fixa a Teff com o dígito da subclasse; sem ele, a cor
   const pelaClasse = tipo !== null && Number.isFinite(tipo.subclass);
   if (!pelaClasse && !temCor) return null;
-  const anaBranca = tipo?.spectralClass === 'WD';
-  const classe: LuminosityClass = anaBranca
-    ? 'VII'
-    : (tipo?.luminosityClass ??
-      (temCor ? descriptorFromCatalog({ bv: n.ci!, spect: null, absmag: mv }).luminosityClass : 'V'));
+  const classe: LuminosityClass =
+    tipo?.luminosityClass ??
+    (temCor ? descriptorFromCatalog({ bv: n.ci!, spect: null, absmag: mv }).luminosityClass : 'V');
   const teff = pelaClasse
     ? teffPeloTipo(tipo.spectralClass, tipo.subclass, classe)
     : { v: temperatureFromBV(n.ci!), fonte: BALLESTEROS };
@@ -356,12 +361,10 @@ function calcular(
   if (!(teff.v >= TEFF_MIN_K && teff.v <= TEFF_MAX_K && raio >= RAIO_MIN_RSOL && raio <= RAIO_MAX_RSOL)) return null;
 
   const tipica = MASSA_TIPICA[classe];
-  const massa: Numero = anaBranca
-    ? { v: MASSA_DA_ANA_BRANCA, p: 'artistico', fonte: 'Kepler et al. 2007, MNRAS 375, 1315' }
-    : tipica
-      ? // sem fonte: nenhuma medida fixa este número (o selo artístico diz isso)
-        { v: tipica[teff.v >= TEFF_DAS_EVOLUIDAS_QUENTES_K ? 1 : 0], p: 'artistico', fonte: '' }
-      : { v: massaPelaLuminosidade(lum), p: 'derivado', fonte: EKER };
+  const massa: Numero = tipica
+    ? // sem fonte: nenhuma medida fixa este número (o selo artístico diz isso)
+      { v: tipica[teff.v >= TEFF_DAS_EVOLUIDAS_QUENTES_K ? 1 : 0], p: 'artistico', fonte: '' }
+    : { v: massaPelaLuminosidade(lum), p: 'derivado', fonte: EKER };
   if (!Number.isFinite(massa.v) || massa.v <= 0) return null;
   const [gMin, gMax] = LOG_G_DA_CLASSE[classe];
   const logG = logGravidade(massa.v, raio);
@@ -411,6 +414,12 @@ export function estrelaDoCatalogo(n: NamedStar): EstrelaVisitavel | null {
   return semRotulo?.coerente ? semRotulo.ficha : null;
 }
 
+/** a companheira de uma escrita à mão (Sirius B) já tem corpo, na órbita
+ *  dela: nem corpo nem ficha física pela regra única */
+export function ehCompanheiraDesenhada(nome: string): boolean {
+  return ESTRELAS_VISITAVEIS.some((e) => e.companheira?.nome === nome);
+}
+
 const memoria = new Map<string, EstrelaVisitavel | null>();
 
 /**
@@ -421,7 +430,7 @@ const memoria = new Map<string, EstrelaVisitavel | null>();
 export function estrelaComCorpo(nome: string, named: readonly NamedStar[]): EstrelaVisitavel | null {
   const autoral = estrelaVisitavelPorNome(nome);
   if (autoral) return autoral;
-  if (ESTRELAS_VISITAVEIS.some((e) => e.companheira?.nome === nome)) return null;
+  if (ehCompanheiraDesenhada(nome)) return null;
   if (memoria.has(nome)) return memoria.get(nome)!;
   const n = named.find((s) => s.n === nome);
   const ficha = n ? estrelaDoCatalogo(n) : null;

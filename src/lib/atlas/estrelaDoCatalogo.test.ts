@@ -67,9 +67,11 @@ describe('a ficha de uma estrela do catálogo (regra única)', () => {
  * ~0,1 dex de espalhamento em L). Massa artística não se cobra.
  */
 const FORA: Record<string, readonly string[]> = {
-  // L −0,17 dex: a coluna BC_V de anã M a 3.060 K (M5) dá −3,27; o L medido
-  // pede ~−3,6 (Proxima é M5.5 em Bessell 1991, mais fria que o M5 do catálogo)
-  'Proxima Centauri': ['luminosidadeLsol'],
+  // L −0,23 dex e R −30 %: o catálogo a chama de M5 (3.060 K, BC_V −3,11 na
+  // tabela conferida de Pecaut & Mamajek); Proxima é M5.5 (Bessell 1991),
+  // mais fria, e o L medido pede BC ~−3,7. O erro é do rótulo, não da
+  // coluna: ajustar a coluna para ela passar estragaria as outras anãs M
+  'Proxima Centauri': ['luminosidadeLsol', 'raioRsol'],
 };
 
 describe('a regra confere com as fichas escritas à mão', () => {

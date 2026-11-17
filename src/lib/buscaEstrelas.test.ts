@@ -197,6 +197,8 @@ describe('consulta numérica por acesso direto', () => {
     expect(nomes('hd48915')).toEqual(['Sirius']);
     expect(nomes('HD 48915')).toEqual(['Sirius']);
     expect(nomes('hip 32349')).toEqual(['Sirius']);
+    // com hífen, como num link escrito à mão (`?foco=hip-69673`)
+    expect(nomes('hip-32349')).toEqual(['Sirius']);
     expect(nomes('hip32349')).toEqual(['Sirius']);
     expect(nomes('hd 0048915')).toEqual(['Sirius']); // zero à esquerda cai fora
   });
