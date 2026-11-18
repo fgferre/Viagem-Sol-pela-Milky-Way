@@ -62,10 +62,15 @@ abaixo, que guardam trabalho que NÃO entrou. Todo o resto estava inteiro dentro
 junção aberto nem etiqueta. Ramo novo de trabalho, depois de juntado, se apaga dos dois lados no mesmo dia.
 
 - `anamorfica`: candidatas A e B da lente anamórfica, item 233. Ele viu e escolheu *"Fica a de hoje"* (10/10). Registro.
-- `faixa-do-disco`: disco de Sgr A✱ visto de perfil (chegada a S2) como faixa macia em vez de risco pontilhado.
-  Imagem melhor, custo da vista de perfil em aberto. Entra quando o custo for medido com a máquina quieta.
-- `saturno-chegada`: prova `?anelb=a|b` do anel B chapado na chegada. Feita ANTES da descrição única dos anéis:
-  refazer a comparação sobre o anel de hoje antes de mostrar a ele; pode já não fazer falta.
+- `faixa-do-disco`: disco de Sgr A✱ visto de perfil como faixa macia. DESCARTADO pela coordenadora em 14/11
+  (alisa a faixa mas a deixa mais comprida e ~30 % mais cara). O risco na chegada a S2 se resolveu no `main` por
+  outro caminho: a câmera chega 6° acima do disco (e73f1f0c). Registro.
+- `saturno-chegada`: candidatos `?anelb=a|b` do anel B chapado. DESCARTADO em 14/11 (ganho pequeno). O conserto de
+  verdade entrou no `main` no mesmo dia: o brilho medido, que ele viu em prancha e mandou trocar (cdf28ac0). Registro.
+  Sobra a limpar: o interruptor `?anelb=0` continua no `main` (devolve o anel de antes); é andaime, tirar na
+  próxima rodada dos anéis.
+- Conferido em 18/11 a pedido dele, relendo o histórico e as conversas (não só as notas): NENHUM dos sete é
+  pendência. Nas notas eu tinha chamado os dois acima de "trabalho vivo"; estava errado.
 - `piloto-hiperion`: as quatro versões do piloto; a quarta entrou no app por outro caminho. Fica como registro.
 - `tritao`: pausado por decisão dele (*"deixar como está"*).
 - `claude/forja-lote3-tentativa`, `claude/forja-lote4-veu`: tentativas recusadas de Betelgeuse. Só para consulta.
