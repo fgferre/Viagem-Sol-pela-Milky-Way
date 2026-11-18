@@ -55,23 +55,12 @@ commit, linha de plano ou resposta do dono.
 - As 14 cópias de trabalho da máquina antiga foram fechadas em 18/11 (*"Sim, arrume"*), com as provas que só existiam
   nelas guardadas antes em `capturas/copias/`. No GitHub saíram 22 ramos já aproveitados; na máquina antiga, 82.
 
-## Os ramos no GitHub (conferido em 18/11; ele não quer "um monte de coisa lá")
+## Os ramos no GitHub (arrumado em 18/11; ele não quer "um monte de coisa lá")
 
-Só três tipos têm razão de existir: `main` (o site no ar), `backup` (o trabalho, à frente do site) e os sete ramos
-abaixo, que guardam trabalho que NÃO entrou. Todo o resto estava inteiro dentro do `main` local. Não há pedido de
-junção aberto nem etiqueta. Ramo novo de trabalho, depois de juntado, se apaga dos dois lados no mesmo dia.
+No GitHub há três ramos e só três: `main` (o site no ar), `backup` (o trabalho, à frente do site) e `tritao`
+(trabalho a retomar). Não há pedido de junção aberto nem etiqueta. Na máquina antiga ficaram só `main` e `tritao`.
+Ramo novo de trabalho, depois de juntado ou descartado, se apaga dos dois lados no mesmo dia.
 
-- `anamorfica`: candidatas A e B da lente anamórfica, item 233. Ele viu e escolheu *"Fica a de hoje"* (10/10). Registro.
-- `faixa-do-disco`: disco de Sgr A✱ visto de perfil como faixa macia. DESCARTADO pela coordenadora em 14/11
-  (alisa a faixa mas a deixa mais comprida e ~30 % mais cara). O risco na chegada a S2 se resolveu no `main` por
-  outro caminho: a câmera chega 6° acima do disco (e73f1f0c). Registro.
-- `saturno-chegada`: candidatos `?anelb=a|b` do anel B chapado. DESCARTADO em 14/11 (ganho pequeno). O conserto de
-  verdade entrou no `main` no mesmo dia: o brilho medido, que ele viu em prancha e mandou trocar (cdf28ac0). Registro.
-  Sobra a limpar: o interruptor `?anelb=0` continua no `main` (devolve o anel de antes); é andaime, tirar na
-  próxima rodada dos anéis.
-- Conferido em 18/11 a pedido dele, relendo o histórico e as conversas (não só as notas): dos sete, só `tritao` é
-  trabalho a retomar; os outros seis são registro. Nas notas eu tinha chamado os dois acima de "trabalho vivo"; estava errado.
-- `piloto-hiperion`: as quatro versões do piloto; a quarta entrou no app por outro caminho. Fica como registro.
 - `tritao`: pausado por decisão dele em 04/10 (*"acho q tritao esta bom hj, vamos tomar cuidado para nao piorar"*),
   depois de ver a comparação (`capturas/tritao/olhar/prancha-comparacao-v1.jpg`): a receita ganhava na face
   fotografada e perdia no lado iluminado hoje (foto borrada com manchas de cor). Em 18/11 ele pediu que eu avaliasse
@@ -83,7 +72,20 @@ junção aberto nem etiqueta. Ramo novo de trabalho, depois de juntado, se apaga
   tratar o lado borrado como nunca visto, que é o que a linha `completar-corpo` faz hoje. Os dados baixados ficaram
   em `.cache/tritao/` na máquina antiga. Ele respondeu *"Sim, na fila"* (18/11): é o próximo corpo, depois das
   duplicidades (item 230 das pendências). Este ramo deixa de ser registro e passa a ser trabalho a retomar.
-- `claude/forja-lote3-tentativa`, `claude/forja-lote4-veu`: tentativas recusadas de Betelgeuse. Só para consulta.
+
+Apagados em 18/11 com a palavra dele (*"pode apagar as seis gavetas e deixar só tritão"*), depois de relidos o
+histórico e as conversas; eram registro de coisa decidida ou descartada, nenhum era pendência:
+- `anamorfica` (423b5c08): duas candidatas da lente, item 233; ele escolheu *"Fica a de hoje"* (10/10). Prancha em
+  `capturas/anamorfica-nova/`.
+- `piloto-hiperion` (2500e3e2): as quatro versões do piloto; a quarta entrou no app em 23/09 por outro caminho.
+- `faixa-do-disco` (4c2716f4): disco de Sgr A✱ de perfil como faixa macia; descartado em 14/11 (mais comprido e ~30 %
+  mais caro). O risco na chegada a S2 se resolveu pela câmera 6° acima do disco (e73f1f0c).
+- `saturno-chegada` (164237e7): candidatos `?anelb=a|b`; descartado em 14/11 (ganho pequeno). O conserto foi o brilho
+  medido (cdf28ac0). Sobra a limpar: o interruptor `?anelb=0` continua no `main`; tirar na próxima rodada dos anéis.
+- `claude/forja-lote3-tentativa` (db5d97aa) e `claude/forja-lote4-veu` (9e55a64e): dois rascunhos do passo do
+  Grande Escurecimento dentro da Forja (região chapada; parte brilhante cinza). As lições estão no `PLAN-FORJA.md`.
+As imagens das comparações ficam em `capturas/`, na máquina antiga. Os códigos entre parênteses são o último commit
+de cada um, caso alguém precise procurar; depois de apagados, o GitHub não garante guardá-los.
 
 ## Decisões dele nesta rodada que não mudam
 

@@ -43,8 +43,8 @@ apagado no mesmo passo, nenhum interruptor que fique.
 
 **Devido antes de publicar:** ver o giro dos anéis em movimento (só foi visto em fotos seguidas); celular e níveis
 baixos de qualidade; a licença do perfil de Björn Jónsson; a célula quente de Betelgeuse, que de perto sai estourada e
-creme (é da rampa de cor: rodada do instrumento). Tentativas guardadas em ramos no GitHub, fora do principal:
-`claude/forja-lote3-tentativa`, `claude/forja-lote4-veu`, `claude/cranky-williams-c481c9`.
+creme (é da rampa de cor: rodada do instrumento). No GitHub há só três ramos: `main` (o site), `backup` (o trabalho)
+e `tritao` (a retomar); o resto foi arrumado em 18/11 (lista em `PLAN-COORDENACAO.md`).
 
 ## O BASTÃO anterior (18/10) — O PESO DO APP, PRIMEIRA LEVA: O SOL DA ABERTURA E O DOWNLOAD NA ORDEM CERTA, NO AR (`origin/main` 6988ff7e)
 
