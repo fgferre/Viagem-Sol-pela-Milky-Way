@@ -4,7 +4,39 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 234.**
 
-## O BASTÃO — onde a rodada parou (18/10) — O PESO DO APP, PRIMEIRA LEVA: O SOL DA ABERTURA E O DOWNLOAD NA ORDEM CERTA, NO AR (`origin/main` 6988ff7e)
+## O BASTÃO — onde a rodada parou (18/11) — MUDANÇA DE MÁQUINA: O TRABALHO DE UM MÊS ESTÁ NO RAMO `backup`, NÃO PUBLICADO
+
+**Se você acabou de clonar numa máquina nova, comece aqui.** O clone traz o `main` publicado (`origin/main` 6988ff7e, de
+18/10). O trabalho está 403 commits à frente, em `origin/backup` (69bf076c ou mais novo). Primeiro passo:
+`git fetch origin && git checkout main && git merge --ff-only origin/backup`. Daí em diante vale a regra de sempre: o
+`main` local anda, a cópia vai por `git push origin main:backup`, e push no `main` publica o site (só com a palavra
+dele; ele disse *"ainda não"*). Depois `npm ci`; os testes pedem o Chrome instalado. O `npm run done` passou em 69bf076c
+(176 arquivos, 4.096 testes).
+
+**O que NÃO veio no clone** (ficou na máquina antiga, fora do git): `capturas/` (36 GB, a única cópia das provas),
+`.cache/` (5 GB de dado bruto baixado: Gaia, galáxia, relevos), `scratchpad/estudos` (3,4 GB, o estudo do NASA Eyes) e
+as cópias de trabalho. Plano e memória citam provas por caminho: se a pasta não existir, pergunte a ele se trouxe;
+não refaça prova para pôr no lugar. A memória do assistente (72 anotações) também não mora neste repositório: ele a
+traz à parte; instale-a na pasta de memória que o seu sistema indicar ANTES de começar, e leia o índice.
+
+**O que há no `main` local e ainda não foi ao ar:** a galáxia só de partículas (WebGPU com reserva) como padrão; as
+estrelas com corpo pelo motor do Sol (`PLAN-FORJA.md`: gravidade, giro, vento, manchas e o Grande Escurecimento de
+Betelgeuse como véu de poeira; mancha do Sol e região de Betelgeuse num botão só); os anéis de Saturno numa descrição
+única, girando com o relógio, com o relevo medido atrás de `?relevo=1` (`PLAN-ANEIS.md`); os filmes novos
+(`PLAN-FILME-ESTELAR.md`). O norte do projeto está em `docs/NORTE.md`.
+
+**A fila (ordem dele, 17/11: *"não vamos deixar esse problema se perpetuar... coordene as resoluções"*):** as
+duplicidades, uma de cada vez. Feitas: estrelas (mancha) e anéis. Faltam: os três motores de galáxia
+(`?galaxia=webgpu|webgl|classica`; ver se a clássica ainda serve; espera a palavra dele), os quatro desenhistas de
+ponto de luz, as cópias de ruído em GLSL (só as idênticas; por último). Todo brief novo: inventário primeiro, o velho
+apagado no mesmo passo, nenhum interruptor que fique.
+
+**Devido antes de publicar:** ver o giro dos anéis em movimento (só foi visto em fotos seguidas); celular e níveis
+baixos de qualidade; a licença do perfil de Björn Jónsson; a célula quente de Betelgeuse, que de perto sai estourada e
+creme (é da rampa de cor: rodada do instrumento). Tentativas guardadas em ramos no GitHub, fora do principal:
+`claude/forja-lote3-tentativa`, `claude/forja-lote4-veu`, `claude/cranky-williams-c481c9`.
+
+## O BASTÃO anterior (18/10) — O PESO DO APP, PRIMEIRA LEVA: O SOL DA ABERTURA E O DOWNLOAD NA ORDEM CERTA, NO AR (`origin/main` 6988ff7e)
 
 **No ar desde 18/10** (*"sim, aprovo o limite no celular, pode publicar"*; deploy verde, bundle no ar = build local por sha256), mesma imagem, menos ms e menos espera
 (plano e números em `PLAN-PESO.md`; medidas em `capturas/copias/Viagem-peso/peso/`): a coroa do Sol calcula o padrão de
