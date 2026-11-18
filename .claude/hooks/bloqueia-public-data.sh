@@ -1,5 +1,18 @@
-#!/usr/bin/env python3
-"""PreToolUse hook (Bash, Edit, Write, NotebookEdit) do Claude Code.
+#!/bin/sh
+''':'
+# Este arquivo é Python. No Mac a primeira linha bastava; no Windows o harness abre
+# hook .sh como "bash arquivo", e em 18/11/2026 o texto abaixo foi lido como shell:
+# os exemplos entre crases rodaram git push de verdade. Estas linhas valem nos dois
+# sistemas: o shell entrega o arquivo ao Python e nunca passa daqui.
+# PYTHONUTF8: no Windows o Python leria o JSON em cp1252, e um acento no comando
+# derrubava a leitura (a trava deixava passar sem julgar).
+export PYTHONUTF8=1
+command -v python3 >/dev/null 2>&1 && exec python3 "$0" "$@"
+command -v python >/dev/null 2>&1 && exec python "$0" "$@"
+echo "BLOQUEADO: a trava precisa do Python (python3 ou python) e não achou." >&2
+exit 2
+'''
+"""PreToolUse hook (Bash, PowerShell, Edit, Write, NotebookEdit) do Claude Code.
 
 `public/data/` guarda os arquivos VERSIONADOS de dados científicos (estrelas,
 galáxia, corpos, efemérides, texturas). Regenerar, apagar, mover ou sobrescrever
@@ -37,6 +50,19 @@ ESCRITA_INLINE = re.compile(
 )
 # redirecionamento para dentro da pasta: > public/data/x ou >> "public/data/x"
 REDIRECAO = re.compile(r"(?<![<>&\d])>>?\s*['\"]?([^\s'\"|;&>]+)")
+# PowerShell (a ferramenta principal no Windows): a trava não analisa a sintaxe dele.
+# Barra o comando que cita a pasta (ou entra em public) E traz um verbo que escreve,
+# apaga, copia ou move, um `>` ou uma chamada .NET de escrita. Barra de mais de
+# propósito; só leitura passa.
+ESCREVE_PS = re.compile(
+    r"(?i)(?<![\w-])(remove-item|ri|rm|rmdir|rd|del|erase|move-item|mi|mv|move|rename-item|rni|"
+    r"ren|copy-item|cpi|cp|copy|set-content|add-content|ac|clear-content|clc|out-file|new-item|"
+    r"ni|tee-object|tee|export-\w+|compress-archive|expand-archive|robocopy|xcopy)(?![\w-])"
+    r"|::(write|append|delete|move|copy|create|replace|open)\w*\(|\bgit\s+clean\b|(?<![<>&\d=-])>"
+)
+ENTRA_EM_PUBLIC = re.compile(
+    r"(?i)(?<![\w-])(cd|chdir|sl|set-location|pushd|push-location)\s+\S*public"
+)
 
 
 def bloquear(motivo):
@@ -73,7 +99,7 @@ def tokens_de(segmento):
         return segmento.split()
 
 
-def julgar_bash(comando):
+def julgar_regeneracao(comando):
     # regeneração: independe de citar a pasta, porque o script sabe o caminho
     m = REGENERA_NPM.search(comando)
     if m and re.search(r"\bnpm\s+(run\s+)?" + re.escape(m.group(0)), comando):
@@ -81,6 +107,23 @@ def julgar_bash(comando):
     m = REGENERA_NODE.search(comando)
     if m and re.search(r"\b(node|npx|tsx)\b", comando):
         bloquear(f"`{m.group(0)}` regenera public/data")
+
+
+def julgar_powershell(comando):
+    norm = comando.replace("\\", "/")
+    julgar_regeneracao(norm)
+    if PASTA not in norm.lower() and not ENTRA_EM_PUBLIC.search(norm):
+        return
+    m = ESCREVE_PS.search(norm) or ESCRITA_INLINE.search(norm)
+    if m:
+        bloquear(
+            f"comando de PowerShell que cita public/data e traz `{m.group(0)}` "
+            "(a trava não analisa PowerShell: com a pasta no comando, só leitura passa)"
+        )
+
+
+def julgar_bash(comando):
+    julgar_regeneracao(comando)
 
     # sem "public" em lugar nenhum, nem `cd` para lá: não há o que julgar
     if "public" not in comando.replace("\\", "/"):
@@ -147,6 +190,8 @@ def main():
     entrada = dados.get("tool_input", {}) or {}
     if tool == "Bash":
         julgar_bash(entrada.get("command", "") or "")
+    elif tool == "PowerShell":
+        julgar_powershell(entrada.get("command", "") or "")
     elif tool in {"Edit", "Write", "MultiEdit", "NotebookEdit"}:
         julgar_arquivo(entrada)
     return 0

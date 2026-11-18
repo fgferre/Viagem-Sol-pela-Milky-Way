@@ -1,5 +1,18 @@
-#!/usr/bin/env python3
-"""PreToolUse hook (Bash) do Claude Code.
+#!/bin/sh
+''':'
+# Este arquivo é Python. No Mac a primeira linha bastava; no Windows o harness abre
+# hook .sh como "bash arquivo", e em 18/11/2026 o texto abaixo foi lido como shell:
+# os exemplos entre crases rodaram git push de verdade. Estas linhas valem nos dois
+# sistemas: o shell entrega o arquivo ao Python e nunca passa daqui.
+# PYTHONUTF8: no Windows o Python leria o JSON em cp1252, e um acento no comando
+# derrubava a leitura (a trava deixava passar sem julgar).
+export PYTHONUTF8=1
+command -v python3 >/dev/null 2>&1 && exec python3 "$0" "$@"
+command -v python >/dev/null 2>&1 && exec python "$0" "$@"
+echo "BLOQUEADO: a trava precisa do Python (python3 ou python) e não achou." >&2
+exit 2
+'''
+"""PreToolUse hook (Bash e PowerShell) do Claude Code.
 
 `git push` sem perguntar ao dono só quando o DESTINO no remoto é explícito e
 não é a `main`: `git push [-u] <remoto> <origem>[:<destino>]` — por exemplo
@@ -34,7 +47,14 @@ REDIRECAO_SOLTA = re.compile(r"^(\d*>>?|\d*<|&>>?)$")
 EXECUTORES = {
     "sh", "bash", "zsh", "dash", "eval", "exec", "env", "command",
     "xargs", "sudo", "nohup", "timeout", "time", "nice", "script",
+    # os do PowerShell (a ferramenta principal no Windows)
+    "&", ".", "cmd", "powershell", "pwsh", "iex", "invoke-expression", "start", "start-process",
 }
+
+
+def nome_de(token):
+    """`/usr/bin/git`, `git.exe`, `Git` -> `git` (Windows e Mac não distinguem caixa)."""
+    return token.replace("\\", "/").rsplit("/", 1)[-1].lower().removesuffix(".exe")
 
 
 def bloquear(motivo):
@@ -89,7 +109,7 @@ def main():
         dados = json.load(sys.stdin)
     except Exception:
         return 0
-    if dados.get("tool_name") != "Bash":
+    if dados.get("tool_name") not in {"Bash", "PowerShell"}:
         return 0
     comando = dados.get("tool_input", {}).get("command", "") or ""
     if not re.search(r"\bgit\b", comando) or "push" not in comando:
@@ -100,7 +120,7 @@ def main():
         if not tokens:
             continue
         # `git [opções globais] push ...` — o segmento tem de COMEÇAR por git
-        if tokens[0] == "git" and "push" in tokens:
+        if nome_de(tokens[0]) == "git" and "push" in tokens:
             i = tokens.index("push")
             args = sem_redirecoes(tokens[i + 1:])
             if any(a in FORCA or a.startswith("--force-with-lease") for a in args):
@@ -119,7 +139,7 @@ def main():
                 bloquear(f"destino do push não dá para julgar -> '{seg}'")
             if destino == "main" or destino.endswith("/main"):
                 bloquear(f"push na main publica o site -> '{seg}'")
-        elif tokens[0].rsplit("/", 1)[-1] in EXECUTORES and re.search(
+        elif nome_de(tokens[0]) in EXECUTORES and re.search(
             r"\bgit\s+(-\S+\s+(\S+\s+)?)*push\b", seg
         ):
             # push escondido num executor de shell (sh -c "git push ..."):
