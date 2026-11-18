@@ -39,8 +39,13 @@ import {
   alturaNaCamada,
   celulasDaOitava,
   celulasDoQuadro,
+  FILA_DA_ESTEIRA_KM,
+  FILEIRAS,
+  desvioDaFila,
+  deslocamentoDaEsteira,
   fasesDoLadrilho,
   lugarDaPedra,
+  segundosDaEpoca,
   luzDaFace,
   pedacosPorArea,
   presencaDaOitava,
@@ -61,7 +66,8 @@ import {
   SOMBRA_PX_INTEIRA,
 } from './pedrasDoAnel';
 import { U_PERFIL_BASE, U_PERFIL_ESCALA } from './gigante';
-import { ANEL_DE_SATURNO, regiaoDoAnelCpu } from './descricaoDoAnel';
+import { ANEL_DE_SATURNO, omegaDoAnelCpu, regiaoDoAnelCpu } from './descricaoDoAnel';
+import { JD2_SOLAR_TDB } from '../../cinematic/filmes/solar/pinos';
 
 const KM_POR_RAIO = ANEL_DE_SATURNO.raioEquatorialKm;
 const A_MAX_KM = ANEL_DE_SATURNO.pedacos.raioMaxKm;
@@ -175,9 +181,9 @@ describe('pedras 3D do anel', () => {
     let comparados = 0;
     for (let o = 0; o < OITAVAS; o++) {
       for (let i = 0; i < 400; i++) {
-        for (const [g, e] of [[0, 0], [3.7, -91.2]] as const) {
-          const a = lugarDaPedra(o, i, camA, g, e);
-          const b = lugarDaPedra(o, i, camB, g, e);
+        for (const tS of [0, 1.7e7]) {
+          const a = lugarDaPedra(o, i, camA, tS);
+          const b = lugarDaPedra(o, i, camB, tS);
           // só onde as duas câmeras escolhem a mesma imagem do ladrilho (com
           // folga para o deslocamento da esteira, até ~7 m)
           const t = TABELA_DE_OITAVAS[o]!;
@@ -205,14 +211,14 @@ describe('pedras 3D do anel', () => {
       // a câmera um ladrilho para fora vê na imagem dela o que A vê na vizinha de fora
       const camB = { ...camA, rhoKm: camA.rhoKm + t.ladoRadial };
       for (let i = 0; i < 20; i++) {
-        const a = lugarDaPedra(o, i, camA, 3.7, -91.2, [1, 0]);
-        const b = lugarDaPedra(o, i, camB, 3.7, -91.2);
+        const a = lugarDaPedra(o, i, camA, 1.7e7, [1, 0]);
+        const b = lugarDaPedra(o, i, camB, 1.7e7);
         expect(a.rhoKm).toBeCloseTo(b.rhoKm, 6);
         expect(Math.abs(a.sKm - b.sKm)).toBeLessThan(1e-6);
         expect(a.zKm).toBe(b.zKm);
         // e a vizinha no arco é a mesma pedra, um ladrilho de arco adiante
-        const c = lugarDaPedra(o, i, camA, 3.7, -91.2, [0, 1]);
-        const d0 = lugarDaPedra(o, i, camA, 3.7, -91.2);
+        const c = lugarDaPedra(o, i, camA, 1.7e7, [0, 1]);
+        const d0 = lugarDaPedra(o, i, camA, 1.7e7);
         expect(c.raioKm).toBe(d0.raioKm);
         expect(Math.abs(c.sKm - d0.sKm - t.ladoNoArco)).toBeLessThan(2 * TEXEL_DA_ESTEIRA_KM + 0.02);
       }
@@ -223,11 +229,11 @@ describe('pedras 3D do anel', () => {
     const celulas = Array.from({ length: OITAVAS }, (_, o) => celulasDaOitava(o));
     const op = new Float32Array(IMAGENS.length * OITAVAS * (PEDRAS_POR_TIER.cinema / CELULA));
     const es = new Float32Array(op.length);
-    const fases = [0, 1, 2, 3].map(() => new Float64Array(OITAVAS));
-    fasesDoLadrilho(130_000, 0.4, 0, 0, fases[0]!, fases[1]!, fases[2]!, fases[3]!);
+    const fr = new Float64Array(OITAVAS);
+    const fila = new Float64Array(OITAVAS * FILEIRAS * 3);
+    fasesDoLadrilho(130_000, 0.4, 0, fr, fila);
     const vista = (ativas: number, zKm: number) => ({
-      ativas, porOitava: PEDRAS_POR_TIER.cinema, rhoKm: 130_000, zKm, espessuraKm: 0.008, lente: null,
-      fr: fases[0]!, fs: fases[1]!, gi: fases[2]!, gf: fases[3]!,
+      ativas, porOitava: PEDRAS_POR_TIER.cinema, rhoKm: 130_000, zKm, espessuraKm: 0.008, lente: null, fr, fila,
     });
     expect(celulasDoQuadro(vista(0, 20), celulas, op, es)).toEqual([0, 0]);
     // a 4,3 km só a maior oitava alcança, e só as vizinhas de lado (os cantos ficam a ≥ 362 tamanhos no plano)
@@ -257,21 +263,20 @@ describe('pedras 3D do anel', () => {
       return (x ^ (x >>> 16)) >>> 0;
     };
     const des = (Math.max(...ANEL_DE_SATURNO.regioes.map((r) => r.esteira)) * 2 * Math.asin(0.66) * LAMBDA_DA_ESTEIRA_KM) / (2 * Math.PI) + 0.0005;
-    // (altura km, mergulho e azimute da visada em graus, cisalhamento g, tier): de cima, rasante, dentro da camada
+    // (altura km, mergulho e azimute da visada em graus, s desde a época, tier): de cima, rasante, dentro da
+    // camada; os instantes dão cisalhamentos de 0, ~37, ~6 e ~0,4 ladrilhos por fileira
     const cameras = [
       [0.1, 30, 200, 0, 'cinema'],
-      [0.02, 2, 95, -37.3, 'cinema'],
-      [0, 0, 10, 5.6, 'cinema'],
-      [0.002, -20, 300, -0.4, 'performance'],
+      [0.02, 2, 95, 1.72e5, 'cinema'],
+      [0, 0, 10, -2.58e4, 'cinema'],
+      [0.002, -20, 300, 1844, 'performance'],
     ] as const;
     let conferidos = 0;
-    for (const [zKm, dep, az, g, tier] of cameras) {
+    for (const [zKm, dep, az, tS, tier] of cameras) {
       const rho = 128_370;
       const fr = new Float64Array(OITAVAS);
-      const fs = new Float64Array(OITAVAS);
-      const gi = new Float64Array(OITAVAS);
-      const gf = new Float64Array(OITAVAS);
-      fasesDoLadrilho(rho, 0.7, g, g * rho, fr, fs, gi, gf);
+      const fila = new Float64Array(OITAVAS * FILEIRAS * 3);
+      fasesDoLadrilho(rho, 0.7, tS, fr, fila);
       // a lente: linhas = direita, cima, trás, no quadro (er, et, ez); 58° na vertical, 1280 × 800
       const fw = new THREE.Vector3(Math.cos((az * Math.PI) / 180), Math.sin((az * Math.PI) / 180), 0)
         .multiplyScalar(Math.cos((dep * Math.PI) / 180)).setZ(-Math.sin((dep * Math.PI) / 180));
@@ -281,7 +286,7 @@ describe('pedras 3D do anel', () => {
       const lente = { m: new Float64Array([...dir.toArray(), ...cima.toArray(), ...fw.clone().negate().toArray()]), p00: p11 / 1.6, p11, pxPorRad: 400 * p11, ok: true };
       const ativas = PedrasDoAnel.oitavasAtivas(zKm);
       const porOitava = PEDRAS_POR_TIER[tier];
-      const [nOp, nEs] = celulasDoQuadro({ ativas, porOitava, rhoKm: rho, zKm, espessuraKm: 0.008, lente, fr, fs, gi, gf }, celulas, op, es);
+      const [nOp, nEs] = celulasDoQuadro({ ativas, porOitava, rhoKm: rho, zKm, espessuraKm: 0.008, lente, fr, fila }, celulas, op, es);
       const opacos = new Set(op.subarray(0, nOp));
       const esmaece = new Set(es.subarray(0, nEs));
       // menos que a janela inteira, mas tudo o que o vértice desenha
@@ -300,8 +305,9 @@ describe('pedras 3D do anel', () => {
             const dk = Math.floor(fr[o]! - a + 0.5) + jr;
             const dR = (dk + a - fr[o]!) * t.ladoRadial;
             if (dR * dR >= alcance2) continue;
-            const cis = ((gi[o]! * q) % 65536) / 65536 + gf[o]! * (dk + a);
-            let sg = (mis((base ^ 0x2c1b3c6d) >>> 0) >>> 8) / 16777216 + cis + fs[o]!;
+            const kf = (o * FILEIRAS + dk + 1) * 3;
+            const cis = ((fila[kf + 1]! * q) % 65536) / 65536 + fila[kf + 2]! * a;
+            let sg = (mis((base ^ 0x2c1b3c6d) >>> 0) >>> 8) / 16777216 + cis + fila[kf]!;
             sg -= Math.floor(sg + 0.5);
             const dS = (sg + ja) * t.ladoNoArco;
             if (dR * dR + dS * dS >= alcance2) continue;
@@ -422,19 +428,101 @@ describe('pedras 3D do anel', () => {
     p.dispose();
   }, 30_000);
 
-  it('relógio parado, pedra parada; mexer a câmera não acumula cisalhamento', () => {
+  it('a mesma data dá o mesmo anel, tocando, saltando, mexendo a câmera ou escondido no meio', () => {
     const p = pedrasDeTeste();
     p.assarJa();
     const u = ((p.malha.children[0] as THREE.Mesh).material as THREE.ShaderMaterial).uniforms;
-    p.atualizar(quadro(128_000, 1));
-    const gf = Array.from(u.uGf.value as Float32Array);
-    p.atualizar(quadro(128_500, 1.2));
-    expect(Array.from(u.uGf.value as Float32Array)).toEqual(gf);
-    // relógio andando: o cisalhamento anda, com o passo grampeado
-    p.atualizar(quadro(128_500, 1.2, 2446471 + 1));
-    expect(Array.from(u.uGf.value as Float32Array)).not.toEqual(gf);
+    const foto = () => [u.uFila.value, u.uEstFila.value, [u.uGiro.value as number]].flatMap((v) => Array.from(v as ArrayLike<number>));
+    const J = 2461360.5;
+    // tocando até J + 1, com a câmera andando e o anel escondido no meio
+    p.atualizar(quadro(128_000, 1, J));
+    const noComeco = foto();
+    for (let k = 1; k <= 10; k++) p.atualizar(quadro(128_000 + 50 * k, 1 + 0.02 * k, J + 0.1 * k));
+    p.atualizar(quadro(128_000, 2000, J + 1.5));
+    expect(p.malha.visible).toBe(false);
+    p.atualizar(quadro(128_000, 1, J + 1));
+    const tocando = foto();
+    expect(tocando).not.toEqual(noComeco);
+    // saltando de longe para o mesmo instante
+    p.atualizar(quadro(128_000, 1, J + 400));
+    p.atualizar(quadro(128_000, 1, J + 1));
+    expect(foto()).toEqual(tocando);
     p.dispose();
   }, 30_000);
+
+  it('cada pedaço gira Ω(ρ)·Δt no raio dele, pela data e de onde quer que se olhe', () => {
+    // no anel C (sem esteira: o arco é só a órbita), duas câmeras diferentes no mesmo ladrilho
+    const camA = { rhoKm: 85_000, theta: 0.3, zKm: 0.003 };
+    const camB = { rhoKm: 85_000.0004, theta: 0.3 + 2e-9, zKm: -0.003 };
+    const t0 = 1.7e7;
+    let conferidos = 0;
+    for (const dt of [0.01, 1, 3 * 86400]) {
+      for (let o = 0; o < OITAVAS; o++) {
+        const t = TABELA_DE_OITAVAS[o]!;
+        // o resto da série além do termo linear, na borda da fileira: R0·(15/8)·Ω·(lado/2ρ)²·Δt
+        const tol = R0_KM * (15 / 8) * omegaDoAnelCpu(camA.rhoKm) * (t.ladoRadial / 2 / camA.rhoKm) ** 2 * dt + 1e-6;
+        for (let i = 0; i < 40; i++) {
+          const a = lugarDaPedra(o, i, camA, t0);
+          // só onde as duas câmeras escolhem a mesma imagem radial do ladrilho
+          if (Math.abs(a.rhoKm - camA.rhoKm) > 0.4 * t.ladoRadial) continue;
+          const b = lugarDaPedra(o, i, camB, t0 + dt);
+          expect(b.rhoKm).toBeCloseTo(a.rhoKm, 6);
+          const esperado = R0_KM * omegaDoAnelCpu(a.rhoKm) * dt;
+          let resto = (b.sKm - a.sKm - esperado) / t.ladoNoArco;
+          resto -= Math.round(resto);
+          expect(Math.abs(resto * t.ladoNoArco)).toBeLessThan(tol);
+          conferidos++;
+        }
+      }
+    }
+    expect(conferidos).toBeGreaterThan(OITAVAS * 40);
+  }, 30_000);
+
+  it('na época do sorteio (a data de Saturno no filme) toda fase é zero: o anel de antes do giro', () => {
+    expect(ANEL_DE_SATURNO.pedacos.epocaDoSorteioJdTdb).toBe(JD2_SOLAR_TDB);
+    expect(segundosDaEpoca(JD2_SOLAR_TDB)).toBe(0);
+    const fr = new Float64Array(OITAVAS);
+    const fila = new Float64Array(OITAVAS * FILEIRAS * 3);
+    for (const [rho, theta] of [[128_370, 0.7], [85_000, 4.1]] as const) {
+      fasesDoLadrilho(rho, theta, 0, fr, fila);
+      for (let o = 0; o < OITAVAS; o++) {
+        const t = TABELA_DE_OITAVAS[o]!;
+        // a fase de antes com g = e = 0: −σ, reduzida a [0, 1), e nenhum cisalhamento
+        const fase = -(theta / (2 * Math.PI)) * t.voltas;
+        for (let d = 0; d < FILEIRAS; d++) {
+          const k = (o * FILEIRAS + d) * 3;
+          expect([fila[k], fila[k + 1], fila[k + 2]]).toEqual([fase - Math.floor(fase), 0, 0]);
+        }
+      }
+    }
+    for (const j of [0, 52_000, 62_683]) expect(desvioDaFila(j, 0)).toEqual([0, 0]);
+  });
+
+  it('as esteiras andam com o material: no meio de uma fila, o mesmo campo deslocado R0·Ω·Δt, sem cisalhar', () => {
+    const j = Math.floor(128_370 / FILA_DA_ESTEIRA_KM);
+    const meio = (j + 0.5) * FILA_DA_ESTEIRA_KM;
+    const t0 = 1.7e7;
+    for (const dt of [0.1, 86400]) {
+      const ds = R0_KM * omegaDoAnelCpu(meio) * dt;
+      // a fila inteira anda junta (fora da faixa de fusão): o espaçamento e a inclinação ficam
+      for (const rho of [meio, meio - 0.6, meio + 0.6]) {
+        for (let k = 0; k < 50; k++) {
+          const s = 3_000 + 0.0137 * k;
+          const [a0, a1] = deslocamentoDaEsteira(s, rho, t0);
+          const [b0, b1] = deslocamentoDaEsteira(s + ds, rho, t0 + dt);
+          expect(Math.abs(b0 - a0)).toBeLessThan(1e-7);
+          expect(Math.abs(b1 - a1)).toBeLessThan(1e-7);
+        }
+      }
+    }
+    // e anda de verdade: no mesmo lugar, um dia depois, é outro trecho do campo
+    let diferentes = 0;
+    for (let k = 0; k < 50; k++) {
+      const s = 3_000 + 0.0137 * k;
+      if (Math.abs(deslocamentoDaEsteira(s, meio, t0)[0] - deslocamentoDaEsteira(s, meio, t0 + 86400)[0]) > 1e-4) diferentes++;
+    }
+    expect(diferentes).toBeGreaterThan(25);
+  });
 
   it('com o anel por destino do Atlas o assado nunca sai de uma vez, nem rente à camada (15/11)', async () => {
     vi.resetModules();

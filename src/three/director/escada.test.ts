@@ -41,7 +41,7 @@ import { AU_PARA_PC, eclipticaParaEquatorial } from '../../lib/atlas/frameGalact
 import { EPOCA_JD_TDB } from '../world/planetas/retrato2026';
 import { RAIO_EQ_TERRA_PC, posicaoDaTerraUA } from '../world/corpos/terra';
 import { posicaoDoGiganteUA, raiosDoGigantePc } from '../world/corpos/gigante';
-import { ANEL_DE_SATURNO } from '../world/corpos/descricaoDoAnel';
+import { ANEL_DE_SATURNO, omegaDoAnelCpu } from '../world/corpos/descricaoDoAnel';
 import { AtlasRig, K_MIN_RAIOS, K_PISO_DO_CORPO } from '../cinematic/atlasRig';
 import { IDS_ESCULPIDOS, criaGeometriaEsculpida } from '../world/corpos/esculpido';
 import { LUGARES_DA_BUSCA, poseDePertoDaEstrelaS, poseDoLugar } from '../world/lugaresDoCeu';
@@ -786,7 +786,7 @@ describe('a vista dos anéis de Saturno (`ver=aneis`, 16/11): chegar à mão at�
     expect(atlas.distancia / KM).toBeCloseTo(PISO_KM, 9);
   });
 
-  it('com o relógio andando o ponto fica na MESMA longitude do frame do anel — a lei dos pedaços, sem giro de conjunto', () => {
+  it('com o relógio andando o ponto anda na órbita do material dele, Ω·ρ·Δt, e a câmera vai junto', () => {
     const { escada, atlas, camera, aplicar, maquinaDoTempo } = bancada({ comSaturno: true, comEfemeride: true });
     escada.focarNoCorpo('saturn', 'aneis');
     aplicar();
@@ -794,16 +794,20 @@ describe('a vista dos anéis de Saturno (`ver=aneis`, 16/11): chegar à mão at�
     const centro = paraPc(efemerideDeMentira().posicaoHeliocentrica('saturn'));
     const antes = noAnel(atlas.alvo, centro, EPOCA_JD_TDB);
     const cameraAntes = noAnel(camera.position, atlas.alvo, EPOCA_JD_TDB);
-    // meio dia de céu: um pedaço a 2,13 raios daria ~1/3 de volta se o anel girasse em bloco
-    maquinaDoTempo.jdVivo = EPOCA_JD_TDB + 0.5;
-    escada.recomporAlvo();
-    aplicar();
-    const depois = noAnel(atlas.alvo, centro, maquinaDoTempo.jdVivo);
-    expect(depois.rho).toBeCloseTo(antes.rho, 3);
-    expect(depois.lon).toBeCloseTo(antes.lon, 9);
-    // e a câmera fica parada em volta dele, no mesmo frame
-    const cameraDepois = noAnel(camera.position, atlas.alvo, maquinaDoTempo.jdVivo);
-    expect(cameraDepois.lon).toBeCloseTo(cameraAntes.lon, 6);
-    expect(cameraDepois.z).toBeCloseTo(cameraAntes.z, 6);
+    const omega = omegaDoAnelCpu(RAIO_DO_PONTO_KM);
+    const volta = (x: number) => x - 2 * Math.PI * Math.round(x / (2 * Math.PI));
+    // um minuto (~1 000 km de arco) e meio dia de céu (~5,8 rad, quase uma volta)
+    for (const dias of [60 / 86400, 0.5]) {
+      maquinaDoTempo.jdVivo = EPOCA_JD_TDB + dias;
+      escada.recomporAlvo();
+      aplicar();
+      const depois = noAnel(atlas.alvo, centro, maquinaDoTempo.jdVivo);
+      expect(depois.rho).toBeCloseTo(antes.rho, 3);
+      expect(depois.rho * volta(depois.lon - antes.lon)).toBeCloseTo(depois.rho * volta(omega * dias * 86400), 3);
+      // e a câmera gira junto em volta dele, à mesma altura
+      const cameraDepois = noAnel(camera.position, atlas.alvo, maquinaDoTempo.jdVivo);
+      expect(volta(cameraDepois.lon - cameraAntes.lon - omega * dias * 86400)).toBeCloseTo(0, 6);
+      expect(cameraDepois.z).toBeCloseTo(cameraAntes.z, 6);
+    }
   });
 });

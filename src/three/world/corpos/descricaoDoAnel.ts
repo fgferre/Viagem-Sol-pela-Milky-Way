@@ -59,13 +59,14 @@ export interface DescricaoDeAnel {
   readonly brilho: { readonly arquivo: string; readonly faseDaFrenteRad: number };
   /** as regiões, de dentro para fora; o valor num raio é {@link regiaoDoAnelCpu} */
   readonly regioes: readonly RegiaoDoAnel[];
-  /** os pedaços: raios mínimo e máximo (km), a faixa de ρ em que existem (km), a agitação (km/s) */
+  /** os pedaços: raios mínimo e máximo (km), a faixa de ρ em que existem (km), a agitação (km/s), a época do sorteio (JD TDB) */
   readonly pedacos: {
     readonly raioMinKm: number;
     readonly raioMaxKm: number;
     readonly rhoMinKm: number;
     readonly rhoMaxKm: number;
     readonly agitacaoKmS: number;
+    readonly epocaDoSorteioJdTdb: number;
   };
   /** o período de corotação da magnetosfera, h — o relógio dos raios do B */
   readonly horasDaCorotacao: number;
@@ -219,6 +220,17 @@ export const ANEL_DE_SATURNO: DescricaoDeAnel = {
      * supõe equipartição com ela.
      */
     agitacaoKmS: 1e-6,
+    /**
+     * A ÉPOCA DO SORTEIO (JD TDB): o instante em que o lugar sorteado de cada
+     * pedaço vale tal como saiu do sorteio; em qualquer outro instante t ele
+     * girou Ω(ρ)·(t − época) no ângulo, pela data (não somado quadro a
+     * quadro). O sorteio é aleatório, então a época não é medida: é a data do
+     * ato de Saturno do filme solar (`JD2_SOLAR_TDB`, 2026-01-01 08:00 UTC,
+     * em `filmes/solar/pinos.ts`), para que no filme toda fase seja zero e a
+     * tomada que atravessa o anel, aprovada em 15/11, saia a mesma. O mundo
+     * não importa o filme: o número fica aqui, e um teste confere a igualdade.
+     */
+    epocaDoSorteioJdTdb: 2461041.8342025466,
   },
 
   /**
@@ -267,6 +279,11 @@ const suave = (a: number, b: number, x: number): number => {
   const t = Math.min(Math.max((x - a) / (b - a), 0), 1);
   return t * t * (3 - 2 * t);
 };
+
+/** A velocidade angular de Kepler, Ω(ρ) = √(GM/ρ³), rad/s, a `km` do centro de Saturno. */
+export function omegaDoAnelCpu(km: number): number {
+  return Math.sqrt(ANEL_DE_SATURNO.gmKm3s2 / (km * km * km));
+}
 
 /** As {@link RegiaoDoAnel} de Saturno num raio `km`, na CPU (a espessura em km). */
 export function regiaoDoAnelCpu(km: number): {

@@ -33,9 +33,11 @@
 //     (`ANEL_DE_SATURNO.regioes`, descricaoDoAnel.ts); nos anéis A e B os pedaços se juntam nas
 //     esteiras de autogravidade (`densidadeDaEsteira`).
 //
-//  4. O MOVIMENTO. O cisalhamento de Kepler no relógio do app, medido no
-//     raio da câmera (relógio parado, pedra parada), e o giro próprio pela
-//     agitação, que não é medida (equipartição, `V_AGITACAO_KM_S`).
+//  4. O MOVIMENTO, PELA DATA. Cada pedaço gira Ω(ρ)·(t − época) no ângulo,
+//     no raio dele (`fasesDoLadrilho`), e as esteiras andam com o material
+//     (`desvioDaFila`); o giro próprio vem da agitação, que não é medida
+//     (equipartição, `V_AGITACAO_KM_S`). Nada é somado quadro a quadro: a
+//     mesma data dá o mesmo arranjo, tocando ou saltando.
 //
 //  5. A LUZ SE CONSERVA. O disco cede, em cada ponto, a fração de τ das
 //     oitavas resolvidas ali (`cessaoDoDisco`); de dentro da camada o disco
@@ -48,12 +50,14 @@
 import * as THREE from 'three';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { QualityLevel } from '../../core/engine';
-import { ANEL_DE_SATURNO, regiaoDoAnelCpu } from './descricaoDoAnel';
+import { ANEL_DE_SATURNO, omegaDoAnelCpu, regiaoDoAnelCpu } from './descricaoDoAnel';
 
 const KM_POR_RAIO = ANEL_DE_SATURNO.raioEquatorialKm;
 
-/** GM de Saturno (`ANEL_DE_SATURNO.gmKm3s2`) — só para Ω(ρ) do cisalhamento. */
-const GM_SATURNO = ANEL_DE_SATURNO.gmKm3s2;
+/** os segundos desde a época do sorteio (`ANEL_DE_SATURNO.pedacos`) no dia juliano `jd`; 0 sem relógio */
+export function segundosDaEpoca(jd: number): number {
+  return Number.isFinite(jd) ? (jd - ANEL_DE_SATURNO.pedacos.epocaDoSorteioJdTdb) * 86400 : 0;
+}
 
 /** O RAIO DE REFERÊNCIA DO ARCO: s = R0·θ, logo além da borda do A (136 775 km). */
 export const R0_KM = 138_600;
@@ -261,6 +265,14 @@ export function alturaNaCamada(z0: number, aKm: number, hKm: number): number {
  * raio de referência de cada anel (`VOLTAS_DA_ESTEIRA`: um número inteiro de
  * ladrilhos por volta, então o campo fecha na volta). Num ρ longe de ρref o
  * arco do ladrilho estica (±12 % no B): o espaçamento e o ângulo andam pouco.
+ *
+ * O CAMPO ANDA COM O MATERIAL (17/11, Passo 2), sem acumular cisalhamento:
+ * o anel é cortado em FILAS de `FILA_DA_ESTEIRA_KM` de raio, e cada fila
+ * desliza no arco R0·Ω(ρ do meio dela)·(t − época) (`desvioDaFila`); numa
+ * faixa de ±`BANDA_DA_FILA` fila em volta de cada fronteira, as duas filas
+ * vizinhas se fundem (o δ e o ∂δ/∂n, em média ponderada). Dentro da fila o
+ * pedaço anda no Ω dele e a esteira no do meio: na borda, 1,5·Ω·1 km ≈ 0,2 m/s
+ * de deriva entre os dois. O espaçamento e a inclinação medidos ficam.
  */
 /** o lado do ladrilho (km) e os texels por lado */
 const LADO_DA_ESTEIRA_KM = 8.192;
@@ -280,6 +292,12 @@ const VOLTAS_DA_ESTEIRA = [
 const TROCA_DA_ESTEIRA_KM = 119_000;
 /** km do ladrilho por km de s = R0·θ (ρref/R0), no B e no A */
 const ARCO_DA_ESTEIRA = VOLTAS_DA_ESTEIRA.map((n) => (n * LADO_DA_ESTEIRA_KM) / (2 * Math.PI * R0_KM));
+/** a largura radial de uma fila do campo que anda, km */
+export const FILA_DA_ESTEIRA_KM = 2.048;
+/** a meia largura da fusão entre filas vizinhas, em filas (a faixa toda: 0,5 km) */
+const BANDA_DA_FILA = 0.125;
+/** as filas de cada lado da da câmera que a GPU recebe (±16 km: além disso a folha já se apagou) */
+const FILAS_DA_ESTEIRA = 8;
 /** os meio-eixos do núcleo (km): cruzando e ao longo das cristas */
 const ENVELOPE_XI_KM = 0.12;
 const ENVELOPE_ETA_KM = 0.15;
@@ -526,13 +544,51 @@ function lerLadrilho(u: number, v: number): [number, number] {
   return [lin(0) * LAMBDA_DA_ESTEIRA_KM, lin(1)];
 }
 
-/** (δ, ∂δ/∂n) da esteira no ponto (ρ, s = R0·θ), km, com a força da região */
-function esteiraEm(rhoKm: number, sKm: number): [number, number] {
+/**
+ * O DESVIO DA FILA `j` (a de raio [j, j + 1)·`FILA_DA_ESTEIRA_KM`) no
+ * instante `tS` (s desde a época): o arco R0·Ω(ρ do meio)·tS, em ladrilhos
+ * da esteira e reduzido a [0, 1), no B e no A. R0·Ω·tS·arco/lado = n·voltas
+ * com n = Ω·tS/2π as voltas da órbita e `VOLTAS_DA_ESTEIRA` inteiro: só a
+ * fração de n importa, e a conta fica em milímetros em dupla precisão.
+ */
+export function desvioDaFila(j: number, tS: number): [number, number] {
+  if (tS === 0) return [0, 0];
+  const n = (omegaDoAnelCpu((j + 0.5) * FILA_DA_ESTEIRA_KM) * tS) / (2 * Math.PI);
+  const f = n - Math.floor(n);
+  const fr = (x: number) => x - Math.floor(x);
+  return [fr(f * VOLTAS_DA_ESTEIRA[0]), fr(f * VOLTAS_DA_ESTEIRA[1])];
+}
+
+/** as duas filas do ponto ρ e a fusão: (desvio da de baixo, da de cima, peso da de cima), no anel do ponto */
+function filaDaEsteira(rhoKm: number, tS: number): [number, number, number] {
+  const x = rhoKm / FILA_DA_ESTEIRA_KM;
+  const m = Math.floor(x + 0.5);
+  const anel = rhoKm < TROCA_DA_ESTEIRA_KM ? 0 : 1;
+  return [desvioDaFila(m - 1, tS)[anel], desvioDaFila(m, tS)[anel], suave(-BANDA_DA_FILA, BANDA_DA_FILA, x - m)];
+}
+
+/** (δ, ∂δ/∂n) do ladrilho nas filas dadas (`filaDaEsteira`): o gêmeo de `lerEsteira` no GLSL */
+function lerNasFilas(u: number, v: number, fila: readonly [number, number, number]): [number, number] {
+  const [d0, d1, w] = fila;
+  if (w <= 0 || d0 === d1) return lerLadrilho(u, v - d0);
+  if (w >= 1) return lerLadrilho(u, v - d1);
+  const a = lerLadrilho(u, v - d0);
+  const b = lerLadrilho(u, v - d1);
+  return [a[0] + (b[0] - a[0]) * w, a[1] + (b[1] - a[1]) * w];
+}
+
+/** (δ, ∂δ/∂n) da esteira no ponto (ρ, s = R0·θ), km, com a força da região, nas filas dadas */
+function esteiraNasFilas(rhoKm: number, sKm: number, fila: readonly [number, number, number]): [number, number] {
   const amp = regiaoDoAnelCpu(rhoKm).esteira;
   if (amp <= 0) return [0, 0];
   const [u, v] = noLadrilho(rhoKm, sKm);
-  const [d, dn] = lerLadrilho(u, v);
+  const [d, dn] = lerNasFilas(u, v, fila);
   return [amp * d, amp * dn];
+}
+
+/** (δ, ∂δ/∂n) da esteira no ponto (ρ, s = R0·θ), km, `tS` s depois da época */
+function esteiraEm(rhoKm: number, sKm: number, tS: number): [number, number] {
+  return esteiraNasFilas(rhoKm, sKm, filaDaEsteira(rhoKm, tS));
 }
 
 /** o passo em s de 1 km do ladrilho ao longo de n (o arco do ladrilho → R0·θ) */
@@ -541,13 +597,13 @@ function arcoDaNormal(rhoKm: number): number {
 }
 
 /** o ESTIRAMENTO do mapa da esteira no lugar sorteado (ρ, s): 1 + ∂δ/∂n — o mapa é inversível se for > 0 */
-export function estiramentoDaEsteira(sKm: number, rhoKm: number): number {
-  return 1 + esteiraEm(rhoKm, sKm)[1];
+export function estiramentoDaEsteira(sKm: number, rhoKm: number, tS = 0): number {
+  return 1 + esteiraEm(rhoKm, sKm, tS)[1];
 }
 
-/** O DESLOCAMENTO de um pedaço cujo lugar sorteado é (ρ, s): (Δρ, Δs em R0·θ), km */
-export function deslocamentoDaEsteira(sKm: number, rhoKm: number): [number, number] {
-  const [d] = esteiraEm(rhoKm, sKm);
+/** O DESLOCAMENTO de um pedaço cujo lugar sorteado é (ρ, s), `tS` s depois da época: (Δρ, Δs em R0·θ), km */
+export function deslocamentoDaEsteira(sKm: number, rhoKm: number, tS = 0): [number, number] {
+  const [d] = esteiraEm(rhoKm, sKm, tS);
   return [d * NORMAL_DA_ESTEIRA[0], d * arcoDaNormal(rhoKm)];
 }
 
@@ -555,96 +611,100 @@ export function deslocamentoDaEsteira(sKm: number, rhoKm: number): [number, numb
  * A DENSIDADE DAS ESTEIRAS no ponto (s = R0·θ, ρ), de média 1: o ponto de
  * origem pelo inverso do deslocamento (Newton ao longo de n — o mapa é
  * monotônico, 1 + ∂δ/∂n > 0), e a densidade 1/(1 + ∂δ/∂n) lá. Vale 1 fora
- * do A e do B.
+ * do A e do B. As filas são as do ponto (como na folha da GPU).
  */
-export function densidadeDaEsteira(sKm: number, rhoKm: number): number {
+export function densidadeDaEsteira(sKm: number, rhoKm: number, tS = 0): number {
   if (regiaoDoAnelCpu(rhoKm).esteira <= 0) return 1;
+  const fila = filaDaEsteira(rhoKm, tS);
   const nr = NORMAL_DA_ESTEIRA[0];
   const ns = arcoDaNormal(rhoKm);
   let u = 0;
   for (let k = 0; k < 8; k++) {
-    const [d, dnk] = esteiraEm(rhoKm - u * nr, sKm - u * ns);
+    const [d, dnk] = esteiraNasFilas(rhoKm - u * nr, sKm - u * ns, fila);
     u -= (u - d) / (1 + dnk);
     u = Math.max(-DESLOCAMENTO_MAXIMO_KM, Math.min(DESLOCAMENTO_MAXIMO_KM, u));
   }
-  return 1 / (1 + esteiraEm(rhoKm - u * nr, sKm - u * ns)[1]);
+  return 1 / (1 + esteiraNasFilas(rhoKm - u * nr, sKm - u * ns, fila)[1]);
 }
 
-/** Ω kepleriano a `rhoKm` do centro, rad/s */
-function omega(rhoKm: number): number {
-  return Math.sqrt(GM_SATURNO / (rhoKm * rhoKm * rhoKm));
-}
+/** as fileiras do ladrilho de cada oitava que a janela alcança: a da câmera e uma de cada lado */
+export const FILEIRAS = 3;
 
 /**
- * O TETO DO PASSO DO RELÓGIO (s de app por quadro): o pedaço na borda da
- * borda do ladrilho anda no arco 1,5·Ω·R0/ρ · K·s por segundo; um quinto do
- * tamanho por quadro é o limite. É o mesmo número em toda oitava.
- */
-export function tetoDoPasso(rhoKm: number): number {
-  return 0.2 / (1.5 * omega(rhoKm) * (R0_KM / rhoKm) * K_LADRILHO);
-}
-
-/**
- * AS FASES DO LADRILHO de cada oitava para a câmera em (ρ, θ), com as
- * integrais do cisalhamento (g, e): a fração da câmera no ladrilho radial
- * (`fr`), a fase do arco (`fs`) e o fator do cisalhamento em parte inteira
- * (mod 65 536) e fracionária (`gi`, `gf`). É o que o vértice lê.
+ * AS FASES DO LADRILHO de cada oitava para a câmera em (ρ, θ), `tS` s depois
+ * da época: a fração da câmera no ladrilho radial (`fr`) e, por FILEIRA
+ * (kc − 1, kc, kc + 1, com kc a da câmera), três números em `fila[(o·3 +
+ * fileira)·3 + …]`: a fase do arco, e o fator do cisalhamento em parte
+ * inteira (mod 65 536) e fracionária. É o que o vértice lê.
+ *
+ * O ARCO de um pedaço de sorteio (a, h) na fileira k, em ladrilhos de arco,
+ * é h + Φ_k(a), com Φ o giro R0·Ω(ρ)·tS desde a época: EXATO no meio da
+ * fileira, ρ_k = (k + ½)·lado, e linear dentro dela, Φ_k(a) = φ_k + γ_k·(a −
+ * ½), γ_k = R0·Ω'(ρ_k)·tS·lado/ladoNoArco. A conta em dupla precisão:
+ * R0·Ω·tS/ladoNoArco = n·voltas, com n = Ω·tS/2π e `voltas` inteiro, então
+ * φ_k = frac(frac(n)·voltas). O resto da série (½Ω''·δρ²) é < 10⁻⁹ do Ω.
  */
 export function fasesDoLadrilho(
   rhoKm: number,
   theta: number,
-  g: number,
-  e: number,
+  tS: number,
   fr: Float32Array | Float64Array,
-  fs: Float32Array | Float64Array,
-  gi: Float32Array | Float64Array,
-  gf: Float32Array | Float64Array
+  fila: Float32Array | Float64Array
 ) {
   for (let o = 0; o < OITAVAS; o++) {
     const t = TABELA_DE_OITAVAS[o]!;
     const kc = Math.floor(rhoKm / t.ladoRadial);
     fr[o] = rhoKm / t.ladoRadial - kc;
-    const go = g * (t.ladoRadial / t.ladoNoArco);
-    const sigma = (theta / (2 * Math.PI)) * t.voltas;
-    const fase = go * kc - e / t.ladoNoArco - sigma;
-    fs[o] = fase - Math.floor(fase);
-    const gInt = Math.floor(go);
-    gi[o] = ((gInt % 65536) + 65536) % 65536;
-    gf[o] = go - gInt;
+    for (let d = 0; d < FILEIRAS; d++) faseDaFileira(o, kc + d - 1, theta, tS, fila, (o * FILEIRAS + d) * 3);
   }
+}
+
+/** a fase do arco e o cisalhamento (inteiro mod 65 536, fração) da fileira `k` da oitava `o`, em `out[i…i+2]` */
+function faseDaFileira(o: number, k: number, theta: number, tS: number, out: Float32Array | Float64Array, i: number) {
+  const t = TABELA_DE_OITAVAS[o]!;
+  const rho = (k + 0.5) * t.ladoRadial;
+  const n = (omegaDoAnelCpu(rho) * tS) / (2 * Math.PI);
+  const fn = n - Math.floor(n);
+  const phi = fn * t.voltas - Math.floor(fn * t.voltas);
+  // R0·Ω' = −1,5·R0·Ω/ρ, em ladrilhos de arco por fileira
+  const gama = (-1.5 * n * t.voltas * t.ladoRadial) / rho;
+  const meio = gama / 2;
+  const fase = phi - (meio - Math.floor(meio)) - (theta / (2 * Math.PI)) * t.voltas;
+  out[i] = fase - Math.floor(fase);
+  const gInt = Math.floor(gama);
+  out[i + 1] = ((gInt % 65536) + 65536) % 65536;
+  out[i + 2] = gama - gInt;
 }
 
 /**
  * O LUGAR DE UM PEDAÇO, na CPU e em dupla precisão — a mesma conta do
  * vértice (`lugar`), sem a escolha: (ρ, s = R0·θ em [0, 2πR0), z) do centro,
- * com a esteira, e o raio a. Nenhum termo lê a posição da câmera além da
- * escolha da imagem do ladrilho: a mais perto dela, deslocada de `img`
- * ladrilhos (radial, arco).
+ * com a esteira, e o raio a, `tS` s depois da época. Nenhum termo lê a
+ * posição da câmera além da escolha da imagem do ladrilho: a mais perto
+ * dela, deslocada de `img` ladrilhos (radial, arco).
  */
 export function lugarDaPedra(
   o: number,
   i: number,
   cam: { rhoKm: number; theta: number; zKm: number },
-  g = 0,
-  e = 0,
+  tS = 0,
   img: readonly [number, number] = [0, 0]
 ): { rhoKm: number; sKm: number; zKm: number; raioKm: number } {
-  const fr = new Float64Array(OITAVAS);
-  const fs = new Float64Array(OITAVAS);
-  const gi = new Float64Array(OITAVAS);
-  const gf = new Float64Array(OITAVAS);
-  fasesDoLadrilho(cam.rhoKm, cam.theta, g, e, fr, fs, gi, gf);
   const t = TABELA_DE_OITAVAS[o]!;
+  const kc = Math.floor(cam.rhoKm / t.ladoRadial);
+  const f = cam.rhoKm / t.ladoRadial - kc;
   const base = misturar((i ^ (o << 24)) >>> 0);
   const h0 = misturar((base ^ 0x51ed27) >>> 0);
   const h1 = misturar((base ^ 0x2c1b3c6d) >>> 0);
   const h2 = misturar((base ^ 0x7a3f91c5) >>> 0);
   const q = h0 & 0xffff;
   const a = q / 65536;
-  const dk = Math.floor(fr[o]! - a + 0.5) + img[0];
-  const dRho = (dk + a - fr[o]!) * t.ladoRadial;
-  const cis = ((gi[o]! * q) % 65536) / 65536 + gf[o]! * (dk + a);
-  let sig = (h1 >>> 8) / 16777216 + cis + fs[o]!;
+  const dk = Math.floor(f - a + 0.5) + img[0];
+  const dRho = (dk + a - f) * t.ladoRadial;
+  const fila = new Float64Array(3);
+  faseDaFileira(o, kc + dk, cam.theta, tS, fila, 0);
+  const cis = ((fila[1]! * q) % 65536) / 65536 + fila[2]! * a;
+  let sig = (h1 >>> 8) / 16777216 + cis + fila[0]!;
   sig -= Math.floor(sig + 0.5);
   sig += img[1];
   const raioKm = (0.5 * t.s) / Math.sqrt(1 - (0.75 * (h0 >>> 16)) / 65536);
@@ -652,7 +712,7 @@ export function lugarDaPedra(
   const z0 = ((h2 & 0xffff) + (h2 >>> 16) + 1) / 65536 - 1;
   const volta = 2 * Math.PI * R0_KM;
   let sKm = R0_KM * cam.theta + sig * t.ladoNoArco;
-  const [eR, eS] = deslocamentoDaEsteira(sKm, rhoKm);
+  const [eR, eS] = deslocamentoDaEsteira(sKm, rhoKm, tS);
   sKm = (((sKm + eS) % volta) + volta) % volta;
   return { rhoKm: rhoKm + eR, sKm, zKm: alturaNaCamada(z0, raioKm, regiaoDoAnelCpu(rhoKm).espessura), raioKm };
 }
@@ -1269,14 +1329,20 @@ float presencasDaSombra(float d, float gp[${OITAVAS_DA_SOMBRA}]) {
 
 /**
  * AS ESTEIRAS EM GLSL, relativas à câmera: `uEstCam` = (a câmera no
- * ladrilho: radial, arco no B, arco no A — as frações, da CPU em dupla
- * precisão). O vértice dos pedaços lê o δ pela mesma leitura bilinear da CPU
- * (`texelFetch` nos quatro texels: o lugar do pedaço é o da CPU); a folha
- * lê (δ, ∂δ/∂n) pelo filtro da placa.
+ * ladrilho: radial, arco no B, arco no A; a câmera na fila do campo que anda
+ * — as frações, da CPU em dupla precisão), e `uEstFila` os desvios (B, A) das
+ * filas da câmera − `FILAS_DA_ESTEIRA` à + (`desvioDaFila`). O vértice dos
+ * pedaços lê o δ pela mesma leitura bilinear da CPU (`texelFetch` nos quatro
+ * texels: o lugar do pedaço é o da CPU); a folha lê (δ, ∂δ/∂n) pelo filtro
+ * da placa.
  */
 const GLSL_ESTEIRA = /* glsl */ `
 uniform highp sampler2D uEsteira;
 uniform vec4 uEstCam;
+uniform vec2 uEstFila[${2 * FILAS_DA_ESTEIRA + 1}];
+const float EST_FILA = ${glslF(FILA_DA_ESTEIRA_KM)};
+const float EST_BANDA = ${glslF(BANDA_DA_FILA)};
+const int EST_FILAS = ${FILAS_DA_ESTEIRA};
 const float LAMBDA = ${glslF(LAMBDA_DA_ESTEIRA_KM)};
 const float EST_LADO = ${glslF(LADO_DA_ESTEIRA_KM)};
 const int EST_N = ${TEXELS_DA_ESTEIRA};
@@ -1303,20 +1369,46 @@ float deslocamentoNoLadrilho(vec2 t) {
   float b = mix(texelFetch(uEsteira, ivec2(i0.x, i1.y), 0).r, texelFetch(uEsteira, i1, 0).r, f.x);
   return mix(a, b, f.y) * LAMBDA;
 }
+// as duas filas do ponto a dRho da câmera e a fusão (\`filaDaEsteira\` na
+// CPU): (desvio da de baixo, da de cima, peso da de cima), no anel do ponto;
+// com os dois desvios iguais (na época, todos zero) só a de baixo conta
+vec3 filaDaEsteira(float dRho, float rhoKm) {
+  float x = uEstCam.w + dRho / EST_FILA;
+  float m = floor(x + 0.5);
+  int i = int(m) + EST_FILAS;
+  vec2 a = uEstFila[clamp(i - 1, 0, 2 * EST_FILAS)];
+  vec2 b = uEstFila[clamp(i, 0, 2 * EST_FILAS)];
+  bool noB = rhoKm < EST_TROCA;
+  float d0 = noB ? a.x : a.y;
+  float d1 = noB ? b.x : b.y;
+  return vec3(d0, d1, d0 == d1 ? 0.0 : smoothstep(-EST_BANDA, EST_BANDA, x - m));
+}
+// o δ km no ponto do ladrilho, nas filas dadas, sem a força (\`lerNasFilas\` na CPU)
+float deslocamentoNasFilas(vec2 t, vec3 fila) {
+  if (fila.z <= 0.0) return deslocamentoNoLadrilho(t - vec2(0.0, fila.x));
+  if (fila.z >= 1.0) return deslocamentoNoLadrilho(t - vec2(0.0, fila.y));
+  return mix(deslocamentoNoLadrilho(t - vec2(0.0, fila.x)), deslocamentoNoLadrilho(t - vec2(0.0, fila.y)), fila.z);
+}
+// (δ/λ, ∂δ/∂n) pelo filtro da placa, nas filas dadas
+vec2 lerEsteira(vec2 t, vec3 fila) {
+  if (fila.z <= 0.0) return textureLod(uEsteira, t - vec2(0.0, fila.x), 0.0).rg;
+  if (fila.z >= 1.0) return textureLod(uEsteira, t - vec2(0.0, fila.y), 0.0).rg;
+  return mix(textureLod(uEsteira, t - vec2(0.0, fila.x), 0.0).rg, textureLod(uEsteira, t - vec2(0.0, fila.y), 0.0).rg, fila.z);
+}
 // \`densidadeDaEsteira\` na CPU: Newton ao longo de n até o ponto de origem,
 // com (δ, ∂δ/∂n) pelo filtro da placa; para quando o passo some
-float densidadeDaEsteira(vec2 t, float amp) {
+float densidadeDaEsteira(vec2 t, float amp, vec3 fila) {
   if (amp <= 0.0) return 1.0;
   vec2 nT = EST_NORMAL / EST_LADO;
   float u = 0.0;
   vec2 e;
   for (int k = 0; k < 6; k++) {
-    e = amp * textureLod(uEsteira, t - u * nT, 0.0).rg * vec2(LAMBDA, 1.0);
+    e = amp * lerEsteira(t - u * nT, fila) * vec2(LAMBDA, 1.0);
     float u2 = clamp(u - (u - e.x) / max(1.0 + e.y, 0.05), ${glslF(-DESLOCAMENTO_MAXIMO_KM)}, ${glslF(DESLOCAMENTO_MAXIMO_KM)});
     if (abs(u2 - u) < 1.0e-6) break;
     u = u2;
   }
-  e = amp * textureLod(uEsteira, t - u * nT, 0.0).rg;
+  e = amp * lerEsteira(t - u * nT, fila);
   return 1.0 / max(1.0 + e.y, 0.05);
 }
 `;
@@ -1427,9 +1519,8 @@ uniform int uPorOitava;
 uniform int uAtivas;
 uniform float uPxPorRad;
 uniform float uFr[${OITAVAS}];
-uniform float uFs[${OITAVAS}];
-uniform float uGi[${OITAVAS}];
-uniform float uGf[${OITAVAS}];
+// por oitava e fileira (\`fasesDoLadrilho\`): a fase do arco, o cisalhamento inteiro (mod 65 536) e a fração
+uniform vec3 uFila[${OITAVAS * FILEIRAS}];
 uniform float uGiro;
 // as sombras: (rumo para longe do Sol no plano, sen e, cos e)
 uniform vec4 uSombraSol;
@@ -1522,10 +1613,12 @@ bool lugar(int o, int i, ivec2 img) {
   if (dRho * dRho >= alcance2) return false;
   uint h1 = misturar(base ^ 0x2c1b3c6du);
 
-  // O ARCO, com o cisalhamento: g·(dk + a) mod 1, com g = gi + gf e a
-  // parte inteira de g já reduzida a 65 536 — gi·q em uint é exato.
-  float cis = float((uint(uGi[o]) * q) & 0xffffu) / 65536.0 + uGf[o] * (dk + a);
-  float dSig = float(h1 >> 8) / 16777216.0 + cis + uFs[o];
+  // O ARCO, girado pela data na fileira do pedaço (dk ∈ {−1, 0, 1} aqui,
+  // pelo alcance): fase + γ·a mod 1, com γ = gi + gf e a parte inteira de γ
+  // já reduzida a 65 536 — gi·q em uint é exato.
+  vec3 fila = uFila[o * ${FILEIRAS} + clamp(int(dk) + 1, 0, ${FILEIRAS - 1})];
+  float cis = float((uint(fila.y) * q) & 0xffffu) / 65536.0 + fila.z * a;
+  float dSig = float(h1 >> 8) / 16777216.0 + cis + fila.x;
   dSig -= floor(dSig + 0.5);
   float dS = (dSig + float(img.y)) * LADO_NO_ARCO[o];
   if (dRho * dRho + dS * dS >= alcance2) return false;
@@ -1587,7 +1680,7 @@ bool lugar(int o, int i, ivec2 img) {
 
   // A ESTEIRA: o pedaço anda ao longo da normal das cristas
   if (reg.y > 0.0) {
-    float del = reg.y * deslocamentoNoLadrilho(noLadrilho(dRho, dS, rhoKm));
+    float del = reg.y * deslocamentoNasFilas(noLadrilho(dRho, dS, rhoKm), filaDaEsteira(dRho, rhoKm));
     float arco = arcoDaEsteira(rhoKm);
     dRho += del * EST_NORMAL.x;
     dS += del * EST_NORMAL.y / arco;
@@ -2729,7 +2822,7 @@ void main() {
   float u = ((rhoKm / KM_POR_RAIO - R_INT) / (R_EXT - R_INT)) * U_ESCALA + U_BASE;
   vec4 perfil = (u < 0.0 || u > 1.0) ? vec4(0.0) : textureLod(uMapaAnel, vec2(u, 0.5), 0.0);
   if (amp <= 0.0 || perfil.a < 0.004) discard;
-  float D = densidadeDaEsteira(noLadrilho(vGrao.x, vGrao.y, rhoKm), amp);
+  float D = densidadeDaEsteira(noLadrilho(vGrao.x, vGrao.y, rhoKm), amp, filaDaEsteira(vGrao.x, rhoKm));
   float tau = tauDaOpacidade(perfil.a) * regiaoDoAnel(rhoKm).z;
   float d = sqrt(vGrao.x * vGrao.x + vGrao.y * vGrao.y + uZCamKm * uZCamKm);
   float td = tau * (1.0 - cessaoDasPedras(d) * tetoDoCampo(rhoKm, tau, uFracaoDoTier));
@@ -2839,7 +2932,7 @@ export interface QuadroDasPedras {
   solAngRad: number;
   kPolar: number;
   tier: QualityLevel;
-  /** o relógio do app (dia juliano) — o cisalhamento anda com ele */
+  /** o relógio do app (dia juliano TDB) — o lugar de cada pedaço sai dele (`segundosDaEpoca`) */
   jd: number;
   /** o Atlas escolheu o planeta (15/11): o assado anda em fatias mesmo de longe */
   destinoDoAtlas?: boolean;
@@ -4090,9 +4183,8 @@ export interface VistaDasCelulas {
   espessuraKm: number;
   lente: Lente | null;
   fr: ArrayLike<number>;
-  fs: ArrayLike<number>;
-  gi: ArrayLike<number>;
-  gf: ArrayLike<number>;
+  /** as fases por oitava e fileira (`fasesDoLadrilho`) */
+  fila: ArrayLike<number>;
   /** a folga a mais do cone, km: o rastro da sombra (`acenderSombra`) */
   folgaKm?: number;
 }
@@ -4152,8 +4244,10 @@ function caixaDaJanela(v: VistaDasCelulas, s: number, r0: number, r1: number, s0
  * oitava)·CELULAS + célula vai para `opacos` ou `esmaece` (ou os dois; com
  * `unir`, toda célula com algum pedaço presente vai só para `opacos`).
  * Devolve quantas em cada. O lugar de cada id é a conta do vértice: o raio
- * (dk + a − f)·lado, com o dk da volta do ladrilho, e o arco h + g·a + gf·dk
- * + fs (mod 1), com o cisalhamento g reduzido ao inteiro mais perto de zero.
+ * (dk + a − f)·lado, com o dk da volta do ladrilho, e o arco h + γ·a + fase
+ * (mod 1) da fileira dk, com o cisalhamento γ reduzido ao inteiro mais perto
+ * de zero. Longe da época o γ passa de centenas e cada faixa cobre o arco
+ * todo: o descarte fica só no raio (é o cisalhamento de verdade).
  */
 export function celulasDoQuadro(
   v: VistaDasCelulas,
@@ -4178,8 +4272,6 @@ export function celulasDoQuadro(
       // a imagem inteira primeiro
       if (!caixaDaJanela(v, t.s, (jr - 0.5) * lado, (jr + 0.5) * lado, (ja - 0.5) * ladoArco, (ja + 0.5) * ladoArco)) continue;
       const f = v.fr[o]!;
-      const gi = v.gi[o]!;
-      const g = (gi >= 32768 ? gi - 65536 : gi) + v.gf[o]!;
       const cel = celulas[o]!;
       const codigo = (m * OITAVAS + o) * CELULAS;
       for (let b = 0; b < faixas; b++) {
@@ -4198,7 +4290,11 @@ export function celulasDoQuadro(
           const r1 = (dk + p1 - f) * lado;
           // a faixa inteira (o arco todo) antes das células
           if (!caixaDaJanela(v, t.s, r0, r1, (ja - 0.5) * ladoArco, (ja + 0.5) * ladoArco)) continue;
-          const c0 = v.gf[o]! * dk + v.fs[o]! + Math.min(g * p0, g * p1);
+          // a fileira dk (as de ±2 ficam além do alcance, e o vértice as recusa antes do arco)
+          const kf = (o * FILEIRAS + Math.min(Math.max(dk + 1, 0), FILEIRAS - 1)) * 3;
+          const gi = v.fila[kf + 1]!;
+          const g = (gi >= 32768 ? gi - 65536 : gi) + v.fila[kf + 2]!;
+          const c0 = v.fila[kf]! + Math.min(g * p0, g * p1);
           const largo = Math.abs(g) * (p1 - p0);
           for (let c = 0; c < CELULAS_POR_FAIXA; c++) {
             const k = b * CELULAS_POR_FAIXA + c;
@@ -4394,7 +4490,7 @@ class Faixa {
   /**
    * AS CANDIDATAS DE PERTO, sem avaliar todas: o sorteio radial é estático,
    * então a janela radial é um trecho contíguo da ordem (com a volta em 1);
-   * nele, o arco sai das mesmas contas do vértice (`uGi`, `uGf`, `uFs`), e
+   * nele, o arco sai das mesmas contas do vértice (`uFila`), e
    * o cone da lente (com folga), no lugar com a esteira, tira as de fora do
    * quadro. Superconjunto das de x < `X_CORTE` que a GPU
    * desenharia.
@@ -4409,9 +4505,9 @@ class Faixa {
     espessuraKm: number,
     lente: Lente,
     fr: Float32Array,
-    fs: Float32Array,
-    gi: Float32Array,
-    gf: Float32Array,
+    fila: Float32Array,
+    /** os segundos desde a época (o campo das esteiras anda com eles) */
+    tS: number,
     tauMaximo: ((rhoKm: number) => number) | null,
     /** a primeira malha que o tier paga (o telefone não paga a mais fina) */
     malhaMaisFina: number
@@ -4442,8 +4538,9 @@ class Faixa {
           const q = ord.q[j]!;
           const a = q / 65536;
           const dk = Math.floor(f - a + 0.5);
-          const cis = ((gi[o]! * q) & 0xffff) / 65536 + gf[o]! * (dk + a);
-          let sig = ord.arco[j]! + cis + fs[o]!;
+          const kf = (o * FILEIRAS + dk + 1) * 3;
+          const cis = ((fila[kf + 1]! * q) & 0xffff) / 65536 + fila[kf + 2]! * a;
+          let sig = ord.arco[j]! + cis + fila[kf]!;
           sig -= Math.floor(sig + 0.5);
           const dS = sig * ladoArco;
           if (Math.abs(dS) >= raio) continue;
@@ -4483,7 +4580,7 @@ class Faixa {
             if ((rq * lente.pxPorRad) / Math.max(fz - DESLOCAMENTO_MAXIMO_KM - FOLGA_DO_CONE * Math.sqrt(d2), rq) < PX_CORTE) continue;
             // O LUGAR COM A ESTEIRA (a conta de \`lugarDaPedra\`): o cone justo,
             // só com a folga da câmera do quadro anterior, e o raio na tela
-            const [eR, eS] = deslocamentoDaEsteira(sCamKm + dS, rhoKm + dRho);
+            const [eR, eS] = deslocamentoDaEsteira(sCamKm + dS, rhoKm + dRho, tS);
             th = (dS + eS) / R0_KM;
             x = (rhoKm + dRho + eR) * Math.cos(th) - rhoKm;
             y = (rhoKm + dRho + eR) * Math.sin(th);
@@ -4558,15 +4655,10 @@ export class PedrasDoAnel {
   /** o assado em andamento (começa com a câmera rumo ao anel) */
   private passos: Passos<void> | null = null;
   private readonly uniforms: Record<string, THREE.IUniform>;
-  /** as integrais do cisalhamento e do giro, em dupla precisão */
-  private g = 0;
-  private e = 0;
-  private giro = 0;
-  private jdAntes = Number.NaN;
+  /** as fases do ladrilho (`fasesDoLadrilho`) e os desvios das filas das esteiras (`desvioDaFila`), da data */
   private readonly fr = new Float32Array(OITAVAS);
-  private readonly fs = new Float32Array(OITAVAS);
-  private readonly gi = new Float32Array(OITAVAS);
-  private readonly gf = new Float32Array(OITAVAS);
+  private readonly fila = new Float32Array(OITAVAS * FILEIRAS * 3);
+  private readonly estFila = new Float32Array(2 * (2 * FILAS_DA_ESTEIRA + 1));
   /** (ρ km, θ, altura km, fração do campo que o tier desenha) — o que o disco lê para ceder */
   readonly cessao = new THREE.Vector4(0, 0, 0, 0);
   /** a câmera no frame do anel em duas partes: a float32 (raios) e o resto (km) — o disco lê */
@@ -4625,12 +4717,11 @@ export class PedrasDoAnel {
       uPxPorRad: { value: 400 },
       uTela: { value: this.tela },
       uFr: { value: this.fr },
-      uFs: { value: this.fs },
-      uGi: { value: this.gi },
-      uGf: { value: this.gf },
+      uFila: { value: this.fila },
       uGiro: { value: 0 },
       uEsteira: { value: null },
       uEstCam: { value: new THREE.Vector4() },
+      uEstFila: { value: this.estFila },
       uForcaEsteira: { value: 0 },
       uRaioFolha: { value: 40 },
       uFundoFolha: { value: -0.02 },
@@ -4957,34 +5048,23 @@ const float R_EXT = ${opcoes.rExt};`;
       (c.z - az) * KM_POR_RAIO,
     );
 
-    // O RELÓGIO: o passo do quadro, com teto contínuo. Fora do desenho o
-    // relógio é só lembrado — ninguém vê o pedaço andar.
-    const dtBruto = Number.isFinite(q.jd) && Number.isFinite(this.jdAntes)
-      ? (q.jd - this.jdAntes) * 86400
-      : 0;
-    this.jdAntes = q.jd;
     if (!this.malha.visible || !faixa) return;
 
-    const teto = tetoDoPasso(rhoKm);
-    const dt = teto * Math.tanh(dtBruto / teto);
-    const om = omega(rhoKm);
-    // R0·Ω'(ρc) = −1,5·Ω·R0/ρc
-    const taxa = -1.5 * om * (R0_KM / rhoKm);
-    this.g += taxa * dt;
-    this.e += taxa * rhoKm * dt;
-    this.giro = (((this.giro + dt / PERIODO_DO_GIRO_S) % 1) + 1) % 1;
-
+    // O RELÓGIO: tudo sai da DATA (s desde a época do sorteio), nada é somado
+    // quadro a quadro — tocar ou saltar até o mesmo instante dá o mesmo anel
+    const tS = segundosDaEpoca(q.jd);
+    const voltasDoGiro = tS / PERIODO_DO_GIRO_S;
     let theta = Math.atan2(c.y, c.x);
     if (theta < 0) theta += 2 * Math.PI;
-    fasesDoLadrilho(rhoKm, theta, this.g, this.e, this.fr, this.fs, this.gi, this.gf);
+    fasesDoLadrilho(rhoKm, theta, tS, this.fr, this.fila);
 
     const porOitava = PEDRAS_POR_TIER[q.tier];
     this.lerLente(theta);
     // a maior espessura que a janela (≤ 1,5 ladrilho da maior oitava) alcança
     const alcance = 1.5 * TABELA_DE_OITAVAS[0]!.ladoRadial;
     const espessuraKm = Math.max(espessura, regiaoDoAnelCpu(rhoKm - alcance).espessura, regiaoDoAnelCpu(rhoKm + alcance).espessura);
-    faixa.acenderPontos({ ativas, porOitava, rhoKm, zKm, espessuraKm, lente: this.lente, fr: this.fr, fs: this.fs, gi: this.gi, gf: this.gf });
-    faixa.escolherDePerto(ativas, porOitava, rhoKm, R0_KM * theta, zKm, espessura, this.lente, this.fr, this.fs, this.gi, this.gf, this.tauMaximo, q.tier === 'performance' ? 1 : 0);
+    faixa.acenderPontos({ ativas, porOitava, rhoKm, zKm, espessuraKm, lente: this.lente, fr: this.fr, fila: this.fila });
+    faixa.escolherDePerto(ativas, porOitava, rhoKm, R0_KM * theta, zKm, espessura, this.lente, this.fr, this.fila, tS, this.tauMaximo, q.tier === 'performance' ? 1 : 0);
     const u = this.uniforms;
     (u.uDirSolLocal!.value as THREE.Vector3).copy(q.dirSolLocal);
     (u.uCamLocal!.value as THREE.Vector3).copy(c);
@@ -4997,12 +5077,15 @@ const float R_EXT = ${opcoes.rExt};`;
     u.uFracaoDoTier!.value = fracao;
     u.uPorOitava!.value = porOitava;
     u.uAtivas!.value = ativas;
-    u.uGiro!.value = this.giro;
+    u.uGiro!.value = voltasDoGiro - Math.floor(voltasDoGiro);
     this.cessao.set(rhoKm, theta, zKm, ativas > 0 ? fracao : 0);
     // a câmera no ladrilho das esteiras (radial, arco no B, no A), em dupla precisão
     const fr = (x: number) => x - Math.floor(x);
     const [vB, vA] = ARCO_DA_ESTEIRA.map((a) => fr((R0_KM * theta * a) / LADO_DA_ESTEIRA_KM));
-    (u.uEstCam!.value as THREE.Vector4).set(fr(rhoKm / LADO_DA_ESTEIRA_KM), vB, vA, 0);
+    (u.uEstCam!.value as THREE.Vector4).set(fr(rhoKm / LADO_DA_ESTEIRA_KM), vB, vA, fr(rhoKm / FILA_DA_ESTEIRA_KM));
+    // e o desvio das filas do campo que anda, da câmera − FILAS à + FILAS
+    const jc = Math.floor(rhoKm / FILA_DA_ESTEIRA_KM);
+    for (let m = -FILAS_DA_ESTEIRA; m <= FILAS_DA_ESTEIRA; m++) this.estFila.set(desvioDaFila(jc + m, tS), 2 * (m + FILAS_DA_ESTEIRA));
     u.uForcaEsteira!.value = forca;
     u.uRaioFolha!.value = raioDaFolhaKm(zKm);
     // do outro lado da camada, além do maior pedaço (o eixo maior passa de a)
@@ -5046,9 +5129,7 @@ const float R_EXT = ${opcoes.rExt};`;
         espessuraKm,
         lente: this.lente,
         fr: this.fr,
-        fs: this.fs,
-        gi: this.gi,
-        gf: this.gf,
+        fila: this.fila,
         folgaKm: (A_MAX_KM + espessuraKm * cosE) / senE,
       });
       this.desenharSombra(faixa);

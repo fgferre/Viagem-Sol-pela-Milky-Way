@@ -11,20 +11,19 @@
 // 2,13 raios de Saturno — o mesmo raio da travessia do filme solar, onde
 // as esteiras e os pedaços estão bem desenhados.
 //
-// O PONTO NÃO GIRA COM O RELÓGIO, e é a lei dos pedaços que manda: o
-// passo do relógio de `PedrasDoAnel.atualizar` só acumula o CISALHAMENTO
-// medido no raio da câmera (`g`, `e`); a fase de cada pedaço não tem giro
-// de conjunto, então os do raio da câmera ficam parados no frame do anel
-// (inercial, preso ao céu, sem o W do planeta) e os de raio vizinho
-// derivam pelo cisalhamento. O ponto fica na mesma longitude desse frame,
-// escolhida uma vez na ENTRADA a partir do Sol; o relógio só o leva junto
-// com Saturno pelo céu. Com o tempo acelerado ele pode entrar na sombra
-// do planeta: é real.
+// O PONTO ANDA NA ÓRBITA DO MATERIAL (17/11, Passo 2): os pedaços giram
+// pela data, cada um no Ω(ρ) do raio dele, no frame do anel (inercial,
+// preso ao céu, sem o W do planeta). A vista acompanha o material do raio
+// do ponto: a longitude é escolhida uma vez na ENTRADA a partir do Sol e
+// anda Ω(ρ do ponto)·(t − t da entrada) — de perto só se vê o
+// cisalhamento e a agitação. Com o tempo acelerado ele dá voltas em
+// Saturno e pode entrar na sombra do planeta: é real.
 // ============================================================
 import * as THREE from 'three';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../lib/atlas/iauOrientation';
 import { GRAU } from '../cinematic/enquadramento';
 import { kmParaPc } from '../escala';
+import { omegaDoAnelCpu } from './corpos/descricaoDoAnel';
 import { orientacaoInercialDoAnelNaCena } from './corpos/orientacaoNaCena';
 import { eixoQuePousaEm } from './lugaresDoCeu';
 import type { PoseDaSonda } from './sondas';
@@ -54,8 +53,10 @@ export const PISO_KM = 2.5e-3;
 
 /** a longitude do ponto e a face do anel que fica no alto, fixadas na entrada */
 export interface EscolhaDoPontoDoAnel {
-  /** longitude no frame do anel (rad; 0 = nodo, +θ = sentido orbital) */
+  /** longitude no frame do anel na entrada (rad; 0 = nodo, +θ = sentido orbital) */
   lon: number;
+  /** o instante da entrada (dia juliano): dali a longitude anda com a órbita */
+  jd: number;
   /** +1 = a face norte no alto, −1 = a sul: a que o Sol iluminava na entrada */
   face: 1 | -1;
 }
@@ -76,8 +77,14 @@ export function escolherPontoDoAnel(centroDeSaturno: THREE.Vector3, jd: number):
   const sol = centroDeSaturno.clone().negate();
   return {
     lon: Math.atan2(sol.dot(y), sol.dot(x)) + LONGITUDE_DESDE_O_SOL_GRAUS * GRAU,
+    jd,
     face: sol.dot(z) < 0 ? -1 : 1,
   };
+}
+
+/** a longitude do ponto no instante `jd`: a da entrada mais a órbita do material no raio dele */
+function longitudeDoPontoDoAnel(escolha: EscolhaDoPontoDoAnel, jd: number): number {
+  return escolha.lon + omegaDoAnelCpu(RAIO_DO_PONTO_KM) * (jd - escolha.jd) * 86400;
 }
 
 /**
@@ -93,7 +100,8 @@ export function poseDoPontoDoAnel(
   escolha: EscolhaDoPontoDoAnel
 ): PoseDaSonda {
   const { x, y, z } = baseDoAnel(jd);
-  const radial = x.multiplyScalar(Math.cos(escolha.lon)).addScaledVector(y, Math.sin(escolha.lon));
+  const lon = longitudeDoPontoDoAnel(escolha, jd);
+  const radial = x.multiplyScalar(Math.cos(lon)).addScaledVector(y, Math.sin(lon));
   const polo = z.multiplyScalar(escolha.face);
   const e = ELEVACAO_DA_CHEGADA_GRAUS * GRAU;
   const chegada = radial.clone().multiplyScalar(Math.cos(e)).addScaledVector(polo, Math.sin(e));
