@@ -72,7 +72,16 @@ junção aberto nem etiqueta. Ramo novo de trabalho, depois de juntado, se apaga
 - Conferido em 18/11 a pedido dele, relendo o histórico e as conversas (não só as notas): NENHUM dos sete é
   pendência. Nas notas eu tinha chamado os dois acima de "trabalho vivo"; estava errado.
 - `piloto-hiperion`: as quatro versões do piloto; a quarta entrou no app por outro caminho. Fica como registro.
-- `tritao`: pausado por decisão dele (*"deixar como está"*).
+- `tritao`: pausado por decisão dele em 04/10 (*"acho q tritao esta bom hj, vamos tomar cuidado para nao piorar"*),
+  depois de ver a comparação (`capturas/tritao/olhar/prancha-comparacao-v1.jpg`): a receita ganhava na face
+  fotografada e perdia no lado iluminado hoje (foto borrada com manchas de cor). Em 18/11 ele pediu que eu avaliasse
+  se está mesmo no padrão. Minha avaliação, olhando o app (`capturas/tritao/olhar/tritao-hoje-18-11-contra-plutao.jpg`):
+  NÃO está. Hoje é uma bola quase toda branca, com pouco para ver, cor redesenhada por IA e relevo emprestado das
+  manchas da cor; ao lado de Plutão a diferença é clara. E a imagem de 04/10 não é a de hoje: o tom e a luz do app
+  mudaram depois (09–13/10) e Tritão ficou mais branco (isto é leitura minha das duas imagens, não medi). O ramo é o
+  ponto de partida da segunda tentativa: leitor dos relevos medidos com teste, plano com os fatos, e a ideia de
+  tratar o lado borrado como nunca visto, que é o que a linha `completar-corpo` faz hoje. Os dados baixados ficaram
+  em `.cache/tritao/` na máquina antiga. Espera a palavra dele para entrar na fila dos corpos.
 - `claude/forja-lote3-tentativa`, `claude/forja-lote4-veu`: tentativas recusadas de Betelgeuse. Só para consulta.
 
 ## Decisões dele nesta rodada que não mudam
