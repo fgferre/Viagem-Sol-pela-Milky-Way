@@ -55,6 +55,19 @@ commit, linha de plano ou resposta do dono.
 - Na máquina antiga ficaram 13 cópias de trabalho em `.claude/worktrees/` e `../Viagem-aneis-de-perto`, sem fechar.
   Todo commit delas está no GitHub. Apagar pede a palavra dele; as provas vão antes para `capturas/copias/`.
 
+## Os ramos no GitHub (conferido em 18/11; ele não quer "um monte de coisa lá")
+
+Só três tipos têm razão de existir: `main` (o site no ar), `backup` (o trabalho, à frente do site) e os sete ramos
+abaixo, que guardam trabalho que NÃO entrou. Todo o resto estava inteiro dentro do `main` local. Não há pedido de
+junção aberto nem etiqueta. Ramo novo de trabalho, depois de juntado, se apaga dos dois lados no mesmo dia.
+
+- `anamorfica`: candidatas A e B da lente anamórfica, item 233, sem decisão dele.
+- `faixa-do-disco`: disco de Sgr A✱ visto de perfil como faixa macia; prova não mostrada a ele (no `BACKLOG.md`).
+- `saturno-chegada`: prova `?anelb=a|b` do anel B chapado na chegada (no `BACKLOG.md`).
+- `piloto-hiperion`: as quatro versões do piloto; a quarta entrou no app por outro caminho. Fica como registro.
+- `tritao`: pausado por decisão dele (*"deixar como está"*).
+- `claude/forja-lote3-tentativa`, `claude/forja-lote4-veu`: tentativas recusadas de Betelgeuse. Só para consulta.
+
 ## Decisões dele nesta rodada que não mudam
 
 - As duas frases antigas de espessura dos anéis: *"Deixe como está"*. Não mexer, não perguntar de novo.
