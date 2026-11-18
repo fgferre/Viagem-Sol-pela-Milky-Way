@@ -4,27 +4,21 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 234.**
 
-## O BASTÃO — onde a rodada parou (18/11) — MUDANÇA DE MÁQUINA: O TRABALHO DE UM MÊS ESTÁ NO RAMO `backup`, NÃO PUBLICADO
+## O BASTÃO — onde a rodada parou (18/11, noite) — O PC É A MÁQUINA DE TRABALHO; UM MÊS DE TRABALHO ESTÁ NO RAMO `backup`, NÃO PUBLICADO
 
-**Se você está numa máquina que não é a de 18/11, comece aqui.** A máquina para onde ele foi já tinha uma cópia do
-projeto, parada havia uns três meses (agosto). ANTES de mexer nela, olhe: `git status` (mudança solta) e
-`git log origin/main..main` depois do `git fetch origin` (commit local que nunca subiu). Se houver qualquer um dos
-dois, pare e conte a ele; não descarte, não force. O mesmo para uma pasta de memória antiga do assistente: a de 18/11
-vale, mas a antiga se guarda ao lado, não se apaga. Um clone novo traz o `main` publicado (`origin/main` 6988ff7e, de
-18/10). O trabalho está 400+ commits à frente, em `origin/backup` (69bf076c ou mais novo). Com a cópia limpa:
-`git fetch origin && git checkout main && git merge --ff-only origin/backup` (se recusar, pare e conte a ele). Daí em diante vale a regra de sempre: o
-`main` local anda, a cópia vai por `git push origin main:backup`, e push no `main` publica o site (só com a palavra
-dele; ele disse *"ainda não"*). Depois `npm ci`; os testes pedem o Chrome instalado. O `npm run done` passou em 69bf076c
-(176 arquivos, 4.096 testes).
+**A mudança de máquina está feita.** O PC (Windows) tem o `main` local igual a `origin/backup` (4a60ac6d ou mais novo),
+as anotações de 18/11 instaladas (as antigas, de agosto, guardadas ao lado) e o `npm run done` verde (176 arquivos,
+4.095 testes, cerca de um minuto). O app abre e carrega neste PC (visto só o convite; galáxia, estrelas e anéis ainda não
+foram olhados aqui). O publicado segue em `origin/main` 6988ff7e, de 18/10. Regra de sempre: o `main` local anda, a cópia
+vai por `git push origin main:backup`, e push no `main` publica o site (só com a palavra dele; ele disse *"ainda não"*).
 
-**Problemas previstos na máquina de destino (escritos antes de acontecer):** (1) pode haver ramos e cópias de
-trabalho de agosto: liste o que está inteiro no `main` e o que não está, e pergunte a ele antes de apagar qualquer
-um; (2) a `capturas/` de lá é a de agosto, não a de 18/11: nunca sobrescrever; (3) o repositório privado das
-anotações pede login no GitHub: se faltar, é ele quem entra; (4) a máquina de 18/11 rodava Node 25.8 e npm 11.11: se
-`npm ci` ou os testes falharem por versão ou por falta do Chrome, conte a ele antes de mexer no sistema; (5) se o
-`npm run done` falhar lá, a causa provável é o ambiente, porque o mesmo código passou em 18/11: não mexa em código
-nem em teste para passar; (6) a primeira resposta a ele é só o estado (onde estamos, o que se deve a ele, o que
-espera a resposta dele): não abra frente nova, não publique e não apague nada sem a palavra dele.
+**O que o Windows cobrou em 18/11, para não repetir:** as travas de `.claude/hooks` eram lidas como shell e executaram os
+exemplos do próprio texto (criaram um ramo no GitHub, apagado no mesmo dia com a palavra dele); consertadas, agora vigiam
+Bash e PowerShell (24c6b82a). Texto sai com LF em qualquer máquina (`.gitattributes`). O Node do PC é o do Mac (25.8.2).
+Neste clone `push.default` é `nothing` de propósito. O editor dele mostra "Sync Changes" com os commits à frente do site:
+clicar ali publica. Ele perguntou e ficou explicado: o site é uma gaveta, o trabalho guardado é outra. Perguntas dele
+ainda sem resposta: se trouxe do Mac as provas, o dado bruto e os estudos; se o ramo local `quad-unico` (agosto, inteiro
+no `main`) pode sair; se quer o bloco "Como trabalho por padrão" nas instruções globais deste PC.
 
 **Depois deste bastão, leia `PLAN-COORDENACAO.md` inteiro, uma vez:** é a passagem da coordenadora anterior (como a
 rodada estava organizada, onde cada frente parou, o que ela disse a ele que não convence, o que prometeu e não
@@ -34,8 +28,8 @@ cumpriu, as decisões dele que não mudam).
 `.cache/` (5 GB de dado bruto baixado: Gaia, galáxia, relevos), `scratchpad/estudos` (3,4 GB, o estudo do NASA Eyes) e
 as cópias de trabalho. Plano e memória citam provas por caminho: se a pasta não existir, pergunte a ele se trouxe;
 não refaça prova para pôr no lugar. A memória do assistente (73 anotações) também não mora neste repositório: está no repositório PRIVADO dele
-`mar-de-estrelas-memoria` (ramo `notas`, fotografia de 18/11, com um README de instalação). Clone-o, copie a pasta
-`memory` para a pasta de memória que o seu sistema indicar ANTES de começar, e leia o índice.
+`mar-de-estrelas-memoria` (ramo `notas`, fotografia de 18/11, com um README de instalação). No PC elas já estão
+instaladas; o que o assistente aprender daqui em diante fica só no PC, não volta sozinho para lá.
 
 **O que há no `main` local e ainda não foi ao ar:** a galáxia só de partículas (WebGPU com reserva) como padrão; as
 estrelas com corpo pelo motor do Sol (`PLAN-FORJA.md`: gravidade, giro, vento, manchas e o Grande Escurecimento de
