@@ -11,7 +11,7 @@
 // A BANCADA MEDE O QUE O VISITANTE VÊ: a lista do que foi PUBLICADO ao
 // React. Pisca é publicação — se nada é publicado, nada na tela mudou.
 // ============================================================
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { MaquinaDoTempo } from './maquinaDoTempo';
 import { AVISO_FORA_DA_JANELA, JANELA_EFEMERIDES } from '../tempoDoAtlas';
 import type { EstadoDoTempo } from '../tempoDoAtlas';
@@ -125,6 +125,17 @@ describe('os saltos da data — o que a vista dos anéis usa para recomeçar em 
     maquina.andarORelogio(1 / 60);
     expect(maquina.saltos).toBe(antes + 1);
     for (let i = 0; i < 180; i++) maquina.andarORelogio(1 / 60);
+    expect(maquina.saltos).toBe(antes + 1);
+    // o telefone a 8 quadros por segundo: o tick sai a cada ~2,5 s de verdade, e continua não sendo salto
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      for (let i = 0; i < 40; i++) {
+        vi.advanceTimersByTime(125);
+        maquina.andarORelogio(0.05);
+      }
+    } finally {
+      vi.useRealTimers();
+    }
     expect(maquina.saltos).toBe(antes + 1);
     maquina.jdPedido = JANELA_EFEMERIDES.jdFim - 10;
     expect(maquina.saltos).toBe(antes + 2);

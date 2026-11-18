@@ -72,6 +72,8 @@ export class MaquinaDoTempo {
    * material) recomeça depois de um salto em vez de ser levado por ele.
    */
   saltos = 0;
+  /** a data que o último tick do AO VIVO escreveu */
+  private jdDoAoVivo = NaN;
   /** degrau na escada de taxas (`tempoDoAtlas`) */
   degrau = 0;
   /** sentido do relógio: 0 é parado, e parado é como o Atlas abre */
@@ -312,9 +314,12 @@ export class MaquinaDoTempo {
         const agora = dateToTDB(new Date());
         const grampeado = grampearJd(agora);
         this.naParede = grampeado !== agora;
-        // o tick de 1 Hz é o relógio correndo; ligar o AO VIVO longe de hoje é salto
-        if (Math.abs(grampeado - this.jd) * 86400 > 2 * PASSO_DO_AO_VIVO_S) this.jdPedido = grampeado;
-        else this.jd = grampeado;
+        // o tick do AO VIVO segue o calendário (o relógio correndo, por mais
+        // lento que venha o quadro); o primeiro, ou o que vem depois de
+        // alguém escrever a data, é salto
+        if (this.jd === this.jdDoAoVivo) this.jd = grampeado;
+        else this.jdPedido = grampeado;
+        this.jdDoAoVivo = grampeado;
       }
     } else {
       const bruto =

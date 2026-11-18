@@ -17,7 +17,9 @@
 // do ponto: a longitude é escolhida uma vez na ENTRADA a partir do Sol e
 // anda Ω(ρ do ponto)·(t − t da entrada) — de perto só se vê o
 // cisalhamento e a agitação. Com o tempo acelerado ele dá voltas em
-// Saturno e pode entrar na sombra do planeta: é real.
+// Saturno e pode entrar na sombra do planeta: é real. Um SALTO da data (o
+// AO VIVO que liga, outra data pedida) não é o relógio correndo: a escolha
+// se refaz pelo Sol no instante novo (`Escada.poseDosAneis`).
 // ============================================================
 import * as THREE from 'three';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../lib/atlas/iauOrientation';
