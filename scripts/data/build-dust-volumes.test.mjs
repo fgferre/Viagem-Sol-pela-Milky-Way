@@ -443,7 +443,8 @@ describe('executarNiveis — a pirâmide do FITS ao disco', () => {
     const varrer = (dir) => {
       for (const e of readdirSync(dir, { withFileTypes: true })) {
         if (e.isDirectory()) varrer(join(dir, e.name));
-        else naPasta.push(relative(publico, join(dir, e.name)));
+        // os índices listam com `/`; no Windows o `relative` devolve `\`
+        else naPasta.push(relative(publico, join(dir, e.name)).replace(/\\/g, '/'));
       }
     };
     varrer(join(publico, 'data', 'galaxy', 'dust-piramide'));

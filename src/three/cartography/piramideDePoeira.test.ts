@@ -174,7 +174,9 @@ function fonteFalsa(falha: (nome: string) => boolean = () => false) {
 }
 type FonteFalsa = ReturnType<typeof fonteFalsa>;
 
-const esvaziar = () => new Promise<void>((r) => setTimeout(r, 0));
+// `setImmediate`, não `setTimeout(r, 0)`: no Windows o relógio anda de ~10 em ~10 ms, e os
+// 480 quadros do teste do 404 estouravam os 5 s só de esperar
+const esvaziar = () => new Promise<void>((r) => setImmediate(r));
 
 /** quadros de 0,1 s até nada estar no ar nem faltar vaga */
 async function bombear(

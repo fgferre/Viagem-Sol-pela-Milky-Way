@@ -43,9 +43,12 @@ function arquivosDeProducao(dir: string): string[] {
 
 const TODOS = arquivosDeProducao(join(RAIZ, 'src'));
 
+/** Caminho relativo à raiz com `/`, como no cadastro (no Windows o `relative` devolve `\`). */
+const relativo = (c: string) => relative(RAIZ, c).replace(/\\/g, '/');
+
 describe('a varredura reproduzível — gl_PointSize contra o cadastro', () => {
   const emissores = TODOS.filter((c) => PADRAO_DE_EMISSOR.test(readFileSync(c, 'utf8'))).map(
-    (c) => relative(RAIZ, c)
+    relativo
   );
 
   it('todo emissor achado no fonte está coberto por uma linha do cadastro', () => {
@@ -80,7 +83,7 @@ describe('a segunda varredura — quem desenha luz em QUAD aditivo', () => {
   const emissores = TODOS.filter((c) => {
     const fonte = readFileSync(c, 'utf8');
     return PADRAO_DE_QUAD_ADITIVO.every((p) => p.test(fonte));
-  }).map((c) => relative(RAIZ, c));
+  }).map(relativo);
 
   it('a varredura ENXERGA o clarão de asas (quad sem gl_PointSize, o escape que a fechou)', () => {
     expect(emissores).toContain('src/three/world/clarao.ts');
