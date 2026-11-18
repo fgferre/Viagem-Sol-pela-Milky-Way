@@ -172,6 +172,8 @@ export interface EpocaDoEscurecimento {
   readonly teffDaManchaK: Numero;
   /** a direção do lado escuro no céu: ângulo de posição, do norte para o leste, em graus */
   readonly anguloGraus: Numero;
+  /** a transmissão do véu de poeira na frente da região (1 = sem véu): o desenho do escuro */
+  readonly transmissaoDoVeu: Numero;
 }
 
 export interface EscurecimentoMedido {
@@ -369,8 +371,16 @@ const NUVEM_DE_BETELGEUSE: NuvemMedida = {
  * the best cool patch temperatures to be 3,400 K in December 2019 and January
  * 2020, down to 3,200 K in March 2020. The cool region has a best-fit extent
  * of 62 %, 79 % and 43 % of the apparent disk" (±50 K, o passo da grade). O
- * artigo ajusta igualmente bem uma nuvem de poeira e não escolhe: o app
- * desenha a mancha, a ficha diz a outra leitura. O círculo do modelo ("radius
+ * artigo ajusta igualmente bem uma nuvem de poeira e conclui pelas duas
+ * juntas: "a dust clump recently formed in the vicinity of the star due to a
+ * local temperature decrease in a cool patch" (o título: "A dusty veil
+ * shading Betelgeuse"). O DESENHO (decisão da coordenadora, 17/11) é o VÉU:
+ * o modelo de poeira não dá a extinção (dá raio e densidade da nuvem por
+ * época, Extended Data Table 3; o A_V = 0,65 é a poeira de antes), então a
+ * transmissão sai da razão medida do pico, 1/10 em dez/2019 e jan/2020
+ * ("in all filters": cinza no visível), e em março, sem razão medida, a
+ * mesma; a parcela fria fica no registro e fora do desenho (pela rampa do
+ * instrumento ela achatava as células). O círculo do modelo ("radius
  * in the range 0 to 10 mas", no quadrante sudoeste) cobre no máximo ~22 % de
  * um disco de 42 mas, e não os 62/79/43 % do próprio texto: o desenho segue
  * as IMAGENS (Fig. 2, eso2109a).
@@ -399,6 +409,7 @@ const ESCURECIMENTO_DE_BETELGEUSE: EscurecimentoMedido = {
       bordaNaImagemEmRaios: { v: 1.3, p: 'derivado', fonte: MONTARGES_2021 },
       teffDaManchaK: TEFF_DO_MODELO_DE_2021,
       anguloGraus: { v: 180, p: 'derivado', fonte: MONTARGES_2021 },
+      transmissaoDoVeu: { v: 1, p: 'derivado', fonte: MONTARGES_2021 },
     },
     {
       data: '2019-12-27T03:27Z',
@@ -406,6 +417,7 @@ const ESCURECIMENTO_DE_BETELGEUSE: EscurecimentoMedido = {
       bordaNaImagemEmRaios: { v: 0, p: 'derivado', fonte: MONTARGES_2021 },
       teffDaManchaK: { v: 3400, p: 'medido', fonte: MONTARGES_2021 },
       anguloGraus: { v: 180, p: 'derivado', fonte: MONTARGES_2021 }, // "Southern hemisphere"
+      transmissaoDoVeu: { v: 0.1, p: 'derivado', fonte: MONTARGES_2021 }, // o pico do sul "over 10 times less"
     },
     {
       data: '2020-01-28T02:00Z',
@@ -413,6 +425,7 @@ const ESCURECIMENTO_DE_BETELGEUSE: EscurecimentoMedido = {
       bordaNaImagemEmRaios: { v: -0.4, p: 'derivado', fonte: MONTARGES_2021 },
       teffDaManchaK: { v: 3400, p: 'medido', fonte: MONTARGES_2021 },
       anguloGraus: { v: 180, p: 'derivado', fonte: MONTARGES_2021 }, // "Southern hemisphere"
+      transmissaoDoVeu: { v: 0.1, p: 'derivado', fonte: MONTARGES_2021 }, // o pico do sul "over 10 times less"
     },
     {
       data: '2020-03-18T23:49Z',
@@ -420,6 +433,7 @@ const ESCURECIMENTO_DE_BETELGEUSE: EscurecimentoMedido = {
       bordaNaImagemEmRaios: { v: 0.2, p: 'derivado', fonte: MONTARGES_2021 },
       teffDaManchaK: { v: 3200, p: 'medido', fonte: MONTARGES_2021 },
       anguloGraus: { v: 225, p: 'derivado', fonte: MONTARGES_2021 }, // "South-Western quadrant"
+      transmissaoDoVeu: { v: 0.1, p: 'derivado', fonte: MONTARGES_2021 }, // sem razão medida em março: a de dez/jan
     },
     {
       data: '2020-04-01T00:00Z',
@@ -427,6 +441,7 @@ const ESCURECIMENTO_DE_BETELGEUSE: EscurecimentoMedido = {
       bordaNaImagemEmRaios: { v: 1.3, p: 'derivado', fonte: MONTARGES_2021 },
       teffDaManchaK: TEFF_DO_MODELO_DE_2021,
       anguloGraus: { v: 225, p: 'derivado', fonte: MONTARGES_2021 },
+      transmissaoDoVeu: { v: 1, p: 'derivado', fonte: MONTARGES_2021 },
     },
   ],
 };
@@ -438,6 +453,12 @@ export interface CelulaQuenteMedida {
   readonly lambdaUm: Numero;
   /** a razão é um TETO: pode ser em parte artefato da reconstrução */
   readonly teto?: boolean;
+  /**
+   * o LUGAR no céu de quem olha da Terra numa data (sem ele, o do desenho):
+   * o ângulo de posição do centro, do norte para o leste, e a distância ao
+   * centro do disco em raios (a projetada); a procedência diz se é medido
+   */
+  readonly lugar?: { readonly data: string; readonly anguloGraus: Numero; readonly distanciaEmRaios: Numero };
 }
 
 const HAUBOIS_2009 = 'Haubois et al. 2009, A&A 508, 923';
@@ -458,9 +479,27 @@ const HAUBOIS_2009 = 'Haubois et al. 2009, A&A 508, 923';
  *    (arXiv 1705.07829): no melhor modelo as manchas grandes (17 mas) levam
  *    3 % da intensidade, que no visível dá quase o mesmo (o teste).
  */
+/**
+ * O LUGAR DA CÉLULA QUENTE DE BETELGEUSE: COMPATÍVEL COM AS IMAGENS de
+ * 2019–2020, NÃO MEDIDO (decisão da coordenadora, 17/11). As imagens do
+ * SPHERE mostram o pico no hemisfério norte em dez/2019 e jan/2020 ("the
+ * Southern hemisphere of the star has a peak brightness over 10 times less
+ * than the Northern hemisphere", Montargès 2021, que não dá o lugar do
+ * pico); a calota que o véu deixa livre em janeiro é a menor (ao norte de
+ * ~0,6 raio). O valor: ao norte (0°), a 0,8165 raio do centro (√(2/3): a
+ * maior a 54,7° da linha de visada, e as outras duas de frente, simétricas,
+ * a sudeste e a sudoeste, perto da borda), em 28/01/2020. A mancha medida
+ * por Haubois 2009 (a nordeste, out/2005) NÃO entra: uma célula gigante não
+ * dura 14 anos.
+ */
 const CELULA_QUENTE_DE_BETELGEUSE: CelulaQuenteMedida = {
   razao: { v: MANCHA_DE_HAUBOIS.razao, p: 'medido', fonte: HAUBOIS_2009 },
   lambdaUm: { v: MANCHA_DE_HAUBOIS.lambdaUm, p: 'medido', fonte: HAUBOIS_2009 },
+  lugar: {
+    data: '2020-01-28T02:00Z',
+    anguloGraus: { v: 0, p: 'artistico', fonte: '' },
+    distanciaEmRaios: { v: Math.sqrt(2 / 3), p: 'artistico', fonte: '' },
+  },
 };
 const CELULA_QUENTE_DE_ANTARES: CelulaQuenteMedida = {
   razao: { v: 1.035, p: 'medido', fonte: 'Ohnaka et al. 2017, Nature 548, 310' },

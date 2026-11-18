@@ -68,6 +68,7 @@ import {
   rotacaoDe,
   superficiePelaTemperatura,
   temDinamoSolar,
+  type CelulaQuenteMedida,
   type EstrelaVisitavel,
 } from '../../lib/atlas/estrelasVisitaveis';
 
@@ -241,7 +242,7 @@ function sementeDe(e: EstrelaVisitavel): number {
   return h >>> 0;
 }
 
-export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): StellarParams {
+export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3, pos?: THREE.Vector3): StellarParams {
   const s = e.superficie;
   const achatamento = achatamentoDe(e);
   const logG = logGravidade(e.massaMsol.v, e.raioRsol.v);
@@ -280,7 +281,34 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
     ...(achatamento?.inclinacaoGraus && eixo ? { eixoNaCena: [eixo.x, eixo.y, eixo.z] as const } : {}),
     ...(gas ? { gas } : {}),
     ...(mancha.medida ? { celulaQuente: { razao: mancha.razao.v, lambdaUm: mancha.lambdaUm.v } } : {}),
+    ...(mancha.lugar && pos ? { lugarDaCelulaQuente: lugarNoCeu(mancha.lugar, pos) } : {}),
     ...(e.escurecimento ? { escurecimento: escurecimentoDoMotor(e.escurecimento) } : {}),
+  };
+}
+
+/**
+ * O LUGAR DE UMA CÉLULA QUENTE no céu da cena: o ponto da superfície que,
+ * visto da Terra (a linha de visada é a posição a partir do Sol), cai a
+ * `distanciaEmRaios` do centro do disco no ângulo de posição dado — no
+ * hemisfério de frente —, como direção unitária a partir do centro da
+ * estrela; a linha de visada (da estrela para o Sol); e a data (JD).
+ */
+export function lugarNoCeu(
+  l: NonNullable<CelulaQuenteMedida['lugar']>,
+  pos: THREE.Vector3
+): { direcao: [number, number, number]; linhaDeVisada: [number, number, number]; jd: number } {
+  const p = [pos.x, pos.y, pos.z] as const;
+  const norte = direcaoNoCeu(p, 0);
+  const leste = direcaoNoCeu(p, 90);
+  const r = Math.min(1, Math.max(0, l.distanciaEmRaios.v));
+  const a = (l.anguloGraus.v * Math.PI) / 180;
+  const n = Math.hypot(...p) || 1;
+  const frente = Math.sqrt(1 - r * r);
+  const d = [0, 1, 2].map((k) => r * (Math.cos(a) * norte[k] + Math.sin(a) * leste[k]) - (frente * p[k]) / n);
+  return {
+    direcao: [d[0], d[1], d[2]],
+    linhaDeVisada: [-p[0] / n, -p[1] / n, -p[2] / n],
+    jd: Date.parse(l.data) / 86400000 + 2440587.5,
   };
 }
 
@@ -290,14 +318,19 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
  */
 export const SOL_PARAMS: StellarParams = parametrosDoMotor(SOL);
 
-/** as épocas do escurecimento da ficha em números de desenho: o ano pela data UT, a borda das imagens, a razão das temperaturas e o lado escuro */
+/**
+ * as épocas do escurecimento da ficha em números de desenho: o ano pela data
+ * UT, a borda das imagens, o véu e o lado escuro. A PARCELA FRIA do modelo
+ * fica fora do desenho (razão 1; decisão da coordenadora, 17/11): pela rampa
+ * do instrumento ela achatava as células; o escuro é o do véu
+ */
 export function escurecimentoDoMotor(x: NonNullable<EstrelaVisitavel['escurecimento']>): EscurecimentoDoMotor {
-  const t0 = x.teffDaFotosferaK.v;
   return {
     epocas: x.epocas.map((p) => ({
       ano: anoDoJd(Date.parse(p.data) / 86400000 + 2440587.5),
       borda: p.bordaNaImagemEmRaios.v,
-      razaoT: p.teffDaManchaK.v / t0,
+      razaoT: 1,
+      transmissao: p.transmissaoDoVeu.v,
       anguloGraus: p.anguloGraus.v,
     })),
   };
@@ -399,7 +432,7 @@ export class EstrelaPeloMotorDoSol {
     this.escurecimento = params.escurecimento ?? null;
     this.quality = meios.quality;
     const t0 = performance.now();
-    this.corpo = new StellarBody(params, meios.renderer, meios.camera, meios.quality, faseDoCiclo(jd));
+    this.corpo = new StellarBody(params, meios.renderer, meios.camera, meios.quality, faseDoCiclo(jd), jd);
     this.msDeConstrucao = performance.now() - t0;
     this.group = this.corpo.group;
     this.raioPc = params.radiusPc;
@@ -713,7 +746,7 @@ export class EstrelasNoQuadro {
   private criar(p: Piloto, jd: number) {
     const meios = this.fios.motorDoSol();
     const d = p.dados;
-    const corpo = new EstrelaPeloMotorDoSol({ ...parametrosDoMotor(d, p.eixo), foraDaOrigem: true }, meios, jd);
+    const corpo = new EstrelaPeloMotorDoSol({ ...parametrosDoMotor(d, p.eixo, p.pos), foraDaOrigem: true }, meios, jd);
     corpo.group.position.copy(p.pos);
     this.group.add(corpo.group);
     const stars = this.fios.stars();

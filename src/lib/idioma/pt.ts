@@ -790,13 +790,18 @@ export const PT = {
   'ficha.estrela.epocaDaManchaFria': '{data}, {pct} % do disco aparente a {k} K',
   'ficha.estrela.dataDaEpoca': '{d}/{m}/{a}',
   'ficha.estrela.escurecimentoNoDesenho':
-    'pelo relógio do app, de {de} a {ate}: o desenho é a região fria (não a poeira), com a forma das imagens — o lado escuro {lados} (no céu, do norte para o leste); dentro dela a temperatura é a do modelo, na razão sobre a fotosfera dele, e a região gira com a estrela entre as datas; o brilho e a cor caem pelo mesmo instrumento das manchas do Sol (o filtro estreito colorizado) e pelo TiO nessa temperatura; derivados: a direção do lado escuro (o artigo dá o hemisfério e o quadrante), onde a borda corta o disco em cada época (lido nas imagens), as pontas da janela; no contínuo, a lei de Planck e o TiO da Forja dariam {escuros}, contra mais de {razao}× nas imagens; o filtro estreito escurece mais, e nada foi aumentado sem fonte; o ponto de luz no céu não escurece (vem do catálogo)',
+    'pelo relógio do app, de {de} a {ate}: o desenho é o véu de poeira do artigo, na frente do lado escuro {lados} (no céu, do norte para o leste), que gira com a estrela entre as datas; o véu deixa passar {veu} do brilho, derivado da razão medida (o pico do lado escuro mais de {razao}× abaixo do oposto em dez/2019 e jan/2020, em todos os filtros; em março, sem razão medida, a mesma); no desenho, em luz linear, o pico do lado escuro fica {desenho} abaixo; por baixo a estrela é a mesma, as células e a célula quente inclusive; a parcela fria do modelo fica fora do desenho (no contínuo, a lei de Planck e o TiO da Forja dariam {escuros}; pelo instrumento de filtro estreito ela achatava as células); derivados: a direção do lado escuro (o artigo dá o hemisfério e o quadrante), onde a borda corta o disco em cada época (lido nas imagens), as pontas da janela; o ponto de luz no céu não escurece (vem do catálogo)',
   'ficha.estrela.ladoEscuroNaEpoca': 'a {graus}° em {data}',
   'ficha.estrela.escuroNaTemperatura': '{x}× mais escuro a {k}/{t0} K',
-  'ficha.campo.bordaDaRegiaoFria': 'borda da região fria',
+  'ficha.campo.bordaDaRegiaoFria': 'borda do véu',
+  'ficha.estrela.picoNoDesenho': '{x}× ({data})',
   'ficha.estrela.bordaDaRegiaoFria':
-    'larga (~{largura} raio) e irregular, seguindo as células, e dentro dela as células claras cedem e a célula quente some: escolha — as imagens não resolvem a borda',
+    'larga (~{largura} raio), macia e irregular em escala grande, como a borda de uma nuvem — a poeira não sabe das células: escolha, as imagens não resolvem a borda',
   'ficha.campo.manchaQuente': 'mancha quente',
+  'ficha.campo.lugarDaManchaQuente': 'lugar da mancha quente',
+  'ficha.estrela.lugarDaManchaQuente': 'a {graus}° do norte para o leste, a {r} raio do centro do disco, em {data}',
+  'ficha.estrela.lugarDaManchaQuenteCompativel':
+    'a {graus}° do norte para o leste, a {r} raio do centro do disco, em {data}: compatível com as imagens de 2019–2020 (o pico no hemisfério norte), não medido — a mancha medida em 2005 não dura até lá; a estrela gira com ela',
   'ficha.campo.manchaNoVisivel': 'mancha no visível',
   'ficha.estrela.nuvemEmVolta':
     'a pluma maior sai a {pa}° no céu (do norte para o leste) e vai até pelo menos {raios} raios; extensões fracas a {extensoes}; uma casca de poeira incompleta a {de}–{ate} raios, mais forte a {paCasca}°',

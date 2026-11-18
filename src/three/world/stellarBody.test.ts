@@ -37,7 +37,9 @@ import {
   cirurgiaDasParticulas,
   cirurgiaDaEstrela,
   cirurgiasDaFotosfera,
+  eixosDasCelulasQuentes,
   forjaDe,
+  glslDoAssadoDaForja,
   cirurgiaDaForma,
   cirurgiaDaFotosfera,
   cirurgiaDaMatiz,
@@ -906,6 +908,36 @@ describe('um motor, qualquer estrela — os parâmetros novos são neutros no So
 // métodos reais sobre um corpo sem construtor (o construtor pede GPU), com
 // os campos que eles tocam.
 // ============================================================
+describe('os eixos das células quentes em volta da linha de visada', () => {
+  it('a maior no lugar, as outras duas de frente simétricas: com a maior a 54,7°, a Terra olha o meio de uma face', () => {
+    const e = [0, 0, 1] as const;
+    const g0 = [0, Math.sqrt(2 / 3), Math.sqrt(1 / 3)] as const;
+    const x = eixosDasCelulasQuentes(g0, e)!;
+    const g1 = new THREE.Vector3(...x.g1);
+    // de cada par, a de frente (z > 0)
+    const g2b = new THREE.Vector3(...x.g0).cross(g1);
+    const g2 = g2b.z > 0 ? g2b : g2b.negate();
+    expect(g1.length()).toBeCloseTo(1, 12);
+    expect(g1.dot(new THREE.Vector3(...x.g0))).toBeCloseTo(0, 12);
+    // as três de frente a 54,7° da linha de visada (uma de cada par)
+    for (const g of [new THREE.Vector3(...x.g0), g1, g2]) expect(Math.abs(g.z)).toBeCloseTo(1 / Math.sqrt(3), 9);
+    // as duas de baixo, uma de cada lado
+    expect(g1.z).toBeGreaterThan(0);
+    expect(Math.sign(g1.x)).toBe(-Math.sign(g2.x));
+    // sem lugar útil, nada
+    expect(eixosDasCelulasQuentes([0, 0, 2], e)).toBeUndefined();
+    expect(eixosDasCelulasQuentes([NaN, 0, 1], e)).toBeUndefined();
+  });
+
+  it('o assado leva os eixos (o x trocado); sem eles, o texto de sempre', () => {
+    const r = forjaDe({ ...SOL_PARAMS, teffK: 3600, dinamo: false, logG: -0.33, radiusPc: 764 * RAIO_DO_SOL_NA_CENA })!;
+    const sem = glslDoAssadoDaForja(r);
+    expect(sem).toContain('vec3 g0 = normalize(vec3(0.62, 0.35, -0.70));\n  vec3 g1 = normalize(cross(g0, vec3(0.0, 1.0, 0.0)));');
+    const com = glslDoAssadoDaForja(r, undefined, { g0: [0.6, 0.8, 0], g1: [0, 0, 1] });
+    expect(com).toContain('vec3 g0 = normalize(vec3(-0.600000, 0.800000, 0.000000));\n  vec3 g1 = normalize(vec3(0.000000, 0.000000, 1.000000));');
+  });
+});
+
 describe('a região pela data: o céu de uma época vira lugar na estrela, e nada não finito chega ao shader', () => {
   const P = 100;
   const fingir = (comEscurecimento = true) => {
@@ -913,7 +945,7 @@ describe('a região pela data: o céu de uma época vira lugar na estrela, e nad
     const mesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.ShaderMaterial());
     mesh.rotation.z = 0.3; // a inclinação, como a do Sol
     Object.assign(corpo, {
-      params: { rotPeriodDays: P, ...(comEscurecimento ? { escurecimento: { epocas: [] } } : {}) },
+      params: { rotPeriodDays: P, tiltRad: 0.3, ...(comEscurecimento ? { escurecimento: { epocas: [] } } : {}) },
       forja: {},
       regiaoPedida: null,
       ctx: { sunMesh: mesh },
@@ -921,11 +953,8 @@ describe('a região pela data: o céu de uma época vira lugar na estrela, e nad
       regiao: {
         uRegiao: { value: new THREE.Vector4(0, 0, 0, 1e-3) },
         uRegiaoBorda: { value: new THREE.Vector3(0, 1, 1) },
-        uRegiaoRazao: { value: new THREE.Vector2(1, 1) },
+        uRegiaoRazao: { value: new THREE.Vector3(1, 1, 1) },
       },
-      regiaoAssada: new THREE.Vector4(0, 0, 0, 1e-3),
-      mioloAssado: 0,
-      assadoDaRegiaoSujo: false,
       qRegiaoA: new THREE.Quaternion(),
       qRegiaoB: new THREE.Quaternion(),
       qRegiaoGiro: new THREE.Quaternion(),
@@ -935,8 +964,7 @@ describe('a região pela data: o céu de uma época vira lugar na estrela, e nad
     const fingido = corpo as unknown as Pick<StellarBody, 'naEstrela'> & {
       aplicarRegiao(): void;
       ctx: { sunMesh: THREE.Mesh };
-      regiao: { uRegiao: { value: THREE.Vector4 }; uRegiaoBorda: { value: THREE.Vector3 }; uRegiaoRazao: { value: THREE.Vector2 } };
-      assadoDaRegiaoSujo: boolean;
+      regiao: { uRegiao: { value: THREE.Vector4 }; uRegiaoBorda: { value: THREE.Vector3 }; uRegiaoRazao: { value: THREE.Vector3 } };
     };
     // o director escreve, o quadro aplica (`update` → `aplicarRegiao`)
     const escrever = (r: RegiaoNaSuperficie | null, jd: number) => {
@@ -946,7 +974,7 @@ describe('a região pela data: o céu de uma época vira lugar na estrela, e nad
     return Object.assign(fingido, { escreverRegiao: escrever });
   };
   const regiao = (centro: readonly [number, number, number]) =>
-    ({ centro, raio: 0.8, miolo: 0.6, penumbra: [1, 1], razoes: { miolo: 0.9, penumbra: 1 } }) as const;
+    ({ centro, raio: 0.8, miolo: 0.6, penumbra: [1, 1], razoes: { miolo: 0.9, penumbra: 1 }, transmissao: 0.1 }) as const;
   // onde o centro escrito cai no céu com a malha como está
   const noCeu = (s: ReturnType<typeof fingir>) => {
     const u = s.regiao.uRegiao.value;
@@ -970,8 +998,7 @@ describe('a região pela data: o céu de uma época vira lugar na estrela, e nad
       expect(noCeu(s).distanceTo(ceu)).toBeLessThan(1e-9);
       expect(s.regiao.uRegiao.value.w).toBe(0.8);
       expect(s.regiao.uRegiaoBorda.value.toArray()).toEqual([0.6, 1, 1]);
-      expect(s.regiao.uRegiaoRazao.value.toArray()).toEqual([0.9, 1]);
-      expect(s.assadoDaRegiaoSujo).toBe(true);
+      expect(s.regiao.uRegiaoRazao.value.toArray()).toEqual([0.9, 1, 0.1]);
     }
   });
 
@@ -993,12 +1020,14 @@ describe('a região pela data: o céu de uma época vira lugar na estrela, e nad
       { ...regiao([0, 0, 1]), miolo: 1 },
       { ...regiao([0, 0, 1]), razoes: { miolo: 0, penumbra: 1 } },
       { ...regiao([0, 0, 1]), raio: Infinity },
+      { ...regiao([0, 0, 1]), transmissao: NaN },
+      { ...regiao([0, 0, 1]), transmissao: -0.1 },
     ]) {
       const s = fingir();
       s.escreverRegiao(regiao([1, 0, 0]), jd0);
       s.escreverRegiao(r, jd0);
       expect(s.regiao.uRegiao.value.toArray()).toEqual([0, 0, 0, 1e-3]);
-      expect(s.regiao.uRegiaoRazao.value.toArray()).toEqual([1, 1]);
+      expect(s.regiao.uRegiaoRazao.value.toArray()).toEqual([1, 1, 1]);
     }
   });
 });

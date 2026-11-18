@@ -1251,6 +1251,19 @@ function linhasDaMancha(e: EstrelaVisitavel, forja: ReturnType<typeof regraDaFor
       'derivado',
       `Planck; ${m.razao.fonte}`
     ),
+    // o lugar da maior, quando o registro o dá (Betelgeuse: compatível com as imagens, não medido)
+    m.lugar
+      ? linha(
+          t('ficha.campo.lugarDaManchaQuente'),
+          t(m.lugar.distanciaEmRaios.p === 'artistico' ? 'ficha.estrela.lugarDaManchaQuenteCompativel' : 'ficha.estrela.lugarDaManchaQuente', {
+            graus: inteiroDoIdioma(Math.round(m.lugar.anguloGraus.v)),
+            r: decimalDoIdioma(String(Math.round(m.lugar.distanciaEmRaios.v * 100) / 100)),
+            data: dataDaEpoca(m.lugar.data),
+          }),
+          m.lugar.distanciaEmRaios.p,
+          m.lugar.distanciaEmRaios.fonte
+        )
+      : null,
   ];
 }
 
@@ -1407,8 +1420,20 @@ function linhasDoBrilho(teffK: number): (LinhaDaFicha | null)[] {
  * O ESCURECIMENTO NO DESENHO, pelos números do registro da estrela: o que o
  * desenho deriva (o lado escuro por época, a lei de Planck e o TiO da Forja
  * nas temperaturas do modelo, contra o piso medido) e, à parte, o que é
- * escolha (a borda larga, o contorno pelas células, as células que cedem).
+ * escolha (a borda do véu, larga e de nuvem). O pico do lado escuro NO
+ * DESENHO é medido no desenho (`PICO_NO_DESENHO`) e dito ao lado do medido.
  */
+/**
+ * A RAZÃO DO PICO NO DESENHO, norte sobre sul em luz linear (antes da curva
+ * de tom), Betelgeuse vista da Terra: medida no próprio desenho em 18/11/2026
+ * (`capturas/.../ferramentas-lote2/pico-linear.mjs`), com o véu de 0,1 e a
+ * célula quente no lugar compatível; refazer se o desenho mudar.
+ */
+const PICO_NO_DESENHO = [
+  { data: '2019-12-27T03:27Z', x: 8.4 },
+  { data: '2020-01-28T02:00Z', x: 26 },
+] as const;
+
 function linhasDoEscurecimentoNoDesenho(e: EstrelaVisitavel, x: EscurecimentoMedido): (LinhaDaFicha | null)[] {
   const t0 = x.teffDaFotosferaK.v;
   const medidas = x.epocas.filter((p) => p.fracaoDoDisco.p === 'medido');
@@ -1432,6 +1457,10 @@ function linhasDoEscurecimentoNoDesenho(e: EstrelaVisitavel, x: EscurecimentoMed
           )
           .join(t('ficha.estrela.eNuvem')),
         razao: numeroDoIdioma(x.razaoDoLadoEscuro.v),
+        veu: numeroDoIdioma(Math.min(...medidas.map((p) => p.transmissaoDoVeu.v))),
+        desenho: PICO_NO_DESENHO.map((p) =>
+          t('ficha.estrela.picoNoDesenho', { x: numeroDoIdioma(p.x), data: dataDaEpoca(p.data) })
+        ).join(t('ficha.estrela.eNuvem')),
       }),
       'derivado',
       x.teffDaFotosferaK.fonte

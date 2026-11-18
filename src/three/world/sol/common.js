@@ -124,7 +124,7 @@ export const SFTDIR_GLSL = [
   // escurecimento (Betelgeuse, 2019–20) — a mesma máscara, a da mancha do
   // Sol estendida. Uma calota de raio angular r (rad, a borda de fora) e d,
   // a distância angular até o centro dela, já com o contorno de quem chama
-  // (o ruído da mancha do Sol, ou as células da Forja). x: o MIOLO, inteiro
+  // (o ruído da mancha do Sol, ou o da borda de uma nuvem). x: o MIOLO, inteiro
   // até r·m e caindo até r; y: a PENUMBRA, além do miolo, de r·pIn a r·pOut
   // (pOut <= pIn: sem penumbra; o max guarda a ordem das bordas mesmo se o
   // compilador avaliar os dois lados). Quem chama garante r > 0 e m < 1

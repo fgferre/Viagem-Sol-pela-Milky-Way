@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { SOL_PARAMS } from '../director/estrelasNoQuadro';
 import { RAIO_DO_SOL_NA_CENA } from '../escala';
 import {
-  brilhoDasCelulasNaRegiaoFria,
   direcaoNoCeu,
   celulaNaTelaEmRaios,
   celulaRealEmRaios,
@@ -443,18 +442,6 @@ describe('a região fria de um escurecimento — a borda, as células e o céu d
     for (const [t, r] of [[0, 0.9], [3600, 0], [NaN, 0.9], [3600, NaN]]) expect(escuroDaRegiaoFria(t!, r!)).toBe(1);
   });
 
-  it('dentro dela as células claras e a quente cedem, contínuas; as faixas ficam', () => {
-    const s = 0.04;
-    expect(brilhoDasCelulasNaRegiaoFria(-0.1, s)).toBe(-0.1);
-    expect(brilhoDasCelulasNaRegiaoFria(0, s)).toBe(0);
-    expect(brilhoDasCelulasNaRegiaoFria(s, s)).toBeCloseTo(s / 3, 12);
-    // a quente enorme (5σ) sai abaixo de σ/2, e nada passa de σ/2
-    expect(brilhoDasCelulasNaRegiaoFria(5 * s, s)).toBeCloseTo((5 * s) / 11, 12);
-    expect(brilhoDasCelulasNaRegiaoFria(1e3, s)).toBeLessThan(s / 2);
-    // contínua e crescente perto de zero
-    expect(brilhoDasCelulasNaRegiaoFria(1e-9, s)).toBeCloseTo(1e-9, 15);
-  });
-
   it('o norte é a declinação crescente e o leste a ascensão reta crescente, vistos da Terra (Betelgeuse)', () => {
     // ICRS cartesiano: x para α = 0, z para o polo norte
     const versorEquatorial = (raDeg: number, decDeg: number) => {
@@ -496,35 +483,41 @@ describe('a região fria de um escurecimento — a borda, as células e o céu d
     expect(direcaoNoCeu([0, 0, 5], 180).every(Number.isFinite)).toBe(true);
   });
 
-  it('a região de um escurecimento: a máscara de toda região, a temperatura local e o mesmo instrumento', () => {
+  it('a região de um escurecimento: a máscara de toda região, a borda de nuvem e o véu que multiplica o brilho', () => {
     const sunJs = readFileSync(new URL('./sol/sun.js', import.meta.url), 'utf8');
     const bet: StellarParams = { ...SOL_PARAMS, teffK: 3600, dinamo: false, logG: -0.33, radiusPc: 764 * RAIO_DO_SOL_NA_CENA };
     const r = forjaDe(bet)!;
     const sem = cirurgiasDaFotosfera(sunJs, '', bet, r)!.fragment;
-    const esc = { epocas: [{ ano: 2019.8, borda: 1.3, razaoT: 1, anguloGraus: 180 }] } as const;
+    const epoca = { ano: 2019.8, borda: 1.3, razaoT: 1, transmissao: 0.1, anguloGraus: 180 };
+    const esc = { epocas: [epoca] };
     const com = cirurgiasDaFotosfera(sunJs, '', { ...bet, escurecimento: esc }, r)!.fragment;
     // sem escurecimento, nada da região no texto; nenhum programa alternativo
     expect(sem).not.toContain('uRegiao');
     expect(com).not.toMatch(/#ifdef|MANCHA_FRIA|uManchaFria/);
-    // a máscara de toda região (a das manchas do Sol), no referencial da estrela, com o contorno pelas células (±2σ)
-    expect(com).toContain('float dRegiao = acos(clamp(dot(sp, uRegiao.xyz), -1.0, 1.0)) - 0.060000*clamp(dForja / ');
+    // a máscara de toda região (a das manchas do Sol), no referencial da estrela, com a borda de nuvem (não as células)
+    expect(com).toContain('float dRegiao = acos(clamp(dot(sp, uRegiao.xyz), -1.0, 1.0));');
+    expect(com).toContain('dRegiao += 0.080000 * (snoise(qNuvem) + 0.5*snoise(qNuvem*2.0 + 3.7));');
+    expect(com).not.toMatch(/dRegiao[^\n]*dForja/);
     expect(com).toContain('vec2 mRegiao = regiaoNaSuperficie(dRegiao, uRegiao.w, uRegiaoBorda.x, uRegiaoBorda.y, uRegiaoBorda.z);');
-    // a mesma conta de `brilhoDasCelulasNaRegiaoFria`
-    expect(com).toContain('dForja > 0.0 ? dForja / (1.0 + 2.0 * dForja / ');
-    // a temperatura da região entra na temperatura local ANTES do instrumento (a rampa e o TiO a leem)
-    expect(com.indexOf('rForja *= 1.0 + mRegiao.x*(uRegiaoRazao.x - 1.0)')).toBeLessThan(com.indexOf('float calorDaForja'));
-    expect(com.indexOf('rForja *= 1.0 + mRegiao.x')).toBeLessThan(com.indexOf('float xTiO ='));
+    // a convecção por baixo é a mesma: nada amassa as células nem mexe na temperatura com a razão 1
+    expect(com).not.toContain('rForja *=');
+    expect(com).not.toContain('dForja');
+    // o véu multiplica o brilho que sai do instrumento, no fim (antes só da paleta)
+    expect(com).toContain('  color *= mix(1.0, uRegiaoRazao.z, mRegiao.x);\n  color *= uPaleta;');
+    // com a parcela fria pedida (razão < 1), a temperatura entra antes do instrumento (a rampa e o TiO a leem)
+    const fria = cirurgiasDaFotosfera(sunJs, '', { ...bet, escurecimento: { epocas: [{ ...epoca, razaoT: 0.9 }] } }, r)!.fragment;
+    const t = 'rForja *= 1.0 + mRegiao.x*(uRegiaoRazao.x - 1.0) + mRegiao.y*(uRegiaoRazao.y - 1.0);';
+    expect(fria.indexOf(t)).toBeGreaterThan(0);
+    expect(fria.indexOf(t)).toBeLessThan(fria.indexOf('float calorDaForja'));
+    expect(fria.indexOf(t)).toBeLessThan(fria.indexOf('float xTiO ='));
     // tirada a região, o texto é o de antes
     const semRegiao = com
-      .replace('uniform vec4 uRegiao;\nuniform vec3 uRegiaoBorda;\nuniform vec2 uRegiaoRazao;\n', '')
-      .replace(/ {2}float dForja = rForja - 1\.0;\n(?: {2}.*\n){4}/, '');
+      .replace('uniform vec4 uRegiao;\nuniform vec3 uRegiaoBorda;\nuniform vec3 uRegiaoRazao;\n', '')
+      .replace(/ {2}float dRegiao = [^\n]*\n(?: {2}.*\n){3}/, '')
+      .replace('  color *= mix(1.0, uRegiaoRazao.z, mRegiao.x);\n', '');
     expect(semRegiao).toBe(sem);
-    // o assado: a célula quente some na região, pela mesma máscara, no referencial do assado (x trocado)
-    const assado = glslDoAssadoDaForja(r, undefined, true);
-    expect(glslDoAssadoDaForja(r, undefined, false)).toBe(glslDoAssadoDaForja(r));
-    expect(assado).toContain('vec3 cRegiao = vec3(-uRegiao.x, uRegiao.y, uRegiao.z);');
-    expect(assado).toContain('quente *= 1.0 - regiaoNaSuperficie(acos(clamp(dot(sp, cRegiao), -1.0, 1.0)), uRegiao.w, uRegiaoBorda.x, uRegiaoBorda.y, uRegiaoBorda.z).x;');
-    expect(assado.indexOf('quente *= 1.0 - regiaoNaSuperficie')).toBeLessThan(assado.indexOf('a.x = mix(a.x'));
+    // o assado não sabe da região: a célula quente passa por baixo do véu como tudo
+    expect(cirurgiaDoAssado('void main(){}', r)).not.toContain('uRegiao');
     // sem a Forja não há onde a região morar
     const quente = { ...SOL_PARAMS, teffK: 9845, dinamo: false, contrasteRelativoAoSol: 0 };
     expect(cirurgiasDaFotosfera(sunJs, '', { ...quente, escurecimento: esc }, null)!.fragment).not.toContain('uRegiao');

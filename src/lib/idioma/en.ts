@@ -756,12 +756,17 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.estrela.epocaDaManchaFria': '{data}, {pct}% of the apparent disk at {k} K',
   'ficha.estrela.dataDaEpoca': '{a}-{m}-{d}',
   'ficha.estrela.escurecimentoNoDesenho':
-    'by the app\'s clock, from {de} to {ate}: the drawing is the cool region (not the dust), shaped as in the images — the dark side {lados} (on the sky, north through east); inside it the temperature is the model\'s, in its ratio to the model\'s photosphere, and the region turns with the star between the dates; brightness and colour fall through the same instrument as the Sun\'s spots (the colourised narrow-band filter) and by the TiO at that temperature; derived: the direction of the dark side (the paper gives the hemisphere and the quadrant), where the edge crosses the disk at each epoch (read from the images), the ends of the window; in the continuum, Planck\'s law and the Forja\'s TiO would give {escuros}, against more than {razao}× in the images; the narrow filter darkens more, and nothing was raised without a source; the point of light in the sky does not dim (it comes from the catalogue)',
+    'by the app\'s clock, from {de} to {ate}: the drawing is the paper\'s dusty veil, in front of the dark side {lados} (on the sky, north through east), turning with the star between the dates; the veil lets through {veu} of the light, derived from the measured ratio (the dark side\'s peak more than {razao}× below the opposite one in Dec 2019 and Jan 2020, in all filters; in March, with no measured ratio, the same); in the drawing, in linear light, the dark side\'s peak is {desenho} below; underneath the star is the same, the cells and the hot cell included; the model\'s cool patch is left out of the drawing (in the continuum, Planck\'s law and the Forja\'s TiO would give {escuros}; through the narrow-band instrument it flattened the cells); derived: the direction of the dark side (the paper gives the hemisphere and the quadrant), where the edge crosses the disk at each epoch (read from the images), the ends of the window; the point of light in the sky does not dim (it comes from the catalogue)',
   'ficha.estrela.ladoEscuroNaEpoca': 'at {graus}° on {data}',
   'ficha.estrela.escuroNaTemperatura': '{x}× darker at {k}/{t0} K',
-  'ficha.campo.bordaDaRegiaoFria': 'cool region\'s edge',
+  'ficha.campo.bordaDaRegiaoFria': 'veil\'s edge',
+  'ficha.estrela.picoNoDesenho': '{x}× ({data})',
   'ficha.estrela.bordaDaRegiaoFria':
-    'wide (~{largura} radius) and irregular, following the cells, and inside it the bright cells give way and the hot cell disappears: a choice — the images do not resolve the edge',
+    'wide (~{largura} radius), soft and irregular on a large scale, like the edge of a cloud — the dust knows nothing of the cells: a choice, the images do not resolve the edge',
+  'ficha.campo.lugarDaManchaQuente': 'hot spot\'s place',
+  'ficha.estrela.lugarDaManchaQuente': '{graus}° from north through east, {r} radius from the disk centre, on {data}',
+  'ficha.estrela.lugarDaManchaQuenteCompativel':
+    '{graus}° from north through east, {r} radius from the disk centre, on {data}: compatible with the 2019–2020 images (the peak in the northern hemisphere), not measured — the spot measured in 2005 does not last that long; the star turns with it',
   'ficha.campo.manchaQuente': 'hot spot',
   'ficha.campo.manchaNoVisivel': 'hot spot in visible light',
   'ficha.estrela.nuvemEmVolta':

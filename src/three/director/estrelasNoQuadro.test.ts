@@ -8,6 +8,7 @@ import {
   EstrelasNoQuadro,
   eixoDeRotacao,
   escurecimentoDoMotor,
+  lugarNoCeu,
   ganhoDaVisita,
   parametrosDaCompanheira,
   parametrosDoMotor,
@@ -22,7 +23,7 @@ import { VAGAS_DE_VISITADAS } from '../world/clarao';
 import { ESTRELAS_VISITAVEIS, estrelaVisitavelPorNome, celulaQuenteDe } from '../../lib/atlas/estrelasVisitaveis';
 import { radianciaVisivelDeCorpoNegro } from '../luzDaCasa';
 import { pesoDoFiltro } from '../world/stellarBody';
-import { BORDA_DA_MANCHA_FRIA, MANCHA_DE_HAUBOIS, pesoDoPico, regiaoDoEscurecimento } from '../world/forjaDaEstrela';
+import { BORDA_DA_MANCHA_FRIA, MANCHA_DE_HAUBOIS, direcaoNoCeu, pesoDoPico, regiaoDoEscurecimento } from '../world/forjaDaEstrela';
 import { anoDoJd } from '../world/ventoDaEstrela';
 
 describe('toda estrela visitável vira parâmetros do MESMO motor, sem nome', () => {
@@ -219,6 +220,32 @@ describe('a nomeada fora da lista à mão ganha piloto pelo foco', () => {
   });
 });
 
+describe('o lugar da célula quente (compatível com as imagens de 2019–2020, não medido)', () => {
+  const bet = estrelaVisitavelPorNome('Betelgeuse')!;
+  const pos = new THREE.Vector3(2.5, 168, 21.8); // perto de α 88,8°, δ 7,4°
+  it('volta ao céu de quem olha da Terra: no ângulo de posição e na distância do registro, de frente', () => {
+    const l = lugarNoCeu(bet.superficie.celulaQuente!.lugar!, pos);
+    const r = pos.clone().normalize();
+    const d = new THREE.Vector3(...l.direcao);
+    expect(d.length()).toBeCloseTo(1, 12);
+    const norte = new THREE.Vector3(...direcaoNoCeu([pos.x, pos.y, pos.z], 0));
+    const leste = new THREE.Vector3(...direcaoNoCeu([pos.x, pos.y, pos.z], 90));
+    expect((Math.atan2(d.dot(leste), d.dot(norte)) * 180) / Math.PI).toBeCloseTo(0, 6); // ao norte
+    expect(Math.hypot(d.dot(leste), d.dot(norte))).toBeCloseTo(Math.sqrt(2 / 3), 9);
+    expect(d.dot(r)).toBeCloseTo(-1 / Math.sqrt(3), 9); // de frente: a 54,7° da linha de visada
+    expect(new THREE.Vector3(...l.linhaDeVisada).dot(r)).toBeCloseTo(-1, 12);
+    expect(l.jd).toBeCloseTo(2458876.5833, 3); // 28/01/2020
+    expect(bet.superficie.celulaQuente!.lugar!.distanciaEmRaios.p).toBe('artistico');
+  });
+  it('só Betelgeuse leva o lugar ao motor, e só com a posição dela', () => {
+    expect(parametrosDoMotor(bet, undefined, pos).lugarDaCelulaQuente).toBeDefined();
+    expect(parametrosDoMotor(bet).lugarDaCelulaQuente).toBeUndefined();
+    for (const e of ESTRELAS_VISITAVEIS) {
+      if (e.nomeNoCatalogo !== 'Betelgeuse') expect(parametrosDoMotor(e, undefined, pos).lugarDaCelulaQuente, e.id).toBeUndefined();
+    }
+  });
+});
+
 describe('o Grande Escurecimento de Betelgeuse pelo relógio do app', () => {
   const bet = estrelaVisitavelPorNome('Betelgeuse')!;
   const x = escurecimentoDoMotor(bet.escurecimento!);
@@ -227,10 +254,11 @@ describe('o Grande Escurecimento de Betelgeuse pelo relógio do app', () => {
   // a corda nas imagens de volta do raio da calota (raio = acos(corda − B)); fora da janela, 9
   const em = (jd: number) => {
     const r = regiaoDoEscurecimento(x, anoDoJd(jd), naEstrela);
-    if (!r) return { c: 9, k: 1, pa: NaN, raio: 0 };
+    if (!r) return { c: 9, k: 1, t: 1, pa: NaN, raio: 0 };
     return {
       c: Math.cos(r.raio) + BORDA_DA_MANCHA_FRIA,
       k: r.razoes.miolo,
+      t: r.transmissao,
       pa: (Math.atan2(r.centro[1], r.centro[0]) * 180) / Math.PI + (r.centro[1] < 0 ? 360 : 0),
       raio: r.raio,
     };
@@ -251,13 +279,16 @@ describe('o Grande Escurecimento de Betelgeuse pelo relógio do app', () => {
     }
     const dez = em(jdDe('2019-12-27T03:27Z'));
     expect(dez.c).toBeCloseTo(0, 9);
-    expect(dez.k).toBeCloseTo(3400 / 3700, 9);
+    // o escuro é o VÉU (a razão do pico medida, 1/10); a parcela fria fica fora do desenho
+    expect(dez.t).toBeCloseTo(0.1, 9);
+    expect(dez.k).toBe(1);
     expect(dez.pa).toBeCloseTo(180, 9);
     const jan = em(jdDe('2020-01-28T02:00Z'));
     expect(jan.c).toBeCloseTo(-0.4, 9);
     const mar = em(jdDe('2020-03-18T23:49Z'));
     expect(mar.c).toBeCloseTo(0.2, 9);
-    expect(mar.k).toBeCloseTo(3200 / 3700, 9);
+    expect(mar.t).toBeCloseTo(0.1, 9);
+    expect(mar.k).toBe(1);
     expect(mar.pa).toBeCloseTo(225, 9);
     // a borda larga: o miolo começa em acos(corda + B)
     const r = regiaoDoEscurecimento(x, anoDoJd(jdDe('2019-12-27T03:27Z')), naEstrela)!;
@@ -275,6 +306,7 @@ describe('o Grande Escurecimento de Betelgeuse pelo relógio do app', () => {
       const b = em(jd + 1 / 1440);
       expect(Math.abs(a.raio - b.raio)).toBeLessThan(1e-3);
       expect(Math.abs(a.k - b.k)).toBeLessThan(1e-4);
+      expect(Math.abs(a.t - b.t)).toBeLessThan(1e-4);
       if (a.raio > 0 && b.raio > 0) expect(Math.abs(a.pa - b.pa)).toBeLessThan(1e-3);
     }
   });

@@ -1093,18 +1093,27 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     const d = imagem(bet).get('escurecimento')!;
     expect(d.procedencia).toBe('derivado');
     expect(d.valor).toContain('de 01/11/2019 a 01/04/2020');
-    expect(d.valor).toContain('o lado escuro a 180° em 27/12/2019, a 180° em 28/01/2020, a 225° em 18/03/2020');
-    // o número sai da lei do contínuo (`escuroDaRegiaoFria`), não da mão; o desenho passa pelo instrumento das manchas do Sol
-    expect(d.valor).toContain('mesmo instrumento das manchas do Sol');
-    expect(d.valor).toContain('dariam 2,3× mais escuro a 3.400/3.700 K e 4,1× mais escuro a 3.200/3.700 K, contra mais de 10×');
+    expect(d.valor).toContain('do lado escuro a 180° em 27/12/2019, a 180° em 28/01/2020, a 225° em 18/03/2020');
+    // o desenho é o véu, com a transmissão do registro (derivada da razão medida); a parcela fria fora, com o número do contínuo (`escuroDaRegiaoFria`)
+    expect(d.valor).toContain('o desenho é o véu de poeira do artigo');
+    expect(d.valor).toContain('o véu deixa passar 0,1 do brilho, derivado da razão medida (o pico do lado escuro mais de 10× abaixo');
+    expect(d.valor).toContain('no desenho, em luz linear, o pico do lado escuro fica 8,4× (27/12/2019) e 26× (28/01/2020) abaixo');
+    expect(d.valor).toContain('dariam 2,3× mais escuro a 3.400/3.700 K e 4,1× mais escuro a 3.200/3.700 K');
     // o que é escolha tem selo próprio
-    const b = imagem(bet).get('borda da região fria')!;
+    const b = imagem(bet).get('borda do véu')!;
     expect(b.procedencia).toBe('artistico');
     expect(b.valor).toContain('~0,3 raio');
+    expect(b.valor).toContain('como a borda de uma nuvem');
+    // o lugar da mancha quente: compatível com as imagens, não medido, com selo de escolha
+    const l = linhasDe(bet).get('lugar da mancha quente')!;
+    expect(l.procedencia).toBe('artistico');
+    expect(l.valor).toContain('a 0° do norte para o leste, a 0,82 raio do centro do disco, em 28/01/2020');
+    expect(l.valor).toContain('não medido');
     for (const outra of ['Antares', 'Rigel', 'Aldebaran']) {
       expect(linhasDe(de(outra)).has('Grande Escurecimento'), outra).toBe(false);
       expect(imagem(de(outra)).has('escurecimento'), outra).toBe(false);
-      expect(imagem(de(outra)).has('borda da região fria'), outra).toBe(false);
+      expect(imagem(de(outra)).has('borda do véu'), outra).toBe(false);
+      expect(linhasDe(de(outra)).has('lugar da mancha quente'), outra).toBe(false);
     }
     definirIdioma('en');
     try {
@@ -1112,7 +1121,8 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
       expect(linhasDe(en).get('cool patch (model)')!.valor).toContain('2020-01-28, 79% of the apparent disk at 3,400 K');
       expect(imagem(en).get('dimming')!.valor).toContain('from 2019-11-01 to 2020-04-01');
       expect(imagem(en).get('dimming')!.valor).toContain('2.3× darker at 3,400/3,700 K and 4.1× darker at 3,200/3,700 K');
-      expect(imagem(en).get("cool region's edge")!.procedencia).toBe('artistico');
+      expect(imagem(en).get('dimming')!.valor).toContain('the veil lets through 0.1 of the light');
+      expect(imagem(en).get("veil's edge")!.procedencia).toBe('artistico');
     } finally {
       definirIdioma('pt-BR');
     }

@@ -416,7 +416,10 @@ export function regraDaForja(
  * manchas do Sol nascem pela regra do dínamo (as cargas de
  * `sol/activity.js` e as manchas virtuais de `sol/sun.js`, cada uma com
  * lugar, raio e vida; as razões e a forma vêm da estrela); a região de um
- * escurecimento, pelas épocas medidas (`regiaoDoEscurecimento`).
+ * escurecimento, pelas épocas medidas (`regiaoDoEscurecimento`). Além da
+ * temperatura, um VÉU na frente dela: a transmissão (1 = sem véu) multiplica
+ * o brilho que sai do instrumento — poeira na frente da estrela, que escurece
+ * sem mexer na fotosfera nem na textura.
  */
 export interface RegiaoNaSuperficie {
   /** o lugar: o centro, unitário, no referencial da estrela (o do objeto, que gira com ela) */
@@ -428,6 +431,8 @@ export interface RegiaoNaSuperficie {
   /** a penumbra, de/até em raios (até ≤ de: sem penumbra) */
   readonly penumbra: readonly [number, number];
   readonly razoes: RazoesDaRegiao;
+  /** a TRANSMISSÃO de um véu na frente do miolo (0 a 1; 1 = sem véu): multiplica o brilho depois do instrumento */
+  readonly transmissao: number;
 }
 
 /** a TEMPERATURA de uma região: T/T_fotosfera no miolo e na penumbra (1 = como a fotosfera) */
@@ -440,36 +445,41 @@ export interface RazoesDaRegiao {
  * UM ESCURECIMENTO MEDIDO por época (`EscurecimentoMedido` da ficha), em
  * números de desenho: o ano (decimal), a borda nas imagens (raios ao longo do
  * lado escuro: a região é a parte do disco além dela), a razão
- * T_fria/T_fotosfera do modelo do artigo e a direção do lado escuro no céu
- * (ângulo de posição, graus). A estrela leva a razão, não a temperatura
- * absoluta: a fotosfera do modelo (3.700 K em Betelgeuse) não é a Teff da
- * ficha (3.600 K). Quem anda no tempo é o director (`regiaoDoEscurecimento`).
+ * T_fria/T_fotosfera que o desenho leva, a transmissão do véu de poeira e a
+ * direção do lado escuro no céu (ângulo de posição, graus). Quem anda no
+ * tempo é o director (`regiaoDoEscurecimento`).
  *
- * O DESENHO (`cirurgiaDaEstrela`, `regiao`): a região da superfície, com a
- * razão no miolo e sem penumbra; o brilho das células cede dentro dela
- * (`brilhoDasCelulasNaRegiaoFria`), ficando as faixas e a textura, e a
- * célula quente some do assado (o pico e o alisamento por dentro), voltando
- * a rede comum. A BORDA é larga e irregular: segue o campo das células da
- * própria Forja.
+ * O DESENHO (`cirurgiaDaEstrela`, `regiao`): o véu na frente da região, que
+ * multiplica o brilho; a fotosfera por baixo é a mesma (as células, a quente
+ * inclusive). A BORDA é a de uma nuvem: larga, macia e irregular em escala
+ * grande (`CONTORNO_DA_NUVEM`), sem saber das células.
  */
 export interface EscurecimentoDoMotor {
   readonly epocas: readonly {
     readonly ano: number;
     readonly borda: number;
     readonly razaoT: number;
+    readonly transmissao: number;
     readonly anguloGraus: number;
   }[];
 }
 
 /**
  * A meia largura da borda da região fria, em raios no disco projetado (a
- * borda inteira ~0,3 R), e quanto o campo das células a desloca por desvio
- * (limitado a ±2σ: ±0,12 rad perto do limbo). ARTÍSTICAS, declaradas na
- * ficha — as imagens do SPHERE, com o feixe de ~24 mas num disco de 42 mas,
- * não resolvem a borda.
+ * borda inteira ~0,3 R). ARTÍSTICA, declarada na ficha — as imagens do
+ * SPHERE, com o feixe de ~24 mas num disco de 42 mas, não resolvem a borda.
  */
 export const BORDA_DA_MANCHA_FRIA = 0.15;
-export const BORDA_PELAS_CELULAS = 0.06;
+
+/**
+ * O CONTORNO DA NUVEM: poeira na frente não sabe onde estão as células; a
+ * borda do véu anda até `amplitude` rad para dentro e para fora por um ruído
+ * de escala grande (`frequencia` por raio: lóbulos de ~1/3 de raio), no
+ * referencial da estrela em volta do centro da região (muda devagar de forma
+ * quando a região anda). ARTÍSTICO, declarado na ficha (extrapolação: as imagens não
+ * resolvem a borda).
+ */
+export const CONTORNO_DA_NUVEM = { amplitude: 0.12, frequencia: 3 } as const;
 
 /**
  * A REGIÃO DE UM ESCURECIMENTO NA DATA (ano decimal), no referencial da
@@ -502,32 +512,29 @@ export function regiaoDoEscurecimento(
   const n = Math.hypot(c[0], c[1], c[2]);
   const borda = e0.borda + (e1.borda - e0.borda) * f;
   const razao = e0.razaoT + (e1.razaoT - e0.razaoT) * f;
+  const transmissao = e0.transmissao + (e1.transmissao - e0.transmissao) * f;
   const B = BORDA_DA_MANCHA_FRIA;
   const fora = Math.acos(Math.min(1, Math.max(-1, borda - B)));
   const dentro = Math.acos(Math.min(1, Math.max(-1, borda + B)));
   // nada não finito chega ao shader (um NaN + bloom branqueia a tela)
-  if (!(n > 1e-9) || !(fora > 1e-4) || !(razao > 0) || !Number.isFinite(razao) || !Number.isFinite(dentro)) return null;
+  if (
+    !(n > 1e-9) ||
+    !(fora > 1e-4) ||
+    !(razao > 0) ||
+    !Number.isFinite(razao) ||
+    !Number.isFinite(dentro) ||
+    !(transmissao >= 0 && transmissao <= 1)
+  ) {
+    return null;
+  }
   return {
     centro: [c[0] / n, c[1] / n, c[2] / n],
     raio: fora,
     miolo: Math.min(0.999, dentro / fora),
     penumbra: [1, 1],
     razoes: { miolo: razao, penumbra: 1 },
+    transmissao,
   };
-}
-
-/**
- * O BRILHO DAS CÉLULAS NA REGIÃO FRIA: o desvio positivo δ da temperatura
- * local (as células claras e as quentes enormes) vira δ/(1 + 2δ/σ), com σ o
- * desvio de uma célula comum na tela, e nunca passa de σ/2; as faixas (δ < 0)
- * ficam, e com elas a textura. Uma célula comum (δ = σ) sai a um terço e a
- * quente de Haubois (δ ≈ 5σ) a 0,45σ, quase no nível das comuns: a região
- * medida a 3.400 K não tem célula a +15 % dentro dela (com o teto em σ, a
- * quente virava um platô liso mais claro que tudo em volta). ARTÍSTICO na
- * forma, declarado.
- */
-export function brilhoDasCelulasNaRegiaoFria(delta: number, sigma: number): number {
-  return delta > 0 ? delta / (1 + (2 * delta) / sigma) : delta;
 }
 
 /**

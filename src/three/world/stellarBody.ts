@@ -69,7 +69,7 @@ import {
   LAMBDA_DOS_CANAIS_UM,
   TIO_DA_FORJA,
   pesoDoTiO,
-  BORDA_PELAS_CELULAS,
+  CONTORNO_DA_NUVEM,
   CELULA_PROFUNDA_EM_RAIOS,
   LARGURA_DA_MANCHA_MAIOR_EM_RAIOS,
   TEFF_SEM_FILTRO_K,
@@ -102,7 +102,7 @@ import { GLSL_COMPRESSAO } from '../shaders/common';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
 import { porCurva, type QualityLevel } from '../core/engine';
 import { EPOCA_JD_TDB } from './planetas/retrato2026';
-import { NOISE_GLSL, REGIAO_GLSL } from './sol/common.js';
+import { NOISE_GLSL } from './sol/common.js';
 import { createGranulation } from './sol/granulation.js';
 import { createPIL } from './sol/pil.js';
 import { createActivity } from './sol/activity.js';
@@ -400,6 +400,20 @@ export interface StellarParams {
    * regra (`MANCHA_DE_HAUBOIS`). Só a Forja a lê.
    */
   readonly celulaQuente?: ManchaNaBanda;
+  /**
+   * O LUGAR DA CÉLULA QUENTE do registro: a direção do centro dela no céu da
+   * cena (a partir do centro da estrela, unitária), a linha de visada da Terra
+   * (da estrela para o Sol) e a data. O corpo leva as duas ao referencial da
+   * estrela pelo giro daquela data e à malha como ela nasce
+   * (`naMalhaAoNascer`); a MAIOR célula quente do assado nasce ali, e as
+   * outras duas de frente ficam simétricas em volta da linha de visada
+   * (`eixosDasCelulasQuentes`). Omitido, o lugar do desenho.
+   */
+  readonly lugarDaCelulaQuente?: {
+    readonly direcao: readonly [number, number, number];
+    readonly linhaDeVisada: readonly [number, number, number];
+    readonly jd: number;
+  };
   /*
    * (A DRAMATURGIA POR TORÇÃO DE FASE morreu em 21/08 — item 5. Eram
    * quatro números aqui — as fases do arranque e do pico, mais a janela
@@ -786,25 +800,24 @@ export function cirurgiaDaEstrela(
     // A REGIÃO NA SUPERFÍCIE (`RegiaoNaSuperficie`, a de um escurecimento):
     // a máscara de toda região (`regiaoNaSuperficie`, a da mancha do Sol), no
     // referencial da estrela (`sp`, o do objeto: `uRegiao.xyz`; o raio em
-    // `uRegiao.w`; o miolo e a penumbra em `uRegiaoBorda`), com o contorno
-    // pelo campo das células (`BORDA_PELAS_CELULAS`, rad por desvio, ±2σ);
-    // dentro, o brilho das células cede (`brilhoDasCelulasNaRegiaoFria`) e a
-    // temperatura local leva a razão da região (`uRegiaoRazao`) — e com ela
-    // passa pelo MESMO instrumento da convecção e das manchas: a rampa pelo
-    // peso do filtro, Planck no contínuo, o TiO na temperatura local. Sem
-    // região, o centro é zero e o raio ínfimo: a máscara é 0 em todo ponto
-    // a régua σ da região fria nunca é zero: uma estrela lisa (contraste 0)
-    // com escurecimento daria 0/0 no shader (um NaN + bloom branqueia a tela);
-    // com dForja = 0 o piso não muda nada
-    const D = literalGlsl(Math.max(d, 1e-4));
+    // `uRegiao.w`; o miolo e a penumbra em `uRegiaoBorda`), com a borda de
+    // uma NUVEM (`CONTORNO_DA_NUVEM`: ruído de escala grande, fixo na região,
+    // que não sabe das células). A temperatura da região (`uRegiaoRazao.xy`)
+    // multiplica a temperatura local — só se o texto a pede (razão < 1 em
+    // alguma época); o VÉU (`uRegiaoRazao.z`, a transmissão) multiplica o
+    // brilho que sai do instrumento, no fim (antes da paleta). Sem região, o
+    // centro é zero e o raio ínfimo: a máscara é 0 em todo ponto
+    const nuvem = CONTORNO_DA_NUVEM;
     const regiao = o.regiao
-      ? '  float dForja = rForja - 1.0;\n' +
-        `  float dRegiao = acos(clamp(dot(sp, uRegiao.xyz), -1.0, 1.0)) - ${literalGlsl(BORDA_PELAS_CELULAS)}*clamp(dForja / ${D}, -2.0, 2.0);\n` +
+      ? '  float dRegiao = acos(clamp(dot(sp, uRegiao.xyz), -1.0, 1.0));\n' +
+        `  vec3 qNuvem = (sp - uRegiao.xyz) * ${literalGlsl(nuvem.frequencia)};\n` +
+        `  dRegiao += ${literalGlsl(nuvem.amplitude / 1.5)} * (snoise(qNuvem) + 0.5*snoise(qNuvem*2.0 + 3.7));\n` +
         '  vec2 mRegiao = regiaoNaSuperficie(dRegiao, uRegiao.w, uRegiaoBorda.x, uRegiaoBorda.y, uRegiaoBorda.z);\n' +
-        `  rForja = 1.0 + mix(dForja, dForja > 0.0 ? dForja / (1.0 + 2.0 * dForja / ${D}) : dForja, mRegiao.x);\n` +
-        '  rForja *= 1.0 + mRegiao.x*(uRegiaoRazao.x - 1.0) + mRegiao.y*(uRegiaoRazao.y - 1.0);\n'
+        (o.regiao.razaoMinima < 1
+          ? '  rForja *= 1.0 + mRegiao.x*(uRegiaoRazao.x - 1.0) + mRegiao.y*(uRegiaoRazao.y - 1.0);\n'
+          : '')
       : '';
-    if (o.regiao) f = 'uniform vec4 uRegiao;\nuniform vec3 uRegiaoBorda;\nuniform vec2 uRegiaoRazao;\n' + f;
+    if (o.regiao) f = 'uniform vec4 uRegiao;\nuniform vec3 uRegiaoBorda;\nuniform vec3 uRegiaoRazao;\n' + f;
     // a temperatura local da Forja (a convecção e a região): sem dínamo não
     // há manchas (`rRegiao` é 1)
     f = trocarUma(
@@ -887,6 +900,12 @@ export function cirurgiaDaEstrela(
         `  color *= mix(vec3((1.0-limbU) + limbU*mu), razaoDePlanck(${xDePlanckGlsl(t1)}, pow((mu + 0.6666667)/1.6666667, 0.25)), ${literalGlsl(Math.min(1, o.continuo!))});`,
       quem
     );
+  }
+  if (o.regiao) {
+    // o VÉU na frente da região (`RegiaoNaSuperficie.transmissao`): poeira
+    // entre a estrela e quem olha multiplica o brilho que sai do instrumento,
+    // a textura inteira por baixo
+    f = trocarUma(f, '  color *= uPaleta;', '  color *= mix(1.0, uRegiaoRazao.z, mRegiao.x);\n  color *= uPaleta;', quem);
   }
   if (o.pontaDoPico) {
     // a PONTA DO PICO (`PONTA_DO_PICO`): o sensor que estoura
@@ -1053,11 +1072,45 @@ vec3 valorDaForja(vec3 p) {
 }
 `;
 
+/** os eixos das células quentes do assado, no referencial do objeto: a maior em ±g0, as outras em ±g1 e ±g2 = g0 × g1 */
+export interface EixosDasCelulasQuentes {
+  readonly g0: readonly [number, number, number];
+  readonly g1: readonly [number, number, number];
+}
+
+/**
+ * OS EIXOS DAS CÉLULAS QUENTES a partir do lugar da maior (`g0`) e da linha
+ * de visada da Terra (`e`), no mesmo referencial: as outras duas de frente
+ * ficam simétricas em volta da linha de visada — g1 e g2 a meio caminho, de
+ * cada lado, da direção de `e` no plano perpendicular a g0. Com a maior a
+ * 54,7° da linha de visada a Terra olha o meio de uma face do octaedro (as
+ * três de frente a 54,7°, as outras atrás). ARTÍSTICO (a forma do padrão).
+ * Sem lugar útil (`e` paralela a g0 ou dado não finito), undefined.
+ */
+export function eixosDasCelulasQuentes(
+  g0: readonly [number, number, number],
+  e: readonly [number, number, number]
+): EixosDasCelulasQuentes | undefined {
+  const n0 = Math.hypot(...g0);
+  if (!(n0 > 1e-9)) return undefined;
+  const a = [g0[0] / n0, g0[1] / n0, g0[2] / n0];
+  const k = e[0] * a[0] + e[1] * a[1] + e[2] * a[2];
+  const u0 = [e[0] - k * a[0], e[1] - k * a[1], e[2] - k * a[2]];
+  const nu = Math.hypot(u0[0], u0[1], u0[2]);
+  if (!(nu > 1e-6)) return undefined;
+  const u = u0.map((x) => x / nu);
+  const v = [a[1] * u[2] - a[2] * u[1], a[2] * u[0] - a[0] * u[2], a[0] * u[1] - a[1] * u[0]];
+  return {
+    g0: [a[0], a[1], a[2]],
+    g1: [(u[0] + v[0]) / Math.SQRT2, (u[1] + v[1]) / Math.SQRT2, (u[2] + v[2]) / Math.SQRT2],
+  };
+}
+
 /** O fragment do assado da Forja: as funções e o `main` (ver acima). */
 export function glslDoAssadoDaForja(
   forja: RegraDaForja,
   cal: CalibracaoDaForja = calibracaoDaForja(forja.fracaoEscura, forja.desordem),
-  regiao = false
+  eixos?: EixosDasCelulasQuentes
 ): string {
   const { sigma, espalhamento } = perfilDaForja(cal.k);
   const D = Math.min(1, Math.max(0, forja.desordem));
@@ -1074,14 +1127,20 @@ export function glslDoAssadoDaForja(
   // peso da escala profunda, que também leva o alisamento (sem degrau em log g 1)
   const wq = pesoDasCelulasQuentes(forja);
   const passo = Math.min(TETO_DA_ADVECCAO, ADVECCAO_DA_FORJA * cel * (0.5 + D));
+  // os eixos do lugar do registro (`eixosDasCelulasQuentes`, no referencial do
+  // objeto), levados ao do assado (o x trocado: a esfera do three põe
+  // x = −cos(lon), o assado x = +cos(lon)); sem lugar, os do desenho
+  const v3 = (v: readonly [number, number, number]) => `normalize(vec3(${L(-v[0])}, ${L(v[1])}, ${L(v[2])}))`;
+  const g0 = eixos ? v3(eixos.g0) : 'normalize(vec3(0.62, 0.35, -0.70))';
+  const g1 = eixos ? v3(eixos.g1) : 'normalize(cross(g0, vec3(0.0, 1.0, 0.0)))';
   const quentes =
     wq > 0
       ? `
   // as células quentes enormes, levadas pelo mesmo escoamento
   // nos seis vértices de um octaedro girado: de qualquer lado, uma a três no disco
   float quente = 0.0;
-  vec3 g0 = normalize(vec3(0.62, 0.35, -0.70));
-  vec3 g1 = normalize(cross(g0, vec3(0.0, 1.0, 0.0)));
+  vec3 g0 = ${g0};
+  vec3 g1 = ${g1};
   vec3 g2 = cross(g0, g1);
   for (int i = 0; i < 6; i++) {
     vec3 h = hashDaForja(vec3(float(i) * 7.13 + 3.31, 1.73, 9.21));
@@ -1102,23 +1161,11 @@ export function glslDoAssadoDaForja(
   tb = tb * tb * tb - ${L(MEDIA_DA_TURBULENCIA)};
   // dentro da célula quente as células comuns perdem parte do contraste
   // (ela sobe inteira): a mancha lê como UMA região clara, não como
-  // células mais claras${
-    regiao
-      ? `
-  // na REGIÃO de um escurecimento não há célula quente: nem o pico nem o
-  // alisamento por dentro — a rede comum de antes volta. A mesma região da
-  // fotosfera (\`uRegiao\`, \`regiaoNaSuperficie\`), no referencial deste
-  // assado: o do objeto com o x trocado (a esfera do three põe x = −cos(lon),
-  // o assado x = +cos(lon)); sem o contorno pelas células
-  vec3 cRegiao = vec3(-uRegiao.x, uRegiao.y, uRegiao.z);
-  quente *= 1.0 - regiaoNaSuperficie(acos(clamp(dot(sp, cRegiao), -1.0, 1.0)), uRegiao.w, uRegiaoBorda.x, uRegiaoBorda.y, uRegiaoBorda.z).x;`
-      : ''
-  }
+  // células mais claras
   a.x = mix(a.x, ${L(cal.m)}, ${L(0.6 * alisa * wq)} * quente) + ${L(cal.s)} * (${L(zQuente * wq)} * quente + ${L(TURBULENCIA_DAS_SUPERGIGANTES * w * 3)} * tb);
   a.w *= 1.0 - ${L(0.85 * alisa * wq)} * quente;`
       : '';
   return (
-    (regiao && wq > 0 ? 'uniform vec4 uRegiao;\nuniform vec3 uRegiaoBorda;\n' + REGIAO_GLSL + '\n' : '') +
     GLSL_RUIDO_DA_FORJA +
     /* glsl */ `
 // a lente: o domínio aumentado (célula maior) ou encolhido de lugar para lugar
@@ -1225,10 +1272,10 @@ void main(){
  * (`sol/chromo.js`) dá lugar ao da convecção (`glslDoAssadoDaForja`); o que
  * vem antes (ruídos, uniforms, o retrato da simulação) fica.
  */
-export function cirurgiaDoAssado(fragment: string, forja: RegraDaForja, regiao = false): string {
+export function cirurgiaDoAssado(fragment: string, forja: RegraDaForja, eixos?: EixosDasCelulasQuentes): string {
   const i = fragment.lastIndexOf('void main(){');
   if (i < 0) throw new Error('cirurgiaDoAssado: a âncora `void main(){` sumiu de sol/chromo.js');
-  return fragment.slice(0, i) + glslDoAssadoDaForja(forja, undefined, regiao);
+  return fragment.slice(0, i) + glslDoAssadoDaForja(forja, undefined, eixos);
 }
 
 /** Sem a passagem smear na Forja: o `main` dela vira uma cópia (só compila; não roda). */
@@ -2446,25 +2493,22 @@ export class StellarBody {
   /** a luz do disco de gás (normal × a fase da data, `escreverDisco`) */
   private readonly luzDoDisco = { value: 0 };
   /**
-   * A REGIÃO NA SUPERFÍCIE pela data (`escreverRegiao`), partilhada pela
-   * fotosfera e pelo assado: o centro no referencial do objeto e o raio
-   * (rad); o miolo e a penumbra (em raios); as razões das temperaturas. Sem
-   * região: o centro zero e o raio ínfimo (a máscara é 0 em todo ponto).
+   * A REGIÃO NA SUPERFÍCIE pela data (`escreverRegiao`), na fotosfera: o
+   * centro no referencial do objeto e o raio (rad); o miolo e a penumbra (em
+   * raios); as razões das temperaturas e a transmissão do véu. Sem região: o
+   * centro zero e o raio ínfimo (a máscara é 0 em todo ponto).
    */
   private readonly regiao = {
     uRegiao: { value: new THREE.Vector4(0, 0, 0, SEM_REGIAO_RAIO) },
     uRegiaoBorda: { value: new THREE.Vector3(0, 1, 1) },
-    uRegiaoRazao: { value: new THREE.Vector2(1, 1) },
+    uRegiaoRazao: { value: new THREE.Vector3(1, 1, 1) },
   };
-  /** a região mudou desde o último assado: com o relógio parado, re-assar (`passoDoReassar`) */
-  private assadoDaRegiaoSujo = false;
   /** a região pedida pelo director e a data dela (`escreverRegiao`), ou null */
   private regiaoPedida: { r: RegiaoNaSuperficie; jd: number } | null = null;
-  private readonly regiaoAssada = new THREE.Vector4(0, 0, 0, SEM_REGIAO_RAIO);
-  private mioloAssado = 0;
   private readonly qRegiaoA = new THREE.Quaternion();
   private readonly qRegiaoB = new THREE.Quaternion();
   private readonly qRegiaoGiro = new THREE.Quaternion();
+  private readonly qRegiaoGiroTmp = new THREE.Quaternion();
   private readonly eRegiao = new THREE.Euler();
   private readonly vRegiao = new THREE.Vector3();
   /** o piso do instrumento em unidades do gás (`PISO_DO_INSTRUMENTO` × o pico do vento + o do disco pela fase) */
@@ -2541,7 +2585,9 @@ export class StellarBody {
      * assá-lo na fase errada obrigaria um re-bake no primeiro quadro de
      * TODA sessão. Quem sabe a data é o director; o corpo obedece.
      */
-    cicloInicial: FaseDoCiclo = { fase01: 0, ciclo: 0 }
+    cicloInicial: FaseDoCiclo = { fase01: 0, ciclo: 0 },
+    /** a data do nascimento (o relógio do app): a malha nasce no giro 0, e o lugar da célula quente é levado até ela */
+    jdDoNascimento: number | null = null
   ) {
     this.params = params;
     this.faseDoCicloViva = cicloInicial;
@@ -2685,12 +2731,6 @@ export class StellarBody {
         this.geoDosQuads.push(geometria);
         const mesh = new THREE.Mesh(geometria, material);
         mesh.frustumCulled = false;
-        // o assado da Forja com a região (`glslDoAssadoDaForja`): os mesmos
-        // uniforms da fotosfera
-        if (material instanceof THREE.ShaderMaterial && material.fragmentShader.includes('uniform vec4 uRegiao;')) {
-          material.uniforms.uRegiao = this.regiao.uRegiao;
-          material.uniforms.uRegiaoBorda = this.regiao.uRegiaoBorda;
-        }
         const s = new THREE.Scene();
         s.add(mesh);
         return s;
@@ -2729,7 +2769,14 @@ export class StellarBody {
     if (this.forja) {
       // o assado pinta a convecção (`cirurgiaDoAssado`) e a smear não roda
       const forja = this.forja;
-      ctx.cirurgiaDoAssado = (f: string) => cirurgiaDoAssado(f, forja, Boolean(this.params.escurecimento));
+      // a maior célula quente no lugar medido, levado ao referencial da
+      // estrela pelo giro da data da medida (a estrela ainda não está na
+      // cena: o pai sem giro, como o grupo das estrelas)
+      const l = params.lugarDaCelulaQuente;
+      const g0 = l ? this.naMalhaAoNascer(l.direcao, l.jd, jdDoNascimento) : undefined;
+      const e = l ? this.naMalhaAoNascer(l.linhaDeVisada, l.jd, jdDoNascimento) : undefined;
+      const eixos = g0 && e ? eixosDasCelulasQuentes(g0, e) : undefined;
+      ctx.cirurgiaDoAssado = (f: string) => cirurgiaDoAssado(f, forja, eixos);
       ctx.cirurgiaDoSmear = cirurgiaDoSmear;
     }
     ctx.chromo = createChromo(ctx);
@@ -3630,8 +3677,8 @@ ${glslDoGas(gas, rGas, kAch, true)}
    */
   private orientacaoNoGiro(angulo: number, out: THREE.Quaternion): THREE.Quaternion {
     if (this.qEixo) return out.copy(this.qEixo).multiply(this.qRegiaoGiro.setFromAxisAngle(EIXO_Y, angulo));
-    const r = (this.ctx.sunMesh as THREE.Mesh).rotation;
-    return out.setFromEuler(this.eRegiao.set(r.x, angulo, r.z, r.order));
+    // a mesma da malha (`rotation.z = tiltRad`, x = 0, a ordem padrão), sem precisar dela
+    return out.setFromEuler(this.eRegiao.set(0, angulo, this.params.tiltRad, 'XYZ'));
   }
 
   /** o giro em que a malha está agora (o de `update`) */
@@ -3646,6 +3693,30 @@ ${glslDoGas(gas, rGas, kAch, true)}
    */
   private giroNaData(jd: number): number {
     return anguloDoGiro(this.giroDaMalha(), 0, 0, jd, this.params.rotPeriodDays);
+  }
+
+  /**
+   * UMA DIREÇÃO DO CÉU numa data, NA MALHA COMO ELA NASCE (antes de estar na
+   * cena: o pai sem giro, como o grupo das estrelas): ao referencial da
+   * estrela pelo giro daquela data, e dele à malha, que nasce no giro 0, pelo
+   * giro da data do nascimento (a mesma conta de `naEstrela` e
+   * `aplicarRegiao`). Sem data do nascimento, a da direção. undefined com
+   * dado não finito.
+   */
+  private naMalhaAoNascer(
+    direcao: readonly [number, number, number],
+    jd: number,
+    jdDoNascimento: number | null
+  ): [number, number, number] | undefined {
+    const jn = jdDoNascimento ?? jd;
+    if (![...direcao, jd, jn].every(Number.isFinite)) return undefined;
+    const giro = (data: number) => anguloDoGiro(0, 0, 0, data, this.params.rotPeriodDays);
+    const q = this.orientacaoNoGiro(0, this.qRegiaoA)
+      .invert()
+      .multiply(this.orientacaoNoGiro(giro(jn), this.qRegiaoB))
+      .multiply(this.orientacaoNoGiro(giro(jd), this.qRegiaoGiroTmp).invert());
+    const v = this.vRegiao.set(direcao[0], direcao[1], direcao[2]).applyQuaternion(q);
+    return [v.x, v.y, v.z];
   }
 
   /**
@@ -3671,15 +3742,17 @@ ${glslDoGas(gas, rGas, kAch, true)}
    * giros (no filme, com o relógio de cena, a diferença é zero). null ou
    * valor não finito: sem região. Só guarda: os uniforms se escrevem em
    * `update`, depois do giro do quadro (`aplicarRegiao`) — antes dele a
-   * região sairia com o giro do quadro anterior, e um corte do filme
-   * pediria dois assados. Só quem tem a Forja desenha a região.
+   * região sairia com o giro do quadro anterior. Só quem tem a Forja
+   * desenha a região.
    */
   escreverRegiao(r: RegiaoNaSuperficie | null, jd: number) {
     if (!this.params.escurecimento || !this.forja) return;
     const ok =
       r !== null &&
       Number.isFinite(jd) &&
-      [...r.centro, r.raio, r.miolo, ...r.penumbra, r.razoes.miolo, r.razoes.penumbra].every(Number.isFinite) &&
+      [...r.centro, r.raio, r.miolo, ...r.penumbra, r.razoes.miolo, r.razoes.penumbra, r.transmissao].every(Number.isFinite) &&
+      r.transmissao >= 0 &&
+      r.transmissao <= 1 &&
       r.raio > 0 &&
       r.miolo >= 0 &&
       r.miolo < 1 &&
@@ -3697,7 +3770,7 @@ ${glslDoGas(gas, rGas, kAch, true)}
     if (!pedida) {
       u.uRegiao.value.set(0, 0, 0, SEM_REGIAO_RAIO);
       u.uRegiaoBorda.value.set(0, 1, 1);
-      u.uRegiaoRazao.value.set(1, 1);
+      u.uRegiaoRazao.value.set(1, 1, 1);
     } else {
       const { r, jd } = pedida;
       const q = this.orientacaoNoGiro(this.giroDaMalha(), this.qRegiaoA)
@@ -3706,17 +3779,7 @@ ${glslDoGas(gas, rGas, kAch, true)}
       const c = this.vRegiao.set(r.centro[0], r.centro[1], r.centro[2]).applyQuaternion(q);
       u.uRegiao.value.set(c.x, c.y, c.z, r.raio);
       u.uRegiaoBorda.value.set(r.miolo, r.penumbra[0], r.penumbra[1]);
-      u.uRegiaoRazao.value.set(r.razoes.miolo, r.razoes.penumbra);
-    }
-    // com o relógio parado o assado só se refaz a pedido: a região andou o bastante, re-assar
-    const a = u.uRegiao.value;
-    const b = this.regiaoAssada;
-    if (
-      Math.abs(a.x - b.x) + Math.abs(a.y - b.y) + Math.abs(a.z - b.z) + Math.abs(a.w - b.w) +
-        Math.abs(u.uRegiaoBorda.value.x - this.mioloAssado) >
-      0.01
-    ) {
-      this.assadoDaRegiaoSujo = true;
+      u.uRegiaoRazao.value.set(r.razoes.miolo, r.razoes.penumbra, r.transmissao);
     }
   }
 
@@ -3898,14 +3961,6 @@ ${glslDoGas(gas, rGas, kAch, true)}
       Math.abs(ctx.tempoDoCiclo - this.cicloAssado) > LIMIAR_DE_REASSAR
     ) {
       this.reassar = { passos: 0, fatia: 0 };
-    }
-    // a região de um escurecimento entrou no assado (`uRegiao`): com o
-    // relógio parado, re-assar uma vez (andando, o de 8 Hz a pega)
-    if (this.assadoDaRegiaoSujo && ctx.bakeStep < 0 && this.reassar === null) {
-      this.assadoDaRegiaoSujo = false;
-      this.regiaoAssada.copy(this.regiao.uRegiao.value);
-      this.mioloAssado = this.regiao.uRegiaoBorda.value.x;
-      if (delta === 0) this.reassar = { passos: 0, fatia: 0 };
     }
 
     // --- simulação de convecção, fatiada (guard-5 + dreno, como lá) ---
