@@ -52,8 +52,8 @@ commit, linha de plano ou resposta do dono.
 
 - A licença do perfil de Björn Jónsson usado nos anéis.
 - O que está em "não convence" acima, ou a decisão dele de publicar assim mesmo.
-- Na máquina antiga ficaram 13 cópias de trabalho em `.claude/worktrees/` e `../Viagem-aneis-de-perto`, sem fechar.
-  Todo commit delas está no GitHub. Apagar pede a palavra dele; as provas vão antes para `capturas/copias/`.
+- As 14 cópias de trabalho da máquina antiga foram fechadas em 18/11 (*"Sim, arrume"*), com as provas que só existiam
+  nelas guardadas antes em `capturas/copias/`. No GitHub saíram 22 ramos já aproveitados; na máquina antiga, 82.
 
 ## Os ramos no GitHub (conferido em 18/11; ele não quer "um monte de coisa lá")
 
