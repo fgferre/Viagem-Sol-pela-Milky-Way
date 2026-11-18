@@ -136,4 +136,12 @@ Provas desta rodada: `capturas/aneis-um-jeito-so/` (roteiro `rodar.sh <porta> <p
 6. Urano, Netuno, Quaoar e Haumea pela mesma descrição (perfil em parâmetro no lugar do `uModo` à mão); Haumea na lista do eclipse; modo `quaoar` morto em G.
 7. WebGPU para os pedaços (decisão do dono de 14/11: depois da imagem).
 
+## Passeio no PC Windows (18/11, RTX 3070, Chrome 156; fotos e vídeos em `capturas/passeio-pc-18-11/`, nada consertado)
+- PONTOS FALSOS, o pior: ~100 pixels por quadro nos pedaços com miolo preto e borda ciano/amarela, que o brilho vira estrelas brancas com halo, por cima do anel e de Saturno (fotos 03, 04). Só pelo Direct3D 11 (o padrão do Chrome no Windows): na mesma placa pelo Vulkan somem (104 contra 6 pixels, foto 05). O console traz `X3595` (derivada dentro de laço com número variável de voltas) nesse programa. Aparece em todo nível e no celular.
+- Engasgo de ~1,4 s logo depois de chegar à vista dos anéis, em toda chegada, em qualquer nível (máximo 1,35–1,40 s nos 3 s depois de assentar; nas estrelas 0,1–0,25 s).
+- Ao vivo a vista fica parada (certo) e a cada segundo a tela inteira dá um tique de grão (|Δ| médio ~2,7, nenhum pixel > 5 níveis): o AO VIVO de 1 Hz se vê, fraco.
+- Relógio a 1,2 dia/s: a tela apaga (brilho médio 62 → 9) por 2 quadros duas vezes por segundo (sombra de Saturno passando); honesto, mas pisca. A 1.000× desliza liso.
+- Máquina do tempo: com "Ao vivo" aceso, trocar a velocidade não faz nada (a data fica parada); só anda depois do ▶. É por aí que o visitante veria o anel girar.
+- Celular em densidade 3 (iPhone): a foto da vista dos anéis derrubou o Chrome sem tela 2 de 2 vezes (densidade 2 e Betelgeuse em 3 saem normais). Pode ser a ferramenta; conferir num iPhone de verdade.
+
 Fora desta frente: a faixa de poeira da galáxia em blocos sobre Saturno (código da galáxia); as duas frases sobre a espessura (o dono: "Deixe como está"); tudo das estrelas.

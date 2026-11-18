@@ -143,3 +143,10 @@ Hoje o Sol NÃO tem registro: ele é `SOL_PARAMS` (stellarBody.ts) mais os liter
 - O ponto de luz e o clarão de Betelgeuse NÃO escurecem no Grande Escurecimento (decidido 17/11): vêm do catálogo (`aLogLum` em stars.bin, `mBase` em `clarao.ts`), não da luz do corpo. Pediria, na rodada de dados: a curva de ΔV por data como dado da estrela e um desvio por estrela no shader do ponto, no `mBase` do clarão e na troca disco ↔ ponto.
 - Pôr v·sen i e os números do Gaia no banco do app (hoje quase todo o catálogo é redondo por falta do dado): é gerar dado, a coordenadora leva ao dono numa rodada só de dados.
 - Celular e níveis de qualidade mais baixos: nada da Forja nem do giro foi conferido lá.
+
+## Passeio no PC Windows (18/11; fotos em `capturas/passeio-pc-18-11/`, d=3 pela data de hoje; nada consertado)
+- Capella: as manchas saem só como contorno escuro fino e oco, como rabiscos de caneta (fotos 21 e `z-capella-perto`); igual pelo Vulkan (foto 27), então não é do Windows. O Sol no Atlas tem manchas cheias (foto 26), mas na abertura do filme galáctico o Sol mostra rabiscos fechados parecidos (`z-sol-filme-galactico`); não sei se são os filamentos do H-alfa e se é novo.
+- Betelgeuse a 3 e 2 raios: a célula quente sai estourada em creme (confirmado, fotos 11 e 12); a rede escura regular lembra barro rachado; Antares e Aldebarã do mesmo jeito, mais fracas.
+- As quentes (Rigel, Deneb, Naos, Achernar, Régulo, Vega, Sirius) são discos pálidos lisos, sem nada para ver; Rigel, Deneb, Naos e Achernar com halo ou disco rosa-choque forte (fotos 13–19, 24).
+- Próxima a 3 raios: duas linhas retas paralelas (órbitas de lado) atravessam a estrela (foto 25); em Saturno de perto as órbitas das luas riscam a frente do planeta (foto 28).
+- Celular (390×844) e nível Performance: Betelgeuse sai como no Cinema, sem defeito novo (fotos 31 e 34).
