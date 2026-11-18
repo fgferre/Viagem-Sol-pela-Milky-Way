@@ -6,9 +6,13 @@ Número é identidade, não posição: item novo entra no fim da sua seção. **
 
 ## O BASTÃO — onde a rodada parou (18/11) — MUDANÇA DE MÁQUINA: O TRABALHO DE UM MÊS ESTÁ NO RAMO `backup`, NÃO PUBLICADO
 
-**Se você acabou de clonar numa máquina nova, comece aqui.** O clone traz o `main` publicado (`origin/main` 6988ff7e, de
-18/10). O trabalho está 403 commits à frente, em `origin/backup` (69bf076c ou mais novo). Primeiro passo:
-`git fetch origin && git checkout main && git merge --ff-only origin/backup`. Daí em diante vale a regra de sempre: o
+**Se você está numa máquina que não é a de 18/11, comece aqui.** A máquina para onde ele foi já tinha uma cópia do
+projeto, parada havia uns três meses (agosto). ANTES de mexer nela, olhe: `git status` (mudança solta) e
+`git log origin/main..main` depois do `git fetch origin` (commit local que nunca subiu). Se houver qualquer um dos
+dois, pare e conte a ele; não descarte, não force. O mesmo para uma pasta de memória antiga do assistente: a de 18/11
+vale, mas a antiga se guarda ao lado, não se apaga. Um clone novo traz o `main` publicado (`origin/main` 6988ff7e, de
+18/10). O trabalho está 400+ commits à frente, em `origin/backup` (69bf076c ou mais novo). Com a cópia limpa:
+`git fetch origin && git checkout main && git merge --ff-only origin/backup` (se recusar, pare e conte a ele). Daí em diante vale a regra de sempre: o
 `main` local anda, a cópia vai por `git push origin main:backup`, e push no `main` publica o site (só com a palavra
 dele; ele disse *"ainda não"*). Depois `npm ci`; os testes pedem o Chrome instalado. O `npm run done` passou em 69bf076c
 (176 arquivos, 4.096 testes).
