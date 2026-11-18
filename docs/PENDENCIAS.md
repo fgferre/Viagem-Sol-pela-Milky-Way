@@ -16,8 +16,9 @@ dele; ele disse *"ainda não"*). Depois `npm ci`; os testes pedem o Chrome insta
 **O que NÃO veio no clone** (ficou na máquina antiga, fora do git): `capturas/` (36 GB, a única cópia das provas),
 `.cache/` (5 GB de dado bruto baixado: Gaia, galáxia, relevos), `scratchpad/estudos` (3,4 GB, o estudo do NASA Eyes) e
 as cópias de trabalho. Plano e memória citam provas por caminho: se a pasta não existir, pergunte a ele se trouxe;
-não refaça prova para pôr no lugar. A memória do assistente (72 anotações) também não mora neste repositório: ele a
-traz à parte; instale-a na pasta de memória que o seu sistema indicar ANTES de começar, e leia o índice.
+não refaça prova para pôr no lugar. A memória do assistente (73 anotações) também não mora neste repositório: está no repositório PRIVADO dele
+`mar-de-estrelas-memoria` (ramo `notas`, fotografia de 18/11, com um README de instalação). Clone-o, copie a pasta
+`memory` para a pasta de memória que o seu sistema indicar ANTES de começar, e leia o índice.
 
 **O que há no `main` local e ainda não foi ao ar:** a galáxia só de partículas (WebGPU com reserva) como padrão; as
 estrelas com corpo pelo motor do Sol (`PLAN-FORJA.md`: gravidade, giro, vento, manchas e o Grande Escurecimento de
