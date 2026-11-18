@@ -164,6 +164,7 @@ function bancada({
   // 92 julga justamente o que acontece quando ela chega.
   const maquinaDoTempo = {
     jdVivo: EPOCA_JD_TDB,
+    saltos: 0,
     efemeride: comEfemeride ? efemerideDeMentira() : null,
     garantirEfemerides() {},
   };
@@ -809,5 +810,27 @@ describe('a vista dos anéis de Saturno (`ver=aneis`, 16/11): chegar à mão at�
       expect(volta(cameraDepois.lon - cameraAntes.lon - omega * dias * 86400)).toBeCloseTo(0, 6);
       expect(cameraDepois.z).toBeCloseTo(cameraAntes.z, 6);
     }
+  });
+
+  it('um SALTO da data (o AO VIVO que liga, a porta ?jd=) refaz a escolha pelo Sol: a vista não é levada pela órbita através dele', () => {
+    const centro = paraPc(efemerideDeMentira().posicaoHeliocentrica('saturn'));
+    const jd = EPOCA_JD_TDB + 321.08;
+    // quem chega já na data nova
+    const direto = bancada({ comSaturno: true, comEfemeride: true });
+    direto.maquinaDoTempo.jdVivo = jd;
+    direto.escada.focarNoCorpo('saturn', 'aneis');
+    direto.aplicar();
+    const esperado = noAnel(direto.atlas.alvo, centro, jd);
+    // quem chegou na época e viu a data saltar para ela
+    const { escada, atlas, aplicar, maquinaDoTempo } = bancada({ comSaturno: true, comEfemeride: true });
+    escada.focarNoCorpo('saturn', 'aneis');
+    aplicar();
+    maquinaDoTempo.jdVivo = jd;
+    maquinaDoTempo.saltos++;
+    escada.recomporAlvo();
+    aplicar();
+    const depois = noAnel(atlas.alvo, centro, jd);
+    expect(depois.rho).toBeCloseTo(esperado.rho, 3);
+    expect(depois.lon).toBeCloseTo(esperado.lon, 9);
   });
 });

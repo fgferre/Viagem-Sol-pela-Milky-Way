@@ -53,8 +53,25 @@ export class MaquinaDoTempo {
    * O instante PEDIDO, em JD TDB. Nasce na época do retrato — sem isso
    * a cena não seria a mesma de ontem no primeiro quadro. O instante
    * MOSTRADO é este grampeado na janela da tabela (`get tempo`).
+   * Escrever nele é um SALTO (`saltos`); só o relógio andando
+   * (`andarORelogio`) muda a data sem saltar.
    */
-  jdPedido = EPOCA_JD_TDB;
+  get jdPedido(): number {
+    return this.jd;
+  }
+  set jdPedido(jd: number) {
+    this.jd = jd;
+    this.saltos++;
+  }
+  private jd = EPOCA_JD_TDB;
+  /**
+   * QUANTAS VEZES A DATA SALTOU: a porta `?jd=`, a volta à época, o
+   * filme, e o primeiro tick do AO VIVO (o calendário de hoje em vez da
+   * época) — tudo que muda a data sem ser o relógio correndo. Quem segue
+   * algo que anda com o relógio (a vista dos anéis acompanha a órbita do
+   * material) recomeça depois de um salto em vez de ser levado por ele.
+   */
+  saltos = 0;
   /** degrau na escada de taxas (`tempoDoAtlas`) */
   degrau = 0;
   /** sentido do relógio: 0 é parado, e parado é como o Atlas abre */
@@ -295,13 +312,15 @@ export class MaquinaDoTempo {
         const agora = dateToTDB(new Date());
         const grampeado = grampearJd(agora);
         this.naParede = grampeado !== agora;
-        this.jdPedido = grampeado;
+        // o tick de 1 Hz é o relógio correndo; ligar o AO VIVO longe de hoje é salto
+        if (Math.abs(grampeado - this.jd) * 86400 > 2 * PASSO_DO_AO_VIVO_S) this.jdPedido = grampeado;
+        else this.jd = grampeado;
       }
     } else {
       const bruto =
         this.jdPedido + (this.sentidoDoTempo * taxaDoDegrau(this.degrau) * dt) / 86400;
       const grampeado = grampearJd(bruto);
-      this.jdPedido = grampeado;
+      this.jd = grampeado;
       if (grampeado !== bruto) {
         this.naParede = true;
         this.sentidoDoTempo = 0;

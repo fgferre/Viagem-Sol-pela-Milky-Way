@@ -112,3 +112,21 @@ describe('a parede do tempo — o relógio assenta em vez de piscar', () => {
     expect(maquina.naParede).toBe(false);
   });
 });
+
+describe('os saltos da data — o que a vista dos anéis usa para recomeçar em vez de ser levada pela órbita', () => {
+  it('o relógio correndo não salta; ligar o AO VIVO longe de hoje e escrever a data saltam', () => {
+    const { maquina } = bancada(JANELA_EFEMERIDES.jdFim - 3000);
+    const antes = maquina.saltos;
+    maquina.andarNoTempo(1);
+    for (let i = 0; i < 60; i++) maquina.andarORelogio(1 / 60);
+    expect(maquina.saltos).toBe(antes);
+    // o primeiro tick do AO VIVO traz o calendário de hoje: salto; os de 1 Hz depois, não
+    maquina.alternarAoVivo();
+    maquina.andarORelogio(1 / 60);
+    expect(maquina.saltos).toBe(antes + 1);
+    for (let i = 0; i < 180; i++) maquina.andarORelogio(1 / 60);
+    expect(maquina.saltos).toBe(antes + 1);
+    maquina.jdPedido = JANELA_EFEMERIDES.jdFim - 10;
+    expect(maquina.saltos).toBe(antes + 2);
+  });
+});

@@ -258,8 +258,11 @@ export class Escada {
    *  que zera `focoSonda` zera também o cometa */
   private pequeno: { tipo: 'sonda' | 'cometa' | 'exoplaneta'; id: string } | null = null;
   /** a VISTA DOS ANÉIS (`ver === 'aneis'`): a longitude e a face fixadas na
-   *  entrada (`escolherPontoDoAnel`); o relógio recompõe a pose com elas */
+   *  entrada (`escolherPontoDoAnel`); o relógio recompõe a pose com elas.
+   *  Um salto da data (`MaquinaDoTempo.saltos`) refaz a escolha: a vista
+   *  acompanha o material enquanto o relógio corre, não através de um salto */
   private escolhaDoAnel: EscolhaDoPontoDoAnel | null = null;
+  private saltosDaEscolha = 0;
   /** a SONDA em foco — id de `lib/sondas.ts`; `null` também apaga um cometa */
   get focoSonda(): string | null {
     return this.pequeno?.tipo === 'sonda' ? this.pequeno.id : null;
@@ -1381,7 +1384,11 @@ export class Escada {
     const p = posicaoDoGiganteUA(PLANETA_DO_PONTO_DO_ANEL, jd, this.maquinaDoTempo.efemeride);
     if (!p) return null;
     const centro = paraPc(p);
-    this.escolhaDoAnel ??= escolherPontoDoAnel(centro, jd);
+    const saltos = this.maquinaDoTempo.saltos;
+    if (!this.escolhaDoAnel || saltos !== this.saltosDaEscolha) {
+      this.escolhaDoAnel = escolherPontoDoAnel(centro, jd);
+      this.saltosDaEscolha = saltos;
+    }
     return poseDoPontoDoAnel(centro, jd, this.escolhaDoAnel);
   }
 
