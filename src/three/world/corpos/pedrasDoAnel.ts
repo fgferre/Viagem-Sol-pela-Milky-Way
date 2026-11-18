@@ -1503,8 +1503,10 @@ vec2 esteiraNoPonto(float dRho, float dS, float rhoKm) {
 }
 // \`densidadeDaEsteira\` na CPU: Newton ao longo de n até o ponto de origem,
 // guardado no intervalo que aperta, com (δ, ∂δ/∂n) pelo filtro da placa;
-// para quando o passo some
-float densidadeDaEsteira(float dRho, float dS, float rhoKm, float amp) {
+// para quando o passo cai abaixo de \`tolKm\` — quem chama passa uma fração
+// da pegada do pixel ao longo de n: o resto do erro não muda o pixel, perto
+// da lente a régua aperta sozinha e longe afrouxa sozinha
+float densidadeDaEsteira(float dRho, float dS, float rhoKm, float amp, float tolKm) {
   if (amp <= 0.0) return 1.0;
   vec2 n = vec2(EST_NORMAL.x, EST_NORMAL.y / arcoDaEsteira(rhoKm));
   float u = 0.0;
@@ -1517,7 +1519,7 @@ float densidadeDaEsteira(float dRho, float dS, float rhoKm, float amp) {
     else lo = u;
     float u2 = u - (u - e.x) / max(1.0 + e.y, 0.05);
     if (!(u2 > lo && u2 < hi)) u2 = 0.5 * (lo + hi);
-    if (abs(u2 - u) < 1.0e-6) break;
+    if (abs(u2 - u) < tolKm) break;
     u = u2;
   }
   e = amp * esteiraNoPonto(dRho - u * n.x, dS - u * n.y, rhoKm - u * n.x);
@@ -2934,7 +2936,8 @@ void main() {
   float u = ((rhoKm / KM_POR_RAIO - R_INT) / (R_EXT - R_INT)) * U_ESCALA + U_BASE;
   vec4 perfil = (u < 0.0 || u > 1.0) ? vec4(0.0) : textureLod(uMapaAnel, vec2(u, 0.5), 0.0);
   if (amp <= 0.0 || perfil.a < 0.004) discard;
-  float D = densidadeDaEsteira(vGrao.x, vGrao.y, rhoKm, amp);
+  // o Newton para quando o passo cai abaixo de 1/4 da pegada do pixel ao longo de n
+  float D = densidadeDaEsteira(vGrao.x, vGrao.y, rhoKm, amp, max(0.25 * pegada, 1.0e-6));
   float tau = tauDaOpacidade(perfil.a) * regiaoDoAnel(rhoKm).z;
   float d = sqrt(vGrao.x * vGrao.x + vGrao.y * vGrao.y + uZCamKm * uZCamKm);
   float td = tau * (1.0 - cessaoDasPedras(d) * tetoDoCampo(rhoKm, tau, uFracaoDoTier));
