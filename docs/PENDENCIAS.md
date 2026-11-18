@@ -17,6 +17,10 @@ vale, mas a antiga se guarda ao lado, não se apaga. Um clone novo traz o `main`
 dele; ele disse *"ainda não"*). Depois `npm ci`; os testes pedem o Chrome instalado. O `npm run done` passou em 69bf076c
 (176 arquivos, 4.096 testes).
 
+**Depois deste bastão, leia `PLAN-COORDENACAO.md` inteiro, uma vez:** é a passagem da coordenadora anterior (como a
+rodada estava organizada, onde cada frente parou, o que ela disse a ele que não convence, o que prometeu e não
+cumpriu, as decisões dele que não mudam).
+
 **O que NÃO veio no clone** (ficou na máquina antiga, fora do git): `capturas/` (36 GB, a única cópia das provas),
 `.cache/` (5 GB de dado bruto baixado: Gaia, galáxia, relevos), `scratchpad/estudos` (3,4 GB, o estudo do NASA Eyes) e
 as cópias de trabalho. Plano e memória citam provas por caminho: se a pasta não existir, pergunte a ele se trouxe;
