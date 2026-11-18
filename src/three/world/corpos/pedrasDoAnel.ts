@@ -35,9 +35,9 @@
 //
 //  4. O MOVIMENTO, PELA DATA. Cada pedaço gira Ω(ρ)·(t − época) no ângulo,
 //     no raio dele (`fasesDoLadrilho`), e as esteiras andam com o material
-//     (`desvioDaFila`); o giro próprio vem da agitação, que não é medida
-//     (equipartição, `V_AGITACAO_KM_S`). Nada é somado quadro a quadro: a
-//     mesma data dá o mesmo arranjo, tocando ou saltando.
+//     e se refazem (`geracoesDaEsteira`); o giro próprio vem da agitação,
+//     que não é medida (equipartição, `V_AGITACAO_KM_S`). Nada é somado
+//     quadro a quadro: a mesma data dá o mesmo arranjo, tocando ou saltando.
 //
 //  5. A LUZ SE CONSERVA. O disco cede, em cada ponto, a fração de τ das
 //     oitavas resolvidas ali (`cessaoDoDisco`); de dentro da camada o disco
@@ -258,26 +258,44 @@ export function alturaNaCamada(z0: number, aKm: number, hKm: number): number {
  * cobra).
  *
  * O CAMPO MORA NUM LADRILHO PERIÓDICO (`campoDaEsteira`), feito aqui uma vez:
- * (δ, ∂δ/∂n) em `TEXELS_DA_ESTEIRA`² texels de `TEXEL_DA_ESTEIRA_KM`, lidos
- * pela mesma leitura bilinear na CPU, no vértice dos pedaços e na folha do
- * disco — uma fonte só, e o lugar de cada pedaço é o mesmo nos três. O
- * ladrilho fica nas coordenadas do anel: ρ e o arco s·ρref/R0, com ρref o
- * raio de referência de cada anel (`VOLTAS_DA_ESTEIRA`: um número inteiro de
- * ladrilhos por volta, então o campo fecha na volta). Num ρ longe de ρref o
- * arco do ladrilho estica (±12 % no B): o espaçamento e o ângulo andam pouco.
+ * o envelope A e o gradiente dele em `TEXELS_DA_ESTEIRA`² nós de
+ * `TEXEL_DA_ESTEIRA_KM`, lidos pela mesma leitura bilinear na CPU, no vértice
+ * dos pedaços e na folha do disco; a portadora é exata, e a forma da onda
+ * (w, δ, ∂δ/∂n) se calcula no ponto — uma fonte só, e o lugar de cada
+ * pedaço é o mesmo nos três. O ladrilho fica nas coordenadas do anel: ρ e o
+ * arco s·ρref/R0, com ρref o raio de referência de cada anel
+ * (`VOLTAS_DA_ESTEIRA`: um número inteiro de ladrilhos por volta, então o
+ * campo fecha na volta). Num ρ longe de ρref o arco do ladrilho estica
+ * (±12 % no B): o espaçamento e o ângulo andam pouco (de 23,7° no começo do
+ * B a 18,9° no fim; 22,2° a 19,8° no A).
  *
- * O CAMPO ANDA COM O MATERIAL (17/11, Passo 2), sem acumular cisalhamento:
- * o anel é cortado em FILAS de `FILA_DA_ESTEIRA_KM` de raio, e cada fila
- * desliza no arco R0·Ω(ρ do meio dela)·(t − época) (`desvioDaFila`); numa
- * faixa de ±`BANDA_DA_FILA` fila em volta de cada fronteira, as duas filas
- * vizinhas se fundem (o δ e o ∂δ/∂n, em média ponderada). Dentro da fila o
- * pedaço anda no Ω dele e a esteira no do meio: na borda, 1,5·Ω·1 km ≈ 0,2 m/s
- * de deriva entre os dois. O espaçamento e a inclinação medidos ficam.
+ * O CAMPO ANDA COM O MATERIAL (17/11, Passo 2) e SE REFAZ: as esteiras não
+ * são um desenho preso ao material, são estruturas transitórias que se
+ * formam, são cisalhadas e se desfazem, e outras nascem no lugar com a
+ * mesma inclinação (Salo 1995; Salo et al. 2004 — a vida delas é da ordem
+ * do período orbital). Aqui: GERAÇÕES do mesmo campo (`geracoesDaEsteira`),
+ * cada uma com o seu deslocamento fixo no ladrilho e levada pelo fluxo de
+ * Kepler exato desde o nascimento — o ponto (ρ, s) lê a geração n em (ρ,
+ * s − R0·Ω(ρ)·(t − c_n)), contínuo em ρ, sem faixa e sem alcance. Duas vivas
+ * de cada vez, defasadas de meia vida, com pesos cos e sen (soma dos
+ * quadrados 1) sobre o campo LINEAR Z e a derivada dele, antes da forma da
+ * onda: como Z é gaussiano (ruído filtrado sob uma portadora) e as duas
+ * gerações são independentes (a distância radial entre elas no ladrilho é
+ * sempre 0,38 lado, ≫ o núcleo), a mistura tem a mesma estatística de uma
+ * só, e a densidade e o deslocamento saem dela juntos (a fusão que conserva
+ * o histograma, Heitz & Neyret 2018). A VIDA `VIDA_DA_ESTEIRA_S` é a maior
+ * em que o cisalhamento deixa a inclinação na faixa medida: um desenho
+ * cisalhado tem cot φ(t) = cot φ(c_n) + (3/2)·Ω·(t − c_n) (cinemática do
+ * fluxo de Kepler), e no pico do peso (t = c_n) ele é o ladrilho; a conta é
+ * `vidaDaEsteira`. A geração 0 tem o pico na época e deslocamento zero: na
+ * data do filme o campo é o do ladrilho, como antes do giro.
  */
-/** o lado do ladrilho (km) e os texels por lado */
+/** o lado do ladrilho (km) e os nós por lado */
 const LADO_DA_ESTEIRA_KM = 8.192;
-const TEXELS_DA_ESTEIRA = 2048;
+const TEXELS_DA_ESTEIRA = 512;
 export const TEXEL_DA_ESTEIRA_KM = LADO_DA_ESTEIRA_KM / TEXELS_DA_ESTEIRA;
+/** onde fica o nó 0, em nós: o lugar em que o ladrilho de 2048 texels (antes de 17/11) o punha — o filme fica igual */
+const NO_ZERO = 1 / 8;
 /** a portadora numa frequência inteira do ladrilho: (128, 49) ondas por lado, ~60 m a 20,9° */
 const ONDAS_DA_ESTEIRA = [128, 49] as const;
 const ONDAS_NA_NORMAL = Math.hypot(ONDAS_DA_ESTEIRA[0], ONDAS_DA_ESTEIRA[1]);
@@ -292,12 +310,38 @@ const VOLTAS_DA_ESTEIRA = [
 const TROCA_DA_ESTEIRA_KM = 119_000;
 /** km do ladrilho por km de s = R0·θ (ρref/R0), no B e no A */
 const ARCO_DA_ESTEIRA = VOLTAS_DA_ESTEIRA.map((n) => (n * LADO_DA_ESTEIRA_KM) / (2 * Math.PI * R0_KM));
-/** a largura radial de uma fila do campo que anda, km */
-export const FILA_DA_ESTEIRA_KM = 2.048;
-/** a meia largura da fusão entre filas vizinhas, em filas (a faixa toda: 0,5 km) */
-const BANDA_DA_FILA = 0.125;
-/** as filas de cada lado da da câmera que a GPU recebe (±16 km: além disso a folha já se apagou) */
-const FILAS_DA_ESTEIRA = 8;
+/** a inclinação medida das esteiras (graus da direção orbital), no B e no A (Colwell et al. 2006; Hedman et al. 2007) */
+const INCLINACAO_MEDIDA_GRAUS = [
+  [18, 26],
+  [18, 24],
+] as const;
+/**
+ * A VIDA DE UMA GERAÇÃO, s: a maior em que, de −T/2 a +T/2 do pico, o
+ * cisalhamento (cot φ ± (3/2)·Ω·T/2) deixa a inclinação do ladrilho na faixa
+ * medida, em todo raio com esteira. O aperto é o fim do B (18,9° no ladrilho,
+ * 18° medidos): 1320 s, 1/31 do período orbital ali — a esteira de verdade
+ * vive da ordem do período porque a autogravidade a refaz enquanto o
+ * cisalhamento a deita; a daqui só é cisalhada, então a troca é mais cedo.
+ */
+export const VIDA_DA_ESTEIRA_S = vidaDaEsteira();
+function vidaDaEsteira(): number {
+  const cot = (g: number) => 1 / Math.tan((g * Math.PI) / 180);
+  let vida = Infinity;
+  for (let rho = 70_000; rho <= 140_000; rho += 10) {
+    if (regiaoDoAnelCpu(rho).esteira <= 0) continue;
+    const anel = rho < TROCA_DA_ESTEIRA_KM ? 0 : 1;
+    const rhoRef = (VOLTAS_DA_ESTEIRA[anel] * LADO_DA_ESTEIRA_KM) / (2 * Math.PI);
+    const cot0 = ((ONDAS_DA_ESTEIRA[0] / ONDAS_DA_ESTEIRA[1]) * rho) / rhoRef;
+    const [min, max] = INCLINACAO_MEDIDA_GRAUS[anel];
+    const folga = Math.min(cot(min) - cot0, cot0 - cot(max));
+    vida = Math.min(vida, (2 * folga) / (1.5 * omegaDoAnelCpu(rho)));
+  }
+  return Math.floor(vida);
+}
+/** o deslocamento radial de uma geração para a seguinte, em lados (a razão áurea: nunca perto de 0 ou 1) */
+const PASSO_RADIAL_DA_GERACAO = (3 - Math.sqrt(5)) / 2;
+/** e no arco */
+const PASSO_NO_ARCO_DA_GERACAO = Math.SQRT2 - 1;
 /** os meio-eixos do núcleo (km): cruzando e ao longo das cristas */
 const ENVELOPE_XI_KM = 0.12;
 const ENVELOPE_ETA_KM = 0.15;
@@ -383,27 +427,35 @@ function fftInversa(re: Float64Array, im: Float64Array, off: number, passo: numb
 }
 
 /**
- * O LADRILHO DAS ESTEIRAS, uma vez: (δ/λ, ∂δ/∂n) em meia precisão, RG. O
- * envelope A e ∂A/∂n saem de uma FFT de `M`² (o espectro do núcleo em volta
- * de zero, ruído complexo sorteado por `misturar`), lidos em bilinear no
- * texel (o envelope tem 6+ amostras na menor onda); a portadora, exata.
+ * O LADRILHO DAS ESTEIRAS, uma vez, em meia precisão: o envelope A (RG) e o
+ * gradiente dele em km do ladrilho, (∂A/∂x, ∂A/∂y) (RGBA), nos nós de uma
+ * FFT de `TEXELS_DA_ESTEIRA`² (o espectro do núcleo em volta de zero, ruído
+ * complexo sorteado por `misturar`; o gradiente pela própria FFT, exato). A
+ * CPU lê os mesmos números de meia precisão, decodificados uma vez.
  */
-let campo: Uint16Array | null = null;
-function campoDaEsteira(): Uint16Array {
+interface CampoDaEsteira {
+  envelope: Uint16Array;
+  gradiente: Uint16Array;
+  /** (Ar, Ai, ∂xAr, ∂xAi, ∂yAr, ∂yAi) por nó, os de meia precisão */
+  lido: Float32Array;
+}
+let campo: CampoDaEsteira | null = null;
+function campoDaEsteira(): CampoDaEsteira {
   return campo ?? drenar(campoDaEsteiraEmPassos());
 }
-function* campoDaEsteiraEmPassos(): Passos<Uint16Array> {
+function* campoDaEsteiraEmPassos(): Passos<CampoDaEsteira> {
   if (campo) return campo;
-  const N = TEXELS_DA_ESTEIRA;
-  const M = 512;
+  const M = TEXELS_DA_ESTEIRA;
   const L = LADO_DA_ESTEIRA_KM;
   const [nx, ny] = NORMAL_DA_ESTEIRA;
   const sXi = ENVELOPE_XI_KM / Math.sqrt(6);
   const sEta = ENVELOPE_ETA_KM / Math.sqrt(6);
   const ar = new Float64Array(M * M);
   const ai = new Float64Array(M * M);
-  const br = new Float64Array(M * M);
-  const bi = new Float64Array(M * M);
+  const xr = new Float64Array(M * M);
+  const xi = new Float64Array(M * M);
+  const yr = new Float64Array(M * M);
+  const yi = new Float64Array(M * M);
   for (let b = 0; b < M; b++) {
     for (let a = 0; a < M; a++) {
       const fa = (a < M / 2 ? a : a - M) / L;
@@ -419,13 +471,15 @@ function* campoDaEsteiraEmPassos(): Passos<Uint16Array> {
       const k = b * M + a;
       ar[k] = r * Math.cos(fase);
       ai[k] = r * Math.sin(fase);
-      // ∂/∂n: × 2πi·fn
-      br[k] = -2 * Math.PI * fn * ai[k]!;
-      bi[k] = 2 * Math.PI * fn * ar[k]!;
+      // ∂/∂x e ∂/∂y: × 2πi·fa, × 2πi·fb
+      xr[k] = -2 * Math.PI * fa * ai[k]!;
+      xi[k] = 2 * Math.PI * fa * ar[k]!;
+      yr[k] = -2 * Math.PI * fb * ai[k]!;
+      yi[k] = 2 * Math.PI * fb * ar[k]!;
     }
     if ((b & 63) === 63) yield;
   }
-  for (const [re, im] of [[ar, ai], [br, bi]] as const) {
+  for (const [re, im] of [[ar, ai], [xr, xi], [yr, yi]] as const) {
     for (let y = 0; y < M; y++) {
       fftInversa(re, im, y * M, 1, M);
       if ((y & 63) === 63) yield;
@@ -438,157 +492,161 @@ function* campoDaEsteiraEmPassos(): Passos<Uint16Array> {
   let soma = 0;
   for (let k = 0; k < M * M; k++) soma += ar[k]! * ar[k]! + ai[k]! * ai[k]!;
   const esc = Math.sqrt((Z2_MEDIO * M * M) / soma);
-  const kOnda = (2 * Math.PI) / LAMBDA_DA_ESTEIRA_KM;
-  // a portadora, separável: e^{2πi(m·i + p·j)/N}
-  const pr = new Float64Array(2 * N);
-  const pi = new Float64Array(2 * N);
-  for (let i = 0; i < N; i++) {
-    for (let e = 0; e < 2; e++) {
-      const ang = (2 * Math.PI * ONDAS_DA_ESTEIRA[e]! * i) / N;
-      pr[e * N + i] = Math.cos(ang);
-      pi[e * N + i] = Math.sin(ang);
-    }
+  const envelope = new Uint16Array(M * M * 2);
+  const gradiente = new Uint16Array(M * M * 4);
+  const lido = new Float32Array(M * M * 6);
+  const meia = THREE.DataUtils.toHalfFloat;
+  const de = THREE.DataUtils.fromHalfFloat;
+  for (let k = 0; k < M * M; k++) {
+    const v = [ar[k]!, ai[k]!, xr[k]!, xi[k]!, yr[k]!, yi[k]!].map((x) => meia(esc * x));
+    envelope.set(v.slice(0, 2), 2 * k);
+    gradiente.set(v.slice(2), 4 * k);
+    for (let c = 0; c < 6; c++) lido[6 * k + c] = de(v[c]!);
+    if ((k & 16383) === 16383) yield;
   }
-  const dado = new Uint16Array(N * N * 2);
-  const passo = N / M;
-  for (let j = 0; j < N; j++) {
-    const y0 = Math.floor(j / passo);
-    const fy = j / passo - y0;
-    const y1 = (y0 + 1) % M;
-    for (let i = 0; i < N; i++) {
-      const x0 = Math.floor(i / passo);
-      const fx = i / passo - x0;
-      const x1 = (x0 + 1) % M;
-      const k00 = y0 * M + x0;
-      const k10 = y0 * M + x1;
-      const k01 = y1 * M + x0;
-      const k11 = y1 * M + x1;
-      const w00 = (1 - fx) * (1 - fy);
-      const w10 = fx * (1 - fy);
-      const w01 = (1 - fx) * fy;
-      const w11 = fx * fy;
-      const lin = (v: Float64Array) => esc * (v[k00]! * w00 + v[k10]! * w10 + v[k01]! * w01 + v[k11]! * w11);
-      const Ar = lin(ar);
-      const Ai = lin(ai);
-      const Br = lin(br) - kOnda * Ai;
-      const Bi = lin(bi) + kOnda * Ar;
-      const cr = pr[i]! * pr[N + j]! - pi[i]! * pi[N + j]!;
-      const ci = pr[i]! * pi[N + j]! + pi[i]! * pr[N + j]!;
-      // Z e a derivada dele ao longo de n (dc, ds)
-      const zc = Ar * cr - Ai * ci;
-      const zs = Ar * ci + Ai * cr;
-      const dc = Br * cr - Bi * ci;
-      const ds = Br * ci + Bi * cr;
-      // w = γ·Z·|Z|/(|Z|² + E0) e a derivada dela ao longo de n; δ = (2/k)·arg 1/(1 − w)
-      const z2 = zc * zc + zs * zs;
-      const A = z2 + PISO_DA_AMPLITUDE;
-      const r = Math.max(Math.sqrt(z2), 1e-9);
-      const dr = (zc * dc + zs * ds) / r;
-      const g = GAMA_DA_ESTEIRA / A;
-      const f = dr / r - (2 * r * dr) / A;
-      const wr = g * r * zc;
-      const wi = g * r * zs;
-      const dwr = g * r * (dc + zc * f);
-      const dwi = g * r * (ds + zs * f);
-      const um = 1 - wr;
-      const o = 2 * (j * N + i);
-      dado[o] = THREE.DataUtils.toHalfFloat(((2 / kOnda) * Math.atan2(wi, um)) / LAMBDA_DA_ESTEIRA_KM);
-      dado[o + 1] = THREE.DataUtils.toHalfFloat(((2 / kOnda) * (dwi * um + dwr * wi)) / (um * um + wi * wi));
-    }
-    if ((j & 15) === 15) yield;
-  }
-  campo ??= dado;
+  campo ??= { envelope, gradiente, lido };
   return campo;
 }
 
-/** a textura do ladrilho (a GPU lê os mesmos números da CPU) */
-function texturaDaEsteira(): THREE.DataTexture {
+/** as texturas do ladrilho, o envelope e o gradiente (a GPU lê os mesmos números da CPU) */
+function texturasDaEsteira(): [THREE.DataTexture, THREE.DataTexture] {
   const N = TEXELS_DA_ESTEIRA;
-  const tex = new THREE.DataTexture(campoDaEsteira(), N, N, THREE.RGFormat, THREE.HalfFloatType);
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.magFilter = THREE.LinearFilter;
-  tex.minFilter = THREE.LinearFilter;
-  tex.generateMipmaps = false;
-  tex.needsUpdate = true;
-  return tex;
+  const { envelope, gradiente } = campoDaEsteira();
+  return [
+    new THREE.DataTexture(envelope, N, N, THREE.RGFormat, THREE.HalfFloatType),
+    new THREE.DataTexture(gradiente, N, N, THREE.RGBAFormat, THREE.HalfFloatType),
+  ].map((tex) => {
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.magFilter = THREE.LinearFilter;
+    tex.minFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    tex.needsUpdate = true;
+    return tex;
+  }) as [THREE.DataTexture, THREE.DataTexture];
 }
 
-/** o ponto (ρ, s = R0·θ) no ladrilho, em ladrilhos (radial, arco) */
-function noLadrilho(rhoKm: number, sKm: number): [number, number] {
-  const anel = rhoKm < TROCA_DA_ESTEIRA_KM ? 0 : 1;
-  return [rhoKm / LADO_DA_ESTEIRA_KM, (sKm * ARCO_DA_ESTEIRA[anel]!) / LADO_DA_ESTEIRA_KM];
-}
+const fracDe = (x: number) => x - Math.floor(x);
 
 /**
- * (δ km, ∂δ/∂n) no ponto do ladrilho (em ladrilhos), sem a força: a leitura
- * bilinear dos texels — o gêmeo de `deslocamentoNoLadrilho` no GLSL (que só
- * lê o δ, com `texelFetch`)
+ * O envelope (e, com `canais` = 6, o gradiente) no ponto p do ladrilho (em
+ * lados), em `out`: a leitura bilinear dos nós — o gêmeo de `envelopeExato`
+ * no GLSL (que só lê o envelope, com `texelFetch`)
  */
-function lerLadrilho(u: number, v: number): [number, number] {
+function lerEnvelope(pu: number, pv: number, canais: 2 | 6, out: Float64Array) {
   const N = TEXELS_DA_ESTEIRA;
-  const dado = campoDaEsteira();
-  const px = (u - Math.floor(u)) * N - 0.5;
-  const py = (v - Math.floor(v)) * N - 0.5;
+  const { lido } = campoDaEsteira();
+  const px = fracDe(pu) * N - NO_ZERO;
+  const py = fracDe(pv) * N - NO_ZERO;
   const i0 = Math.floor(px);
   const j0 = Math.floor(py);
   const fx = px - i0;
   const fy = py - j0;
-  const i1 = (i0 + 1 + N) % N;
-  const j1 = (j0 + 1 + N) % N;
-  const ia = (i0 + N) % N;
-  const ja = (j0 + N) % N;
-  const h = THREE.DataUtils.fromHalfFloat;
-  const t = (i: number, j: number, c: number) => h(dado[2 * (j * N + i) + c]!);
-  const lin = (c: number) =>
-    (t(ia, ja, c) * (1 - fx) + t(i1, ja, c) * fx) * (1 - fy) + (t(ia, j1, c) * (1 - fx) + t(i1, j1, c) * fx) * fy;
-  return [lin(0) * LAMBDA_DA_ESTEIRA_KM, lin(1)];
+  const ia = (i0 + N) & (N - 1);
+  const ja = (j0 + N) & (N - 1);
+  const i1 = (ia + 1) & (N - 1);
+  const j1 = (ja + 1) & (N - 1);
+  const t = (i: number, j: number, c: number) => lido[6 * (j * N + i) + c]!;
+  for (let c = 0; c < canais; c++)
+    out[c] = (t(ia, ja, c) * (1 - fx) + t(i1, ja, c) * fx) * (1 - fy) + (t(ia, j1, c) * (1 - fx) + t(i1, j1, c) * fx) * fy;
+}
+
+/** uma geração viva das esteiras: o deslocamento dela no ladrilho (radial, arco; em lados), o peso e t − c, os s desde o pico */
+interface GeracaoDaEsteira {
+  du: number;
+  dv: number;
+  peso: number;
+  desdeOPico: number;
 }
 
 /**
- * O DESVIO DA FILA `j` (a de raio [j, j + 1)·`FILA_DA_ESTEIRA_KM`) no
- * instante `tS` (s desde a época): o arco R0·Ω(ρ do meio)·tS, em ladrilhos
- * da esteira e reduzido a [0, 1), no B e no A. R0·Ω·tS·arco/lado = n·voltas
- * com n = Ω·tS/2π as voltas da órbita e `VOLTAS_DA_ESTEIRA` inteiro: só a
- * fração de n importa, e a conta fica em milímetros em dupla precisão.
+ * AS DUAS GERAÇÕES VIVAS `tS` s depois da época: a n, com o pico em c_n =
+ * n·T/2, e a n + 1, com pesos cos e sen de (π/2)·(t − c_n)/(T/2) — a soma dos
+ * quadrados é 1, e cada uma vive de c − T/2 a c + T/2. A geração k fica
+ * deslocada (k·0,382, k·0,414) lados no ladrilho: a 0 não se desloca.
  */
-export function desvioDaFila(j: number, tS: number): [number, number] {
-  if (tS === 0) return [0, 0];
-  const n = (omegaDoAnelCpu((j + 0.5) * FILA_DA_ESTEIRA_KM) * tS) / (2 * Math.PI);
-  const f = n - Math.floor(n);
-  const fr = (x: number) => x - Math.floor(x);
-  return [fr(f * VOLTAS_DA_ESTEIRA[0]), fr(f * VOLTAS_DA_ESTEIRA[1])];
+export function geracoesDaEsteira(tS: number): [GeracaoDaEsteira, GeracaoDaEsteira] {
+  const meia = VIDA_DA_ESTEIRA_S / 2;
+  const n = Math.floor(tS / meia);
+  const f = tS / meia - n;
+  const ger = (k: number, peso: number, desdeOPico: number) => ({
+    du: fracDe(k * PASSO_RADIAL_DA_GERACAO),
+    dv: fracDe(k * PASSO_NO_ARCO_DA_GERACAO),
+    peso,
+    desdeOPico,
+  });
+  return [ger(n, Math.cos((Math.PI / 2) * f), f * meia), ger(n + 1, Math.sin((Math.PI / 2) * f), (f - 1) * meia)];
 }
 
-/** as duas filas do ponto ρ e a fusão: (desvio da de baixo, da de cima, peso da de cima), no anel do ponto */
-function filaDaEsteira(rhoKm: number, tS: number): [number, number, number] {
-  const x = rhoKm / FILA_DA_ESTEIRA_KM;
-  const m = Math.floor(x + 0.5);
-  const anel = rhoKm < TROCA_DA_ESTEIRA_KM ? 0 : 1;
-  return [desvioDaFila(m - 1, tS)[anel], desvioDaFila(m, tS)[anel], suave(-BANDA_DA_FILA, BANDA_DA_FILA, x - m)];
+/** o número de onda da portadora ao longo de n, rad/km */
+const K_DA_ONDA = (2 * Math.PI) / LAMBDA_DA_ESTEIRA_KM;
+/** a fase da portadora no nó 0, em voltas */
+const FASE_DO_NO_ZERO = ((ONDAS_DA_ESTEIRA[0] + ONDAS_DA_ESTEIRA[1]) * NO_ZERO) / TEXELS_DA_ESTEIRA;
+
+/**
+ * A FORMA DA ONDA no campo linear (Z, ∂Z/∂n): (δ km, ∂δ/∂n), δ = (2/k)·arg
+ * 1/(1 − w), w = γ·Z·|Z|/(|Z|² + E0), sem a força — o gêmeo de `formaDaOnda`
+ * no GLSL
+ */
+function formaDaOnda(zc: number, zs: number, dc: number, ds: number): [number, number] {
+  const z2 = zc * zc + zs * zs;
+  const A = z2 + PISO_DA_AMPLITUDE;
+  const r = Math.max(Math.sqrt(z2), 1e-9);
+  const dr = (zc * dc + zs * ds) / r;
+  const g = GAMA_DA_ESTEIRA / A;
+  const f = dr / r - (2 * r * dr) / A;
+  const wr = g * r * zc;
+  const wi = g * r * zs;
+  const dwr = g * r * (dc + zc * f);
+  const dwi = g * r * (ds + zs * f);
+  const um = 1 - wr;
+  return [(2 / K_DA_ONDA) * Math.atan2(wi, um), ((2 / K_DA_ONDA) * (dwi * um + dwr * wi)) / (um * um + wi * wi)];
 }
 
-/** (δ, ∂δ/∂n) do ladrilho nas filas dadas (`filaDaEsteira`): o gêmeo de `lerEsteira` no GLSL */
-function lerNasFilas(u: number, v: number, fila: readonly [number, number, number]): [number, number] {
-  const [d0, d1, w] = fila;
-  if (w <= 0 || d0 === d1) return lerLadrilho(u, v - d0);
-  if (w >= 1) return lerLadrilho(u, v - d1);
-  const a = lerLadrilho(u, v - d0);
-  const b = lerLadrilho(u, v - d1);
-  return [a[0] + (b[0] - a[0]) * w, a[1] + (b[1] - a[1]) * w];
-}
-
-/** (δ, ∂δ/∂n) da esteira no ponto (ρ, s = R0·θ), km, com a força da região, nas filas dadas */
-function esteiraNasFilas(rhoKm: number, sKm: number, fila: readonly [number, number, number]): [number, number] {
+const lidoDoEnvelope = new Float64Array(6);
+/**
+ * (δ km, ∂δ/∂n) da esteira no ponto (ρ, s = R0·θ), com a força da região, nas
+ * gerações dadas: cada uma lida em (ρ, s − R0·Ω(ρ)·(t − c)) e deslocada, Z e
+ * ∂Z/∂n somados com os pesos, e a forma da onda na soma. ∂Z/∂n é ao longo da
+ * normal FIXA n (para onde o pedaço anda), no campo cisalhado: o arco do
+ * ladrilho anda (3/2)·L·m·V·n_ρ/ρ por km de n a mais. Sem `comDerivada`,
+ * ∂δ/∂n sai 0.
+ */
+function esteiraNasGeracoes(rhoKm: number, sKm: number, geracoes: readonly GeracaoDaEsteira[], comDerivada: boolean): [number, number] {
   const amp = regiaoDoAnelCpu(rhoKm).esteira;
   if (amp <= 0) return [0, 0];
-  const [u, v] = noLadrilho(rhoKm, sKm);
-  const [d, dn] = lerNasFilas(u, v, fila);
-  return [amp * d, amp * dn];
-}
-
-/** (δ, ∂δ/∂n) da esteira no ponto (ρ, s = R0·θ), km, `tS` s depois da época */
-function esteiraEm(rhoKm: number, sKm: number, tS: number): [number, number] {
-  return esteiraNasFilas(rhoKm, sKm, filaDaEsteira(rhoKm, tS));
+  const anel = rhoKm < TROCA_DA_ESTEIRA_KM ? 0 : 1;
+  const L = LADO_DA_ESTEIRA_KM;
+  const [nx, ny] = NORMAL_DA_ESTEIRA;
+  const u = rhoKm / L;
+  const v = (sKm * ARCO_DA_ESTEIRA[anel]!) / L;
+  const omega = omegaDoAnelCpu(rhoKm);
+  const e = lidoDoEnvelope;
+  let zc = 0;
+  let zs = 0;
+  let dc = 0;
+  let ds = 0;
+  for (const g of geracoes) {
+    if (g.peso === 0) continue;
+    // o arco que o fluxo de Kepler levou desde o pico, em lados: n·voltas, n as voltas da órbita
+    const mV = ((omega * g.desdeOPico) / (2 * Math.PI)) * VOLTAS_DA_ESTEIRA[anel];
+    const pu = fracDe(u + g.du);
+    const pv = fracDe(v + g.dv - mV);
+    lerEnvelope(pu, pv, comDerivada ? 6 : 2, e);
+    const psi = 2 * Math.PI * (ONDAS_DA_ESTEIRA[0] * pu + ONDAS_DA_ESTEIRA[1] * pv - FASE_DO_NO_ZERO);
+    const c = Math.cos(psi);
+    const s = Math.sin(psi);
+    zc += g.peso * (e[0]! * c - e[1]! * s);
+    zs += g.peso * (e[0]! * s + e[1]! * c);
+    if (!comDerivada) continue;
+    const ey = ny + (1.5 * L * mV * nx) / rhoKm;
+    const kn = ((2 * Math.PI) / L) * (ONDAS_DA_ESTEIRA[0] * nx + ONDAS_DA_ESTEIRA[1] * ey);
+    const br = nx * e[2]! + ey * e[4]! - kn * e[1]!;
+    const bi = nx * e[3]! + ey * e[5]! + kn * e[0]!;
+    dc += g.peso * (br * c - bi * s);
+    ds += g.peso * (br * s + bi * c);
+  }
+  const [d, dn] = formaDaOnda(zc, zs, dc, ds);
+  return [amp * d, comDerivada ? amp * dn : 0];
 }
 
 /** o passo em s de 1 km do ladrilho ao longo de n (o arco do ladrilho → R0·θ) */
@@ -598,33 +656,38 @@ function arcoDaNormal(rhoKm: number): number {
 
 /** o ESTIRAMENTO do mapa da esteira no lugar sorteado (ρ, s): 1 + ∂δ/∂n — o mapa é inversível se for > 0 */
 export function estiramentoDaEsteira(sKm: number, rhoKm: number, tS = 0): number {
-  return 1 + esteiraEm(rhoKm, sKm, tS)[1];
+  return 1 + esteiraNasGeracoes(rhoKm, sKm, geracoesDaEsteira(tS), true)[1];
 }
 
 /** O DESLOCAMENTO de um pedaço cujo lugar sorteado é (ρ, s), `tS` s depois da época: (Δρ, Δs em R0·θ), km */
 export function deslocamentoDaEsteira(sKm: number, rhoKm: number, tS = 0): [number, number] {
-  const [d] = esteiraEm(rhoKm, sKm, tS);
+  const [d] = esteiraNasGeracoes(rhoKm, sKm, geracoesDaEsteira(tS), false);
   return [d * NORMAL_DA_ESTEIRA[0], d * arcoDaNormal(rhoKm)];
 }
 
 /**
  * A DENSIDADE DAS ESTEIRAS no ponto (s = R0·θ, ρ), de média 1: o ponto de
  * origem pelo inverso do deslocamento (Newton ao longo de n — o mapa é
- * monotônico, 1 + ∂δ/∂n > 0), e a densidade 1/(1 + ∂δ/∂n) lá. Vale 1 fora
- * do A e do B. As filas são as do ponto (como na folha da GPU).
+ * monotônico, 1 + ∂δ/∂n > 0, então a raiz fica no intervalo [lo, hi] que
+ * cada passo aperta, e o passo que sai dele vira bissecção), e a densidade
+ * 1/(1 + ∂δ/∂n) lá. Vale 1 fora do A e do B.
  */
 export function densidadeDaEsteira(sKm: number, rhoKm: number, tS = 0): number {
   if (regiaoDoAnelCpu(rhoKm).esteira <= 0) return 1;
-  const fila = filaDaEsteira(rhoKm, tS);
+  const geracoes = geracoesDaEsteira(tS);
   const nr = NORMAL_DA_ESTEIRA[0];
   const ns = arcoDaNormal(rhoKm);
   let u = 0;
+  let lo = -DESLOCAMENTO_MAXIMO_KM;
+  let hi = DESLOCAMENTO_MAXIMO_KM;
   for (let k = 0; k < 8; k++) {
-    const [d, dnk] = esteiraNasFilas(rhoKm - u * nr, sKm - u * ns, fila);
+    const [d, dnk] = esteiraNasGeracoes(rhoKm - u * nr, sKm - u * ns, geracoes, true);
+    if (u > d) hi = u;
+    else lo = u;
     u -= (u - d) / (1 + dnk);
-    u = Math.max(-DESLOCAMENTO_MAXIMO_KM, Math.min(DESLOCAMENTO_MAXIMO_KM, u));
+    if (!(u > lo && u < hi)) u = 0.5 * (lo + hi);
   }
-  return 1 / (1 + esteiraNasFilas(rhoKm - u * nr, sKm - u * ns, fila)[1]);
+  return 1 / (1 + esteiraNasGeracoes(rhoKm - u * nr, sKm - u * ns, geracoes, true)[1]);
 }
 
 /** as fileiras do ladrilho de cada oitava que a janela alcança: a da câmera e uma de cada lado */
@@ -1329,86 +1392,135 @@ float presencasDaSombra(float d, float gp[${OITAVAS_DA_SOMBRA}]) {
 
 /**
  * AS ESTEIRAS EM GLSL, relativas à câmera: `uEstCam` = (a câmera no
- * ladrilho: radial, arco no B, arco no A; a câmera na fila do campo que anda
- * — as frações, da CPU em dupla precisão), e `uEstFila` os desvios (B, A) das
- * filas da câmera − `FILAS_DA_ESTEIRA` à + (`desvioDaFila`). O vértice dos
- * pedaços lê o δ pela mesma leitura bilinear da CPU (`texelFetch` nos quatro
- * texels: o lugar do pedaço é o da CPU); a folha lê (δ, ∂δ/∂n) pelo filtro
- * da placa.
+ * ladrilho: radial, arco no B, arco no A — as frações, da CPU em dupla
+ * precisão; e o ρ da câmera, km), e por geração (`geracoesDaEsteira`)
+ * `uEstGer` = (deslocamento radial, peso, desvio do arco no B, no A) — o
+ * desvio é frac(m·V − dv) no raio da câmera, m = Ω·(t − c)/2π — e `uEstGiro`
+ * os m·V (B, A) das duas, para a série do Ω em volta da câmera: m(ρ)·V =
+ * m·V·(1 − 1,5x + 1,875x²), x = Δρ/ρ (o resto, < 3 mm a 40 km). O vértice
+ * dos pedaços lê o envelope pela mesma leitura bilinear da CPU
+ * (`texelFetch` nos quatro nós: o lugar do pedaço é o da CPU); a folha lê
+ * envelope e gradiente pelo filtro da placa.
  */
 const GLSL_ESTEIRA = /* glsl */ `
 uniform highp sampler2D uEsteira;
+uniform highp sampler2D uEsteiraD;
 uniform vec4 uEstCam;
-uniform vec2 uEstFila[${2 * FILAS_DA_ESTEIRA + 1}];
-const float EST_FILA = ${glslF(FILA_DA_ESTEIRA_KM)};
-const float EST_BANDA = ${glslF(BANDA_DA_FILA)};
-const int EST_FILAS = ${FILAS_DA_ESTEIRA};
+uniform vec4 uEstGer[2];
+uniform vec4 uEstGiro;
 const float LAMBDA = ${glslF(LAMBDA_DA_ESTEIRA_KM)};
 const float EST_LADO = ${glslF(LADO_DA_ESTEIRA_KM)};
 const int EST_N = ${TEXELS_DA_ESTEIRA};
+const float EST_NO_ZERO = ${glslF(NO_ZERO)};
+const vec2 EST_ONDAS = vec2(${glslF(ONDAS_DA_ESTEIRA[0])}, ${glslF(ONDAS_DA_ESTEIRA[1])});
+const float EST_FASE0 = ${glslF(FASE_DO_NO_ZERO)};
 const vec2 EST_NORMAL = vec2(${glslF(NORMAL_DA_ESTEIRA[0])}, ${glslF(NORMAL_DA_ESTEIRA[1])});
 const float EST_TROCA = ${glslF(TROCA_DA_ESTEIRA_KM)};
 const vec2 EST_ARCO = vec2(${glslF(ARCO_DA_ESTEIRA[0]!)}, ${glslF(ARCO_DA_ESTEIRA[1]!)});
+const float EST_GAMA = ${glslF(GAMA_DA_ESTEIRA)};
+const float EST_E0 = ${glslF(PISO_DA_AMPLITUDE)};
+const float EST_2_K = ${glslF(2 / K_DA_ONDA)};
 // km do ladrilho por km de s = R0·θ no raio rhoKm (\`ARCO_DA_ESTEIRA\`)
 float arcoDaEsteira(float rhoKm) {
   return rhoKm < EST_TROCA ? EST_ARCO.x : EST_ARCO.y;
 }
-// (dRho, dS) km da câmera no ladrilho, em ladrilhos (\`noLadrilho\` na CPU)
-vec2 noLadrilho(float dRho, float dS, float rhoKm) {
-  bool b = rhoKm < EST_TROCA;
-  return vec2(uEstCam.x + dRho / EST_LADO, (b ? uEstCam.y : uEstCam.z) + dS * (b ? EST_ARCO.x : EST_ARCO.y) / EST_LADO);
+vec2 estMul(vec2 a, vec2 b) {
+  return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
 }
-// o δ km no ponto do ladrilho, sem a força (\`lerLadrilho\` na CPU)
-float deslocamentoNoLadrilho(vec2 t) {
-  vec2 p = fract(t) * float(EST_N) - 0.5;
-  vec2 c = floor(p);
-  vec2 f = p - c;
+// o ponto a (dRho, dS) km da câmera na geração g, em lados do ladrilho, e o
+// m·V dela no raio do ponto (\`esteiraNasGeracoes\` na CPU)
+vec2 naGeracao(int g, float dRho, float dS, float rhoKm, out float mV) {
+  vec4 G = uEstGer[g];
+  bool b = rhoKm < EST_TROCA;
+  float mVc = g == 0 ? (b ? uEstGiro.x : uEstGiro.y) : (b ? uEstGiro.z : uEstGiro.w);
+  float x = dRho / uEstCam.w;
+  float dm = mVc * x * (-1.5 + 1.875 * x);
+  mV = mVc + dm;
+  return vec2(uEstCam.x + dRho / EST_LADO + G.x,
+    (b ? uEstCam.y - G.z : uEstCam.z - G.w) + dS * (b ? EST_ARCO.x : EST_ARCO.y) / EST_LADO - dm);
+}
+// a portadora e^{iψ} no ponto do ladrilho
+vec2 portadora(vec2 p) {
+  float a = 6.283185307 * fract(dot(EST_ONDAS, fract(p)) - EST_FASE0);
+  return vec2(cos(a), sin(a));
+}
+// o envelope no ponto do ladrilho, pelos quatro nós (\`lerEnvelope\` na CPU)
+vec2 envelopeExato(vec2 p) {
+  vec2 q = fract(p) * float(EST_N) - EST_NO_ZERO;
+  vec2 c = floor(q);
+  vec2 f = q - c;
   ivec2 i0 = (ivec2(c) + EST_N) & (EST_N - 1);
   ivec2 i1 = (i0 + 1) & (EST_N - 1);
-  float a = mix(texelFetch(uEsteira, i0, 0).r, texelFetch(uEsteira, ivec2(i1.x, i0.y), 0).r, f.x);
-  float b = mix(texelFetch(uEsteira, ivec2(i0.x, i1.y), 0).r, texelFetch(uEsteira, i1, 0).r, f.x);
-  return mix(a, b, f.y) * LAMBDA;
+  vec2 a = mix(texelFetch(uEsteira, i0, 0).rg, texelFetch(uEsteira, ivec2(i1.x, i0.y), 0).rg, f.x);
+  vec2 b = mix(texelFetch(uEsteira, ivec2(i0.x, i1.y), 0).rg, texelFetch(uEsteira, i1, 0).rg, f.x);
+  return mix(a, b, f.y);
 }
-// as duas filas do ponto a dRho da câmera e a fusão (\`filaDaEsteira\` na
-// CPU): (desvio da de baixo, da de cima, peso da de cima), no anel do ponto;
-// com os dois desvios iguais (na época, todos zero) só a de baixo conta
-vec3 filaDaEsteira(float dRho, float rhoKm) {
-  float x = uEstCam.w + dRho / EST_FILA;
-  float m = floor(x + 0.5);
-  int i = int(m) + EST_FILAS;
-  vec2 a = uEstFila[clamp(i - 1, 0, 2 * EST_FILAS)];
-  vec2 b = uEstFila[clamp(i, 0, 2 * EST_FILAS)];
-  bool noB = rhoKm < EST_TROCA;
-  float d0 = noB ? a.x : a.y;
-  float d1 = noB ? b.x : b.y;
-  return vec3(d0, d1, d0 == d1 ? 0.0 : smoothstep(-EST_BANDA, EST_BANDA, x - m));
+// (δ km, ∂δ/∂n) do campo linear (Z, ∂Z/∂n), sem a força (\`formaDaOnda\` na CPU)
+vec2 formaDaOnda(vec2 z, vec2 dz) {
+  float z2 = dot(z, z);
+  float A = z2 + EST_E0;
+  float r = max(sqrt(z2), 1.0e-9);
+  float dr = dot(z, dz) / r;
+  float g = EST_GAMA / A;
+  float f = dr / r - 2.0 * r * dr / A;
+  vec2 w = g * r * z;
+  vec2 dw = g * r * (dz + z * f);
+  float um = 1.0 - w.x;
+  return EST_2_K * vec2(atan(w.y, um), (dw.y * um + dw.x * w.y) / (um * um + w.y * w.y));
 }
-// o δ km no ponto do ladrilho, nas filas dadas, sem a força (\`lerNasFilas\` na CPU)
-float deslocamentoNasFilas(vec2 t, vec3 fila) {
-  if (fila.z <= 0.0) return deslocamentoNoLadrilho(t - vec2(0.0, fila.x));
-  if (fila.z >= 1.0) return deslocamentoNoLadrilho(t - vec2(0.0, fila.y));
-  return mix(deslocamentoNoLadrilho(t - vec2(0.0, fila.x)), deslocamentoNoLadrilho(t - vec2(0.0, fila.y)), fila.z);
+// o δ km a (dRho, dS) da câmera, sem a força: as duas gerações no campo linear
+float deslocamentoDaEsteira(float dRho, float dS, float rhoKm) {
+  vec2 z = vec2(0.0);
+  for (int g = 0; g < 2; g++) {
+    float peso = uEstGer[g].y;
+    if (peso <= 0.0) continue;
+    float mV;
+    vec2 p = naGeracao(g, dRho, dS, rhoKm, mV);
+    z += peso * estMul(envelopeExato(p), portadora(p));
+  }
+  return formaDaOnda(z, vec2(0.0)).x;
 }
-// (δ/λ, ∂δ/∂n) pelo filtro da placa, nas filas dadas
-vec2 lerEsteira(vec2 t, vec3 fila) {
-  if (fila.z <= 0.0) return textureLod(uEsteira, t - vec2(0.0, fila.x), 0.0).rg;
-  if (fila.z >= 1.0) return textureLod(uEsteira, t - vec2(0.0, fila.y), 0.0).rg;
-  return mix(textureLod(uEsteira, t - vec2(0.0, fila.x), 0.0).rg, textureLod(uEsteira, t - vec2(0.0, fila.y), 0.0).rg, fila.z);
+// (δ km, ∂δ/∂n) a (dRho, dS) da câmera, sem a força, pelo filtro da placa
+vec2 esteiraNoPonto(float dRho, float dS, float rhoKm) {
+  vec2 z = vec2(0.0);
+  vec2 dz = vec2(0.0);
+  for (int g = 0; g < 2; g++) {
+    float peso = uEstGer[g].y;
+    if (peso <= 0.0) continue;
+    float mV;
+    vec2 p = naGeracao(g, dRho, dS, rhoKm, mV);
+    vec2 q = p + (0.5 - EST_NO_ZERO) / float(EST_N);
+    vec2 A = textureLod(uEsteira, q, 0.0).rg;
+    vec4 G = textureLod(uEsteiraD, q, 0.0);
+    vec2 c = portadora(p);
+    float ey = EST_NORMAL.y + 1.5 * EST_LADO * mV * EST_NORMAL.x / rhoKm;
+    float kn = 6.283185307 / EST_LADO * (EST_ONDAS.x * EST_NORMAL.x + EST_ONDAS.y * ey);
+    vec2 B = EST_NORMAL.x * G.xy + ey * G.zw + kn * vec2(-A.y, A.x);
+    z += peso * estMul(A, c);
+    dz += peso * estMul(B, c);
+  }
+  return formaDaOnda(z, dz);
 }
 // \`densidadeDaEsteira\` na CPU: Newton ao longo de n até o ponto de origem,
-// com (δ, ∂δ/∂n) pelo filtro da placa; para quando o passo some
-float densidadeDaEsteira(vec2 t, float amp, vec3 fila) {
+// guardado no intervalo que aperta, com (δ, ∂δ/∂n) pelo filtro da placa;
+// para quando o passo some
+float densidadeDaEsteira(float dRho, float dS, float rhoKm, float amp) {
   if (amp <= 0.0) return 1.0;
-  vec2 nT = EST_NORMAL / EST_LADO;
+  vec2 n = vec2(EST_NORMAL.x, EST_NORMAL.y / arcoDaEsteira(rhoKm));
   float u = 0.0;
+  float lo = ${glslF(-DESLOCAMENTO_MAXIMO_KM)};
+  float hi = ${glslF(DESLOCAMENTO_MAXIMO_KM)};
   vec2 e;
   for (int k = 0; k < 6; k++) {
-    e = amp * lerEsteira(t - u * nT, fila) * vec2(LAMBDA, 1.0);
-    float u2 = clamp(u - (u - e.x) / max(1.0 + e.y, 0.05), ${glslF(-DESLOCAMENTO_MAXIMO_KM)}, ${glslF(DESLOCAMENTO_MAXIMO_KM)});
+    e = amp * esteiraNoPonto(dRho - u * n.x, dS - u * n.y, rhoKm - u * n.x);
+    if (u > e.x) hi = u;
+    else lo = u;
+    float u2 = u - (u - e.x) / max(1.0 + e.y, 0.05);
+    if (!(u2 > lo && u2 < hi)) u2 = 0.5 * (lo + hi);
     if (abs(u2 - u) < 1.0e-6) break;
     u = u2;
   }
-  e = amp * lerEsteira(t - u * nT, fila);
+  e = amp * esteiraNoPonto(dRho - u * n.x, dS - u * n.y, rhoKm - u * n.x);
   return 1.0 / max(1.0 + e.y, 0.05);
 }
 `;
@@ -1680,7 +1792,7 @@ bool lugar(int o, int i, ivec2 img) {
 
   // A ESTEIRA: o pedaço anda ao longo da normal das cristas
   if (reg.y > 0.0) {
-    float del = reg.y * deslocamentoNasFilas(noLadrilho(dRho, dS, rhoKm), filaDaEsteira(dRho, rhoKm));
+    float del = reg.y * deslocamentoDaEsteira(dRho, dS, rhoKm);
     float arco = arcoDaEsteira(rhoKm);
     dRho += del * EST_NORMAL.x;
     dS += del * EST_NORMAL.y / arco;
@@ -2822,7 +2934,7 @@ void main() {
   float u = ((rhoKm / KM_POR_RAIO - R_INT) / (R_EXT - R_INT)) * U_ESCALA + U_BASE;
   vec4 perfil = (u < 0.0 || u > 1.0) ? vec4(0.0) : textureLod(uMapaAnel, vec2(u, 0.5), 0.0);
   if (amp <= 0.0 || perfil.a < 0.004) discard;
-  float D = densidadeDaEsteira(noLadrilho(vGrao.x, vGrao.y, rhoKm), amp, filaDaEsteira(vGrao.x, rhoKm));
+  float D = densidadeDaEsteira(vGrao.x, vGrao.y, rhoKm, amp);
   float tau = tauDaOpacidade(perfil.a) * regiaoDoAnel(rhoKm).z;
   float d = sqrt(vGrao.x * vGrao.x + vGrao.y * vGrao.y + uZCamKm * uZCamKm);
   float td = tau * (1.0 - cessaoDasPedras(d) * tetoDoCampo(rhoKm, tau, uFracaoDoTier));
@@ -4655,10 +4767,10 @@ export class PedrasDoAnel {
   /** o assado em andamento (começa com a câmera rumo ao anel) */
   private passos: Passos<void> | null = null;
   private readonly uniforms: Record<string, THREE.IUniform>;
-  /** as fases do ladrilho (`fasesDoLadrilho`) e os desvios das filas das esteiras (`desvioDaFila`), da data */
+  /** as fases do ladrilho (`fasesDoLadrilho`) e as duas gerações das esteiras (`geracoesDaEsteira`), da data */
   private readonly fr = new Float32Array(OITAVAS);
   private readonly fila = new Float32Array(OITAVAS * FILEIRAS * 3);
-  private readonly estFila = new Float32Array(2 * (2 * FILAS_DA_ESTEIRA + 1));
+  private readonly estGer = new Float32Array(8);
   /** (ρ km, θ, altura km, fração do campo que o tier desenha) — o que o disco lê para ceder */
   readonly cessao = new THREE.Vector4(0, 0, 0, 0);
   /** a câmera no frame do anel em duas partes: a float32 (raios) e o resto (km) — o disco lê */
@@ -4720,8 +4832,10 @@ export class PedrasDoAnel {
       uFila: { value: this.fila },
       uGiro: { value: 0 },
       uEsteira: { value: null },
+      uEsteiraD: { value: null },
       uEstCam: { value: new THREE.Vector4() },
-      uEstFila: { value: this.estFila },
+      uEstGer: { value: this.estGer },
+      uEstGiro: { value: new THREE.Vector4() },
       uForcaEsteira: { value: 0 },
       uRaioFolha: { value: 40 },
       uFundoFolha: { value: -0.02 },
@@ -4811,7 +4925,7 @@ const float R_EXT = ${opcoes.rExt};`;
       f.replace('CAMADA_DO_ANEL', opcoes.glslCamadaDoAnel).replace('ASSADOS_DAS_PEDRAS', glslAssado());
 
     const u = this.uniforms;
-    u.uEsteira!.value = texturaDaEsteira();
+    [u.uEsteira!.value, u.uEsteiraD!.value] = texturasDaEsteira();
     u.uRelevo!.value = texturaDoRelevo();
     u.uLonge!.value = texturaDeLonge();
     u.uNormaDeLonge!.value = formasDeLonge().texNorma ??= texturaDaNorma(formasDeLonge().normaDoSol);
@@ -5080,12 +5194,16 @@ const float R_EXT = ${opcoes.rExt};`;
     u.uGiro!.value = voltasDoGiro - Math.floor(voltasDoGiro);
     this.cessao.set(rhoKm, theta, zKm, ativas > 0 ? fracao : 0);
     // a câmera no ladrilho das esteiras (radial, arco no B, no A), em dupla precisão
-    const fr = (x: number) => x - Math.floor(x);
-    const [vB, vA] = ARCO_DA_ESTEIRA.map((a) => fr((R0_KM * theta * a) / LADO_DA_ESTEIRA_KM));
-    (u.uEstCam!.value as THREE.Vector4).set(fr(rhoKm / LADO_DA_ESTEIRA_KM), vB, vA, fr(rhoKm / FILA_DA_ESTEIRA_KM));
-    // e o desvio das filas do campo que anda, da câmera − FILAS à + FILAS
-    const jc = Math.floor(rhoKm / FILA_DA_ESTEIRA_KM);
-    for (let m = -FILAS_DA_ESTEIRA; m <= FILAS_DA_ESTEIRA; m++) this.estFila.set(desvioDaFila(jc + m, tS), 2 * (m + FILAS_DA_ESTEIRA));
+    const [vB, vA] = ARCO_DA_ESTEIRA.map((a) => fracDe((R0_KM * theta * a) / LADO_DA_ESTEIRA_KM));
+    (u.uEstCam!.value as THREE.Vector4).set(fracDe(rhoKm / LADO_DA_ESTEIRA_KM), vB, vA, rhoKm);
+    // e as duas gerações: o arco que cada uma andou desde o pico, no raio da câmera
+    const giro = u.uEstGiro!.value as THREE.Vector4;
+    geracoesDaEsteira(tS).forEach((g, k) => {
+      const m = (omegaDoAnelCpu(rhoKm) * g.desdeOPico) / (2 * Math.PI);
+      const [mB, mA] = VOLTAS_DA_ESTEIRA.map((v) => m * v);
+      this.estGer.set([g.du, g.peso, fracDe(mB! - g.dv), fracDe(mA! - g.dv)], 4 * k);
+      giro.setComponent(2 * k, mB!).setComponent(2 * k + 1, mA!);
+    });
     u.uForcaEsteira!.value = forca;
     u.uRaioFolha!.value = raioDaFolhaKm(zKm);
     // do outro lado da camada, além do maior pedaço (o eixo maior passa de a)
@@ -5230,6 +5348,7 @@ const float R_EXT = ${opcoes.rExt};`;
     (this.uniforms.uNormaDeLonge!.value as THREE.Texture).dispose();
     if (longe) longe.tex = longe.texNorma = null;
     (this.uniforms.uEsteira!.value as THREE.Texture).dispose();
+    (this.uniforms.uEsteiraD!.value as THREE.Texture).dispose();
     for (const m of [this.folha!, this.nevoa!]) {
       m.geometry.dispose();
       (m.material as THREE.ShaderMaterial).dispose();

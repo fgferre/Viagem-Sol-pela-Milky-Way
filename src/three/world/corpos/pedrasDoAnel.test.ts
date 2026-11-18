@@ -39,9 +39,9 @@ import {
   alturaNaCamada,
   celulasDaOitava,
   celulasDoQuadro,
-  FILA_DA_ESTEIRA_KM,
   FILEIRAS,
-  desvioDaFila,
+  VIDA_DA_ESTEIRA_S,
+  geracoesDaEsteira,
   deslocamentoDaEsteira,
   fasesDoLadrilho,
   lugarDaPedra,
@@ -68,6 +68,9 @@ import {
 import { U_PERFIL_BASE, U_PERFIL_ESCALA } from './gigante';
 import { ANEL_DE_SATURNO, omegaDoAnelCpu, regiaoDoAnelCpu } from './descricaoDoAnel';
 import { JD2_SOLAR_TDB } from '../../cinematic/filmes/solar/pinos';
+import { orientacaoInercialDoAnelNaCena } from './orientacaoNaCena';
+import { IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
+import { RAIO_DO_PONTO_KM, escolherPontoDoAnel, poseDoPontoDoAnel } from '../pontoDoAnel';
 
 const KM_POR_RAIO = ANEL_DE_SATURNO.raioEquatorialKm;
 const A_MAX_KM = ANEL_DE_SATURNO.pedacos.raioMaxKm;
@@ -383,7 +386,7 @@ describe('pedras 3D do anel', () => {
     expect(menor).toBeGreaterThan(0.02);
     // sem fronteira de texel: contínua onde a leitura bilinear troca de 2×2 texels
     for (let m = 0; m < 20; m++) {
-      const rho = (Math.floor(128_000 / TEXEL_DA_ESTEIRA_KM) + m + 0.5) * TEXEL_DA_ESTEIRA_KM;
+      const rho = (Math.floor(128_000 / TEXEL_DA_ESTEIRA_KM) + m + 0.125) * TEXEL_DA_ESTEIRA_KM;
       const s = 4_321 + 0.137 * m;
       expect(Math.abs(densidadeDaEsteira(s, rho - 1e-7) - densidadeDaEsteira(s, rho + 1e-7))).toBeLessThan(1e-3);
     }
@@ -432,7 +435,10 @@ describe('pedras 3D do anel', () => {
     const p = pedrasDeTeste();
     p.assarJa();
     const u = ((p.malha.children[0] as THREE.Mesh).material as THREE.ShaderMaterial).uniforms;
-    const foto = () => [u.uFila.value, u.uEstFila.value, [u.uGiro.value as number]].flatMap((v) => Array.from(v as ArrayLike<number>));
+    const foto = () =>
+      [u.uFila.value, u.uEstGer.value, (u.uEstGiro.value as THREE.Vector4).toArray(), [u.uGiro.value as number]].flatMap((v) =>
+        Array.from(v as ArrayLike<number>)
+      );
     const J = 2461360.5;
     // tocando até J + 1, com a câmera andando e o anel escondido no meio
     p.atualizar(quadro(128_000, 1, J));
@@ -495,33 +501,134 @@ describe('pedras 3D do anel', () => {
         }
       }
     }
-    for (const j of [0, 52_000, 62_683]) expect(desvioDaFila(j, 0)).toEqual([0, 0]);
   });
 
-  it('as esteiras andam com o material: no meio de uma fila, o mesmo campo deslocado R0·Ω·Δt, sem cisalhar', () => {
-    const j = Math.floor(128_370 / FILA_DA_ESTEIRA_KM);
-    const meio = (j + 0.5) * FILA_DA_ESTEIRA_KM;
-    const t0 = 1.7e7;
-    for (const dt of [0.1, 86400]) {
-      const ds = R0_KM * omegaDoAnelCpu(meio) * dt;
-      // a fila inteira anda junta (fora da faixa de fusão): o espaçamento e a inclinação ficam
-      for (const rho of [meio, meio - 0.6, meio + 0.6]) {
-        for (let k = 0; k < 50; k++) {
+  it('na época as esteiras são o ladrilho de antes do giro: uma geração só, de peso 1 e sem deslocamento', () => {
+    expect(geracoesDaEsteira(0)).toEqual([
+      { du: 0, dv: 0, peso: 1, desdeOPico: 0 },
+      { du: expect.any(Number), dv: expect.any(Number), peso: 0, desdeOPico: -VIDA_DA_ESTEIRA_S / 2 },
+    ]);
+    // (s, ρ, Δρ km, densidade) do ladrilho de 2048 texels de antes de 17/11: o
+    // lugar dentro de 1,5 m; a densidade, que ele interpolava depois da forma
+    // da onda, dentro de 15 % no vão e 3 % em média
+    const antes = [
+      [3000.0, 101000.0, -0.0022493, 0.41666],
+      [3008.014169, 128007.901503, 0.0015644, 0.56383],
+      [3007.028337, 101006.393569, -0.0006371, 1.07397],
+      [3006.042506, 128007.320508, -0.0045003, 1.16166],
+      [3005.056675, 101004.595137, -0.0038663, 0.80691],
+      [3004.070843, 128006.739513, -0.0055479, 0.79214],
+      [3003.085012, 101002.796706, 0.0002403, 2.31141],
+      [3002.099181, 128006.158518, -0.0043555, 0.69608],
+      [3001.113349, 101000.998274, 0.0113468, 0.36339],
+      [3000.127518, 128005.577523, -0.0015217, 0.54946],
+      [3008.141687, 101007.391843, 0.0020503, 0.68387],
+      [3007.155855, 128004.996528, 0.0000079, 2.27412],
+      [3006.170024, 101005.593412, -0.0059223, 0.79664],
+      [3005.184193, 128004.415533, -0.0007907, 0.37327],
+      [3004.198361, 101003.79498, -0.0072376, 0.8014],
+      [3003.21253, 128003.834538, -0.000914, 2.88395],
+    ] as const;
+    let soma = 0;
+    for (const [s, rho, dRho, d] of antes) {
+      expect(Math.abs(deslocamentoDaEsteira(s, rho, 0)[0] - dRho)).toBeLessThan(0.0015);
+      const erro = Math.abs(densidadeDaEsteira(s, rho, 0) / d - 1);
+      expect(erro).toBeLessThan(0.15);
+      soma += erro;
+    }
+    expect(soma / antes.length).toBeLessThan(0.03);
+  });
+
+  it('a mistura de duas gerações tem a estatística de uma só: dispersão e p95/p5 dentro de 5 %', () => {
+    const meia = VIDA_DA_ESTEIRA_S / 2;
+    const estatistica = (xs: number[]) => {
+      const m = xs.reduce((a, b) => a + b, 0) / xs.length;
+      const o = [...xs].sort((a, b) => a - b);
+      return [Math.sqrt(xs.reduce((a, b) => a + (b - m) ** 2, 0) / xs.length), o[Math.floor(0.95 * o.length)]! / o[Math.floor(0.05 * o.length)]!];
+    };
+    // uma geração de peso 1 (a 14, deslocada no ladrilho) e duas de peso 1/√2, no ladrilho inteiro do A
+    const [pura, mista] = [14 * meia, 14.5 * meia].map((tS) => {
+      const pesos = geracoesDaEsteira(tS).map((g) => g.peso);
+      const estira: number[] = [];
+      const dens: number[] = [];
+      for (let a = 0; a < 200; a++) {
+        for (let b = 0; b < 200; b++) {
+          const [s, rho] = [9_000 + b * 0.04519, 128_000 + a * 0.04073];
+          estira.push(estiramentoDaEsteira(s, rho, tS));
+          dens.push(densidadeDaEsteira(s, rho, tS));
+        }
+      }
+      return { pesos, numeros: [...estatistica(estira), ...estatistica(dens)] };
+    });
+    expect(pura.pesos[0]).toBe(1);
+    expect(mista.pesos[0]).toBeCloseTo(Math.SQRT1_2, 12);
+    expect(mista.pesos[1]).toBeCloseTo(Math.SQRT1_2, 12);
+    pura.numeros.forEach((x, k) => expect(Math.abs(mista.numeros[k]! / x - 1)).toBeLessThan(0.05));
+  }, 30_000);
+
+  it('as esteiras andam com o material em todo raio, sem faixa: o mesmo campo R0·Ω(ρ)·Δt adiante', () => {
+    const t0 = 320 * 86400;
+    // o peso muda devagar: no máximo ~2·δmax·(π/T) por segundo
+    const lento = (dt: number) => (0.03 * Math.PI * dt) / VIDA_DA_ESTEIRA_S + 1e-7;
+    for (const dt of [0.01, 0.1]) {
+      // raios a dezenas de km uns dos outros, no B e no A
+      for (const rho of [92_500, 101_003.3, 101_047.9, 117_000, 122_000, 128_370, 128_412.6, 136_500]) {
+        const ds = R0_KM * omegaDoAnelCpu(rho) * dt;
+        let andou = 0;
+        for (let k = 0; k < 40; k++) {
           const s = 3_000 + 0.0137 * k;
           const [a0, a1] = deslocamentoDaEsteira(s, rho, t0);
           const [b0, b1] = deslocamentoDaEsteira(s + ds, rho, t0 + dt);
-          expect(Math.abs(b0 - a0)).toBeLessThan(1e-7);
-          expect(Math.abs(b1 - a1)).toBeLessThan(1e-7);
+          expect(Math.abs(b0 - a0)).toBeLessThan(lento(dt));
+          expect(Math.abs(b1 - a1)).toBeLessThan(lento(dt));
+          if (Math.abs(deslocamentoDaEsteira(s, rho, t0 + dt)[0] - a0) > 1e-4) andou++;
         }
+        expect(andou).toBeGreaterThan(20);
       }
     }
-    // e anda de verdade: no mesmo lugar, um dia depois, é outro trecho do campo
-    let diferentes = 0;
-    for (let k = 0; k < 50; k++) {
-      const s = 3_000 + 0.0137 * k;
-      if (Math.abs(deslocamentoDaEsteira(s, meio, t0)[0] - deslocamentoDaEsteira(s, meio, t0 + 86400)[0]) > 1e-4) diferentes++;
+    // contínuo em ρ: nada de costura (nem onde as faixas de 2,048 km de antes se juntavam)
+    for (let j = 0; j < 40; j++) {
+      const rho = 128_000 + 2.048 * j + (j % 2 ? 0.256 : 0);
+      for (const s of [3_000, 3_001.37]) {
+        expect(Math.abs(densidadeDaEsteira(s, rho - 1e-7, t0) - densidadeDaEsteira(s, rho + 1e-7, t0))).toBeLessThan(1e-3);
+      }
     }
-    expect(diferentes).toBeGreaterThan(25);
+  });
+
+  it('a câmera da vista dos anéis anda junto com os pedaços (e as esteiras) do raio dela', () => {
+    const centro = new THREE.Vector3(3e-5, -1e-5, 2e-6);
+    const jd0 = JD2_SOLAR_TDB + 320;
+    const escolha = escolherPontoDoAnel(centro, jd0);
+    // a longitude do alvo no frame do anel (x̂ o nodo, ŷ = −colunaZ)
+    const longitude = (jd: number) => {
+      const o = orientacaoInercialDoAnelNaCena(IAU_ORIENTATIONS.saturn!, jd);
+      const r = poseDoPontoDoAnel(centro, jd, escolha).alvo.clone().sub(centro);
+      return Math.atan2(-r.dot(new THREE.Vector3(...o.colunaZ)), r.dot(new THREE.Vector3(...o.colunaX)));
+    };
+    const tS = segundosDaEpoca(jd0);
+    const o = OITAVAS - 1;
+    const cam0 = { rhoKm: RAIO_DO_PONTO_KM, theta: longitude(jd0), zKm: 0.001 };
+    let conferidos = 0;
+    for (const dt of [1, 60]) {
+      // o mesmo dia juliano para a câmera e os pedaços, como no app
+      const jd1 = jd0 + dt / 86400;
+      const cam1 = { ...cam0, theta: longitude(jd1) };
+      for (let i = 0; i < 3000; i++) {
+        const a = lugarDaPedra(o, i, cam0, tS);
+        if (Math.abs(a.rhoKm - RAIO_DO_PONTO_KM) > 0.06) continue;
+        const b = lugarDaPedra(o, i, cam1, segundosDaEpoca(jd1));
+        // o cisalhamento entre o raio dele e o da câmera, e a esteira que se refaz devagar
+        const tol = 1.5 * R0_KM * omegaDoAnelCpu(RAIO_DO_PONTO_KM) * (0.07 / RAIO_DO_PONTO_KM) * dt + (0.03 * Math.PI * dt) / VIDA_DA_ESTEIRA_S + 1e-5;
+        // o mesmo pedaço, ou a imagem dele num ladrilho vizinho (a janela anda com a câmera)
+        const t = TABELA_DE_OITAVAS[o]!;
+        let ds = (b.sKm - R0_KM * cam1.theta - (a.sKm - R0_KM * cam0.theta)) / t.ladoNoArco;
+        ds -= Math.round(ds);
+        expect(Math.abs(ds * t.ladoNoArco)).toBeLessThan(tol);
+        expect(Math.abs(b.rhoKm - a.rhoKm)).toBeLessThan(tol);
+        conferidos++;
+      }
+    }
+    expect(conferidos).toBeGreaterThan(20);
   });
 
   it('com o anel por destino do Atlas o assado nunca sai de uma vez, nem rente à camada (15/11)', async () => {
@@ -564,7 +671,7 @@ describe('pedras 3D do anel', () => {
       b.assarJa();
       const bytes = (p: PedrasDoAnel) => {
         const u = ((p.malha.children[0] as THREE.Mesh).material as THREE.ShaderMaterial).uniforms;
-        const dados: ArrayBufferView[] = ['uEsteira', 'uRelevo', 'uLonge', 'uNormaDeLonge', 'uPermutacao'].map(
+        const dados: ArrayBufferView[] = ['uEsteira', 'uEsteiraD', 'uRelevo', 'uLonge', 'uNormaDeLonge', 'uPermutacao'].map(
           (k) => (u[k]!.value as THREE.DataTexture).image.data as ArrayBufferView
         );
         const shaders: string[] = [];
