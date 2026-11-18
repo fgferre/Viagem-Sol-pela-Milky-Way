@@ -17,6 +17,15 @@ vale, mas a antiga se guarda ao lado, não se apaga. Um clone novo traz o `main`
 dele; ele disse *"ainda não"*). Depois `npm ci`; os testes pedem o Chrome instalado. O `npm run done` passou em 69bf076c
 (176 arquivos, 4.096 testes).
 
+**Problemas previstos na máquina de destino (escritos antes de acontecer):** (1) pode haver ramos e cópias de
+trabalho de agosto: liste o que está inteiro no `main` e o que não está, e pergunte a ele antes de apagar qualquer
+um; (2) a `capturas/` de lá é a de agosto, não a de 18/11: nunca sobrescrever; (3) o repositório privado das
+anotações pede login no GitHub: se faltar, é ele quem entra; (4) a máquina de 18/11 rodava Node 25.8 e npm 11.11: se
+`npm ci` ou os testes falharem por versão ou por falta do Chrome, conte a ele antes de mexer no sistema; (5) se o
+`npm run done` falhar lá, a causa provável é o ambiente, porque o mesmo código passou em 18/11: não mexa em código
+nem em teste para passar; (6) a primeira resposta a ele é só o estado (onde estamos, o que se deve a ele, o que
+espera a resposta dele): não abra frente nova, não publique e não apague nada sem a palavra dele.
+
 **Depois deste bastão, leia `PLAN-COORDENACAO.md` inteiro, uma vez:** é a passagem da coordenadora anterior (como a
 rodada estava organizada, onde cada frente parou, o que ela disse a ele que não convence, o que prometeu e não
 cumpriu, as decisões dele que não mudam).
