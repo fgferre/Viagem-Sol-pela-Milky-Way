@@ -3,7 +3,7 @@
 // shaders+mesh (depois do bake da cromosfera). Corpos movidos verbatim.
 
 import * as THREE from 'three';
-import { SFTDIR_GLSL, BFIELD_GLSL, LIC_GLSL } from './common.js';
+import { SFTDIR_GLSL, BFIELD_GLSL, LIC_GLSL, REGIAO_GLSL } from './common.js';
 
 export function createSunBase(ctx){
   var SPHERE_SEG = ctx.SPHERE_SEG;
@@ -415,7 +415,14 @@ export function createSunUniforms(ctx){
     // damp anti-fusão por umbra real (Float32Array vivo, idem)
     uSpots: { value: spotVecs },
     uSpotsK: { value: ctx.SPOTS_K },
-    uSpotsRealK: { value: spotRealDamp }
+    uSpotsRealK: { value: spotRealDamp },
+    // A TEMPERATURA DAS MANCHAS (motor único, 17/11): a razão T/T_fotosfera
+    // no miolo (umbra) e na penumbra, dado da estrela (o registro); e o
+    // INSTRUMENTO, o ganho com que a temperatura local vira calor da rampa
+    // H-alfa (o peso do filtro × o ganho do instrumento), o mesmo da Forja
+    uRazaoDoMiolo: { value: ctx.RAZOES_DA_MANCHA.miolo },
+    uRazaoDaPenumbra: { value: ctx.RAZOES_DA_MANCHA.penumbra },
+    uGanhoDaRampa: { value: ctx.GANHO_DA_RAMPA }
   };
   ctx.sunUniforms = sunUniforms;
 }
@@ -512,7 +519,10 @@ export function createSunMesh(ctx){
     '#define SPOTS_MAX 10',
     'uniform vec4 uSpots[SPOTS_MAX];',
     'uniform float uSpotsK;',
-    'uniform float uSpotsRealK[8];'].join('\n') + '\n' + SFTDIR_GLSL + '\n' + BFIELD_GLSL + '\n' + LIC_GLSL + '\n' + [
+    'uniform float uSpotsRealK[8];',
+    'uniform float uRazaoDoMiolo;',
+    'uniform float uRazaoDaPenumbra;',
+    'uniform float uGanhoDaRampa;'].join('\n') + '\n' + SFTDIR_GLSL + '\n' + BFIELD_GLSL + '\n' + LIC_GLSL + '\n' + REGIAO_GLSL + '\n' + [
     'void main(){',
     '  vec3 viewDir = normalize(cameraPosition - vPositionW);',
     '  vec3 N = normalize(vNormalW);',
@@ -676,9 +686,10 @@ export function createSunMesh(ctx){
     // artefatos-cg). Com uSpotsK=0 os pesos são exatamente 0.38/0.16.
     '    d *= 1.0 + mix(0.18, 0.38 - 0.10*pShape, isFoll)*snoise(spW*24.0 + f*9.0)',
     '           + mix(0.07, 0.16 - 0.04*pShape, isFoll)*snoise(spW*60.0 - f*4.0);',
-    '    float ui0 = 1.0 - smoothstep(r*0.55, r, d);',
-    '    float ui = ui0 * lifeK;',
-    '    float pi = clamp((1.0 - smoothstep(r*pIn, r*pOut, d)) - ui0, 0.0, 1.0) * lifeK;',
+    // a máscara de toda região (`regiaoNaSuperficie`): miolo até 0,55 r
+    '    vec2 reg = regiaoNaSuperficie(d, r, 0.55, pIn, pOut);',
+    '    float ui = reg.x * lifeK;',
+    '    float pi = reg.y * lifeK;',
     '    umbra = max(umbra, ui);',
     '    if (pi > pen){',
     '      pen = pi;',
@@ -714,9 +725,9 @@ export function createSunMesh(ctx){
     '      float isFollV = mod(float(i), 2.0);',
     '      dv *= 1.0 + mix(0.18, 0.30, isFollV)*snoise(spW*24.0 + fv*9.0)',
     '            + mix(0.07, 0.12, isFollV)*snoise(spW*60.0 - fv*4.0);',
-    '      float uiV0 = 1.0 - smoothstep(rv*0.55, rv, dv);',
-    '      float uiV = uiV0 * lifeKv;',
-    '      float piV = clamp((1.0 - smoothstep(rv*pIn, rv*pOut, dv)) - uiV0, 0.0, 1.0) * lifeKv;',
+    '      vec2 regV = regiaoNaSuperficie(dv, rv, 0.55, pIn, pOut);',
+    '      float uiV = regV.x * lifeKv;',
+    '      float piV = regV.y * lifeKv;',
     '      umbra = max(umbra, uiV);',
     '      if (piV > pen){',
     '        pen = piV;',
@@ -733,20 +744,18 @@ export function createSunMesh(ctx){
     // --- plage: onde o campo é forte (em volta das regiões ativas),
     // mas fora das manchas — brilha sem nunca chegar ao branco ---
     '  float plage = st.b * (1.0 - umbra - pen*0.7);',
+    // A TEMPERATURA DA MANCHA (motor único, 17/11): a razão T/T_fotosfera
+    // local, a do miolo e a da penumbra pelas máscaras (dado da estrela),
+    // nunca mais fria que o miolo (a penumbra fibrilada passa de 1 e as
+    // máscaras vêm de manchas diferentes); ela vira imagem no INSTRUMENTO:
+    // entra no calor da rampa H-alfa pelo peso do filtro × o ganho
+    // (`uGanhoDaRampa`, o mesmo da Forja), antes da plage e das erupções,
+    // como o escuro de antes. Antes era um "calor" multiplicado (×0,04 na
+    // umbra, ×0,56/0,62 na penumbra), sem temperatura.
+    '  float rRegiao = max(1.0 + umbra*(uRazaoDoMiolo - 1.0) + pen*(uRazaoDaPenumbra - 1.0), uRazaoDoMiolo);',
     // 0.34 (era 0.22): sweep T2.2 — plage mais quente SEM mover o spread
     // do sol calmo (gate G ficou em 0.29, contraste localizado)
-    // FASE 6 (B1): com spots>0 a penumbra escurece um grau mais fundo
-    // (0.44 — franja legível, alvo 1:2-2.5) e o escurecimento COMBINADO
-    // tem teto 0.945: onde umbra e penumbra de manchas distintas ainda
-    // se cruzarem (a separação por construção torna isso raro), o
-    // interior nunca zera num preto chapado ("buraco de shader", flag
-    // alta do painel). O else é o baseline VERBATIM (associatividade
-    // preservada) — com uSpotsK=0 o frame é bit-exato por construção.
-    '  if (uSpotsK > 0.001){',
-    '    heat = heat*(1.0 - min(umbra*0.96 + pen*0.44, 0.945)) + clamp(plage, 0.0, 1.0)*0.34;',
-    '  } else {',
-    '    heat = heat*(1.0 - umbra*0.96 - pen*0.38) + clamp(plage, 0.0, 1.0)*0.34;',
-    '  }',
+    '  heat += uGanhoDaRampa*(rRegiao - 1.0) + clamp(plage, 0.0, 1.0)*0.34;',
     // --- flare TWO-RIBBON (FASE 1, pendência audit-loop6 ref-08):
     // flash IMPULSIVO compacto no topo do laço (uFlare.w, a reconexão
     // em si) + DUAS fitas cromosféricas paralelas à PIL local que se

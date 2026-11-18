@@ -109,6 +109,11 @@ export interface Superficie {
    * quentes; sem ela, a regra (a de Betelgeuse levada à Teff de cada uma)
    */
   readonly celulaQuente?: CelulaQuenteMedida;
+  /**
+   * a TEMPERATURA DAS MANCHAS medida: T/T_fotosfera no miolo (umbra) e na
+   * penumbra (`manchasDe`); sem ela, as do Sol
+   */
+  readonly manchas?: { readonly miolo: Numero; readonly penumbra: Numero };
 }
 
 export interface EstrelaVisitavel {
@@ -1249,6 +1254,20 @@ export function posicaoDaCompanheira(
  * o contínuo V de Claret das outras: diferença anotada no `PLAN-FORJA.md`).
  */
 const IAU_2015_B3 = 'IAU 2015, Resolução B3 (valores nominais)';
+/**
+ * A TEMPERATURA DAS MANCHAS DO SOL, lida no texto de Borrero & Ichimoto
+ * 2011 (Living Rev. Solar Phys. 8, 4; arXiv 1109.4412, §2.5): no visível, a
+ * umbra tem "about 5 – 25%" do brilho da granulação e a penumbra "about 65
+ * – 85%"; "Assuming that the temperature at τ=2/3 for the quiet Sun is about
+ * 6050 K, [...] T_umb(τ=2/3) ≈ 4800 K and T_pen(τ=2/3) ≈ 5650 K". As razões:
+ * 4.800/6.050 = 0,793 e 5.650/6.050 = 0,934 (a estrela leva a razão, não a
+ * temperatura: a do artigo é a de τ = 2/3, não a Teff).
+ */
+const BORRERO_ICHIMOTO_2011 = 'Borrero & Ichimoto 2011, Living Rev. Solar Phys. 8, 4';
+const MANCHAS_DO_SOL = {
+  miolo: { v: 4800 / 6050, p: 'derivado', fonte: BORRERO_ICHIMOTO_2011 },
+  penumbra: { v: 5650 / 6050, p: 'derivado', fonte: BORRERO_ICHIMOTO_2011 },
+} as const;
 export const SOL: EstrelaVisitavel = {
   id: 'sol',
   nomeNoCatalogo: 'Sol',
@@ -1265,5 +1284,15 @@ export const SOL: EstrelaVisitavel = {
     granuloEmRaios: { v: GRANULO_SOL_EM_RAIOS, p: 'derivado', fonte: 'Tremblay et al. 2013, A&A 557, A7' },
     contrasteGranulos: { v: CONTRASTE_REAL_DO_SOL, p: 'derivado', fonte: 'Beeck et al. 2013, arXiv 1308.4874' },
     bordaU: { v: 0.3, p: 'artistico', fonte: '' }, // o núcleo de H-alfa, sem fonte aberta
+    manchas: MANCHAS_DO_SOL,
   },
 };
+
+/**
+ * A TEMPERATURA DAS MANCHAS de uma estrela: a medida dela, ou as do Sol
+ * (nenhuma outra estrela do registro tem a sua; só as de dínamo têm
+ * manchas). Um número por parte, a razão sobre a fotosfera.
+ */
+export function manchasDe(e: EstrelaVisitavel): { readonly miolo: Numero; readonly penumbra: Numero } {
+  return e.superficie.manchas ?? MANCHAS_DO_SOL;
+}

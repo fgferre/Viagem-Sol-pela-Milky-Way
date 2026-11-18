@@ -37,11 +37,13 @@ import { SEMENTE_DA_CASA, SOL_KNOBS, StellarBody, pesoDoFiltro, rocheDe, type St
 import {
   direcaoNoCeu,
   pesoDoPico,
+  regiaoDoEscurecimento,
   semConveccaoNaSuperficie,
   type EscurecimentoDoMotor,
 } from '../world/forjaDaEstrela';
 import { PontoDeEstrela } from '../world/pontoDeEstrela';
 import { anoDoJd, faseDoDisco, gasDaEstrela } from '../world/ventoDaEstrela';
+import { jdDoAno } from '../../lib/estrelasS';
 import { RAIO_SOL_PC } from '../escala';
 import { BETA_DA_EMISSAO } from '../shaders/starShaders';
 import { bvToColor } from '../shaders/common';
@@ -59,6 +61,7 @@ import {
   logGravidade,
   luminosidadeDe,
   celulaQuenteDe,
+  manchasDe,
   SOL,
   posicaoDaCompanheira,
   raioDaEstrelaPc,
@@ -266,6 +269,8 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
       granuloNaTelaEmRaios(s.granuloEmRaios.v) / granuloNaTelaEmRaios(GRANULO_SOL_EM_RAIOS),
     contrasteRelativoAoSol: contrasteDosGranulos / CONTRASTE_REAL_DO_SOL,
     bordaU: s.bordaU.v,
+    // a temperatura das manchas (miolo e penumbra), a medida ou a do Sol
+    manchas: { miolo: manchasDe(e).miolo.v, penumbra: manchasDe(e).penumbra.v },
     ...(veu > 0 ? { veu } : {}),
     // a regra do pico (a ponta, a asa e o tom do véu no motor): só nas quentes
     ...camposDoPico(e.teffK.v, teffDoPicoK),
@@ -285,14 +290,16 @@ export function parametrosDoMotor(e: EstrelaVisitavel, eixo?: THREE.Vector3): St
  */
 export const SOL_PARAMS: StellarParams = parametrosDoMotor(SOL);
 
-/** as épocas do escurecimento da ficha em números de desenho: o ano pela data UT, a borda das imagens e a razão das temperaturas */
+/** as épocas do escurecimento da ficha em números de desenho: o ano pela data UT, a borda das imagens, a razão das temperaturas e o lado escuro */
 export function escurecimentoDoMotor(x: NonNullable<EstrelaVisitavel['escurecimento']>): EscurecimentoDoMotor {
-  const ano = (data: string) => anoDoJd(Date.parse(data) / 86400000 + 2440587.5);
   const t0 = x.teffDaFotosferaK.v;
   return {
-    borda: x.epocas.map((p) => [ano(p.data), p.bordaNaImagemEmRaios.v] as const),
-    razaoT: x.epocas.map((p) => [ano(p.data), p.teffDaManchaK.v / t0] as const),
-    anguloGraus: x.epocas.map((p) => [ano(p.data), p.anguloGraus.v] as const),
+    epocas: x.epocas.map((p) => ({
+      ano: anoDoJd(Date.parse(p.data) / 86400000 + 2440587.5),
+      borda: p.bordaNaImagemEmRaios.v,
+      razaoT: p.teffDaManchaK.v / t0,
+      anguloGraus: p.anguloGraus.v,
+    })),
   };
 }
 
@@ -349,6 +356,8 @@ export function parametrosDaCompanheira(e: EstrelaVisitavel): StellarParams | nu
     knobPrefix: `${e.id}b`,
     contrasteRelativoAoSol: 0,
     bordaU: 0.3,
+    // sem dínamo não há manchas: a temperatura delas é a do Sol, sem uso
+    manchas: SOL_PARAMS.manchas,
     foraDaOrigem: true,
     // o véu pela MESMA lei da principal (a anã branca é a mais radiante)
     ...(veuDe(c.teffK.v) > 0 ? { veu: veuDe(c.teffK.v) } : {}),
@@ -425,17 +434,18 @@ export class EstrelaPeloMotorDoSol {
     this.corpo.escreverCiclo(faseDoCiclo(q.jd));
     // a fase do disco de gás (Achernar) é a da DATA, pela lista medida
     if (this.epocasDoDisco) this.corpo.escreverDisco(faseDoDisco(this.epocasDoDisco, anoDoJd(q.jd)));
-    // a mancha fria de um escurecimento (Betelgeuse, 2019–20) é a da DATA,
-    // presa ao céu de quem olha da Terra (a linha de visada é a posição a
-    // partir do Sol), não à câmera nem ao giro da estrela
+    // a região fria de um escurecimento (Betelgeuse, 2019–20) é a da DATA:
+    // cada época é um retrato do céu de quem olha da Terra (a linha de
+    // visada é a posição a partir do Sol), levado ao referencial da estrela
+    // pelo giro daquela data; entre as épocas ela gira com a estrela. Não
+    // depende da câmera
     const x = this.escurecimento;
     if (x) {
-      const ano = anoDoJd(q.jd);
-      this.corpo.escreverManchaFria(
-        direcaoNoCeu([q.posPc.x, q.posPc.y, q.posPc.z], faseDoDisco(x.anguloGraus, ano)),
-        faseDoDisco(x.borda, ano),
-        faseDoDisco(x.razaoT, ano)
+      const pos = [q.posPc.x, q.posPc.y, q.posPc.z] as const;
+      const regiao = regiaoDoEscurecimento(x, anoDoJd(q.jd), (anguloGraus, ano) =>
+        this.corpo.naEstrela(direcaoNoCeu(pos, anguloGraus), jdDoAno(ano))
       );
+      this.corpo.escreverRegiao(regiao, q.jd);
     }
     this.corpo.update(q.tempoS, this.meios.camera);
   }

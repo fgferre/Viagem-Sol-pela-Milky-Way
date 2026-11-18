@@ -404,44 +404,117 @@ export function regraDaForja(
 }
 
 /**
- * A REGIÃO FRIA DE UM ESCURECIMENTO (`EscurecimentoMedido` da ficha), em
- * números de desenho: por época (ano decimal), a borda nas imagens (raios ao
- * longo do lado escuro), a razão T_fria/T_fotosfera do modelo do artigo e a
- * direção do lado escuro no céu (ângulo de posição, graus). A estrela leva a
- * razão, não a temperatura absoluta: a fotosfera do modelo (3.700 K em
- * Betelgeuse) não é a Teff da ficha (3.600 K). Quem anda no tempo é o
- * director (linear entre as épocas, `faseDoDisco`).
+ * UMA REGIÃO NA SUPERFÍCIE de qualquer estrela (motor único, 17/11): o
+ * mesmo tipo para as manchas do Sol e de toda estrela de dínamo e para a
+ * região fria de um escurecimento (Betelgeuse, 2019–20); a causa (o campo
+ * magnético, a convecção) só define o valor. No shader é UMA máscara, a da
+ * mancha do Sol estendida (`regiaoNaSuperficie`, `sol/common.js`): o miolo
+ * inteiro até `raio·miolo`, caindo até `raio`; a penumbra de `raio·penumbra[0]`
+ * a `raio·penumbra[1]`. Dentro, a TEMPERATURA é a razão sobre a fotosfera
+ * (`razoes`); quem a transforma em imagem é o instrumento (a rampa do
+ * filtro e, no contínuo, Planck e o TiO — o mesmo para toda estrela). As
+ * manchas do Sol nascem pela regra do dínamo (as cargas de
+ * `sol/activity.js` e as manchas virtuais de `sol/sun.js`, cada uma com
+ * lugar, raio e vida; as razões e a forma vêm da estrela); a região de um
+ * escurecimento, pelas épocas medidas (`regiaoDoEscurecimento`).
+ */
+export interface RegiaoNaSuperficie {
+  /** o lugar: o centro, unitário, no referencial da estrela (o do objeto, que gira com ela) */
+  readonly centro: readonly [number, number, number];
+  /** o raio angular da borda de fora, rad (> 0) */
+  readonly raio: number;
+  /** onde a queda do miolo começa, em fração do raio (0 a < 1) */
+  readonly miolo: number;
+  /** a penumbra, de/até em raios (até ≤ de: sem penumbra) */
+  readonly penumbra: readonly [number, number];
+  readonly razoes: RazoesDaRegiao;
+}
+
+/** a TEMPERATURA de uma região: T/T_fotosfera no miolo e na penumbra (1 = como a fotosfera) */
+export interface RazoesDaRegiao {
+  readonly miolo: number;
+  readonly penumbra: number;
+}
+
+/**
+ * UM ESCURECIMENTO MEDIDO por época (`EscurecimentoMedido` da ficha), em
+ * números de desenho: o ano (decimal), a borda nas imagens (raios ao longo do
+ * lado escuro: a região é a parte do disco além dela), a razão
+ * T_fria/T_fotosfera do modelo do artigo e a direção do lado escuro no céu
+ * (ângulo de posição, graus). A estrela leva a razão, não a temperatura
+ * absoluta: a fotosfera do modelo (3.700 K em Betelgeuse) não é a Teff da
+ * ficha (3.600 K). Quem anda no tempo é o director (`regiaoDoEscurecimento`).
  *
- * O DESENHO (`cirurgiaDaEstrela`, `manchaFria`): dentro da região, a
- * temperatura É a dela — a razão entra pela lei de Planck por canal e pelo
- * TiO da Forja na temperatura local, o brilho das células cede
+ * O DESENHO (`cirurgiaDaEstrela`, `regiao`): a região da superfície, com a
+ * razão no miolo e sem penumbra; o brilho das células cede dentro dela
  * (`brilhoDasCelulasNaRegiaoFria`), ficando as faixas e a textura, e a
  * célula quente some do assado (o pico e o alisamento por dentro), voltando
- * a rede comum; a rampa do instrumento vê só a convecção em volta da média dela
- * (o ganho do instrumento sobre a queda inteira não tem fonte e afundava a
- * rampa no pé). A BORDA é larga e irregular: segue o campo das células da
+ * a rede comum. A BORDA é larga e irregular: segue o campo das células da
  * própria Forja.
  */
 export interface EscurecimentoDoMotor {
-  readonly borda: readonly (readonly [number, number])[];
-  readonly razaoT: readonly (readonly [number, number])[];
-  readonly anguloGraus: readonly (readonly [number, number])[];
+  readonly epocas: readonly {
+    readonly ano: number;
+    readonly borda: number;
+    readonly razaoT: number;
+    readonly anguloGraus: number;
+  }[];
 }
 
 /**
  * A meia largura da borda da região fria, em raios no disco projetado (a
  * borda inteira ~0,3 R), e quanto o campo das células a desloca por desvio
- * (limitado a ±2σ: ±0,12 R). ARTÍSTICAS, declaradas na ficha — as imagens
- * do SPHERE, com o feixe de ~24 mas num disco de 42 mas, não resolvem a borda.
+ * (limitado a ±2σ: ±0,12 rad perto do limbo). ARTÍSTICAS, declaradas na
+ * ficha — as imagens do SPHERE, com o feixe de ~24 mas num disco de 42 mas,
+ * não resolvem a borda.
  */
 export const BORDA_DA_MANCHA_FRIA = 0.15;
 export const BORDA_PELAS_CELULAS = 0.06;
 
-/** a borda de quem não tem região fria: além do disco inteiro, com a borda larga e o deslocamento */
-export const CORDA_SEM_MANCHA = 2;
-
-/** a borda além da qual nada da região fria toca o disco */
-export const BORDA_FORA_DO_DISCO = 1 + BORDA_DA_MANCHA_FRIA + 2 * BORDA_PELAS_CELULAS;
+/**
+ * A REGIÃO DE UM ESCURECIMENTO NA DATA (ano decimal), no referencial da
+ * estrela, ou null fora da janela (antes da primeira época e depois da
+ * última; as pontas da lista têm a borda além do disco). Cada época é um
+ * retrato do CÉU da Terra: `naEstrela(anguloGraus, anoDaEpoca)` leva a
+ * direção do lado escuro no céu ao referencial da estrela pelo giro DAQUELA
+ * data (quem sabe o giro é o corpo). Entre duas épocas a região anda no
+ * referencial da estrela (o centro, normalizado da reta entre os dois; a
+ * borda e a razão, lineares) e gira com ela. A borda nas imagens vira raio
+ * angular: no disco visto do lado do centro (sobre o limbo), a parte além
+ * da corda `b` é a calota de raio acos(b); a borda larga (±
+ * `BORDA_DA_MANCHA_FRIA` na corda) vai do miolo acos(b + B) à borda de fora
+ * acos(b − B). Sem penumbra.
+ */
+export function regiaoDoEscurecimento(
+  x: EscurecimentoDoMotor,
+  ano: number,
+  naEstrela: (anguloGraus: number, anoDaEpoca: number) => readonly [number, number, number]
+): RegiaoNaSuperficie | null {
+  const ep = x.epocas;
+  if (!Number.isFinite(ano) || ep.length < 2 || !(ano > ep[0].ano) || !(ano < ep[ep.length - 1].ano)) return null;
+  let i = 1;
+  while (ep[i].ano < ano) i++;
+  const [e0, e1] = [ep[i - 1], ep[i]];
+  const f = e1.ano > e0.ano ? (ano - e0.ano) / (e1.ano - e0.ano) : 1;
+  const c0 = naEstrela(e0.anguloGraus, e0.ano);
+  const c1 = naEstrela(e1.anguloGraus, e1.ano);
+  const c = [0, 1, 2].map((k) => c0[k] + (c1[k] - c0[k]) * f);
+  const n = Math.hypot(c[0], c[1], c[2]);
+  const borda = e0.borda + (e1.borda - e0.borda) * f;
+  const razao = e0.razaoT + (e1.razaoT - e0.razaoT) * f;
+  const B = BORDA_DA_MANCHA_FRIA;
+  const fora = Math.acos(Math.min(1, Math.max(-1, borda - B)));
+  const dentro = Math.acos(Math.min(1, Math.max(-1, borda + B)));
+  // nada não finito chega ao shader (um NaN + bloom branqueia a tela)
+  if (!(n > 1e-9) || !(fora > 1e-4) || !(razao > 0) || !Number.isFinite(razao) || !Number.isFinite(dentro)) return null;
+  return {
+    centro: [c[0] / n, c[1] / n, c[2] / n],
+    raio: fora,
+    miolo: Math.min(0.999, dentro / fora),
+    penumbra: [1, 1],
+    razoes: { miolo: razao, penumbra: 1 },
+  };
+}
 
 /**
  * O BRILHO DAS CÉLULAS NA REGIÃO FRIA: o desvio positivo δ da temperatura
@@ -515,9 +588,10 @@ export const C2_UM_K = 14388;
 /**
  * O ESCURO DA REGIÃO FRIA no visível: quantas vezes uma região a `razaoT`
  * da temperatura local sai mais escura que a vizinhança, na luminância da
- * tela (Rec. 709, antes da curva de tom) — a mesma lei que o desenho usa:
- * Planck por canal e o TiO da Forja na temperatura local. É o número que a
- * ficha diz; a curva de tom ainda o aperta na tela.
+ * tela (Rec. 709, antes da curva de tom), NO CONTÍNUO: Planck por canal e o
+ * TiO da Forja na temperatura local. É o número que a ficha diz; o desenho,
+ * pelo filtro estreito do instrumento (a rampa, como as manchas do Sol),
+ * escurece mais, e a curva de tom ainda o aperta na tela.
  */
 export function escuroDaRegiaoFria(teffK: number, razaoT: number): number {
   if (!(teffK > 0) || !(razaoT > 0)) return 1;

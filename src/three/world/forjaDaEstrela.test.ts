@@ -3,8 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { SOL_PARAMS } from '../director/estrelasNoQuadro';
 import { RAIO_DO_SOL_NA_CENA } from '../escala';
 import {
-  BORDA_FORA_DO_DISCO,
-  CORDA_SEM_MANCHA,
   brilhoDasCelulasNaRegiaoFria,
   direcaoNoCeu,
   celulaNaTelaEmRaios,
@@ -433,11 +431,6 @@ describe('a Forja desligada não muda nada', () => {
 });
 
 describe('a região fria de um escurecimento — a borda, as células e o céu da Terra', () => {
-  it('sem região, nem a borda larga deslocada pelas células toca o disco (o ponto mais além é 1)', () => {
-    expect(BORDA_FORA_DO_DISCO).toBeCloseTo(1.27, 12);
-    expect(CORDA_SEM_MANCHA).toBeGreaterThan(BORDA_FORA_DO_DISCO);
-  });
-
   it('o escuro da região fria no visível é o da lei do desenho: 1 sem diferença, cresce com o frio, e nada não finito', () => {
     expect(escuroDaRegiaoFria(3600, 1)).toBeCloseTo(1, 12);
     const a = escuroDaRegiaoFria(3600, 3400 / 3700);
@@ -503,35 +496,38 @@ describe('a região fria de um escurecimento — a borda, as células e o céu d
     expect(direcaoNoCeu([0, 0, 5], 180).every(Number.isFinite)).toBe(true);
   });
 
-  it('o texto da fotosfera só muda com o escurecimento, e só dentro de MANCHA_FRIA', () => {
+  it('a região de um escurecimento: a máscara de toda região, a temperatura local e o mesmo instrumento', () => {
     const sunJs = readFileSync(new URL('./sol/sun.js', import.meta.url), 'utf8');
     const bet: StellarParams = { ...SOL_PARAMS, teffK: 3600, dinamo: false, logG: -0.33, radiusPc: 764 * RAIO_DO_SOL_NA_CENA };
     const r = forjaDe(bet)!;
     const sem = cirurgiasDaFotosfera(sunJs, '', bet, r)!.fragment;
-    const esc = { borda: [[2019.8, 1.3]], razaoT: [[2019.8, 1]], anguloGraus: [[2019.8, 180]] } as const;
+    const esc = { epocas: [{ ano: 2019.8, borda: 1.3, razaoT: 1, anguloGraus: 180 }] } as const;
     const com = cirurgiasDaFotosfera(sunJs, '', { ...bet, escurecimento: esc }, r)!.fragment;
-    expect(sem).not.toContain('uManchaFria');
-    // sem o define, o pré-processador devolve o texto de antes
-    expect(com.replace(/#ifdef MANCHA_FRIA\n[^#]*#endif\n/g, '')).toBe(sem);
-    expect(com.match(/#ifdef MANCHA_FRIA/g)).toHaveLength(3);
-    // a borda larga, deslocada pelo campo das células (±2σ)
-    expect(com).toContain('smoothstep(uManchaFria.w - 0.150000, uManchaFria.w + 0.150000, dot(N, uManchaFria.xyz) + 0.060000*clamp(dForja / ');
+    // sem escurecimento, nada da região no texto; nenhum programa alternativo
+    expect(sem).not.toContain('uRegiao');
+    expect(com).not.toMatch(/#ifdef|MANCHA_FRIA|uManchaFria/);
+    // a máscara de toda região (a das manchas do Sol), no referencial da estrela, com o contorno pelas células (±2σ)
+    expect(com).toContain('float dRegiao = acos(clamp(dot(sp, uRegiao.xyz), -1.0, 1.0)) - 0.060000*clamp(dForja / ');
+    expect(com).toContain('vec2 mRegiao = regiaoNaSuperficie(dRegiao, uRegiao.w, uRegiaoBorda.x, uRegiaoBorda.y, uRegiaoBorda.z);');
     // a mesma conta de `brilhoDasCelulasNaRegiaoFria`
     expect(com).toContain('dForja > 0.0 ? dForja / (1.0 + 2.0 * dForja / ');
-    // as células cedem antes da rampa; a razão das temperaturas entra depois, por Planck e pelo TiO
-    expect(com.indexOf('float mFria')).toBeLessThan(com.indexOf('float calorDaForja'));
-    expect(com.indexOf('float xTiOFria')).toBeGreaterThan(com.indexOf('float xTiO ='));
-    expect(com.indexOf('razaoDePlanck(vec3(')).toBeLessThan(com.indexOf('color *= (1.0-limbU) + limbU*mu;'));
-    // a razão de Planck é definida uma vez só
-    expect(com.match(/vec3 razaoDePlanck\(/g)).toHaveLength(1);
-    // o assado: a célula quente (o pico e o alisamento por dentro) some na região fria, só com o define
+    // a temperatura da região entra na temperatura local ANTES do instrumento (a rampa e o TiO a leem)
+    expect(com.indexOf('rForja *= 1.0 + mRegiao.x*(uRegiaoRazao.x - 1.0)')).toBeLessThan(com.indexOf('float calorDaForja'));
+    expect(com.indexOf('rForja *= 1.0 + mRegiao.x')).toBeLessThan(com.indexOf('float xTiO ='));
+    // tirada a região, o texto é o de antes
+    const semRegiao = com
+      .replace('uniform vec4 uRegiao;\nuniform vec3 uRegiaoBorda;\nuniform vec2 uRegiaoRazao;\n', '')
+      .replace(/ {2}float dForja = rForja - 1\.0;\n(?: {2}.*\n){4}/, '');
+    expect(semRegiao).toBe(sem);
+    // o assado: a célula quente some na região, pela mesma máscara, no referencial do assado (x trocado)
     const assado = glslDoAssadoDaForja(r, undefined, true);
     expect(glslDoAssadoDaForja(r, undefined, false)).toBe(glslDoAssadoDaForja(r));
-    expect(assado.replace(/#ifdef MANCHA_FRIA\n[^#]*#endif\n?/g, '')).toBe(glslDoAssadoDaForja(r));
-    expect(assado).toContain('quente *= 1.0 - smoothstep(uManchaFriaAssado.w - 0.150000, uManchaFriaAssado.w + 0.150000, dot(sp, uManchaFriaAssado.xyz));');
-    expect(assado.indexOf('quente *= 1.0 - smoothstep')).toBeLessThan(assado.indexOf('a.x = mix(a.x'));
-    // sem a Forja não há onde a mancha morar
+    expect(assado).toContain('vec3 cRegiao = vec3(-uRegiao.x, uRegiao.y, uRegiao.z);');
+    expect(assado).toContain('quente *= 1.0 - regiaoNaSuperficie(acos(clamp(dot(sp, cRegiao), -1.0, 1.0)), uRegiao.w, uRegiaoBorda.x, uRegiaoBorda.y, uRegiaoBorda.z).x;');
+    expect(assado.indexOf('quente *= 1.0 - regiaoNaSuperficie')).toBeLessThan(assado.indexOf('a.x = mix(a.x'));
+    // sem a Forja não há onde a região morar
     const quente = { ...SOL_PARAMS, teffK: 9845, dinamo: false, contrasteRelativoAoSol: 0 };
-    expect(cirurgiasDaFotosfera(sunJs, '', { ...quente, escurecimento: esc }, null)!.fragment).not.toContain('MANCHA_FRIA');
+    expect(cirurgiasDaFotosfera(sunJs, '', { ...quente, escurecimento: esc }, null)!.fragment).not.toContain('uRegiao');
   });
+
 });

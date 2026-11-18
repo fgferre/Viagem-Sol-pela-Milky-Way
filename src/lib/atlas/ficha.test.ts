@@ -1094,8 +1094,9 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
     expect(d.procedencia).toBe('derivado');
     expect(d.valor).toContain('de 01/11/2019 a 01/04/2020');
     expect(d.valor).toContain('o lado escuro a 180° em 27/12/2019, a 180° em 28/01/2020, a 225° em 18/03/2020');
-    // o número sai da lei do desenho (`escuroDaRegiaoFria`), não da mão
-    expect(d.valor).toContain('dão 2,3× mais escuro a 3.400/3.700 K e 4,1× mais escuro a 3.200/3.700 K, contra mais de 10×');
+    // o número sai da lei do contínuo (`escuroDaRegiaoFria`), não da mão; o desenho passa pelo instrumento das manchas do Sol
+    expect(d.valor).toContain('mesmo instrumento das manchas do Sol');
+    expect(d.valor).toContain('dariam 2,3× mais escuro a 3.400/3.700 K e 4,1× mais escuro a 3.200/3.700 K, contra mais de 10×');
     // o que é escolha tem selo próprio
     const b = imagem(bet).get('borda da região fria')!;
     expect(b.procedencia).toBe('artistico');

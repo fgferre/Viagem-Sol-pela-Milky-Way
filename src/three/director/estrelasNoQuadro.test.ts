@@ -22,8 +22,8 @@ import { VAGAS_DE_VISITADAS } from '../world/clarao';
 import { ESTRELAS_VISITAVEIS, estrelaVisitavelPorNome, celulaQuenteDe } from '../../lib/atlas/estrelasVisitaveis';
 import { radianciaVisivelDeCorpoNegro } from '../luzDaCasa';
 import { pesoDoFiltro } from '../world/stellarBody';
-import { BORDA_FORA_DO_DISCO, MANCHA_DE_HAUBOIS, pesoDoPico } from '../world/forjaDaEstrela';
-import { anoDoJd, faseDoDisco } from '../world/ventoDaEstrela';
+import { BORDA_DA_MANCHA_FRIA, MANCHA_DE_HAUBOIS, pesoDoPico, regiaoDoEscurecimento } from '../world/forjaDaEstrela';
+import { anoDoJd } from '../world/ventoDaEstrela';
 
 describe('toda estrela visitável vira parâmetros do MESMO motor, sem nome', () => {
   it('cada uma tem raio, período e atividade finitos', () => {
@@ -222,13 +222,22 @@ describe('a nomeada fora da lista à mão ganha piloto pelo foco', () => {
 describe('o Grande Escurecimento de Betelgeuse pelo relógio do app', () => {
   const bet = estrelaVisitavelPorNome('Betelgeuse')!;
   const x = escurecimentoDoMotor(bet.escurecimento!);
+  // uma estrela que não gira e um céu de brinquedo: o lado escuro a `pa` graus vira (cos, sen, 0)
+  const naEstrela = (pa: number) => [Math.cos((pa * Math.PI) / 180), Math.sin((pa * Math.PI) / 180), 0] as const;
+  // a corda nas imagens de volta do raio da calota (raio = acos(corda − B)); fora da janela, 9
   const em = (jd: number) => {
-    const ano = anoDoJd(jd);
-    return { c: faseDoDisco(x.borda, ano), k: faseDoDisco(x.razaoT, ano), pa: faseDoDisco(x.anguloGraus, ano) };
+    const r = regiaoDoEscurecimento(x, anoDoJd(jd), naEstrela);
+    if (!r) return { c: 9, k: 1, pa: NaN, raio: 0 };
+    return {
+      c: Math.cos(r.raio) + BORDA_DA_MANCHA_FRIA,
+      k: r.razoes.miolo,
+      pa: (Math.atan2(r.centro[1], r.centro[0]) * 180) / Math.PI + (r.centro[1] < 0 ? 360 : 0),
+      raio: r.raio,
+    };
   };
   const jdDe = (iso: string) => Date.parse(iso) / 86400000 + 2440587.5;
 
-  it('só Betelgeuse tem escurecimento, e só ela leva a mancha aos parâmetros do motor', () => {
+  it('só Betelgeuse tem escurecimento, e só ela leva a região aos parâmetros do motor', () => {
     expect(ESTRELAS_VISITAVEIS.filter((e) => e.escurecimento).map((e) => e.nomeNoCatalogo)).toEqual(['Betelgeuse']);
     for (const e of ESTRELAS_VISITAVEIS) {
       expect(parametrosDoMotor(e).escurecimento !== undefined, e.id).toBe(e.nomeNoCatalogo === 'Betelgeuse');
@@ -238,9 +247,7 @@ describe('o Grande Escurecimento de Betelgeuse pelo relógio do app', () => {
   it('nada fora da janela; as épocas medidas nas datas do SPHERE; sem salto entre elas', () => {
     // a data padrão do app (jan/2026), a época de antes (jan/2019) e as pontas
     for (const jd of [2461041.5008692136, jdDe('2019-01-01T01:58Z'), jdDe('2019-10-31T00:00Z'), jdDe('2020-04-02T00:00Z')]) {
-      const s = em(jd);
-      expect(s.k).toBe(1);
-      expect(s.c).toBeGreaterThanOrEqual(BORDA_FORA_DO_DISCO);
+      expect(em(jd).raio).toBe(0);
     }
     const dez = em(jdDe('2019-12-27T03:27Z'));
     expect(dez.c).toBeCloseTo(0, 9);
@@ -252,6 +259,10 @@ describe('o Grande Escurecimento de Betelgeuse pelo relógio do app', () => {
     expect(mar.c).toBeCloseTo(0.2, 9);
     expect(mar.k).toBeCloseTo(3200 / 3700, 9);
     expect(mar.pa).toBeCloseTo(225, 9);
+    // a borda larga: o miolo começa em acos(corda + B)
+    const r = regiaoDoEscurecimento(x, anoDoJd(jdDe('2019-12-27T03:27Z')), naEstrela)!;
+    expect(r.raio * r.miolo).toBeCloseTo(Math.acos(BORDA_DA_MANCHA_FRIA), 9);
+    expect(r.penumbra[1]).toBeLessThanOrEqual(r.penumbra[0]);
     // o mínimo (fevereiro): entre janeiro e março, no sudoeste do sul
     const fev = em(jdDe('2020-02-10T00:00Z'));
     expect(fev.c).toBeGreaterThan(-0.4);
@@ -262,9 +273,23 @@ describe('o Grande Escurecimento de Betelgeuse pelo relógio do app', () => {
     for (let jd = jdDe('2019-10-30T00:00Z'); jd < jdDe('2020-04-03T00:00Z'); jd += 0.5) {
       const a = em(jd);
       const b = em(jd + 1 / 1440);
-      expect(Math.abs(a.c - b.c)).toBeLessThan(1e-4);
+      expect(Math.abs(a.raio - b.raio)).toBeLessThan(1e-3);
       expect(Math.abs(a.k - b.k)).toBeLessThan(1e-4);
-      expect(Math.abs(a.pa - b.pa)).toBeLessThan(1e-3);
+      if (a.raio > 0 && b.raio > 0) expect(Math.abs(a.pa - b.pa)).toBeLessThan(1e-3);
     }
+  });
+
+  it('a época é um retrato do céu: entre duas a região anda no referencial da estrela', () => {
+    // uma estrela que gira 90° entre dezembro e janeiro: a região de janeiro
+    // continua a de dezembro no referencial dela (o centro da reta, normalizado)
+    const a0 = anoDoJd(jdDe('2019-12-27T03:27Z'));
+    const a1 = anoDoJd(jdDe('2020-01-28T02:00Z'));
+    const gira = (pa: number, ano: number) => naEstrela(pa - (90 * (ano - a0)) / (a1 - a0));
+    const meio = regiaoDoEscurecimento(x, (a0 + a1) / 2, gira)!;
+    expect(Math.hypot(...meio.centro)).toBeCloseTo(1, 12);
+    expect((Math.atan2(meio.centro[1], meio.centro[0]) * 180) / Math.PI).toBeCloseTo(135, 9);
+    // nada não finito: sem região
+    expect(regiaoDoEscurecimento(x, NaN, naEstrela)).toBeNull();
+    expect(regiaoDoEscurecimento(x, (a0 + a1) / 2, () => [NaN, 0, 0])).toBeNull();
   });
 });

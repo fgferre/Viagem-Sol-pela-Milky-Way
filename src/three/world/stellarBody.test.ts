@@ -59,7 +59,7 @@ import {
 } from './stellarBody';
 import { uvMeshVertex } from './sol/common.js';
 import { estrelaVisitavelPorNome } from '../../lib/atlas/estrelasVisitaveis';
-import { BORDA_FORA_DO_DISCO, CORDA_SEM_MANCHA, pesoDaLisa } from './forjaDaEstrela';
+import { pesoDaLisa, type RegiaoNaSuperficie } from './forjaDaEstrela';
 import { gasDaEstrela } from './ventoDaEstrela';
 import { K_MIN_RAIOS } from '../cinematic/atlasRig';
 
@@ -902,78 +902,103 @@ describe('um motor, qualquer estrela — os parâmetros novos são neutros no So
 });
 
 // ============================================================
-// A REGIÃO FRIA PELA DATA (`escreverManchaFria`): o método real sobre um
-// `this` de mentira com os campos que ele toca (o construtor pede GPU).
+// A REGIÃO NA SUPERFÍCIE PELA DATA (`naEstrela`, `escreverRegiao`): os
+// métodos reais sobre um corpo sem construtor (o construtor pede GPU), com
+// os campos que eles tocam.
 // ============================================================
-describe('a região fria pela data: limiar, liga-desliga, valores não finitos e o x do assado', () => {
+describe('a região pela data: o céu de uma época vira lugar na estrela, e nada não finito chega ao shader', () => {
+  const P = 100;
   const fingir = (comEscurecimento = true) => {
+    const corpo = Object.create(StellarBody.prototype) as Record<string, unknown>;
     const mesh = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.ShaderMaterial());
-    return {
-      params: comEscurecimento ? { escurecimento: {} } : {},
-      manchaFria: {
-        uManchaFria: { value: new THREE.Vector4(0, 0, 1, CORDA_SEM_MANCHA) },
-        uManchaFriaK: { value: 1 },
-        uManchaFriaAssado: { value: new THREE.Vector4(0, 0, 1, CORDA_SEM_MANCHA) },
-      },
+    mesh.rotation.z = 0.3; // a inclinação, como a do Sol
+    Object.assign(corpo, {
+      params: { rotPeriodDays: P, ...(comEscurecimento ? { escurecimento: { epocas: [] } } : {}) },
+      forja: {},
+      regiaoPedida: null,
       ctx: { sunMesh: mesh },
-      dManchaTmp: new THREE.Vector3(),
-      qManchaTmp: new THREE.Quaternion(),
-      manchaAssada: new THREE.Vector4(0, 0, 1, CORDA_SEM_MANCHA),
-      assadoDaManchaSujo: false,
-      assadoComManchaFria: new THREE.ShaderMaterial(),
+      qEixo: null,
+      regiao: {
+        uRegiao: { value: new THREE.Vector4(0, 0, 0, 1e-3) },
+        uRegiaoBorda: { value: new THREE.Vector3(0, 1, 1) },
+        uRegiaoRazao: { value: new THREE.Vector2(1, 1) },
+      },
+      regiaoAssada: new THREE.Vector4(0, 0, 0, 1e-3),
+      mioloAssado: 0,
+      assadoDaRegiaoSujo: false,
+      qRegiaoA: new THREE.Quaternion(),
+      qRegiaoB: new THREE.Quaternion(),
+      qRegiaoGiro: new THREE.Quaternion(),
+      eRegiao: new THREE.Euler(),
+      vRegiao: new THREE.Vector3(),
+    });
+    const fingido = corpo as unknown as Pick<StellarBody, 'naEstrela'> & {
+      aplicarRegiao(): void;
+      ctx: { sunMesh: THREE.Mesh };
+      regiao: { uRegiao: { value: THREE.Vector4 }; uRegiaoBorda: { value: THREE.Vector3 }; uRegiaoRazao: { value: THREE.Vector2 } };
+      assadoDaRegiaoSujo: boolean;
     };
+    // o director escreve, o quadro aplica (`update` → `aplicarRegiao`)
+    const escrever = (r: RegiaoNaSuperficie | null, jd: number) => {
+      StellarBody.prototype.escreverRegiao.call(fingido as unknown as StellarBody, r, jd);
+      fingido.aplicarRegiao();
+    };
+    return Object.assign(fingido, { escreverRegiao: escrever });
   };
-  type Falso = ReturnType<typeof fingir>;
-  const escrever = (alvo: Falso, d: readonly [number, number, number], corda: number, razaoT: number) =>
-    (StellarBody.prototype.escreverManchaFria as (this: unknown, ...a: unknown[]) => void).call(alvo, d, corda, razaoT);
-  const ligada = (s: Falso) =>
-    [s.ctx.sunMesh.material as THREE.ShaderMaterial, s.assadoComManchaFria].map((m) => Boolean(m.defines && 'MANCHA_FRIA' in m.defines));
+  const regiao = (centro: readonly [number, number, number]) =>
+    ({ centro, raio: 0.8, miolo: 0.6, penumbra: [1, 1], razoes: { miolo: 0.9, penumbra: 1 } }) as const;
+  // onde o centro escrito cai no céu com a malha como está
+  const noCeu = (s: ReturnType<typeof fingir>) => {
+    const u = s.regiao.uRegiao.value;
+    s.ctx.sunMesh.updateMatrixWorld(true);
+    return new THREE.Vector3(u.x, u.y, u.z).applyQuaternion(s.ctx.sunMesh.getWorldQuaternion(new THREE.Quaternion()));
+  };
+  const ceu = new THREE.Vector3(0.3, -0.5, 0.8).normalize();
+  const jd0 = 2458844.64375;
 
   it('sem escurecimento no registro, nada muda', () => {
     const s = fingir(false);
-    escrever(s, [1, 0, 0], 0, 0.9);
-    expect(s.manchaFria.uManchaFria.value.w).toBe(CORDA_SEM_MANCHA);
-    expect(ligada(s)).toEqual([false, false]);
+    s.escreverRegiao(regiao([1, 0, 0]), jd0);
+    expect(s.regiao.uRegiao.value.toArray()).toEqual([0, 0, 0, 1e-3]);
   });
 
-  it('liga só com a temperatura diferente e a borda dentro do disco, nos dois programas; e desliga de volta', () => {
-    const s = fingir();
-    escrever(s, [0, 0, 1], 0, 1);
-    expect(ligada(s)).toEqual([false, false]);
-    escrever(s, [0, 0, 1], BORDA_FORA_DO_DISCO, 0.9);
-    expect(ligada(s)).toEqual([false, false]);
-    escrever(s, [0, 0, 1], BORDA_FORA_DO_DISCO - 0.01, 0.9);
-    expect(ligada(s)).toEqual([true, true]);
-    expect(s.manchaFria.uManchaFriaK.value).toBe(0.9);
-    expect(s.assadoDaManchaSujo).toBe(true);
-    escrever(s, [0, 0, 1], 1.3, 1);
-    expect(ligada(s)).toEqual([false, false]);
-  });
-
-  it('valor não finito (o relógio fora do ar) não chega ao shader: sem mancha', () => {
-    for (const [d, c, r] of [
-      [[NaN, 0, 1], 0, 0.9],
-      [[0, 0, 1], Infinity, 0.9],
-      [[0, 0, 1], 0, NaN],
-      [[0, 0, 1], 0, 0],
-    ] as const) {
+  it('na data da época, a região cai no lugar medido do céu, gire a malha como girar pelo tempo de tela', () => {
+    for (const giroDaTela of [0, 1.1, -2.7]) {
       const s = fingir();
-      escrever(s, d, c, r);
-      expect(s.manchaFria.uManchaFria.value.toArray()).toEqual([0, 0, 1, CORDA_SEM_MANCHA]);
-      expect(s.manchaFria.uManchaFriaK.value).toBe(1);
-      expect(ligada(s)).toEqual([false, false]);
+      s.ctx.sunMesh.rotation.y = giroDaTela;
+      s.escreverRegiao(regiao(s.naEstrela([ceu.x, ceu.y, ceu.z], jd0)), jd0);
+      expect(noCeu(s).distanceTo(ceu)).toBeLessThan(1e-9);
+      expect(s.regiao.uRegiao.value.w).toBe(0.8);
+      expect(s.regiao.uRegiaoBorda.value.toArray()).toEqual([0.6, 1, 1]);
+      expect(s.regiao.uRegiaoRazao.value.toArray()).toEqual([0.9, 1]);
+      expect(s.assadoDaRegiaoSujo).toBe(true);
     }
   });
 
-  it('no assado o lado escuro vai sem o giro da malha e com o x espelhado', () => {
+  it('depois da época ela gira com a estrela: um quarto do período, um quarto de volta pelo giro da malha', () => {
     const s = fingir();
-    escrever(s, [1, 0, 0], 0.2, 0.9);
-    expect(s.manchaFria.uManchaFriaAssado.value.toArray()).toEqual([-1, 0, 0, 0.2]);
-    // a malha girada 90° em y: o +x da cena é o +z do objeto
-    s.ctx.sunMesh.rotation.y = Math.PI / 2;
+    const c = s.naEstrela([ceu.x, ceu.y, ceu.z], jd0);
+    s.escreverRegiao(regiao(c), jd0 + P / 4);
     s.ctx.sunMesh.updateMatrixWorld(true);
-    escrever(s, [1, 0, 0], 0.2, 0.9);
-    const a = s.manchaFria.uManchaFriaAssado.value;
-    expect([a.x, a.y, a.z, a.w].map((v) => Math.round(v * 1e9) / 1e9 + 0)).toEqual([0, 0, 1, 0.2]);
+    // a malha gira em y DEPOIS da inclinação (Euler XYZ: o giro é em torno do +y da cena)
+    const esperado = ceu.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
+    expect(noCeu(s).distanceTo(esperado)).toBeLessThan(1e-9);
+  });
+
+  it('valor não finito ou fora da faixa (o relógio fora do ar) não chega ao shader: sem região', () => {
+    for (const r of [
+      null,
+      { ...regiao([NaN, 0, 1]) },
+      { ...regiao([0, 0, 1]), raio: 0 },
+      { ...regiao([0, 0, 1]), miolo: 1 },
+      { ...regiao([0, 0, 1]), razoes: { miolo: 0, penumbra: 1 } },
+      { ...regiao([0, 0, 1]), raio: Infinity },
+    ]) {
+      const s = fingir();
+      s.escreverRegiao(regiao([1, 0, 0]), jd0);
+      s.escreverRegiao(r, jd0);
+      expect(s.regiao.uRegiao.value.toArray()).toEqual([0, 0, 0, 1e-3]);
+      expect(s.regiao.uRegiaoRazao.value.toArray()).toEqual([1, 1]);
+    }
   });
 });

@@ -119,6 +119,28 @@ export const SFTDIR_GLSL = [
   ].join('\n');
 
   // ---------------------------------------------------------------
+  // UMA REGIÃO NA SUPERFÍCIE de qualquer estrela (motor único, 17/11): as
+  // manchas do Sol e de toda estrela de dínamo, e a região fria de um
+  // escurecimento (Betelgeuse, 2019–20) — a mesma máscara, a da mancha do
+  // Sol estendida. Uma calota de raio angular r (rad, a borda de fora) e d,
+  // a distância angular até o centro dela, já com o contorno de quem chama
+  // (o ruído da mancha do Sol, ou as células da Forja). x: o MIOLO, inteiro
+  // até r·m e caindo até r; y: a PENUMBRA, além do miolo, de r·pIn a r·pOut
+  // (pOut <= pIn: sem penumbra; o max guarda a ordem das bordas mesmo se o
+  // compilador avaliar os dois lados). Quem chama garante r > 0 e m < 1
+  // (bordas do smoothstep em ordem: invertidas são indefinidas na GLSL). A
+  // TEMPERATURA de cada parte (a razão sobre a fotosfera) é dado da
+  // estrela; quem a transforma em imagem é o instrumento.
+  // ---------------------------------------------------------------
+export const REGIAO_GLSL = [
+    'vec2 regiaoNaSuperficie(float d, float r, float m, float pIn, float pOut){',
+    '  float miolo = 1.0 - smoothstep(r*m, r, d);',
+    '  float pen = pOut > pIn ? clamp((1.0 - smoothstep(r*pIn, r*max(pOut, pIn + 1e-3), d)) - miolo, 0.0, 1.0) : 0.0;',
+    '  return vec2(miolo, pen);',
+    '}'
+  ].join('\n');
+
+  // ---------------------------------------------------------------
   // Campo magnético de cargas pontuais sob a superfície + LIC (line
   // integral convolution) barata — blocos compartilhados pelos shaders
   // do bake (chromo), do smear e do disco: os três avaliam o MESMO
