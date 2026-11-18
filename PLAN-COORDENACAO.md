@@ -69,8 +69,8 @@ junção aberto nem etiqueta. Ramo novo de trabalho, depois de juntado, se apaga
   verdade entrou no `main` no mesmo dia: o brilho medido, que ele viu em prancha e mandou trocar (cdf28ac0). Registro.
   Sobra a limpar: o interruptor `?anelb=0` continua no `main` (devolve o anel de antes); é andaime, tirar na
   próxima rodada dos anéis.
-- Conferido em 18/11 a pedido dele, relendo o histórico e as conversas (não só as notas): NENHUM dos sete é
-  pendência. Nas notas eu tinha chamado os dois acima de "trabalho vivo"; estava errado.
+- Conferido em 18/11 a pedido dele, relendo o histórico e as conversas (não só as notas): dos sete, só `tritao` é
+  trabalho a retomar; os outros seis são registro. Nas notas eu tinha chamado os dois acima de "trabalho vivo"; estava errado.
 - `piloto-hiperion`: as quatro versões do piloto; a quarta entrou no app por outro caminho. Fica como registro.
 - `tritao`: pausado por decisão dele em 04/10 (*"acho q tritao esta bom hj, vamos tomar cuidado para nao piorar"*),
   depois de ver a comparação (`capturas/tritao/olhar/prancha-comparacao-v1.jpg`): a receita ganhava na face
@@ -81,7 +81,8 @@ junção aberto nem etiqueta. Ramo novo de trabalho, depois de juntado, se apaga
   mudaram depois (09–13/10) e Tritão ficou mais branco (isto é leitura minha das duas imagens, não medi). O ramo é o
   ponto de partida da segunda tentativa: leitor dos relevos medidos com teste, plano com os fatos, e a ideia de
   tratar o lado borrado como nunca visto, que é o que a linha `completar-corpo` faz hoje. Os dados baixados ficaram
-  em `.cache/tritao/` na máquina antiga. Espera a palavra dele para entrar na fila dos corpos.
+  em `.cache/tritao/` na máquina antiga. Ele respondeu *"Sim, na fila"* (18/11): é o próximo corpo, depois das
+  duplicidades (item 230 das pendências). Este ramo deixa de ser registro e passa a ser trabalho a retomar.
 - `claude/forja-lote3-tentativa`, `claude/forja-lote4-veu`: tentativas recusadas de Betelgeuse. Só para consulta.
 
 ## Decisões dele nesta rodada que não mudam

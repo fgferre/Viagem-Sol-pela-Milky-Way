@@ -37,7 +37,8 @@ Betelgeuse como véu de poeira; mancha do Sol e região de Betelgeuse num botão
 **A fila (ordem dele, 17/11: *"não vamos deixar esse problema se perpetuar... coordene as resoluções"*):** as
 duplicidades, uma de cada vez. Feitas: estrelas (mancha) e anéis. Faltam: os três motores de galáxia
 (`?galaxia=webgpu|webgl|classica`; ver se a clássica ainda serve; espera a palavra dele), os quatro desenhistas de
-ponto de luz, as cópias de ruído em GLSL (só as idênticas; por último). Todo brief novo: inventário primeiro, o velho
+ponto de luz, as cópias de ruído em GLSL (só as idênticas; por último). Depois delas, o próximo corpo é Tritão
+(*"Sim, na fila"*, 18/11; item 230). Todo brief novo: inventário primeiro, o velho
 apagado no mesmo passo, nenhum interruptor que fique.
 
 **Devido antes de publicar:** ver o giro dos anéis em movimento (só foi visto em fotos seguidas); celular e níveis
@@ -1070,6 +1071,13 @@ Europa (cor real inferida da Galileo sobre o mosaico USGS de 500 m, 4096 px,
 tom meio-termo dele) e Jápeto (relevo gerado: crista no lugar com 20 km,
 55 crateras com nome, as demais pela foto). Ficam na fila: Urano, Netuno,
 Vesta, Deimos, Tritão (pausado), Ariel, Titã, Vênus.**
+**Tritão sai da pausa (18/11).** Ele perguntou: *"Você poderia avaliar se Tritão está no padrão bom mesmo?"*.
+Olhado no app, não está: quase todo branco, pouco para ver, ao lado de Plutão a diferença é clara
+(`capturas/tritao/olhar/tritao-hoje-18-11-contra-plutao.jpg`). Resposta dele: *"Sim, na fila"*. É o próximo corpo,
+DEPOIS das duplicidades. Parte do ramo `tritao` (plano e leitor dos relevos medidos) e da segunda tentativa anotada
+nele, pela linha `completar-corpo`; os dados de outubro ficaram na máquina antiga e se baixam de novo com o sim dele.
+A régua é a de sempre: nenhuma vista pode sair pior que a de hoje, e ele decide pela prancha.
+(Vesta e Deimos saíram desta fila em 16/10, feitos.)
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
