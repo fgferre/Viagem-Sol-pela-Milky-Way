@@ -291,7 +291,7 @@ export function alturaNaCamada(z0: number, aKm: number, hKm: number): number {
  * data do filme o campo é o do ladrilho, como antes do giro.
  */
 /** o lado do ladrilho (km) e os nós por lado */
-const LADO_DA_ESTEIRA_KM = 8.192;
+export const LADO_DA_ESTEIRA_KM = 8.192;
 const TEXELS_DA_ESTEIRA = 512;
 export const TEXEL_DA_ESTEIRA_KM = LADO_DA_ESTEIRA_KM / TEXELS_DA_ESTEIRA;
 /** onde fica o nó 0, em nós: o lugar em que o ladrilho de 2048 texels (antes de 17/11) o punha — o filme fica igual */
@@ -303,13 +303,13 @@ export const LAMBDA_DA_ESTEIRA_KM = LADO_DA_ESTEIRA_KM / ONDAS_NA_NORMAL;
 /** a normal das cristas no ladrilho, (radial, arco) */
 const NORMAL_DA_ESTEIRA = [ONDAS_DA_ESTEIRA[0] / ONDAS_NA_NORMAL, ONDAS_DA_ESTEIRA[1] / ONDAS_NA_NORMAL] as const;
 /** os ladrilhos por volta no B e no A (ρref ≈ 105 000 e 129 000 km); a troca fica na divisão de Cassini, onde não há esteira */
-const VOLTAS_DA_ESTEIRA = [
+export const VOLTAS_DA_ESTEIRA = [
   Math.round((2 * Math.PI * 105_000) / LADO_DA_ESTEIRA_KM),
   Math.round((2 * Math.PI * 129_000) / LADO_DA_ESTEIRA_KM),
 ] as const;
-const TROCA_DA_ESTEIRA_KM = 119_000;
+export const TROCA_DA_ESTEIRA_KM = 119_000;
 /** km do ladrilho por km de s = R0·θ (ρref/R0), no B e no A */
-const ARCO_DA_ESTEIRA = VOLTAS_DA_ESTEIRA.map((n) => (n * LADO_DA_ESTEIRA_KM) / (2 * Math.PI * R0_KM));
+export const ARCO_DA_ESTEIRA = VOLTAS_DA_ESTEIRA.map((n) => (n * LADO_DA_ESTEIRA_KM) / (2 * Math.PI * R0_KM));
 /** a inclinação medida das esteiras (graus da direção orbital), no B e no A (Colwell et al. 2006; Hedman et al. 2007) */
 const INCLINACAO_MEDIDA_GRAUS = [
   [18, 26],

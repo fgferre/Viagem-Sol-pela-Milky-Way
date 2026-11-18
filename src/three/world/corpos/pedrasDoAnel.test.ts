@@ -41,6 +41,10 @@ import {
   celulasDoQuadro,
   FILEIRAS,
   VIDA_DA_ESTEIRA_S,
+  LADO_DA_ESTEIRA_KM,
+  ARCO_DA_ESTEIRA,
+  VOLTAS_DA_ESTEIRA,
+  TROCA_DA_ESTEIRA_KM,
   geracoesDaEsteira,
   deslocamentoDaEsteira,
   fasesDoLadrilho,
@@ -594,6 +598,79 @@ describe('pedras 3D do anel', () => {
       }
     }
   });
+
+  it('a troca de geração não estala: seguindo o material através de t = n·T/2, deslocamento e densidade andam liso', () => {
+    const meia = VIDA_DA_ESTEIRA_S / 2;
+    const eps = 1e-3;
+    // n = 41 891 é o AO VIVO de ~320 dias depois da época
+    for (const n of [1, 41_891, -7]) {
+      const tb = n * meia;
+      for (let k = 0; k < 120; k++) {
+        const rho = (k % 2 ? 101_000 : 128_000) + 0.0371 * k;
+        const s0 = 3_000 + 0.0533 * k;
+        const noMaterial = (t: number) => s0 + R0_KM * omegaDoAnelCpu(rho) * t;
+        const [a0, a1] = deslocamentoDaEsteira(noMaterial(tb - eps), rho, tb - eps);
+        const [b0, b1] = deslocamentoDaEsteira(noMaterial(tb + eps), rho, tb + eps);
+        // 2 ms de relógio: um estalo seria de metros; o liso anda ~1e-7 km
+        expect(Math.hypot(b0 - a0, b1 - a1)).toBeLessThan(1e-5);
+        const da = densidadeDaEsteira(noMaterial(tb - eps), rho, tb - eps);
+        const db = densidadeDaEsteira(noMaterial(tb + eps), rho, tb + eps);
+        expect(Math.abs(db - da)).toBeLessThan(1e-3 * da);
+      }
+    }
+  });
+
+  it('o gêmeo da GPU: os uniformes e a série do Ω em volta da câmera põem cada ponto no lugar do ladrilho em que a CPU o põe', () => {
+    const p = pedrasDeTeste();
+    p.assarJa();
+    const u = ((p.malha.children[0] as THREE.Mesh).material as THREE.ShaderMaterial).uniforms;
+    // o espelho abaixo é o `naGeracao` que o vértice compila, linha a linha
+    const vert = ((p.malha.children[0] as THREE.Mesh).material as THREE.ShaderMaterial).vertexShader;
+    expect(vert).toContain('float dm = mVc * x * (-1.5 + 1.875 * x);');
+    expect(vert).toContain('return vec2(uEstCam.x + dRho / EST_LADO + G.x,');
+    expect(vert).toContain('(b ? uEstCam.y - G.z : uEstCam.z - G.w) + dS * (b ? EST_ARCO.x : EST_ARCO.y) / EST_LADO - dm);');
+    const L = LADO_DA_ESTEIRA_KM;
+    const volta = (x: number) => x - Math.round(x);
+    let conferidos = 0;
+    // na época, no AO VIVO e 40 anos adiante
+    for (const jd of [JD2_SOLAR_TDB, JD2_SOLAR_TDB + 320.37, JD2_SOLAR_TDB + 40 * 365.25]) {
+      const tS = segundosDaEpoca(jd);
+      const gs = geracoesDaEsteira(tS);
+      for (const rhoC of [101_000, 128_000]) {
+        // a câmera em θ = 0: o s (R0·θ) de um ponto é o dS dele
+        p.atualizar(quadro(rhoC, 0.02, jd));
+        const cam = u.uEstCam!.value as THREE.Vector4;
+        const ger = Array.from(u.uEstGer!.value as ArrayLike<number>);
+        const giro = u.uEstGiro!.value as THREE.Vector4;
+        const b = rhoC < TROCA_DA_ESTEIRA_KM;
+        const anel = b ? 0 : 1;
+        const arco = ARCO_DA_ESTEIRA[anel]!;
+        for (let g = 0; g < 2; g++) {
+          for (const dRho of [-40, -3.3, 0, 0.7, 25, 40]) {
+            for (const dS of [-40, -1.1, 0, 2.9, 40]) {
+              const rho = rhoC + dRho;
+              // `naGeracao` no GLSL, lido dos uniformes
+              const mVc = g === 0 ? (b ? giro.x : giro.y) : b ? giro.z : giro.w;
+              const x = dRho / cam.w;
+              const dm = mVc * x * (-1.5 + 1.875 * x);
+              const pu = cam.x + dRho / L + ger[4 * g]!;
+              const pv = (b ? cam.y - ger[4 * g + 2]! : cam.z - ger[4 * g + 3]!) + (dS * arco) / L - dm;
+              // `esteiraNasGeracoes` na CPU, em dupla precisão
+              const mV = ((omegaDoAnelCpu(rho) * gs[g]!.desdeOPico) / (2 * Math.PI)) * VOLTAS_DA_ESTEIRA[anel]!;
+              const qu = rho / L + gs[g]!.du;
+              const qv = (dS * arco) / L + gs[g]!.dv - mV;
+              // 1e-6 lado ≈ 8 mm
+              expect(Math.abs(volta(pu - qu))).toBeLessThan(1e-6);
+              expect(Math.abs(volta(pv - qv))).toBeLessThan(1e-6);
+              conferidos++;
+            }
+          }
+        }
+      }
+    }
+    expect(conferidos).toBe(3 * 2 * 2 * 6 * 5);
+    p.dispose();
+  }, 30_000);
 
   it('a câmera da vista dos anéis anda junto com os pedaços (e as esteiras) do raio dela', () => {
     const centro = new THREE.Vector3(3e-5, -1e-5, 2e-6);
