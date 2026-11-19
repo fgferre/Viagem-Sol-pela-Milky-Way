@@ -4,14 +4,16 @@
 // pontos e os números nomeados calculados a partir dos pinos (nada de
 // coordenada copiada no JSON). A geometria de cada ato mora em `atos/` (um módulo
 // por roteiro, mais `atos/geometria.ts` com o que é comum); aqui os
-// pontos e números dos atos se reúnem. Não constrói Journey: devolve
-// planos, inícios, duração, apoios, o calendário dos quatro relógios e o
-// "cima"; quem registra o filme é o objeto `Filme`.
+// pontos e números dos atos se reúnem. Devolve planos, inícios, duração,
+// apoios, o calendário dos quatro relógios e o "cima"; quem registra o filme
+// é o objeto `Filme` (o Journey daqui só serve para o motor olhar o caminho
+// da câmera ao montar os apoios).
 import * as THREE from 'three';
 import type { Shot } from '../../lerSequencia';
 import { montarAtos } from '../montagem';
 import { glide } from '../../movimentos';
 import { montarApoiosDoRoteiro } from '../../apoiosDoRoteiro';
+import { Journey } from '../../journey';
 import { JD2_SOLAR_TDB, PINOS_SOLAR, RELOGIOS_SOLAR, type RelogioSolar } from './pinos';
 import { CIMA_DA_ECLIPTICA, PONTOS_DOS_CORPOS, raioPc } from './atos/geometria';
 import { NUMEROS_PROLOGO, PONTOS_PROLOGO } from './atos/prologo';
@@ -120,6 +122,7 @@ export function montarFilmeSolar(): FilmeSolarMontado {
    * 40 UA e nada do quadro atravessa o corte; do primeiro instante do
    * epílogo em diante o céu é o de JD_A, o da Terra no pino.
    */
+  const camera = new Journey(shots, starts);
   const trocas: FilmeSolarMontado['trocas'] = [];
   for (let n = 1; n < inicioDoAto.length; n++) {
     const de = RELOGIO_DO_ATO[n - 1];
@@ -133,7 +136,15 @@ export function montarFilmeSolar(): FilmeSolarMontado {
     shots,
     starts,
     duracao,
-    apoios: montarApoiosDoRoteiro(shots, starts),
+    // o motor olha o caminho da câmera e os pinos e decide sozinho quando segurar
+    // cada corpo (`PalcoDoRoteiro`); o Sol não é corpo do palco, tem o motor dele
+    apoios: montarApoiosDoRoteiro(shots, starts, {
+      duracao,
+      camera: (t) => camera.at(t),
+      corpos: [...PINOS_SOLAR]
+        .filter(([id]) => id !== 'sun')
+        .map(([id, centro]) => [id, centro, raioPc(id)] as const),
+    }),
     pinos: PINOS_SOLAR,
     jd: JD2_SOLAR_TDB,
     trocas,

@@ -1021,7 +1021,7 @@ export interface QuadroDoRochoso extends MiraDaTela {
   /** o Atlas está focado neste corpo (ou na lua dele) — um dos três que
    *  SEGURAM os texels (`Seguradores`, texturas.ts). */
   focoDoAtlas: boolean;
-  /** o roteiro do filme declarou este corpo — o segurador monotônico. */
+  /** o filme segura este corpo: a câmera dele o vê agora ou vai ver em seguida. */
   pedidoDoRoteiro: boolean;
   politica: PoliticaDeLuz;
   /** a curva `camera.luz` do filme neste quadro (F2b, `kDaLuz`); ausente = 0 */

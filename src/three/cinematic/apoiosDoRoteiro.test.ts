@@ -1,4 +1,5 @@
 // Serve: dono — o roteiro deve pedir recursos e dirigir os marcos de conferência (75).
+import * as THREE from 'three';
 import { describe, expect, it, vi } from 'vitest';
 import { lerApoiosDoPlano, montarApoiosDoRoteiro } from './apoiosDoRoteiro';
 import { lerSequencia } from './lerSequencia';
@@ -67,6 +68,38 @@ describe('apoios do roteiro — item 75', () => {
     expect(retimado.instanteDeQA('foto')).toBe(20.75);
   });
 
+  it('com o palco, o motor pede o corpo antes de ele aparecer e o solta quando some; o pedido do roteiro só adianta', () => {
+    // a câmera vai de x = 0 a x = 100 pc e volta, a 1 pc/s: passa duas vezes por `a` (em 60 pc),
+    // começa e acaba em `c` (na origem) e nunca chega perto de `longe`. Com raio de 0,01 pc e
+    // lente de 40°, um corpo tem tamanho de disco a menos de ~15 pc.
+    const palco = {
+      duracao: 200,
+      camera: (t: number) => ({ pos: new THREE.Vector3(t <= 100 ? t : 200 - t, 0, 0), fov: 40 }),
+      corpos: [
+        ['a', new THREE.Vector3(60, 0, 0), 0.01],
+        ['c', new THREE.Vector3(0, 0, 0), 0.01],
+        ['longe', new THREE.Vector3(0, 1e6, 0), 0.01],
+      ] as const,
+    };
+    const em = (apoios: ReturnType<typeof montarApoiosDoRoteiro>, id: string, ts: number[]) =>
+      ts.map((t) => apoios.preAquecerCorpo(t, id));
+    // sem pedido nenhum no roteiro: ~20 s antes de aparecer, até sumir, nas duas passagens
+    const sozinho = montarApoiosDoRoteiro([{ dur: 200 }], [0], palco);
+    expect(em(sozinho, 'a', [24, 26, 60, 74, 76, 100, 104, 106, 140, 154, 156]))
+      .toEqual([false, true, true, true, false, false, false, true, true, true, false]);
+    // em vista no último quadro: segue pedido depois do fim (a fase 'end')
+    expect(em(sozinho, 'c', [0, 14, 16, 100, 164, 166, 200, 1e6])).toEqual([true, true, false, false, false, true, true, true]);
+    expect(em(sozinho, 'longe', [0, 100, 200])).toEqual([false, false, false]);
+    // o pedido do roteiro adianta a janela da PRÓXIMA passagem; pedir o que a câmera nunca vê não segura nada,
+    // e o corpo que o palco não conhece fica pedido até o fim, como num filme sem palco
+    const pedindo = montarApoiosDoRoteiro([
+      { dur: 80, preload: { corpos: ['a', 'longe', 'mars'] } }, { dur: 120, preload: { corpos: ['a'] } },
+    ], [10, 90], palco);
+    expect(em(pedindo, 'a', [9.9, 10, 76, 89.9, 90, 154, 156])).toEqual([false, true, false, false, true, true, false]);
+    expect(em(pedindo, 'longe', [10, 100])).toEqual([false, false]);
+    expect(em(pedindo, 'mars', [9.9, 10, 1e6])).toEqual([false, true, true]);
+  });
+
   it('mudar o JSON muda a preparação no Director e os tempos reais de captura', async () => {
     vi.resetModules();
     vi.stubGlobal('window', { location: { search: '' } });
@@ -113,9 +146,9 @@ describe('apoios do roteiro — item 75', () => {
       expect(d.palcoQuente).toBe(false);
       d.journeyT = perfil.t0;
       expect(d.palcoQuente).toBe(true);
-      // O SEGURADOR DO ROTEIRO É MONOTÔNICO (item 115): uma vez aceso,
-      // aceso até o fim do filme — é isso que impede a descarga de tirar
-      // do roteiro um corpo que ele vai usar em seguida.
+      // NO GALÁCTICO, QUE NÃO DÁ PALCO AO MOTOR, O SEGURADOR DO ROTEIRO É
+      // MONOTÔNICO (item 115): uma vez aceso, aceso até o fim do filme —
+      // a descarga não tira do roteiro um corpo que ele vai usar em seguida.
       const fim = audit.shots[audit.shots.length - 1];
       for (const t of [REVEAL_T, REVEAL_T + 1, perfil.t0, fim.t0 + fim.dur]) {
         d.journeyT = t;

@@ -58,11 +58,11 @@ export function vizinhancaLiberada(
 }
 
 /**
- * No filme, só os corpos e os momentos declarados pelo roteiro — e o
- * pedido é MONOTÔNICO: `montarApoiosDoRoteiro` guarda o INÍCIO de cada
- * corpo e responde `t >= inicio`, então uma vez aceso ele fica aceso até
- * o filme acabar. É essa monotonia que garante que a descarga nunca
- * tire do roteiro um corpo que ele vai usar em seguida.
+ * No filme, quem decide é o motor (`montarApoiosDoRoteiro`): com o caminho
+ * da câmera e os pinos, cada corpo fica pedido só em volta das vezes em que
+ * aparece, e o `preload.corpos` do roteiro adianta esse pedido; no filme que
+ * não dá palco ao motor, o pedido do roteiro vale até o fim. Nos dois casos a
+ * descarga nunca tira do filme um corpo que ele vai mostrar em seguida.
  *
  * 'journey' OU 'end' CONTAM COMO FILME (item 225): a legenda do
  * encerramento ("pálido ponto azul") vive na fase 'end', e até aqui só

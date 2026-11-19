@@ -146,8 +146,8 @@ export interface FiosDoPalco {
    *
    * Eram um booleano só (`preAquecer`) até o item 115, e viraram dois
    * porque a DESCARGA precisa saber quem segura: o foco do Atlas solta
-   * no clique seguinte, o pedido do roteiro é monotônico até o fim do
-   * filme. A política dos dois mora em `director/preAquecimento.ts`.
+   * no clique seguinte, o pedido do filme vale enquanto a câmera dele vê o
+   * corpo. A política dos dois mora em `director/preAquecimento.ts`.
    */
   noFoco: (id: string) => boolean;
   noRoteiro: (id: string) => boolean;

@@ -151,6 +151,37 @@ describe('o filme solar monta', () => {
     expect(antesDe(plano('saturnoChegada').inicio, ['saturn', 'enceladus', 'hyperion', 'mimas', 'titan'])).toEqual([]);
   });
 
+  it('o motor segura cada corpo só em volta das vezes em que a câmera o vê: nos anéis de Saturno, só o sistema de Saturno', () => {
+    // até 19/11 os vinte e dois corpos ficavam guardados até o fim do filme:
+    // 3,2 GiB de textura, e a placa desistia nos anéis de Saturno
+    const ids = [...pinos.keys()].filter((id) => id !== 'sun');
+    const segurados = (t: number) => ids.filter((id) => apoios.preAquecerCorpo(t, id)).sort();
+    expect(segurados(plano('saturnoRasante').inicio)).toEqual(['enceladus', 'hyperion', 'mimas', 'saturn', 'titan']);
+    // numa tela de 1080 px, todo corpo com tamanho de disco (o gate de 4 px do palco) está
+    // pedido, e já estava 15 s antes; o máximo de uma vez são as cinco de Júpiter e as cinco
+    // de Saturno, no arco de saída de Júpiter
+    const camera = new Journey(shots, starts);
+    const semPedido: string[] = [];
+    let maximo = 0;
+    for (let t = 0; t <= duracao; t += 0.5) {
+      const { pos, fov } = camera.at(t);
+      maximo = Math.max(maximo, segurados(t).length);
+      for (const id of ids) {
+        const px = (2 * Math.atan(raioPc(id) / pos.distanceTo(pinos.get(id)!)) * 1080) / (2 * Math.tan(THREE.MathUtils.degToRad(fov) / 2));
+        if (px >= 4 && !(apoios.preAquecerCorpo(t, id) && apoios.preAquecerCorpo(Math.max(0, t - 15), id))) {
+          semPedido.push(`${id} em t=${t}`);
+        }
+      }
+    }
+    expect(semPedido).toEqual([]);
+    expect(maximo).toBe(10);
+    // a Terra e a Lua voltam a ser pedidas antes do corte do epílogo, sem o roteiro pedir, e ficam depois do fim
+    const corte = plano('mesmaLuz').inicio;
+    expect(['earth', 'moon'].filter((id) => !apoios.preAquecerCorpo(corte - 15, id))).toEqual([]);
+    expect(segurados(plano('saturnoChegada').inicio + 1)).not.toContain('earth');
+    expect(segurados(1e6)).toEqual(['earth', 'moon']);
+  });
+
   it('a auditoria editorial do motor não acha sobreposição nem legenda vazando um corte sem ponte', () => {
     const auditoria = auditarRoteiro(shots, starts);
     expect(auditoria.duration).toBe(duracao);

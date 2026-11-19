@@ -20,7 +20,7 @@ import { APOIOS_DO_FILME } from '../cinematic/journey';
 
 // 'earth' e 'moon' são preload do roteiro real (revelacao.json) — um t
 // bem depois de qualquer início real confirma que o roteiro os pediu
-// (o pedido é monotônico: `t >= inicio`).
+// (o galáctico não solta ninguém: pedido até o fim).
 const T_BEM_DEPOIS_DO_FILME = 1e6;
 
 describe('o pedido do roteiro conta o fim do filme como filme', () => {

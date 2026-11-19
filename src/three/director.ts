@@ -719,7 +719,7 @@ export class Director {
   private readonly perturbarDoPalco = () => this.perturbar();
   /** A política mora em preAquecimento; a ligação ao this é feita uma vez.
    *  São DUAS mãos desde o item 115 — o foco solta no clique seguinte, o
-   *  roteiro segura até o fim do filme, e a descarga precisa da diferença. */
+   *  filme segura enquanto a câmera dele vê o corpo, e a descarga precisa da diferença. */
   private corpoNoFoco(id: string): boolean {
     return corpoNoFocoDoAtlas(this.phase, this.escada.focoCorpoId, id);
   }

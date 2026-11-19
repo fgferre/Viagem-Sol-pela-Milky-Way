@@ -547,12 +547,15 @@ export const CANAL_HORIZONTE2: CanalPedido = { canal: 'horizon2', cor: false, re
  *    seguinte do visitante, e é EXATAMENTE esse caso que a carência
  *    protege: quem vai a Marte e volta à Terra em cinco segundos não
  *    paga rede nenhuma.
- *  - `filme`: o roteiro declarou o corpo (`preload.corpos`). É
- *    MONOTÔNICO no tempo do filme — `montarApoiosDoRoteiro` guarda o
- *    INÍCIO e responde `t >= inicio` —, então uma vez pedido o corpo
- *    fica segurado até o filme acabar. É por isso que a descarga não
- *    pode estrangular a viagem: ela nunca alcança um corpo que o
- *    roteiro ainda vai usar.
+ *  - `filme`: a câmera do filme vê o corpo agora ou vai ver em seguida.
+ *    Quem calcula é o motor, do caminho da câmera e dos pinos
+ *    (`PalcoDoRoteiro`, apoiosDoRoteiro.ts); o `preload.corpos` do roteiro
+ *    só adianta o pedido. É função só do tempo do filme, então vale igual
+ *    tocando, saltando ou retomando no meio — e a descarga nunca alcança
+ *    um corpo que o filme ainda vai mostrar. Até 19/11 o pedido ia até o
+ *    fim do filme, e os vinte e dois corpos do filme solar ficavam todos
+ *    residentes. (O filme que não dá palco ao motor segue assim: pedido
+ *    até o fim.)
  */
 export interface Seguradores {
   tela: boolean;
@@ -636,6 +639,17 @@ const carregarPelaRede: CarregadorDeTextura = async (url, sinal, aoChegar) => {
   const tex = new THREE.Texture(bitmap);
   tex.flipY = false;
   tex.needsUpdate = true;
+  // OS PIXELS DECODIFICADOS SÓ SERVEM ATÉ SUBIREM À PLACA. O three chama
+  // `onUpdate` logo depois do upload, e dali em diante o bitmap é uma
+  // segunda cópia da imagem na memória do sistema: 128 MiB por mapa de
+  // 8192×4096, perto de 1 GiB com a Terra e a Lua em cinema (medido em
+  // 19/11, `capturas/queda-filme-solar-19-11/`). Ninguém o lê depois: o
+  // tamanho do mapa é anotado na entrega (`publicar`), antes do upload, e
+  // textura de corpo nunca sobe duas vezes (não há `needsUpdate` depois).
+  tex.onUpdate = () => {
+    bitmap.close();
+    tex.onUpdate = null;
+  };
   return tex;
 };
 
