@@ -11,6 +11,14 @@ O dono trouxe um relatório de 13 itens e pediu: "analisado e endereçado, coord
 - [x] **F4 — interação** (item 11; feito, 4e70f7b7; provado contra o principal de antes por sonda): voo livre sem `blur` (tecla presa ao trocar de janela) e `onKeyDown` sem conferir `enabled`; Esc com o menu "Filmes" aberto e o foco fora dele sobe um degrau; "Via Láctea" no caminho do Atlas é texto morto (BACKLOG 26); o observador do HUD não vê o detalhe do selo nem a bússola acesa.
 - [x] **F5 — higiene de shader e Node** (itens 1 e 12; feito, 9b5333dc; Órion e as duas telas de carga idênticas ponto a ponto): 4 `smoothstep` de bordas invertidas e 2 `pow(negativo, 2.0)` reescritos em forma idêntica; `engines` no `package.json`. A foto do Berçário em Direct3D 11 e em Vulkan saiu igual (`capturas/auditoria-gemini-19-11/`): não há defeito visto neste PC, o risco que sobra é celular.
 
+## Segunda leitura do Gemini, depois dos consertos (19/11)
+
+Ele releu os dez commits e confirmou o resto; três pontos, conferidos no código antes de mexer:
+
+- [x] **O conserto do perfil do anel estava pela metade** (9574c270): a falha deixava de ficar guardada, mas o único pedido era o do nascimento da casca, e ninguém pedia de novo — Saturno seguia sem anel até recarregar. Agora `atualizar` pede de novo a cada 10 s do relógio do quadro, com o corpo na tela (o corpo não tem relógio próprio: o teste do cabeçalho barra `performance.now`).
+- [x] **"Aproximar" e "Sistema" da ficha largavam o foco no corpo da página** (o botão clicado some), e o Esc morria com a ficha aberta; o "Anéis" ao lado já devolvia o foco. Os dois passaram a devolver. Na tela: o botão some, o foco fica na ficha, o 1º Esc a fecha e o 2º sobe um degrau.
+- Ficam anotados, sem mexer: a cerca do motor (`cercaDoMotor`, um objeto `WebGLSync`) que não é apagada quando a tela de carga sai pelo teto de tempo — um objeto por página, só nesse caminho; o oráculo `aoClicarEmBrilho` (`selo.ts`), que só os testes usam e não limpa os 9 controles "vivos" que o clique de verdade limpa (`useEspelhoDaUrl.ts`); e o motor da galáxia desenhar 5 quadros em vez de 1 depois de cada mudança (a fatia passa de 1 para 4 no segundo quadro) — inofensivo.
+
 ## Não entra nesta rodada (dito ao dono)
 
 - Inércia do arrasto (item 8): a álgebra confere, o efeito realista é ~11 % num engasgo a 120 Hz, e a proposta não é idêntica a 60 Hz. Mexe no toque aprovado.
