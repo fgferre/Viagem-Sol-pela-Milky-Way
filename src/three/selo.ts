@@ -1251,6 +1251,28 @@ export function escalaDaVista(
  * assistência numa linha que diz ASSISTIDO — quem responde é a COPY: ela
  * nomeia o que restou (a amostragem) e diz o que o clique faz.
  */
+/**
+ * OS CONTROLES ESCOLHIDOS À MÃO que o clique na linha BRILHO devolve ao
+ * preset — chave do selo → campo da vista que volta a `null`. A lista é
+ * UMA SÓ: o oráculo abaixo a percorre, e o clique de verdade
+ * (`voltarAoBrilhoReal`, em `useEspelhoDaUrl.ts`) despacha por uma tabela
+ * tipada com estas mesmas chaves — controle novo que entre num lado e
+ * falte no outro não compila. O laboratório já tem a lista dele
+ * (`CONTROLES_DO_LABORATORIO`), usada igual pelos dois.
+ */
+export const FORCADOS_QUE_O_CLIQUE_SOLTA = {
+  msaa: 'amostras',
+  nebula: 'nebulosa',
+  escala: 'escala',
+  gas: 'gas',
+  terra: 'terra',
+  particulas: 'particulas',
+  galaxia: 'galaxia',
+  poeira: 'poeira',
+} as const satisfies Record<string, keyof EstadoDaVista>;
+
+export type ChaveForcada = keyof typeof FORCADOS_QUE_O_CLIQUE_SOLTA;
+
 export function aoClicarEmBrilho(e: EstadoDaVista): EstadoDaVista {
   const chaves = new Set(
     estadoDoSelo(e)
@@ -1258,8 +1280,17 @@ export function aoClicarEmBrilho(e: EstadoDaVista): EstadoDaVista {
       .map((c) => c.chave)
   );
   if (chaves.size === 0) return { ...e, luz: 'assistida' };
+  const soltos = Object.fromEntries(
+    Object.entries(FORCADOS_QUE_O_CLIQUE_SOLTA)
+      .filter(([chave]) => chaves.has(chave))
+      .map(([, campo]) => [campo, null])
+  ) as Partial<EstadoDaVista>;
   return {
     ...e,
+    ...soltos,
+    laboratorio: Object.fromEntries(
+      CONTROLES_DO_LABORATORIO.map((c) => [c.id, chaves.has(c.id) ? null : e.laboratorio[c.id]])
+    ) as Laboratorio,
     portas: e.portas.filter((p) => !chaves.has(p)),
     exposicaoManual: chaves.has('exp') ? false : e.exposicaoManual,
     tom: chaves.has('tone') ? TOM_PADRAO : e.tom,

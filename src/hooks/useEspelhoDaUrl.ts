@@ -32,6 +32,7 @@ import { chaveDoFoco, construirIndice } from '../lib/buscaEstrelas';
 import { CAMADAS } from '../three/atlasConfig';
 import { FILME_PADRAO } from '../three/cinematic/filme';
 import { estadoDoSelo } from '../three/selo';
+import type { ChaveForcada } from '../three/selo';
 import { ESCALA_PADRAO, aplicarEscalaDaUi, lerEscalaDaUi } from '../lib/uiScale';
 import {
   CONTROLES_DO_LABORATORIO,
@@ -42,6 +43,24 @@ import type { IdDoLaboratorio } from '../three/world/laboratorioDaGalaxia';
 
 /** a exposição de referência da casa — o 1,02 da vista interna */
 export const EXPOSICAO_PADRAO = 1.02;
+
+/**
+ * Como o clique na linha BRILHO solta cada controle escolhido à mão — as
+ * chaves são as de `FORCADOS_QUE_O_CLIQUE_SOLTA` (selo.ts), e o tipo
+ * cobra as duas listas iguais.
+ */
+const SOLTAR_DO_DIRECTOR: { readonly [K in ChaveForcada]: (d: Director) => void } = {
+  msaa: (d) => d.forcarAmostras(null),
+  nebula: (d) => d.forcarNebulosa(null),
+  escala: (d) => d.forcarEscala(null),
+  gas: (d) => d.forcarGas(null),
+  terra: (d) => d.forcarTerra(null),
+  particulas: (d) => d.forcarParticulas(null),
+  galaxia: (d) => d.forcarGalaxia(null),
+  // desarma TAMBÉM `poeiraTeste` (dentro de `forcarPoeira`): sem isto um
+  // `?poeira=teste` de bancada continuaria no ar depois do clique
+  poeira: (d) => d.forcarPoeira(null),
+};
 
 /**
  * Reescreve a query preservando tudo que não é o parâmetro tocado.
@@ -515,33 +534,16 @@ export function useEspelhoDaUrl(dep: {
       } else if (c.chave === 'lente') {
         d.definirLente('nenhuma');
         setLente('nenhuma');
-      } else if (c.chave === 'msaa') {
-        // a suavização escolhida à mão volta ao preset (item 145) — e
-        // sem este ramo ela cairia no `setLayerHidden` lá embaixo, que
-        // não conhece esta chave: o selo apagaria a linha da URL e a
-        // cena continuaria com o número forçado
-        d.forcarAmostras(null);
-      } else if (c.chave === 'nebula') {
-        d.forcarNebulosa(null);
-      } else if (c.chave === 'escala') {
-        d.forcarEscala(null);
-      } else if (c.chave === 'gas') {
-        d.forcarGas(null);
-      } else if (c.chave === 'terra') {
-        d.forcarTerra(null);
+      } else if (Object.hasOwn(SOLTAR_DO_DIRECTOR, c.chave)) {
+        // os controles escolhidos à mão voltam ao preset — e sem este
+        // ramo cairiam no `setLayerHidden` lá embaixo, que não os
+        // conhece: o selo apagaria a linha da URL e a cena continuaria
+        // com o valor forçado
+        SOLTAR_DO_DIRECTOR[c.chave as ChaveForcada](d);
       } else if (c.chave === 'relevo') {
         d.definirRelevo('real');
-      } else if (c.chave === 'particulas') {
-        d.forcarParticulas(null);
-      } else if (c.chave === 'galaxia') {
-        d.forcarGalaxia(null);
       } else if (CONTROLES_DO_LABORATORIO.some((l) => l.id === c.chave)) {
         d.forcarLaboratorio(c.chave as IdDoLaboratorio, null);
-      } else if (c.chave === 'poeira') {
-        // desarma TAMBÉM `poeiraTeste` (dentro de `forcarPoeira`): sem
-        // isto um `?poeira=teste` de bancada continuaria no ar depois
-        // do clique, com a URL já limpa
-        d.forcarPoeira(null);
       } else if (c.chave === 'luz') {
         // volta ao 1/d² cru no próximo quadro (D2 — volta 'vivo'), e o
         // carimbo porque esta é a única linha sem espelho em React: sem

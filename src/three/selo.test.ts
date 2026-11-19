@@ -33,6 +33,7 @@ import {
   estadoDoSelo,
   legendaDaProcedencia,
   CARTOGRAFIA_DESLIGADA,
+  FORCADOS_QUE_O_CLIQUE_SOLTA,
 } from './selo';
 import type { EstadoDaVista } from './selo';
 import {
@@ -611,6 +612,42 @@ describe('3. clicar volta ao real', () => {
     expect(depois.luz).toBe('real');
     expect(estadoDoSelo(depois).brilho).toBe('assistido');
     expect(estadoDoSelo(depois).desvios.map((d) => d.chave)).toEqual(['q']);
+  });
+
+  // os controles escolhidos à mão, cada um fora do preset
+  const A_MAO: Partial<EstadoDaVista> = {
+    amostras: 4,
+    nebulosa: 'baixa',
+    escala: 0.5,
+    gas: 'fino',
+    terra: 'classica',
+    particulas: 'metade',
+    galaxia: 'classica',
+    poeira: 'forte',
+  };
+
+  it('solta os controles escolhidos à mão, como o clique de verdade', () => {
+    // o clique (`voltarAoBrilhoReal`) devolve ao preset os oito controles
+    // da gaveta e o laboratório; o oráculo tem de dizer o mesmo
+    const sujo = com({ ...A_MAO, laboratorio: { ...LABORATORIO_PADRAO, lod: 24, filhas: 2 } });
+    const limpo = aoClicarEmBrilho(sujo);
+    expect(limpo).toEqual(LIMPA);
+    expect(estadoDoSelo(limpo).brilho).toBe('real');
+  });
+
+  it('a lista única dos soltos cobre cada linha viva que lê um controle à mão', () => {
+    // cada chave da lista que o clique e o oráculo usam é uma linha `vivo`
+    // do registro, e o campo dela é o que a linha lê
+    expect(Object.keys(FORCADOS_QUE_O_CLIQUE_SOLTA).sort()).toEqual(
+      Object.keys(A_MAO).map((campo) =>
+        Object.entries(FORCADOS_QUE_O_CLIQUE_SOLTA).find(([, c]) => c === campo)?.[0]
+      ).sort()
+    );
+    for (const [chave, campo] of Object.entries(FORCADOS_QUE_O_CLIQUE_SOLTA)) {
+      const linha = REGISTRO.find((c) => c.chave === chave);
+      expect(linha?.volta, chave).toBe('vivo');
+      expect(linha?.desvia(com({ [campo]: A_MAO[campo] })), chave).toBe(true);
+    }
   });
 });
 
