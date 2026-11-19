@@ -100,6 +100,8 @@ import type { IdDoLaboratorio } from '../three/world/laboratorioDaGalaxia';
  * As quatro curvas. O NOME é marca (ACES, AgX) e não se traduz; a NOTA
  * é frase, e sai do dicionário na língua de agora (item 130).
  */
+const CATEGORIAS = ['imagem', 'interface', 'desempenho', 'sessao'] as const;
+
 const TONS: { id: ToneMapMode; nome: string; nota: ChaveDeTexto }[] = [
   { id: 'aces', nome: 'ACES', nota: 'ajustes.tom.aces' },
   { id: 'agx', nome: 'AgX', nota: 'ajustes.tom.agx' },
@@ -367,6 +369,7 @@ export function Ajustes({
   /** alça de arrasto no cabeçalho (`CabecalhoDoPainel`) — só na folha do celular */
   celular?: boolean;
 }) {
+  const [categoria, setCategoria] = useState<(typeof CATEGORIAS)[number]>('imagem');
   const [copiado, setCopiado] = useState(false);
   // O ANEL DE CONFIRMAÇÃO (reaudito C3d) — conta só sucessos REAIS do
   // clipboard; a falha (abaixo) nunca incrementa, então nunca acende — é
@@ -473,77 +476,30 @@ export function Ajustes({
         onFechar={onFechar}
         rotuloFechar={t('ajustes.fechar')}
         celular={celular}
-      />
+      >
+        <div className="ajustes-navegacao" role="group" aria-label={t('ajustes.categorias')}>
+          {CATEGORIAS.map((id) => (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={categoria === id}
+              aria-controls={`ajustes-painel-${id}`}
+              onClick={() => {
+                setCategoria(id);
+                dialogo.ref.current?.scrollTo(0, 0);
+              }}
+            >
+              <span>{t(`ajustes.grupo.${id}`)}</span>
+            </button>
+          ))}
+        </div>
+      </CabecalhoDoPainel>
 
-      <section className="ajustes-grupo" aria-labelledby="ajustes-grupo-interface">
-        <h3 className="ajustes-grupo-titulo" id="ajustes-grupo-interface">
-          {t('ajustes.grupo.interface')}
-        </h3>
-        {/* O SELETOR DE IDIOMA (item 130, F1). Mora AQUI e não na barra
-            nem na URL: a barra é o lugar do que se usa a toda hora, e a
-            URL desta casa é espelho da vista, não painel — knob de URL
-            foi recusado pelo dono. Troca a língua AO VIVO, sem recarregar.
-            O nome de cada língua vem NA PRÓPRIA LÍNGUA ("Português",
-            "English"): quem não lê a língua de agora precisa reconhecer a
-            dele na lista, e "Portuguese" não ajuda quem procura o
-            português. */}
-        <LinhaDeAjuste
-          id="idioma"
-          rotulo={t('ajustes.idioma')}
-          dica={t('ajustes.idiomaNota')}
-          dicaPresa={dicaPresa}
-          onAlternarDica={alternarDica}
-        >
-          <Segmentado
-            aria={t('ajustes.idioma')}
-            valor={idioma}
-            opcoes={IDIOMAS.map((lingua) => ({
-              valor: lingua.id,
-              nome: lingua.nome,
-              lang: lingua.id,
-            }))}
-            onEscolher={definirIdioma}
-          />
-        </LinhaDeAjuste>
-
-        <LinhaDeAjuste
-          id="texto"
-          rotulo={t('ajustes.texto', { degrau: rotuloDaEscala(escalaUi) })}
-          dica={t('ajustes.textoNota')}
-          dicaPresa={dicaPresa}
-          onAlternarDica={alternarDica}
-        >
-          <Segmentado
-            aria={t('ajustes.texto', { degrau: rotuloDaEscala(escalaUi) })}
-            valor={escalaUi}
-            opcoes={DEGRAUS_DA_UI.map((f) => ({ valor: f, nome: rotuloDaEscala(f) }))}
-            onEscolher={onEscalaUi}
-          />
-        </LinhaDeAjuste>
-
-        <LinhaDeAjuste
-          id="rotulos3d"
-          rotulo={t('ajustes.rotulos3d')}
-          dica={t('ajustes.rotulos3dNota')}
-          dicaPresa={dicaPresa}
-          onAlternarDica={alternarDica}
-        >
-          <Segmentado
-            aria={t('ajustes.rotulos3d')}
-            valor={rotulos3d}
-            opcoes={[
-              { valor: false, nome: t('ajustes.desligados') },
-              { valor: true, nome: t('ajustes.ligados') },
-            ]}
-            onEscolher={onRotulos3d}
-          />
-        </LinhaDeAjuste>
-      </section>
-
-      <section className="ajustes-grupo" aria-labelledby="ajustes-grupo-imagem">
-        <h3 className="ajustes-grupo-titulo" id="ajustes-grupo-imagem">
-          {t('ajustes.grupo.imagem')}
-        </h3>
+      <section
+        id="ajustes-painel-imagem"
+        aria-label={t('ajustes.grupo.imagem')}
+        hidden={categoria !== 'imagem'}
+      >
         {/* EXPOSIÇÃO não tem "?": nunca teve nota própria (a frase que
             existia era só o valor, não uma explicação), e o redesenho não
             inventa texto novo — o valor mora ao lado do controle. */}
@@ -606,10 +562,77 @@ export function Ajustes({
         )}
       </section>
 
-      <section className="ajustes-grupo" aria-labelledby="ajustes-grupo-desempenho">
-        <h3 className="ajustes-grupo-titulo" id="ajustes-grupo-desempenho">
-          {t('ajustes.grupo.desempenho')}
-        </h3>
+      <section
+        id="ajustes-painel-interface"
+        aria-label={t('ajustes.grupo.interface')}
+        hidden={categoria !== 'interface'}
+      >
+        {/* O SELETOR DE IDIOMA (item 130, F1). Mora AQUI e não na barra
+            nem na URL: a barra é o lugar do que se usa a toda hora, e a
+            URL desta casa é espelho da vista, não painel — knob de URL
+            foi recusado pelo dono. Troca a língua AO VIVO, sem recarregar.
+            O nome de cada língua vem NA PRÓPRIA LÍNGUA ("Português",
+            "English"): quem não lê a língua de agora precisa reconhecer a
+            dele na lista, e "Portuguese" não ajuda quem procura o
+            português. */}
+        <LinhaDeAjuste
+          id="idioma"
+          rotulo={t('ajustes.idioma')}
+          dica={t('ajustes.idiomaNota')}
+          dicaPresa={dicaPresa}
+          onAlternarDica={alternarDica}
+        >
+          <Segmentado
+            aria={t('ajustes.idioma')}
+            valor={idioma}
+            opcoes={IDIOMAS.map((lingua) => ({
+              valor: lingua.id,
+              nome: lingua.nome,
+              lang: lingua.id,
+            }))}
+            onEscolher={definirIdioma}
+          />
+        </LinhaDeAjuste>
+
+        <LinhaDeAjuste
+          id="texto"
+          rotulo={t('ajustes.texto', { degrau: rotuloDaEscala(escalaUi) })}
+          dica={t('ajustes.textoNota')}
+          dicaPresa={dicaPresa}
+          onAlternarDica={alternarDica}
+        >
+          <Segmentado
+            aria={t('ajustes.texto', { degrau: rotuloDaEscala(escalaUi) })}
+            valor={escalaUi}
+            opcoes={DEGRAUS_DA_UI.map((f) => ({ valor: f, nome: rotuloDaEscala(f) }))}
+            onEscolher={onEscalaUi}
+          />
+        </LinhaDeAjuste>
+
+        <LinhaDeAjuste
+          id="rotulos3d"
+          rotulo={t('ajustes.rotulos3d')}
+          dica={t('ajustes.rotulos3dNota')}
+          dicaPresa={dicaPresa}
+          onAlternarDica={alternarDica}
+        >
+          <Segmentado
+            aria={t('ajustes.rotulos3d')}
+            valor={rotulos3d}
+            opcoes={[
+              { valor: false, nome: t('ajustes.desligados') },
+              { valor: true, nome: t('ajustes.ligados') },
+            ]}
+            onEscolher={onRotulos3d}
+          />
+        </LinhaDeAjuste>
+      </section>
+
+      <section
+        id="ajustes-painel-desempenho"
+        aria-label={t('ajustes.grupo.desempenho')}
+        hidden={categoria !== 'desempenho'}
+      >
         <LinhaDeAjuste
           id="qualidade"
           rotulo={t('ajustes.qualidade')}
@@ -971,10 +994,11 @@ export function Ajustes({
         </Sanfona>
       </section>
 
-      <section className="ajustes-grupo" aria-labelledby="ajustes-grupo-sessao">
-        <h3 className="ajustes-grupo-titulo" id="ajustes-grupo-sessao">
-          {t('ajustes.grupo.sessao')}
-        </h3>
+      <section
+        id="ajustes-painel-sessao"
+        aria-label={t('ajustes.grupo.sessao')}
+        hidden={categoria !== 'sessao'}
+      >
         {/* OS DOIS BOTÕES DE AÇÃO (Lote 7) — largura cheia, empilhados, sem
             rótulo; "rever o convite" só existe no voo livre (`onReverConvite`
             ausente fora dele) e conserva o "?" com a nota do convite. */}

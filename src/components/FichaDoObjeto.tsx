@@ -47,7 +47,7 @@ import { Ajuda } from './Ajuda';
 import { CabecalhoDoPainel } from './CabecalhoDoPainel';
 import { Icone } from './Icone';
 import { Sanfona } from './Sanfona';
-import type { CorpoNoJson, CorposDoAtlas, FonteDaFicha, IdDeSecao } from '../lib/atlas/ficha';
+import type { CorpoNoJson, CorposDoAtlas, FonteDaFicha, IdDeSecao, LinhaDaFicha } from '../lib/atlas/ficha';
 import {
   montarFicha,
   montarFichaDeCometa,
@@ -238,13 +238,7 @@ export function FichaDoObjeto({
     corpo: string | null;
     secoes: readonly IdDeSecao[];
   } | null>(null);
-  /** o título que "Ler mais" realçou por último, e QUANTAS vezes — por
-   *  CLIQUE, não por mudança de valor (`useRealce`): a seção pode já
-   *  estar aberta, e mesmo assim o clique confirma o destino de novo. */
-  const [realceLerMais, setRealceLerMais] = useState<{
-    secaoId: IdDeSecao;
-    vezes: number;
-  } | null>(null);
+  const [introducaoExpandida, setIntroducaoExpandida] = useState<string | null>(null);
   const alvo = corpoId ?? estrelaEmFoco;
   const escolhidas = abertas && abertas.corpo === alvo ? abertas.secoes : null;
   // A CONFIRMAÇÃO DA ESCOLHA (C3b, reaudit) — o ID ESTÁVEL do alvo, nunca
@@ -331,25 +325,10 @@ export function FichaDoObjeto({
     [corpoId, estrelaEmFoco, estrela, lugar, sonda, cometa, exoplaneta, jd, fonte, corpos, texturas, camaraUa, realceDoRelevo, idioma]
   );
 
-  /**
-   * A INTRODUÇÃO (Lote 5, PLAN-UI.md §3.5) — as três primeiras linhas do
-   * texto da seção Contexto ("o que é"), ou da primeira curiosidade
-   * quando não há contexto; NUNCA as duas, e nunca inventada: sem
-   * nenhuma das duas, sem introdução (o `null` abaixo). `useMemo` e não
-   * cálculo direto no JSX porque `ficha` pode ser `null` até aqui — o
-   * hook precisa correr em toda passada, antes do `return null` de baixo.
-   */
-  const introducao = useMemo(() => {
-    const contexto = ficha?.secoes.find((s) => s.id === 'contexto');
-    if (contexto && contexto.linhas.length > 0) {
-      return { secaoId: 'contexto' as const, texto: contexto.linhas[0].valor };
-    }
-    const curiosidades = ficha?.secoes.find((s) => s.id === 'curiosidades');
-    if (curiosidades && curiosidades.linhas.length > 0) {
-      return { secaoId: 'curiosidades' as const, texto: curiosidades.linhas[0].valor };
-    }
-    return null;
-  }, [ficha]);
+  // A primeira descrição aparece uma única vez, acima das seções de dados.
+  const contexto = ficha?.secoes.find((s) => s.id === 'contexto');
+  const secaoDaIntroducao = contexto ?? ficha?.secoes.find((s) => s.id === 'curiosidades');
+  const introducao = secaoDaIntroducao?.linhas[0];
 
   /**
    * A LINHA DA COMPACTA (fix, 09/09) — "rótulo · valor" sob o nome, a
@@ -453,7 +432,11 @@ export function FichaDoObjeto({
   }, [aberta, temFicha, podeAproximar, noSistema, temAneis, idioma, celular, fichaExpandida]);
 
   if (!aberta || !ficha) return null;
-  const primeira = ficha.secoes[0]?.id;
+  const secoes = ficha.secoes
+    .map((secao) => secao === secaoDaIntroducao ? { ...secao, linhas: secao.linhas.slice(1) } : secao)
+    .filter((secao) => secao.linhas.length > 0);
+  const primeira = secoes[0]?.id;
+  const introducaoAberta = introducaoExpandida === ficha.id;
   // A COMPACTA (Lote 5, §7 + B2, 09/09): existe no celular OU numa
   // janela BAIXA da mesa (`compactavel`) — as duas são "onde a ficha
   // cheia não cabe sem cobrir o quadro". Fora delas a mesa sempre mostra
@@ -537,6 +520,7 @@ export function FichaDoObjeto({
               type="button"
               ref={fichaExpandida ? recolherRef : detalhesRef}
               className="atlas-ficha-detalhes"
+              aria-expanded={fichaExpandida}
               aria-label={t(fichaExpandida ? 'ficha.recolherAria' : 'ficha.detalhesAria')}
               onClick={() => onAlternarFichaExpandida?.()}
             >
@@ -558,7 +542,7 @@ export function FichaDoObjeto({
           simplesmente não desenha nada (comentário do `useMemo`). */}
       {compacta && resumoCompacto && (
         <p className="atlas-ficha-resumo">
-          {resumoCompacto.rotulo} · {resumoCompacto.valor}
+          {resumoCompacto.rotulo} · <strong>{resumoCompacto.valor}</strong>
         </p>
       )}
 
@@ -573,7 +557,7 @@ export function FichaDoObjeto({
         {podeAproximar && (
           <button
             type="button"
-            className="hud-btn small"
+            className="hud-btn small atlas-ficha-visitar"
             onClick={onAproximar}
             aria-label={t('ficha.aproximarAria', { nome: ficha.nome })}
           >
@@ -585,7 +569,7 @@ export function FichaDoObjeto({
         {onAneis && (
           <button
             type="button"
-            className="hud-btn small"
+            className="hud-btn small hud-btn--discreto"
             onClick={() => {
               onAneis();
               // o botão some na vista dos anéis: o foco fica na ficha, e o Esc a
@@ -602,7 +586,7 @@ export function FichaDoObjeto({
         {!noSistema && (
           <button
             type="button"
-            className="hud-btn small"
+            className="hud-btn small hud-btn--discreto"
             onClick={onSistema}
             aria-label={t('ficha.sistemaAria')}
           >
@@ -618,14 +602,6 @@ export function FichaDoObjeto({
           não são o que a compacta promete mostrar. */}
       {!compacta && (
         <>
-          {/* A INTRODUÇÃO (§3.5) — três linhas do texto de Contexto, ou
-              da primeira curiosidade sem ele; "Ler mais" abre a seção de
-              origem e rola até ela, sem duplicar o texto. O BOTÃO FICA
-              FORA do `<p>` clampado de propósito: um filho inline dentro
-              de `-webkit-line-clamp` mede a caixa errado (medido: o
-              recorte parava numa altura maior que 3 linhas e "Ler mais"
-              saía cortado sem elipse) — irmão depois do parágrafo, o
-              clamp mede só o texto que existe para ser cortado. */}
           {introducao && (
             <div
               className={
@@ -633,42 +609,26 @@ export function FichaDoObjeto({
                 (dadosAcabaramDeChegar ? ' atlas-ficha-assenta' : '')
               }
             >
-              <p className="atlas-ficha-intro">{introducao.texto}</p>
+              <dl className="atlas-ficha-intro" id="ficha-introducao">
+                <dt>{introducao.rotulo}</dt>
+                <dd>
+                  <p className={introducaoAberta ? undefined : 'atlas-ficha-intro-recorte'}>
+                    {introducao.valor}
+                  </p>
+                  {introducaoAberta && <ProcedenciaDaLinha linha={introducao} />}
+                </dd>
+              </dl>
               <button
                 type="button"
                 className="atlas-ficha-lermais"
-                onClick={() => {
-                  const secaoId = introducao.secaoId;
-                  const base = escolhidas ?? (primeira ? [primeira] : []);
-                  if (!base.includes(secaoId)) {
-                    setAbertas({ corpo: alvo, secoes: [...base, secaoId] });
-                  }
-                  // O TÍTULO DE DESTINO CONFIRMA (C3b, reaudit) — por
-                  // CLIQUE, mesmo quando a seção já estava aberta.
-                  setRealceLerMais((anterior) => ({
-                    secaoId,
-                    vezes: anterior && anterior.secaoId === secaoId ? anterior.vezes + 1 : 1,
-                  }));
-                  const rolar = () =>
-                    document
-                      .getElementById(`ficha-secao-${secaoId}`)
-                      ?.scrollIntoView({ block: 'nearest' });
-                  rolar();
-                  // A SANFONA CRESCE (Sanfona.tsx/usePresenca.ts, ao longo
-                  // de `--t-entrada`) quando a seção estava fechada: a
-                  // primeira rolagem mede a caixa ainda colapsada. Espera
-                  // o `animationend` da PRÓPRIA sanfona (nenhuma duração
-                  // duplicada aqui, e ela já zera sob movimento reduzido)
-                  // e rola de novo — inofensivo quando a seção já estava
-                  // aberta, porque então nada anima e o evento não dispara.
-                  requestAnimationFrame(() => {
-                    document
-                      .getElementById(`ficha-${secaoId}`)
-                      ?.addEventListener('animationend', rolar, { once: true });
-                  });
-                }}
+                aria-expanded={introducaoAberta}
+                aria-controls="ficha-introducao"
+                onClick={() => setIntroducaoExpandida(introducaoAberta ? null : ficha.id)}
               >
-                {t('ficha.lerMais')}
+                {t(introducaoAberta ? 'ficha.lerMenos' : 'ficha.lerMais')}
+                <span className="atlas-ficha-seta" aria-hidden="true">
+                  <Icone nome="chevronDireita" tamanho={14} />
+                </span>
               </button>
             </div>
           )}
@@ -714,14 +674,9 @@ export function FichaDoObjeto({
             </p>
           )}
 
-          {ficha.secoes.map((secao) => {
+          {secoes.map((secao) => {
             const estaAberta =
               escolhidas === null ? secao.id === primeira : escolhidas.includes(secao.id);
-            // O TÍTULO DESTINO DO "LER MAIS" (C3b, reaudit) — só a seção
-            // que o botão abriu por último recebe o realce, e só enquanto
-            // `realceLerMais` continuar apontando para ela.
-            const realceDoTitulo =
-              realceLerMais && realceLerMais.secaoId === secao.id ? realceLerMais.vezes : 0;
             return (
               <section
                 key={secao.id}
@@ -748,12 +703,7 @@ export function FichaDoObjeto({
                       });
                     }}
                   >
-                    <span
-                      key={realceDoTitulo || 'estavel'}
-                      className={realceDoTitulo > 0 ? 'realce-texto' : undefined}
-                    >
-                      {secao.titulo}
-                    </span>
+                    <span>{secao.titulo}</span>
                     {/* A SETA NÃO TROCA MAIS DE DESENHO (C3c, reaudit): o
                         MESMO `chevronDireita` gira 0→90° por CSS
                         (`.atlas-ficha-seta`, 04-atlas.css), lido do
@@ -766,97 +716,62 @@ export function FichaDoObjeto({
                 <Sanfona id={`ficha-${secao.id}`} aberta={estaAberta}>
                   <dl className="atlas-ficha-linhas">
                     {secao.linhas.map((l, i) => {
-                  // TEXTO LONGO (frase, lista de catálogo) empilha a linha
-                  // inteira em vez de espremer em 60% da largura — ver o
-                  // comentário do `.larga` em 04-atlas.css.
-                  const larga = l.valor.length > LIMIAR_DA_LINHA_LARGA;
-                  return (
-                    <div
-                      className={'atlas-ficha-linha' + (larga ? ' larga' : '')}
-                      key={`${l.rotulo}-${i}`}
-                    >
-                      <dt>{l.rotulo}</dt>
-                      <dd>
-                        <span className="atlas-ficha-valor-linha">
-                          <span className="atlas-ficha-valor">{l.valor}</span>
-                          {l.badge && (
-                            <span className="atlas-ficha-badge">{l.badge}</span>
-                          )}
-                        </span>
-                      </dd>
-                      {/* A PROCEDÊNCIA DE CADA NÚMERO, no vocabulário do
-                          selo e em nenhum outro — o `rotulo` é o do tier, e
-                          uma segunda redação aqui seria o quarto tier
-                          fantasma. IRMÃ de `dd` (não filha, redesenho 06/09):
-                          `grid-column: 1 / -1` só alcança a linha inteira
-                          como item direto da grade de `.atlas-ficha-linha`.
-                          O `title` é o da LINHA (`l.fonte`), não o do tier: o
-                          `oQue` do selo fala das ESTRELAS ("cor e temperatura
-                          por modelo"), e ele estava aparecendo ao passar o
-                          mouse na gravidade, na massa e no escape de um
-                          PLANETA, que saem de GM e do raio. Cada linha já
-                          declara de onde veio; é essa frase que o ponteiro
-                          tem de repetir. LINHA SEM SELO (o crédito da
-                          imagem, e o relevo que não se aplica) não desenha
-                          o selo: um ponto neutro ali se leria "artístico".
-                          SELO EM PARTES (a linha mista da imagem, 16/10/2026):
-                          cada parte leva o ponto e a cor do tier dela, e a
-                          caixa fica neutra, sem ponto próprio. */}
-                      {l.procedencia && l.partes && (
-                        <span className="atlas-ficha-proc partes" title={l.fonte}>
-                          {l.partes.map((p, i) => (
-                            <span key={p.procedencia}>
-                              {i > 0 && ' · '}
-                              <span className={`atlas-ficha-parte ${p.procedencia}`}>
-                                {p.texto}
-                              </span>
-                            </span>
-                          ))}
-                          {l.fonte ? ` · ${l.fonte}` : ''}
-                        </span>
-                      )}
-                      {l.procedencia && !l.partes && (
-                        <span
-                          className={`atlas-ficha-proc ${l.procedencia}`}
-                          title={l.fonte}
+                      const prosa = secao.id === 'contexto' || secao.id === 'curiosidades';
+                      const larga = prosa || l.valor.length > LIMIAR_DA_LINHA_LARGA;
+                      const destaque = secao.id === primeira && i === 0 && !larga;
+                      return (
+                        <div
+                          className={
+                            'atlas-ficha-linha' +
+                            (destaque ? ' atlas-ficha-linha-destaque' : '') +
+                            (larga ? ' larga' : '') +
+                            (prosa ? ' atlas-ficha-prosa' : '')
+                          }
+                          key={`${l.rotulo}-${i}`}
                         >
-                          {PROCEDENCIA[l.procedencia].rotulo}
-                          {l.fonte ? ` · ${l.fonte}` : ''}
-                        </span>
-                      )}
-                    </div>
-                  );
+                          <dt>{l.rotulo}</dt>
+                          <dd>
+                            <span className="atlas-ficha-valor-linha">
+                              <span className="atlas-ficha-valor">{l.valor}</span>
+                              {l.badge && (
+                                <span className="atlas-ficha-badge">{l.badge}</span>
+                              )}
+                            </span>
+                            <ProcedenciaDaLinha linha={l} />
+                          </dd>
+                        </div>
+                      );
                     })}
-                    {/* O RELEVO INVENTADO mora AQUI (Lote 5, PLAN-UI.md §3.5:
-                        "vai para a seção 'A imagem'") — é a MESMA linha de
-                        sempre (rótulo + "?" à esquerda, `.hud-interruptor` à
-                        direita, no molde de `.ajustes-item`), só que agora
-                        dentro da seção que fala da foto, e não mais solta
-                        acima de todas as seções. Fecha e reabre com ela. */}
-                    {secao.id === 'imagem' && relevoDaCor !== null && (
-                      <label className="ajustes-item">
-                        <span className="ajustes-rotulo-caixa">
-                          <span className="ajustes-rotulo">{t('ficha.relevoDaCor')}</span>
-                          <Ajuda
-                            id="relevo"
-                            rotulo={t('ficha.relevoDaCor')}
-                            texto={t('ficha.relevoDaCorAria', { nome: ficha.nome })}
-                            presa={dicaPresa === 'relevo'}
-                            onAlternar={() => alternarDica('relevo')}
-                          />
-                        </span>
-                        <span className="ajustes-controle">
-                          <input
-                            type="checkbox"
-                            className="hud-interruptor"
-                            checked={relevoDaCor}
-                            aria-label={t('ficha.relevoDaCorAria', { nome: ficha.nome })}
-                            onChange={() => onRelevoDaCor(!relevoDaCor)}
-                          />
-                        </span>
-                      </label>
-                    )}
                   </dl>
+                  {/* O RELEVO INVENTADO mora AQUI (Lote 5, PLAN-UI.md §3.5:
+                      "vai para a seção 'A imagem'") — é a MESMA linha de
+                      sempre (rótulo + "?" à esquerda, `.hud-interruptor` à
+                      direita, no molde de `.ajustes-item`), só que agora
+                      dentro da seção que fala da foto, e não mais solta
+                      acima de todas as seções. Fecha e reabre com ela. */}
+                  {secao.id === 'imagem' && relevoDaCor !== null && (
+                    <label className="ajustes-item">
+                      <span className="ajustes-rotulo-caixa">
+                        <span className="ajustes-rotulo">{t('ficha.relevoDaCor')}</span>
+                        <Ajuda
+                          id="relevo"
+                          rotulo={t('ficha.relevoDaCor')}
+                          texto={t('ficha.relevoDaCorAria', { nome: ficha.nome })}
+                          presa={dicaPresa === 'relevo'}
+                          onAlternar={() => alternarDica('relevo')}
+                        />
+                      </span>
+                      <span className="ajustes-controle">
+                        <input
+                          type="checkbox"
+                          className="hud-interruptor"
+                          checked={relevoDaCor}
+                          aria-label={t('ficha.relevoDaCorAria', { nome: ficha.nome })}
+                          onChange={() => onRelevoDaCor(!relevoDaCor)}
+                        />
+                      </span>
+                    </label>
+                  )}
                 </Sanfona>
               </section>
             );
@@ -864,6 +779,23 @@ export function FichaDoObjeto({
         </>
       )}
     </div>
+  );
+}
+
+function ProcedenciaDaLinha({ linha }: { linha: LinhaDaFicha }) {
+  if (!linha.procedencia) return null;
+  return (
+    <span className="atlas-ficha-proc">
+      {linha.partes
+        ? linha.partes.map((parte, i) => (
+          <span key={parte.procedencia}>
+            {i > 0 && ' · '}
+            <span className={`atlas-ficha-parte ${parte.procedencia}`}>{parte.texto}</span>
+          </span>
+        ))
+        : PROCEDENCIA[linha.procedencia].rotulo}
+      {linha.fonte ? ` · ${linha.fonte}` : ''}
+    </span>
   );
 }
 

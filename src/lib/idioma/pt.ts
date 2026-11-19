@@ -167,7 +167,8 @@ export const PT = {
   'ajustes.grupo.terra': 'Terra',
   'ajustes.grupo.galaxia': 'Via Láctea',
   'ajustes.grupo.sessao': 'Sessão',
-  'ajustes.aria': 'Ajustes de renderização',
+  'ajustes.categorias': 'Categorias de ajustes',
+  'ajustes.aria': 'Ajustes da viagem',
   'ajustes.fechar': 'Fechar ajustes',
   // o rótulo do botão "?" de cada linha — a explicação em letra miúda
   // saiu do fluxo e virou dica sob demanda (redesenho do painel, 05/09)
@@ -337,6 +338,7 @@ export const PT = {
   'atlas.camadas': 'Camadas',
   'atlas.camadasBotao': 'Camadas',
   'atlas.fecharCamadas': 'Fechar camadas',
+  'atlas.camadasAtivas': 'ativas',
   'atlas.familiaConta': '{familia}: {ligadas} de {total} camadas ligadas',
   'atlas.seloAria': 'Selo de honestidade desta vista',
   'atlas.eixoEscala': 'escala',
@@ -397,14 +399,14 @@ export const PT = {
     'Nome de um corpo do sistema, ou nome, designação ou catálogo da estrela',
   // A DICA DO "?" (redesenho, pedido do dono: "aplica o mesmo padrão no
   // painel de Busca") — junta o que `busca.campoAria` diz (o que se pode
-  // digitar) com os exemplos de `busca.dica` e a explicação do UM NOME
+  // digitar) com os exemplos de nomes e a explicação do UM NOME
   // POR ESTRELA, que saiu da frase do estado vazio para morar só aqui.
   'busca.ajuda':
     'Digite o nome de um corpo do sistema, ou o nome, a designação (gama vel) ou o catálogo (hd 48915) de uma estrela — {exemplos}. O catálogo guarda um nome por estrela, o próprio quando existe.',
   // ENCURTADA (redesenho): a explicação do "um nome por estrela" mudou
   // para `busca.ajuda` — a frase do estado vazio agora é UMA linha. FIXA
   // (item 4b), sem `{alcance}` nem `{exemplos}`: o tamanho do catálogo e
-  // as dicas de formato moram só em `busca.ajuda`/`busca.dica` — aqui só
+  // as dicas de formato moram só em `busca.ajuda` — aqui só
   // três nomes que qualquer visitante reconhece.
   'busca.vazio': 'Nada com esse nome. Tente Terra, Sírius ou Andrômeda.',
   'busca.contagem':
@@ -418,7 +420,6 @@ export const PT = {
   'busca.verboEnquadra': 'enquadra',
   'busca.verboAtlas': 'abre o atlas nele',
   'busca.verboVoa': 'voa até lá',
-  'busca.dica': 'nome, designação (gama vel) ou catálogo (hd 48915) · {exemplos}',
   'busca.exemploCorpo': 'terra',
 
   // ---- os cartões de destino da busca vazia (Lote 6, §3.4) ----------
@@ -494,6 +495,7 @@ export const PT = {
   'ficha.recolher': 'Recolher',
   'ficha.recolherAria': 'Recolher para a ficha resumida',
   'ficha.lerMais': 'Ler mais',
+  'ficha.lerMenos': 'Ler menos',
   // ---- a ficha vazia e as falhas de carga (Lote 5, PLAN-UI.md §7/§9) --
   'ficha.vazia': 'Este lugar ainda não tem ficha de dados.',
   'ficha.erroDados':

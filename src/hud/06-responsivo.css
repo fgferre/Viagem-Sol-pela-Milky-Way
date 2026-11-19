@@ -398,3 +398,14 @@
     transition: none;
   }
 }
+
+/* Em paisagem, o cabeçalho com abas ou campo pode tomar toda a altura
+   da folha. A rolagem precisa conseguir mostrar o último controle. */
+@media (max-height: 520px) {
+  .hud-dialogo:is(.ajustes, .atlas-busca) {
+    scroll-padding-top: 0;
+  }
+  .hud-dialogo:is(.ajustes, .atlas-busca) .hud-cabecalho {
+    position: static;
+  }
+}

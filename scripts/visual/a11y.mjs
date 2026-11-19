@@ -677,7 +677,7 @@ async function julgarEscComDicaPresa(s, onde) {
   // DOM (não um clique em JS, que nunca passa pelo hit-test do
   // navegador nem dispara pointerenter).
   const alvo = await s.js(`(() => {
-    const b = document.querySelector('[data-dialogo="camadas"] .hud-ajuda');
+    const b = document.querySelector('[data-dialogo="camadas"] .atlas-gaveta-familia > div:not([hidden]) .hud-ajuda');
     const r = b.getBoundingClientRect();
     return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
   })()`);
@@ -691,7 +691,7 @@ async function julgarEscComDicaPresa(s, onde) {
   // `id` que o contrato do componente publica; ela fica sempre MONTADA,
   // então "solta" é o atributo `hidden`, não o desaparecimento do nó.
   const dicaDoBotao = `(() => {
-    const b = document.querySelector('[data-dialogo="camadas"] .hud-ajuda');
+    const b = document.querySelector('[data-dialogo="camadas"] .atlas-gaveta-familia > div:not([hidden]) .hud-ajuda');
     const d = b && document.getElementById(b.getAttribute('aria-controls'));
     return { presa: Boolean(d && d.classList.contains('presa')), escondida: Boolean(d && d.hidden) };
   })()`;
@@ -1503,6 +1503,8 @@ try {
   // ser lido.
   const desligada = await sessao.js(`(() => {
     const l = document.querySelector('[data-dialogo="camadas"] .atlas-gaveta-linha');
+    const grupo = l.closest('.atlas-gaveta-familia').querySelector('.atlas-camadas-grupo');
+    if (grupo.getAttribute('aria-expanded') === 'false') grupo.click();
     l.querySelector('input[type=checkbox]').click();
     return l.textContent.trim();
   })()`);
@@ -1852,6 +1854,7 @@ try {
     "window.localStorage.setItem('viagem-prefs', JSON.stringify({ conviteAtlasVisto: true }))"
   );
   await sessao.ir(`atlas=1&ajustes=1&${PIN}`);
+  await sessao.js(`document.querySelector('[aria-controls="ajustes-painel-desempenho"]').click()`);
 
   // A GAVETA "AVANÇADO" É RECOLHÍVEL E FECHADA POR PADRÃO (Lote 7) — os
   // controles (curva de tom, MSAA/amostras, nebulosa, gás, Terra, relevo,
@@ -1920,6 +1923,8 @@ try {
     'ajustes · qualidade: trocar para Performance muda a região viva'
       + ` ("${medidaAntes.texto}" → "${textoDepois}")`
   );
+
+  await sessao.js(`document.querySelector('[aria-controls="ajustes-painel-sessao"]').click()`);
 
   // COPIAR LINK, sucesso e falha (§9) — só tinha conferência por LEITURA
   // de `navigator.clipboard.writeText` resolvendo ou rejeitando; nunca
@@ -2734,6 +2739,7 @@ async function julgarEscalaDaUi(s) {
 
   // ---- a URL manda, o storage não sabe de nada --------------------
   await s.ir(`atlas=1&ajustes=1&${PIN}`);
+  await s.js(`document.querySelector('[aria-controls="ajustes-painel-interface"]').click()`);
   await s.js(`(() => {
     const b = [...document.querySelectorAll('[data-dialogo="ajustes"] button')]
       .find((e) => e.textContent.trim() === '120%');

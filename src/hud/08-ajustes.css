@@ -46,9 +46,78 @@
      (`var(--pad-painel)`, 01-base.css — Lote 2b). */
   padding-bottom: calc(var(--pad-painel) + 0.2rem);
 }
-/* O CABEÇALHO deste painel é `CabecalhoDoPainel` (Lote 2b) — a régua
-   comum de `01-base.css`; `.ajustes-topo` (a peça própria de antes)
-   saiu com ele. */
+.ajustes .hud-cabecalho {
+  container-type: inline-size;
+}
+.ajustes-navegacao {
+  display: grid;
+  grid-template-columns: repeat(4, auto);
+  gap: 0.2rem;
+  margin-top: 0.55rem;
+}
+.ajustes-navegacao button {
+  position: relative;
+  min-height: max(44px, 2.1rem);
+  padding: 0.3rem 0.2rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: var(--raio-controle) var(--raio-controle) 0 0;
+  background: transparent;
+  color: var(--texto-2);
+  font: 500 0.8125rem/1.25 var(--fonte-ui);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ajustes-navegacao button:hover {
+  color: var(--texto);
+  background: var(--hover);
+}
+.ajustes-navegacao button[aria-pressed='true'] {
+  color: var(--acento);
+  border-bottom-color: var(--acento);
+  background: color-mix(in srgb, var(--acento) 9%, transparent);
+}
+.ajustes-navegacao button:focus-visible,
+.ajustes .ajustes-seg button:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: -3px;
+  z-index: 1;
+}
+.ajustes section .ajustes-item:not(.ajustes-acao) {
+  padding-block: 0.65rem;
+  row-gap: 0.35rem;
+}
+.ajustes section .ajustes-rotulo {
+  font-weight: 500;
+  white-space: normal;
+}
+.ajustes section .ajustes-controle {
+  flex-basis: 100%;
+  margin: 0;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+.ajustes section .ajustes-controle input[type='range'] {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.ajustes .ajustes-seg {
+  width: 100%;
+}
+.ajustes .ajustes-seg button {
+  padding-inline: 0.3rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.ajustes .ajustes-seg button.on {
+  font-weight: 600;
+  background: color-mix(in srgb, var(--acento) 10%, transparent);
+}
+@container (max-width: 20rem) {
+  .ajustes-navegacao {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 
 .ajustes-grupo + .ajustes-grupo {
   margin-top: 0.85rem;
@@ -71,9 +140,6 @@
 }
 .ajustes-titulo-secao + .sanfona > .sanfona-miolo > .ajustes-grupo:first-child {
   padding-top: 0.45rem;
-}
-.ajustes-grupo-titulo + .ajustes-acoes {
-  margin-top: 0.5rem;
 }
 
 /* ---- A LINHA — o átomo do redesenho ---------------------------------

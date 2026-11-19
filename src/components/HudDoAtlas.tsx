@@ -18,7 +18,7 @@ import type { ReactElement } from 'react';
 import type { EstadoDaBussola } from '../three/cinematic/atlasRig';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
 import { CAMADAS_POR_FAMILIA, familiaEmTexto } from '../three/atlasConfig';
-import type { Camada } from '../three/atlasConfig';
+import type { Camada, FamiliaDeCamada } from '../three/atlasConfig';
 import { t } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
 import { useDicaPresa } from '../hooks/useDicaPresa';
@@ -54,7 +54,7 @@ import type { EstadoDoTempo, SentidoDoTempo } from '../three/tempoDoAtlas';
  * A CONTAGEM É O RESUMO DO GRUPO, e é o que se lê sem abrir nada: "3 de
  * 4" diz que alguma coisa do sistema solar está desligada sem obrigar a
  * varrer as caixas. Para quem ouve a tela ela vai no `aria-label` do
- * grupo; na tela é o par de números ao lado do título.
+ * cabeçalho que abre o grupo; na tela é o par de números ao lado do título.
  *
  * ELA EXISTE NOS DOIS MODOS — e, por consequência, em toda fase que tem
  * barra de controles: filme, voo livre e Atlas. É a MESMA peça nas três
@@ -123,6 +123,7 @@ export function GavetaDeCamadas({
   celular?: boolean;
 }) {
   const dialogo = useDialogFocus('camadas', ativa, onFechar);
+  const [familiaAberta, abrirFamilia] = useState<FamiliaDeCamada | null>('Estrelas');
   useIdioma();
   // A DICA PRESA (06/09) — o mesmo padrão do painel de Ajustes, com o
   // mesmo hook: fixar uma "?" apaga a de cima, clique fora do diálogo
@@ -133,7 +134,7 @@ export function GavetaDeCamadas({
   if (!aberta) return null;
   return (
     <div
-      className="hud-cartao hud-dialogo atlas-gaveta"
+      className="hud-cartao hud-dialogo atlas-gaveta atlas-camadas"
       aria-label={t('atlas.camadasAria')}
       {...dialogo}
       onClick={() => {
@@ -147,50 +148,62 @@ export function GavetaDeCamadas({
         rotuloFechar={t('atlas.fecharCamadas')}
         celular={celular}
       />
-      {CAMADAS_POR_FAMILIA.map(({ familia, camadas }) => {
+      {CAMADAS_POR_FAMILIA.map(({ familia, camadas, previa }, i) => {
         const ligadas = camadas.filter((c) => !escondidas.has(c.flag)).length;
+        const expandida = familiaAberta === familia;
+        const id = `atlas-camadas-familia-${i}`;
+        const nome = familiaEmTexto(familia);
         return (
           <div
             key={familia}
             className="atlas-gaveta-familia"
             role="group"
-            aria-label={t('atlas.familiaConta', {
-              familia: familiaEmTexto(familia),
-              ligadas,
-              total: camadas.length,
-            })}
+            aria-label={nome}
           >
             <h3 className="atlas-gaveta-titulo">
-              <span>{familiaEmTexto(familia)}</span>
-              {/* a contagem já foi dita no `aria-label` do grupo, e ouvi-la
-                  duas vezes a cada caixa seria ruído */}
-              <span className="atlas-gaveta-conta" aria-hidden="true">
-                {ligadas}/{camadas.length}
-              </span>
-            </h3>
-            {camadasParaExibir(camadas).map((c) => {
-              const ligada = !escondidas.has(c.flag);
-              return (
-                <label key={c.flag} className="atlas-gaveta-linha">
-                  <span className="atlas-gaveta-rotulo-caixa">
-                    <span className="atlas-gaveta-nome">{c.nome}</span>
-                    <Ajuda
-                      id={c.flag}
-                      rotulo={c.nome}
-                      texto={c.nota}
-                      presa={dicaPresa === c.flag}
-                      onAlternar={() => alternarDica(c.flag)}
-                    />
+              <button
+                type="button"
+                className="atlas-camadas-grupo"
+                aria-expanded={expandida}
+                aria-controls={id}
+                aria-label={t('atlas.familiaConta', { familia: nome, ligadas, total: camadas.length })}
+                onClick={() => abrirFamilia(expandida ? null : familia)}
+              >
+                <img className="atlas-camadas-previa" src={`${import.meta.env.BASE_URL}previas/${previa}.webp`} alt="" />
+                <span className="atlas-camadas-resumo">
+                  <span>{nome}</span>
+                  <span className="atlas-camadas-estado" aria-hidden="true">
+                    <span className="atlas-gaveta-conta">{ligadas}/{camadas.length}</span> {t('atlas.camadasAtivas')}
                   </span>
-                  <input
-                    type="checkbox"
-                    className="hud-interruptor"
-                    checked={ligada}
-                    onChange={() => onCamada(c.flag, !ligada)}
-                  />
-                </label>
-              );
-            })}
+                </span>
+                <Icone nome={expandida ? 'chevronBaixo' : 'chevronDireita'} tamanho={15} />
+              </button>
+            </h3>
+            <div id={id} hidden={!expandida}>
+              {camadasParaExibir(camadas).map((c) => {
+                const ligada = !escondidas.has(c.flag);
+                return (
+                  <label key={c.flag} className="atlas-gaveta-linha">
+                    <span className="atlas-gaveta-rotulo-caixa">
+                      <span className="atlas-gaveta-nome">{c.nome}</span>
+                      <Ajuda
+                        id={c.flag}
+                        rotulo={c.nome}
+                        texto={c.nota}
+                        presa={dicaPresa === c.flag}
+                        onAlternar={() => alternarDica(c.flag)}
+                      />
+                    </span>
+                    <input
+                      type="checkbox"
+                      className="hud-interruptor"
+                      checked={ligada}
+                      onChange={() => onCamada(c.flag, !ligada)}
+                    />
+                  </label>
+                );
+              })}
+            </div>
           </div>
         );
       })}

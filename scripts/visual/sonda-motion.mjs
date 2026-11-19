@@ -200,17 +200,9 @@ const SEL_CAMADAS_GATILHO = '[data-abre-dialogo="camadas"]';
 const SEL_AJUSTES_GATILHO = '[data-abre-dialogo="ajustes"]';
 const SEL_CAMADAS_PAINEL = '[data-dialogo="camadas"]';
 const SEL_AJUSTES_PAINEL = '[data-dialogo="ajustes"]';
-// O CONTAINER do segmentado "Qualidade" — pela POSIÇÃO (3º `.ajustes-seg`
-// do painel: Idioma, Texto, Qualidade, nesta ordem fixa em Ajustes.tsx),
-// nunca pelo `aria-label`: ele é TRADUZIDO (`t('ajustes.qualidade')`), e
-// um seletor em português quebra sob `--query=lang=en` (achado rodando
-// M1, DPR2+EN, 11/09 — "Qualidade" não existe em inglês). `nth-of-type`
-// não serve — cada `.ajustes-seg` é filho único do seu próprio
-// `.ajustes-controle`, então CSS puro não conta "o 3º da classe"; só um
-// `querySelectorAll` em ORDEM DE DOCUMENTO faz essa conta, daí ser uma
-// EXPRESSÃO JS (usada dentro de outro `(() => {...})()`), não um seletor
-// CSS como os `SEL_*` vizinhos.
-const jsSegQualidade = () => `Array.from(document.querySelectorAll('${SEL_AJUSTES_PAINEL} .ajustes-seg'))[2]`;
+const SEL_AJUSTES_DESEMPENHO = '[aria-controls="ajustes-painel-desempenho"]';
+const SEL_AJUSTES_SESSAO = '[aria-controls="ajustes-painel-sessao"]';
+const jsSegQualidade = () => `document.querySelector('${SEL_AJUSTES_PAINEL} .ajustes-seg--qualidade')`;
 // OS BOTÕES DA MÁQUINA DO TEMPO, pela mesma razão: o `aria-label` deles
 // é traduzido ("Avançar no tempo" não existe sob `--query=lang=en`, achado
 // rodando `--sequencia` em inglês, 11/09). Os três segmentados de
@@ -1199,6 +1191,7 @@ async function rodarSequencia() {
       await clicarReal(sessao, SEL_AJUSTES_GATILHO);
       await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_AJUSTES_PAINEL}'))`, teto(3000));
       await pausa(200);
+      await clicarReal(sessao, SEL_AJUSTES_SESSAO);
       await clicarReal(sessao, '.ajustes-acoes > .ajustes-copiar');
       await esperarPor(
         { js: sessao.js },
@@ -1427,6 +1420,7 @@ async function rodarInterrupcoes() {
     // ---------------------------------------------------------------
     await clicarReal(sessao, SEL_AJUSTES_GATILHO);
     await dorme(400);
+    await clicarReal(sessao, SEL_AJUSTES_DESEMPENHO);
     await clicarReal(sessao, SEL_AVANCADO_GATILHO); // abre
     // O REPOUSO É UM ESTADO, NÃO UM INSTANTE (doutrina de `esperarPor`):
     // no Edge (12/09) a dobra começou tarde e aos 400 ms a caixa ainda
@@ -3504,7 +3498,7 @@ async function cenaDicaC5(sessao, commit, pasta) {
   await esperarPor({ js: sessao.js }, `Boolean(document.querySelector('${SEL_AJUSTES_PAINEL}'))`, 3000);
   await dorme(400); // assenta a entrada do painel antes de medir
 
-  const seletorAjuda = `${SEL_AJUSTES_PAINEL} .hud-ajuda`;
+  const seletorAjuda = '#ajustes-painel-imagem .hud-ajuda';
   const rAjuda = await retanguloDe(sessao, seletorAjuda);
   if (!rAjuda) throw new Error(`v8: "${seletorAjuda}" não encontrado`);
   const idDica = await sessao.js(
@@ -5235,6 +5229,7 @@ try {
     await clicarReal(sessao, SEL_AJUSTES_GATILHO);
     await dorme(500);
 
+    await clicarReal(sessao, SEL_AJUSTES_DESEMPENHO);
     // e) segmentado "Qualidade": escolhe outra opção e mede o filete
     const antesSeg = await sessao.js(`(() => {
       const g = ${jsSegQualidade()};

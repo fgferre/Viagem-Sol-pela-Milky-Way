@@ -350,6 +350,7 @@
   right: var(--regua-largura, 1rem);
   max-height: var(--teto-dialogo);
   overflow-y: auto;
+  scroll-padding-top: var(--altura-cabecalho, auto);
   pointer-events: auto;
   z-index: var(--camada-dialogo);
   padding: var(--pad-painel);
@@ -455,6 +456,11 @@
 /* O NOME (com `eyebrow`) é maior — 24 px na mesa, a régua da ficha
    (§3.5); 22 px no celular é o `.hud-dialogo` virando folha (fatia 9),
    ver a regra ali. `margin-top` separa da linha do eyebrow. */
+.hud-dialogo:is(.atlas-busca, .ajustes, [data-dialogo='camadas']) .hud-cabecalho-titulo {
+  font-size: 1.65rem;
+  font-weight: 300;
+  letter-spacing: -0.025em;
+}
 .hud-cabecalho-titulo--nome {
   margin-top: 0.15rem;
   font-size: 1.5rem;
