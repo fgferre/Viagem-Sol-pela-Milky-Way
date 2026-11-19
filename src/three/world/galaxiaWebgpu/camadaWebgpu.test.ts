@@ -1,0 +1,68 @@
+// Serve: chão — com nada mudando no que vai à placa, a galáxia WebGPU não redesenha nem sobe a textura de novo; qualquer mudança (ou fatia pendente) redesenha
+import * as THREE from 'three';
+import { describe, expect, it, vi } from 'vitest';
+import type { CamadaWebgpu } from './camadaWebgpu';
+import type { MotorDaGalaxia } from './motor';
+
+// a placa de mentira: toda peça devolve outra peça; só a fila conta os envios
+const peca = (): unknown =>
+  new Proxy(() => {}, { get: (_, p) => (p === 'then' ? undefined : peca()), apply: () => peca() });
+
+async function bancada() {
+  vi.stubGlobal('window', { location: { search: '' } });
+  const { CamadaWebgpu: Camada } = await import('./camadaWebgpu');
+  const { MotorDaGalaxia: MotorReal } = await import('./motor');
+  const fila = { writeBuffer: vi.fn(), writeTexture: vi.fn(), submit: vi.fn() };
+  const gpu = new Proxy({}, { get: (_, p) => (p === 'queue' ? fila : peca()) });
+  const tela = { width: 2, height: 2, getContext: () => peca() };
+  const Motor = MotorReal as unknown as new (...a: unknown[]) => MotorDaGalaxia;
+  const pipelines = { ext: peca(), dep: peca(), tom: peca(), dobra: peca() };
+  const motor = new Motor(gpu, tela, 100, pipelines, 'rgba16float', new Uint16Array(4));
+  const sorteio = () => ({ dados: new ArrayBuffer(20 * 10), esp: new Uint32Array(10), m: 10 });
+  motor.acrescentarPacote(sorteio());
+  const camada = new (Camada as unknown as new (m: MotorDaGalaxia, t: unknown) => CamadaWebgpu)(motor, tela);
+  const textura = (camada.mesh.material as THREE.ShaderMaterial).uniforms.uGalaxia.value as THREE.Texture;
+  const camera = new THREE.PerspectiveCamera(50, 2, 1, 1e6);
+  camera.position.set(8000, 300, 20);
+  const estado = { w: 64, h: 32, ganho: 1, op: { k: 1, borrifo: 0, filtro: 0, lod: 0, fatia: 1, pesoFixo: 1, pesoPerto: 0 } };
+  const update = () => camada.update(camera, estado.w, estado.h, 0.5, estado.ganho, 1, estado.op);
+  return { fila, camera, estado, update, textura, mais: () => motor.acrescentarPacote(sorteio()) };
+}
+
+describe('a galáxia WebGPU parada não redesenha', () => {
+  it('dois quadros iguais enviam um só e sobem a textura uma vez; câmera, tamanho, ganho e sorteio novo redesenham', async () => {
+    const { fila, camera, estado, update, textura, mais } = await bancada();
+    const v0 = textura.version;
+    update();
+    update();
+    expect(fila.submit).toHaveBeenCalledTimes(1);
+    expect(textura.version).toBe(v0 + 1);
+    // o tremor do filme pausado nos últimos dígitos da dupla precisão não muda o float32
+    camera.position.x += 1e-9;
+    update();
+    expect(fila.submit).toHaveBeenCalledTimes(1);
+    const mudancas = [
+      () => camera.position.x++,
+      () => (estado.w = 80),
+      () => (estado.ganho = 0.5),
+      () => (estado.op = { ...estado.op, k: 2 }),
+      mais,
+    ];
+    for (const mudar of mudancas) {
+      const antes = fila.submit.mock.calls.length;
+      mudar();
+      update();
+      update();
+      expect(fila.submit).toHaveBeenCalledTimes(antes + 1);
+    }
+    expect(textura.version).toBe(v0 + 1 + mudancas.length);
+  });
+
+  it('com a extinção em fatias, redesenha até a última fatia assentar e só então para', async () => {
+    const { fila, estado, update } = await bancada();
+    update();
+    estado.op = { ...estado.op, fatia: 4 };
+    for (let i = 0; i < 6; i++) update();
+    expect(fila.submit).toHaveBeenCalledTimes(1 + 4);
+  });
+});

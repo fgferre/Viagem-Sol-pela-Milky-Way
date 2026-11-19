@@ -267,8 +267,10 @@ export class CamadaWebgpu {
     camera.updateMatrixWorld();
     this.vp.copy(camera.matrixWorld).invert().premultiply(camera.projectionMatrix);
     if (this.tela.width !== largura || this.tela.height !== altura) this.textura.dispose();
+    let novo: boolean;
     try {
-      this.motor.quadro(
+      // com a imagem parada o motor não desenha e a textura guarda o último quadro
+      novo = this.motor.quadro(
         {
           viewProj: this.vp.elements,
           pos: camera.position.toArray(),
@@ -276,7 +278,9 @@ export class CamadaWebgpu {
         },
         largura,
         altura,
-        { ...opcoes, expo: 1, ganho }
+        { ...opcoes, expo: 1, ganho },
+        false,
+        true
       );
     } catch (e) {
       this.falhou = true;
@@ -284,7 +288,7 @@ export class CamadaWebgpu {
       falhar('erro', 'erro ao desenhar', e);
       return;
     }
-    this.textura.needsUpdate = true;
+    if (novo) this.textura.needsUpdate = true;
     if (this.motor.erros.length) {
       this.falhou = true;
       falhar('erro', `erro da GPU: ${this.motor.erros[0]}`);

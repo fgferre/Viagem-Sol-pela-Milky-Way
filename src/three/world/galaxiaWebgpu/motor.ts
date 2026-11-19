@@ -19,6 +19,7 @@ import { BYTES_DOS_UNIFORMES, NIVEIS, WGSL_DEPOSITO, WGSL_DOBRA, WGSL_EXTINCAO, 
 
 const ESCALA = 65536; // ponto fixo do acumulador: 1 unidade de cena = 2^16
 const BYTES_DA_PARTICULA = 20;
+const DC = new THREE.Vector3(); // rascunho do nível de detalhe
 const USO = { mapRead: 0x01, copySrc: 0x04, copyDst: 0x08, uniform: 0x40, storage: 0x80, queryResolve: 0x200 };
 
 export interface CameraDoMotor {
@@ -167,6 +168,12 @@ export class MotorDaGalaxia {
   private readonly dadosU = new ArrayBuffer(BYTES_DOS_UNIFORMES);
   private readonly capacidade: number;
   private nQuadro = 0;
+  /** A CHAVE DO ÚLTIMO QUADRO: os uniformes como foram à placa (float32,
+   *  fora o deslocamento da fatia) e a fatia; 0 = não vale (redesenha) */
+  private readonly uAnterior = new Uint32Array(BYTES_DOS_UNIFORMES / 4);
+  private fatiaAnterior = 0;
+  /** fatias da extinção que ainda faltam renovar com a chave de agora */
+  private faltam = 0;
   /** total acumulado ao fim de cada sorteio */
   private readonly limites: number[] = [];
 
@@ -287,10 +294,12 @@ export class MotorDaGalaxia {
     this.limites.push(this.total);
     this.sorteios++;
     this.nQuadro = 0; // a extinção das novas ainda não foi calculada
+    this.fatiaAnterior = 0;
   }
 
   private redimensionar(w: number, h: number) {
     if (w === this.largura && h === this.altura) return;
+    this.fatiaAnterior = 0; // a tela nova nasce vazia
     this.largura = w;
     this.altura = h;
     this.tela.width = w;
@@ -314,9 +323,17 @@ export class MotorDaGalaxia {
     );
   }
 
-  /** codifica e envia um quadro; com `medir`, resolve o relógio no fim */
-  quadro(camera: CameraDoMotor, w: number, h: number, op: OpcoesDoQuadro, medir = false) {
-    if (!this.total) return;
+  /**
+   * Codifica e envia um quadro; com `medir`, resolve o relógio no fim. Com
+   * `pularSeIgual` (a camada do app), NÃO envia quando a placa receberia os
+   * mesmos uniformes do quadro anterior e a extinção já assentou em todas
+   * as fatias: o motor não tem relógio, então a imagem seria a mesma. A
+   * chave é o float32 que vai à placa, não a câmera em dupla precisão (que
+   * treme nos últimos dígitos no filme pausado). Devolve false quando a
+   * tela ficou como estava (nada a subir de novo).
+   */
+  quadro(camera: CameraDoMotor, w: number, h: number, op: OpcoesDoQuadro, medir = false, pularSeIgual = false) {
+    if (!this.total) return true;
     this.redimensionar(w, h);
     const uF = new Float32Array(this.dadosU);
     const uI = new Uint32Array(this.dadosU);
@@ -324,7 +341,7 @@ export class MotorDaGalaxia {
     // disco (raio do modelo, inclinado por μ) na distância da câmera
     let s = this.sorteios;
     if (op.lod > 0) {
-      const dc = new THREE.Vector3(camera.pos[0], camera.pos[1], camera.pos[2]).sub(GAL.GC_POS);
+      const dc = DC.set(camera.pos[0], camera.pos[1], camera.pos[2]).sub(GAL.GC_POS);
       const dist = Math.max(dc.length(), 1);
       const pcPorPx = (2 * camera.tanMeioFov * dist) / h;
       const mu = Math.max(Math.abs(dc.dot(EZ)) / dist, 0.15);
@@ -342,7 +359,7 @@ export class MotorDaGalaxia {
       const grupos = Math.ceil(n / 256);
       return [Math.min(grupos, 32768), Math.ceil(grupos / 32768)] as const;
     };
-    uF.set(Array.from(camera.viewProj), 0);
+    uF.set(camera.viewProj, 0);
     uF.set([camera.pos[0], camera.pos[1], camera.pos[2], h], 16);
     uF.set([EX.x, EX.y, EX.z, camera.tanMeioFov], 20);
     uF.set([EY.x, EY.y, EY.z, op.ganho], 24);
@@ -352,7 +369,6 @@ export class MotorDaGalaxia {
     uI[40] = usados;
     uI[41] = op.k;
     uI[42] = op.borrifo;
-    uI[43] = (this.nQuadro % fatia) * porFatia;
     uI[44] = op.filtro;
     uI[45] = linha;
     uF[46] = 1 / s;
@@ -364,8 +380,20 @@ export class MotorDaGalaxia {
     uF[53] = op.pesoPerto ?? 0;
     // o alvo de partículas por pixel que a pegada do espaçamento persegue
     uF[54] = op.lod > 0 ? op.lod : 1;
-    this.nQuadro++;
     this.usadas = usados;
+    // a chave: tudo o que vai à placa menos o deslocamento da fatia (uI[43]),
+    // que anda sozinho; depois de cada mudança, `fatia` quadros até assentar
+    uI[43] = 0;
+    const igual = this.fatiaAnterior === fatia && this.uAnterior.every((v, i) => v === uI[i]);
+    if (igual && this.faltam <= 0 && pularSeIgual && !medir) return false;
+    if (igual) this.faltam--;
+    else {
+      this.uAnterior.set(uI);
+      this.fatiaAnterior = fatia;
+      this.faltam = fatia - 1;
+    }
+    uI[43] = (this.nQuadro % fatia) * porFatia;
+    this.nQuadro++;
     this.gpu.queue.writeBuffer(this.bufU, 0, this.dadosU);
 
     const marca = (i: number) =>
@@ -405,6 +433,7 @@ export class MotorDaGalaxia {
       enc.copyBufferToBuffer(this.bufRelogio, 0, this.bufLeitura, 0, 48);
     }
     this.gpu.queue.submit([enc.finish()]);
+    return true;
   }
 
   /** resolve quando o dispositivo se perde (driver, GPU reiniciada…) ou é destruído */
@@ -418,6 +447,7 @@ export class MotorDaGalaxia {
    */
   async pintar(w: number, h: number, cor: readonly number[]) {
     this.redimensionar(w, h);
+    this.fatiaAnterior = 0; // a tela deixou de ter o último quadro
     const enc = this.gpu.createCommandEncoder();
     const p = enc.beginRenderPass({
       colorAttachments: [
