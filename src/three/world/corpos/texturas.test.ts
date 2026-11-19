@@ -28,6 +28,7 @@ import {
   MARGEM_DO_QUADRO_RAD,
   TexturasDoCorpo,
   alvoDePixels,
+  vezDoCarregador,
   buscarManifestUmaVez,
   carregarCanaisDoCorpo,
   descartarTextura,
@@ -702,6 +703,9 @@ describe('a carga sai da thread principal: fetch + createImageBitmap (peça 2)',
   function bancadaDoBitmap() {
     const chamadas: { url: string; opcoes: unknown }[] = [];
     const fechados: unknown[] = [];
+    const buscados: string[] = [];
+    /** o maior número de bitmaps abertos ao mesmo tempo */
+    let pico = 0;
     const blobs = new Map<string, object>();
     const falso = globalThis as unknown as Record<string, unknown>;
     const antes = { fetch: falso.fetch, cib: falso.createImageBitmap, IB: falso.ImageBitmap };
@@ -716,17 +720,21 @@ describe('a carga sai da thread principal: fetch + createImageBitmap (peça 2)',
     }
     falso.ImageBitmap = BitmapDeTeste;
     falso.fetch = async (url: string) => {
+      buscados.push(url);
       const blob = { url };
       blobs.set(url, blob);
       return { ok: true, blob: async () => blob };
     };
     falso.createImageBitmap = async (blob: { url: string }, opcoes: unknown) => {
       chamadas.push({ url: blob.url, opcoes });
+      pico = Math.max(pico, chamadas.length - fechados.length);
       return new BitmapDeTeste();
     };
     return {
       chamadas,
       fechados,
+      buscados,
+      pico: () => pico,
       restaurar: () => {
         falso.fetch = antes.fetch;
         falso.createImageBitmap = antes.cib;
@@ -816,6 +824,63 @@ describe('a carga sai da thread principal: fetch + createImageBitmap (peça 2)',
       b.restaurar();
     }
   });
+
+  it('a vez da imagem: bytes em paralelo, UM bitmap aberto por vez, configurado antes de subir', async () => {
+    const b = bancadaDoBitmap();
+    const vez = vezDoCarregador();
+    const subidas: { colorSpace: string; largura: unknown; abertos: number }[] = [];
+    // o renderer de mentira faz o que o three faz: sobe e chama `onUpdate`
+    const placa = {
+      initTexture: (tex: THREE.Texture) => {
+        subidas.push({
+          colorSpace: tex.colorSpace,
+          largura: tex.userData.largura,
+          abertos: b.chamadas.length - b.fechados.length,
+        });
+        tex.onUpdate?.(tex);
+      },
+    };
+    vez.ligar(placa);
+    try {
+      let lote: Map<string, THREE.Texture> | null | undefined;
+      void carregarCanaisDoCorpo(
+        'earth',
+        [CANAL_MAP, CANAL_NORMAL, { canal: 'night', cor: true, repetirEmU: true }],
+        { tier: () => 'alta', maxTextureSize: 16384, base: '', webp: true,
+          buscarManifest: async () => MANIFEST },
+        'alta',
+        nunca,
+        undefined,
+        undefined,
+        vez
+      ).then((l) => {
+        lote = l;
+      });
+      await flush();
+      // os três `fetch` saíram juntos; só UM bitmap nasceu
+      expect(b.buscados).toHaveLength(3);
+      expect(b.chamadas).toHaveLength(1);
+      for (let quadro = 1; quadro <= 3; quadro++) {
+        expect(lote, `entregue antes do quadro ${quadro}`).toBeUndefined();
+        vez.aoQuadro();
+        // um quadro, uma subida — e o bitmap dela fechou no `onUpdate`
+        expect(subidas).toHaveLength(quadro);
+        expect(b.fechados).toHaveLength(quadro);
+        await flush();
+      }
+      expect(b.pico()).toBe(1);
+      expect(subidas.every((s) => s.abertos === 1 && s.largura === 8)).toBe(true);
+      // o `map` subiu em sRGB e a normal, DADO, linear — o espaço de cor
+      // entra no upload e não pode ser trocado depois dele
+      expect(subidas[0]!.colorSpace).toBe(THREE.SRGBColorSpace);
+      expect(subidas[1]!.colorSpace).toBe(THREE.NoColorSpace);
+      expect([...lote!.keys()]).toEqual(['map', 'normal', 'night']);
+      expect(lote!.get('map')!.userData.altura).toBe(4);
+    } finally {
+      vez.desligar(placa);
+      b.restaurar();
+    }
+  });
 });
 
 describe('o abort: pedido sem dono para de descer (peça 3)', () => {
@@ -884,6 +949,74 @@ describe('o abort: pedido sem dono para de descer (peça 3)', () => {
     expect(c.sinais[0]!.aborted).toBe(false);
     c.casa.dispose();
     expect(c.sinais[0]!.aborted).toBe(true);
+  });
+});
+
+describe('a vez da imagem: o lote só é entregue depois de TODAS subirem, uma por quadro', () => {
+  it('cancelado no meio, nada é publicado, tudo é descartado — e a vez passa adiante', async () => {
+    const descartadas: string[] = [];
+    const publicados: string[][] = [];
+    const subidas: string[] = [];
+    const carregarTextura = async (url: string) => {
+      const tex = texturaContada(descartadas, url);
+      tex.userData.url = url;
+      return tex;
+    };
+    const vez = vezDoCarregador(carregarTextura);
+    const placa = {
+      initTexture: (tex: THREE.Texture) => {
+        subidas.push(tex.userData.url as string);
+      },
+    };
+    vez.ligar(placa);
+    const casa = new TexturasDoCorpo({
+      corpo: 'earth',
+      canais: [CANAL_MAP, CANAL_NORMAL, { canal: 'night', cor: true, repetirEmU: true }],
+      rede: {
+        tier: () => 'alta',
+        maxTextureSize: 16384,
+        base: '',
+        webp: true,
+        buscarManifest: async () => MANIFEST,
+        carregarTextura,
+      },
+      oQueNaoNasce: 'o globo não nasce nesta sessão',
+      publicar: (porCanal) => publicados.push([...porCanal.keys()]),
+      soltar: () => {},
+    });
+    try {
+      casa.aoTick({ tela: true, foco: false, filme: false }, 0);
+      await flush();
+      vez.aoQuadro();
+      await flush();
+      // a primeira subiu, a segunda espera o quadro, a terceira a vez
+      expect(subidas).toHaveLength(1);
+      expect(publicados).toEqual([]);
+
+      // ninguém segura: o lote em voo é cancelado na hora
+      casa.aoTick({ tela: false, foco: false, filme: false }, 1);
+      await flush();
+      vez.aoQuadro();
+      expect(subidas, 'subiu textura de lote cancelado').toHaveLength(1);
+      expect(publicados).toEqual([]);
+      // as três: a que JÁ SUBIU, a que esperava o quadro e a que esperava a vez
+      expect(descartadas).toHaveLength(3);
+
+      // a vez não ficou presa: o lote seguinte anda, um quadro por textura
+      casa.aoTick({ tela: true, foco: false, filme: false }, 2);
+      await flush();
+      for (let quadro = 1; quadro <= 3; quadro++) {
+        expect(publicados, `entregue antes do quadro ${quadro}`).toEqual([]);
+        vez.aoQuadro();
+        expect(subidas).toHaveLength(1 + quadro);
+        await flush();
+      }
+      expect(publicados).toEqual([['map', 'normal', 'night']]);
+      expect(casa.pronta).toBe(true);
+    } finally {
+      vez.desligar(placa);
+      casa.dispose();
+    }
   });
 });
 

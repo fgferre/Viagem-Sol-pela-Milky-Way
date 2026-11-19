@@ -74,7 +74,12 @@ import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
 import { WrappedStars, resolvedCatalogCurve } from './world/wrappedStars';
 import { CORPOS_DEFAULT_ON, CorposResolvidos } from './world/corpos/corpos';
-import { ehTelefone, meioConeDaTela, tetoDoAparelho } from './world/corpos/texturas';
+import {
+  ehTelefone,
+  meioConeDaTela,
+  tetoDoAparelho,
+  vezDoCarregador,
+} from './world/corpos/texturas';
 import { LuaResolvida } from './world/corpos/lua';
 import type { TerraResolvida } from './world/corpos/terra';
 import { RochosoResolvido } from './world/corpos/rochoso';
@@ -1109,6 +1114,11 @@ export class Director {
 
   private events: DirectorEvents;
   private readonly abortController = new AbortController();
+  /**
+   * A VEZ DA IMAGEM dos corpos (texturas.ts): as texturas sobem à placa
+   * aqui, uma por quadro, e não todas no quadro em que o lote é entregue.
+   */
+  private readonly vezDaImagem = vezDoCarregador();
   private readonly debug = new URLSearchParams(window.location.search);
   /** a luz que a lente acendeu no quadro anterior e a fonte dela — o
    *  clarão cede a ela o halo do campo da MESMA estrela (world/clarao.ts) */
@@ -1360,6 +1370,7 @@ export class Director {
     // ouvindo. Este ramo só cala o warning; o init continua vendo o erro.
     void this.assets.catch(() => {});
     this.post = new Post(this.engine.renderer, this.engine.scene, this.engine.camera);
+    this.vezDaImagem.ligar(this.engine.renderer);
     this.nebula = new Nebula(0.5);
     // POEIRA PERTO DE CASA (E2/E3 + pedido do dono, 27/09): a opção da
     // gaveta Avançado (`poeiraForcada`/`poeiraTeste`, lidas no CAMPO,
@@ -4073,6 +4084,10 @@ export class Director {
     let warp = 0;
     let luzDoRoteiro = 0;
 
+    // UMA textura de corpo sobe à placa por quadro, antes de tudo: o lote
+    // só é entregue quando a última dele subiu (`VezDaImagem`)
+    this.vezDaImagem.aoQuadro();
+
     // VÉU DO ATLAS, antes de tudo (o passo e a razão moram em
     // director/veu.ts — se ele fechar neste quadro, a fase vira AQUI)
     this.veuDoAtlas.tique(dt, this.reducedMotion || this.shotMode);
@@ -5031,6 +5046,7 @@ export class Director {
     for (const posto of this.noPalco) {
       step(posto.id, () => posto.corpo.dispose());
     }
+    step('vezDaImagem', () => this.vezDaImagem.desligar(this.engine.renderer));
     step('palco', () => this.palco.dispose());
     step('dust', () => this.dust.dispose());
     step('nebula', () => this.nebula.dispose());

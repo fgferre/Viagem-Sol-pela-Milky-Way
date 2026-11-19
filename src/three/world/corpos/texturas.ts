@@ -423,11 +423,16 @@ export type BuscadorDeManifest = (url: string) => Promise<ManifestDeTexturas>;
  * que perdeu o dono no meio do caminho para de descer. `aoChegar` é
  * chamado a cada pedaço de bytes que desce — o relógio da casa
  * (`PRAZO_SEM_BYTES_S`); quem não o chama conta só a imagem que pousa.
+ * `aVez` (`VezDaImagem`) é esperada ENTRE os bytes e a decodificação:
+ * os bytes comprimidos descem em paralelo, os pixels decodificados
+ * nascem um de cada vez. Quem não a chama (o carregador de teste) entrega
+ * a textura pronta, e a vez é pedida logo depois, antes de configurar.
  */
 export type CarregadorDeTextura = (
   url: string,
   sinal?: AbortSignal,
-  aoChegar?: () => void
+  aoChegar?: () => void,
+  aVez?: (aoAndar?: () => void) => Promise<void>
 ) => Promise<THREE.Texture>;
 
 /**
@@ -620,10 +625,14 @@ const buscarPelaRede: BuscadorDeManifest = async (url) => {
  *
  * A prova de que o pixel não mudou é o `ab-identidade` nas 54 vistas.
  */
-const carregarPelaRede: CarregadorDeTextura = async (url, sinal, aoChegar) => {
+const carregarPelaRede: CarregadorDeTextura = async (url, sinal, aoChegar, aVez) => {
   const r = await fetch(url, { signal: sinal });
   if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
-  const bitmap = await createImageBitmap(await contandoOsBytes(r, aoChegar).blob(), {
+  const bytes = await contandoOsBytes(r, aoChegar).blob();
+  // os bytes comprimidos são pequenos; o que pesa é o bitmap — e ele só
+  // nasce na vez dele (`VezDaImagem`), quando o anterior já subiu à placa
+  if (aVez) await aVez(aoChegar);
+  const bitmap = await createImageBitmap(bytes, {
     imageOrientation: 'flipY',
     premultiplyAlpha: 'none',
     colorSpaceConversion: 'none',
@@ -644,8 +653,9 @@ const carregarPelaRede: CarregadorDeTextura = async (url, sinal, aoChegar) => {
   // segunda cópia da imagem na memória do sistema: 128 MiB por mapa de
   // 8192×4096, perto de 1 GiB com a Terra e a Lua em cinema (medido em
   // 19/11, `capturas/queda-filme-solar-19-11/`). Ninguém o lê depois: o
-  // tamanho do mapa é anotado na entrega (`publicar`), antes do upload, e
-  // textura de corpo nunca sobe duas vezes (não há `needsUpdate` depois).
+  // tamanho do mapa é anotado em `userData` ao configurar o canal
+  // (`carregarCanaisDoCorpo`), antes do upload, e textura de corpo nunca
+  // sobe duas vezes (não há `needsUpdate` depois).
   tex.onUpdate = () => {
     bitmap.close();
     tex.onUpdate = null;
@@ -717,6 +727,173 @@ export function buscarManifestUmaVez(
   return nova;
 }
 
+/** Quem sobe uma textura à placa fora do desenho — o renderer do three. */
+export interface QuemSobe {
+  initTexture(tex: THREE.Texture): void;
+}
+
+/** Um canal esperando a vez de decodificar. */
+interface EsperaDaVez {
+  conceder: () => void;
+  aoAndar: (() => void) | undefined;
+}
+
+/**
+ * A VEZ DA IMAGEM: o trecho PESADO de uma textura — decodificar,
+ * configurar, subir à placa, fechar o bitmap — acontece UMA de cada vez,
+ * na casa inteira.
+ *
+ * Por quê (medido em 19/11, `capturas/queda-filme-solar-19-11/`): com os
+ * canais decodificados em paralelo e o lote inteiro subindo no quadro da
+ * entrega, a Terra e a Lua em Cinema somavam ~900 MiB na placa, ~700 MiB
+ * de bitmaps na página e as cópias de trânsito no MESMO instante — e num
+ * PC com pouca memória reservável esse pico derrubava o contexto
+ * (`GL_OUT_OF_MEMORY`). Aqui o pico é de UMA imagem: a próxima só
+ * decodifica depois de a anterior ter subido e fechado o bitmap.
+ *
+ * Os `fetch` continuam em paralelo, sob a `FilaDeCargas` e as vezes dela:
+ * a ordem da vez da imagem é a de chegada dos bytes.
+ *
+ * A SUBIDA é do Director: `aoQuadro`, uma vez por tick, sobe no máximo
+ * UMA textura (`initTexture`) e só então o canal anda. Sem ninguém ligado
+ * (`ligar`) a casa faz o de antes, bit a bit — é o caso da suíte, que roda
+ * em Node sem renderer.
+ *
+ * Uma por carregador, como a fila (`vezDoCarregador`): em produção é uma
+ * só; o teste que injeta o carregador dele tem a dele.
+ */
+export class VezDaImagem {
+  private quemSobe: QuemSobe | null = null;
+  /** alguém está com a vez (decodificando, configurando ou subindo) */
+  private ocupada = false;
+  private readonly esperando: EsperaDaVez[] = [];
+  /** a textura de quem está com a vez, esperando o quadro para subir */
+  private aSubir: THREE.Texture | null = null;
+  private subiu: (() => void) | null = null;
+  private caiu: ((erro: unknown) => void) | null = null;
+
+  /** há quem suba? Lido no início de cada lote. */
+  get ligada(): boolean {
+    return this.quemSobe !== null;
+  }
+
+  ligar(quemSobe: QuemSobe): void {
+    this.quemSobe = quemSobe;
+  }
+
+  /** só quem ligou desliga — dois Directors (Fast Refresh) não se desligam */
+  desligar(quemSobe: QuemSobe): void {
+    if (this.quemSobe === quemSobe) this.quemSobe = null;
+  }
+
+  /**
+   * Espera a vez. O cancelamento tira o canal da fila na hora. `aoAndar`
+   * é avisado a cada vez que a fila anda: um lote cujos bytes já chegaram
+   * e que espera a decodificação dos outros não está mudo, e o prazo sem
+   * bytes (`PRAZO_SEM_BYTES_S`) não pode tomá-lo por morto.
+   */
+  vez(sinal?: AbortSignal, aoAndar?: () => void): Promise<void> {
+    if (sinal?.aborted) return Promise.reject(new Error('carga cancelada'));
+    if (!this.ocupada) {
+      this.ocupada = true;
+      return Promise.resolve();
+    }
+    return new Promise((resolver, rejeitar) => {
+      const espera: EsperaDaVez = { conceder: () => {}, aoAndar };
+      const desistir = () => {
+        const i = this.esperando.indexOf(espera);
+        if (i >= 0) this.esperando.splice(i, 1);
+        rejeitar(new Error('carga cancelada'));
+      };
+      espera.conceder = () => {
+        sinal?.removeEventListener('abort', desistir);
+        resolver();
+      };
+      this.esperando.push(espera);
+      sinal?.addEventListener('abort', desistir, { once: true });
+    });
+  }
+
+  /** quem estava com a vez terminou (subiu, caiu ou foi cancelado) */
+  liberar(): void {
+    const proxima = this.esperando.shift();
+    if (!proxima) {
+      this.ocupada = false;
+      return;
+    }
+    proxima.aoAndar?.();
+    for (const e of this.esperando) e.aoAndar?.();
+    proxima.conceder();
+  }
+
+  /**
+   * Pede a subida da textura de quem está com a vez; resolve no quadro em
+   * que ela subiu. Cancelada antes, a textura sai do lugar NA HORA — quem
+   * a descarta em seguida não pode deixá-la para o `initTexture` recriar
+   * na placa a partir de um bitmap fechado.
+   */
+  subir(tex: THREE.Texture, sinal?: AbortSignal): Promise<void> {
+    if (sinal?.aborted) return Promise.reject(new Error('carga cancelada'));
+    return new Promise((resolver, rejeitar) => {
+      const desistir = () => {
+        if (this.aSubir === tex) {
+          this.aSubir = null;
+          this.subiu = null;
+          this.caiu = null;
+        }
+        rejeitar(new Error('carga cancelada'));
+      };
+      sinal?.addEventListener('abort', desistir, { once: true });
+      this.aSubir = tex;
+      this.subiu = () => {
+        sinal?.removeEventListener('abort', desistir);
+        resolver();
+      };
+      this.caiu = (erro) => {
+        sinal?.removeEventListener('abort', desistir);
+        rejeitar(erro);
+      };
+    });
+  }
+
+  /**
+   * O QUADRO DO DIRECTOR: no máximo UMA textura sobe. O three chama o
+   * `onUpdate` da textura no fim do upload, e é ali que o bitmap fecha
+   * (`carregarPelaRede`). Um upload que estoura derruba o lote como
+   * qualquer falha, em vez de prender a vez para sempre.
+   */
+  aoQuadro(): void {
+    const tex = this.aSubir;
+    const quemSobe = this.quemSobe;
+    if (!tex || !quemSobe) return;
+    const subiu = this.subiu;
+    const caiu = this.caiu;
+    this.aSubir = null;
+    this.subiu = null;
+    this.caiu = null;
+    try {
+      quemSobe.initTexture(tex);
+    } catch (erro) {
+      caiu?.(erro);
+      return;
+    }
+    subiu?.();
+  }
+}
+
+const vezesPorCarregador = new WeakMap<CarregadorDeTextura, VezDaImagem>();
+
+/** A vez da imagem do carregador; sem argumento, a da rede (a do Director). */
+export function vezDoCarregador(carregar?: CarregadorDeTextura): VezDaImagem {
+  const chave = carregar ?? carregarPelaRede;
+  let vez = vezesPorCarregador.get(chave);
+  if (!vez) {
+    vez = new VezDaImagem();
+    vezesPorCarregador.set(chave, vez);
+  }
+  return vez;
+}
+
 /**
  * A CARGA TRANSACIONAL de um corpo: manifest (uma vez), os canais em
  * paralelo, e a entrega ATÔMICA.
@@ -747,33 +924,69 @@ export async function carregarCanaisDoCorpo(
   cancelado: () => boolean,
   sinal?: AbortSignal,
   /** o degrau da tela (`degrauPara`); infinito = só o teto do tier */
-  degrau = Number.POSITIVE_INFINITY
+  degrau = Number.POSITIVE_INFINITY,
+  /** a vez da imagem; só vale ligada — desligada, a carga de antes */
+  vez?: VezDaImagem
 ): Promise<Map<string, THREE.Texture> | null> {
   const { base, maxTextureSize } = opcoes;
   const buscar = opcoes.buscarManifest ?? buscarPelaRede;
   const carregar = opcoes.carregarTextura ?? carregarPelaRede;
   const webpOk = opcoes.webp ?? detectarWebp();
+  const umaPorVez = vez?.ligada ? vez : null;
 
   const manifest = await buscarManifestUmaVez(buscar, `${base}data/atlas/texturas.json`);
 
   const lote = await Promise.allSettled(
     canais.map(async (pedido) => {
-      // o alvo é POR CANAL — a dose de VRAM mora em `alvoDePixels` — e a
-      // tela só o baixa, nunca o sobe
-      const alvo = Math.min(
-        alvoDePixels(tier, pedido.canal, maxTextureSize, pedido.assunto),
-        degrau
-      );
-      const variante = escolherVariante(manifest.entradas, corpo, pedido.canal, alvo, webpOk);
-      if (!variante) {
-        throw new Error(`${corpo} sem variante para '${pedido.canal}' ≤ ${alvo}px`);
+      // A VEZ DESTE CANAL, pedida uma vez só: pelo carregador entre os
+      // bytes e a decodificação, ou aqui, depois dele, se ele não a pediu.
+      // `segura` diz se ela foi concedida — só quem a tem a devolve.
+      let pedida: Promise<void> | null = null;
+      let segura = false;
+      const aVez = umaPorVez
+        ? (aoAndar?: () => void) =>
+            (pedida ??= umaPorVez.vez(sinal, aoAndar).then(() => {
+              segura = true;
+              // cancelado no instante da concessão: nem decodifica
+              if (sinal?.aborted) throw new Error('carga cancelada');
+            }))
+        : undefined;
+      try {
+        // o alvo é POR CANAL — a dose de VRAM mora em `alvoDePixels` — e a
+        // tela só o baixa, nunca o sobe
+        const alvo = Math.min(
+          alvoDePixels(tier, pedido.canal, maxTextureSize, pedido.assunto),
+          degrau
+        );
+        const variante = escolherVariante(manifest.entradas, corpo, pedido.canal, alvo, webpOk);
+        if (!variante) {
+          throw new Error(`${corpo} sem variante para '${pedido.canal}' ≤ ${alvo}px`);
+        }
+        const tex = await carregar(`${base}${variante.arquivo}`, sinal, undefined, aVez);
+        try {
+          if (aVez) await aVez();
+          // CONFIGURAR ANTES DE SUBIR: o espaço de cor e o wrap entram no
+          // upload, e depois dele o bitmap já está fechado
+          if (pedido.cor) tex.colorSpace = THREE.SRGBColorSpace;
+          tex.wrapS = pedido.repetirEmU ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
+          tex.wrapT = THREE.ClampToEdgeWrapping;
+          tex.anisotropy = ANISOTROPIA_DOS_MAPAS;
+          // o tamanho em texels, anotado enquanto a imagem existe — quem o
+          // lê na entrega (`uTamanhoDoMapa`) já encontra o bitmap fechado
+          const img = tex.image as { width?: number; height?: number } | null | undefined;
+          tex.userData.largura = img?.width ?? 0;
+          tex.userData.altura = img?.height ?? 0;
+          if (umaPorVez) await umaPorVez.subir(tex, sinal);
+        } catch (erro) {
+          // a textura já existe e o canal cai: ninguém mais a vê (o lote só
+          // descarta o que chegou inteiro), então o descarte é daqui
+          descartarTextura(tex);
+          throw erro;
+        }
+        return { canal: pedido.canal, tex };
+      } finally {
+        if (segura) umaPorVez!.liberar();
       }
-      const tex = await carregar(`${base}${variante.arquivo}`, sinal);
-      if (pedido.cor) tex.colorSpace = THREE.SRGBColorSpace;
-      tex.wrapS = pedido.repetirEmU ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
-      tex.wrapT = THREE.ClampToEdgeWrapping;
-      tex.anisotropy = ANISOTROPIA_DOS_MAPAS;
-      return { canal: pedido.canal, tex };
     })
   );
 
@@ -1133,6 +1346,8 @@ export class TexturasDoCorpo {
   /** o lugar do lote pedido na fila (`FilaDeCargas`); null sem pedido */
   private lugar: LugarNaFila | null = null;
   private readonly fila: FilaDeCargas;
+  /** a vez da imagem do mesmo carregador (`VezDaImagem`) */
+  private readonly vez: VezDaImagem;
   /**
    * O tier cuja TROCA esgotou as três tentativas. Sem ele o tick
    * repetiria o pedido para sempre, 60 vezes por segundo, contra uma
@@ -1182,6 +1397,9 @@ export class TexturasDoCorpo {
   constructor(pedido: PedidoDeTexturas) {
     this.pedido = pedido;
     this.fila = filaDoCarregador(pedido.rede.carregarTextura ?? carregarPelaRede);
+    // resolvida AQUI e não dentro da carga: lá o carregador é o `vigiado`,
+    // um embrulho novo por lote, que acharia uma vez nova e desligada
+    this.vez = vezDoCarregador(pedido.rede.carregarTextura);
   }
 
   /** quantos dos três seguram os texels neste quadro (0 = carência) */
@@ -1554,11 +1772,16 @@ export class TexturasDoCorpo {
     };
     this.vigia = vigia;
     const carregar = rede.carregarTextura ?? carregarPelaRede;
-    const vigiado: CarregadorDeTextura = (url, sinal) => {
+    const vigiado: CarregadorDeTextura = (url, sinal, _aoChegar, aVez) => {
       vigia.noAr = true;
-      return carregar(url, sinal, () => {
-        vigia.chegou = true;
-      }).then((tex) => {
+      return carregar(
+        url,
+        sinal,
+        () => {
+          vigia.chegou = true;
+        },
+        aVez
+      ).then((tex) => {
         vigia.pousou = true;
         return tex;
       });
@@ -1580,7 +1803,8 @@ export class TexturasDoCorpo {
         tier,
         () => vencida() || desistiu,
         aborto.signal,
-        degrau
+        degrau,
+        this.vez
       ),
       prazo,
     ])

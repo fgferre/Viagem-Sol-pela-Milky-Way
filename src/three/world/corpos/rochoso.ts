@@ -1166,8 +1166,12 @@ export class RochosoResolvido {
         const tex = porCanal.get('map');
         if (tex) {
           u.uMapaDia.value = tex;
-          const img = tex.image as { width?: number; height?: number } | undefined;
-          (u.uTamanhoDoMapa.value as THREE.Vector2).set(img?.width ?? 0, img?.height ?? 0);
+          // o tamanho anotado na carga (texturas.ts): o bitmap já pode ter
+          // subido e fechado, e a imagem fechada mede 0×0
+          (u.uTamanhoDoMapa.value as THREE.Vector2).set(
+            (tex.userData.largura as number | undefined) ?? 0,
+            (tex.userData.altura as number | undefined) ?? 0
+          );
         }
         // o lote é ATÔMICO (texturas.ts): ou veio inteiro, ou nenhum —
         // cinco com horizonte, três com relevo de vértice, dois com
