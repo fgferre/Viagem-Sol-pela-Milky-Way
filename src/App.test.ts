@@ -148,3 +148,13 @@ describe('o selo no filme (F4 da viagem solar)', () => {
     expect(FONTE).toContain('{hud.selo && directorRef.current && selo(directorRef.current)}');
   });
 });
+
+describe('a cerca do motor é apagada fora do motorPronto', () => {
+  it('na saída da tela de carga e na desmontagem, com o teto de tempo sem sinal', () => {
+    const solta = FONTE.indexOf('const soltarCerca = useCallback(');
+    expect(solta).toBeGreaterThan(0);
+    expect(FONTE.indexOf('gl.deleteSync(cercaDoMotor.current)', solta)).toBeGreaterThan(solta);
+    expect(FONTE).toContain("if (carga === 'fora') soltarCerca();");
+    expect(FONTE).toContain('useEffect(() => soltarCerca, [soltarCerca]);');
+  });
+});

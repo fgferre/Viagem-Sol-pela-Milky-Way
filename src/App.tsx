@@ -1166,6 +1166,18 @@ export default function App() {
     cercaDoMotor.current = null;
     return true;
   }, []);
+  // Se a tela de carga sai pelo teto de tempo antes do sinal, ninguém
+  // pergunta de novo: a cerca é apagada aqui, na saída e na desmontagem.
+  const soltarCerca = useCallback(() => {
+    if (!cercaDoMotor.current) return;
+    const gl = directorRef.current?.engine.renderer.getContext() as WebGL2RenderingContext | undefined;
+    if (gl && !gl.isContextLost()) gl.deleteSync(cercaDoMotor.current);
+    cercaDoMotor.current = null;
+  }, []);
+  useEffect(() => {
+    if (carga === 'fora') soltarCerca();
+  }, [carga, soltarCerca]);
+  useEffect(() => soltarCerca, [soltarCerca]);
 
   /**
    * O SELO, UMA PEÇA PARA DUAS CASAS: o rodapé do Atlas (sempre) e o
