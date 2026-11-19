@@ -1319,7 +1319,7 @@ describe('a massa na ficha', () => {
 describe('os anéis na ficha de Saturno', () => {
   afterEach(() => definirIdioma('pt-BR'));
 
-  it('a seção vem logo depois do físico, com quatro linhas seladas e citadas', () => {
+  it('a seção vem logo depois do físico, com cinco linhas seladas e citadas', () => {
     const f = ficha('saturn')!;
     const ids = f.secoes.map((s) => s.id);
     expect(ids.indexOf('aneis')).toBe(ids.indexOf('fisico') + 1);
@@ -1330,15 +1330,19 @@ describe('os anéis na ficha de Saturno', () => {
       ['espessura', 'derivado'],
       ['pedaços', 'derivado'],
       ['massa', 'medido'],
+      ['o desenho', 'derivado'],
     ]);
     for (const l of aneis.linhas) expect(l.fonte, l.rotulo).toBeTruthy();
+    // o autor do modelo dos anéis só pede que a origem seja dita a quem vê
+    expect(aneis.linhas[4]!.valor).toContain('criado por Björn Jónsson');
     expect(aneis.linhas[3]!.valor).toBe('≈ 1,54 × 10¹⁹ kg, cerca de 0,4 da massa de Mimas');
   });
 
   it('em inglês, as mesmas linhas com o texto da língua', () => {
     definirIdioma('en');
     const aneis = ficha('saturn')!.secoes.find((s) => s.id === 'aneis')!;
-    expect(aneis.linhas.map((l) => l.rotulo)).toEqual(['extent', 'thickness', 'particles', 'mass']);
+    expect(aneis.linhas.map((l) => l.rotulo)).toEqual(['extent', 'thickness', 'particles', 'mass', 'the drawing']);
+    expect(aneis.linhas[4]!.valor).toContain('created by Björn Jónsson');
     expect(aneis.linhas[3]!.valor).toBe('≈ 1.54 × 10¹⁹ kg, about 0.4 of the mass of Mimas');
   });
 

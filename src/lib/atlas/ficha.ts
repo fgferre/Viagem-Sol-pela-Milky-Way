@@ -484,6 +484,10 @@ function secaoAneis(id: string): LinhaDaFicha[] {
       'medido',
       'Iess et al. 2019 (Science)'
     ),
+    // O CRÉDITO QUE O AUTOR PEDE (19/11): a transparência, a cor e os três
+    // brilhos que a cena desenha vêm do modelo dele, e ele só pede que a
+    // origem seja dita a quem vê
+    linha(t('ficha.anel.desenho'), t('ficha.anel.desenhoValor'), 'derivado', t('ficha.anel.desenhoFonte')),
   ].filter((l): l is LinhaDaFicha => l !== null);
 }
 

@@ -555,6 +555,11 @@ export const PT = {
   'ficha.anel.pedacos': 'pedaços',
   'ficha.anel.pedacosValor': 'de ~1 cm a ~10 m, de gelo de água',
   'ficha.anel.massaValor': '≈ {massa}, cerca de {fracao} da massa de Mimas',
+  'ficha.anel.desenho': 'o desenho',
+  'ficha.anel.desenhoValor':
+    'a transparência, a cor e o brilho ao longo do raio seguem o modelo de anéis criado por Björn Jónsson a partir de imagens das Voyager e da Cassini',
+  // sem o título em inglês nem o endereço (termina em ".is"): a tela em português não leva palavra inglesa (teste da ficha)
+  'ficha.anel.desenhoFonte': 'Björn Jónsson, modelo dos anéis de Saturno',
   'ficha.campo.periodo': 'período orbital',
   'ficha.campo.afelioPerielio': 'afélio · periélio',
   'ficha.campo.excentricidade': 'excentricidade',

@@ -526,6 +526,10 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.anel.pedacos': 'particles',
   'ficha.anel.pedacosValor': 'from ~1 cm to ~10 m, of water ice',
   'ficha.anel.massaValor': '≈ {massa}, about {fracao} of the mass of Mimas',
+  'ficha.anel.desenho': 'the drawing',
+  'ficha.anel.desenhoValor':
+    'transparency, colour and brightness along the radius follow the ring model created by Björn Jónsson from Voyager and Cassini images',
+  'ficha.anel.desenhoFonte': 'Björn Jónsson, “A model of Saturn’s rings”',
   'ficha.campo.periodo': 'orbital period',
   'ficha.campo.afelioPerielio': 'aphelion · perihelion',
   'ficha.campo.excentricidade': 'eccentricity',
