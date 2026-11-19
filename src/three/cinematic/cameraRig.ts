@@ -296,14 +296,21 @@ export class JourneyRig {
       this.desvioFov = fovMostrado - this.lenteDoRoteiro(inicio);
       this.desvioFovVel = fovVelMostrada - fovVelNova;
       this.andarDesvio(Math.max(0, t - tJunta));
-    } else if (dt > 0) {
+    } else if (dt > 0 && !this.paused) {
+      // A MOLA É DO FILME, não do relógio de parede: com o filme pausado
+      // logo depois de uma junta grande (Encélado → Titã, 166°) ela
+      // seguia andando com o `dt` de parede e a câmera girava 141,6° com
+      // a imagem congelada. Pausada, a junta espera o play.
       this.andarDesvio(dt);
     }
     this.plano = s.plano;
     this.tAnterior = t;
 
     girarPor(_tmpDir, this.desvio, this.lookDir);
-    const fov = alvoFov + this.desvioFov;
+    // a segunda parede que `ajustarLente` promete: o desvio da junta soma
+    // DEPOIS do grampo de `lenteDoRoteiro` e poderia levar a lente para
+    // fora da janela sã
+    const fov = THREE.MathUtils.clamp(alvoFov + this.desvioFov, 8, 75);
     this.lookSm.copy(s.pos).addScaledVector(this.lookDir, Math.max(wantLen, 1e-12));
 
     camera.position.copy(s.pos);

@@ -324,25 +324,99 @@ export function lookRaspao(
  */
 export const panThenHold = (a: THREE.Vector3, b: THREE.Vector3, fim: number): PosFn =>
   (k, out) => out.copy(a).lerp(b, smooth(Math.min(k / fim, 1)));
+/*
+ * A VIRADA PERTO DE 180° (auditoria de 19/11, §1.1). O ramo antigo
+ * trocava o eixo de `a×b` por uma perpendicular construída quando o dot
+ * passava de −0,9995, e a mira saltava num instante: 112° na `volta` do
+ * estelar, 18° no raspão de Marte, 10° no de Titã. Nenhuma regra que olhe
+ * só (a, b) é contínua em volta do antípoda — o eixo geodésico dá uma
+ * volta inteira em torno dele —, então quem decide o lado é o PLANO: o
+ * `lado` é o eixo da virada no instante em que ela começa (função só do
+ * roteiro, sem memória de quadro; seek = play continua valendo).
+ *
+ * Dentro da calota de `RHO_DENTRO` em volta do antípoda o giro é em torno
+ * do `lado` projetado no plano bissetor de a e b (⟂ a−b, onde mora todo
+ * eixo que leva a até b): é contínuo na travessia e não depende do
+ * `a×b`, que ali é só arredondamento (a `volta` passa 0,6 s com a e b
+ * opostos até o último bit). Entre `RHO_DENTRO` e `RHO_FORA` o eixo
+ * desliza do geodésico para o do lado; fora, é o slerp de sempre, conta
+ * por conta. Os raios são medidos (19/11): por dentro, 2,75° cobre o
+ * raspão de Mercúrio, que depois de cruzar o antípoda se afasta até 2,5°
+ * ainda virando; por fora, 3,75° fica abaixo dos 3,89° em que
+ * `paraTrappist` raspa o antípoda (fica como era), dos 5,69° das viradas
+ * de chegada do solar e longe dos 7,16° do galáctico — o filme aprovado
+ * nunca entra na calota.
+ *
+ * Fica UM corte, que a topologia exige: b saindo da calota pelo lado de
+ * lá (passou do antípoda) cruza o ponto do anel em que os dois eixos se
+ * opõem. Nenhuma virada de hoje chega a ele.
+ */
+const RHO_DENTRO = THREE.MathUtils.degToRad(2.75);
+const RHO_FORA = THREE.MathUtils.degToRad(3.75);
+const COS_FORA = Math.cos(RHO_FORA);
+const _eixoSlerp = new THREE.Vector3();
+const _eixoCurto = new THREE.Vector3();
+const _corda = new THREE.Vector3();
+const _aNoGiro = new THREE.Vector3();
+const _bNoGiro = new THREE.Vector3();
 /** slerp de versores — o lerp de PONTOS perto da câmera gira 445 °/s
  *  (Sirius) e 650 °/s (fuga). A direção não atravessa a origem. */
-const _eixoSlerp = new THREE.Vector3();
 function slerpVersor(
-  a: THREE.Vector3, b: THREE.Vector3, t: number, out: THREE.Vector3
+  a: THREE.Vector3, b: THREE.Vector3, t: number, lado: THREE.Vector3, out: THREE.Vector3
 ): THREE.Vector3 {
   const dot = THREE.MathUtils.clamp(a.dot(b), -1, 1);
   if (dot > 0.9995) return out.copy(a).lerp(b, t).normalize();
-  if (dot < -0.9995) {
-    _eixoSlerp.set(Math.abs(a.x) < 0.9 ? 1 : 0, Math.abs(a.x) < 0.9 ? 0 : 1, 0);
-    _eixoSlerp.cross(a).normalize();
-    return out.copy(a).applyAxisAngle(_eixoSlerp, Math.PI * t);
-  }
+  if (dot < -COS_FORA) return slerpPeloLado(a, b, t, dot, lado, out);
   const omega = Math.acos(dot);
   const so = Math.sin(omega);
   return out
     .copy(a)
     .multiplyScalar(Math.sin((1 - t) * omega) / so)
     .addScaledVector(b, Math.sin(t * omega) / so);
+}
+/** a virada dentro da calota do antípoda: giro em torno do `lado` (ver acima) */
+function slerpPeloLado(
+  a: THREE.Vector3, b: THREE.Vector3, t: number, dot: number,
+  lado: THREE.Vector3, out: THREE.Vector3
+): THREE.Vector3 {
+  const rho = Math.PI - Math.acos(dot);
+  const peso = 1 - THREE.MathUtils.smoothstep(rho, RHO_DENTRO, RHO_FORA);
+  _corda.copy(a).sub(b).normalize();
+  _eixoSlerp.copy(lado).addScaledVector(_corda, -lado.dot(_corda));
+  if (_eixoSlerp.lengthSq() > 1e-18) _eixoSlerp.normalize();
+  else _eixoSlerp.set(0, 0, 0);
+  if (peso < 1) {
+    _eixoCurto.crossVectors(a, b).normalize().multiplyScalar(1 - peso);
+    _eixoSlerp.multiplyScalar(peso).add(_eixoCurto);
+  }
+  if (_eixoSlerp.lengthSq() < 1e-18) {
+    // o ponto do corte, ou um `lado` paralelo à corda: uma perpendicular
+    // construída à corda, como fazia o ramo antigo com `a`
+    _eixoSlerp.set(Math.abs(_corda.x) < 0.9 ? 1 : 0, Math.abs(_corda.x) < 0.9 ? 0 : 1, 0);
+    _eixoSlerp.cross(_corda);
+  }
+  _eixoSlerp.normalize();
+  // o ângulo de a até b em torno do eixo, no sentido dele, em (0, 2π)
+  _aNoGiro.copy(a).addScaledVector(_eixoSlerp, -a.dot(_eixoSlerp));
+  _bNoGiro.copy(b).addScaledVector(_eixoSlerp, -b.dot(_eixoSlerp));
+  let angulo = Math.atan2(
+    _eixoCurto.crossVectors(_aNoGiro, _bNoGiro).dot(_eixoSlerp),
+    _aNoGiro.dot(_bNoGiro)
+  );
+  if (angulo < 0) angulo += 2 * Math.PI;
+  return out.copy(a).applyAxisAngle(_eixoSlerp, angulo * t);
+}
+/** o eixo da virada de `de` para `para` vistos de `posDe(k)` — o lado
+ *  que ela toma; sem plano (paralelos ou opostos), uma perpendicular */
+function ladoDaVirada(
+  posDe: PosFn, k: number, de: THREE.Vector3, para: THREE.Vector3
+): THREE.Vector3 {
+  const p = posDe(k, new THREE.Vector3());
+  const da = de.clone().sub(p).normalize();
+  const lado = da.clone().cross(para.clone().sub(p).normalize());
+  if (lado.lengthSq() > 1e-24) return lado.normalize();
+  lado.set(Math.abs(da.x) < 0.9 ? 1 : 0, Math.abs(da.x) < 0.9 ? 0 : 1, 0);
+  return lado.cross(da).normalize();
 }
 /**
  * O olhar de um EVENTO de passagem: vira cedo (`k1`) do assunto `a` para
@@ -361,23 +435,31 @@ export function lookEvento(
   const dirA = new THREE.Vector3();
   const dirB = new THREE.Vector3();
   const dir = new THREE.Vector3();
+  // o lado de cada virada, lido no começo dela (k = 0 e k = k2) e
+  // guardado na primeira vez que for pedido — é do plano, não do quadro
+  let ladoDaIda: THREE.Vector3 | null = null;
+  let ladoDaEntrega: THREE.Vector3 | null = null;
   return (k, out) => {
     posDe(k, p);
     let de: THREE.Vector3;
     let para: THREE.Vector3;
     let t: number;
+    let lado: THREE.Vector3;
     if (k <= k1) {
       de = a;
       para = assunto;
       t = glide(k / k1);
+      lado = ladoDaIda ??= ladoDaVirada(posDe, 0, a, assunto);
     } else if (k <= k2) {
       de = assunto;
       para = assunto;
       t = 1;
+      lado = ladoDaIda ??= ladoDaVirada(posDe, 0, a, assunto);
     } else {
       de = assunto;
       para = rumo;
       t = glide((k - k2) / (1 - k2));
+      lado = ladoDaEntrega ??= ladoDaVirada(posDe, k2, assunto, rumo);
     }
     dirA.copy(de).sub(p);
     const la = dirA.length();
@@ -385,7 +467,7 @@ export function lookEvento(
     dirB.copy(para).sub(p);
     const lb = dirB.length();
     if (lb > 1e-20) dirB.multiplyScalar(1 / lb);
-    slerpVersor(dirA, dirB, t, dir);
+    slerpVersor(dirA, dirB, t, lado, dir);
     return out.copy(p).addScaledVector(dir, 1);
   };
 }

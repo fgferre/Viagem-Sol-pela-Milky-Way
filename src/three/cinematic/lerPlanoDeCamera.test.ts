@@ -690,4 +690,110 @@ describe('lerPlanoDeCamera — item 75', () => {
       vi.resetModules();
     }
   });
+
+  it('a passagem rente a 180° vira pelo lado do plano, sem salto, e o galáctico sai bit a bit igual', async () => {
+    // O ORÁCULO é o `lookEvento` de ANTES (bdb832e9), verbatim, com o ramo
+    // que trocava o eixo em dot < −0,9995; os filmes são montados duas
+    // vezes, com ele e com o de agora
+    const slerpAntigo = (u: THREE.Vector3, v: THREE.Vector3, t: number, out: THREE.Vector3) => {
+      const dot = THREE.MathUtils.clamp(u.dot(v), -1, 1);
+      if (dot > 0.9995) return out.copy(u).lerp(v, t).normalize();
+      if (dot < -0.9995) {
+        const eixo = new THREE.Vector3(Math.abs(u.x) < 0.9 ? 1 : 0, Math.abs(u.x) < 0.9 ? 0 : 1, 0);
+        eixo.cross(u).normalize();
+        return out.copy(u).applyAxisAngle(eixo, Math.PI * t);
+      }
+      const omega = Math.acos(dot);
+      const so = Math.sin(omega);
+      return out.copy(u).multiplyScalar(Math.sin((1 - t) * omega) / so).addScaledVector(v, Math.sin(t * omega) / so);
+    };
+    const lookEventoAntigo = (
+      posDe: (k: number, out: THREE.Vector3) => THREE.Vector3,
+      de0: THREE.Vector3, assunto: THREE.Vector3, rumo: THREE.Vector3, k1: number, k2: number
+    ) => {
+      const p = new THREE.Vector3();
+      const dirA = new THREE.Vector3();
+      const dirB = new THREE.Vector3();
+      const dir = new THREE.Vector3();
+      return (k: number, out: THREE.Vector3) => {
+        posDe(k, p);
+        const [de, para, t] = k <= k1 ? [de0, assunto, glide(k / k1)]
+          : k <= k2 ? [assunto, assunto, 1] : [assunto, rumo, glide((k - k2) / (1 - k2))];
+        dirA.copy(de).sub(p);
+        const la = dirA.length();
+        if (la > 1e-20) dirA.multiplyScalar(1 / la);
+        dirB.copy(para).sub(p);
+        const lb = dirB.length();
+        if (lb > 1e-20) dirB.multiplyScalar(1 / lb);
+        slerpAntigo(dirA, dirB, t, dir);
+        return out.copy(p).addScaledVector(dir, 1);
+      };
+    };
+    type Filmes = typeof import('./filme')['FILMES'];
+    const montar = (filmes: Filmes, id: string) => filmes.get(id)!().journey;
+    vi.resetModules();
+    vi.doMock('./movimentos', async (original) => ({
+      ...(await original<typeof import('./movimentos')>()),
+      lookEvento: lookEventoAntigo,
+      lookPan: (posDe: (k: number, out: THREE.Vector3) => THREE.Vector3, de: THREE.Vector3, para: THREE.Vector3, fim: number) =>
+        lookEventoAntigo(posDe, de, para, para, fim, 1),
+    }));
+    let antigos: Filmes;
+    try {
+      antigos = (await import('./filme')).FILMES;
+    } finally {
+      vi.doUnmock('./movimentos');
+      vi.resetModules();
+    }
+    const { FILMES } = await import('./filme');
+    const campos = (s: ReturnType<ReturnType<typeof montar>['at']>) =>
+      [...s.pos.toArray(), ...s.look.toArray(), s.fov, s.warp, s.roll];
+    const mira = (j: ReturnType<typeof montar>, t: number) => {
+      const s = j.at(t);
+      return s.look.sub(s.pos).normalize();
+    };
+    /** o maior giro da mira entre amostras de 1 ms em [t0, t1], em graus */
+    const maiorPasso = (j: ReturnType<typeof montar>, t0: number, t1: number) => {
+      let maior = 0;
+      let antes = mira(j, t0);
+      for (let i = 1; t0 + i / 1000 <= t1; i++) {
+        const agora = mira(j, t0 + i / 1000);
+        maior = Math.max(maior, THREE.MathUtils.radToDeg(antes.angleTo(agora)));
+        antes = agora;
+      }
+      return maior;
+    };
+
+    // o galáctico aprovado: os MESMOS doubles a 60 quadros/s, do 0 ao fim
+    const galAntigo = montar(antigos, 'galactico');
+    const galNovo = montar(FILMES, 'galactico');
+    const quadros = Math.floor(galNovo.duration * 60);
+    let iguais = 0;
+    for (let i = 0; i <= quadros; i++) {
+      const velho = campos(galAntigo.at(i / 60));
+      const novo = campos(galNovo.at(i / 60));
+      if (velho.every((x, n) => Object.is(x, novo[n]))) iguais++;
+    }
+    expect(iguais).toBe(quadros + 1);
+
+    // os saltos medidos na auditoria (estelar `volta`; solar Marte e
+    // Titã): o de antes salta num milissegundo, o de agora desliza
+    const antes = { estelar: montar(antigos, 'estelar'), solar: montar(antigos, 'solar') };
+    const agora = { estelar: montar(FILMES, 'estelar'), solar: montar(FILMES, 'solar') };
+    const casos = [['estelar', 255.944, 100], ['solar', 130.868, 15], ['solar', 279.482, 8]] as const;
+    for (const [id, t, saltoAntigo] of casos) {
+      expect(maiorPasso(antes[id], t - 0.05, t + 0.05), `${id} t=${t} antes`).toBeGreaterThan(saltoAntigo);
+      expect(maiorPasso(agora[id], t - 0.05, t + 0.05), `${id} t=${t} agora`).toBeLessThan(0.15);
+    }
+
+    // seek = play: o lado é do plano — a volta lida de trás para frente
+    // num filme recém-montado dá os mesmos doubles que lida em ordem
+    const aoContrario = montar(FILMES, 'estelar');
+    const instantes = Array.from({ length: 121 }, (_, i) => 255.5 + i / 60);
+    const lidos = instantes.map((t) => campos(agora.estelar.at(t)));
+    for (let i = instantes.length - 1; i >= 0; i--) {
+      expect(campos(aoContrario.at(instantes[i]))).toEqual(lidos[i]);
+    }
+    // folga para a máquina do GitHub, que é várias vezes mais lenta (o padrão de 5 s derrubou publicações)
+  }, 30_000);
 });

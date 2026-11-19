@@ -824,6 +824,29 @@ describe('a lente do modo fotografia (item 100, fase 2 — a variante (a) dele)'
     rig.apply(cam, T_MARIAS, 0); // snap pós-reset: o fov do script, exato
     expect(cam.fov).toBe(doRoteiro);
   });
+
+  it('o desvio da junta não leva a lente além da parede de 75°', () => {
+    // um plano que abre a lente a 67°/s até `teto` e outro parado nela: a
+    // mola herda a velocidade e passa do alvo
+    const origem = still(new THREE.Vector3());
+    const mira = still(new THREE.Vector3(1, 0, 0));
+    const maiorLente = (teto: number) => {
+      const journey = new Journey([
+        { dur: 1, pos: origem, look: mira, fov0: teto - 67, fov1: teto, fovEase: (x: number) => x },
+        { dur: 2, pos: origem, look: mira, fov0: teto, fov1: teto },
+      ] satisfies Shot[], [0, 1]);
+      const rig = new JourneyRig(journey);
+      const cam = new THREE.PerspectiveCamera();
+      let maior = 0;
+      for (let q = 0; q <= 90; q++) {
+        rig.apply(cam, q / 30, 1 / 30);
+        maior = Math.max(maior, cam.fov);
+      }
+      return maior;
+    };
+    expect(maiorLente(70)).toBeGreaterThan(71); // longe da parede, a mola passa
+    expect(maiorLente(75)).toBe(75);
+  });
 });
 
 describe('o "cima" do filme — cada filme pode declarar o seu polo (viagem solar)', () => {
@@ -928,5 +951,21 @@ describe('o corte seco (F4) — o plano que abre num corte não herda a junta', 
     expect(avisos(filme(true))).toEqual([30]);
     // a junta sem o campo é mola, não salto: nenhum aviso
     expect(avisos(filme())).toEqual([]);
+  });
+
+  it('pausado logo depois da junta, a mola espera o play: a câmera não gira com o filme parado', () => {
+    const rig = new JourneyRig(filme());
+    const cam = new THREE.PerspectiveCamera();
+    for (let q = 0; q <= 33; q++) rig.apply(cam, q / 30, 1 / 30);
+    const parada = cam.getWorldDirection(new THREE.Vector3());
+    // o director pausa assim: o mesmo t, o dt de parede correndo
+    rig.paused = true;
+    for (let q = 0; q < 60; q++) rig.apply(cam, 33 / 30, 1 / 30);
+    expect(cam.getWorldDirection(new THREE.Vector3()).toArray()).toEqual(parada.toArray());
+    // e a junta segue de onde estava no play
+    rig.paused = false;
+    rig.apply(cam, 34 / 30, 1 / 30);
+    const giro = cam.getWorldDirection(new THREE.Vector3()).angleTo(parada);
+    expect(THREE.MathUtils.radToDeg(giro)).toBeGreaterThan(1);
   });
 });
