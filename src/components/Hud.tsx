@@ -50,92 +50,68 @@ export function TitleVeil({
       aria-hidden={!visible}
     >
       {mode === 'intro' && (
-        <div
-          className="abertura-coluna"
-          style={{ '--filmes': FILMES_EM_CARTAZ.length } as CSSProperties}
-        >
-          <div className="title-kicker">{t('hud.kicker')}</div>
-          <div className="title-big">{t('hud.nome')}</div>
-          <div className="title-rule" />
-          <div className="title-sub">{t('hud.abertura.linha1')}</div>
-          <div className="title-sub title-sub--linha2">{t('hud.abertura.linha2')}</div>
-          {/* AS PORTAS DA ABERTURA (Lote 8, PLAN-UI.md §3.1). O "Explorar"
-              já estava ligado aqui (App passa onExplore ao véu) e só era
-              desenhado no fim — quem não quer 3 min de filme fechava a
-              aba em vez de entrar na galáxia. O "Entrar no Atlas" é o
-              item 60, agora rotulado "Explorar o Atlas" e promovido a
-              PRIMÁRIO: é o MESMO `entrarNoAtlas` do portal do
-              pausar-e-olhar, dois caminhos até o mesmo modo, um só
-              código. As notas de cada porta continuam por
-              `aria-describedby`, não texto solto, para que quem ouve a
-              tela receba a explicação junto com o botão. */}
-          {onAtlas && (
-            <div className="abertura-porta">
-              <button
-                className="veil-btn veil-btn--primario"
-                onClick={onAtlas}
-                aria-describedby="porta-atlas"
-              >
-                <Icone nome="bussola" tamanho={16} />
-                {/* rótulo em `<span>` (C2): texto solto ao lado do ícone
-                    não tem caixa própria para a pressão comprimir. */}
-                <span>{t('hud.porta.atlas')}</span>
-              </button>
-              <span className="abertura-porta-nota" id="porta-atlas">
-                {t('hud.porta.atlasNota')}
-              </span>
-            </div>
-          )}
-          {/* OS FILMES, LADO A LADO (escolha visível, item 210/F1; maquete
-              B de 05/10, aprovada por ele): um botão por filme do cartaz
-              (`FILMES_EM_CARTAZ`, nunca os ids escritos aqui), com o nome,
-              a duração DO FILME e a nota dele embaixo. Todos numa fileira
-              só e do mesmo tamanho, ou todos empilhados — nunca dois em
-              cima e um embaixo; o `--filmes` acima alarga a coluna para
-              caber a fileira (02-filme.css). O "Voo livre" desce para uma
-              fileira própria, sozinho e na largura inteira — a mesma
-              `.abertura-portas`: um botão só estica. Em `<span>` (C2): a
-              pressão afunda o filho, não um nó de texto solto. */}
-          <div className="abertura-portas">
-            {FILMES_EM_CARTAZ.map((id) => {
-              const filme = filmeDe(id);
-              return (
-                <div className="abertura-porta" key={id}>
-                  <button
-                    className="veil-btn veil-btn--secundario"
-                    onClick={() => onPlay(id)}
-                    aria-describedby={`porta-filme-${id}`}
-                  >
-                    <Icone nome="play" tamanho={16} />
-                    <span>{`${t(filme.titulo)} · ${duracaoPorExtenso(filme.journey.duration)}`}</span>
-                  </button>
-                  <span
-                    className="abertura-porta-nota abertura-porta-nota--secundaria"
-                    id={`porta-filme-${id}`}
-                  >
-                    {t(filme.nota)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          {onExplore && (
-            <div className="abertura-portas">
-              <div className="abertura-porta">
-                <button
-                  className="veil-btn veil-btn--secundario"
-                  onClick={onExplore}
-                  aria-describedby="porta-voo"
-                >
-                  <Icone nome="explorar" tamanho={16} />
-                  <span>{t('hud.porta.voo')}</span>
-                </button>
-                <span className="abertura-porta-nota abertura-porta-nota--secundaria" id="porta-voo">
-                  {t('hud.porta.explorarNota')}
-                </span>
+        <div className="abertura-coluna">
+          <header className="abertura-cabecalho">
+            <div className="title-kicker">{t('hud.kicker')}</div>
+            <h1 className="title-big">{t('hud.nome')}</h1>
+            <p className="title-sub">{t('hud.abertura.linha1')}</p>
+          </header>
+
+          {(onAtlas || onExplore) && (
+            <section className="abertura-explorar" aria-labelledby="abertura-explorar">
+              <h2 id="abertura-explorar">{t('hud.abertura.explorar')}</h2>
+              <div className="abertura-modos">
+                {onAtlas && (
+                  <div className="abertura-porta">
+                    <button className="veil-btn veil-btn--primario" onClick={onAtlas} aria-describedby="porta-atlas">
+                      <Icone nome="bussola" tamanho={18} />
+                      <span>{t('hud.porta.atlas')}</span>
+                    </button>
+                    <span className="abertura-porta-nota" id="porta-atlas">{t('hud.porta.atlasNota')}</span>
+                  </div>
+                )}
+                {onExplore && (
+                  <div className="abertura-porta">
+                    <button className="veil-btn veil-btn--secundario" onClick={onExplore} aria-describedby="porta-voo">
+                      <Icone nome="explorar" tamanho={18} />
+                      <span>{t('hud.porta.voo')}</span>
+                    </button>
+                    <span className="abertura-porta-nota" id="porta-voo">{t('hud.porta.explorarNota')}</span>
+                  </div>
+                )}
               </div>
-            </div>
+            </section>
           )}
+
+          <section className="abertura-cartaz" aria-labelledby="abertura-assistir">
+            <h2 id="abertura-assistir">{t('hud.abertura.assistir')}</h2>
+            <div className="abertura-filmes">
+              {FILMES_EM_CARTAZ.map((id) => {
+                const filme = filmeDe(id);
+                return (
+                  <div className="abertura-porta" key={id}>
+                    <button
+                      className="veil-btn veil-btn--secundario abertura-filme"
+                      onClick={() => onPlay(id)}
+                      aria-labelledby={`titulo-${id} duracao-${id}`}
+                      aria-describedby={`porta-filme-${id}`}
+                    >
+                      <span className="abertura-previa">
+                        <img src={`${import.meta.env.BASE_URL}previas/${filme.previa}.webp`} alt="" />
+                        <Icone nome="play" tamanho={14} />
+                      </span>
+                      <span className="abertura-filme-texto">
+                        <span className="abertura-duracao" id={`duracao-${id}`}>{duracaoPorExtenso(filme.journey.duration)}</span>
+                        <span className="abertura-filme-titulo" id={`titulo-${id}`}>{t(filme.titulo)}</span>
+                        <span className="abertura-porta-nota" id={`porta-filme-${id}`}>{t(filme.nota)}</span>
+                      </span>
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+          <p className="title-sub abertura-dados">{t('hud.abertura.linha2')}</p>
         </div>
       )}
       {fim && (

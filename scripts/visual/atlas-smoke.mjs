@@ -2566,7 +2566,14 @@ try {
     })()`);
 
     await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
-    const foiParaOFilme = await clicarPorAria('Viagem galáctica — ver desde o começo');
+    const abriuFilmes = await sessao.js(`(() => {
+      const gatilho = document.querySelector('.controls-bar [aria-controls="barra-mais-ferramentas"]');
+      gatilho?.click();
+      return Boolean(gatilho);
+    })()`);
+    await dorme(250);
+    const foiParaOFilme = abriuFilmes
+      && await clicarPorAria('Viagem galáctica — ver desde o começo');
     await dorme(500);
     const noFilme = JSON.parse(await sessao.js(`JSON.stringify({
       fase: window.__director.captura.fase,

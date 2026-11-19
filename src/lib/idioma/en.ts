@@ -59,6 +59,8 @@ export const EN: Record<keyof typeof PT, string> = {
     'This browser has no usable WebGL — the Journey needs it to draw the galaxy. Update the browser or turn hardware acceleration on and try again.',
   'hud.fatalContexto':
     'The graphics card gave up drawing the Journey — the browser took the 3D context away from this page.',
+  'hud.abertura.explorar': 'Explore',
+  'hud.abertura.assistir': 'Watch',
   'hud.abertura.linha1':
     'from the Sun to the supergiants of Orion, to the heart of the galaxy — and back',
   'hud.abertura.linha2':
@@ -143,7 +145,9 @@ export const EN: Record<keyof typeof PT, string> = {
   // collapse behind a single trigger, closed on every load; the label
   // stays short because the `aria-label` below already says what it opens.
   'barra.mais': 'More',
-  'barra.maisAria': 'Show the films, Layers, quality and Settings',
+  'barra.maisFilmes': 'Films',
+  'barra.maisFerramentas': 'Tools',
+  'barra.filmeTocando': 'Now playing',
   'barra.qualidadeAria': 'Graphics quality',
   'barra.alcasAria': 'Atlas controls',
   'barra.reguaAria': 'Atlas tools',
@@ -157,6 +161,13 @@ export const EN: Record<keyof typeof PT, string> = {
 
   // ---- the settings panel ------------------------------------------
   'ajustes.titulo': 'Settings',
+  'ajustes.grupo.interface': 'Interface',
+  'ajustes.grupo.imagem': 'Image',
+  'ajustes.grupo.desempenho': 'Performance',
+  'ajustes.grupo.renderizacao': 'Rendering',
+  'ajustes.grupo.terra': 'Earth',
+  'ajustes.grupo.galaxia': 'Milky Way',
+  'ajustes.grupo.sessao': 'Session',
   'ajustes.aria': 'Rendering settings',
   'ajustes.fechar': 'Close settings',
   // the "?" button label on each row — the fine print left the flow and

@@ -15,10 +15,8 @@
 // explicações em letra pequena, pouco claro o que é a opção que está
 // sendo alterada"*. Três mudanças:
 //  1. LINHA, não parágrafo — cada controle é `.ajustes-item`: rótulo à
-//     esquerda, controle à direita. O `<h3>` de seção só sobrevive onde
-//     agrupa MAIS de uma linha (a gaveta Avançado); nos demais o próprio
-//     rótulo da linha já diz o que ela é, e repetir num título acima
-//     seria a mesma complexidade que o dono apontou.
+//     esquerda, controle à direita. Os títulos agrupam linhas de mesmo
+//     propósito.
 //  2. AS NOTAS VIRARAM DICA — o texto miúdo que explicava cada opção só
 //     aparece sob um "?": no hover/foco (CSS) ou fixado por clique
 //     (estado `dicaPresa`, só um por vez).
@@ -477,540 +475,557 @@ export function Ajustes({
         celular={celular}
       />
 
-      {/* O SELETOR DE IDIOMA (item 130, F1). Mora AQUI e não na barra
-          nem na URL: a barra é o lugar do que se usa a toda hora, e a
-          URL desta casa é espelho da vista, não painel — knob de URL
-          foi recusado pelo dono. Troca a língua AO VIVO, sem recarregar.
-          O nome de cada língua vem NA PRÓPRIA LÍNGUA ("Português",
-          "English"): quem não lê a língua de agora precisa reconhecer a
-          dele na lista, e "Portuguese" não ajuda quem procura o
-          português. */}
-      <LinhaDeAjuste
-        id="idioma"
-        rotulo={t('ajustes.idioma')}
-        dica={t('ajustes.idiomaNota')}
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <Segmentado
-          aria={t('ajustes.idioma')}
-          valor={idioma}
-          opcoes={IDIOMAS.map((lingua) => ({
-            valor: lingua.id,
-            nome: lingua.nome,
-            lang: lingua.id,
-          }))}
-          onEscolher={definirIdioma}
-        />
-      </LinhaDeAjuste>
-
-      <LinhaDeAjuste
-        id="texto"
-        rotulo={t('ajustes.texto', { degrau: rotuloDaEscala(escalaUi) })}
-        dica={t('ajustes.textoNota')}
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <Segmentado
-          aria={t('ajustes.texto', { degrau: rotuloDaEscala(escalaUi) })}
-          valor={escalaUi}
-          opcoes={DEGRAUS_DA_UI.map((f) => ({ valor: f, nome: rotuloDaEscala(f) }))}
-          onEscolher={onEscalaUi}
-        />
-      </LinhaDeAjuste>
-
-      <LinhaDeAjuste
-        id="qualidade"
-        rotulo={t('ajustes.qualidade')}
-        dica={t('ajustes.qualidadeNota')}
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <Segmentado
-          aria={t('ajustes.qualidade')}
-          valor={qualidade.escolha}
-          opcoes={QUALIDADES.map((q) => ({ valor: q.id, nome: q.nome }))}
-          onEscolher={onQualidade}
-          // A GRADE 2×2 COM TEXTO GRANDE (auditoria celular, 13/09) — só
-          // a Qualidade tem quatro opções e nome de sobra ("Performance")
-          // para estourar a folha do celular; a classe é o gancho que
-          // `08-ajustes.css` lê (`.ajustes-seg--qualidade`).
-          classeExtra="ajustes-seg--qualidade"
-        />
-      </LinhaDeAjuste>
-      {/* A MEDIÇÃO, DITA (Ajustes D). A frase é a mesma do título do
-          seletor da barra — uma função só (`rotuloDaQualidade`), senão
-          os dois hospedeiros contariam a mesma coisa de dois jeitos.
-          Ela é `aria-live` porque muda SOZINHA: quem está com o painel
-          aberto quando o quadro engasga tem de ouvir a sugestão sem
-          precisar reabrir nada. */}
-      {/* CLASSE MANTIDA (`ajustes-medida`): `scripts/visual/atlas-smoke.mjs`
-          lê este seletor para tirar a leitura de q/s da captura — trocar o
-          nome quebraria um consumidor fora deste arquivo, calado. */}
-      <p className="ajustes-medida" role="status" aria-live="polite">
-        {rotuloDaQualidade(qualidade)}
-      </p>
-
-      {/* EXPOSIÇÃO não tem "?": nunca teve nota própria (a frase que
-          existia era só o valor, não uma explicação), e o redesenho não
-          inventa texto novo — o valor mora ao lado do controle. */}
-      <LinhaDeAjuste
-        id="exposicao"
-        rotulo={t('ajustes.exposicao')}
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <input
-          type="range"
-          min="0.4"
-          max="2.2"
-          step="0.02"
-          value={exposicao}
-          aria-label={t('ajustes.exposicao')}
-          onChange={(e) => onExposicao(Number(e.target.value))}
-        />
-        <span className="ajustes-valor">{exposicao.toFixed(2)}</span>
-      </LinhaDeAjuste>
-
-      <LinhaDeAjuste
-        id="lente"
-        rotulo={t('ajustes.lente')}
-        dica={t('ajustes.lenteNota')}
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <Segmentado
-          aria={t('ajustes.lente')}
-          valor={lenteAtual}
-          opcoes={MODOS_DA_LENTE.map((modo) => ({ valor: modo, nome: t(`ajustes.lente.${modo}`) }))}
-          onEscolher={onLente}
-          // quatro lentes com nome comprido ("Anamórfica", "Hollywood") não cabem numa
-          // fileira no celular: lá viram a grade 2×2 de botões iguais (09-celular.css)
-          classeExtra="ajustes-seg--lente"
-        />
-      </LinhaDeAjuste>
-      {/* A FORÇA DA LENTE (o dono, 09/10: "os estilos mais uma barra de força"):
-          com "Nenhuma" não há reflexo a fortalecer, e o painel não tem controle
-          desabilitado em lugar nenhum — então a linha some, e o valor fica guardado */}
-      {lenteAtual !== 'nenhuma' && (
+      <section className="ajustes-grupo" aria-labelledby="ajustes-grupo-interface">
+        <h3 className="ajustes-grupo-titulo" id="ajustes-grupo-interface">
+          {t('ajustes.grupo.interface')}
+        </h3>
+        {/* O SELETOR DE IDIOMA (item 130, F1). Mora AQUI e não na barra
+            nem na URL: a barra é o lugar do que se usa a toda hora, e a
+            URL desta casa é espelho da vista, não painel — knob de URL
+            foi recusado pelo dono. Troca a língua AO VIVO, sem recarregar.
+            O nome de cada língua vem NA PRÓPRIA LÍNGUA ("Português",
+            "English"): quem não lê a língua de agora precisa reconhecer a
+            dele na lista, e "Portuguese" não ajuda quem procura o
+            português. */}
         <LinhaDeAjuste
-          id="forcaDaLente"
-          rotulo={t('ajustes.forcaDaLente')}
+          id="idioma"
+          rotulo={t('ajustes.idioma')}
+          dica={t('ajustes.idiomaNota')}
+          dicaPresa={dicaPresa}
+          onAlternarDica={alternarDica}
+        >
+          <Segmentado
+            aria={t('ajustes.idioma')}
+            valor={idioma}
+            opcoes={IDIOMAS.map((lingua) => ({
+              valor: lingua.id,
+              nome: lingua.nome,
+              lang: lingua.id,
+            }))}
+            onEscolher={definirIdioma}
+          />
+        </LinhaDeAjuste>
+
+        <LinhaDeAjuste
+          id="texto"
+          rotulo={t('ajustes.texto', { degrau: rotuloDaEscala(escalaUi) })}
+          dica={t('ajustes.textoNota')}
+          dicaPresa={dicaPresa}
+          onAlternarDica={alternarDica}
+        >
+          <Segmentado
+            aria={t('ajustes.texto', { degrau: rotuloDaEscala(escalaUi) })}
+            valor={escalaUi}
+            opcoes={DEGRAUS_DA_UI.map((f) => ({ valor: f, nome: rotuloDaEscala(f) }))}
+            onEscolher={onEscalaUi}
+          />
+        </LinhaDeAjuste>
+
+        <LinhaDeAjuste
+          id="rotulos3d"
+          rotulo={t('ajustes.rotulos3d')}
+          dica={t('ajustes.rotulos3dNota')}
+          dicaPresa={dicaPresa}
+          onAlternarDica={alternarDica}
+        >
+          <Segmentado
+            aria={t('ajustes.rotulos3d')}
+            valor={rotulos3d}
+            opcoes={[
+              { valor: false, nome: t('ajustes.desligados') },
+              { valor: true, nome: t('ajustes.ligados') },
+            ]}
+            onEscolher={onRotulos3d}
+          />
+        </LinhaDeAjuste>
+      </section>
+
+      <section className="ajustes-grupo" aria-labelledby="ajustes-grupo-imagem">
+        <h3 className="ajustes-grupo-titulo" id="ajustes-grupo-imagem">
+          {t('ajustes.grupo.imagem')}
+        </h3>
+        {/* EXPOSIÇÃO não tem "?": nunca teve nota própria (a frase que
+            existia era só o valor, não uma explicação), e o redesenho não
+            inventa texto novo — o valor mora ao lado do controle. */}
+        <LinhaDeAjuste
+          id="exposicao"
+          rotulo={t('ajustes.exposicao')}
           dicaPresa={dicaPresa}
           onAlternarDica={alternarDica}
         >
           <input
             type="range"
-            min={FORCA_DA_LENTE.minima}
-            max={FORCA_DA_LENTE.maxima}
-            step={FORCA_DA_LENTE.passo}
-            value={forcaDaLente}
-            aria-label={t('ajustes.forcaDaLente')}
-            onChange={(e) => onForcaDaLente(Number(e.target.value))}
+            min="0.4"
+            max="2.2"
+            step="0.02"
+            value={exposicao}
+            aria-label={t('ajustes.exposicao')}
+            onChange={(e) => onExposicao(Number(e.target.value))}
           />
-          <span className="ajustes-valor">{forcaDaLente}%</span>
+          <span className="ajustes-valor">{exposicao.toFixed(2)}</span>
         </LinhaDeAjuste>
-      )}
 
-      {/* A GAVETA AVANÇADO (item 145) — os presets na frente, os
-          controles individuais atrás. Ela mora COLADA na seção da
-          qualidade, e não no fim do painel, por causa da régua: o
-          número de quadros/s que o visitante compara é o da linha logo
-          acima, e um controle a três rolagens dela mediria memória em
-          vez de desempenho. É o ÚNICO `<h3>` que sobrou no corpo do
-          painel: agrupa CINCO linhas, e é aí que um título continua
-          sendo economia, não repetição.
-
-          RECOLHÍVEL, FECHADA POR PADRÃO (Lote 7) — mesma anatomia do
-          título de seção da ficha (`FichaDoObjeto.tsx`): o `<h3>` só
-          hospeda o botão, que carrega `aria-expanded`/`aria-controls` e
-          o chevron que GIRA (C3c, reaudit: o mesmo SVG sempre, 0→90° por
-          CSS — `.atlas-ficha-seta`, 04-atlas.css). Abrir/recolher não
-          chama nenhum handler de valor; o `.efetivo` de cada segmento
-          continua respondendo ao PRESET vivo, escondido ou não. */}
-      <h3 className="ajustes-titulo-secao">
-        <button
-          type="button"
-          aria-expanded={avancadoAberto}
-          aria-controls="ajustes-avancado"
-          onClick={() => setAvancadoAberto((v) => !v)}
+        <LinhaDeAjuste
+          id="lente"
+          rotulo={t('ajustes.lente')}
+          dica={t('ajustes.lenteNota')}
+          dicaPresa={dicaPresa}
+          onAlternarDica={alternarDica}
         >
-          <span>{t('ajustes.avancado')}</span>
-          <span className="atlas-ficha-seta" aria-hidden="true">
-            <Icone nome="chevronDireita" tamanho={16} />
-          </span>
-        </button>
-      </h3>
+          <Segmentado
+            aria={t('ajustes.lente')}
+            valor={lenteAtual}
+            opcoes={MODOS_DA_LENTE.map((modo) => ({ valor: modo, nome: t(`ajustes.lente.${modo}`) }))}
+            onEscolher={onLente}
+            // quatro lentes com nome comprido ("Anamórfica", "Hollywood") não cabem numa
+            // fileira no celular: lá viram a grade 2×2 de botões iguais (09-celular.css)
+            classeExtra="ajustes-seg--lente"
+          />
+        </LinhaDeAjuste>
+        {/* A FORÇA DA LENTE (o dono, 09/10: "os estilos mais uma barra de força"):
+            com "Nenhuma" não há reflexo a fortalecer, e o painel não tem controle
+            desabilitado em lugar nenhum — então a linha some, e o valor fica guardado */}
+        {lenteAtual !== 'nenhuma' && (
+          <LinhaDeAjuste
+            id="forcaDaLente"
+            rotulo={t('ajustes.forcaDaLente')}
+            dicaPresa={dicaPresa}
+            onAlternarDica={alternarDica}
+          >
+            <input
+              type="range"
+              min={FORCA_DA_LENTE.minima}
+              max={FORCA_DA_LENTE.maxima}
+              step={FORCA_DA_LENTE.passo}
+              value={forcaDaLente}
+              aria-label={t('ajustes.forcaDaLente')}
+              onChange={(e) => onForcaDaLente(Number(e.target.value))}
+            />
+            <span className="ajustes-valor">{forcaDaLente}%</span>
+          </LinhaDeAjuste>
+        )}
+      </section>
 
-      <Sanfona id="ajustes-avancado" aberta={avancadoAberto}>
-
-      <LinhaDeAjuste
-        id="tom"
-        rotulo={t('ajustes.tom')}
-        dica={
-          <>
-            <p>{t('ajustes.tomNota')}</p>
-            <ul className="ajustes-dica-lista">
-              {TONS.map((curva) => (
-                <li key={curva.id}>
-                  <strong>{curva.nome}</strong> — {t(curva.nota)}
-                </li>
-              ))}
-            </ul>
-          </>
-        }
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <Segmentado
-          aria={t('ajustes.tom')}
-          valor={tom}
-          opcoes={TONS.map((curva) => ({ valor: curva.id, nome: curva.nome }))}
-          onEscolher={onTom}
-        />
-      </LinhaDeAjuste>
-
-      <LinhaDeAjuste
-        id="msaa"
-        rotulo={t('ajustes.msaa')}
-        dica={t('ajustes.msaaNota')}
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <Segmentado
-          aria={t('ajustes.msaa')}
-          valor={qualidade.amostras}
-          opcoes={AMOSTRAS.map((a) => ({
-            valor: a.valor,
-            nome: a.nome(),
-            efetivo:
-              qualidade.amostras === null &&
-              a.valor !== null &&
-              a.valor === amostrasEfetivas,
-          }))}
-          onEscolher={onAmostras}
-        />
-      </LinhaDeAjuste>
-
-      <LinhaDeAjuste
-        id="nebulosa"
-        rotulo={t('ajustes.nebulosaControle')}
-        dica={t('ajustes.nebulosaNota')}
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <Segmentado
-          aria={t('ajustes.nebulosaControle')}
-          valor={qualidade.nebulosa}
-          opcoes={NEBULOSAS.map((n) => ({
-            valor: n.valor,
-            nome: n.nome(),
-            efetivo:
-              qualidade.nebulosa === null &&
-              n.valor !== null &&
-              n.valor === presetVivo.nebulosa,
-          }))}
-          onEscolher={onNebulosa}
-        />
-      </LinhaDeAjuste>
-
-      <LinhaDeAjuste
-        id="gas"
-        rotulo={t('ajustes.gasControle')}
-        dica={t('ajustes.gasNota')}
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <Segmentado
-          aria={t('ajustes.gasControle')}
-          valor={qualidade.gas}
-          opcoes={GASES.map((g) => ({
-            valor: g.valor,
-            nome: g.nome(),
-            efetivo:
-              qualidade.gas === null && g.valor !== null && g.valor === presetVivo.gas,
-          }))}
-          onEscolher={onGas}
-        />
-      </LinhaDeAjuste>
-
-      <LinhaDeAjuste
-        id="terra"
-        rotulo={t('ajustes.terraControle')}
-        dica={t('ajustes.terraNota')}
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <Segmentado
-          aria={t('ajustes.terraControle')}
-          valor={qualidade.terra}
-          opcoes={TERRAS.map((v) => ({
-            valor: v.valor,
-            nome: v.nome(),
-            efetivo:
-              qualidade.terra === null && v.valor !== null && v.valor === presetVivo.terra,
-          }))}
-          onEscolher={onTerra}
-        />
-      </LinhaDeAjuste>
-
-      {/* O RELEVO DA TERRA (item 232) — colado na Terra, porque só a
-          variante com profundidade o desenha (na clássica ele não muda
-          nada, e a dica diz). Os dois botões em colunas IGUAIS
-          (`ajustes-seg--par`): "Real" é curto e "Realçado 3×" não. */}
-      <LinhaDeAjuste
-        id="relevo"
-        rotulo={t('ajustes.relevoControle')}
-        dica={t('ajustes.relevoNota', { fator: FATOR_DO_RELEVO_REALCADO })}
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <Segmentado
-          aria={t('ajustes.relevoControle')}
-          valor={qualidade.relevo}
-          opcoes={RELEVOS.map((r) => ({ valor: r.valor, nome: r.nome() }))}
-          onEscolher={onRelevo}
-          classeExtra="ajustes-seg--par"
-        />
-      </LinhaDeAjuste>
-
-      <LinhaDeAjuste
-        id="poeira"
-        rotulo={t('ajustes.poeira')}
-        dica={t('ajustes.poeiraNota')}
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <Segmentado
-          aria={t('ajustes.poeira')}
-          valor={qualidade.poeira}
-          opcoes={POEIRAS.map((p) => ({
-            valor: p.valor,
-            nome: p.nome(),
-            efetivo:
-              qualidade.poeira === null && p.valor !== null && p.valor === presetVivo.poeira,
-          }))}
-          onEscolher={onPoeira}
-        />
-      </LinhaDeAjuste>
-
-      <LinhaDeAjuste
-        id="particulas"
-        rotulo={t('ajustes.particulasControle')}
-        dica={t('ajustes.particulasNota')}
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <Segmentado
-          aria={t('ajustes.particulasControle')}
-          valor={qualidade.particulas}
-          opcoes={PARTICULAS.map((p) => ({
-            valor: p.valor,
-            nome: p.nome(),
-            efetivo:
-              qualidade.particulas === null &&
-              p.valor !== null &&
-              p.valor === presetVivo.particulas,
-          }))}
-          onEscolher={onParticulas}
-        />
-      </LinhaDeAjuste>
-
-      {/* A GALÁXIA (12/11/2026): o `.efetivo` marca quem ESTÁ desenhando —
-          a cadeia do preset pode ter caído para o degrau de baixo */}
-      <LinhaDeAjuste
-        id="galaxia"
-        rotulo={t('ajustes.galaxiaControle')}
-        dica={t('ajustes.galaxiaNota')}
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <Segmentado
-          aria={t('ajustes.galaxiaControle')}
-          valor={qualidade.galaxia}
-          opcoes={GALAXIAS.map((g) => ({
-            valor: g.valor,
-            nome: g.nome(),
-            efetivo: qualidade.galaxia === null && g.valor === qualidade.galaxiaViva,
-          }))}
-          onEscolher={onGalaxia}
-        />
-      </LinhaDeAjuste>
-
-      {/* O LABORATÓRIO DA GALÁXIA (13/11/2026) — os botões do protótipo
-          WebGPU e os do WebGL, colado na Galáxia porque é dela que ele
-          depende: o que não vale no caminho que DESENHA fica à vista e
-          desligado, com o motivo dito uma vez por grupo. Mesma anatomia do
-          Avançado (título recolhível, fechado por padrão). */}
-      <h3 className="ajustes-titulo-secao">
-        <button
-          type="button"
-          aria-expanded={laboratorioAberto}
-          aria-controls="ajustes-laboratorio"
-          onClick={() => setLaboratorioAberto((v) => !v)}
+      <section className="ajustes-grupo" aria-labelledby="ajustes-grupo-desempenho">
+        <h3 className="ajustes-grupo-titulo" id="ajustes-grupo-desempenho">
+          {t('ajustes.grupo.desempenho')}
+        </h3>
+        <LinhaDeAjuste
+          id="qualidade"
+          rotulo={t('ajustes.qualidade')}
+          dica={t('ajustes.qualidadeNota')}
+          dicaPresa={dicaPresa}
+          onAlternarDica={alternarDica}
         >
-          <span>{t('ajustes.lab.titulo')}</span>
-          <span className="atlas-ficha-seta" aria-hidden="true">
-            <Icone nome="chevronDireita" tamanho={16} />
-          </span>
-        </button>
-      </h3>
-      <Sanfona id="ajustes-laboratorio" aberta={laboratorioAberto}>
-        {(['webgpu', 'webgl'] as const).map((motor) => {
-          const controles = CONTROLES_DO_LABORATORIO.filter((c) => c.motor === motor);
-          const motivo = motivoDoBloqueio(controles[0].id, qualidade.galaxiaViva);
-          // os presos ao teto: o caminho vale, mas com o teto do tier eles não mudam a imagem
-          const preso = (id: IdDoLaboratorio) =>
-            motivo === null && presoAoTeto(id, qualidade.laboratorio, qualidade.tier);
-          return (
-            <div className="ajustes-lab-grupo" key={motor}>
-              <p className="ajustes-lab-grupo-titulo">{t(`ajustes.lab.grupo.${motor}`)}</p>
-              {motivo && <p className="ajustes-lab-motivo">{t(`ajustes.lab.bloqueio.${motivo}`)}</p>}
-              {controles.some((c) => preso(c.id)) && (
-                <p className="ajustes-lab-motivo">{t('ajustes.lab.bloqueio.teto')}</p>
-              )}
-              {controles.map((c) => {
-                const valor = qualidade.laboratorio[c.id];
-                const padrao = padraoDoControle(c.id, qualidade.tier);
-                const nome = nomeDoControleDoLaboratorio(c.id);
-                return (
-                  <LinhaDeAjuste
-                    key={c.id}
-                    id={`lab-${c.id}`}
-                    rotulo={nome}
-                    dica={t(`ajustes.lab.${c.id}Nota` as ChaveDeTexto)}
-                    dicaPresa={dicaPresa}
-                    onAlternarDica={alternarDica}
-                  >
-                    {c.aplica === 'reassar' && qualidade.galaxiaReassando && (
-                      <span className="ajustes-lab-aplicando" role="status">
-                        {t('ajustes.lab.aplicando')}
-                      </span>
-                    )}
-                    <Segmentado
-                      aria={nome}
-                      valor={valor}
-                      desabilitado={motivo !== null || preso(c.id)}
-                      opcoes={[
-                        {
-                          valor: null,
-                          nome: t('ajustes.preset'),
-                        },
-                        ...c.valores.map((v) => ({
-                          valor: v as number | null,
-                          nome: valorDoLaboratorioEmTexto(c.id, v),
-                          efetivo: valor === null && v === padrao,
-                        })),
-                      ]}
-                      onEscolher={(v) => onLaboratorio(c.id, v)}
-                    />
-                  </LinhaDeAjuste>
-                );
-              })}
-            </div>
-          );
-        })}
-        <div className="ajustes-acoes">
+          <Segmentado
+            aria={t('ajustes.qualidade')}
+            valor={qualidade.escolha}
+            opcoes={QUALIDADES.map((q) => ({ valor: q.id, nome: q.nome }))}
+            onEscolher={onQualidade}
+            // A GRADE 2×2 COM TEXTO GRANDE (auditoria celular, 13/09) — só
+            // a Qualidade tem quatro opções e nome de sobra ("Performance")
+            // para estourar a folha do celular; a classe é o gancho que
+            // `08-ajustes.css` lê (`.ajustes-seg--qualidade`).
+            classeExtra="ajustes-seg--qualidade"
+          />
+        </LinhaDeAjuste>
+        {/* A MEDIÇÃO, DITA (Ajustes D). A frase é a mesma do título do
+            seletor da barra — uma função só (`rotuloDaQualidade`), senão
+            os dois hospedeiros contariam a mesma coisa de dois jeitos.
+            Ela é `aria-live` porque muda SOZINHA: quem está com o painel
+            aberto quando o quadro engasga tem de ouvir a sugestão sem
+            precisar reabrir nada. */}
+        {/* CLASSE MANTIDA (`ajustes-medida`): `scripts/visual/atlas-smoke.mjs`
+            lê este seletor para tirar a leitura de q/s da captura — trocar o
+            nome quebraria um consumidor fora deste arquivo, calado. */}
+        <p className="ajustes-medida" role="status" aria-live="polite">
+          {rotuloDaQualidade(qualidade)}
+        </p>
+
+        <h4 className="ajustes-titulo-secao">
           <button
             type="button"
-            className="ajustes-copiar"
-            disabled={!laboratorioMexido(qualidade.laboratorio)}
-            onClick={onZerarLaboratorio}
+            aria-expanded={avancadoAberto}
+            aria-controls="ajustes-avancado"
+            onClick={() => setAvancadoAberto((v) => !v)}
           >
-            <span>{t('ajustes.lab.voltar')}</span>
+            <span>{t('ajustes.avancado')}</span>
+            <span className="atlas-ficha-seta" aria-hidden="true">
+              <Icone nome="chevronDireita" tamanho={16} />
+            </span>
+          </button>
+        </h4>
+
+        <Sanfona id="ajustes-avancado" aberta={avancadoAberto}>
+          <section className="ajustes-grupo" aria-labelledby="ajustes-grupo-renderizacao">
+            <h5 className="ajustes-grupo-titulo" id="ajustes-grupo-renderizacao">
+              {t('ajustes.grupo.renderizacao')}
+            </h5>
+            <LinhaDeAjuste
+              id="tom"
+              rotulo={t('ajustes.tom')}
+              dica={
+                <>
+                  <p>{t('ajustes.tomNota')}</p>
+                  <ul className="ajustes-dica-lista">
+                    {TONS.map((curva) => (
+                      <li key={curva.id}>
+                        <strong>{curva.nome}</strong> — {t(curva.nota)}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              }
+              dicaPresa={dicaPresa}
+              onAlternarDica={alternarDica}
+            >
+              <Segmentado
+                aria={t('ajustes.tom')}
+                valor={tom}
+                opcoes={TONS.map((curva) => ({ valor: curva.id, nome: curva.nome }))}
+                onEscolher={onTom}
+              />
+            </LinhaDeAjuste>
+
+            <LinhaDeAjuste
+              id="msaa"
+              rotulo={t('ajustes.msaa')}
+              dica={t('ajustes.msaaNota')}
+              dicaPresa={dicaPresa}
+              onAlternarDica={alternarDica}
+            >
+              <Segmentado
+                aria={t('ajustes.msaa')}
+                valor={qualidade.amostras}
+                opcoes={AMOSTRAS.map((a) => ({
+                  valor: a.valor,
+                  nome: a.nome(),
+                  efetivo:
+                    qualidade.amostras === null &&
+                    a.valor !== null &&
+                    a.valor === amostrasEfetivas,
+                }))}
+                onEscolher={onAmostras}
+              />
+            </LinhaDeAjuste>
+
+            {/* ESCALA DE RESOLUÇÃO não ganha `.efetivo`: o teto do preset é
+                `min(dpr do monitor, pixelRatio do preset)` — depende do
+                MONITOR, não é uma fração fixa entre as três da lista, e
+                fingir uma marcaria o segmento errado em metade das telas. */}
+            <LinhaDeAjuste
+              id="escala"
+              rotulo={t('ajustes.escalaDeResolucao')}
+              dica={t('ajustes.escalaDeResolucaoNota')}
+              dicaPresa={dicaPresa}
+              onAlternarDica={alternarDica}
+            >
+              <Segmentado
+                aria={t('ajustes.escalaDeResolucao')}
+                valor={qualidade.escala}
+                opcoes={ESCALAS.map((e) => ({ valor: e.valor, nome: e.nome() }))}
+                onEscolher={onEscala}
+              />
+            </LinhaDeAjuste>
+          </section>
+
+          <section className="ajustes-grupo" aria-labelledby="ajustes-grupo-terra">
+            <h5 className="ajustes-grupo-titulo" id="ajustes-grupo-terra">
+              {t('ajustes.grupo.terra')}
+            </h5>
+            <LinhaDeAjuste
+              id="terra"
+              rotulo={t('ajustes.terraControle')}
+              dica={t('ajustes.terraNota')}
+              dicaPresa={dicaPresa}
+              onAlternarDica={alternarDica}
+            >
+              <Segmentado
+                aria={t('ajustes.terraControle')}
+                valor={qualidade.terra}
+                opcoes={TERRAS.map((v) => ({
+                  valor: v.valor,
+                  nome: v.nome(),
+                  efetivo:
+                    qualidade.terra === null && v.valor !== null && v.valor === presetVivo.terra,
+                }))}
+                onEscolher={onTerra}
+              />
+            </LinhaDeAjuste>
+
+            {/* O RELEVO DA TERRA (item 232) — colado na Terra, porque só a
+                variante com profundidade o desenha (na clássica ele não muda
+                nada, e a dica diz). Os dois botões em colunas IGUAIS
+                (`ajustes-seg--par`): "Real" é curto e "Realçado 3×" não. */}
+            <LinhaDeAjuste
+              id="relevo"
+              rotulo={t('ajustes.relevoControle')}
+              dica={t('ajustes.relevoNota', { fator: FATOR_DO_RELEVO_REALCADO })}
+              dicaPresa={dicaPresa}
+              onAlternarDica={alternarDica}
+            >
+              <Segmentado
+                aria={t('ajustes.relevoControle')}
+                valor={qualidade.relevo}
+                opcoes={RELEVOS.map((r) => ({ valor: r.valor, nome: r.nome() }))}
+                onEscolher={onRelevo}
+                classeExtra="ajustes-seg--par"
+              />
+            </LinhaDeAjuste>
+          </section>
+
+          <section className="ajustes-grupo" aria-labelledby="ajustes-grupo-galaxia">
+            <h5 className="ajustes-grupo-titulo" id="ajustes-grupo-galaxia">
+              {t('ajustes.grupo.galaxia')}
+            </h5>
+            <LinhaDeAjuste
+              id="nebulosa"
+              rotulo={t('ajustes.nebulosaControle')}
+              dica={t('ajustes.nebulosaNota')}
+              dicaPresa={dicaPresa}
+              onAlternarDica={alternarDica}
+            >
+              <Segmentado
+                aria={t('ajustes.nebulosaControle')}
+                valor={qualidade.nebulosa}
+                opcoes={NEBULOSAS.map((n) => ({
+                  valor: n.valor,
+                  nome: n.nome(),
+                  efetivo:
+                    qualidade.nebulosa === null &&
+                    n.valor !== null &&
+                    n.valor === presetVivo.nebulosa,
+                }))}
+                onEscolher={onNebulosa}
+              />
+            </LinhaDeAjuste>
+
+            <LinhaDeAjuste
+              id="gas"
+              rotulo={t('ajustes.gasControle')}
+              dica={t('ajustes.gasNota')}
+              dicaPresa={dicaPresa}
+              onAlternarDica={alternarDica}
+            >
+              <Segmentado
+                aria={t('ajustes.gasControle')}
+                valor={qualidade.gas}
+                opcoes={GASES.map((g) => ({
+                  valor: g.valor,
+                  nome: g.nome(),
+                  efetivo:
+                    qualidade.gas === null && g.valor !== null && g.valor === presetVivo.gas,
+                }))}
+                onEscolher={onGas}
+              />
+            </LinhaDeAjuste>
+
+            <LinhaDeAjuste
+              id="poeira"
+              rotulo={t('ajustes.poeira')}
+              dica={t('ajustes.poeiraNota')}
+              dicaPresa={dicaPresa}
+              onAlternarDica={alternarDica}
+            >
+              <Segmentado
+                aria={t('ajustes.poeira')}
+                valor={qualidade.poeira}
+                opcoes={POEIRAS.map((p) => ({
+                  valor: p.valor,
+                  nome: p.nome(),
+                  efetivo:
+                    qualidade.poeira === null && p.valor !== null && p.valor === presetVivo.poeira,
+                }))}
+                onEscolher={onPoeira}
+              />
+            </LinhaDeAjuste>
+
+            <LinhaDeAjuste
+              id="particulas"
+              rotulo={t('ajustes.particulasControle')}
+              dica={t('ajustes.particulasNota')}
+              dicaPresa={dicaPresa}
+              onAlternarDica={alternarDica}
+            >
+              <Segmentado
+                aria={t('ajustes.particulasControle')}
+                valor={qualidade.particulas}
+                opcoes={PARTICULAS.map((p) => ({
+                  valor: p.valor,
+                  nome: p.nome(),
+                  efetivo:
+                    qualidade.particulas === null &&
+                    p.valor !== null &&
+                    p.valor === presetVivo.particulas,
+                }))}
+                onEscolher={onParticulas}
+              />
+            </LinhaDeAjuste>
+
+            {/* A GALÁXIA (12/11/2026): o `.efetivo` marca quem ESTÁ desenhando —
+                a cadeia do preset pode ter caído para o degrau de baixo */}
+            <LinhaDeAjuste
+              id="galaxia"
+              rotulo={t('ajustes.galaxiaControle')}
+              dica={t('ajustes.galaxiaNota')}
+              dicaPresa={dicaPresa}
+              onAlternarDica={alternarDica}
+            >
+              <Segmentado
+                aria={t('ajustes.galaxiaControle')}
+                valor={qualidade.galaxia}
+                opcoes={GALAXIAS.map((g) => ({
+                  valor: g.valor,
+                  nome: g.nome(),
+                  efetivo: qualidade.galaxia === null && g.valor === qualidade.galaxiaViva,
+                }))}
+                onEscolher={onGalaxia}
+              />
+            </LinhaDeAjuste>
+
+            {/* O LABORATÓRIO DA GALÁXIA (13/11/2026) — os botões do protótipo
+                WebGPU e os do WebGL, colado na Galáxia porque é dela que ele
+                depende: o que não vale no caminho que DESENHA fica à vista e
+                desligado, com o motivo dito uma vez por grupo. Mesma anatomia do
+                Avançado (título recolhível, fechado por padrão). */}
+            <h5 className="ajustes-titulo-secao">
+              <button
+                type="button"
+                aria-expanded={laboratorioAberto}
+                aria-controls="ajustes-laboratorio"
+                onClick={() => setLaboratorioAberto((v) => !v)}
+              >
+                <span>{t('ajustes.lab.titulo')}</span>
+                <span className="atlas-ficha-seta" aria-hidden="true">
+                  <Icone nome="chevronDireita" tamanho={16} />
+                </span>
+              </button>
+            </h5>
+            <Sanfona id="ajustes-laboratorio" aberta={laboratorioAberto}>
+              {(['webgpu', 'webgl'] as const).map((motor) => {
+                const controles = CONTROLES_DO_LABORATORIO.filter((c) => c.motor === motor);
+                const motivo = motivoDoBloqueio(controles[0].id, qualidade.galaxiaViva);
+                // os presos ao teto: o caminho vale, mas com o teto do tier eles não mudam a imagem
+                const preso = (id: IdDoLaboratorio) =>
+                  motivo === null && presoAoTeto(id, qualidade.laboratorio, qualidade.tier);
+                return (
+                  <div className="ajustes-lab-grupo" key={motor}>
+                    <p className="ajustes-lab-grupo-titulo">{t(`ajustes.lab.grupo.${motor}`)}</p>
+                    {motivo && <p className="ajustes-lab-motivo">{t(`ajustes.lab.bloqueio.${motivo}`)}</p>}
+                    {controles.some((c) => preso(c.id)) && (
+                      <p className="ajustes-lab-motivo">{t('ajustes.lab.bloqueio.teto')}</p>
+                    )}
+                    {controles.map((c) => {
+                      const valor = qualidade.laboratorio[c.id];
+                      const padrao = padraoDoControle(c.id, qualidade.tier);
+                      const nome = nomeDoControleDoLaboratorio(c.id);
+                      return (
+                        <LinhaDeAjuste
+                          key={c.id}
+                          id={`lab-${c.id}`}
+                          rotulo={nome}
+                          dica={t(`ajustes.lab.${c.id}Nota` as ChaveDeTexto)}
+                          dicaPresa={dicaPresa}
+                          onAlternarDica={alternarDica}
+                        >
+                          {c.aplica === 'reassar' && qualidade.galaxiaReassando && (
+                            <span className="ajustes-lab-aplicando" role="status">
+                              {t('ajustes.lab.aplicando')}
+                            </span>
+                          )}
+                          <Segmentado
+                            aria={nome}
+                            valor={valor}
+                            desabilitado={motivo !== null || preso(c.id)}
+                            opcoes={[
+                              {
+                                valor: null,
+                                nome: t('ajustes.preset'),
+                              },
+                              ...c.valores.map((v) => ({
+                                valor: v as number | null,
+                                nome: valorDoLaboratorioEmTexto(c.id, v),
+                                efetivo: valor === null && v === padrao,
+                              })),
+                            ]}
+                            onEscolher={(v) => onLaboratorio(c.id, v)}
+                          />
+                        </LinhaDeAjuste>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+              <div className="ajustes-acoes">
+                <button
+                  type="button"
+                  className="ajustes-copiar"
+                  disabled={!laboratorioMexido(qualidade.laboratorio)}
+                  onClick={onZerarLaboratorio}
+                >
+                  <span>{t('ajustes.lab.voltar')}</span>
+                </button>
+              </div>
+            </Sanfona>
+          </section>
+        </Sanfona>
+      </section>
+
+      <section className="ajustes-grupo" aria-labelledby="ajustes-grupo-sessao">
+        <h3 className="ajustes-grupo-titulo" id="ajustes-grupo-sessao">
+          {t('ajustes.grupo.sessao')}
+        </h3>
+        {/* OS DOIS BOTÕES DE AÇÃO (Lote 7) — largura cheia, empilhados, sem
+            rótulo; "rever o convite" só existe no voo livre (`onReverConvite`
+            ausente fora dele) e conserva o "?" com a nota do convite. */}
+        <div className="ajustes-acoes">
+          {onReverConvite && (
+            <div className="ajustes-item ajustes-acao">
+              <button type="button" className="ajustes-copiar" onClick={onReverConvite}>
+                {/* `<span>` (C2 do plano de motion): a pressão da casa
+                    afunda o filho (`> *`), e texto solto não tinha caixa
+                    própria para comprimir. */}
+                <span>{t('ajustes.reverConvite')}</span>
+              </button>
+              <Ajuda
+                id="convite"
+                rotulo={t('ajustes.convite')}
+                texto={t('ajustes.conviteNota')}
+                presa={dicaPresa === 'convite'}
+                onAlternar={() => alternarDica('convite')}
+              />
+            </div>
+          )}
+          <button type="button" className="ajustes-copiar" onClick={aoClicarCopiarLink}>
+            <span>{t('ajustes.copiarLink')}</span>
+            {sucessosDeCopia > 0 && (
+              <span className="realce-anel" aria-hidden="true" key={sucessosDeCopia} />
+            )}
           </button>
         </div>
-      </Sanfona>
-
-      {/* ESCALA DE RESOLUÇÃO não ganha `.efetivo`: o teto do preset é
-          `min(dpr do monitor, pixelRatio do preset)` — depende do
-          MONITOR, não é uma fração fixa entre as três da lista, e
-          fingir uma marcaria o segmento errado em metade das telas. */}
-      <LinhaDeAjuste
-        id="escala"
-        rotulo={t('ajustes.escalaDeResolucao')}
-        dica={t('ajustes.escalaDeResolucaoNota')}
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <Segmentado
-          aria={t('ajustes.escalaDeResolucao')}
-          valor={qualidade.escala}
-          opcoes={ESCALAS.map((e) => ({ valor: e.valor, nome: e.nome() }))}
-          onEscolher={onEscala}
-        />
-      </LinhaDeAjuste>
-
-      </Sanfona>
-
-      <LinhaDeAjuste
-        id="rotulos3d"
-        rotulo={t('ajustes.rotulos3d')}
-        dica={t('ajustes.rotulos3dNota')}
-        dicaPresa={dicaPresa}
-        onAlternarDica={alternarDica}
-      >
-        <Segmentado
-          aria={t('ajustes.rotulos3d')}
-          valor={rotulos3d}
-          opcoes={[
-            { valor: false, nome: t('ajustes.desligados') },
-            { valor: true, nome: t('ajustes.ligados') },
-          ]}
-          onEscolher={onRotulos3d}
-        />
-      </LinhaDeAjuste>
-
-      {/* OS DOIS BOTÕES DE AÇÃO (Lote 7) — largura cheia, empilhados, sem
-          rótulo; "rever o convite" só existe no voo livre (`onReverConvite`
-          ausente fora dele) e conserva o "?" com a nota do convite. */}
-      <div className="ajustes-acoes">
-        {onReverConvite && (
-          <div className="ajustes-item ajustes-acao">
-            <button type="button" className="ajustes-copiar" onClick={onReverConvite}>
-              {/* `<span>` (C2 do plano de motion): a pressão da casa
-                  afunda o filho (`> *`), e texto solto não tinha caixa
-                  própria para comprimir. */}
-              <span>{t('ajustes.reverConvite')}</span>
-            </button>
-            <Ajuda
-              id="convite"
-              rotulo={t('ajustes.convite')}
-              texto={t('ajustes.conviteNota')}
-              presa={dicaPresa === 'convite'}
-              onAlternar={() => alternarDica('convite')}
+        {/* ESTADO SEMPRE PRESENTE (§9) — vazio fora do sucesso, só para o
+            leitor de tela anunciar a troca quando "Copiado ✓" aparece. */}
+        <p className="ajustes-copiar-estado" role="status" aria-live="polite">
+          {copiado ? t('ajustes.copiado') : ''}
+        </p>
+        {urlSemCopia != null && (
+          <>
+            <div className="ajustes-aviso-falha" role="alert">
+              <Icone nome="alerta" tamanho={16} />
+              <span>{t('ajustes.copiaFalhou')}</span>
+            </div>
+            <input
+              ref={campoSemCopiaRef}
+              className="ajustes-campo-leitura"
+              type="text"
+              readOnly
+              value={urlSemCopia}
+              aria-label={t('ajustes.copiarLink')}
+              onFocus={(e) => e.currentTarget.select()}
             />
-          </div>
+          </>
         )}
-        <button type="button" className="ajustes-copiar" onClick={aoClicarCopiarLink}>
-          <span>{t('ajustes.copiarLink')}</span>
-          {sucessosDeCopia > 0 && (
-            <span className="realce-anel" aria-hidden="true" key={sucessosDeCopia} />
-          )}
-        </button>
-      </div>
-      {/* ESTADO SEMPRE PRESENTE (§9) — vazio fora do sucesso, só para o
-          leitor de tela anunciar a troca quando "Copiado ✓" aparece. */}
-      <p className="ajustes-copiar-estado" role="status" aria-live="polite">
-        {copiado ? t('ajustes.copiado') : ''}
-      </p>
-      {urlSemCopia != null && (
-        <>
-          <div className="ajustes-aviso-falha" role="alert">
-            <Icone nome="alerta" tamanho={16} />
-            <span>{t('ajustes.copiaFalhou')}</span>
-          </div>
-          <input
-            ref={campoSemCopiaRef}
-            className="ajustes-campo-leitura"
-            type="text"
-            readOnly
-            value={urlSemCopia}
-            aria-label={t('ajustes.copiarLink')}
-            onFocus={(e) => e.currentTarget.select()}
-          />
-        </>
-      )}
+      </section>
     </div>
   );
 }

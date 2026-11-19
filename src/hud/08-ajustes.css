@@ -50,14 +50,31 @@
    comum de `01-base.css`; `.ajustes-topo` (a peça própria de antes)
    saiu com ele. */
 
-/* O ÚNICO `<h3>` que sobrou no corpo do painel (a gaveta Avançado, que
-   agrupa cinco linhas) — o resto virou `.ajustes-item` direto, porque
-   um título acima de UMA linha só repetiria o próprio rótulo dela.
-   MESMA ANATOMIA do título de seção da ficha (Lote 7) — recolhível,
-   fechada por padrão: o `<h3>` só hospeda o botão, e a pele (serifa
-   17 px, filete embaixo, chevron) vem de `.atlas-ficha-titulo button`
-   em `04-atlas.css`, que estende o seletor para `.ajustes-titulo-secao
-   button` também — sem duplicar regra. */
+.ajustes-grupo + .ajustes-grupo {
+  margin-top: 0.85rem;
+}
+.ajustes-grupo-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin: 0 0 0.2rem;
+  color: var(--acento);
+  font: 400 1.0625rem/1.3 var(--fonte-display);
+}
+.ajustes-grupo-titulo::after {
+  content: '';
+  flex: 1;
+  border-top: 1px solid var(--borda);
+}
+.ajustes .sanfona .ajustes-grupo-titulo {
+  font-size: 0.9375rem;
+}
+.ajustes-titulo-secao + .sanfona > .sanfona-miolo > .ajustes-grupo:first-child {
+  padding-top: 0.45rem;
+}
+.ajustes-grupo-titulo + .ajustes-acoes {
+  margin-top: 0.5rem;
+}
 
 /* ---- A LINHA — o átomo do redesenho ---------------------------------
    Rótulo (+ "?") à esquerda, controle à direita — o controle com 15rem

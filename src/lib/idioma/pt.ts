@@ -56,6 +56,8 @@ export const PT = {
     'Este navegador está sem WebGL utilizável — a Viagem precisa dele para desenhar a galáxia. Atualize o navegador ou ative a aceleração de hardware e tente de novo.',
   'hud.fatalContexto':
     'A placa de vídeo desistiu de desenhar a Viagem — o navegador tirou o contexto 3D desta página.',
+  'hud.abertura.explorar': 'Explorar',
+  'hud.abertura.assistir': 'Assistir',
   'hud.abertura.linha1': 'do Sol às supergigantes de Órion, ao coração da galáxia — e de volta',
   'hud.abertura.linha2':
     '328.749 estrelas de catálogo · Via Láctea volumétrica reconstruída em tempo real',
@@ -141,7 +143,9 @@ export const PT = {
   // recolhem atrás de um gatilho só, fechado a cada carga; o rótulo é
   // curto porque o `aria-label` abaixo já diz o que ele abre.
   'barra.mais': 'Mais',
-  'barra.maisAria': 'Mostrar os filmes, Camadas, qualidade e Ajustes',
+  'barra.maisFilmes': 'Filmes',
+  'barra.maisFerramentas': 'Ferramentas',
+  'barra.filmeTocando': 'Em exibição',
   'barra.qualidadeAria': 'Qualidade gráfica',
   'barra.alcasAria': 'Controles do Atlas',
   'barra.reguaAria': 'Ferramentas do Atlas',
@@ -156,6 +160,13 @@ export const PT = {
 
   // ---- o painel de ajustes (`components/Ajustes.tsx`) ---------------
   'ajustes.titulo': 'Ajustes',
+  'ajustes.grupo.interface': 'Interface',
+  'ajustes.grupo.imagem': 'Imagem',
+  'ajustes.grupo.desempenho': 'Desempenho',
+  'ajustes.grupo.renderizacao': 'Renderização',
+  'ajustes.grupo.terra': 'Terra',
+  'ajustes.grupo.galaxia': 'Via Láctea',
+  'ajustes.grupo.sessao': 'Sessão',
   'ajustes.aria': 'Ajustes de renderização',
   'ajustes.fechar': 'Fechar ajustes',
   // o rótulo do botão "?" de cada linha — a explicação em letra miúda
