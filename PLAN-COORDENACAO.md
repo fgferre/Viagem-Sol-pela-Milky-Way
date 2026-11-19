@@ -48,7 +48,11 @@ commit, linha de plano ou resposta do dono.
 - Uma rodada só de dados, com comando dele: números do Gaia, giro das estrelas (ζ Puppis 1,78 d), a curva de brilho
   de Betelgeuse; a poeira da galáxia em blocos sobre Saturno.
 
-## Antes de publicar (publicar só com a palavra dele; ele disse *"ainda não"*)
+## PUBLICADO em 19/11/2026 (`2ec8f118`, com a palavra dele: *"Sim, publique"*)
+
+O site no ar era de 18/10 (`6988ff7e`); foram 454 commits de uma vez. A construção no GitHub passou em 5 minutos (antes dela, oito testes pesados ganharam folga de tempo: a máquina de lá já derrubou duas publicações por isso). Conferido no ar: a página cita os mesmos arquivos de programa da construção local, dois dados batem por sha256, o crédito do modelo dos anéis está no programa publicado, e as telas da galáxia e de Saturno saem idênticas às do ensaio (`capturas/ensaio-publicacao-19-11/no-ar-*`). Foi ao ar SEM: celular de verdade, Safari e Firefox, e o juiz de acessibilidade (congela neste PC); ele viu os vídeos dos anéis e a prancha e mandou publicar.
+
+## O que estava na lista de antes de publicar (histórico)
 
 - A licença do perfil de Björn Jónsson usado nos anéis: RESOLVIDO em 19/11 (0532aa6d). A página do autor libera o uso sem permissão especial e pede a citação da origem; a ficha de Saturno ganhou a linha "o desenho" com o nome dele, nas duas línguas (texto lido guardado em `.cache/revisoes/licenca-jonsson/`).
 - Conferência de 19/11, a pedido dele ("Sim, confira antes"): ensaio da publicação neste PC passou (lint, `data:verify`, 4.126 testes, build de 802 MB); seis telas do site construído olhadas (`capturas/ensaio-publicacao-19-11/prancha-site-construido.jpg`); os anéis gravados em movimento a 1× e a 1.000× (`aneis-girando.mp4`, `aneis-girando-rapido-v2.mp4`, sem pisca: maior salto de brilho entre quadros 0,4 em 255) e enviados a ele. ESPERA ELE: ver os dois vídeos, abrir no celular pela rede de casa (servidor `vite-lan`), e aceitar ou não Betelgeuse de perto como está.
