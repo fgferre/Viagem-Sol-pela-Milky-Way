@@ -75,7 +75,9 @@ if (lista.length === 0) {
   process.exit(0);
 }
 process.stdout.write(`testes dos tocados (${lista.length}):\n${lista.map((t) => `  ${t}`).join('\n')}\n`);
-const r = spawnSync('npx', ['vitest', 'run', ...lista], {
+// pelo node e não pelo `npx`: no Windows o npx é um .cmd, o spawn sem shell
+// não o acha e a rodada saía com código 1 sem rodar nada
+const r = spawnSync(process.execPath, ['node_modules/vitest/vitest.mjs', 'run', ...lista], {
   cwd: ROOT,
   stdio: 'inherit',
 });
