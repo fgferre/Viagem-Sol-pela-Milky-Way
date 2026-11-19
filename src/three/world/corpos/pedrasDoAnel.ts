@@ -1268,10 +1268,16 @@ uint misturar(uint x) {
 vec4 quatro(uint h) {
   return vec4(float(h & 0xffu), float((h >> 8) & 0xffu), float((h >> 16) & 0xffu), float(h >> 24)) / 255.0;
 }
+// A RAIZ DE "1 MENOS ALGO QUE PODE VALER 1" (o sorteio chega aos extremos):
+// no Direct3D 11 esse zero chega à raiz de um jeito que nem \`max(x, 0.0)\`
+// segura, e sai NaN — o pedaço pequeno virava um ponto preto que o brilho
+// estoura, e o grande, descartado calado. Só tira a raiz do que é positivo
+// (nos positivos, o mesmo número de antes)
+float raizDe(float x) { return x > 0.0 ? sqrt(x) : 0.0; }
 vec3 direcao(float z01, float a01) {
   float z = 2.0 * z01 - 1.0;
   float a = 2.0 * PI * a01;
-  return vec3(sqrt(max(1.0 - z * z, 0.0)) * vec2(cos(a), sin(a)), z);
+  return vec3(raizDe(1.0 - z * z) * vec2(cos(a), sin(a)), z);
 }
 // a variante da forma desta pedra (\`baseDaVariante\` na CPU): os
 // agregados pequenos são as variantes de monte \`VARIANTES\` em diante
@@ -1857,8 +1863,8 @@ void parametrosDaForma() {
     ? vec3(1.0, 0.5 + 0.45 * r6.x, 0.32 + 0.4 * r6.y)
     : vec3(1.0, 0.72 + 0.25 * r6.x, 0.55 + 0.3 * r6.y);
   qGiro = vec4(
-    sqrt(1.0 - r4.x) * sin(2.0 * PI * r4.y), sqrt(1.0 - r4.x) * cos(2.0 * PI * r4.y),
-    sqrt(r4.x) * sin(2.0 * PI * r4.z), sqrt(r4.x) * cos(2.0 * PI * r4.z)
+    raizDe(1.0 - r4.x) * sin(2.0 * PI * r4.y), raizDe(1.0 - r4.x) * cos(2.0 * PI * r4.y),
+    raizDe(r4.x) * sin(2.0 * PI * r4.z), raizDe(r4.x) * cos(2.0 * PI * r4.z)
   );
   // O GIRO PRÓPRIO (\`giroProprio\`): v/a em voltas inteiras por período,
   // em torno de um eixo sorteado
@@ -1882,7 +1888,7 @@ vec3 girar(vec3 v) {
 float divisorDaFase(vec3 vistaKm) {
   float cosA = clamp(dot(vSol, -vistaKm / max(length(vistaKm), 1.0e-30)), -1.0, 1.0);
   float alfaV = acos(cosA);
-  return max((sqrt(1.0 - cosA * cosA) + (PI - alfaV) * cosA) / PI, ${glslF(FASE_PISO)});
+  return max((raizDe(1.0 - cosA * cosA) + (PI - alfaV) * cosA) / PI, ${glslF(FASE_PISO)});
 }
 void faseDoCorpo(vec3 vistaKm) {
   vTinta /= divisorDaFase(vistaKm);
@@ -2591,13 +2597,17 @@ flat varying vec4 vProj;
 flat varying float vMundo;
 uniform sampler2D uLonge;
 // A FORMA DE LONGE (\`formasDeLonge\`) na direção d, da linha da variante:
-// (a normal, o raio); a linha + ${2 * VARIANTES} traz o céu aberto (x)
+// (a normal, o raio); a linha + ${2 * VARIANTES} traz o céu aberto (x).
+// Lida no nível 0 (o mapa não tem mipmap, a imagem é a mesma): é chamada
+// dentro dos laços da marcha e da bissecção, que param em voltas diferentes
+// de pixel a pixel, e ali a derivada que \`texture\` pede ao vizinho é
+// indefinida (o aviso X3595 do Direct3D 11)
 vec4 deLonge(int linha, vec3 d) {
   vec2 p = d.xy / (abs(d.x) + abs(d.y) + abs(d.z));
   if (d.z < 0.0) p = (1.0 - abs(p.yx)) * vec2(p.x >= 0.0 ? 1.0 : -1.0, p.y >= 0.0 ? 1.0 : -1.0);
   const float N = ${glslF(LADO_DE_LONGE)};
   vec2 s = clamp((p * 0.5 + 0.5) * N - 0.5, 0.0, N - 1.0);
-  return texture(uLonge, vec2((s.x + 0.5) / N, (float(linha) * N + s.y + 0.5) / ${glslF(4 * VARIANTES * LADO_DE_LONGE)}));
+  return textureLod(uLonge, vec2((s.x + 0.5) / N, (float(linha) * N + s.y + 0.5) / ${glslF(4 * VARIANTES * LADO_DE_LONGE)}), 0.0);
 }
 void main() {
   // o RAIO DE VISADA deste pixel, na vista (a câmera na origem)
