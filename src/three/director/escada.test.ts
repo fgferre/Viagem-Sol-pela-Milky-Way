@@ -694,6 +694,26 @@ describe('o "Aproximar" de cometas e de lugares do céu (13/11)', () => {
     expect(atlas.alvo.distanceTo(poseDePertoDaEstrelaS('S2', maquinaDoTempo.jdVivo)!.alvo)).toBe(0);
   });
 
+  it('o Esc de perto sobe UM degrau — lugar, galáxia de cima e cometa voltam à própria vista; o buraco do centro, como antes', () => {
+    const passo = (ir: (e: InstanceType<typeof Escada>) => void, jd?: number) => {
+      const { escada, atlas, maquinaDoTempo } = bancada();
+      if (jd) maquinaDoTempo.jdVivo = jd;
+      ir(escada);
+      const antes = { alvo: atlas.alvo.clone(), raio: atlas.raioDoAlvo, degrau: escada.escadaViva.degrau };
+      escada.aproximarDoCorpo();
+      expect(atlas.raioDoAlvo).not.toBe(antes.raio);
+      expect(escada.subirDegrau()).toBe(true);
+      expect(escada.escadaViva).toMatchObject({ degrau: antes.degrau, podeAproximar: true });
+      expect(atlas.alvo.distanceTo(antes.alvo)).toBe(0);
+      expect(atlas.raioDoAlvo).toBe(antes.raio);
+    };
+    const lugar = (id: string) => LUGARES_DA_BUSCA.find((l) => l.id === id)!;
+    passo((e) => e.visitarLugar(lugar('andromeda')));
+    passo((e) => e.visitarLugar(lugar('via-lactea')));
+    passo((e) => e.visitarSonda('halley'), 2446471.0);
+    passo((e) => e.irAte(GAL.GC_POS.clone(), 0, 'Sagittarius A*'));
+  });
+
   it('a estrela com corpo: o botão some depois de usado, como nos outros destinos (13/11, TRAPPIST-1)', () => {
     const { escada } = bancada({ comPiloto: true });
     escada.visitarEstrela({ n: 'TRAPPIST-1', x: 12.4, y: 0, z: 0 });

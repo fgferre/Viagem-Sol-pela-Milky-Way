@@ -1832,6 +1832,26 @@ export class Escada {
       this.irAte(this.estrelaFocada.pos.clone(), 0, this.estrelaFocada.nome);
       return true;
     }
+    // de perto num lugar do céu (ou no buraco a partir dele), sobe para a
+    // vista do lugar — a mesma de `visitarLugar`
+    if (degrau === 'estrela' && this.ver === 'corpo' && this.lugarFocado) {
+      const l = this.lugarFocado;
+      this.atlas.focar(l.alvo, l.raio, l.eixoDe, {
+        rampa: this.rampaDaEscada(),
+        polo: l.polo,
+        pisoRaio: l.pisoRaio ?? raioDeEnquadramentoEstelar(l.alvo.length()),
+      });
+      this.enquadrarAgora();
+      this.ver = 'orbita';
+      this.emitirEscada();
+      this.teletransportou();
+      return true;
+    }
+    // da cabeça de um cometa, sobe para a vista da órbita dele
+    if (degrau === 'cometa' && this.ver === 'corpo' && this.pequeno) {
+      this.visitarSonda(this.pequeno.id);
+      return true;
+    }
     this.focarNoSistema();
     return true;
   }
