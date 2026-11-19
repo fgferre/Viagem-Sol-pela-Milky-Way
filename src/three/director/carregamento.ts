@@ -200,7 +200,8 @@ export async function montarCarga(opts: {
   const { catalogos, tier, aoAvancar } = opts;
   // A CADEIA (12/11/2026): WebGPU → partículas no WebGL → clássica. O
   // primeiro degrau é o pedido; um WebGPU que já falhou nesta página não
-  // é tentado de novo (a camada cai sozinha para o WebGL, `Galaxy`).
+  // é tentado de novo (a camada cai sozinha para o WebGL, `Galaxy`) — até
+  // o visitante pedir o WebGPU outra vez (`Director.forcarGalaxia`).
   const pedidoDoCaminho = opts.galaxia ?? PRESETS[tier].galaxia;
   const caminho: CaminhoDaGalaxia =
     pedidoDoCaminho === 'webgpu' && webgpuFalhouNestaPagina() ? 'particulas' : pedidoDoCaminho;

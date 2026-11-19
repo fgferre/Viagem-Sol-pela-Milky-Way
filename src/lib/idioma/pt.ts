@@ -248,8 +248,19 @@ export const PT = {
   'ajustes.particulas.quarto': '¼',
   'ajustes.galaxiaControle': 'Galáxia',
   'ajustes.galaxiaNota':
-    'Como a galáxia vista de fora é desenhada. WebGPU: dezenas de milhões de partículas. WebGL: as mesmas partículas, em menor número (a reserva de quem não tem WebGPU). Clássica: a de antes, com camadas pintadas. Em Automático o app tenta nessa ordem e marca a que está desenhando.',
+    'Como a galáxia vista de fora é desenhada. WebGPU: dezenas de milhões de partículas. WebGL: as mesmas partículas, em menor número (a reserva de quem não tem WebGPU). Clássica: a de antes, com camadas pintadas. Em Automático o app tenta nessa ordem. O sublinhado pontilhado marca a que está desenhando, e a frase embaixo diz por que não é a escolhida.',
   'ajustes.galaxia.webgpu': 'WebGPU',
+  'ajustes.galaxiaQueda.subindo': 'Ligando o WebGPU… Enquanto isso, a galáxia é desenhada com WebGL.',
+  'ajustes.galaxiaQueda.atrasado':
+    'A placa de vídeo está ocupada e o WebGPU ainda não respondeu. A galáxia segue em WebGL e troca sozinha quando ele chegar.',
+  'ajustes.galaxiaQueda.semWebgpu': 'Este navegador não oferece WebGPU. A galáxia é desenhada com WebGL.',
+  'ajustes.galaxiaQueda.ponte':
+    'Este navegador não consegue juntar o WebGPU ao resto da cena. A galáxia é desenhada com WebGL.',
+  'ajustes.galaxiaQueda.perdido':
+    'A placa de vídeo desligou o WebGPU (costuma acontecer quando ela está ocupada). A galáxia passou para WebGL. Clique em WebGPU para tentar de novo.',
+  'ajustes.galaxiaQueda.erro':
+    'O WebGPU deu erro na placa de vídeo. A galáxia passou para WebGL. Clique em WebGPU para tentar de novo.',
+  'ajustes.galaxiaQueda.outro': 'O motor escolhido não ligou. O botão com sublinhado pontilhado é o que está desenhando.',
   'ajustes.galaxia.particulas': 'WebGL',
   'ajustes.galaxia.classica': 'Clássica',
   // O LABORATÓRIO DA GALÁXIA (13/11/2026): os botões do protótipo WebGPU e

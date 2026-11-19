@@ -36,6 +36,7 @@ import type {
   NivelDaNebulosa,
   CaminhoDaGalaxia,
   ParticulasDaGalaxia,
+  QuedaDaGalaxia,
   QualityLevel,
   RelevoDaTerra,
   TipoDePoeira,
@@ -65,6 +66,7 @@ import { ClaraoDeAsas, veuDaLenteNaTela, type LuzDaLenteNoQuadro } from './world
 import { SondaDaLente } from './lente/sondaDaLente';
 import { amplitudeDaLente, G_DA_LENTE, multiplicadorDaForca } from './lente/passeDaLente';
 import { Galaxy, GAL, dentroDoDisco } from './world/galaxy';
+import { esquecerQuedaDoWebgpu, motivoDaQuedaDoWebgpu } from './world/galaxiaWebgpu/camadaWebgpu';
 import { GalaxiasVizinhas, sortearVizinhas } from './world/vizinhas';
 import type { CartographyMode } from './world/galaxy';
 import { ObservedClouds } from './world/observedClouds';
@@ -3227,6 +3229,7 @@ export class Director {
       poeira: this.poeiraForcada,
       galaxia: this.galaxiaForcada,
       galaxiaViva: this.galaxy?.caminho ?? this.galaxiaForcada ?? this.engine.preset.galaxia,
+      galaxiaQueda: this.quedaDaGalaxia(),
       laboratorio: this.laboratorio,
       galaxiaReassando: this.trocaPedida !== null || Boolean(this.esperaDosSorteios),
     });
@@ -3446,6 +3449,13 @@ export class Director {
    */
   forcarGalaxia(caminho: CaminhoDaGalaxia | null) {
     this.galaxiaForcada = caminho;
+    // PEDIR O WEBGPU DEPOIS DE UMA QUEDA É TENTAR DE NOVO (18/11/2026): a
+    // queda deixa de valer pela página e o mundo é reassado mesmo com o
+    // mesmo pedido de antes. Um WebGPU ainda a caminho não é pedido duas vezes.
+    if (caminho === 'webgpu' && this.galaxy?.caminho !== 'webgpu' && !this.galaxy?.webgpuACaminho) {
+      esquecerQuedaDoWebgpu();
+      this.chaveDoMundoNaTela = null;
+    }
     this.perturbar();
     void this.reassarMundo(this.engine.quality);
     this.publicarQualidade();
@@ -3482,6 +3492,18 @@ export class Director {
       }, 400);
     }
     this.publicarQualidade();
+  }
+
+  /**
+   * POR QUE A GALÁXIA QUE DESENHA NÃO É A PEDIDA (18/11/2026) — o painel
+   * diz em palavras. `null` quando é a pedida, e enquanto um mundo novo
+   * está no forno (é ele que vai responder).
+   */
+  private quedaDaGalaxia(): QuedaDaGalaxia | null {
+    const g = this.galaxy;
+    if (!g || this.trocaPedida !== null) return null;
+    if (g.caminho === (this.galaxiaForcada ?? this.engine.preset.galaxia)) return null;
+    return g.webgpuACaminho ?? motivoDaQuedaDoWebgpu() ?? 'outro';
   }
 
   /** o pedido que um mundo atende — o tier, a galáxia escolhida e os sorteios */

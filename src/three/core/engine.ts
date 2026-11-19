@@ -251,6 +251,14 @@ export type CaminhoDaGalaxia = 'webgpu' | 'particulas' | 'classica';
 
 export const CAMINHOS_DA_GALAXIA: readonly CaminhoDaGalaxia[] = ['webgpu', 'particulas', 'classica'];
 
+/**
+ * POR QUE A GALÁXIA QUE DESENHA NÃO É A PEDIDA (18/11/2026), na palavra
+ * que o painel traduz: o WebGPU ainda subindo ou atrasado (placa
+ * ocupada), as quedas da camada (`camadaWebgpu.ts`) e `outro` para o
+ * degrau das partículas que não montaram.
+ */
+export type QuedaDaGalaxia = 'subindo' | 'atrasado' | 'semWebgpu' | 'ponte' | 'perdido' | 'erro' | 'outro';
+
 /** a lei da porta `?galaxia=`, no mesmo contrato de `lerPortaGas`. */
 export function lerPortaGalaxia(bruto: string | null | undefined): CaminhoDaGalaxia | null {
   return CAMINHOS_DA_GALAXIA.find((v) => v === bruto) ?? null;
@@ -725,6 +733,8 @@ export interface EstadoDaQualidade {
   galaxia: CaminhoDaGalaxia | null;
   /** a galáxia que ESTÁ desenhando agora — depois das quedas da cadeia */
   galaxiaViva: CaminhoDaGalaxia;
+  /** por que ela não é a pedida (`null` quando é) */
+  galaxiaQueda: QuedaDaGalaxia | null;
   /** o laboratório da galáxia (13/11/2026): cada controle, `null` = padrão */
   laboratorio: Laboratorio;
   /** um mundo novo está sendo sorteado (galáxia ou sorteios trocados): o painel diz "aplicando…" */

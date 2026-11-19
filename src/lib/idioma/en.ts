@@ -241,8 +241,17 @@ export const EN: Record<keyof typeof PT, string> = {
   'ajustes.particulas.quarto': '¼',
   'ajustes.galaxiaControle': 'Galaxy',
   'ajustes.galaxiaNota':
-    'How the galaxy seen from outside is drawn. WebGPU: tens of millions of particles. WebGL: the same particles, fewer of them (the fallback without WebGPU). Classic: the old one, with painted layers. On Preset the app tries them in that order and marks the one drawing now.',
+    'How the galaxy seen from outside is drawn. WebGPU: tens of millions of particles. WebGL: the same particles, fewer of them (the fallback without WebGPU). Classic: the old one, with painted layers. On Preset the app tries them in that order. The dotted underline marks the one drawing now, and the line below says why it is not the one chosen.',
   'ajustes.galaxia.webgpu': 'WebGPU',
+  'ajustes.galaxiaQueda.subindo': 'Starting WebGPU… Meanwhile the galaxy is drawn with WebGL.',
+  'ajustes.galaxiaQueda.atrasado':
+    'The graphics card is busy and WebGPU has not answered yet. The galaxy stays on WebGL and switches by itself when it arrives.',
+  'ajustes.galaxiaQueda.semWebgpu': 'This browser does not offer WebGPU. The galaxy is drawn with WebGL.',
+  'ajustes.galaxiaQueda.ponte': 'This browser cannot join WebGPU to the rest of the scene. The galaxy is drawn with WebGL.',
+  'ajustes.galaxiaQueda.perdido':
+    'The graphics card shut WebGPU down (this tends to happen when it is busy). The galaxy switched to WebGL. Click WebGPU to try again.',
+  'ajustes.galaxiaQueda.erro': 'WebGPU hit an error on the graphics card. The galaxy switched to WebGL. Click WebGPU to try again.',
+  'ajustes.galaxiaQueda.outro': 'The chosen engine did not start. The button with the dotted underline is the one drawing.',
   'ajustes.galaxia.particulas': 'WebGL',
   'ajustes.galaxia.classica': 'Classic',
   'ajustes.lab.titulo': 'Galaxy lab',

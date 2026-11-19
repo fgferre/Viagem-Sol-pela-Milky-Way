@@ -30,7 +30,7 @@ import {
 } from './geradorDaGalaxia';
 import { porCurva } from '../core/engine';
 import type { CaminhoDaGalaxia } from '../core/engine';
-import { CamadaWebgpu } from './galaxiaWebgpu/camadaWebgpu';
+import type { CamadaPedida, CamadaWebgpu } from './galaxiaWebgpu/camadaWebgpu';
 import type { GalaxyBuffers } from './geradorDaGalaxia';
 import { controleDoLaboratorio, opcoesWebgpu, LABORATORIO_PADRAO } from './laboratorioDaGalaxia';
 import type { Laboratorio } from './laboratorioDaGalaxia';
@@ -132,6 +132,8 @@ export class Galaxy {
   private camadaWebgpu: CamadaWebgpu | null = null;
   /** a camada foi pedida e ainda não chegou (nem desistiu) */
   private webgpuEmVoo = false;
+  /** ... e já passou do prazo: a captura não espera mais, mas ela entra se chegar */
+  private webgpuAtrasada = false;
   /** a fração da luz das partículas que cabe à camada WebGPU, do último `update` */
   private cessao = 0;
   /** a lei de longe é toda da camada WebGPU neste quadro: o WebGL só desenha a de perto */
@@ -1231,14 +1233,22 @@ export class Galaxy {
    * Liga a camada WebGPU pedida pela carga (`CamadaWebgpu.criar`, que já
    * sobe em paralelo com ela). Sem WebGPU (ou com a ponte quebrada) a
    * camada não chega e o WebGL segue; numa galáxia clássica ela é solta.
+   * Passado o prazo o painel é avisado, e a camada que chega atrasada
+   * entra mesmo assim (18/11/2026).
    */
-  ligarWebgpu(pedida: Promise<CamadaWebgpu | null>) {
+  ligarWebgpu(pedida: CamadaPedida) {
     if (!this.soParticulas) {
-      void pedida.then((camada) => camada?.dispose());
+      void pedida.pronta.then((camada) => camada?.dispose());
       return;
     }
     this.webgpuEmVoo = true;
-    void pedida.then((camada) => {
+    void pedida.atrasou.then(() => {
+      if (!this.webgpuEmVoo) return;
+      this.webgpuAtrasada = true;
+      console.warn('[galáxia] o WebGPU passou do prazo (placa ocupada?) — o WebGL desenha até ele chegar.');
+      this.anunciarCaminho();
+    });
+    void pedida.pronta.then((camada) => {
       this.webgpuEmVoo = false;
       if (camada && this.descartada) camada.dispose();
       else if (camada) {
@@ -1297,7 +1307,14 @@ export class Galaxy {
    * se a câmera sai antes de ela chegar, a espera volta no mesmo quadro.
    */
   get desenhoEmVoo(): boolean {
-    return (this.webgpuEmVoo || (this.camadaWebgpu?.pendentes ?? 0) > 0) && this.desenhaDeFora;
+    const aCaminho = this.webgpuEmVoo && !this.webgpuAtrasada;
+    return (aCaminho || (this.camadaWebgpu?.pendentes ?? 0) > 0) && this.desenhaDeFora;
+  }
+
+  /** o WebGPU pedido ainda não chegou: `subindo` no prazo, `atrasado` depois dele */
+  get webgpuACaminho(): 'subindo' | 'atrasado' | null {
+    if (!this.webgpuEmVoo) return null;
+    return this.webgpuAtrasada ? 'atrasado' : 'subindo';
   }
 
   /** a camada WebGPU (ou a falta dela) entra no quadro desta câmera */

@@ -13,41 +13,66 @@
 // só-partículas, como reserva. De dentro do disco também: a camada entra
 // pelo `peso` que galaxy.ts lhe dá.
 //
-// A CADEIA NUNCA DEIXA A GALÁXIA PRETA. `criar` devolve null — e o WebGL
-// segue desenhando — sem adaptador, sem dispositivo em 15 s, com erro de
-// compilação, ou quando a PONTE falha: a tela WebGPU é pintada com um
-// valor conhecido e lida de volta por um WebGL2 à parte (a ponte só foi
-// medida no Chrome). Depois de pronta, perda do dispositivo ou erro da
-// GPU marcam `falhou`, e galaxy.ts devolve a luz ao WebGL no quadro
-// seguinte. Uma falha vale pela página inteira: o mundo da troca de tier
-// não tenta de novo (a escolha é feita uma vez, na carga).
+// A CADEIA NUNCA DEIXA A GALÁXIA PRETA. `criar().pronta` devolve null — e
+// o WebGL segue desenhando — sem adaptador, com erro de compilação, ou
+// quando a PONTE falha: a tela WebGPU é pintada com um valor conhecido e
+// lida de volta por um WebGL2 à parte (a ponte só foi medida no Chrome).
+// Depois de pronta, perda do dispositivo ou erro da GPU marcam `falhou`, e
+// galaxy.ts devolve a luz ao WebGL no quadro seguinte. Uma falha vale pela
+// página inteira — o mundo da troca de tier não tenta de novo — até o
+// visitante pedir o WebGPU outra vez (`esquecerQuedaDoWebgpu`, 18/11/2026).
+//
+// O PRAZO NÃO É QUEDA (18/11/2026). Com a placa disputada o dispositivo
+// passava dos 15 s, a camada era descartada quando chegava e a página
+// ficava no WebGL para sempre, calada. Agora o prazo só avisa
+// (`atrasou`): a captura para de esperar, o painel diz que a placa está
+// ocupada, e a camada entra quando chegar.
 // ============================================================
 import * as THREE from 'three';
 import type { GalaxyBuffers } from '../geradorDaGalaxia';
 import { MotorDaGalaxia } from './motor';
 import type { OpcoesDoQuadro, SorteioEmpacotado } from './motor';
 import type { OpcoesDoLaboratorioWebgpu } from '../laboratorioDaGalaxia';
+import type { QuedaDaGalaxia } from '../../core/engine';
 
 /** partículas por sorteio com folga (o gerador dá ~4,02 M na qualidade alta) */
 const CAPACIDADE_POR_SORTEIO = 4_100_000;
 
-/** quanto a GPU tem para entregar o dispositivo antes de a cadeia desistir */
+/** quanto a GPU tem para entregar a camada antes de o painel dizer que ela atrasou */
 const PRAZO_DO_DISPOSITIVO_MS = 15_000;
 
 /** o valor da sonda da ponte: acima de 1, como a luz linear da galáxia */
 const COR_DA_SONDA = [0.25, 2, 8, 1] as const;
 
+/** o porquê de uma queda, na palavra que o painel traduz */
+type MotivoDaQueda = Extract<QuedaDaGalaxia, 'semWebgpu' | 'ponte' | 'perdido' | 'erro'>;
+
 /** uma falha do WebGPU vale pela página inteira (e é avisada uma vez só) */
-let falhaDaPagina: string | null = null;
+let falhaDaPagina: MotivoDaQueda | null = null;
 
 export function webgpuFalhouNestaPagina() {
   return falhaDaPagina !== null;
 }
 
-function falhar(motivo: string, erro?: unknown) {
+export function motivoDaQuedaDoWebgpu() {
+  return falhaDaPagina;
+}
+
+/** o visitante pediu o WebGPU de novo: a próxima carga tenta outra vez */
+export function esquecerQuedaDoWebgpu() {
+  falhaDaPagina = null;
+}
+
+function falhar(motivo: MotivoDaQueda, detalhe: string, erro?: unknown) {
   if (falhaDaPagina !== null) return;
   falhaDaPagina = motivo;
-  console.warn(`[galáxia] WebGPU fora (${motivo}) — segue o WebGL.`, erro ?? '');
+  console.warn(`[galáxia] WebGPU fora (${detalhe}) — segue o WebGL.`, erro ?? '');
+}
+
+/** a camada pedida e o aviso do prazo, que não a cancela */
+export interface CamadaPedida {
+  pronta: Promise<CamadaWebgpu | null>;
+  atrasou: Promise<void>;
 }
 
 /**
@@ -138,7 +163,7 @@ export class CamadaWebgpu {
   }
 
   /**
-   * `null` sem WebGPU (ou com a ponte quebrada). O primeiro sorteio é a
+   * `pronta` dá `null` sem WebGPU (ou com a ponte quebrada). O primeiro sorteio é a
    * carga principal (`principal`, a mesma que o WebGL desenha); `sortear(s)`
    * entrega os seguintes (s = 1, 2, …), já empacotados, que entram na ordem.
    *
@@ -147,48 +172,45 @@ export class CamadaWebgpu {
    * camada fica pronta quase junto com a galáxia WebGL. Antes eram três
    * esperas em fila depois da carga (motor, sonda, sorteio extra).
    */
-  static async criar(
+  static criar(
+    principal: Promise<GalaxyBuffers & { nuvens?: Uint16Array | null }>,
+    sorteios: number,
+    sortear: (s: number) => Promise<SorteioEmpacotado>
+  ): CamadaPedida {
+    return {
+      pronta: CamadaWebgpu.montar(principal, sorteios, sortear),
+      atrasou: new Promise((r) => window.setTimeout(r, PRAZO_DO_DISPOSITIVO_MS)),
+    };
+  }
+
+  private static async montar(
     principal: Promise<GalaxyBuffers & { nuvens?: Uint16Array | null }>,
     sorteios: number,
     sortear: (s: number) => Promise<SorteioEmpacotado>
   ): Promise<CamadaWebgpu | null> {
     if (falhaDaPagina !== null) return null;
     const tela = new OffscreenCanvas(2, 2);
-    let prazo = 0;
-    const motor = await Promise.race([
-      MotorDaGalaxia.criar(
-        tela,
-        sorteios * CAPACIDADE_POR_SORTEIO,
-        true,
-        principal.then((b) => b.nuvens ?? undefined)
-      ),
-      new Promise<null>((r) => {
-        prazo = window.setTimeout(() => {
-          falhar('o dispositivo não chegou no prazo');
-          r(null);
-        }, PRAZO_DO_DISPOSITIVO_MS);
-      }),
-    ]).catch((e: unknown) => {
-      falhar('erro ao iniciar', e);
+    const motor = await MotorDaGalaxia.criar(
+      tela,
+      sorteios * CAPACIDADE_POR_SORTEIO,
+      true,
+      principal.then((b) => b.nuvens ?? undefined)
+    ).catch((e: unknown) => {
+      falhar('erro', 'erro ao iniciar', e);
       return null;
     });
-    window.clearTimeout(prazo);
     if (!motor) {
-      falhar('sem adaptador');
-      return null;
-    }
-    if (falhaDaPagina !== null) {
-      motor.destruir(); // chegou depois do prazo
+      falhar('semWebgpu', 'sem adaptador');
       return null;
     }
     try {
       await motor.pintar(2, 2, COR_DA_SONDA);
     } catch (e) {
-      falhar('a sonda da ponte não pintou', e);
+      falhar('erro', 'a sonda da ponte não pintou', e);
     }
-    if (falhaDaPagina === null && !ponteFunciona(tela)) falhar('a ponte com o WebGL não devolve a luz');
+    if (falhaDaPagina === null && !ponteFunciona(tela)) falhar('ponte', 'a ponte com o WebGL não devolve a luz');
     if (falhaDaPagina !== null || motor.erros.length) {
-      falhar('erro da GPU na sonda');
+      falhar('erro', 'erro da GPU na sonda');
       motor.destruir();
       return null;
     }
@@ -196,13 +218,13 @@ export class CamadaWebgpu {
     void motor.perdido.then((info) => {
       if (!camada.vivo) return; // destruído por nós
       camada.falhou = true;
-      falhar(`dispositivo perdido: ${info.message}`);
+      falhar('perdido', `dispositivo perdido: ${info.message}`);
     });
     const buffers = await principal;
     try {
       motor.acrescentar(buffers.bright, buffers.brightCount);
     } catch (e) {
-      falhar('erro ao subir as partículas', e);
+      falhar('erro', 'erro ao subir as partículas', e);
       camada.dispose();
       return null;
     }
@@ -259,13 +281,13 @@ export class CamadaWebgpu {
     } catch (e) {
       this.falhou = true;
       this.mesh.visible = false;
-      falhar('erro ao desenhar', e);
+      falhar('erro', 'erro ao desenhar', e);
       return;
     }
     this.textura.needsUpdate = true;
     if (this.motor.erros.length) {
       this.falhou = true;
-      falhar(`erro da GPU: ${this.motor.erros[0]}`);
+      falhar('erro', `erro da GPU: ${this.motor.erros[0]}`);
     }
   }
 

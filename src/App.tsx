@@ -289,6 +289,7 @@ export default function App() {
     // a cadeia do preset até o Director publicar quem de fato desenha
     galaxia: null,
     galaxiaViva: PRESETS[TIER_DE_PRODUTO].galaxia,
+    galaxiaQueda: null,
     laboratorio: LABORATORIO_PADRAO,
     galaxiaReassando: false,
   });

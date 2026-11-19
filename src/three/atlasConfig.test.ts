@@ -390,6 +390,7 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
       | 'poeira'
       | 'galaxia'
       | 'galaxiaViva'
+      | 'galaxiaQueda'
       | 'laboratorio'
       | 'galaxiaReassando';
     const estado = (m: Omit<Estado, Gaveta> & Partial<Pick<Estado, Gaveta>>) =>
@@ -404,6 +405,7 @@ describe('os quatro estados do seletor (Ajustes D)', () => {
         poeira: null,
         galaxia: null,
         galaxiaViva: 'webgpu',
+        galaxiaQueda: null,
         laboratorio: LABORATORIO_PADRAO,
         galaxiaReassando: false,
         ...m,

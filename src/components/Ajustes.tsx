@@ -817,7 +817,9 @@ export function Ajustes({
       </LinhaDeAjuste>
 
       {/* A GALÁXIA (12/11/2026): o `.efetivo` marca quem ESTÁ desenhando —
-          a cadeia do preset pode ter caído para o degrau de baixo */}
+          a cadeia pode ter caído para o degrau de baixo, com o preset OU
+          com a escolha à mão (18/11/2026: o WebGPU marcado com o WebGL
+          desenhando era a queda calada) —, e a frase de baixo diz por quê */}
       <LinhaDeAjuste
         id="galaxia"
         rotulo={t('ajustes.galaxiaControle')}
@@ -831,11 +833,14 @@ export function Ajustes({
           opcoes={GALAXIAS.map((g) => ({
             valor: g.valor,
             nome: g.nome(),
-            efetivo: qualidade.galaxia === null && g.valor === qualidade.galaxiaViva,
+            efetivo: g.valor === qualidade.galaxiaViva && qualidade.galaxia !== qualidade.galaxiaViva,
           }))}
           onEscolher={onGalaxia}
         />
       </LinhaDeAjuste>
+      <p className="ajustes-lab-motivo" role="status" aria-live="polite">
+        {qualidade.galaxiaQueda && t(`ajustes.galaxiaQueda.${qualidade.galaxiaQueda}`)}
+      </p>
 
       {/* O LABORATÓRIO DA GALÁXIA (13/11/2026) — os botões do protótipo
           WebGPU e os do WebGL, colado na Galáxia porque é dela que ele
