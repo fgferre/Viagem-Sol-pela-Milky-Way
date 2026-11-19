@@ -846,7 +846,7 @@ async function pedirBrilhoDoAnel(
   }
 }
 
-async function pedirPerfilDoAnel(base: string): Promise<void> {
+export async function pedirPerfilDoAnel(base: string): Promise<void> {
   perfilDoAnelPedido ??= (async () => {
     // pelo MESMO caminho de rede dos outros .bin da casa: `fetchBinary`
     // prefere o irmão .gz e descomprime no cliente (o Pages serve o cru
@@ -869,7 +869,10 @@ async function pedirPerfilDoAnel(base: string): Promise<void> {
     textura.needsUpdate = true;
     const brilho = BRILHO_MEDIDO_DO_ANEL ? await pedirBrilhoDoAnel(base) : null;
     perfilDoAnelVivo = { textura, bytes, brilho };
-  })();
+  })().catch((erro: unknown) => {
+    perfilDoAnelPedido = null; // a falha (de rede) não fica guardada: o próximo pede de novo
+    throw erro;
+  });
   return perfilDoAnelPedido;
 }
 

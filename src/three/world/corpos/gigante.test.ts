@@ -18,7 +18,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import * as THREE from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { MetaEfemerides } from '../../../lib/atlas/efemerides';
 import { decodeEfemerides, MotorEfemerides } from '../../../lib/atlas/efemerides';
 import { CORPOS_COM_ANEL } from '../../../lib/atlas/eclipse';
@@ -54,6 +54,7 @@ import {
   QUANTIS_DO_TAU,
   ancoraDoBrilhoDoAnel,
   fronteiraDoAnelCpu,
+  pedirPerfilDoAnel,
   posicaoDoGiganteUA,
   raiosDoGigantePc,
 } from './gigante';
@@ -1083,5 +1084,28 @@ describe('o chão do anel: Saturno publica a segunda superfície (item 139)', ()
     const dGlobo = e.centroPc.distanceTo(cam) - e.raioPc;
     expect(dChao).toBeGreaterThan(dGlobo);
     corpo.dispose();
+  });
+});
+
+// a rede do perfil: falha na primeira vez, responde nas seguintes
+const { fetchBinaryFalso } = vi.hoisted(() => ({ fetchBinaryFalso: vi.fn() }));
+vi.mock('../../config', async (original) => {
+  const real = await original<typeof import('../../config')>();
+  fetchBinaryFalso.mockImplementation(real.fetchBinary);
+  return { ...real, fetchBinary: fetchBinaryFalso };
+});
+
+describe('o perfil do anel que falha não fica guardado', () => {
+  it('depois de uma falha de rede, o próximo pedido vai à rede de novo e entra', async () => {
+    const { arquivo, caixas } = ANEL_DE_SATURNO.perfil;
+    fetchBinaryFalso.mockClear(); // os outros Saturnos do arquivo já pediram
+    fetchBinaryFalso.mockImplementation(async (url: string) => {
+      if (url.endsWith(arquivo)) return new ArrayBuffer(caixas * 4);
+      throw new Error('sem rede');
+    });
+    fetchBinaryFalso.mockRejectedValueOnce(new Error('a rede caiu'));
+    await expect(pedirPerfilDoAnel('/')).rejects.toThrow('a rede caiu');
+    await expect(pedirPerfilDoAnel('/')).resolves.toBeUndefined();
+    expect(fetchBinaryFalso.mock.calls.filter(([url]) => String(url).endsWith(arquivo))).toHaveLength(2);
   });
 });

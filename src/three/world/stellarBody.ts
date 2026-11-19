@@ -2537,9 +2537,9 @@ export class StellarBody {
    * véu nem meia cromosfera em quadro.
    */
   private reassar: { passos: number; fatia: number } | null = null;
-  /** as geometrias das cenas de quad (`makeFullscreenScene`) — elas não
-   *  moram no `group`, então só esta lista as leva ao `dispose()` */
-  private readonly geoDosQuads: THREE.PlaneGeometry[] = [];
+  /** as malhas das cenas de quad (`makeFullscreenScene`) — elas não moram
+   *  no `group`, então só esta lista leva geometria e material ao `dispose()` */
+  private readonly quadsDasCenas: THREE.Mesh[] = [];
   /** a câmera relativa ao centro DESTA estrela (o Sol: a própria posição) */
   private readonly camRel = new THREE.Vector3();
   /** outra cor que não a do Sol (`teffK` ≠ 5.772 K): a matiz por quadro */
@@ -2724,9 +2724,8 @@ export class StellarBody {
       // C) custava 5 geometrias POR CLIQUE, e o amostrador de memória as
       // pegou. A lista é a coleira: quem cria, anota.
       makeFullscreenScene: (material: THREE.Material) => {
-        const geometria = new THREE.PlaneGeometry(2, 2);
-        this.geoDosQuads.push(geometria);
-        const mesh = new THREE.Mesh(geometria, material);
+        const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material);
+        this.quadsDasCenas.push(mesh);
         mesh.frustumCulled = false;
         const s = new THREE.Scene();
         s.add(mesh);
@@ -4252,8 +4251,15 @@ ${glslDoGas(gas, rGas, kAch, true)}
     free(ctx.absMat);
     free(ctx.absMatTingido);
     // as cenas de quad vivem fora do `group` — só esta lista as alcança
-    for (const g of this.geoDosQuads) g.dispose();
-    this.geoDosQuads.length = 0;
+    for (const q of this.quadsDasCenas) {
+      q.geometry.dispose();
+      free(q.material);
+    }
+    this.quadsDasCenas.length = 0;
+    // o mapa do sprite da coroa externa: material.dispose() não o leva
+    free(ctx.coronaOuter?.material?.map);
+    // programa, VAOs, transform feedback e buffers crus das ejeções
+    ctx.cmePts?.dispose?.();
     // Data3DTexture da coroa volumétrica: material.dispose() NÃO dispõe
     // texturas, e esta não pertence a nenhum material do traverse.
     free(ctx.cvolTex);

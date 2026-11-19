@@ -17,7 +17,7 @@
 // que é puro.
 // ============================================================
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { SOL_PARAMS } from '../director/estrelasNoQuadro';
 import * as THREE from 'three';
 import { RAIO_ARTISTICO_DO_SOL_PC, RAIO_DO_SOL_NA_CENA, RAIO_SOL_PC } from '../escala';
@@ -1031,5 +1031,25 @@ describe('a região pela data: o céu de uma época vira lugar na estrela, e nad
       expect(s.regiao.uRegiao.value.toArray()).toEqual([0, 0, 0, 1e-3]);
       expect(s.regiao.uRegiaoRazao.value.toArray()).toEqual([1, 1, 1]);
     }
+  });
+});
+
+describe('o dispose do corpo estelar leva o que mora fora do group', () => {
+  // sem WebGL o construtor não roda: o dispose recebe um corpo à mão com
+  // as peças que antes ficavam sem dono a cada visita e troca de qualidade
+  it('os materiais das cenas de quad, o mapa da coroa externa e os objetos crus das ejeções', () => {
+    const quad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial());
+    const mapa = new THREE.Texture();
+    const coroa = new THREE.Sprite(new THREE.SpriteMaterial({ map: mapa }));
+    const group = new THREE.Group();
+    group.add(coroa);
+    const cmePts = { dispose: vi.fn() };
+    const descartados = vi.fn();
+    for (const x of [quad.geometry, quad.material, mapa]) x.addEventListener('dispose', descartados);
+    const corpo = { ctx: { coronaOuter: coroa, cmePts }, group, quadsDasCenas: [quad] };
+    StellarBody.prototype.dispose.call(corpo as unknown as StellarBody);
+    expect(descartados).toHaveBeenCalledTimes(3);
+    expect(cmePts.dispose).toHaveBeenCalledOnce();
+    expect(corpo.quadsDasCenas).toHaveLength(0);
   });
 });

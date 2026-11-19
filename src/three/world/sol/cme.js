@@ -434,8 +434,10 @@ export function createCME(ctx){
     gl.attachShader(prog, vs); gl.attachShader(prog, fs);
     gl.transformFeedbackVaryings(prog, ['tfPos', 'tfVel'], gl.SEPARATE_ATTRIBS);
     gl.linkProgram(prog);
+    gl.deleteShader(vs); gl.deleteShader(fs);   // presos ao programa até ele ir
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)){
       console.error('CME TF link: ' + gl.getProgramInfoLog(prog));
+      gl.deleteProgram(prog);
       return;
     }
     var init = new Float32Array(CME_PTS_N*4);   // vida 0 = morta (spawn no evento)
@@ -465,6 +467,18 @@ export function createCME(ctx){
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
     cmePts.tf = gl.createTransformFeedback();
     cmePts.prog = prog;
+    // o StellarBody.dispose() chama: o three não conhece estes objetos crus
+    // (apagar um buffer que o three já apagou pela geometria não faz nada)
+    cmePts.dispose = function(){
+      gl.deleteProgram(cmePts.prog);
+      gl.deleteTransformFeedback(cmePts.tf);
+      for (var i = 0; i < 2; i++){
+        gl.deleteVertexArray(cmePts.vaos[i]);
+        gl.deleteBuffer(cmePts.posBuf[i]);
+        gl.deleteBuffer(cmePts.velBuf[i]);
+      }
+      cmePts.on = false;
+    };
     cmePts.uLoc = {
       dt: gl.getUniformLocation(prog, 'uDt'),
       t: gl.getUniformLocation(prog, 'uT'),
