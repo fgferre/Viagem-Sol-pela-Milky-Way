@@ -63,7 +63,8 @@ beforeAll(() => {
   const fora = Array.from({ length: 36 }, (_, q) => [-110 + 1.2 * q, -40 + 2 * q]);
   entrada = { metros, spcFino, mascaras: { dentro, nucleo, peso }, qualidade, luminancia, linhas: [linha(dentroDoSpc), linha(fora)] };
   r = preencheSpt({ ...entrada, Wf, Hf, cobertura: new Uint8Array(W * H), W, H, raioM: R, p: P });
-});
+  // folga para a máquina do GitHub, que é várias vezes mais lenta (o padrão de 10 s do preparo já estourou aqui com a máquina ocupada)
+}, 120_000);
 
 describe('o SPT de Encélado por exemplo do SPC (R4)', () => {
   it('as origens dos retalhos caem só no SPC, com o retalho girado inteiro dentro dele', () => {

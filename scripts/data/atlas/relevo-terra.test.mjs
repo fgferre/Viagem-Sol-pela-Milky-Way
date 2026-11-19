@@ -162,7 +162,8 @@ describe('relevo da Terra', () => {
     // a marcha anda na grade da FONTE e passa do alcance da montanha mais alta
     const ultimo = angulosDoHorizonte(ETOPO.largura).at(-1);
     expect(ultimo * RAIO_KM).toBeGreaterThan(Math.sqrt(2 * RAIO_KM * 8.85));
-  });
+    // folga para a máquina do GitHub, que é várias vezes mais lenta (o padrão de 5 s derrubou publicações)
+  }, 30_000);
 
   it('a cadeia lê do parametros.json dos candidatos os mesmos números que o gerador dá, e as três entradas dividem um só relevo', () => {
     const superficie = { lagos: [{ nome: 'Baikal', nivelM: 456, areaKm2: 32005, fundoM: -1184 }], abaixoDoMar: 7 };

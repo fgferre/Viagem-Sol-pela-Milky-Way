@@ -526,7 +526,8 @@ describe('a pirâmide da poeira na GPU (E3c) — as contas puras', () => {
     expect(raiosDoNivel({ voxelPc: 1.25, raioPc: 225 }, RAIO_DESEJADO_PC[4] ?? 0)).toEqual([...RAMPAS_DESLIGADAS]);
     expect(raiosDoNivel({ voxelPc: 2.5, raioPc: 450 }, Infinity)).toEqual([...RAMPAS_DESLIGADAS]);
     expect(pesoDoNivel(RAMPAS_DESLIGADAS, 0, 0)).toBe(0);
-  });
+    // folga para a máquina do GitHub, que é várias vezes mais lenta (o padrão de 5 s derrubou publicações)
+  }, 30_000);
 
   it('os raios do computador levam o fim das rampas a ~200 / ~400 / ~620 pc da câmera; os do Performance ficam os de antes', () => {
     const fim = (raios: readonly number[]) => GRADES_DO_CONTRATO.map((g) => raiosDoNivel(g, raios[g.nivel])[1]);

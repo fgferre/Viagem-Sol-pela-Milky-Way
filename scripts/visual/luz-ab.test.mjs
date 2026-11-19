@@ -495,7 +495,8 @@ describe('a linha de comando do medidor', () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
-  });
+    // folga para a máquina do GitHub, que é várias vezes mais lenta (o padrão de 5 s derrubou publicações)
+  }, 30_000);
 });
 
 describe('medirUmbra — o buraco contra o chão ao lado', () => {

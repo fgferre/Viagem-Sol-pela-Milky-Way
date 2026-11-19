@@ -889,7 +889,8 @@ describe('a ficha de ESTRELA — medida e derivada, nunca editorial', () => {
         expect(EDITORIAL, estrela.n).not.toContain(l.rotulo);
       }
     }
-  });
+    // folga para a máquina do GitHub, que é várias vezes mais lenta (o padrão de 5 s derrubou publicações)
+  }, 30_000);
 
   it('Capella é um par: a principal medida e a outra estrela na seção dela, lida como estrela e não como anã branca', () => {
     const f = montarFichaDeEstrela('Capella', starsMeta.named.find((s) => s.n === 'Capella'))!;

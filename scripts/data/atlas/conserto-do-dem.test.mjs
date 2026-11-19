@@ -207,7 +207,8 @@ describe("o conserto do DEM (Encélado, R4)", () => {
       false,
     );
     expect(ruins).toBeGreaterThan(0);
-  });
+    // folga para a máquina do GitHub, que é várias vezes mais lenta (o padrão de 5 s derrubou publicações)
+  }, 30_000);
 
   it("o fino do remendo troca a estatística das bolhas pela do terreno bom, banda a banda", () => {
     const h = r.campo;

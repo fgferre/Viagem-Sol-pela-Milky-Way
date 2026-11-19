@@ -498,7 +498,8 @@ describe('a fiação do Sol no Director (F2 → M1)', () => {
         expect(Math.abs(Math.log10(luz(px + 0.01, regra) / luz(px, regra)))).toBeLessThan(0.05);
       }
     }
-  });
+    // folga para a máquina do GitHub, que é várias vezes mais lenta (o padrão de 5 s derrubou publicações)
+  }, 30_000);
 
   it('o override tem a janela própria da lei: 1 exato até 1/20 do quadro, 0 exato de 1/10 em diante', () => {
     // §5.7: a mesma discoPx do eixo óptico, lida como FRAÇÃO DO QUADRO

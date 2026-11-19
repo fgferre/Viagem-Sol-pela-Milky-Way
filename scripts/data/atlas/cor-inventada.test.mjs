@@ -438,7 +438,8 @@ describe('a M2: a resolução local e a montagem', () => {
       expect(naFaixa(...faixa)).toBeGreaterThan(1);
       expect(naFaixa(...faixa)).toBeLessThan(3);
     }
-  });
+    // folga para a máquina do GitHub, que é várias vezes mais lenta (o padrão de 5 s derrubou publicações)
+  }, 30_000);
 
   it('a montagem devolve a foto onde σ_loc é mínima, e a síntese abaixo do corte onde não é', () => {
     const foto = Float32Array.from(ruido(11), (v) => 100 + 30 * v);
