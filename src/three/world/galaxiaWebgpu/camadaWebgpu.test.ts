@@ -58,10 +58,13 @@ describe('a galáxia WebGPU parada não redesenha', () => {
     expect(textura.version).toBe(v0 + 1 + mudancas.length);
   });
 
-  it('com a extinção em fatias, redesenha até a última fatia assentar e só então para', async () => {
-    const { fila, estado, update } = await bancada();
-    update();
+  it('com a extinção em fatias, carrega num envio só e, depois de mexer a câmera, redesenha até a última fatia assentar', async () => {
+    const { fila, camera, estado, update } = await bancada();
     estado.op = { ...estado.op, fatia: 4 };
+    // o 1º quadro calcula a extinção inteira (fatia 1): a troca para 4 não é mudança
+    for (let i = 0; i < 6; i++) update();
+    expect(fila.submit).toHaveBeenCalledTimes(1);
+    camera.position.x++;
     for (let i = 0; i < 6; i++) update();
     expect(fila.submit).toHaveBeenCalledTimes(1 + 4);
   });

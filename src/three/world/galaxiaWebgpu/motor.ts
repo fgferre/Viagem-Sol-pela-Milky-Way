@@ -382,12 +382,18 @@ export class MotorDaGalaxia {
     uF[54] = op.lod > 0 ? op.lod : 1;
     this.usadas = usados;
     // a chave: tudo o que vai à placa menos o deslocamento da fatia (uI[43]),
-    // que anda sozinho; depois de cada mudança, `fatia` quadros até assentar
+    // que anda sozinho; depois de cada mudança, `fatia` quadros até assentar.
+    // A fatia só escolhe quem é recalculado: com a extinção já completa nesta
+    // chave (faltam <= 0), trocá-la sozinha não muda a imagem
     uI[43] = 0;
-    const igual = this.fatiaAnterior === fatia && this.uAnterior.every((v, i) => v === uI[i]);
+    const completa = this.fatiaAnterior > 0 && this.faltam <= 0;
+    const igual =
+      (this.fatiaAnterior === fatia || completa) && this.uAnterior.every((v, i) => v === uI[i]);
     if (igual && this.faltam <= 0 && pularSeIgual && !medir) return false;
-    if (igual) this.faltam--;
-    else {
+    if (igual) {
+      this.faltam--;
+      this.fatiaAnterior = fatia;
+    } else {
       this.uAnterior.set(uI);
       this.fatiaAnterior = fatia;
       this.faltam = fatia - 1;
