@@ -85,6 +85,19 @@ describe('o botão "Aproximar" segue só a escada', () => {
 // O BOTÃO "ANÉIS" (15/11; vista do corpo desde 16/11): o anel não é um
 // lugar, é Saturno — o botão leva à vista dos anéis do corpo em foco, pelo
 // mesmo caminho do `?ver=aneis`, e some dentro dela.
+describe('os botões da escada que somem ao clicar deixam o foco na ficha', () => {
+  it('"Aproximar", "Anéis" e "Sistema": sem isto o foco ia ao corpo da página e o Esc morria com a ficha aberta', () => {
+    const escada = FONTE.slice(FONTE.indexOf('className="atlas-ficha-escada"'), FONTE.indexOf('A COMPACTA PARA AQUI'));
+    const devolve = 'refDaFicha.current?.focus({ preventScroll: true });';
+    for (const acao of ['onAproximar();', 'onAneis();', 'onSistema();']) {
+      const depois = escada.slice(escada.indexOf(acao));
+      expect(escada, acao).toContain(acao);
+      expect(depois.indexOf(devolve), acao).toBeLessThan(depois.indexOf('</button>'));
+      expect(depois.indexOf(devolve), acao).toBeGreaterThan(0);
+    }
+  });
+});
+
 describe('o botão "Anéis" leva à vista dos anéis do corpo em foco', () => {
   const APP = readFileSync(new URL('../App.tsx', import.meta.url), 'utf8');
   const BOOT = readFileSync(new URL('../hooks/useDirector.ts', import.meta.url), 'utf8');

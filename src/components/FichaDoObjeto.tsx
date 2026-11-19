@@ -558,7 +558,11 @@ export function FichaDoObjeto({
           <button
             type="button"
             className="hud-btn small atlas-ficha-visitar"
-            onClick={onAproximar}
+            onClick={() => {
+              onAproximar();
+              // o botão some ao chegar de perto: o foco fica na ficha (como no "Anéis")
+              refDaFicha.current?.focus({ preventScroll: true });
+            }}
             aria-label={t('ficha.aproximarAria', { nome: ficha.nome })}
           >
             <Icone nome="aproximar" tamanho={16} />
@@ -587,7 +591,11 @@ export function FichaDoObjeto({
           <button
             type="button"
             className="hud-btn small hud-btn--discreto"
-            onClick={onSistema}
+            onClick={() => {
+              onSistema();
+              // o botão some na vista do sistema: o foco fica na ficha (como no "Anéis")
+              refDaFicha.current?.focus({ preventScroll: true });
+            }}
             aria-label={t('ficha.sistemaAria')}
           >
             <Icone nome="sistema" tamanho={16} />
