@@ -786,6 +786,8 @@ let perfilDoAnelVivo: {
   brilho: { textura: THREE.DataTexture; dados: Uint16Array } | null;
 } | null = null;
 let perfilDoAnelPedido: Promise<void> | null = null;
+/** a espera, em segundos do relógio do quadro, entre dois pedidos do perfil que falhou (rede): não martela offline */
+const ESPERA_DO_PERFIL_S = 10;
 
 /**
  * O BRILHO MEDIDO, pelo mesmo `fetchBinary` do perfil. Arquivo ausente ou
@@ -1726,6 +1728,9 @@ export class GiganteResolvido {
   /** um salto que caiu com o globo fora de quadro (`saltoGuardado`) */
   private saltoPendente = false;
   private armado = false;
+  /** o pedido do perfil do anel falhou e espera para repetir; `perfilFalhouEm` é o `tS` do 1º quadro depois da falha */
+  private perfilFalhou = false;
+  private perfilFalhouEm: number | null = null;
   private readonly sombra = criaSombraNaCena();
 
   /** o estado das texturas — a casa dele é o pipeline (`texturas.ts`) */
@@ -1910,6 +1915,19 @@ export class GiganteResolvido {
       diametroPedidoPelaTela(diametroPx, this.raioA, this.centro, q),
       q.vizinhoDoAtlas === true
     );
+
+    // O PERFIL DO ANEL QUE A REDE DERRUBOU: o único pedido era o do
+    // nascimento da casca, e a falha deixava Saturno sem anel até recarregar
+    // a página. Com o corpo na tela, pede de novo a cada `ESPERA_DO_PERFIL_S`,
+    // contados no relógio do quadro (o corpo não tem relógio próprio).
+    if (this.perfilFalhou) {
+      this.perfilFalhouEm ??= q.tS;
+      if (this.armado && q.tS - this.perfilFalhouEm >= ESPERA_DO_PERFIL_S) {
+        this.perfilFalhou = false;
+        this.perfilFalhouEm = null;
+        void this.ligarPerfilDoAnel();
+      }
+    }
 
     const emQuadro =
       this.armado &&
@@ -2308,6 +2326,8 @@ export class GiganteResolvido {
       await pedirPerfilDoAnel(this.base);
     } catch (erro) {
       console.warn('[gigante] perfil do anel não veio', erro);
+      // `atualizar` pede de novo depois da espera, com o corpo na tela
+      this.perfilFalhou = true;
       return;
     }
     if (this.disposto || !perfilDoAnelVivo) return;

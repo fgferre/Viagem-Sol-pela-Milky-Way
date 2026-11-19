@@ -1096,6 +1096,29 @@ vi.mock('../../config', async (original) => {
 });
 
 describe('o perfil do anel que falha não fica guardado', () => {
+  // ANTES do teste de baixo: aqui o perfil ainda não entrou no módulo
+  it('com Saturno na tela, o perfil que a rede derrubou é pedido de novo depois da espera', async () => {
+    const { arquivo } = ANEL_DE_SATURNO.perfil;
+    const pedidos = () =>
+      fetchBinaryFalso.mock.calls.filter(([url]) => String(url).endsWith(arquivo)).length;
+    fetchBinaryFalso.mockClear();
+    fetchBinaryFalso.mockRejectedValue(new Error('sem rede'));
+    const { corpo } = giganteDeTeste('saturn');
+    corpo.atualizar(quadro('saturn', 4, { tS: 100 }));
+    await flush();
+    corpo.atualizar(quadro('saturn', 4, { tS: 100 }));
+    await flush();
+    expect(pedidos()).toBe(1); // o do nascimento da casca, que falhou
+    corpo.atualizar(quadro('saturn', 4, { tS: 101 }));
+    corpo.atualizar(quadro('saturn', 4, { tS: 105 }));
+    await flush();
+    expect(pedidos()).toBe(1); // antes da espera, nada
+    corpo.atualizar(quadro('saturn', 4, { tS: 112 }));
+    await flush();
+    expect(pedidos()).toBe(2); // sem isto ninguém pedia de novo até recarregar a página
+    corpo.dispose();
+  });
+
   it('depois de uma falha de rede, o próximo pedido vai à rede de novo e entra', async () => {
     const { arquivo, caixas } = ANEL_DE_SATURNO.perfil;
     fetchBinaryFalso.mockClear(); // os outros Saturnos do arquivo já pediram
