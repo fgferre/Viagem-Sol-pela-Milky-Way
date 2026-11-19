@@ -3644,94 +3644,110 @@ export class Director {
       return;
     }
     this.trocaPedida = chave;
-    const carga = await montarCarga({
-      catalogos: this.catalogos,
-      tier: q,
-      galaxia: this.galaxiaForcada,
-      sorteios: this.laboratorio.sorteios,
-      // o loader não aparece: a troca é viva, e o rótulo de etapa é do
-      // carregamento. O visitante vê o mundo velho até o mundo novo
-      // estar pronto — que é a promessa inteira da letra C.
-      aoAvancar: () => {},
-    });
-    if (!this.mundoAindaVale(geracao)) {
-      descartarCarga(carga);
-      return;
+    // O FORNO QUE LANÇA não pode prender a troca: sem isto `trocaPedida`
+    // ficava presa (captura e painel esperando para sempre), e o mundo
+    // pela metade ficava sem dono. O mundo de antes segue desenhando.
+    let emForno: Parameters<typeof descartarCarga>[0] | null = null;
+    try {
+      const carga = await montarCarga({
+        catalogos: this.catalogos,
+        tier: q,
+        galaxia: this.galaxiaForcada,
+        sorteios: this.laboratorio.sorteios,
+        // o loader não aparece: a troca é viva, e o rótulo de etapa é do
+        // carregamento. O visitante vê o mundo velho até o mundo novo
+        // estar pronto — que é a promessa inteira da letra C.
+        aoAvancar: () => {},
+      });
+      emForno = carga;
+      if (!this.mundoAindaVale(geracao)) {
+        descartarCarga(carga);
+        return;
+      }
+      this.vestirGalaxia(carga.galaxy);
+      const assou = await carga.galaxy.bakeDiscLayers(
+        this.engine.renderer,
+        () => this.folego(geracao)
+      );
+      if (!assou || !this.mundoAindaVale(geracao)) {
+        descartarCarga(carga);
+        return;
+      }
+      const solNovo = new StellarBody(
+        SOL_PARAMS,
+        this.engine.renderer,
+        this.engine.camera,
+        q,
+        // o Sol do tier novo nasce NA DATA VIVA — é o que faz a troca ao
+        // vivo sair igual ao boot direto naquele tier (Ajustes C)
+        faseDoCiclo(this.maquinaDoTempo.jdVivo)
+      );
+      // ---- SWAP ATÔMICO — daqui até o fim nada cede a thread ----------
+      emForno = null; // daqui em diante o mundo novo é o da tela
+      const velho = {
+        galaxy: this.galaxy,
+        poeira: this.dustMapTexture,
+        estrutura: this.structureMapTexture,
+        sol: this.sun,
+      };
+      this.engine.scene.remove(velho.galaxy.group);
+      this.galaxy = carga.galaxy;
+      this.engine.scene.add(this.galaxy.group);
+      this.dustMapTexture = carga.dustMapTexture;
+      this.structureMapTexture = carga.structureMapTexture;
+      // os dois consumidores dos mapas que SOBREVIVEM à troca (a
+      // população deles não depende de tier): sem estes dois binds ficariam
+      // lendo a textura que o teardown descarta duas linhas abaixo
+      this.nebula.setDustMap(carga.dustMapTexture, this.catalogos ? 1 : 0);
+      this.wrappedStars.setDustMap(carga.dustMapTexture);
+      if (this.starForges && this.debug.has('forgetau')) {
+        const tauTex = this.galaxy.tauMapTexture;
+        if (tauTex) this.starForges.setTauMap(tauTex);
+      }
+      this.engine.scene.remove(velho.sol.group);
+      this.sun = solNovo;
+      this.engine.scene.add(this.sun.group);
+      // O PALCO LOCAL NÃO É REFEITO AQUI, e isso é decisão medida:
+      // reconstruir os doze corpos para alcançar os que JÁ estão carregados
+      // foi tentado e medido em 20/08 — a Terra em close-up some por ~2 s
+      // enquanto a textura no tier novo vem pela rede, o véu que a letra C
+      // proíbe. Quem alcança os carregados desde o item 59 (31/08) é o
+      // DOUBLE-BUFFER POR CORPO (`TexturasDoCorpo`, world/corpos/
+      // texturas.ts): cada corpo compara o tier vivo dos pixels que tem com
+      // o do seletor, busca o lote novo em segundo plano e troca o ponteiro
+      // num quadro só — o mesmo desenho deste swap, um degrau abaixo, e sem
+      // um quadro sem globo. Quem nunca carregou continua obedecendo ao
+      // tier de agora na primeira carga: textura de corpo é alocação
+      // PREGUIÇOSA, do que se visitou, não peso residente do mundo.
+      this.tierDoMundo = q;
+      this.chaveDoMundoNaTela = chave;
+      this.trocaPedida = null;
+      // ---- fim do swap ------------------------------------------------
+      // TEARDOWN DO MUNDO VELHO, passo a passo blindado: um dispose que
+      // estoure não pode levar os outros junto (a mesma lei do `teardown`
+      // da morte do Director) — a diferença é que aqui a sessão CONTINUA,
+      // e um passo perdido no meio vazaria pelo resto da visita.
+      const passo = (rotulo: string, fn: () => void) =>
+        this.passoBlindado('troca de tier', rotulo, fn);
+      passo('galaxy', () => velho.galaxy.dispose());
+      passo('dustMap', () => velho.poeira?.dispose());
+      passo('structureMap', () => velho.estrutura?.dispose());
+      passo('sun', () => velho.sol.dispose());
+      // o mundo novo tem OUTRO mapa de poeira: a LUT do raymarch foi
+      // medida contra o que acabou de ser descartado
+      this.nebula.invalidarLut();
+      this.perturbar();
+      // o "aplicando…" do laboratório apaga e o caminho novo aparece no painel
+      this.publicarQualidade();
+    } catch (error) {
+      console.warn('[troca de tier] o mundo novo não montou; segue o de antes.', error);
+      const meia = emForno;
+      if (meia) this.passoBlindado('troca de tier', 'mundo pela metade', () => descartarCarga(meia));
+      if (geracao === this.geracaoDaTroca) {
+        this.trocaPedida = null;
+        this.publicarQualidade();
+      }
     }
-    this.vestirGalaxia(carga.galaxy);
-    const assou = await carga.galaxy.bakeDiscLayers(
-      this.engine.renderer,
-      () => this.folego(geracao)
-    );
-    if (!assou || !this.mundoAindaVale(geracao)) {
-      descartarCarga(carga);
-      return;
-    }
-    const solNovo = new StellarBody(
-      SOL_PARAMS,
-      this.engine.renderer,
-      this.engine.camera,
-      q,
-      // o Sol do tier novo nasce NA DATA VIVA — é o que faz a troca ao
-      // vivo sair igual ao boot direto naquele tier (Ajustes C)
-      faseDoCiclo(this.maquinaDoTempo.jdVivo)
-    );
-    // ---- SWAP ATÔMICO — daqui até o fim nada cede a thread ----------
-    const velho = {
-      galaxy: this.galaxy,
-      poeira: this.dustMapTexture,
-      estrutura: this.structureMapTexture,
-      sol: this.sun,
-    };
-    this.engine.scene.remove(velho.galaxy.group);
-    this.galaxy = carga.galaxy;
-    this.engine.scene.add(this.galaxy.group);
-    this.dustMapTexture = carga.dustMapTexture;
-    this.structureMapTexture = carga.structureMapTexture;
-    // os dois consumidores dos mapas que SOBREVIVEM à troca (a
-    // população deles não depende de tier): sem estes dois binds ficariam
-    // lendo a textura que o teardown descarta duas linhas abaixo
-    this.nebula.setDustMap(carga.dustMapTexture, this.catalogos ? 1 : 0);
-    this.wrappedStars.setDustMap(carga.dustMapTexture);
-    if (this.starForges && this.debug.has('forgetau')) {
-      const tauTex = this.galaxy.tauMapTexture;
-      if (tauTex) this.starForges.setTauMap(tauTex);
-    }
-    this.engine.scene.remove(velho.sol.group);
-    this.sun = solNovo;
-    this.engine.scene.add(this.sun.group);
-    // O PALCO LOCAL NÃO É REFEITO AQUI, e isso é decisão medida:
-    // reconstruir os doze corpos para alcançar os que JÁ estão carregados
-    // foi tentado e medido em 20/08 — a Terra em close-up some por ~2 s
-    // enquanto a textura no tier novo vem pela rede, o véu que a letra C
-    // proíbe. Quem alcança os carregados desde o item 59 (31/08) é o
-    // DOUBLE-BUFFER POR CORPO (`TexturasDoCorpo`, world/corpos/
-    // texturas.ts): cada corpo compara o tier vivo dos pixels que tem com
-    // o do seletor, busca o lote novo em segundo plano e troca o ponteiro
-    // num quadro só — o mesmo desenho deste swap, um degrau abaixo, e sem
-    // um quadro sem globo. Quem nunca carregou continua obedecendo ao
-    // tier de agora na primeira carga: textura de corpo é alocação
-    // PREGUIÇOSA, do que se visitou, não peso residente do mundo.
-    this.tierDoMundo = q;
-    this.chaveDoMundoNaTela = chave;
-    this.trocaPedida = null;
-    // ---- fim do swap ------------------------------------------------
-    // TEARDOWN DO MUNDO VELHO, passo a passo blindado: um dispose que
-    // estoure não pode levar os outros junto (a mesma lei do `teardown`
-    // da morte do Director) — a diferença é que aqui a sessão CONTINUA,
-    // e um passo perdido no meio vazaria pelo resto da visita.
-    const passo = (rotulo: string, fn: () => void) =>
-      this.passoBlindado('troca de tier', rotulo, fn);
-    passo('galaxy', () => velho.galaxy.dispose());
-    passo('dustMap', () => velho.poeira?.dispose());
-    passo('structureMap', () => velho.estrutura?.dispose());
-    passo('sun', () => velho.sol.dispose());
-    // o mundo novo tem OUTRO mapa de poeira: a LUT do raymarch foi
-    // medida contra o que acabou de ser descartado
-    this.nebula.invalidarLut();
-    this.perturbar();
-    // o "aplicando…" do laboratório apaga e o caminho novo aparece no painel
-    this.publicarQualidade();
   }
 
   /**
@@ -4937,6 +4953,7 @@ export class Director {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    window.clearTimeout(this.esperaDosSorteios);
     this.preferenciaDeMovimento?.removeEventListener('change', this.aoMudarMovimento);
     document.removeEventListener('visibilitychange', this.aoMudarVisibilidade);
     // aborta JÁ (os fetches em voo não interessam mais); o resto pode

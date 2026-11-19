@@ -40,27 +40,38 @@ export interface AvancoDaCarga {
   etapa: EtapaDaCadeia;
 }
 
+/** a cadeia lançou aqui dentro (import que a rede derrubou, memória):
+ *  exceção de `onmessage` assíncrono NÃO chega ao `onerror` da página,
+ *  então ela volta como mensagem — e a página segue pela reserva */
+export interface ErroDaCarga {
+  erro: string;
+}
+
 export type RespostaDaCarga = AvancoDaCarga | CargaAssada;
 
 onmessage = async (e: MessageEvent<PedidoDaCarga>) => {
-  const { search, ...entrada } = e.data;
-  Object.defineProperty(globalThis, 'window', {
-    value: { location: { search } },
-    configurable: true,
-  });
-  const { assarCarga } = await import('./cadeiaDaCarga');
-  const carga = await assarCarga(entrada, (etapa) =>
-    postMessage({ etapa } satisfies AvancoDaCarga)
-  );
-  // transferência, não cópia: os 122,7 MiB do cinema e os dois mapas de
-  // 1 MiB mudam de dono, não de lugar
-  postMessage(carga, {
-    transfer: [
-      carga.poeira.buffer,
-      carga.estrutura.buffer,
-      carga.bright.buffer,
-      ...(carga.nuvens ? [carga.nuvens.buffer] : []),
-      ...(carga.pacote ? [carga.pacote.dados, carga.pacote.esp.buffer] : []),
-    ],
-  });
+  try {
+    const { search, ...entrada } = e.data;
+    Object.defineProperty(globalThis, 'window', {
+      value: { location: { search } },
+      configurable: true,
+    });
+    const { assarCarga } = await import('./cadeiaDaCarga');
+    const carga = await assarCarga(entrada, (etapa) =>
+      postMessage({ etapa } satisfies AvancoDaCarga)
+    );
+    // transferência, não cópia: os 122,7 MiB do cinema e os dois mapas de
+    // 1 MiB mudam de dono, não de lugar
+    postMessage(carga, {
+      transfer: [
+        carga.poeira.buffer,
+        carga.estrutura.buffer,
+        carga.bright.buffer,
+        ...(carga.nuvens ? [carga.nuvens.buffer] : []),
+        ...(carga.pacote ? [carga.pacote.dados, carga.pacote.esp.buffer] : []),
+      ],
+    });
+  } catch (erro) {
+    postMessage({ erro: String(erro) } satisfies ErroDaCarga);
+  }
 };

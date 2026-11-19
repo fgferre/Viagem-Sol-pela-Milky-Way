@@ -7,12 +7,18 @@
 // ============================================================
 import type { VizinhaSorteada } from './geradorDasVizinhas';
 
+// exceção de `onmessage` assíncrono não chega ao `onerror` da página:
+// ela volta como mensagem, e a página segue pela reserva
 onmessage = async (e: MessageEvent<number>) => {
-  const { gerarVizinhas } = await import('./geradorDasVizinhas');
-  const vizinhas = gerarVizinhas(e.data);
-  postMessage(vizinhas, {
-    transfer: vizinhas.flatMap((v) => [v.pontos.buffer, ...(v.poeira ? [v.poeira.tau.buffer] : [])]),
-  });
+  try {
+    const { gerarVizinhas } = await import('./geradorDasVizinhas');
+    const vizinhas = gerarVizinhas(e.data);
+    postMessage(vizinhas, {
+      transfer: vizinhas.flatMap((v) => [v.pontos.buffer, ...(v.poeira ? [v.poeira.tau.buffer] : [])]),
+    });
+  } catch (erro) {
+    postMessage({ erro: String(erro) });
+  }
 };
 
 export type { VizinhaSorteada };

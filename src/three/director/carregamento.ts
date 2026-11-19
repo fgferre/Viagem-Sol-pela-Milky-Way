@@ -14,6 +14,7 @@ import type {
   EtapaDaCadeia,
 } from '../world/cadeiaDaCarga';
 import type {
+  ErroDaCarga,
   PedidoDaCarga,
   RespostaDaCarga,
 } from '../world/cargaEmWorker';
@@ -113,18 +114,25 @@ function assarCargaEmWorker(
       inline();
       return;
     }
-    worker.onmessage = (e: MessageEvent<RespostaDaCarga>) => {
+    // a MESMA reserva para o worker que morre e para o que devolve erro
+    const reserva = () => {
+      worker.terminate();
+      inline();
+    };
+    worker.onmessage = (e: MessageEvent<RespostaDaCarga | ErroDaCarga>) => {
       if ('etapa' in e.data) {
         aoAvancar(e.data.etapa);
+        return;
+      }
+      if ('erro' in e.data) {
+        console.warn('[carga] o worker falhou — segue na thread.', e.data.erro);
+        reserva();
         return;
       }
       worker.terminate();
       resolve(e.data);
     };
-    worker.onerror = () => {
-      worker.terminate();
-      inline();
-    };
+    worker.onerror = reserva;
     worker.postMessage(pedido);
   });
 }
@@ -250,12 +258,19 @@ export async function montarCarga(opts: {
     }
   };
   // o último degrau: se as partículas não montam, a clássica — e só ela
-  const montado = pedido.soParticulas
-    ? await assar(true, principal).catch((e: unknown) => {
-        console.warn('[galáxia] as partículas não montaram — segue a clássica.', e);
-        return assar(false);
-      })
-    : await assar(false, principal);
+  const montado = await (
+    pedido.soParticulas
+      ? assar(true, principal).catch((e: unknown) => {
+          console.warn('[galáxia] as partículas não montaram — segue a clássica.', e);
+          return assar(false);
+        })
+      : assar(false, principal)
+  ).catch((e: unknown) => {
+    // nenhuma galáxia montou: a camada WebGPU em voo fica sem dono, e é
+    // descartada quando chegar (ela segura o dispositivo e os buffers)
+    void camada?.pronta.then((c) => c?.dispose(), () => {});
+    throw e;
+  });
   const { carga, galaxy, dustMapTexture, structureMapTexture } = montado;
   // O MOTOR WEBGPU: mais sorteios do MESMO modelo (outra semente cada um)
   if (camada) galaxy.ligarWebgpu(camada);

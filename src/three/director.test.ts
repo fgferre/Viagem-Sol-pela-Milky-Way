@@ -16,7 +16,7 @@
 // ============================================================
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { poeiraParaMotor } from './atlasConfig';
 import type { VolumeDePoeira } from './cartography/galacticAssets';
 import { MaquinaDoTempo } from './director/maquinaDoTempo';
@@ -1088,6 +1088,55 @@ describe('a troca de fonte da poeira em voo: a captura espera o volume novo', ()
     expect(poeiraNoSelo({ poeiraTeste: false, poeiraForcada: 'media' })).toBe('media');
     // `?poeira=xyz`: nem bancada nem variante — nada a declarar
     expect(poeiraNoSelo({ poeiraTeste: false, poeiraForcada: null })).toBeNull();
+  });
+});
+
+describe('a troca de tier que LANÇA não prende o app (auditoria B, item 4)', () => {
+  it('o forno que estoura solta `trocaPedida`, publica e descarta o mundo pela metade', async () => {
+    const cabeca = '\n  private async reassarMundo(q: QualityLevel) {\n';
+    const i = FONTE.indexOf(cabeca);
+    expect(i, '`reassarMundo` sumiu do director.ts').toBeGreaterThan(0);
+    // as duas anotações de TS do corpo que o `new Function` não lê
+    const corpo = FONTE.slice(i + cabeca.length, FONTE.indexOf('\n  }\n', i))
+      .replace(': Parameters<typeof descartarCarga>[0] | null', '')
+      .replace('(rotulo: string, fn: () => void)', '(rotulo, fn)');
+    const descartadas: unknown[] = [];
+    const carga = { galaxy: { bakeDiscLayers: () => Promise.reject(new Error('sem memória')) } };
+    const livres = {
+      montarCarga: () => Promise.resolve(carga),
+      descartarCarga: (c: unknown) => descartadas.push(c),
+      StellarBody: class {},
+      SOL_PARAMS: {},
+      faseDoCiclo: () => 0,
+    };
+    const reassar = new Function(...Object.keys(livres), `return async function (q) {\n${corpo}\n};`)(
+      ...Object.values(livres)
+    );
+    let publicadas = 0;
+    const d = {
+      disposed: false,
+      phase: 'atlas',
+      tierDoMundo: 'cinema',
+      chaveDoMundoNaTela: 'cinema',
+      trocaPedida: null as string | null,
+      geracaoDaTroca: 0,
+      chaveDoMundo: (q: string) => q,
+      mundoAindaVale(g: number) {
+        return g === this.geracaoDaTroca;
+      },
+      vestirGalaxia: () => {},
+      publicarQualidade: () => publicadas++,
+      passoBlindado: (_c: string, _r: string, fn: () => void) => fn(),
+      engine: { renderer: {} },
+      laboratorio: { sorteios: null },
+    };
+    const aviso = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await reassar.call(d, 'performance');
+    expect(aviso).toHaveBeenCalledOnce();
+    aviso.mockRestore();
+    expect(d.trocaPedida, 'a troca ficou presa: o mesmo pedido seria ignorado para sempre').toBeNull();
+    expect(publicadas).toBe(1);
+    expect(descartadas).toEqual([carga]);
   });
 });
 

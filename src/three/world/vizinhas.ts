@@ -36,7 +36,8 @@ export const LUZ_DA_VIA_LACTEA_POR_SOL = (3 * SOMA_DA_VIA_LACTEA) / L_V_DA_VIA_L
 export function sortearVizinhas(escala: number): Promise<VizinhaSorteada[]> {
   return new Promise((resolve) => {
     const inline = () => {
-      void import('./geradorDasVizinhas').then(({ gerarVizinhas }) => resolve(gerarVizinhas(escala)));
+      // a falha da reserva também sai (rejeita), em vez de esperar para sempre
+      resolve(import('./geradorDasVizinhas').then(({ gerarVizinhas }) => gerarVizinhas(escala)));
     };
     let worker: Worker;
     try {
@@ -45,14 +46,21 @@ export function sortearVizinhas(escala: number): Promise<VizinhaSorteada[]> {
       inline();
       return;
     }
-    worker.onmessage = (e: MessageEvent<VizinhaSorteada[]>) => {
-      worker.terminate();
-      resolve(e.data);
-    };
-    worker.onerror = () => {
+    // a MESMA reserva para o trabalhador que morre e para o que devolve erro
+    const reserva = () => {
       worker.terminate();
       inline();
     };
+    worker.onmessage = (e: MessageEvent<VizinhaSorteada[] | { erro: string }>) => {
+      if ('erro' in e.data) {
+        console.warn('[vizinhas] o trabalhador falhou — segue na thread.', e.data.erro);
+        reserva();
+        return;
+      }
+      worker.terminate();
+      resolve(e.data);
+    };
+    worker.onerror = reserva;
     worker.postMessage(escala);
   });
 }
