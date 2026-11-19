@@ -836,6 +836,9 @@ export class CaudasDosCometas {
   update(q: QuadroDasCaudas) {
     const n = PARTICULAS_POR_TIER[q.tier];
     this.particulasDesenhadas = 0;
+    // a geometria é uma só: o alcance vale para todos os acesos; o apagado
+    // se esconde pela própria visibilidade (`pontos.visible`)
+    this.geometria.setDrawRange(0, n);
     for (const c of COMETAS) {
       const s = q.ligado && q.noAtlas && Number.isFinite(q.jd) ? estadoDoCometa(c.id, q.jd) : null;
       let vivo = this.vivos.get(c.id);
@@ -896,8 +899,6 @@ export class CaudasDosCometas {
     u.uDose.value = GANHO * escalaDoBrilho(v.cometa.brilho.M1) * (MAXIMO / Math.max(n, 1));
     v.pontos.visible = n > 0;
     this.escreverComaDePerto(v, s, n, q.tier);
-    // a geometria é uma só: o mesmo tier vale para todos os acesos
-    this.geometria.setDrawRange(0, n);
     if (v.nucleo) v.nucleo.visible = q.foco === v.cometa.id;
   }
 

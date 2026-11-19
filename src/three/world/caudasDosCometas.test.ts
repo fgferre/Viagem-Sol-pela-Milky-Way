@@ -1,6 +1,9 @@
+import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import { brilhoRelativo, cometaPorId } from '../../lib/cometas';
 import {
+  CaudasDosCometas,
+  PARTICULAS_POR_TIER,
   PASSOS_DA_COMA,
   correcaoPelaAtividade,
   exposicaoDePerto,
@@ -51,6 +54,23 @@ describe('as caudas dos cometas — de perto', () => {
     expect(exposicaoDosIons(3e6)).toBe(1);
     expect(exposicaoDosIons(3e4)).toBeCloseTo(exposicaoDePerto(3e5), 12);
     expect(exposicaoDosIons(1e4) / exposicaoDosIons(2500)).toBeCloseTo(8, 6);
+  });
+
+  it('o cometa apagado em foco não apaga as partículas dos acesos (a geometria é uma só)', () => {
+    const caudas = new CaudasDosCometas();
+    const camera = new THREE.PerspectiveCamera();
+    const vivos = (caudas as unknown as { vivos: Map<string, { grupo: THREE.Group; pontos: THREE.Points }> }).vivos;
+    let apagadosEmFoco = 0;
+    // fev/1986: Halley aceso; os outros, depois dele na lista, focados um a um
+    for (const foco of ['encke', 'churyumov-gerasimenko', 'swift-tuttle', 'hale-bopp', 'neowise', 'pons-brooks', '3i-atlas']) {
+      caudas.update({ jd: 2_446_470.5, camera, alturaPx: 800, tier: 'cinema', ligado: true, noAtlas: true, foco });
+      expect(vivos.get('halley')?.pontos.visible).toBe(true);
+      const f = vivos.get(foco);
+      if (f?.grupo.visible && !f.pontos.visible) apagadosEmFoco++;
+      expect(vivos.get('halley')?.pontos.geometry.drawRange.count).toBe(PARTICULAS_POR_TIER.cinema);
+    }
+    expect(apagadosEmFoco).toBeGreaterThan(0);
+    caudas.dispose();
   });
 
   it('o passo da coma de perto segue o tier e o telefone não pesa mais que os 16 de antes', () => {

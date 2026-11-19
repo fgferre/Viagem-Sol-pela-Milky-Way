@@ -4364,6 +4364,17 @@ export class Director {
     }
     this.saltoDeCamera = false;
     let superficie = this.palco.superficieMaisProxima(cam.position);
+    // AS CAUDAS DOS COMETAS ANTES DO NEAR: o núcleo em foco sai da posição
+    // DESTE quadro (com o relógio correndo, a do anterior cortava o núcleo)
+    this.caudas?.update({
+      jd: this.maquinaDoTempo.jdVivo,
+      camera: this.engine.camera,
+      alturaPx: hPx,
+      tier: this.engine.quality,
+      ligado: !this.hide.has('nocaudas'),
+      noAtlas: this.phase === 'atlas',
+      foco: this.escada.focoCometa,
+    });
     // O NÚCLEO DO COMETA EM FOCO também é superfície (pilar 4): quilômetros
     // de corpo que o near do Sol cortaria de perto
     const nucleo = this.caudas?.superficieDoFoco(cam.position, this.escada.focoCometa) ?? null;
@@ -4579,21 +4590,12 @@ export class Director {
       this.sondas.foco = this.phase === 'atlas' ? this.escada.focoSonda : null;
       this.sondas.update(this.maquinaDoTempo.jdVivo);
     }
-    // OS COMETAS (pilar 4): a órbita do que está em foco e as caudas dos
-    // acesos — as caudas só no Atlas, onde a máquina do tempo as move
-    if (this.orbitasDosCometas && this.caudas) {
+    // OS COMETAS (pilar 4): a órbita do que está em foco (as caudas dos
+    // acesos subiram para antes do near, acima)
+    if (this.orbitasDosCometas) {
       this.orbitasDosCometas.ligado = !this.hide.has('nocometas');
       this.orbitasDosCometas.foco = this.phase === 'atlas' ? this.escada.focoCometa : null;
       this.orbitasDosCometas.update(this.maquinaDoTempo.jdVivo);
-      this.caudas.update({
-        jd: this.maquinaDoTempo.jdVivo,
-        camera: this.engine.camera,
-        alturaPx: hPx,
-        tier: this.engine.quality,
-        ligado: !this.hide.has('nocaudas'),
-        noAtlas: this.phase === 'atlas',
-        foco: this.escada.focoCometa,
-      });
     }
     this.dust.update(cam.position, hPx, time);
     // Sgr A*: só de perto (a extinção real esconde o centro de longe);
