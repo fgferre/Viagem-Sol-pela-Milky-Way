@@ -47,7 +47,7 @@ import { cenaPcParaHeliocentricaEclipticaUA } from '../../lib/atlas/frameGalacti
 import { UA_POR_PC } from '../world/planetas/planetas';
 import type { Planetas } from '../world/planetas/planetas';
 import { RAIO_DO_SOL_NA_CENA, kmParaPc } from '../escala';
-import { CHAVE_DE_CORPO, CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA, classeEmTexto } from '../atlasConfig';
+import { CHAVE_DE_CORPO, CORPOS_DO_SISTEMA, HELIO_SEM_PONTO, LUAS_DO_SISTEMA, classeEmTexto } from '../atlasConfig';
 import { corDaOrbita } from '../world/orbitas';
 import type { NamedStar } from '../config';
 import type { Phase } from '../fases';
@@ -216,14 +216,55 @@ function corDeAnelCss(id: string, paiId?: string): string | undefined {
  * corpo — o mesmo índice que os oclusores e o Atlas leem. O id casa por
  * igualdade exata e é minúsculo, então não se confunde com nome de
  * estrela do HYG: 'atlas' é a lua, 'Atlas' continua sendo a estrela.
+ *
+ * OS ANÕES E ASTEROIDES (`HELIO_SEM_PONTO`, 19/11/2026) entram pela
+ * mesma porta das luas: não têm vértice na camada de pontos, e o passo do
+ * palco já entregava o centro desenhado deles a `escreverPosicaoDeLua`
+ * (todo rochoso sem retrato é `rotuloDeLua`), que o jogava fora por não
+ * achar o id entre as luas. Agora ele cai em `helioPosParaRotulo`.
  */
-const CORPO_DO_ROTEIRO = new Map<string, { corpo: CorpoRotulavel; i: number; lua: boolean }>([
-  ...CORPOS_DO_SISTEMA.map((corpo, i) => [corpo.id, { corpo, i, lua: false }] as const),
-  ...LUAS_DO_SISTEMA.map((corpo, i) => [corpo.id, { corpo, i, lua: true }] as const),
+type FonteDoCorpo = 'planeta' | 'lua' | 'helio';
+const CORPO_DO_ROTEIRO = new Map<string, { corpo: CorpoRotulavel; i: number; fonte: FonteDoCorpo }>([
+  ...CORPOS_DO_SISTEMA.map((corpo, i) => [corpo.id, { corpo, i, fonte: 'planeta' as const }] as const),
+  ...LUAS_DO_SISTEMA.map((corpo, i) => [corpo.id, { corpo, i, fonte: 'lua' as const }] as const),
+  ...HELIO_SEM_PONTO.map((corpo, i) => [corpo.id, { corpo, i, fonte: 'helio' as const }] as const),
 ]);
 
 /** a posição do assunto do filme que se move (companheira, exoplaneta), reusada */
 const _movel = new THREE.Vector3();
+/** a posição do destino da linha de rumo, reusada (era um vetor novo por quadro) */
+const _destino = new THREE.Vector3();
+
+/**
+ * O DESTINO DA LINHA DE RUMO — escreve em `saida` onde ele está e devolve o
+ * nome em caixa alta, ou `null` se ninguém o conhece. A ORDEM guarda o
+ * galáctico bit a bit: 'SGR' e a estrela das nomeadas resolvem como sempre
+ * (o ponto do NOME, não o do corpo). Só quando os dois falham entra a
+ * tabela dos assuntos, e dela só o LUGAR do céu (19/11/2026: "Nebulosa de
+ * Órion" no estelar nunca aparecia) — com o nome na língua da tela, como o
+ * rótulo do mesmo lugar.
+ */
+export function destinoNaCena(
+  dest: string,
+  named: readonly NamedStar[] | null,
+  saida: THREE.Vector3
+): string | null {
+  if (dest === 'SGR') {
+    saida.copy(GAL.GC_POS);
+    return 'SAGITTARIUS A✱';
+  }
+  const estrela = named?.find((s) => s.n === dest);
+  if (estrela) {
+    saida.set(estrela.x, estrela.y, estrela.z);
+    return dest.toUpperCase();
+  }
+  const assunto = assuntoDasTabelas(dest);
+  if (assunto?.tipo === 'lugar') {
+    saida.set(assunto.lugar.x, assunto.lugar.y, assunto.lugar.z);
+    return nomeDoLugar(assunto.lugar).toUpperCase();
+  }
+  return null;
+}
 
 export class Rotulos {
   /** última projeção de rótulos — alvo do clicar-para-visitar */
@@ -260,6 +301,14 @@ export class Rotulos {
    *  (projectCorpos ignora NaN — rótulo só onde há corpo). */
   private readonly luaPosParaRotulo = new Float32Array(
     LUAS_DO_SISTEMA.length * 3
+  ).fill(Number.NaN);
+  /** o mesmo, para os anões e asteroides (`HELIO_SEM_PONTO`): o centro
+   *  DESENHADO, que o passo do palco escreve — no filme e fora dele é a
+   *  efeméride no `jd` do quadro. Array à parte porque o das luas é lido
+   *  pelas órbitas na ordem de `LUAS_DO_SISTEMA`. Só o assunto do filme o
+   *  lê; no Atlas eles seguem sem nome solto, como antes. */
+  private readonly helioPosParaRotulo = new Float32Array(
+    HELIO_SEM_PONTO.length * 3
   ).fill(Number.NaN);
   /**
    * OS DISCOS QUE ESCONDEM NOME — o Sol na cabeça, os corpos do quadro
@@ -487,13 +536,16 @@ export class Rotulos {
     return this.luaPosParaRotulo;
   }
 
-  /** escreve o centro vivo no slot da lua em `luaPosParaRotulo`. */
+  /** escreve o centro vivo no slot da lua em `luaPosParaRotulo` — ou, para
+   *  um anão ou asteroide, em `helioPosParaRotulo`. */
   escreverPosicaoDeLua(id: string, centro: THREE.Vector3) {
-    const i = LUAS_DO_SISTEMA.findIndex((l) => l.id === id);
-    if (i < 0) return;
-    this.luaPosParaRotulo[i * 3] = centro.x;
-    this.luaPosParaRotulo[i * 3 + 1] = centro.y;
-    this.luaPosParaRotulo[i * 3 + 2] = centro.z;
+    const entrada = CORPO_DO_ROTEIRO.get(id);
+    if (!entrada || entrada.fonte === 'planeta') return;
+    const destino = entrada.fonte === 'lua' ? this.luaPosParaRotulo : this.helioPosParaRotulo;
+    const i = entrada.i;
+    destino[i * 3] = centro.x;
+    destino[i * 3 + 1] = centro.y;
+    destino[i * 3 + 2] = centro.z;
   }
 
   /**
@@ -813,7 +865,10 @@ export class Rotulos {
    * dos oclusores deste quadro, e as duas fontes são escritas no filme
    * como no Atlas: `planetas.posicoes` (o instante do filme, pela máquina
    * do tempo) para os dez do retrato e `luaPosParaRotulo` (o centro do
-   * corpo resolvido, com o pino, pelo passo do palco) para as luas. A
+   * corpo resolvido, com o pino, pelo passo do palco) para as luas; os
+   * anões e asteroides, pela mesma mão do palco, em `helioPosParaRotulo`
+   * (o centro onde o rochoso é desenhado: a efeméride no `jd` do quadro,
+   * que no ato de Ceres é o pino dele bit a bit). A
    * PROJEÇÃO é a do Atlas, e o rótulo passa INTEIRO por ela (E4c):
    * `projectCorpos` dá o nome na língua de agora, a classe, a
    * `prioridade`, o canal primário e o globo que esconde, e a etiqueta
@@ -823,10 +878,11 @@ export class Rotulos {
    */
   private resolveCorpoDirigido(
     cam: THREE.PerspectiveCamera,
-    { corpo, i, lua }: { corpo: CorpoRotulavel; i: number; lua: boolean },
+    { corpo, i, fonte }: { corpo: CorpoRotulavel; i: number; fonte: FonteDoCorpo },
     planetas: Planetas | null
   ): StarLabel | null {
-    const posicoes = lua ? this.luaPosParaRotulo : planetas?.posicoes;
+    const posicoes =
+      fonte === 'lua' ? this.luaPosParaRotulo : fonte === 'helio' ? this.helioPosParaRotulo : planetas?.posicoes;
     if (!posicoes) return null;
     const [l] = projectCorpos(
       cam, [corpo], posicoes.subarray(i * 3, i * 3 + 3), this.oclusoresDeRotulo
@@ -843,13 +899,9 @@ export class Rotulos {
   ) {
     let text = '';
     if (dest) {
-      const target = dest === 'SGR' ? GAL.GC_POS : named?.find((s) => s.n === dest);
-      if (target) {
-        const d = camPos.distanceTo(
-          target instanceof THREE.Vector3
-            ? target
-            : new THREE.Vector3(target.x, target.y, target.z)
-        );
+      const label = destinoNaCena(dest, named, _destino);
+      if (label !== null) {
+        const d = camPos.distanceTo(_destino);
         // A QUARTA CÓPIA DA ESCADA MORREU AQUI (2026-08-14). Esta linha
         // fazia `d * 3.262` e escrevia "1953 AL" com ponto decimal,
         // enquanto o rótulo da mesma estrela, um palmo acima na mesma
@@ -870,7 +922,6 @@ export class Rotulos {
         // nome do destino, em vez do "0.0 AL" que a cópia antiga
         // escrevia ao chegar em cima do alvo.
         const nota = notaDeDistancia(d * UA_POR_PC, numeroDoIdioma);
-        const label = dest === 'SGR' ? 'SAGITTARIUS A✱' : dest.toUpperCase();
         text = nota ? `→ ${label} · ${nota}` : `→ ${label}`;
       }
     }

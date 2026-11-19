@@ -5,7 +5,9 @@
 // do céu, Sirius B e os exoplanetas tinham nome no Atlas e sumiam calados
 // no filme. Agora o assunto sai das MESMAS tabelas de que a Busca e o Atlas
 // montam o índice e os rótulos — nada de segunda tabela de nomes:
-//   - os corpos da casa: `CORPOS_DO_SISTEMA` e `LUAS_DO_SISTEMA` (pelo id);
+//   - os corpos da casa: `CORPOS_DO_SISTEMA`, `LUAS_DO_SISTEMA` e, desde
+//     19/11, os anões e asteroides de `HELIO_SEM_PONTO` (pelo id) — o
+//     solar dizia "ceres" e o nome sumia calado;
 //   - os lugares do céu: `LUGARES_DA_BUSCA` (o id, o nome pt ou o en);
 //   - as companheiras: `ESTRELAS_VISITAVEIS[].companheira` (o nome);
 //   - os exoplanetas: `SISTEMAS_PLANETARIOS` (o id, o nome ou um apelido);
@@ -25,7 +27,7 @@
 import { normalizarConsulta, type LugarBuscavel } from '../../lib/buscaEstrelas';
 import { ESTRELAS_VISITAVEIS, type EstrelaVisitavel } from '../../lib/atlas/estrelasVisitaveis';
 import { SISTEMAS_PLANETARIOS, type Exoplaneta, type SistemaPlanetario } from '../../lib/exoplanetas';
-import { CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA } from '../atlasConfig';
+import { CORPOS_DO_SISTEMA, HELIO_SEM_PONTO, LUAS_DO_SISTEMA } from '../atlasConfig';
 import { LUGARES_DA_BUSCA } from '../world/lugaresDoCeu';
 
 export type AssuntoDasTabelas =
@@ -40,7 +42,9 @@ export type AssuntoDasTabelas =
   /** uma estrela com corpo — o rótulo a acha nas nomeadas, pelo nome do catálogo */
   | { tipo: 'estrela'; nome: string };
 
-const IDS_DA_CASA = new Set([...CORPOS_DO_SISTEMA, ...LUAS_DO_SISTEMA].map((c) => c.id));
+const IDS_DA_CASA = new Set(
+  [...CORPOS_DO_SISTEMA, ...LUAS_DO_SISTEMA, ...HELIO_SEM_PONTO].map((c) => c.id)
+);
 
 /** chave normalizada → assunto, das tabelas de texto (a lei da Busca) */
 const POR_TEXTO = (() => {

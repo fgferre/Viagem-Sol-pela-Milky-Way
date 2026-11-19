@@ -1135,6 +1135,7 @@ describe('o corpo da casa como assunto do beat (viagem solar)', () => {
   afterEach(() => definirIdioma('pt-BR'));
 
   const LUA = new THREE.Vector3(1, 0.5, 1);
+  const CERES = new THREE.Vector3(-0.5, 0.75, 0);
 
   /**
    * Um quadro do filme com a câmera a 5 pc olhando a origem. A Terra
@@ -1146,12 +1147,14 @@ describe('o corpo da casa como assunto do beat (viagem solar)', () => {
     target,
     quiet = true,
     lua = LUA,
+    ceres = CERES,
     named = [] as NamedStar[],
     nomesEscondidos = false,
   }: {
     target?: string[];
     quiet?: boolean;
     lua?: THREE.Vector3;
+    ceres?: THREE.Vector3;
     named?: NamedStar[];
     nomesEscondidos?: boolean;
   }) {
@@ -1177,6 +1180,9 @@ describe('o corpo da casa como assunto do beat (viagem solar)', () => {
     rotulos.escreverPosicaoDeLua('moon', lua);
     rotulos.escreverPosicaoDeLua('io', new THREE.Vector3(0.5, -0.8, 0));
     rotulos.escreverPosicaoDeLua('atlas', new THREE.Vector3(-1, 0.6, 0));
+    // o anão sem ponto na camada: o passo do palco escreve o centro dele
+    // pela mesma porta das luas (todo rochoso sem retrato é `rotuloDeLua`)
+    rotulos.escreverPosicaoDeLua('ceres', ceres);
     rotulos.projetar(cam, {
       fase: 'journey', named, dHome: 5, planetas, foco: null,
       nomesEscondidos, iconesEscondidos: false, texto3d: false,
@@ -1249,6 +1255,18 @@ describe('o corpo da casa como assunto do beat (viagem solar)', () => {
     // atrás da Terra, dentro do cone dela (e fora do cone do Sol)
     expect(noFilme({ target: ['moon'], lua: new THREE.Vector3(0.05, 0, -1) }).lista).toEqual([]);
     expect(noFilme({ target: ['moon'], lua: new THREE.Vector3(NaN, NaN, NaN) }).lista).toEqual([]);
+  });
+
+  it('Ceres, anão sem ponto na camada, tem nome onde o palco o desenha e cede ao globo como a lua (19/11)', () => {
+    const { lista, cam } = noFilme({ target: ['ceres'] });
+    expect(lista.map((l) => [l.key, l.name, l.detalhe, l.dirigido])).toEqual([
+      ['corpo:ceres', 'Ceres', 'planeta anão', true],
+    ]);
+    const p = CERES.clone().project(cam);
+    expect([lista[0].x, lista[0].y]).toEqual([(p.x + 1) / 2, (1 - p.y) / 2]);
+    // atrás da Terra a mesma régua das luas o cala; sem efeméride, também
+    expect(noFilme({ target: ['ceres'], ceres: new THREE.Vector3(0.05, 0, -1) }).lista).toEqual([]);
+    expect(noFilme({ target: ['ceres'], ceres: new THREE.Vector3(NaN, NaN, NaN) }).lista).toEqual([]);
   });
 
   it('o nome é o da língua de agora', () => {
@@ -1600,5 +1618,57 @@ describe('os nomes dentro de um lugar em foco (13/11)', () => {
     const r = lugar(0.32, 0.45);
     lugares.abrirVagaNoGrupo('pleiades', [r]);
     expect(r.y).toBe(0.45);
+  });
+});
+
+// ============================================================
+// A LINHA DE RUMO RESOLVE TODO DESTINO DOS TRÊS FILMES (19/11/2026). O
+// estelar dizia `destino: "Nebulosa de Órion"` e a linha nunca aparecia:
+// ela só conhecia 'SGR' e as nomeadas. A prova corre sobre os roteiros de
+// verdade e o catálogo de verdade (as nomeadas do boot com as anfitriãs,
+// como em `filmes/estelar/montar.test.ts`), e cobra que o galáctico sai
+// pelo caminho de sempre, número a número.
+// ============================================================
+describe('a linha de rumo resolve todo destino dos três filmes', () => {
+  afterEach(() => definirIdioma('pt-BR'));
+
+  it('cada destino tem lugar e nome; os do galáctico, o ponto do nome e o SGR de sempre', async () => {
+    const { readFileSync, readdirSync } = await import('node:fs');
+    const { comAnfitrias } = await import('../../lib/exoplanetas');
+    const { destinoNaCena } = await import('./rotulos');
+    const meta = JSON.parse(
+      readFileSync(new URL('../../../public/data/stars_meta.json', import.meta.url), 'utf8')
+    ) as { named: NamedStar[] };
+    const named = comAnfitrias(meta.named);
+    const raiz = new URL('../cinematic/roteiros/', import.meta.url);
+    const destinos = (pasta: string) =>
+      readdirSync(new URL(pasta, raiz)).filter((f) => f.endsWith('.json')).flatMap((f) => {
+        const dado = JSON.parse(readFileSync(new URL(pasta + f, raiz), 'utf8')) as {
+          planos?: { destino?: string }[];
+        };
+        return (dado.planos ?? []).flatMap((p) => (p.destino ? [p.destino] : []));
+      });
+    const galactico = destinos('');
+    const v = new THREE.Vector3();
+    for (const dest of [...galactico, ...destinos('solar/'), ...destinos('estelar/')]) {
+      expect(destinoNaCena(dest, named, v), dest).not.toBeNull();
+      expect([v.x, v.y, v.z].every(Number.isFinite), dest).toBe(true);
+    }
+    expect(new Set(galactico)).toEqual(new Set(['Alnilam', 'Betelgeuse', 'Antares', 'SGR']));
+    for (const dest of galactico) {
+      const rotulo = destinoNaCena(dest, named, v);
+      if (dest === 'SGR') {
+        expect([rotulo, v.equals(GAL.GC_POS)]).toEqual(['SAGITTARIUS A✱', true]);
+      } else {
+        const s = named.find((e) => e.n === dest)!;
+        expect([rotulo, v.x, v.y, v.z]).toEqual([dest.toUpperCase(), s.x, s.y, s.z]);
+      }
+    }
+    // o lugar: o centro da tabela da Busca, o nome na língua da tela
+    const orion = lugares.LUGARES_DA_BUSCA.find((l) => l.id === 'nebulosa-de-orion')!;
+    expect(destinoNaCena('Nebulosa de Órion', named, v)).toBe('NEBULOSA DE ÓRION');
+    expect([v.x, v.y, v.z]).toEqual([orion.x, orion.y, orion.z]);
+    definirIdioma('en');
+    expect(destinoNaCena('Nebulosa de Órion', named, v)).toBe((orion.nomeEn ?? orion.nome).toUpperCase());
   });
 });

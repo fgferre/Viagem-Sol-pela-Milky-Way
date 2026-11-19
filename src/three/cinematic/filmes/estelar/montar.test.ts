@@ -12,6 +12,7 @@ import { comAnfitrias } from '../../../../lib/exoplanetas';
 };
 const { JD_DO_FILME_ESTELAR_TDB, montarFilmeEstelar } = await import('./montar');
 const { assuntoDasTabelas } = await import('../../assuntos');
+const { auditarRoteiro } = await import('../../journey');
 const { posicaoDoExoplanetaNaCena } = await import('../../../world/exoplanetas');
 const { ESTRELAS_DO_FILME } = await import('./estrelas');
 const prologo = (await import('../../roteiros/estelar/prologo.json')).default;
@@ -71,5 +72,13 @@ describe('o filme estelar (E0)', () => {
     const e = (t: number) => posicaoDoExoplanetaNaCena('trappist-1e', m.jdDoFilme(t), estrela)!;
     // 6,1 dias de período: em 4 s de plano (6 dias) ele quase dá a volta
     expect(e(t0).distanceTo(e(t0 + 2))).toBeGreaterThan(0.02 * 4.848e-6);
+  });
+
+  it('a auditoria editorial do motor não acha sobreposição nem legenda vazando um corte sem ponte', () => {
+    const { shots, starts, duracao } = montarFilmeEstelar();
+    const auditoria = auditarRoteiro(shots, starts);
+    expect(auditoria.duration).toBe(duracao);
+    expect(auditoria.overlaps).toEqual([]);
+    expect(auditoria.crossings.filter((c) => !c.bridge)).toEqual([]);
   });
 });

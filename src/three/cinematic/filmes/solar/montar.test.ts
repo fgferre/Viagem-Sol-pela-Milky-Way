@@ -189,6 +189,16 @@ describe('o filme solar monta', () => {
     expect(auditoria.crossings.filter((c) => !c.bridge)).toEqual([]);
   });
 
+  it('assunto que o app não sabe nomear é recusado na montagem; Ceres ele sabe', async () => {
+    const prologo = (await import('../../roteiros/solar/prologo.json')).default;
+    const comAssuntos = (assuntos: string[]) => ({
+      ...prologo,
+      planos: [{ ...prologo.planos[0], assuntos }, ...prologo.planos.slice(1)],
+    });
+    expect(() => montarFilmeSolar([comAssuntos(['ceres', 'SOL'])])).not.toThrow();
+    expect(() => montarFilmeSolar([comAssuntos(['ceres', 'Plêiade'])])).toThrow(/“Plêiade”/);
+  });
+
   it('cada ato tem ao menos um ponto de conferência (qa)', () => {
     const porAto = filme.planosPorAto.map((_, n) => {
       const de = filme.planosPorAto.slice(0, n).reduce((a, b) => a + b, 0);

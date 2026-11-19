@@ -11,6 +11,7 @@
 import * as THREE from 'three';
 import type { Shot } from '../../lerSequencia';
 import { montarAtos } from '../montagem';
+import { assuntoDasTabelas } from '../../assuntos';
 import { glide } from '../../movimentos';
 import { montarApoiosDoRoteiro } from '../../apoiosDoRoteiro';
 import { Journey } from '../../journey';
@@ -79,9 +80,21 @@ const TROCA_PARA: Readonly<Partial<Record<RelogioSolar, { inicio: number; duraca
   a: { inicio: 0, duracao: 0 },
 };
 
-export function montarFilmeSolar(): FilmeSolarMontado {
+/** os seis roteiros, na ordem prólogo → epílogo (a ordem de `RELOGIO_DO_ATO`) */
+const ROTEIROS: readonly unknown[] = [prologo, casa, jupiter, saturno, afastamento, epilogo];
+
+/**
+ * O QUE UM PLANO DO FILME SOLAR PODE NOMEAR: o que as tabelas dos assuntos
+ * conhecem. Ele não fixa estrela do catálogo (essa chega depois da
+ * montagem, e é por isso que o galáctico fica sem filtro), então nome que
+ * as tabelas não acham é nome que sumiria calado — como "ceres" sumiu até
+ * 19/11/2026 — e a montagem o recusa.
+ */
+const conheceAssunto = (nome: string): boolean => assuntoDasTabelas(nome) !== null;
+
+export function montarFilmeSolar(roteiros: readonly unknown[] = ROTEIROS): FilmeSolarMontado {
   const { shots, starts, duracao, inicioDoAto, planosPorAto } = montarAtos(
-    [prologo, casa, jupiter, saturno, afastamento, epilogo], PONTOS, NUMEROS
+    roteiros, PONTOS, NUMEROS, conheceAssunto
   );
   /**
    * AS TROCAS DE RELÓGIO, em segundos do corte: cada roteiro corre no

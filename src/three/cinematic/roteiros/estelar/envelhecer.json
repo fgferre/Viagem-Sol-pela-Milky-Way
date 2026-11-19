@@ -98,7 +98,7 @@
         "lente": [40, 40],
         "ritmo": "smooth"
       },
-      "assuntos": ["Sirius"],
+      "assuntos": ["Sirius", "Sírius B"],
       "fundoSilencioso": true,
       "olhar": "assunto",
       "legendas": [
