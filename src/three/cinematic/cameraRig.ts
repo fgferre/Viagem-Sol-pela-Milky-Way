@@ -696,6 +696,7 @@ export class FreeRoam {
     window.addEventListener('lostpointercapture', this.onPointerCancel);
     window.addEventListener('keydown', this.onKeyDown);
     window.addEventListener('keyup', this.onKeyUp);
+    window.addEventListener('blur', this.onBlur);
     canvas.addEventListener('wheel', this.onWheel, { passive: true });
   }
 
@@ -872,6 +873,7 @@ export class FreeRoam {
     window.removeEventListener('lostpointercapture', this.onPointerCancel);
     window.removeEventListener('keydown', this.onKeyDown);
     window.removeEventListener('keyup', this.onKeyUp);
+    window.removeEventListener('blur', this.onBlur);
     this.canvas.removeEventListener('wheel', this.onWheel);
     // defesa 2: o HMR do vite chama isto a cada salvamento — listener de
     // captura que sobrevive mexe na câmera de uma sessão morta
@@ -948,6 +950,8 @@ export class FreeRoam {
   }
 
   private onKeyDown = (event: KeyboardEvent) => {
+    // voo desligado não guarda tecla: ela ressurgiria presa ao religar
+    if (!this.enabled) return;
     // com o ponteiro capturado NÃO HÁ onde digitar: o foco pode ter
     // ficado no botão que ofereceu a captura, e a guarda de formulário
     // engoliria justamente o WASD que o visitante acabou de destravar
@@ -958,6 +962,11 @@ export class FreeRoam {
 
   private onKeyUp = (event: KeyboardEvent) => {
     this.keys.delete(event.code);
+  };
+
+  /** a janela perdeu o foco: o `keyup` das teclas seguradas não vem mais */
+  private onBlur = () => {
+    this.keys.clear();
   };
 
   private onWheel = (event: WheelEvent) => {

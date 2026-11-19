@@ -10,7 +10,8 @@ import { HUD_POR_FASE } from '../three/fases';
 export function useAtalhos(
   directorRef: React.RefObject<Director | null>,
   setPaused: (v: boolean) => void,
-  abrirBusca: () => void
+  abrirBusca: () => void,
+  fecharMenuDosFilmes: () => void
 ) {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -46,6 +47,20 @@ export function useAtalhos(
       ) {
         event.preventDefault();
         abrirBusca();
+        return;
+      }
+      // O MENU "FILMES"/"MAIS" ABERTO vem antes da escada: com o foco
+      // dentro dele o Esc nem chega aqui (`fecharMenuComEscape` o para);
+      // com o foco fora, o Esc que nenhum diálogo reivindicou fecha o menu
+      // em vez de subir um degrau por baixo dele. `.saindo` já está fechando.
+      if (
+        event.code === 'Escape' &&
+        !event.defaultPrevented &&
+        !document.querySelector('[data-dialogo]') &&
+        document.querySelector('#barra-mais-ferramentas:not(.saindo)')
+      ) {
+        event.preventDefault();
+        fecharMenuDosFilmes();
         return;
       }
       // Os três atalhos do FILME não têm sujeito dentro do Atlas — e
@@ -93,7 +108,7 @@ export function useAtalhos(
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
     // directorRef é ref (estável); setPaused é setState (estável);
-    // abrirBusca só fecha sobre setStates — a captura do 1º render vale
+    // abrirBusca e fecharMenuDosFilmes só fecham sobre setStates — a captura do 1º render vale
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 }

@@ -85,6 +85,17 @@ describe('a reserva dos rótulos cobre o HUD fixo (item 56)', () => {
     expect(FONTE).toContain('if (barra) observador.observe(barra);');
   });
 
+  it('a gaveta do selo (aninhada) e a bússola acesa (classe) também remedem', () => {
+    const vigia = FONTE.slice(FONTE.indexOf('const vigiarAninhadas = () => {'));
+    expect(vigia).toContain("mudancasDoHud.observe(selo, { childList: true });");
+    expect(vigia).toContain(
+      "mudancasDoHud.observe(bussola, { attributes: true, attributeFilter: ['class'] });"
+    );
+    // o HUD inteiro segue só com os filhos diretos — nunca a subárvore
+    expect(FONTE).toContain('mudancasDoHud.observe(root, { childList: true });');
+    expect(FONTE).not.toContain('subtree: true');
+  });
+
   it('caixa vazia não vira retângulo — em ?shot=2 todo o HUD é display:none', () => {
     // desde o C1 do plano de motion o filtro também descarta a caixa de
     // repouso NULA (painel fora da árvore do HUD) — a regra da caixa
@@ -114,6 +125,19 @@ describe('trocar de filme atualiza o HUD (a escolha visível, F1 da viagem solar
     expect(play).toContain('setFilme(d.filmeEscolhido);');
     expect(play).toContain('setTicks(d.progressTicks);');
     expect(play).toContain('espelharFilme();');
+  });
+});
+
+describe('"Via Láctea" no caminho do Atlas leva a algum lugar (auditoria, item 11)', () => {
+  const BARRA = readFileSync(new URL('./components/BarraOuAlcas.tsx', import.meta.url), 'utf8');
+
+  it('o trecho tem clique, e o clique é o MESMO destino do cartão da Via Láctea na busca', () => {
+    expect(BARRA).toContain(
+      "{ chave: 'via-lactea', texto: t('contexto.viaLactea'), aoClicar: visitarViaLactea }"
+    );
+    const clique = FONTE.slice(FONTE.indexOf('visitarViaLactea={() => {'));
+    expect(clique).toContain("LUGARES_DA_BUSCA.find((l) => l.id === 'via-lactea')");
+    expect(clique).toContain("escolherAlvo({ tipo: 'lugar', lugar }, directorRef.current)");
   });
 });
 

@@ -685,6 +685,17 @@ export default function App() {
     if (barra) observador.observe(barra);
     // A ficha e o menu de filmes podem montar depois deste efeito. A lista
     // é reobservada quando um filho direto entra ou sai, sem vigiar a subárvore.
+    // Duas peças da lista mudam FORA disso e são vigiadas uma a uma: a gaveta
+    // do selo nasce DENTRO do `.atlas-selo`, e a bússola só troca de classe
+    // (`.acesa`) — as duas mudam por gesto, nunca por quadro.
+    const vigiarAninhadas = () => {
+      for (const selo of root.querySelectorAll('.atlas-selo')) {
+        mudancasDoHud.observe(selo, { childList: true });
+      }
+      for (const bussola of root.querySelectorAll('.atlas-bussola')) {
+        mudancasDoHud.observe(bussola, { attributes: true, attributeFilter: ['class'] });
+      }
+    };
     const mudancasDoHud = new MutationObserver((mudancas) => {
       for (const mudanca of mudancas) {
         for (const no of mudanca.removedNodes) {
@@ -692,9 +703,11 @@ export default function App() {
         }
       }
       for (const e of root.querySelectorAll(AREAS_RESERVADAS)) observador.observe(e);
+      vigiarAninhadas();
       medir();
     });
     mudancasDoHud.observe(root, { childList: true });
+    vigiarAninhadas();
     // NENHUM `animationend` PARA REMEDIR (C1 do plano de motion): a
     // caixa que `medir` lê para o `[data-dialogo]` já é a de REPOUSO
     // (`caixaDeRepouso`, acima), a mesma do primeiro quadro ao último —
@@ -855,7 +868,7 @@ export default function App() {
 
   // depois do `alternarGaveta` porque passa a busca ao atalho de teclado
   // ("/" e Ctrl+K, item 8) — a ordem dos hooks não muda entre renders
-  useAtalhos(directorRef, setPaused, () => alternarGaveta('busca'));
+  useAtalhos(directorRef, setPaused, () => alternarGaveta('busca'), () => setMaisAberto(false));
 
   /**
    * A ESCOLHA DA PALETA. O verbo é da FASE, não do botão: o Director
@@ -1468,6 +1481,11 @@ export default function App() {
         // `escolherAlvo` chama para um corpo dentro do Atlas (a busca).
         focarNoSistema={() => directorRef.current?.focarNoSistema()}
         focarNoCorpo={(id) => directorRef.current?.focarNoCorpo(id, 'orbita')}
+        // "Via Láctea": o MESMO destino do cartão dela na busca
+        visitarViaLactea={() => {
+          const lugar = LUGARES_DA_BUSCA.find((l) => l.id === 'via-lactea');
+          if (lugar) escolherAlvo({ tipo: 'lugar', lugar }, directorRef.current);
+        }}
         textoGrande={textoGrande}
       />
 

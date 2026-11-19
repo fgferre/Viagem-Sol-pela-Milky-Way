@@ -367,6 +367,7 @@ function bancada() {
   };
   return {
     rig,
+    cam,
     toques,
     mira,
     down: (e: ToqueDePonteiro) => canvas.emitir('pointerdown', e),
@@ -525,6 +526,32 @@ describe('FreeRoam — o teardown leva TODOS os listeners do gesto', () => {
     b.rig.dispose();
     expect(janela.quantos('pointercancel')).toBe(antesCancel);
     expect(janela.quantos('lostpointercapture')).toBe(antesPerda);
+  });
+});
+
+describe('FreeRoam — tecla presa não sobrevive', () => {
+  // `target: null`: a tecla não veio de um controle (o canvas tem o foco)
+  const tecla = (code: string) => ({ code, target: null });
+  /** a câmera nasceu parada em (10,0,0): sem tecla segurada, ela fica lá */
+  const parada = (cam: THREE.PerspectiveCamera) => cam.position.equals(new THREE.Vector3(10, 0, 0));
+
+  it('a janela perde o foco com W segurado: a nave não sai voando sozinha', () => {
+    const b = bancada();
+    janela.emitir('keydown', tecla('KeyW'));
+    janela.emitir('blur', {});
+    b.mira();
+    expect(parada(b.cam)).toBe(true);
+    b.rig.dispose();
+    expect(janela.quantos('blur')).toBe(0);
+  });
+
+  it('W apertado com o voo desligado não fica guardado para quando ele religar', () => {
+    const b = bancada();
+    b.rig.enabled = false;
+    janela.emitir('keydown', tecla('KeyW'));
+    b.rig.enabled = true;
+    b.mira();
+    expect(parada(b.cam)).toBe(true);
   });
 });
 

@@ -106,6 +106,9 @@ export interface BarraOuAlcasProps {
   /** o corpo-pai da linha de contexto — a MESMA seleção que a busca usa
    *  para um corpo (`escolherAlvo`, dentro do Atlas: `focarNoCorpo`). */
   focarNoCorpo: (id: string) => void;
+  /** "Via Láctea" da linha de contexto — o MESMO destino do cartão da
+   *  Via Láctea na busca (`escolherAlvo` com o lugar `via-lactea`). */
+  visitarViaLactea: () => void;
 }
 
 /**
@@ -113,10 +116,11 @@ export interface BarraOuAlcasProps {
  * › Terra › Lua", derivada da escada, NUNCA digitada à mão: o degrau, o
  * `corpoId` e o corpo-PAI (`REGISTRO_ORBITAL[id].centro`, o mesmo dado que
  * `ficha.ts` já lê para a linha "Distância — {pai}") decidem os
- * trechos. Só "Sistema Solar" e o corpo-pai são BOTÕES — os únicos dois
- * trechos com ação existente; "Via Láctea" e o alvo atual são texto, como
- * o plano manda: um breadcrumb não é um menu, é uma leitura de onde se
- * está, com dois atalhos para voltar.
+ * trechos. "Via Láctea", "Sistema Solar" e o corpo-pai são BOTÕES — os
+ * trechos com ação existente (a Via Láctea leva à vista de fora que a
+ * busca já oferece); o alvo atual é texto, como o plano manda: um
+ * breadcrumb não é um menu, é uma leitura de onde se está, com atalhos
+ * para voltar.
  */
 /** um trecho do breadcrumb — texto puro, ou botão quando há ação real */
 interface TrechoDoContexto {
@@ -138,10 +142,11 @@ function trechosDoContexto(
   foco: string | null,
   focarNoSistema: () => void,
   focarNoCorpo: (id: string) => void,
-  comViaLactea: boolean
+  comViaLactea: boolean,
+  visitarViaLactea?: () => void
 ): TrechoDoContexto[] {
   const viaLactea: TrechoDoContexto[] = comViaLactea
-    ? [{ chave: 'via-lactea', texto: t('contexto.viaLactea') }]
+    ? [{ chave: 'via-lactea', texto: t('contexto.viaLactea'), aoClicar: visitarViaLactea }]
     : [];
   // A ESTRELA FICA FORA DA ESCADA DE CORPOS (escada.ts, `EstadoDaEscada`):
   // "Via Láctea › Sirius", sem o degrau "Sistema Solar" no meio — o alvo
@@ -194,6 +199,7 @@ function ContextoDoAlvo({
   textoGrande = false,
   alcas = false,
   comViaLactea = true,
+  visitarViaLactea,
   abrirFicha,
 }: {
   escada: EstadoDaEscada;
@@ -218,6 +224,8 @@ function ContextoDoAlvo({
    * Falso só no Atlas de mesa, onde a linha tem duas linhas de sobra.
    */
   comViaLactea?: boolean;
+  /** o clique em "Via Láctea"; só a mesa passa (no telefone o trecho some) */
+  visitarViaLactea?: () => void;
   /**
    * O ÚLTIMO TRECHO TAMBÉM ABRE A FICHA (Lote 4½, palavra do dono no
    * portão: "clicar no último trecho da linha de contexto... também
@@ -233,7 +241,14 @@ function ContextoDoAlvo({
   // separados, mas disparam no mesmo commit, então a migalha de pão e a
   // ficha acendem juntas sem precisar compartilhar estado nenhum.
   const vezesFoco = useRealce(foco);
-  const todos = trechosDoContexto(escada, foco, focarNoSistema, focarNoCorpo, comViaLactea);
+  const todos = trechosDoContexto(
+    escada,
+    foco,
+    focarNoSistema,
+    focarNoCorpo,
+    comViaLactea,
+    visitarViaLactea
+  );
   const trechos = alcas || estreito || textoGrande ? todos.slice(-1) : todos;
   return (
     <p className="atlas-contexto">
@@ -303,6 +318,7 @@ export function BarraOuAlcas({
   changeQuality,
   focarNoSistema,
   focarNoCorpo,
+  visitarViaLactea,
 }: BarraOuAlcasProps) {
   useIdioma();
   /**
@@ -525,6 +541,7 @@ export function BarraOuAlcas({
         foco={foco}
         focarNoSistema={focarNoSistema}
         focarNoCorpo={focarNoCorpo}
+        visitarViaLactea={visitarViaLactea}
         // O ÚLTIMO TRECHO (o alvo) também abre a ficha (Lote 4½) — só
         // quando a régua existe (`regua`, abaixo) e há alvo elegível;
         // NUNCA fecha, só abre — clicar de novo no nome não esconde a
