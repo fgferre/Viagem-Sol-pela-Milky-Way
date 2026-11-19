@@ -17,9 +17,10 @@
 //    é G·X/X_Rigel, X = (Ṁ/v∞)² / (R³·B656(Teff)) — a medida de emissão de
 //    um vento ∝ (Ṁ/v∞)²/R³ (a área do disco, R², divide o volume, R³ · R⁻⁴
 //    da densidade ao quadrado), sobre o contínuo de Planck em 656,3 nm.
-//    G (`GANHO_DO_GAS`) é o único ganho, ARTÍSTICO, ancorado em Rigel: na
-//    linha de Hα o diâmetro dela é 1,5× o do contínuo (Chesneau et al. 2010,
-//    A&A 521, A5), o envelope pesa tanto quanto o disco num filtro estreito.
+//    G (`GANHO_DO_GAS`) é o único ganho, escolhido por imagem DENTRO da
+//    faixa que os perfis observados de Hα sustentam (ver a constante). O
+//    1,5× de Rigel (Chesneau et al. 2010, A&A 521, A5) é o TAMANHO da
+//    região da linha, não uma fração de fluxo.
 //    Abaixo de `LIMIAR_DE_DESENHO` o gás nem é construído.
 //  · DISCO (dado da estrela, `discoDeGas`): ρ = ρ0·(r/R)^−n·exp(−z²/H²),
 //    H = H0·(r/R)^1,5, H0 = tan(meia abertura) — a meia espessura em 1/e
@@ -154,17 +155,26 @@ export const ANCORA_RIGEL = { teffK: 12100, raioRsol: 67.7 } as const;
 const X_RIGEL = medidaDoVento(VENTO_DE_RIGEL, ANCORA_RIGEL.raioRsol, ANCORA_RIGEL.teffK);
 
 /**
- * O GANHO DO GÁS — o único número de brilho, ARTÍSTICO, por imagem: a
- * fração do fluxo do disco que o gás de Rigel carrega na vista de
- * instrumento (1 = o gás inteiro com o mesmo fluxo do disco). O disco de
- * uma Be usa o mesmo G × a fase. A faixa que a medida sustenta é ~0,3 a ~1
- * (o pico de Hα de Achernar ativa ≲ 1,3–1,5 do contínuo; Deneb, 1,3 Å de
- * absorção líquida). 0,3, a ponta baixa, mantido no fechamento (17/11, com o
- * halo curto e liso): o halo de Rigel já tem a borda acesa e o de Naos, no
- * teto, já clareia para o rosa-claro; de perto (a 2 raios) o halo de 1,5
- * raio já chega perto das laterais do quadro — mais ganho só o espalharia.
+ * O GANHO DO GÁS — o único número de brilho: a fração do fluxo do disco que
+ * o gás de Rigel carrega na vista de instrumento (1 = o gás inteiro com o
+ * mesmo fluxo do disco). O disco de uma Be usa o mesmo G × a fase.
+ * Escolhido por imagem (18/11/2026, prancha de 0,3 / 0,15 / 0,08) DENTRO do
+ * que os perfis OBSERVADOS de Hα dão para o excesso sobre o contínuo num
+ * filtro mais estreito que a linha (lidos no texto dos artigos):
+ *  · Rigel: sem número; a linha é preenchida por emissão fraca e variável,
+ *    e ~20 % do tempo é absorção pura (Chesneau et al. 2010; Shultz et al.
+ *    2014);
+ *  · Deneb: ~0,15, derivado de 0,30 Å de emissão em ~2 Å (Richardson et al.
+ *    2011; a linha líquida é absorção de 1,3 Å) — com G = 0,15 ela desenha
+ *    0,105;
+ *  · Achernar ativa: pico < 1,3 do contínuo em 2006–2018 (Kervella et al.
+ *    2022) e ≲ 1,5 em 1999–2007 (Rivinius et al. 2013): excesso < 0,3 a ≲ 0,5.
+ * O gás de verdade (o observado menos a absorção da fotosfera) é maior que
+ * esse excesso, e nenhum texto lido dá o valor. O 0,3 de antes era o topo
+ * da faixa e lia como anel rosa-choque. Leitura e prancha em
+ * `capturas/estrelas-quentes-18-11/`.
  */
-export const GANHO_DO_GAS = 0.3;
+export const GANHO_DO_GAS = 0.15;
 /** o limiar de DESENHO (não físico): abaixo de 1/400 do fluxo do disco, meio degrau de tela, o gás nem nasce */
 export const LIMIAR_DE_DESENHO = 1 / 400;
 
@@ -172,10 +182,11 @@ export const LIMIAR_DE_DESENHO = 1 / 400;
  * O TETO DO GÁS: ele nunca carrega mais fluxo que o próprio disco. A base é
  * a medida que existe do pico da linha: em Achernar ativa o pico de Hα fica
  * sempre ≲ 1,3–1,5 do contínuo (Kervella et al. 2022; Rivinius et al. 2013),
- * ou seja, a emissão do gás no centro da linha não passa de ~1 vez o
- * contínuo da estrela. Hoje é só guarda: nenhuma estrela do catálogo chega
- * nele (Naos, a mais alta, fica em 0,99; 17/11); o teste barra a primeira
- * que chegar, e aí a ficha passa a dizer que o brilho dela foi cortado.
+ * ou seja, o excesso observado não passa de ~0,5 do contínuo; o 1 é guarda
+ * folgada, porque o gás de verdade (descontada a absorção da fotosfera) é
+ * maior que o excesso e não tem valor lido. Nenhuma estrela do catálogo
+ * chega nele (Naos, a mais alta, fica em 0,49; 18/11); o teste barra a
+ * primeira que chegar, e aí a ficha passa a dizer que o brilho foi cortado.
  */
 export const TETO_DO_GAS = 1;
 
