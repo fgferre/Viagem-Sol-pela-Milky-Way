@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { corDaLinhaDeEmissao } from '../luzDaCasa';
+import { LUGARES_DO_FILME } from '../../lib/lugaresDoFilme';
 import { lugarDaTabela } from './lugaresDoCeu';
 import {
   ARCMIN_PC,
@@ -100,6 +101,14 @@ describe('a nebulosa de Órion', () => {
   it('a lei fixa do brilho na tela: 100× de fluxo viram 100^0,12 ≈ 1,7×', () => {
     expect(GAMA_DO_BRILHO).toBe(0.12);
     expect(brilhoNaTela(brilhoDaFrente(0.2, 1)) / brilhoNaTela(brilhoDaFrente(2, 1))).toBeCloseTo(100 ** 0.12, 9);
+  });
+
+  it('a ficha de Órion diz a lei que a tela usa (o texto ficou em 0,3 quando o valor virou 0,12)', () => {
+    const ficha = JSON.stringify(LUGARES_DO_FILME.find((l) => l.id === 'nebulosa-de-orion'));
+    const gama = String(GAMA_DO_BRILHO);
+    const vezes = (100 ** GAMA_DO_BRILHO).toFixed(1);
+    expect(ficha).toContain(`elevada a ${gama.replace('.', ',')} (cem vezes mais luz aparecem como ${vezes.replace('.', ',')} vez`);
+    expect(ficha).toContain(`raised to the power ${gama} (a hundred times more light shows as ${vezes} times`);
   });
 
   it('a luz acende a parede só dentro do leque e a cor soma o [O III] 4959 e as Balmer azuis', () => {
