@@ -636,7 +636,7 @@ vec4 orCampo(vec3 q) {
     //    frente mais densa (autor) — 0,03 pc abaixo, para o borrão da
     //    grade não cobrir a camada acesa
     float hh = h + 0.03;
-    if (hh < 0.0) K += ${parte(64)} * ${n(KAPPA_DA_NUVEM)} * orMassa(q) * smoothstep(0.0, -0.05, hh) * (1.0 + 4.0 * exp(hh * 4.0));
+    if (hh < 0.0) K += ${parte(64)} * ${n(KAPPA_DA_NUVEM)} * orMassa(q) * (1.0 - smoothstep(-0.05, 0.0, hh)) * (1.0 + 4.0 * exp(hh * 4.0));
   } else if (length((q - OR_BOLHA_C) * OR_BOLHA_INV) < 2.2) {
     float s = orBolha(q);
     float den = orDentro(s, r);

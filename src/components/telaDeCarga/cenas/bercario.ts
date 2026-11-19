@@ -235,12 +235,14 @@ vec3 gas(vec2 uv) {
   vec4 q = N(w * 0.16, z);
   vec2 ww = w + 0.4 * (q.gb - 0.5);
   float g = fbm(ww * 0.40, z, 4.0, 9).x;
-  float prof = exp(-pow((w.y - 0.12) / 0.40, 2.0)) * 0.85 + 0.15;
+  float pa = (w.y - 0.12) / 0.40;
+  float prof = exp(-pa * pa) * 0.85 + 0.15;
   float b = max(0.0, 0.5 + g * 1.3) * prof;
   vec3 c = vec3(0.004, 0.009, 0.020);
   c += vec3(0.018, 0.070, 0.110) * b;
   c += vec3(0.09, 0.22, 0.30) * pow(max(g + 0.05, 0.0), 2.0) * prof * 2.4;
-  c += vec3(0.07, 0.035, 0.02) * exp(-pow((w.y + 0.02) / 0.14, 2.0)) * q.a;
+  float pb = (w.y + 0.02) / 0.14;
+  c += vec3(0.07, 0.035, 0.02) * exp(-pb * pb) * q.a;
   return c * (0.28 + 0.72 * uLuz) * L.w;
 }
 

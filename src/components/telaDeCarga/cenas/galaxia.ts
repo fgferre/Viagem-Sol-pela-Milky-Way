@@ -380,7 +380,7 @@ void main() {
       vec4 nB = (mix(texture(uRuido, vec3(q2 * 5.3, z2 + 0.25)), texture(uRuido, vec3(q1 * 5.3, z1 + 0.25)), w1) - 0.5) * nrm + 0.5;
       float nf = clamp(nA.r * 0.6 + nB.r * 0.4, 0.0, 1.0);
       float nd = clamp(nA.g * 0.5 + nB.g * 0.5, 0.0, 1.0);
-      float rev = smoothstep(uRevela, uRevela - 0.14, r);
+      float rev = (1.0 - smoothstep(uRevela - 0.14, uRevela, r));
       float fora = 1.0 - smoothstep(0.8, 1.22, r);
       float perfil = exp(-r / 0.28) * fora;
       float velho = perfil * (0.32 + 1.6 * m.b * rev) * (0.75 + 0.5 * nf);

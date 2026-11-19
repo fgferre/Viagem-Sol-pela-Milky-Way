@@ -738,7 +738,7 @@ void rochaNua(vec3 p, vec3 q, float grao, float pix, out vec3 cor, out float h) 
   float mancha = ruido(q * 4.5 + 2.0);
   float alto = smoothstep(0.47, 0.63, terras);
   float nivel = mix(0.22, 0.56, uMundo.x);
-  float mar = smoothstep(nivel + 0.07, nivel - 0.05, terras + 0.08 * (mancha - 0.5));
+  float mar = (1.0 - smoothstep(nivel - 0.05, nivel + 0.07, terras + 0.08 * (mancha - 0.5)));
   float bacia = 0.0;
   float anel = 0.0;
   for (int i = 0; i < 3; i++) {
@@ -857,7 +857,7 @@ void faceRochosa(vec3 p, vec3 dirSol, out vec3 albedo, out float altura, out vec
   altura = 0.0;
   if (!soGelo) rochaNua(p, q, grao, pix, albedo, altura);
   if (uFace.x < 1.5 || soGelo) {
-    float frio = soGelo ? 1.0 : smoothstep(290.0, 250.0, T + 90.0 * (fbm(q * 3.1, 3) - 0.5));
+    float frio = soGelo ? 1.0 : (1.0 - smoothstep(250.0, 290.0, T + 90.0 * (fbm(q * 3.1, 3) - 0.5)));
     if (frio > 0.0) {
       vec3 gelo;
       float alturaDoGelo;
