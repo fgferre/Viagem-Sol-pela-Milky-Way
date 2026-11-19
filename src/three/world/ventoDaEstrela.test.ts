@@ -30,6 +30,7 @@ import {
   fracaoDesenhadaDoVento,
   fracaoDoVento,
   gasDaEstrela,
+  raioDoPisoDoGas,
   velocidadeDeEscape,
   ventoDaFicha,
   ventoPelaReceita,
@@ -207,6 +208,14 @@ describe('a imagem do gás: o halo curto, o piso e os braços', () => {
         antes = c;
       }
     }
+  });
+
+  it('o raio do piso do gás: o do disco em Achernar, o da linha do vento em Rigel, 1 sem gás', () => {
+    const achernar = estrelaVisitavelPorNome('Achernar')!;
+    expect(raioDoPisoDoGas(achernar)).toBe(gasDaEstrela(achernar)!.disco!.raioDoPiso);
+    expect(raioDoPisoDoGas(achernar)).toBeCloseTo(2.31, 1);
+    expect(raioDoPisoDoGas(doCatalogo('Rigel'))).toBe(raioDaLinhaDe(doCatalogo('Rigel')).v);
+    expect(raioDoPisoDoGas(doCatalogo('Spica'))).toBe(1);
   });
 
   it('os braços só com giro MEDIDO: Rigel (período artístico) não tem; a mesma ficha com giro medido tem', () => {

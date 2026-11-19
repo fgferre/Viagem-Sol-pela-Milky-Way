@@ -22,7 +22,7 @@
 // dado do projeto, não número inventado no teste — e o instante é o da
 // época, que é onde as capturas do gate moram.
 // ============================================================
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
 import type { Engine } from '../core/engine';
 import type { NamedStar, StarsMeta } from '../config';
@@ -51,9 +51,12 @@ import { GAL } from '../world/baseGalactica';
 import { ENTREGA_DO_BURACO_PC, kmParaPc } from '../escala';
 import { RS_SGR_A_PC } from '../../lib/buracoNegro';
 import { ATLAS_FOV_GRAUS, enquadrar, retanguloUtilDoAtlas } from '../cinematic/atlasRig';
+import { MARGEM_DE_ENQUADRAMENTO } from '../cinematic/enquadramento';
 import { orientacaoInercialDoAnelNaCena } from '../world/corpos/orientacaoNaCena';
 import { ID_DO_PONTO_DO_ANEL, PISO_KM, RAIO_DO_PONTO_KM } from '../world/pontoDoAnel';
 import { construirIndice, resolverFoco } from '../../lib/buscaEstrelas';
+import { estrelaVisitavelPorNome, raioDaEstrelaPc } from '../../lib/atlas/estrelasVisitaveis';
+import { raioDoPisoDoGas } from '../world/ventoDaEstrela';
 
 // O runner da casa é `node` (vitest.config.ts) e o enquadramento pergunta
 // a largura da janela (`larguraDeCss`) a cada `apply`. Uma linha de
@@ -697,6 +700,19 @@ describe('o "Aproximar" de cometas e de lugares do céu (13/11)', () => {
     expect(escada.escadaViva).toMatchObject({ degrau: 'estrela', podeAproximar: true });
     escada.aproximarDoCorpo();
     expect(escada.escadaViva).toMatchObject({ degrau: 'estrela', podeAproximar: false });
+  });
+
+  it('a estrela com gás chega com o piso do gás rente à borda do quadro, e a régua e o piso do zoom no corpo (19/11, Achernar)', () => {
+    const { escada, atlas } = bancada({ comPiloto: true });
+    const focar = vi.spyOn(atlas, 'focar');
+    escada.visitarEstrela({ n: 'Achernar', x: 40, y: 0, z: 0 });
+    escada.aproximarDoCorpo();
+    const dados = estrelaVisitavelPorNome('Achernar')!;
+    const raio = raioDaEstrelaPc(dados);
+    const ultima = focar.mock.calls.at(-1)!;
+    expect(raioDoPisoDoGas(dados)).toBeGreaterThan(MARGEM_DE_ENQUADRAMENTO);
+    expect(ultima[1]).toBeCloseTo((raio * raioDoPisoDoGas(dados)) / MARGEM_DE_ENQUADRAMENTO, 15);
+    expect(ultima[3]).toMatchObject({ pisoRaio: raio, regua: raio });
   });
 
   it('a nomeada fora da lista à mão também desce, pela ficha da regra única', () => {

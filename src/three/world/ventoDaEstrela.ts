@@ -521,3 +521,14 @@ export function gasDaEstrela(e: EstrelaVisitavel): GasDoMotor | null {
   if (!vento && !disco) return null;
   return { ...(vento ? { vento } : {}), ...(disco ? { disco } : {}) };
 }
+
+/**
+ * O RAIO DO PISO DO GÁS de uma estrela, em raios equatoriais: até onde o gás
+ * dela aparece de frente antes do piso do instrumento — o raio da linha do
+ * vento (`raioDaLinhaDe`) e o raio do piso do disco (`raioDoPisoDoDisco`); 1
+ * sem gás desenhado. É o que a chegada da câmera enquadra (`Escada`).
+ */
+export function raioDoPisoDoGas(e: EstrelaVisitavel): number {
+  const g = gasDaEstrela(e);
+  return Math.max(1, g?.vento ? raioDaLinhaDe(e).v : 1, g?.disco?.raioDoPiso ?? 1);
+}

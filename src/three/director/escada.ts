@@ -99,6 +99,7 @@ import { escalaDaUi, larguraDeCss } from '../../lib/uiScale';
 import { Escolha } from './escolha';
 import { estrelaVisitavelPorNome, raioDaEstrelaPc, type EstrelaVisitavel } from '../../lib/atlas/estrelasVisitaveis';
 import { estrelaComCorpo } from '../../lib/atlas/estrelaDoCatalogo';
+import { raioDoPisoDoGas } from '../world/ventoDaEstrela';
 // o centro do frame heliocêntrico mora no vizinho neutro
 // (`cinematic/enquadramento.ts`): exportá-lo DAQUI fazia o único ciclo de
 // import de valor do `src/` — a escada precisa da `Escolha`, e a escolha
@@ -1447,14 +1448,24 @@ export class Escada {
    * mesma lente de todo enquadramento privilegiado — Betelgeuse enche o
    * quadro de muito mais longe que Proxima. A direção é a de repouso do
    * foco da estrela (o lado do Sol, com o pino de fase): é a vista "de
-   * casa", e em Vega é quase o polo, como da Terra. Estrela sem corpo
+   * casa", e em Vega é quase o polo, como da Terra. Estrela com gás é
+   * enquadrada com o piso do gás (`raioDoPisoDoGas`) rente à borda. Estrela sem corpo
    * (fora do piloto, ou `?estrelaslugar=0`): no-op, o degrau não existe.
    */
   private aproximarDaEstrela() {
     const p = this.pilotoEmFoco();
     if (!p) return;
     const raio = raioDaEstrelaPc(p.dados);
-    this.atlas.focar(p.pos, raio, p.pos, { rampa: this.rampaDaEscada(), pisoRaio: raio });
+    // o assunto é a estrela COM o gás dela (19/11): o piso do instrumento, onde o
+    // gás já é preto, fica RENTE à borda do quadro — a margem de sempre é a do
+    // corpo, e pô-la também no gás deixava Rigel pequena no meio do preto; a
+    // régua do `?d=` e o piso do zoom seguem no corpo
+    const quadro = raio * Math.max(1, raioDoPisoDoGas(p.dados) / MARGEM_DE_ENQUADRAMENTO);
+    this.atlas.focar(p.pos, quadro, p.pos, {
+      rampa: this.rampaDaEscada(),
+      pisoRaio: raio,
+      ...(quadro > raio ? { regua: raio } : {}),
+    });
     this.enquadrarAgora();
     this.focoCorpoId = null;
     this.ver = 'corpo';
