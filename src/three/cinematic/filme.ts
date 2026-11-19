@@ -37,6 +37,8 @@ export interface Filme {
   id: string;
   /** o nome do filme nos botões de escolha (capa, "Mais", Atlas) — chave de idioma */
   titulo: ChaveDeTexto;
+  /** imagem do catálogo em public/previas para o cartaz da abertura */
+  previa: string;
   /** a linha que diz o que o filme é, sob o botão da capa — chave de idioma */
   nota: ChaveDeTexto;
   /** o que o véu de encerramento diz quando o filme acaba */
@@ -68,6 +70,7 @@ function montarGalactico(): Filme {
   return {
     id: FILME_PADRAO,
     titulo: 'hud.filme.galactico.titulo',
+    previa: 'via-lactea',
     nota: 'hud.filme.galactico.nota',
     encerramento: { citacao: true, rodape: 'hud.fim.rodape' },
     journey: new Journey(),
@@ -91,6 +94,7 @@ function montarSolar(): Filme {
   return {
     id: 'solar',
     titulo: 'hud.filme.solar.titulo',
+    previa: 'saturn',
     nota: 'hud.filme.solar.nota',
     encerramento: { linha: 'hud.fim.solar.linha', credito: 'hud.fim.solar.credito' },
     journey: new Journey(m.shots, m.starts),
@@ -114,6 +118,7 @@ function montarEstelar(): Filme {
   return {
     id: 'estelar',
     titulo: 'hud.filme.estelar.titulo',
+    previa: 'nebulosa-de-orion',
     nota: 'hud.filme.estelar.nota',
     encerramento: { linha: 'hud.fim.estelar.linha', credito: 'hud.fim.estelar.credito' },
     journey: new Journey(m.shots, m.starts),

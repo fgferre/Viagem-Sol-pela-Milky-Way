@@ -136,6 +136,7 @@ const AREAS_RESERVADAS = [
   // pintado como parte dela, sumia) — como irmão, precisa da própria
   // linha para seguir afastando os rótulos.
   '.filme-transporte',
+  '.filme-mais',
   // A FICHA DO OBJETO não precisa de linha própria (item 74): ela é um
   // diálogo de verdade, então o `[data-dialogo]` lá em cima já a alcança —
   // que é exatamente o que aquele seletor promete ("diálogo novo passa a
@@ -406,6 +407,12 @@ export default function App() {
    * que descer.
    */
   const celular = useCelular();
+  const [maisAberto, setMaisAberto] = useState(false);
+  const [faseAnteriorDoMenu, setFaseAnteriorDoMenu] = useState(phase);
+  if (phase !== faseAnteriorDoMenu) {
+    setFaseAnteriorDoMenu(phase);
+    setMaisAberto(false);
+  }
 
   // AS CINCO GAVETAS (Ajustes, Camadas, Busca, Ficha, Tempo) — uma aberta por
   // vez, e o mecanismo inteiro mora em `useGavetas`: o enum, os dois gatilhos,
@@ -422,6 +429,7 @@ export default function App() {
     fichaExpandida,
     alternarFichaExpandida,
   } = useGavetas(escada, foco, phase, celular);
+  if (phase === 'atlas' && gaveta && maisAberto) setMaisAberto(false);
 
   // C6 (docs/PLANO-MOTION-UI.md §7/§12.5) — o halo de contorno está
   // ADOTADO e liga por padrão; `?contorno=css` força o lado A, o
@@ -675,17 +683,18 @@ export default function App() {
     // É a caixa que enxerga a quebra, e é dela que sai o `--barra-fim`.
     const barra = root.querySelector('.controls-bar');
     if (barra) observador.observe(barra);
-    // A FICHA CHEGA TARDE (item 225): `corpos.json`/`texturas.json` são
-    // buscados na REDE na primeira abertura (`FichaDoObjeto.tsx`), então
-    // no instante em que este efeito roda — a MESMA passagem em que
-    // `gaveta` virou 'ficha' — o `[data-dialogo="ficha"]` ainda não
-    // existe, e o `ResizeObserver` de cima só observa quem já está na
-    // tela. Um `MutationObserver` ESTREITO (`childList`, sem `subtree` —
-    // não é medição por quadro, é por INSERÇÃO/remoção de um filho
-    // DIRETO de `.hud-root`, o mesmo contrato de `AREAS_RESERVADAS`)
-    // refaz a medição quando ela chega.
-    const chegadaDaFicha = new MutationObserver(medir);
-    chegadaDaFicha.observe(root, { childList: true });
+    // A ficha e o menu de filmes podem montar depois deste efeito. A lista
+    // é reobservada quando um filho direto entra ou sai, sem vigiar a subárvore.
+    const mudancasDoHud = new MutationObserver((mudancas) => {
+      for (const mudanca of mudancas) {
+        for (const no of mudanca.removedNodes) {
+          if (no instanceof Element) observador.unobserve(no);
+        }
+      }
+      for (const e of root.querySelectorAll(AREAS_RESERVADAS)) observador.observe(e);
+      medir();
+    });
+    mudancasDoHud.observe(root, { childList: true });
     // NENHUM `animationend` PARA REMEDIR (C1 do plano de motion): a
     // caixa que `medir` lê para o `[data-dialogo]` já é a de REPOUSO
     // (`caixaDeRepouso`, acima), a mesma do primeiro quadro ao último —
@@ -695,7 +704,7 @@ export default function App() {
     window.addEventListener('resize', medir);
     return () => {
       observador.disconnect();
-      chegadaDaFicha.disconnect();
+      mudancasDoHud.disconnect();
       window.removeEventListener('resize', medir);
     };
   }, [phase, montada, celular, haloDeContorno]);
@@ -1008,8 +1017,8 @@ export default function App() {
    * aos mockups, em duas palavras: *"2) somem sozinhos"*. Com o filme
    * CORRENDO e nenhum gesto por 3 s, a barra de controles e a barra de
    * capítulos esmaecem; o primeiro movimento de ponteiro, toque, roda ou
-   * tecla as traz de volta. Pausado, ficam: quem pausou parou para usar
-   * alguma coisa.
+   * tecla as traz de volta. Pausado, com Mais ou uma gaveta aberta, os
+   * controles ficam à vista.
    *
    * O QUE SOME É O CHROME, e só ele. A legenda do beat e a dica do
    * pausar-e-olhar (`.filme-rodape`) são CONTEÚDO — é o que o visitante
@@ -1017,7 +1026,7 @@ export default function App() {
    * que apagasse a própria legenda por inatividade estaria escondendo a
    * obra, não o controle remoto.
    */
-  const chromeVisivel = useChromeDoFilme(inJourney && !paused);
+  const chromeVisivel = useChromeDoFilme(inJourney && !paused && !maisAberto && !montada);
   const chromeSumido = chromeVisivel ? '' : ' hud-sumido';
   // As peças que só decidem PRESENÇA por fase saem do mapa único
   // (`fases.ts`); as condições compostas continuam aqui, sobre ele.
@@ -1185,6 +1194,9 @@ export default function App() {
         // que o `voo-smoke` procura.
         className={`scene-canvas${arrastoFazAlgo(phase, paused) ? ' arrastavel' : ''}`}
         aria-label={t('cena.aria')}
+        onPointerDown={(e) => {
+          if (e.button === 0 && maisAberto && !montada) setMaisAberto(false);
+        }}
       />
       <canvas ref={labelCanvasRef} className="label-canvas" aria-hidden="true" />
 
@@ -1421,6 +1433,8 @@ export default function App() {
         hud={hud}
         alcas={alcas}
         chromeSumido={chromeSumido}
+        maisAberto={maisAberto}
+        onMaisAberto={setMaisAberto}
         gaveta={gaveta}
         alternarGaveta={alternarGaveta}
         ofereceFicha={ofereceFicha}

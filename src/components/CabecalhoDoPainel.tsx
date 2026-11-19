@@ -14,6 +14,7 @@
 // marca. Sem `eyebrow`, tudo continua numa linha só, como nos outros
 // quatro painéis (Ajustes, Busca, Camadas, a gaveta do Tempo).
 // ============================================================
+import { useLayoutEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { Icone } from './Icone';
 
@@ -24,6 +25,7 @@ export function CabecalhoDoPainel({
   onFechar,
   rotuloFechar,
   acoes,
+  children,
   celular = false,
 }: {
   /** o título do painel, ou (com `eyebrow`) o NOME do alvo — a ficha
@@ -41,11 +43,30 @@ export function CabecalhoDoPainel({
   rotuloFechar: string;
   /** botões extras entre o "?" e o fechar (nenhum painel usa ainda) */
   acoes?: ReactNode;
+  children?: ReactNode;
   /** alça de arrasto (36×4 px) acima do título — só na folha do celular */
   celular?: boolean;
 }) {
+  const cabecalho = useRef<HTMLElement>(null);
+  const comControles = children != null;
+  // O Tab e as setas da busca devem trazer o item para a parte descoberta
+  // do painel. A altura do cabeçalho muda com a língua e a escala do texto.
+  useLayoutEffect(() => {
+    const topo = cabecalho.current;
+    const painel = topo?.closest<HTMLElement>('.hud-dialogo');
+    if (!comControles || !topo || !painel) return;
+    const medir = () => painel.style.setProperty('--altura-cabecalho', `${topo.offsetHeight}px`);
+    medir();
+    const observador = new ResizeObserver(medir);
+    observador.observe(topo);
+    return () => {
+      observador.disconnect();
+      painel.style.removeProperty('--altura-cabecalho');
+    };
+  }, [comControles]);
+
   return (
-    <header className="hud-cabecalho">
+    <header className="hud-cabecalho" ref={cabecalho}>
       {celular && <span className="hud-alca" aria-hidden="true" />}
       <div className="hud-cabecalho-corpo">
         <div className="hud-cabecalho-linha">
@@ -68,6 +89,7 @@ export function CabecalhoDoPainel({
         {eyebrow != null && (
           <h2 className="hud-cabecalho-titulo hud-cabecalho-titulo--nome">{titulo}</h2>
         )}
+        {children}
       </div>
     </header>
   );

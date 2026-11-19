@@ -518,14 +518,6 @@
   line-height: 1.5;
   text-align: center;
 }
-/* a segunda linha da abertura (item 60): menor e mais discreta que a
-   primeira, sem outra classe além do modificador — `.title-sub` sozinho
-   continua existindo na primeira linha, para quem lê por essa classe */
-.title-sub--linha2 {
-  margin-top: 0.35rem;
-  font-size: 0.875rem;
-  color: var(--texto-2);
-}
 .title-rule {
   width: 5rem;
   height: 1px;
@@ -628,55 +620,214 @@
   }
 }
 
-/* ---- AS PORTAS DA ABERTURA (Lote 8, PLAN-UI.md §3.1) -----------------
-   Uma PRIMÁRIA ("Explorar o Atlas", largura da coluna) e, abaixo dela,
-   duas SECUNDÁRIAS lado a lado ("Ver o filme", "Voo livre") — troca a
-   antiga fileira de três botões iguais (item 60/61) pela hierarquia da
-   maquete M1. `.abertura-coluna` é a caixa que centraliza tudo (kicker,
-   marca, filete, subtítulo e portas) numa largura de leitura.
-   A COLUNA CABE A FILEIRA DOS FILMES (três filmes, 14/11): `--filmes` vem
-   do cartaz (Hud.tsx) e `--fileira` é a largura de todos lado a lado, a
-   16rem cada — o maior rótulo de hoje, "Viagem galáctica · 3 min 13 s",
-   mede 15,7rem com ícone e margens (medido em pt e en, ui=1 e 1,4). A
-   coluna alarga até ela em vez de quebrar a fileira; o teto continua
-   sendo a tela menos a margem. */
+/* A abertura deixa o Sol à vista. Explorar reúne a navegação manual e
+   o cartaz mostra a duração e uma imagem de cada viagem do catálogo. */
+.veil.veil-intro {
+  display: block;
+  background:
+    linear-gradient(0deg, #08090c 1%, rgb(8 9 12 / 94%) 16%, transparent 50%),
+    linear-gradient(90deg, rgb(6 8 12 / 95%), rgb(6 8 12 / 84%) 27%, rgb(6 8 12 / 18%) 66%);
+}
 .abertura-coluna {
-  --fileira: calc(var(--filmes, 2) * 16rem + (var(--filmes, 2) - 1) * 0.75rem);
-  width: max(35rem, var(--fileira));
-  max-width: calc(100% - 3rem);
+  box-sizing: border-box;
+  width: min(100%, 100rem);
+  min-height: 100%;
   margin: 0 auto;
-  text-align: center;
-}
-.abertura-coluna > .abertura-porta {
-  margin-top: 1.5rem;
-}
-.abertura-porta {
+  padding: clamp(1.5rem, 7vh, 6rem) 6vw clamp(1.25rem, 4vh, 3rem);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
+  align-items: flex-start;
 }
-.abertura-porta .veil-btn {
-  width: 100%;
+.abertura-cabecalho {
+  margin: auto 0 0;
 }
-/* a fileira das secundárias: TODAS numa linha, iguais, ou TODAS
-   empilhadas — nunca dois em cima e um embaixo (gosto do dono: fileira
-   não quebra nem fica desigual). */
-.abertura-portas {
+.abertura-cabecalho .title-kicker,
+.abertura-coluna h2,
+.abertura-duracao {
+  font-family: var(--fonte-ui);
+  font-weight: 500;
+  font-size: 0.6875rem;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.abertura-cabecalho .title-kicker {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 0.75rem;
-  margin-top: 0.75rem;
+  margin: 0 0 0.8rem;
+  color: var(--acento);
 }
-.abertura-portas .abertura-porta {
-  /* a base é zero enquanto a fileira cabe (a coluna mede `--fileira` ou
-     mais) e enorme quando não cabe: aí cada porta vira uma linha, todas
-     da largura da coluna — sem media query (uiScale.test.ts: só 760 é
-     quebra de HUD), e o `rem` cresce com `?ui=`. O "Voo livre", sozinho
-     na sua fileira, estica nos dois casos. */
-  flex: 1 1 calc((var(--fileira) - 100%) * 999);
+.abertura-cabecalho .title-kicker::before {
+  content: '';
+  width: 2.5rem;
+  height: 1px;
+  background: currentColor;
 }
-
+.abertura-cabecalho .title-big {
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  line-height: 1.02;
+  letter-spacing: -0.055em;
+  font-size: clamp(3rem, calc(6.5vw * var(--ui)), 6.75rem);
+}
+.abertura-cabecalho .title-sub {
+  max-width: 35ch;
+  margin: 0.9rem 0 0;
+  text-align: left;
+  line-height: 1.5;
+  color: var(--texto-2);
+}
+.abertura-explorar {
+  width: min(100%, 28rem);
+  margin: clamp(1.5rem, 4vh, 3rem) 0 auto;
+}
+.abertura-coluna h2 {
+  margin: 0 0 0.85rem;
+  color: var(--texto-2);
+}
+.abertura-modos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.abertura-porta {
+  min-width: 0;
+}
+.abertura-modos .veil-btn {
+  width: 100%;
+  height: auto;
+  min-height: max(44px, 2.9rem);
+  padding: 0.55rem 0.65rem;
+}
+.abertura-modos .veil-btn--secundario {
+  background-color: rgb(8 9 12 / 72%);
+  border-color: var(--borda-forte);
+}
+.abertura-cartaz {
+  container: cartaz / inline-size;
+  width: 100%;
+  margin-top: clamp(2rem, 7vh, 6rem);
+}
+.abertura-cartaz h2 {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.abertura-cartaz h2::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--borda-forte);
+}
+.abertura-filmes {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: clamp(0.75rem, 2vw, 2rem);
+}
+.abertura-filmes .abertura-filme {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-columns: minmax(3.75rem, 30%) 1fr;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.35rem 0;
+  border: 0;
+  text-align: left;
+}
+.abertura-previa {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: var(--raio-controle);
+  background: #07090d;
+}
+.abertura-previa img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1.3;
+  object-fit: cover;
+}
+.abertura-previa svg {
+  position: absolute;
+  bottom: 0.4rem;
+  left: 0.4rem;
+  box-sizing: content-box;
+  padding: 0.32rem;
+  border: 1px solid var(--borda-forte);
+  border-radius: 50%;
+  background: rgb(8 9 12 / 76%);
+}
+.abertura-filme-texto {
+  display: grid;
+  gap: 0.3rem;
+}
+.abertura-duracao {
+  font-variant-numeric: tabular-nums;
+  color: var(--acento);
+  letter-spacing: 0.075em;
+}
+.abertura-filme-titulo {
+  font-family: var(--fonte-display);
+  font-size: 1.3rem;
+  font-weight: 400;
+  line-height: 1.1;
+}
+.abertura-porta-nota,
+.abertura-dados {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--texto-2);
+  line-height: 1.45;
+}
+.abertura-modos .abertura-porta-nota {
+  display: block;
+  margin-top: 0.5rem;
+}
+.abertura-coluna .abertura-dados {
+  text-align: left;
+  margin: 1.25rem 0 0;
+  font-size: 0.6875rem;
+}
+@media (max-width: 760px) {
+  .veil.veil-intro {
+    background:
+      linear-gradient(0deg, #08090c 8%, rgb(8 9 12 / 88%) 46%, transparent 83%),
+      linear-gradient(90deg, rgb(6 8 12 / 92%), rgb(6 8 12 / 35%));
+  }
+  .abertura-coluna {
+    padding: max(1.75rem, env(safe-area-inset-top)) 6vw max(1.25rem, env(safe-area-inset-bottom));
+  }
+  .abertura-cabecalho .title-big {
+    font-size: 3.15rem;
+  }
+  .abertura-cabecalho .title-sub {
+    font-size: 0.875rem;
+  }
+  .abertura-explorar {
+    margin-top: 1.4rem;
+  }
+  .abertura-cartaz {
+    margin-top: 1.7rem;
+  }
+}
+/* O cartaz acompanha a largura de leitura, inclusive com o texto ampliado. */
+@container cartaz (max-width: 45rem) {
+  .abertura-filmes {
+    grid-auto-flow: row;
+    grid-auto-columns: 1fr;
+    gap: 0;
+  }
+  .abertura-filmes .abertura-porta + .abertura-porta {
+    border-top: 1px solid var(--borda);
+  }
+  .abertura-filmes .abertura-filme {
+    grid-template-columns: 4.8rem minmax(0, 1fr);
+    padding: 0.55rem 0;
+  }
+}
 /* ---- botões da abertura e do encerramento (mesma anatomia) ---------- */
 .veil-btn {
   display: inline-flex;
@@ -752,16 +903,3 @@
   background: var(--hover);
   border-color: var(--borda-forte);
 }
-/* A LINHA QUE DIZ O QUE A PORTA É. Fica no tom da `free-hint`, não no do
-   `title-sub`: é dica, não título. */
-.abertura-porta-nota {
-  margin-top: 0.5rem;
-  font-size: 0.75rem;
-  color: var(--texto-3);
-  text-align: center;
-  line-height: 1.5;
-}
-.abertura-porta-nota--secundaria {
-  font-size: 0.6875rem;
-}
-

@@ -68,24 +68,6 @@
     line-height: 1.8;
   }
 
-  /* A ABERTURA ROLA COM TEXTO GRANDE (item 87, decisão do dono em
-     25/08). A 390×844 com `?ui=1.4`, o conteúdo é mais alto que a tela:
-     centralizá-lo escondia tanto o kicker no topo quanto o tempo do
-     filme no rodapé. `safe center` mantém a composição centralizada
-     quando ela cabe e cede para o início quando transborda; o próprio
-     véu vira então a área rolável. Nada encolhe para caber — quem pediu
-     texto grande percorre a página e lê as duas pontas no tamanho que
-     escolheu. */
-  .veil-intro {
-    overflow-y: auto;
-    justify-content: safe center;
-  }
-
-  /* AS PORTAS DA ABERTURA (Lote 8): a primária já é 100% da coluna e as
-     duas secundárias empilham sozinhas quando não cabem (`02-filme.css`) — a
-     largura fixa que existia aqui para as três colunas iguais saiu
-     junto com aquele arranjo. */
-
   /* a quebra e o alinhamento à direita subiram para a fatia 3: valem em
      toda largura desde que a barra ganhou teto (94vw). Aqui fica o que
      é só da tela estreita — a barra sobe e ganha as duas bordas. */
@@ -414,5 +396,16 @@
      passo já era instantânea (o furo não desliza de um alvo ao outro) */
   .spotlight {
     transition: none;
+  }
+}
+
+/* Em paisagem, o cabeçalho com abas ou campo pode tomar toda a altura
+   da folha. A rolagem precisa conseguir mostrar o último controle. */
+@media (max-height: 520px) {
+  .hud-dialogo:is(.ajustes, .atlas-busca) {
+    scroll-padding-top: 0;
+  }
+  .hud-dialogo:is(.ajustes, .atlas-busca) .hud-cabecalho {
+    position: static;
   }
 }

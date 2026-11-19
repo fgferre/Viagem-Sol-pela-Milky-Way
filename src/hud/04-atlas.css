@@ -332,37 +332,41 @@
   width: min(25rem, 34vw);
 }
 
-/* O CABEÇALHO É `CabecalhoDoPainel` (Lote 2b, PLAN-UI.md §3.5): a
-   classe do corpo é o `eyebrow`, o nome é o `titulo` — a régua comum
-   de `01-base.css`. `.atlas-ficha-nome` sobrevive só para o ELLIPSIS de
-   um nome muito longo (o tamanho/família/caixa vêm do
-   `.hud-cabecalho-titulo--nome` do pai; sem redeclará-los aqui, para não
-   competir com ele na cascata) — e porque `busca-smoke.mjs`/`a11y.mjs`
-   leem o texto por esta classe. */
-.atlas-ficha-nome {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.atlas-ficha .hud-cabecalho-eyebrow {
+  color: var(--acento);
+  font-weight: 600;
 }
-/* A CONFIRMAÇÃO DO NOME E DA CLASSE (C3b, reaudit) — o `role="status"`/
-   `aria-live` fica no `.atlas-ficha-nome` (ESTÁVEL, nunca remonta); quem
-   troca é um `<span>` FILHO, com `key`/`.realce-texto` de `useRealce`
-   (`FichaDoObjeto.tsx`). `inline-block` é para ficar transformável (o
-   `translate` do keyframe, `01-base.css`). */
+
+.atlas-ficha .hud-cabecalho-titulo--nome {
+  font-size: 2rem;
+  font-weight: 300;
+  line-height: 1.06;
+}
+
+.atlas-ficha :is(.hud-cabecalho-titulo--nome, .atlas-ficha-nome, .atlas-ficha-nome > span) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .atlas-ficha-nome > span,
 .atlas-ficha-classe > span {
   display: inline-block;
-  /* O CORTE DO NOME COMPRIDO MORA NO PRÓPRIO TRECHO (visto 11/09 com um
-     nome de teste longo): um `inline-block` é uma caixa ATÔMICA, e as
-     reticências do pai não entram nela — o nome saía cortado seco na
-     borda do painel, sem o "…". O trecho cabe no pai e corta a si mesmo;
-     o `translate` do realce move a caixa inteira, corte junto. */
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
   vertical-align: top;
 }
+
+.atlas-ficha-classe > span {
+  white-space: nowrap;
+}
+
+.atlas-ficha .atlas-ficha-resumo strong {
+  color: var(--texto);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
 /* OS DOIS GESTOS DA ESCADA (fix, 09/09): AÇÕES lado a lado, uma linha
    só — até aqui vestiam `.ajustes-seg` (redesenho de 06/09), a moldura
    do GRUPO DE ESCOLHA de Ajustes, com filete entre os dois e sublinhado
@@ -384,6 +388,19 @@
    2,5rem/40 px, o tamanho da barra de fora de um diálogo. */
 .atlas-ficha-escada .hud-btn {
   min-height: 2.75rem;
+  padding-inline: 0.6rem;
+}
+.atlas-ficha-escada .atlas-ficha-visitar {
+  color: var(--acento);
+  background: var(--acento-fundo);
+  border-color: transparent;
+}
+.atlas-ficha-escada .atlas-ficha-visitar:hover {
+  border-color: var(--acento);
+  color: var(--acento);
+}
+.atlas-ficha-escada .hud-btn--discreto {
+  color: var(--texto-2);
 }
 /* A FILEIRA NUNCA QUEBRA (gosto do dono, 01/10; o terceiro botão,
    "Anéis", 15/11): coube, fica como sempre foi; não coube (a ficha mede,
@@ -418,50 +435,75 @@
    dicionários. `text-transform: capitalize` (a palavra inteira) faria a
    mesma coisa errado em rótulos de duas palavras ("Velocidade Orbital"),
    por isso é só a primeira letra. */
-.atlas-ficha-linha dt::first-letter {
+.atlas-ficha dt::first-letter {
   text-transform: uppercase;
 }
 
-/* A INTRODUÇÃO (Lote 5, PLAN-UI.md §3.5) — as três primeiras linhas do
-   texto de Contexto (ou da primeira curiosidade sem ele); "Ler mais"
-   é IRMÃO do parágrafo clampado, não filho dele (`FichaDoObjeto.tsx`
-   explica o porquê: um filho inline dentro de `-webkit-line-clamp`
-   media a caixa do recorte errado, medido nesta pele). */
 .atlas-ficha-intro-bloco {
-  margin: 0 0 0.9rem;
-  padding-bottom: 0.7rem;
-  border-bottom: 1px solid var(--borda);
+  padding: 0.2rem 0 0.45rem;
 }
-.atlas-ficha-intro {
-  margin: 0 0 0.3rem;
-  font-size: 0.8125rem;
-  line-height: 1.5;
+
+.atlas-ficha-intro,
+.atlas-ficha-intro dd,
+.atlas-ficha-intro p {
+  margin: 0;
+}
+
+.atlas-ficha-intro dt {
+  margin-bottom: 0.35rem;
   color: var(--texto-2);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.atlas-ficha-intro p {
+  color: var(--texto);
+  font-family: var(--fonte-display);
+  font-size: 1.0625rem;
+  font-weight: 400;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.atlas-ficha-intro-recorte {
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
 .atlas-ficha-lermais {
-  display: inline-block;
-  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  min-height: 2.75rem;
+  padding: 0 0.35rem;
+  margin-inline-start: -0.35rem;
   border: 0;
   background: none;
   cursor: pointer;
   color: var(--acento);
   font: inherit;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
+  font-weight: 500;
   text-decoration: underline;
   text-decoration-color: transparent;
+  text-underline-offset: 0.2em;
   transition: text-decoration-color var(--t-rapido) var(--curva);
 }
+
 .atlas-ficha-lermais:hover,
 .atlas-ficha-lermais:focus-visible {
   text-decoration-color: currentcolor;
 }
+
 .atlas-ficha-lermais:focus-visible {
   outline: 2px solid var(--foco);
   outline-offset: 2px;
+}
+
+.atlas-ficha-lermais .atlas-ficha-seta {
+  color: inherit;
 }
 
 /* O ASSENTAMENTO (C3b, reaudit) — a introdução e as três seções que só
@@ -552,9 +594,6 @@
 /* AS SEÇÕES DOBRÁVEIS, no vocabulário do `.atlas-gaveta-titulo`: caixa
    alta, espaçada, fria, com uma régua embaixo. O título INTEIRO é o botão —
    alvo de toque de linha cheia, que é o que uma tela pequena precisa. */
-.atlas-ficha-secao + .atlas-ficha-secao {
-  margin-top: 0.7rem;
-}
 .atlas-ficha-titulo,
 .ajustes-titulo-secao {
   margin: 0 0 0.3rem;
@@ -626,151 +665,108 @@
   rotate: 90deg;
 }
 
+.atlas-ficha-secao {
+  border-top: 1px solid var(--borda);
+}
+
+.atlas-ficha .atlas-ficha-titulo {
+  margin: 0;
+}
+
+.atlas-ficha .atlas-ficha-titulo button {
+  border-bottom: 0;
+  text-align: start;
+}
+
+.atlas-ficha-titulo button[aria-expanded='true'] {
+  color: var(--acento);
+}
+
+.atlas-ficha-lermais[aria-expanded='true'] .atlas-ficha-seta {
+  rotate: 90deg;
+}
+
 .atlas-ficha-linhas {
   margin: 0;
-  padding: 0;
+  padding: 0 0 0.55rem;
 }
-/* CADA LINHA VIRA DUAS COLUNAS (redesenho, 06/09): rótulo à esquerda,
-   valor em evidência à direita — a régua de `.ajustes-item`/
-   `.atlas-tempo-linha` aplicada aqui. A coluna do valor é
-   `fit-content(60%)`: do tamanho do CONTEÚDO e nunca além de 60% da
-   linha (mais largo que isso, o valor quebra dentro dela); a do rótulo é
-   o resto, `minmax(0, 1fr)`, e quebra em duas linhas quando falta
-   espaço. Até 14/09 era `1fr auto` com `max-width: 60%` no `dd` — mas o
-   `%` de um item de grade se mede contra a PRÓPRIA célula, não contra a
-   linha: o `dd` ficava com 60% da coluna que o valor acabara de
-   dimensionar e o valor, alinhado ao fim, vazava 40% da sua largura por
-   cima do rótulo ("Distance to the Saturn" sob "1589 thousand km", a
-   820 px de janela), e nenhum valor chegava à borda direita. `.larga`
-   (abaixo) continua sendo uma coluna só. */
+
 .atlas-ficha-linha {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) fit-content(60%);
-  column-gap: 0.8rem;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 0.25rem 0.85rem;
   align-items: baseline;
-  min-height: 2.5rem;
-  padding: 0.35rem 0;
+  padding: 0.45rem 0;
 }
+
 .atlas-ficha-linha + .atlas-ficha-linha {
   border-top: 1px solid var(--borda);
 }
-/* RÓTULO DA LINHA (Lote 2b, item 3): Inter 13 px, caixa NORMAL — não
-   mais eyebrow. */
+
 .atlas-ficha-linha dt {
-  font-size: 0.8125rem;
-  letter-spacing: 0;
-  text-transform: none;
   color: var(--texto-2);
-}
-.atlas-ficha-linha dd {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.15rem;
-  /* o `dd` ESTICA na coluna — é o que encosta o valor na borda direita,
-     como na maquete; um valor mais largo que os 60% quebra aqui dentro
-     (acima de 24 caracteres o componente marca `.larga`, abaixo). */
+  font-size: 0.8125rem;
+  font-weight: 500;
   overflow-wrap: anywhere;
-  text-align: right;
 }
+
+.atlas-ficha-linha dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 .atlas-ficha-valor-linha {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  justify-content: flex-end;
-  gap: 0.4rem;
+  gap: 0.2rem 0.45rem;
 }
-/* VALOR 16 px, tabular, `var(--texto)` (Lote 2b, item 3). */
+
 .atlas-ficha-valor {
-  font-size: 1rem;
   color: var(--texto);
+  font-size: 0.9375rem;
   font-variant-numeric: tabular-nums;
 }
-/* o "×Terra" — o mesmo âmbar do acento da casa */
+
 .atlas-ficha-badge {
-  font-size: 0.75rem;
-  letter-spacing: 0;
   color: var(--acento);
+  font-size: 0.75rem;
 }
-/* A PROCEDÊNCIA DE CADA NÚMERO, sob o valor e fria: ela é para ser lida
-   quando se procura, não para competir com o valor. O ponto de cor
-   (`::before`, abaixo) repete a cor do texto por `currentcolor`, e as
-   três cores são as do selo — `--ok` para medido, `--acento` para
-   derivado; o artístico fica na cor neutra de sempre, sem selo próprio. */
-/* 11 px (o piso do §2 item 2), e o ponto de cor fica INLINE no começo do
-   texto — nunca solto numa coluna à parte, MESMO quando o texto quebra
-   em duas linhas (item 3): por isso não há `nowrap`/`ellipsis` aqui, e
-   `align-items: flex-start` prende o ponto à PRIMEIRA linha em vez de
-   flutuar no meio do bloco quando ele quebra. */
+
 .atlas-ficha-proc {
-  grid-column: 1 / -1;
-  justify-self: end;
-  display: inline-flex;
-  align-items: flex-start;
-  gap: 0.35rem;
-  max-width: 100%;
-  text-align: right;
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--texto-2);
   font-size: 0.6875rem;
-  letter-spacing: 0;
-  color: var(--texto-3);
+  line-height: 1.4;
 }
-.atlas-ficha-proc::before {
-  content: '';
-  width: 0.4rem;
-  height: 0.4rem;
-  margin-top: 0.3em;
-  flex: none;
-  border-radius: 50%;
-  background: currentcolor;
-}
-.atlas-ficha-proc.medido,
+
 .atlas-ficha-parte.medido {
   color: var(--ok);
 }
-.atlas-ficha-proc.derivado,
+
 .atlas-ficha-parte.derivado {
   color: var(--acento);
 }
-/* O SELO EM PARTES (16/10/2026): a linha mista da imagem mostra cada tier
-   com a porcentagem da área, cada parte com o ponto e a cor do tier dela;
-   a caixa fica na cor neutra (os "·" e a fonte) e sem ponto próprio. O
-   texto corre em linha e quebra ENTRE as partes, nunca dentro de uma —
-   no celular a linha desce, não estoura a caixa. */
-.atlas-ficha-proc.partes {
-  display: block;
+
+.atlas-ficha-linha:is(.larga, .atlas-ficha-linha-destaque) {
+  grid-template-columns: minmax(0, 1fr);
 }
-.atlas-ficha-proc.partes::before {
-  content: none;
+
+.atlas-ficha-linha-destaque {
+  padding: 0.25rem 0 0.75rem;
 }
-.atlas-ficha-parte {
-  white-space: nowrap;
+
+.atlas-ficha-linha-destaque .atlas-ficha-valor {
+  font-family: var(--fonte-display);
+  font-size: 1.65rem;
+  font-weight: 300;
+  line-height: 1.1;
 }
-.atlas-ficha-parte::before {
-  content: '';
-  display: inline-block;
-  width: 0.4rem;
-  height: 0.4rem;
-  margin-right: 0.35rem;
-  vertical-align: middle;
-  border-radius: 50%;
-  background: currentcolor;
-}
-/* A LINHA LARGA (redesenho, 06/09) — texto longo (frases, listas de
-   catálogo) não cabe nos 60% de `dd` sem virar uma coluna de uma palavra;
-   uma coluna só faz o valor descer para debaixo do rótulo, como uma
-   linha de Ajustes faz quando o controle não cabe ao lado. O componente decide (mais de ~24
-   caracteres), o CSS só muda a grade. */
-.atlas-ficha-linha.larga {
-  grid-template-columns: 1fr;
-  row-gap: 0.3rem;
-}
-.atlas-ficha-linha.larga dd {
-  align-items: flex-start;
-  text-align: left;
-}
-.atlas-ficha-linha.larga .atlas-ficha-valor-linha {
-  justify-content: flex-start;
+
+.atlas-ficha-prosa .atlas-ficha-valor {
+  line-height: 1.55;
 }
 
 /* O SELO DE HONESTIDADE, DOBRADO EM UMA LINHA (item 61, 22/08): canto
@@ -1587,33 +1583,55 @@
 /* O CABEÇALHO da gaveta (Camadas e Tempo) é `CabecalhoDoPainel` (Lote
    2a/2b) — `.atlas-gaveta-topo`/`.atlas-tempo-topo` (as peças próprias
    de antes) saíram com ele. */
-/* AS TRÊS FAMÍLIAS (item 61). O título de cada grupo carrega a
-   contagem à direita — "3/4" —, e é ela que diz, sem varrer as caixas,
-   que alguma coisa daquela escala está desligada. Mesmo vocabulário do
-   `.atlas-gaveta-topo`: caixa alta, espaçada, fria. */
-.atlas-gaveta-familia + .atlas-gaveta-familia {
-  margin-top: 1.25rem;
+.atlas-camadas .atlas-gaveta-familia {
+  border-top: 1px solid var(--borda);
 }
-/* O TÍTULO DA FAMÍLIA é o eyebrow do grupo (item 3: caixa alta 11 px,
-   0,12 em, `--texto-2`) — a régua comum de todo eyebrow da casa (§4);
-   a contagem ao lado, mesma linha, mesma cor. */
 .atlas-gaveta-titulo {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 0.6rem;
-  margin: 0 0 0.3rem;
-  padding-bottom: 0.2rem;
-  border-bottom: 1px solid var(--borda);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  font-size: 0.6875rem;
-  font-weight: 400;
-  color: var(--texto-2);
+  margin: 0;
 }
-.atlas-gaveta-conta {
-  letter-spacing: 0;
-  color: var(--texto-3);
+.atlas-camadas-grupo {
+  display: grid;
+  grid-template-columns: 3.7rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 0.6rem 0.25rem;
+  border: 0;
+  background: transparent;
+  color: var(--texto);
+  text-align: start;
+  cursor: pointer;
+}
+.atlas-camadas-previa {
+  width: 100%;
+  aspect-ratio: 1.55;
+  object-fit: cover;
+  border-radius: 0.35rem;
+}
+.atlas-camadas-resumo {
+  display: grid;
+  gap: 0.15rem;
+  font: 400 1.15rem/1.18 var(--fonte-display);
+}
+.atlas-camadas-estado {
+  color: var(--texto-2);
+  font: 400 0.75rem/1.3 var(--fonte-ui);
+  font-variant-numeric: tabular-nums;
+}
+.atlas-camadas-grupo:hover {
+  background: var(--hover);
+}
+.atlas-camadas-grupo:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: -2px;
+}
+.atlas-camadas-grupo[aria-expanded='true'] svg {
+  color: var(--acento);
+}
+.atlas-gaveta-familia > div:not([hidden]) {
+  padding: 0.15rem 0 0.35rem 0.9rem;
+  border-inline-start: 1px solid var(--borda-forte);
+  margin-inline-start: 0.25rem;
 }
 /* A LINHA (06/09) — o padrão de Ajustes aplicado à gaveta: rótulo (com
    o "?") à esquerda, interruptor à direita. A altura mínima e a
@@ -1637,13 +1655,6 @@
   min-height: 2.75rem;
   padding: 0.2rem 0;
   cursor: pointer;
-}
-/* FILETE ENTRE LINHAS (maquete `m9-camadas-pele-b.png`, Lote 7): no topo
-   de toda linha menos a primeira da família — a primeira encosta no
-   filete do título (`.atlas-gaveta-titulo`, acima) e não precisa de um
-   segundo. */
-.atlas-gaveta-familia .atlas-gaveta-linha + .atlas-gaveta-linha {
-  border-top: 1px solid var(--borda);
 }
 .atlas-gaveta-rotulo-caixa {
   display: contents;
@@ -1755,24 +1766,14 @@
    NADA aqui pisca — o que está escolhido tem borda e fundo, não pulso.
    Pele e ancoragem vêm de `hud-cartao hud-dialogo` (fatia 1); aqui fica
    a largura, que é a única coisa que distingue as três caixas. */
-/* 440 px / 34vw (Lote 4, item 4) — era 24rem (384 px). */
 .atlas-busca {
-  width: min(27.5rem, 34vw);
-  /* SÓ AQUI: o DOM tem a caixa de texto ANTES do cabeçalho (comentário no
-     componente explica o porquê — `useDialogFocus` foca o primeiro
-     focável do DOM ao abrir, e é a caixa quem tem de receber o foco). O
-     `flex` + `order` do cabeçalho é o que devolve a ordem VISUAL certa
-     sem mexer no foco: CSS decide o que se vê, o DOM decide quem foca. */
-  display: flex;
-  flex-direction: column;
+  width: min(27.5rem, max(20rem, 34vw));
 }
-/* O CABEÇALHO é `CabecalhoDoPainel` (Lote 2b) — `.atlas-busca-topo` (a
-   peça própria de antes) saiu com ele. O QUE FICA: a caixa de texto tem
-   de ser o PRIMEIRO focável do DOM (comentário no componente), e por
-   isso o cabeçalho nasce DEPOIS dela no markup — `order: -1` devolve a
-   ordem VISUAL certa sem mexer no foco. */
 .atlas-busca .hud-cabecalho {
-  order: -1;
+  margin-bottom: 0;
+}
+.atlas-busca .hud-cabecalho-corpo {
+  border-bottom: 0;
 }
 /* A LINHA DA CAIXA, sozinha — a única da casa que recebe texto do
    visitante. Herda o desenho do botão MENOS o tracking: nome de estrela
@@ -1780,7 +1781,7 @@
    justamente o nome. */
 .atlas-busca-campo-linha {
   position: relative;
-  margin-top: 0.6rem;
+  margin-top: 0.75rem;
 }
 /* A LUPA é ornamento do campo que já diz o que é pelo `aria-label` — por
    isso `aria-hidden`, como o ícone das linhas da gaveta de Camadas. Um
@@ -1803,34 +1804,18 @@
   padding: 0 0.6rem 0 2.4rem;
   border: 1px solid var(--borda);
   border-radius: var(--raio-controle);
-  background: transparent;
+  background: var(--hover);
   color: var(--texto);
   font: inherit;
   font-size: 0.875rem;
   letter-spacing: 0;
 }
 .atlas-busca-campo::placeholder {
-  color: var(--texto-3);
+  color: var(--texto-2);
 }
 .atlas-busca-campo:focus-visible {
   outline: 2px solid var(--foco);
-  outline-offset: 2px;
-}
-/* O RÓTULO "DESTINOS SUGERIDOS" PRECISA DE AR PARA O ANEL DE FOCO (achado
-   do dono, 10/09, em foto: com o campo focado, *"a caixa de pesquisa está
-   com o rim azul, sobrepoe o texto suggested destinations"*). O anel é
-   `outline: 2px` com `outline-offset: 2px` — quatro pixels PARA FORA da
-   caixa, que não ocupam espaço nenhum no layout e por isso caíam em cima
-   da primeira linha de texto abaixo.
-   O rótulo é o eyebrow comum dos painéis, reaproveitado aqui sem caixa
-   própria (`PaletaDeBusca`); em linha, ele nem aceitava margem. Vira
-   bloco e ganha os dois respiros: o de cima é o que deixa o anel caber,
-   o de baixo separa do filtro. FILHO DIRETO no seletor de propósito — o
-   eyebrow do CABEÇALHO deste mesmo painel mora dentro de `.hud-cabecalho`
-   e não pode herdar margem nenhuma daqui. */
-.atlas-busca > .hud-cabecalho-eyebrow {
-  display: block;
-  margin: 0.75rem 0 0.4rem;
+  outline-offset: 1px;
 }
 .atlas-busca-lista {
   list-style: none;
@@ -1849,220 +1834,130 @@
    ≥ 44 px (Lote 2b, item 3: "linhas de resultado ≥ 44 px"). */
 .atlas-busca-item {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  column-gap: 0.6rem;
-  min-height: 2.75rem;
-  box-sizing: border-box;
-  padding: 0.3rem 0.45rem;
+  gap: 0.25rem 0.75rem;
+  min-height: max(44px, 3rem);
+  padding: 0.45rem 0.6rem;
   border-left: 2px solid transparent;
   border-bottom: 1px solid var(--borda);
   cursor: pointer;
 }
-.atlas-busca-item:last-child {
-  border-bottom: none;
-}
 .atlas-busca-item:hover {
   background: var(--hover);
 }
-/* a escolha corrente — o mesmo jeito que a máquina do tempo mostra o
-   botão apertado: borda e fundo, nunca movimento */
 .atlas-busca-item.ativo {
   border-left-color: var(--acento);
   background: var(--acento-fundo);
 }
 .atlas-busca-nome-linha {
-  display: flex;
-  align-items: baseline;
-  gap: 0.4rem;
-  min-width: 0;
+  display: grid;
+  gap: 0.12rem;
 }
 .atlas-busca-nome {
-  font-size: 0.875rem;
-  letter-spacing: 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
   color: var(--texto);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
-.atlas-busca-item.ativo .atlas-busca-nome {
-  color: var(--acento);
-}
-/* O SELO DE TIPO — planeta, lua, estrela, anão… (`tipoDaEntrada` no
-   componente). Chip 11 px (item 3), moldura de contorno só, sem
-   preenchimento: aqui é rótulo, não botão. */
-.atlas-busca-tipo {
-  flex: 0 0 auto;
-  padding: 0.05rem 0.4rem;
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-controle);
-  font-size: 0.6875rem;
-  letter-spacing: 0;
-  text-transform: none;
+.atlas-busca-tipo,
+.atlas-busca-nota,
+.atlas-busca-aviso {
+  font-size: 0.75rem;
+  line-height: 1.4;
   color: var(--texto-2);
 }
 .atlas-busca-nota {
-  flex: 0 0 auto;
-  font-size: 0.8125rem;
-  letter-spacing: 0;
-  text-align: right;
+  text-align: end;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  color: var(--texto-2);
+  max-width: 15ch;
 }
-/* a linha viva. Altura para DUAS linhas porque o estado de contagem e o
-   vazio podem quebrar em telas estreitas mesmo curtos agora — a caixa
-   não pode pular de tamanho entre os estados */
 .atlas-busca-aviso {
-  margin: 0.55rem 0 0;
-  min-height: 2.4rem;
-  font-size: 0.75rem;
-  line-height: 1.5;
-  letter-spacing: 0;
-  color: var(--texto-2);
+  margin: 0.7rem 0 0;
+}
+.atlas-busca-aviso:empty,
+.atlas-busca-lista:empty {
+  margin: 0;
 }
 
-/* TELA ESTREITA — a nota desce para debaixo do nome quando as duas
-   colunas apertam demais (mesmo limiar de 08-ajustes.css). */
-@media (max-width: 760px) {
-  .atlas-busca-item {
-    grid-template-columns: 1fr;
-    row-gap: 0.15rem;
-  }
-  .atlas-busca-nota {
-    text-align: left;
-  }
+/* A mesma lista nos dois tamanhos: a imagem ajuda a reconhecer o destino
+   e a legenda distingue lugares com nomes pouco familiares. */
+.atlas-busca .atlas-busca-filtros {
+  display: flex;
+  width: 100%;
+  margin: 0 0 0.4rem;
+  border: 0;
+  border-bottom: 1px solid var(--borda);
+  border-radius: 0;
+  background: transparent;
 }
-
-/* A DICA "/" DENTRO DO CAMPO (Lote 6) — mesma régua da lupa, espelhada:
-   à direita, ornamento que o `aria-hidden` já cobre (o atalho em si é
-   anunciado pelo botão que abre a busca, `busca.botaoDica`). */
-.atlas-busca-atalho {
-  position: absolute;
-  right: 0.6rem;
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 0.05rem 0.35rem;
-  border: 1px solid var(--borda);
-  border-radius: 4px;
-  font: inherit;
-  font-size: 0.6875rem;
-  color: var(--texto-3);
-  pointer-events: none;
+.atlas-busca .atlas-busca-filtros button {
+  flex: 1 1 auto;
+  min-height: max(44px, 2.75rem);
+  border: none;
+  padding-inline: 0.25rem;
 }
-
-/* OS CARTÕES DE DESTINO (consulta vazia, Lote 6, PLAN-UI.md §3.4) — dez
-   portas fixas para quem abre a busca sem saber o que digitar. O
-   PRINCIPAL de cada categoria (o primeiro do array) ocupa as duas
-   colunas com imagem mais alta; os demais dividem a grade. Superfície
-   sólida (`--fundo-painel`), nunca transparente: é foto sobre a cena, e
-   uma borda só não segura o quadro sozinha. */
 .atlas-destinos {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.6rem;
-  margin-top: 0.7rem;
-}
-/* QUEM ROLA É O DIÁLOGO INTEIRO (`.hud-dialogo`, 01-base.css: `overflow-y:
-   auto` com o cabeçalho preso), a MESMA anatomia dos outros painéis —
-   nada aqui encolhe para caber. Sem isto a coluna de flex apertava os
-   filhos em vez de rolar: os cartões saíam com 115 px e o texto cortado
-   na mesa, e os filtros viravam 20 px de rótulos cortados no celular
-   (1ª foto do Lote 6). A lista de resultados guarda o próprio teto
-   (`.atlas-busca-lista`, acima), como sempre. */
-.atlas-busca > * {
-  flex: none;
 }
 .atlas-destino {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--borda);
-  border-radius: var(--raio-controle);
-  overflow: hidden;
-  background: var(--fundo-painel);
+  display: grid;
+  grid-template-columns: clamp(3.25rem, 18%, 4.5rem) minmax(0, 1fr);
+  align-content: center;
+  align-items: end;
+  gap: 0.15rem 0.9rem;
+  min-height: max(44px, 3.9rem);
+  padding: 0.45rem 0.25rem;
+  border: 0;
+  border-bottom: 1px solid var(--borda);
+  background: transparent;
+  text-align: start;
   color: var(--texto);
-  text-align: left;
-  cursor: pointer;
-  padding: 0;
   font: inherit;
-  /* ENTRADA ÚNICA (U32, motion): cada cartão nasce oito pixels abaixo e
-     opaco, e sobe uma vez só ao abrir a busca; `--i` (via `style`, no
-     componente) escalona a largada entre eles. `backwards` só — um fill
-     `forwards` prenderia o valor final por cima do `translate` do
-     hover, e ele nunca mais se moveria. */
-  animation: surgeCartao var(--t-entrada) var(--curva) backwards;
-  animation-delay: calc(var(--i) * var(--t-entrada) / 10);
-  /* `box-shadow`/`border-color` cronometram o hover; `translate` também,
-     mas com `--t-assenta` — ENTROU na lista de pressão da casa em C2
-     (01-base.css, `--escala-pressao`), e o levantar do hover é
-     deslocamento como outro qualquer (E5 da auditoria: `--t-rapido` não
-     zera sob preferência reduzida). `scale` é a própria pressão, e
-     ela afunda os filhos (`> *`, abaixo), nunca o cartão. */
-  transition:
-    translate var(--t-assenta) var(--curva),
-    box-shadow var(--t-rapido) var(--curva),
-    border-color var(--t-rapido) var(--curva);
+  cursor: pointer;
+  transition: background-color var(--t-rapido) var(--curva);
 }
-/* os filhos (imagem/nome/convite) afundam sob o dedo; a caixa do
-   cartão — a que o hover levanta com `translate` — não muda de tamanho. */
 .atlas-destino > * {
   transition: scale var(--t-pressao) var(--curva);
 }
-.atlas-destino--principal {
-  grid-column: 1 / -1;
+.atlas-destino:last-child {
+  border-bottom: 0;
 }
-/* HOVER só onde é capacidade de verdade (U32): mouse em tela pequena e
-   toque em tela grande também caem aqui — o toque confirma sozinho, sem
-   depender disto. */
-@media (hover: hover) {
-  .atlas-destino:hover {
-    border-color: var(--acento);
-    translate: 0 -2px;
-    box-shadow: 0 6px 18px rgba(226, 184, 114, 0.2);
-  }
+.atlas-destino:hover,
+.atlas-destino:focus-visible {
+  background: var(--hover);
 }
 .atlas-destino:focus-visible {
   outline: 2px solid var(--foco);
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 .atlas-destino-imagem {
-  display: block;
+  grid-area: 1 / 1 / span 2;
+  align-self: center;
   width: 100%;
-  height: 80px;
+  aspect-ratio: 1.5;
   object-fit: cover;
-  background: #000;
+  border-radius: 0.35rem;
 }
-.atlas-destino--principal .atlas-destino-imagem {
-  height: 128px;
+.atlas-destino-nome,
+.atlas-destino-convite {
+  grid-column: 2;
+  overflow-wrap: anywhere;
 }
 .atlas-destino-nome {
-  display: block;
-  padding: 0.5rem 0.65rem 0;
-  font-size: 1rem;
-  font-weight: 500;
-  color: var(--texto);
+  font: 400 1.15rem/1.2 var(--fonte-display);
 }
 .atlas-destino-convite {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  padding: 0 0.65rem 0.65rem;
-  font-size: 0.8125rem;
-  line-height: 1.35;
+  align-self: start;
+  font-size: 0.75rem;
+  line-height: 1.4;
   color: var(--texto-2);
 }
-@keyframes surgeCartao {
-  from {
-    opacity: 0;
-    translate: 0 8px;
-  }
-}
+
 /* O BOTÃO "LIMPAR BUSCA" (Lote 6) mora sozinho, abaixo do aviso — o
    `.hud-btn.small` de sempre, só sem esticar a largura toda (o pai é
    coluna de flex com `stretch` por padrão). */
 .atlas-busca-aviso + .hud-btn.small {
-  align-self: flex-start;
   margin-top: 0.5rem;
 }
 
@@ -2204,15 +2099,4 @@
   .atlas-bussola {
     transition: none;
   }
-}
-
-/* O VALOR NÃO QUEBRA: "1,4" e "UA" em linhas separadas era o efeito da
-   coluna estreita (foto 06/09). Valor curto fica inteiro à direita; o
-   valor longo já tem a linha `.larga`, empilhada, e continua quebrando. */
-.atlas-ficha-linhas dd:not(.larga dd) .atlas-ficha-valor-linha,
-.atlas-ficha-linhas .atlas-ficha-valor-linha {
-  white-space: nowrap;
-}
-.atlas-ficha-linhas .larga .atlas-ficha-valor-linha {
-  white-space: normal;
 }

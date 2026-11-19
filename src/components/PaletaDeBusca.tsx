@@ -25,7 +25,6 @@
 // NADA AQUI PISCA: o que muda de estado muda de borda e de rótulo.
 // ============================================================
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
 import { alvoDoEnter, buscar, nomeDaEntrada } from '../lib/buscaEstrelas';
 import { classeEmTexto } from '../three/atlasConfig';
 import type { EntradaDaBusca, IndiceEstrelas } from '../lib/buscaEstrelas';
@@ -156,7 +155,7 @@ export function PaletaDeBusca({
   // NO CELULAR o foco inicial vai para o CONTÊINER, não para o campo: um
   // toque que abre a busca não pode abrir o teclado virtual sozinho — só
   // o toque DIRETO no campo abre. Na mesa o padrão de sempre continua
-  // ('primeiro' foca o campo, que é o primeiro focável do DOM).
+  // ('primeiro' prioriza o campo sobre a ajuda e o botão de fechar).
   const dialogo = useDialogFocus('busca', aberta, onFechar, {
     focoInicial: celular ? 'caixa' : 'primeiro',
   });
@@ -301,7 +300,7 @@ export function PaletaDeBusca({
           palavra: t(resultados.length === 1 ? 'busca.resultado' : 'busca.resultados'),
           verbo: oQueOEnterFaz,
         })
-      : t('busca.dica', { exemplos });
+      : '';
 
   return (
     <div
@@ -320,48 +319,6 @@ export function PaletaDeBusca({
       // paleta) só chega depois, na bolha, se não houver dica presa.
       onKeyDownCapture={aoTeclarEsc}
     >
-      {/* A CAIXA VEM PRIMEIRO NO DOM, de propósito — mesmo o cabeçalho
-          aparecendo ACIMA dela na tela (`.atlas-busca .hud-cabecalho` tem
-          `order: -1`, só visual). `useDialogFocus` foca o PRIMEIRO
-          focável do DOM ao abrir, e aqui isso não é detalhe: é o campo
-          que precisa nascer com o foco para a digitação valer no
-          instante em que a paleta abre — mover a caixa para depois do
-          "?" e do "✕" no markup roubaria esse foco para o botão de
-          ajuda, e "/" pararia de cair no campo. */}
-      <div className="atlas-busca-campo-linha">
-        <span className="atlas-busca-lupa" aria-hidden="true">
-          <Icone nome="busca" tamanho={16} />
-        </span>
-        <input
-          ref={campoRef}
-          type="text"
-          className="atlas-busca-campo"
-          value={consulta}
-          onChange={(e) => {
-            setConsulta(e.target.value);
-            setAtivo(0);
-          }}
-          onKeyDown={aoTeclar}
-          placeholder={t(
-            corpos > 0 ? 'busca.campoCorposEEstrelas' : 'busca.campoEstrelas'
-          )}
-          aria-label={t('busca.campoAria')}
-          role="combobox"
-          aria-expanded={resultados.length > 0}
-          aria-controls="atlas-busca-lista"
-          aria-autocomplete="list"
-          aria-activedescendant={
-            resultados.length > 0 ? `atlas-busca-op-${escolhido}` : undefined
-          }
-          autoComplete="off"
-          spellCheck={false}
-        />
-        {/* A DICA "/" (Lote 6) — só decora (some no celular, 09-celular.css,
-            onde não existe tecla física para o atalho valer); o atalho de
-            verdade já é anunciado pelo botão que abre a busca. */}
-        <kbd className="atlas-busca-atalho" aria-hidden="true">/</kbd>
-      </div>
-
       <CabecalhoDoPainel
         titulo={t('busca.titulo')}
         ajuda={
@@ -376,7 +333,37 @@ export function PaletaDeBusca({
         onFechar={onFechar}
         rotuloFechar={t('busca.fechar')}
         celular={celular}
-      />
+      >
+        <div className="atlas-busca-campo-linha">
+          <span className="atlas-busca-lupa" aria-hidden="true">
+            <Icone nome="busca" tamanho={16} />
+          </span>
+          <input
+            ref={campoRef}
+            type="text"
+            className="atlas-busca-campo"
+            value={consulta}
+            onChange={(e) => {
+              setConsulta(e.target.value);
+              setAtivo(0);
+            }}
+            onKeyDown={aoTeclar}
+            placeholder={t(
+              corpos > 0 ? 'busca.campoCorposEEstrelas' : 'busca.campoEstrelas'
+            )}
+            aria-label={t('busca.campoAria')}
+            role="combobox"
+            aria-expanded={resultados.length > 0}
+            aria-controls="atlas-busca-lista"
+            aria-autocomplete="list"
+            aria-activedescendant={
+              resultados.length > 0 ? `atlas-busca-op-${escolhido}` : undefined
+            }
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </div>
+      </CabecalhoDoPainel>
 
       {/* CONSULTA VAZIA (Lote 6, PLAN-UI.md §3.4): filtros + cartões de
           destino no lugar da lista. A lista continua montada logo abaixo
@@ -386,11 +373,8 @@ export function PaletaDeBusca({
           mesma `consultaLenta`. */}
       {semConsulta && (
         <>
-          {/* O RÓTULO "DESTINOS SUGERIDOS" (item 4a) — reaproveita o
-              texto já existente de `busca.destinosAria` e o eyebrow comum
-              dos painéis (`CabecalhoDoPainel`), sem CSS nova. */}
-          <span className="hud-cabecalho-eyebrow">{t('busca.destinosAria')}</span>
           <Segmentado
+            classeExtra="atlas-busca-filtros"
             aria={t('busca.filtrosAria')}
             valor={categoria}
             opcoes={[
@@ -401,14 +385,11 @@ export function PaletaDeBusca({
             onEscolher={setCategoria}
           />
           <div className="atlas-destinos" role="group" aria-label={t('busca.destinosAria')}>
-            {destinos.map((destino, i) => (
+            {destinos.map((destino) => (
               <button
                 key={destino.id}
                 type="button"
-                className={
-                  'atlas-destino' + (i === 0 ? ' atlas-destino--principal' : '')
-                }
-                style={{ '--i': i } as CSSProperties}
+                className="atlas-destino"
                 onClick={() => escolher(destino.entrada)}
               >
                 <img

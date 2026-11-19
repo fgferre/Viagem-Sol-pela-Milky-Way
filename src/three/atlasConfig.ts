@@ -57,14 +57,14 @@ import type {
  * caixa desliga?", e ela sai do que a flag realmente apaga na cena, não
  * do lugar em que a linha caiu na tabela.
  */
-export type FamiliaDeCamada = 'Galáxia' | 'Estrelas' | 'Sistema solar';
+const FAMILIAS = [
+  { familia: 'Galáxia', previa: 'via-lactea' },
+  { familia: 'Estrelas', previa: 'pleiades' },
+  { familia: 'Sistema solar', previa: 'saturn' },
+] as const;
 
-/** A ordem em que a gaveta as mostra — de fora para dentro. */
-export const FAMILIAS_DE_CAMADAS: readonly FamiliaDeCamada[] = [
-  'Galáxia',
-  'Estrelas',
-  'Sistema solar',
-];
+export type FamiliaDeCamada = typeof FAMILIAS[number]['familia'];
+export const FAMILIAS_DE_CAMADAS: readonly FamiliaDeCamada[] = FAMILIAS.map((grupo) => grupo.familia);
 
 /** Uma CAMADA da cena: um conjunto de coisas que se desliga de uma vez. */
 export interface Camada {
@@ -204,8 +204,10 @@ export const CAMADAS: readonly Camada[] = [
 export const CAMADAS_POR_FAMILIA: readonly {
   familia: FamiliaDeCamada;
   camadas: readonly Camada[];
-}[] = FAMILIAS_DE_CAMADAS.map((familia) => ({
+  previa: string;
+}[] = FAMILIAS.map(({ familia, previa }) => ({
   familia,
+  previa,
   camadas: CAMADAS.filter((c) => c.familia === familia),
 })).filter((g) => g.camadas.length > 0);
 

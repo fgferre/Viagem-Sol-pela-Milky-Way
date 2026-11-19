@@ -17,7 +17,7 @@
 //     o getter `captura` não aprendeu a fase e todo gate futuro do Atlas
 //     estaria medindo espera cega — o modo caro de falhar.
 //  3. O PORTAL LEVA A CÂMERA. A prova MUDOU DE PERGUNTA em 23/08 (item
-//     61, §2). Ela cobrava que as três entradas dessem o MESMO md5, e
+//     61, `2). Ela cobrava que as três entradas dessem o MESMO md5, e
 //     cobrava certo enquanto `entrarNoAtlas` chamava `focarNoSistema()`
 //     e jogava a pose fora. Isso ERA o defeito: entrar em t=10, t=100 ou
 //     t=250 devolvia sempre a vista de abertura, a 224 UA de casa, e o
@@ -307,7 +307,7 @@ try {
   // está em `display: none` e o `.click()` do DOM dispara igual, o que
   // é justamente o que se quer — a prova é do BOTÃO.
   //
-  // E O ESPELHO MUDOU em 23/08 (item 61, §2): a comparação era com "os
+  // E O ESPELHO MUDOU em 23/08 (item 61, `2): a comparação era com "os
   // três cliques", e os três cliques deixaram de dar uma vista só — cada
   // um pousa onde o filme estava. Quem entra SEM filme atrás continua
   // caindo no enquadramento de abertura, e é com o `?atlas=1` puro (o
@@ -394,7 +394,7 @@ try {
   // passou a FOCAR em vez de voar. Sem esta prova, a busca da F3
   // nasceria sobre um pipeline que ninguém verificou estar de pé.
   //
-  // E ELAS COMEÇAM DA VISTA DE ABERTURA, desde 23/08 (item 61, §2). O
+  // E ELAS COMEÇAM DA VISTA DE ABERTURA, desde 23/08 (item 61, `2). O
   // portal acima entrou vindo de t=100 e agora POUSA onde o filme
   // estava — 1.911 pc de casa, o degrau `céu`. Lá o rótulo que o
   // hit-test acha primeiro é o `sol-home`, e clicar nele é a exceção
@@ -458,7 +458,7 @@ try {
     // escolher RE-MIRA a câmera, então o rótulo que estava em `tinta`
     // já não está lá — clicar duas vezes no mesmo pixel com segundos de
     // intervalo é outro gesto, e mediria outra coisa.
-    // O `&jd=EPOCA` É PINO, e ele entrou em 23/08 (item 61, §3): o Atlas
+    // O `&jd=EPOCA` É PINO, e ele entrou em 23/08 (item 61, `3): o Atlas
   // passou a abrir com o relógio do céu AO VIVO, e relógio andando é cena
   // mudando — o sinal de prontidão fica em `andando` e o `assentar()`
   // destas provas cai no teto de segurança. Medido sem o pino: a pinça
@@ -741,6 +741,8 @@ try {
     const l = document.querySelectorAll(
       '[data-dialogo="camadas"] .atlas-gaveta-linha'
     )[${indice}];
+    const grupo = l.closest('.atlas-gaveta-familia').querySelector('.atlas-camadas-grupo');
+    if (grupo.getAttribute('aria-expanded') === 'false') grupo.click();
     const input = l.querySelector('input');
     const antes = window.__director.captura.quadros;
     input.click();
@@ -925,11 +927,12 @@ try {
   //      do visitante em silêncio);
   //   4. o Atlas nem soube      — modo, instante do céu e alvo em quadro.
   await sessao.ir('atlas=1&jd=2465000&foco=hd48915&ajustes=1&q=alta&shot=1');
+  await sessao.js(`document.querySelector('[aria-controls="ajustes-painel-desempenho"]').click()`);
   await sessao.js('window.__marcaQ = 1');
   // o botão mostra o nome pt-BR da tabela única ('Cinema', 'Auto'); a
   // comparação em minúsculas casa com o `id`, que é o que se digita aqui
   const clicarTier = (q) => sessao.js(`(() => [...document.querySelectorAll(
-    '[data-dialogo="ajustes"] button')].find(
+    '#ajustes-painel-desempenho .ajustes-seg--qualidade button')].find(
       (b) => b.textContent.trim().toLowerCase() === '${q}').click())()`);
   for (const q of ['cinema', 'alta']) {
     await clicarTier(q);
@@ -1024,6 +1027,7 @@ try {
       + ` seletor '${semQnaUrl.escolhido}')`
   );
   await sessao.js("window.localStorage.removeItem('viagem-prefs')");
+  await sessao.js(`document.querySelector('[aria-controls="ajustes-painel-desempenho"]').click()`);
   await sessao.js('window.__marcaAuto = 1;'
     + ' window.__medicaoAntesDoAuto = window.__director.engine.medicao');
   await clicarTier('auto');
@@ -1375,7 +1379,7 @@ try {
       + ` (${emQuadro.ua.toFixed(4)} UA do Sol, esfera de ${emQuadro.km.toFixed(0)} km)`
   );
 
-  // ---- 15c: OS NOMES DA ABERTURA (item 73, plano §3) ---------------
+  // ---- 15c: OS NOMES DA ABERTURA (item 73, plano `3) ---------------
   // A segunda coisa que o dono pediu, com as palavras dele:
   // *"conseguíamos ver os rótulos de todos objetos de forma
   // inteligente"*. A medida de antes daquela obra: 38 projetados → 7
@@ -1582,7 +1586,7 @@ try {
   // (1200×900, jd=EPOCA): 17 assentados — 3 corpos + 14 estrelas; Skat
   // aparece na primeira leitura e some 4 s depois, quando o rodízio dá a
   // volta. A lei que os dois vereditos abaixo guardam não mudou.
-  // RE-PINADO EM 07/09 (Lote 4, PLAN-UI.md §2 item 1): 17 → 18. As
+  // RE-PINADO EM 07/09 (Lote 4, PLAN-UI.md `2 item 1): 17 → 18. As
   // tarjas de cinema saíram do Atlas de mesa (`retanguloDoAtlas.ts`,
   // Lote 4) — sem elas sobra mais céu na abertura, e Skat deixa de
   // depender do rodízio: agora fica assentada o tempo todo, sem sumir.
@@ -2566,7 +2570,14 @@ try {
     })()`);
 
     await sessao.ir('atlas=1&jd=EPOCA&q=cinema');
-    const foiParaOFilme = await clicarPorAria('Viagem galáctica — ver desde o começo');
+    const abriuFilmes = await sessao.js(`(() => {
+      const gatilho = document.querySelector('.controls-bar [aria-controls="barra-mais-ferramentas"]');
+      gatilho?.click();
+      return Boolean(gatilho);
+    })()`);
+    await dorme(250);
+    const foiParaOFilme = abriuFilmes
+      && await clicarPorAria('Viagem galáctica — ver desde o começo');
     await dorme(500);
     const noFilme = JSON.parse(await sessao.js(`JSON.stringify({
       fase: window.__director.captura.fase,
@@ -2742,8 +2753,8 @@ try {
   }
 
   // ---- 28: A FICHA — "Ler mais" e o interruptor "Relevo inventado" --
-  // As duas só tinham conferência de leitura. "Ler mais" (§3.5) expande
-  // a seção de onde a introdução veio; o interruptor (`onRelevoDaCor` →
+  // As duas só tinham conferência de leitura. "Ler mais" (`3.5) expande
+  // a introdução no mesmo lugar; o interruptor (`onRelevoDaCor` →
   // `Rochoso.definirRelevoDaCor`) liga/desliga o relevo FINGIDO da cor
   // — em MEMÓRIA, por corpo: `src/lib/preferencias.ts` só guarda o
   // convite visto, e o comentário de lá é explícito ("Tom, exposição e
@@ -2760,19 +2771,24 @@ try {
     // chegam por rede na primeira abertura (FichaDoObjeto.tsx) — o
     // esqueleto (`aria-busy`) sai sozinho quando os dois assentam.
     await esperarPor(sessao, `!document.querySelector('.atlas-ficha-esqueleto')`, 8000);
-    const abertasAntes = await sessao.js(`document.querySelectorAll('.atlas-ficha-linhas').length`);
+    const alturaAntes = await sessao.js(`document.querySelector('.atlas-ficha-intro')?.offsetHeight`);
     const temLerMais = await sessao.js(`Boolean(document.querySelector('.atlas-ficha-lermais'))`);
     conferir(temLerMais, 'a introdução da ficha de Saturno oferece "Ler mais"');
     if (temLerMais) {
       await sessao.js(`document.querySelector('.atlas-ficha-lermais').click()`);
-      await dorme(300);
-      const abertasDepois = await sessao.js(
-        `document.querySelectorAll('.atlas-ficha-linhas').length`
-      );
+      const intro = await sessao.js(`({
+        aberta: document.querySelector('.atlas-ficha-lermais')?.getAttribute('aria-expanded'),
+        altura: document.querySelector('.atlas-ficha-intro')?.offsetHeight,
+        fonte: document.querySelector('.atlas-ficha-intro .atlas-ficha-proc')?.textContent,
+      })`);
       conferir(
-        abertasDepois > abertasAntes,
-        `"Ler mais" expande a seção de origem: ${abertasAntes} → ${abertasDepois} seções com`
-          + ' conteúdo visível'
+        intro.aberta === 'true' && intro.altura > alturaAntes && Boolean(intro.fonte),
+        '"Ler mais" expande a própria introdução e revela sua fonte'
+      );
+      await sessao.js(`document.querySelector('.atlas-ficha-lermais').click()`);
+      conferir(
+        await sessao.js(`document.querySelector('.atlas-ficha-lermais').getAttribute('aria-expanded') === 'false'`),
+        '"Ler menos" recolhe a introdução no mesmo lugar'
       );
     }
 
@@ -2986,7 +3002,7 @@ try {
       dedo('touchEnd', []),
     ]);
     await sessao.assentar();
-    // A LEITURA (Lote 3, PLAN-UI.md §6, item 225): até aqui "ainda é céu"
+    // A LEITURA (Lote 3, PLAN-UI.md `6, item 225): até aqui "ainda é céu"
     // relia o PONTO DE ANTES do toque — sozinho, sem câmera se movendo, a
     // posição do rótulo não mudava e o ponto velho valia pelo novo. Desde
     // que a ficha reserva espaço na câmera (`Director.reservarParaAFicha`),

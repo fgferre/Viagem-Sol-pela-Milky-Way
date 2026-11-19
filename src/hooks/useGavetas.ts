@@ -836,9 +836,8 @@ export function useGavetas(
         return;
       }
       const alvo = e.target instanceof Element ? e.target : null;
-      // UM CONTROLE QUE TAMBÉM ARRASTA (o deslizante da exposição, da
-      // escala) nunca começa um arrasto da folha: o dedo é dele
-      if (alvo?.closest('input[type="range"]')) return;
+      // O gesto num campo pertence ao controle (selecionar texto ou ajustar um valor).
+      if (alvo?.closest('input')) return;
       // a folha ainda está voltando para a compacta (`assentarNaCompacta`,
       // no máximo `--t-folha`): um dedo novo agora encontraria o layout
       // da expandida sob o transform segurado — espera o assentamento

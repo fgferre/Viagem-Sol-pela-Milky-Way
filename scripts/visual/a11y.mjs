@@ -304,26 +304,9 @@ async function julgarDialogo(s, nome, onde) {
  * mudança que só acontece na abertura precisa de vista que abra a
  * abertura.
  *
- * O que ele cobra, e cada linha é uma promessa que a tela faz:
- *  1. cada porta é um botão COM a sua linha de explicação, e o botão
- *     aponta para ela por `aria-describedby` — quem ouve a tela recebe
- *     as duas coisas juntas, e um `aria-describedby` pendurado em nada
- *     é pior que nenhum;
- *  2. NENHUMA porta é destacada em cor (decisão do dono: as três
- *     iguais) — cor, borda e fundo idênticos nas três;
- *  2b. e nenhuma é MAIOR que as outras — o mesmo retângulo nas três.
- *     O dono mediu isso a olho na foto ("botao explorar livremente está
- *     com tamanho diferente dos outros", 22/08) enquanto a linha 2
- *     passava limpa: tinta igual não é tamanho igual. A régua é
- *     `getBoundingClientRect`, e a cobrança vive no laço do `?ui=`
- *     porque a igualdade vem do CSS — CSS que só vale no tamanho de
- *     sempre não é igualdade, é coincidência;
- *  3. o Tab passa nas três, na ordem em que estão na tela;
- *  4. nada sai da tela, nem com o texto no maior degrau — três botões
- *     com três linhas embaixo é o estado mais alto que a abertura tem.
- *  5. no aparelho de 390×844 com texto em 140%, nada encolhe: o véu
- *     transborda e ROLA, com a tarja inteira no início e o tempo inteiro
- *     no fim (item 87, decisão do dono em 25/08).
+ * Confere as duas portas de exploração, a mesma área de seleção nos
+ * filmes, as descrições e a ordem do Tab. Com texto grande, a rolagem
+ * no celular precisa alcançar tanto o título quanto o rodapé.
  */
 async function julgarAbertura(s) {
   const assentou = await s.ir(PIN);
@@ -361,20 +344,12 @@ async function julgarAbertura(s) {
         + ` (aria-describedby=${p.descrito} → "${p.nota}")`
     );
   }
-  // LOTE 8 (PLAN-UI.md §3.1, maquete M1 aprovada em 07/09): UMA porta é a
-  // principal — a do Atlas, na tinta do acento — e as secundárias (desde
-  // 05/10 os filmes lado a lado e o Voo livre sozinho)
-  // vestem a MESMA tinta entre si. Até o Lote 8 a régua era "as três com a
-  // mesma tinta"; a decisão do dono ("Explorar o Atlas é o botão principal")
-  // inverteu a prova.
-  const tintas = [...new Set((portas || []).map((p) => p.tinta))];
-  const principal = (portas || []).find((p) => p.descrito === 'porta-atlas');
-  const secundarias = (portas || []).filter((p) => p.descrito !== 'porta-atlas');
+  const atlas = (portas || []).find((p) => p.descrito === 'porta-atlas');
+  const voo = (portas || []).find((p) => p.descrito === 'porta-voo');
+  const filmes = (portas || []).filter((p) => p.descrito?.startsWith('porta-filme-'));
   conferir(
-    tintas.length === 2 && Boolean(principal) && secundarias.length === nFilmes + 1
-      && secundarias.every((p) => p.tinta === secundarias[0].tinta) && principal.tinta !== secundarias[0].tinta,
-    `abertura: só a porta do Atlas é destacada em cor e as ${secundarias.length} secundárias têm a mesma tinta`
-      + ` — ${tintas.length} tintas: ${tintas.join(' vs ')}`
+    atlas && voo && atlas.tinta !== voo.tinta && filmes.every((p) => p.tinta === filmes[0].tinta && p.tinta !== atlas.tinta),
+    'abertura: o Atlas se destaca e todos os filmes têm o mesmo tratamento'
   );
 
   // o Tab passa em todas, na ordem da tela
@@ -408,30 +383,21 @@ async function julgarAbertura(s) {
       for (const p of document.querySelectorAll('.veil-intro .abertura-porta')) {
         const b = p.querySelector('button');
         const r = b.getBoundingClientRect();
-        out.push({ nome: b.textContent.trim(),
+        out.push({ nome: b.textContent.trim(), grupo: p.closest('section')?.getAttribute('aria-labelledby'),
           caixa: r.width.toFixed(2) + '×' + r.height.toFixed(2) });
       }
       return out;
     })()`);
-    // LOTE 8 (05/10: os filmes lado a lado, o Voo livre sozinho): TODOS
-    // os filmes medem o mesmo retângulo entre si, e a principal (a
-    // primeira da coluna) e o Voo livre (a última) são mais LARGOS que
-    // cada filme — a coluna inteira contra uma fração dela (maquete M1).
-    const [principalCx, ...secundariasCx] = caixas;
-    const vooCx = secundariasCx[secundariasCx.length - 1];
-    const filmesCx = secundariasCx.slice(0, -1);
+    const filmesCx = caixas.filter((c) => c.grupo === 'abertura-assistir');
+    const modosCx = caixas.filter((c) => c.grupo === 'abertura-explorar');
     const larguraDe = (c) => Number(c.caixa.split('×')[0]);
     const alturaDe = (c) => Number(c.caixa.split('×')[1]);
-    // "mesmo retângulo" a menos de meio pixel: o flex reparte a coluna em
-    // duas e a metade pode cair em subpixel diferente (383,59 × 383,61 a
-    // ui=1,4) — isso é aritmética do navegador, não desigualdade de desenho
-    const iguais = filmesCx.length === nFilmes && nFilmes >= 2
-      && filmesCx.every((c) => Math.abs(larguraDe(c) - larguraDe(filmesCx[0])) <= 0.5
-        && Math.abs(alturaDe(c) - alturaDe(filmesCx[0])) <= 0.5);
+    const iguais = filmesCx.length === nFilmes && filmesCx.every((c) =>
+      Math.abs(larguraDe(c) - larguraDe(filmesCx[0])) <= 0.5
+      && Math.abs(alturaDe(c) - alturaDe(filmesCx[0])) <= 0.5);
     conferir(
-      iguais && larguraDe(principalCx) > larguraDe(filmesCx[0])
-        && larguraDe(vooCx) > larguraDe(filmesCx[0]),
-      `abertura com ui=${fator}: os ${nFilmes} filmes medem o MESMO retângulo e a principal e o Voo livre são mais largos`
+      iguais && modosCx.length === 2 && modosCx.every((c) => alturaDe(c) >= 44),
+      `abertura com ui=${fator}: os filmes têm o mesmo retângulo no cartaz e os dois modos de exploração têm alvo de 44 px`
         + ` — ${caixas.map((c) => `"${c.nome}" ${c.caixa}`).join(' vs ')}`
     );
 
@@ -463,9 +429,7 @@ async function julgarAbertura(s) {
   const rolagem = await s.js(`(() => {
     const veu = document.querySelector('.veil-intro');
     const topo = document.querySelector('.veil-intro .title-kicker');
-    // LOTE 8: a última coisa da coluna é a nota da última porta (a linha
-    // da duração, .journey-runtime, entrou no botão do filme)
-    const rodape = [...document.querySelectorAll('.veil-intro .abertura-porta-nota')].pop();
+    const rodape = document.querySelector('.veil-intro .abertura-dados');
     const caixa = (e) => { const r = e.getBoundingClientRect(); return {
       topo: r.top, base: r.bottom,
     }; };
@@ -581,7 +545,7 @@ async function julgarPagina(s, query, onde, aposNavegar) {
  * `julgarPagina` e `julgarGavetaDeCamadas` esperam encontrar em seguida.
  */
 async function julgarMaisDoFilme(s) {
-  const MAIS = '[aria-label="Mostrar os filmes, Camadas, qualidade e Ajustes"]';
+  const MAIS = '[aria-controls="barra-mais-ferramentas"]';
   const MEDIR = `(() => {
     const mais = document.querySelector('${MAIS}');
     return {
@@ -603,7 +567,7 @@ async function julgarMaisDoFilme(s) {
   const depois = await s.js(MEDIR);
   conferir(
     depois.expandido === 'true' && depois.camadas && depois.ajustes,
-    `filme · "Mais" (E1): o clique revela Camadas e Ajustes na MESMA barra`
+    `filme · "Mais": o clique revela Camadas e Ajustes no menu`
       + ` (aria-expanded=${depois.expandido})`
   );
 }
@@ -713,7 +677,7 @@ async function julgarEscComDicaPresa(s, onde) {
   // DOM (não um clique em JS, que nunca passa pelo hit-test do
   // navegador nem dispara pointerenter).
   const alvo = await s.js(`(() => {
-    const b = document.querySelector('[data-dialogo="camadas"] .hud-ajuda');
+    const b = document.querySelector('[data-dialogo="camadas"] .atlas-gaveta-familia > div:not([hidden]) .hud-ajuda');
     const r = b.getBoundingClientRect();
     return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
   })()`);
@@ -727,7 +691,7 @@ async function julgarEscComDicaPresa(s, onde) {
   // `id` que o contrato do componente publica; ela fica sempre MONTADA,
   // então "solta" é o atributo `hidden`, não o desaparecimento do nó.
   const dicaDoBotao = `(() => {
-    const b = document.querySelector('[data-dialogo="camadas"] .hud-ajuda');
+    const b = document.querySelector('[data-dialogo="camadas"] .atlas-gaveta-familia > div:not([hidden]) .hud-ajuda');
     const d = b && document.getElementById(b.getAttribute('aria-controls'));
     return { presa: Boolean(d && d.classList.contains('presa')), escondida: Boolean(d && d.hidden) };
   })()`;
@@ -1124,14 +1088,22 @@ async function julgarFerramentasDoAtlas(s) {
   await s.ir(`atlas=1&foco=terra&${PIN}`);
   await s.assentar();
   const semFilme = JSON.parse(await s.js(LER));
-  // OS GLIFOS SAÍRAM (Lote 4, item 2): o desenho é `<Icone>` (SVG) e o
-  // texto ficou puro — a mesma troca que Busca/Camadas/Tempo já tinham.
   conferir(
-    // desde 05/10 há UM botão por filme do cartaz, no lugar do "Ver o filme"
-    semFilme.some((t) => t.startsWith('Viagem galáctica'))
-      && semFilme.some((t) => t.startsWith('Viagem solar')) && semFilme.includes('Voo livre'),
-    `atlas: as ferramentas estão na barra — os dois filmes e o Voo livre (${semFilme.join(' · ')})`
+    semFilme.includes('Filmes') && semFilme.includes('Voo livre')
+      && !semFilme.some((t) => t.startsWith('Viagem')),
+    `atlas: Filmes agrupa as viagens e Voo livre fica na barra (${semFilme.join(' · ')})`
   );
+  const gatilhoFilmes = '.controls-bar [aria-controls="barra-mais-ferramentas"]';
+  await s.js(`document.querySelector('${gatilhoFilmes}').click()`);
+  await esperarPor(s, "!!document.querySelector('#barra-mais-ferramentas button')", 3000);
+  const filmes = JSON.parse(await s.js(`JSON.stringify([
+    ...document.querySelectorAll('#barra-mais-ferramentas button')
+  ].map((b) => b.textContent.trim()))`));
+  conferir(
+    ['Viagem galáctica', 'Viagem solar', 'Viagem estelar'].every((nome) => filmes.includes(nome)),
+    `atlas: Filmes mostra as viagens pelo nome (${filmes.join(' · ')})`
+  );
+  await s.js(`document.querySelector('${gatilhoFilmes}').click()`);
   conferir(
     !semFilme.some((t) => t.includes('Retomar')),
     'atlas sem filme guardado: NÃO oferece "Retomar" — não há para onde voltar'
@@ -1531,6 +1503,8 @@ try {
   // ser lido.
   const desligada = await sessao.js(`(() => {
     const l = document.querySelector('[data-dialogo="camadas"] .atlas-gaveta-linha');
+    const grupo = l.closest('.atlas-gaveta-familia').querySelector('.atlas-camadas-grupo');
+    if (grupo.getAttribute('aria-expanded') === 'false') grupo.click();
     l.querySelector('input[type=checkbox]').click();
     return l.textContent.trim();
   })()`);
@@ -1880,6 +1854,7 @@ try {
     "window.localStorage.setItem('viagem-prefs', JSON.stringify({ conviteAtlasVisto: true }))"
   );
   await sessao.ir(`atlas=1&ajustes=1&${PIN}`);
+  await sessao.js(`document.querySelector('[aria-controls="ajustes-painel-desempenho"]').click()`);
 
   // A GAVETA "AVANÇADO" É RECOLHÍVEL E FECHADA POR PADRÃO (Lote 7) — os
   // controles (curva de tom, MSAA/amostras, nebulosa, gás, Terra, relevo,
@@ -1948,6 +1923,8 @@ try {
     'ajustes · qualidade: trocar para Performance muda a região viva'
       + ` ("${medidaAntes.texto}" → "${textoDepois}")`
   );
+
+  await sessao.js(`document.querySelector('[aria-controls="ajustes-painel-sessao"]').click()`);
 
   // COPIAR LINK, sucesso e falha (§9) — só tinha conferência por LEITURA
   // de `navigator.clipboard.writeText` resolvendo ou rejeitando; nunca
@@ -2762,6 +2739,7 @@ async function julgarEscalaDaUi(s) {
 
   // ---- a URL manda, o storage não sabe de nada --------------------
   await s.ir(`atlas=1&ajustes=1&${PIN}`);
+  await s.js(`document.querySelector('[aria-controls="ajustes-painel-interface"]').click()`);
   await s.js(`(() => {
     const b = [...document.querySelectorAll('[data-dialogo="ajustes"] button')]
       .find((e) => e.textContent.trim() === '120%');

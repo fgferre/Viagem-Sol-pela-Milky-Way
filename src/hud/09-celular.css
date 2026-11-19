@@ -311,19 +311,11 @@
   .hud-root:has(.atlas-alcas) .controls-bar .hud-btn {
     min-height: 2.5rem;
   }
-  /* OS BOTÕES DO GRUPO "MODOS" (os dois filmes, ⇗ Voo livre, ↩ Retomar)
-     SÃO SÓ ÍCONE NO CELULAR: o `data-so-icones` que `BarraOuAlcas.tsx`
-     escreve no grupo. Nasceu em 13/09 (auditoria celular) para quando
-     falta espaço — `estreito` (≤360 px) ou `textoGrande` (ui ≥ 1,2) — e
-     desde 05/10 vale em qualquer largura do celular: com os dois filmes
-     ao lado do voo livre os nomes não cabiam e o "Sistema Solar" saía
-     cortado. O nome acessível não muda — os botões já levam `aria-label`
-     — e o `title` diz o nome. Cada filme tem o seu ícone (galáxia, Sol),
-     porque o play é o mesmo para os dois. */
-  .hud-root:has(.atlas-alcas) .controls-bar [data-so-icones] .hud-btn > span {
+  /* Voo e Retomar ficam só com ícones; Filmes conserva o rótulo. */
+  .hud-root:has(.atlas-alcas) .controls-bar [data-so-icones] .hud-btn:not(.filme-mais-gatilho) > span {
     display: none;
   }
-  .hud-root:has(.atlas-alcas) .controls-bar [data-so-icones] .hud-btn {
+  .hud-root:has(.atlas-alcas) .controls-bar [data-so-icones] .hud-btn:not(.filme-mais-gatilho) {
     min-width: 2.75rem;
     padding-inline: 0;
     justify-content: center;
@@ -592,6 +584,9 @@
   .atlas-ficha[data-ficha-estado='expandida'] {
     overflow-y: auto;
   }
+  .atlas-ficha[data-ficha-estado='expandida'] .hud-cabecalho-titulo--nome {
+    font-size: 1.625rem;
+  }
   /* O DEDO MANDA NA ALTURA (C4 do plano de motion): enquanto um arrasto
      está na tela (`data-arrasto`, `useGavetas.ts`), a ficha troca de
      compacta para expandida sob o dedo sem a transição de altura acima —
@@ -607,6 +602,13 @@
   .hud-dialogo .hud-cabecalho {
     touch-action: none;
   }
+  .atlas-busca .hud-cabecalho {
+    touch-action: auto;
+  }
+  .atlas-busca :is(.hud-alca, .hud-cabecalho-linha) {
+    touch-action: none;
+  }
+
 
   /* O TIPO E O NOME QUEBRAM, NUNCA CORTAM, nos dois estados (13/11, o
      dono viu "NEBULOSA DE EMISSÃO" cortada com texto grande). MEDIDO a
@@ -700,11 +702,7 @@
     grid-area: 2 / 1;
     align-self: start;
     margin: 0;
-    /* Inter 500, não a serifada da mesa/expandida (§3.5: "eyebrow + nome
-       em Inter 500" é a régua só da COMPACTA). */
-    font-family: var(--fonte-ui);
-    font-weight: 500;
-    font-size: 0.9375rem;
+    font-size: 1.125rem;
     letter-spacing: 0;
     line-height: 1.15;
   }
@@ -766,55 +764,6 @@
      só-chevron do celular continua aqui, no cabeçalho da compacta
      (acima): ele só existe no telefone. */
 
-  /* OS CARTÕES DE DESTINO (Lote 6) — no celular a grade vira LISTA,
-     linha por linha, miniatura à esquerda: dedo é alvo vertical, não
-     grade de duas colunas. Mesma marcação da mesa (04-atlas.css),
-     `.atlas-destino--principal` incluso — só o layout muda. */
-  .atlas-destinos {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-  }
-  .atlas-destino {
-    display: grid;
-    grid-template-columns: 88px 1fr;
-    grid-template-rows: auto auto;
-    column-gap: 0.75rem;
-    align-items: center;
-    min-height: 80px;
-    padding: 0.5rem 0;
-    border: none;
-    border-radius: 0;
-    border-bottom: 1px solid var(--borda);
-    background: none;
-  }
-  .atlas-destino:last-child {
-    border-bottom: none;
-  }
-  .atlas-destino-imagem {
-    grid-row: 1 / 3;
-    grid-column: 1;
-    width: 88px;
-    height: 64px;
-    border-radius: var(--raio-controle);
-  }
-  .atlas-destino--principal .atlas-destino-imagem {
-    height: 64px;
-  }
-  .atlas-destino-nome {
-    grid-column: 2;
-    grid-row: 1;
-    padding: 0;
-  }
-  .atlas-destino-convite {
-    grid-column: 2;
-    grid-row: 2;
-    padding: 0;
-  }
-  /* SEM TECLA FÍSICA, sem dica de tecla. */
-  .atlas-busca-atalho {
-    display: none;
-  }
   /* OS TRÊS FILTROS CABEM NA LARGURA, a 320 px com `ui` 1,4 inclusive: a
      mesma regra de encaixe das alças (§3.3) — o rótulo escala com a
      janela (o `vw` multiplicado por `--ui`, como `uiScale.test.ts` cobra),
