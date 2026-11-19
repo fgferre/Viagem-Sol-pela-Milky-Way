@@ -144,5 +144,6 @@ describe('apoios do roteiro — item 75', () => {
       vi.unstubAllGlobals();
       vi.resetModules();
     }
-  });
+    // o custo é importar o Director a frio (4 s sozinho no PC), não o que se confere
+  }, 30_000);
 });
