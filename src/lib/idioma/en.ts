@@ -793,9 +793,9 @@ export const EN: Record<keyof typeof PT, string> = {
   'ficha.estrela.hidrogenioEmVolta': 'Hα is seen out to {max} radii, nearly all within {ate}, strongest near {pico}',
   'ficha.estrela.vento': 'loses {mdot} solar masses per year, in a wind of ~{v} km/s',
   'ficha.estrela.discoDeGas':
-    'out to ~{raios} equatorial radii; measured from 2013 to the end of {ate}, and today\'s state has not been measured',
+    'fades outward with no edge: 1% of the peak at ~{um} equatorial radii and 2% at ~{dois}; measured from 2013 to the end of {ate}, and today\'s state has not been measured',
   'ficha.estrela.formaDoDisco':
-    'half-opening of ~{graus}° at the base, flaring outward; the density falls with distance to the power {n}',
+    'half-opening of ~{graus}° at the base, flaring outward; the density falls with distance to the power {n}, that of a steady viscous disk',
   'ficha.estrela.ventoDoModelo':
     'loses {mdot} solar masses per year (measured); the speed, ~{v} km/s, is that of the fitted model, not a direct measurement',
   'ficha.estrela.regiaoDaLinha': 'the hydrogen glows out to ~{raios} stellar radii',

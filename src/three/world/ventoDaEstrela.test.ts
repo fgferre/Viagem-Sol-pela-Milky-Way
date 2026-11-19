@@ -9,8 +9,10 @@ import {
   BRACOS_DO_VENTO,
   normalDosBracos,
   PISO_DO_INSTRUMENTO,
+  colunaDoDisco,
   colunaDoVento,
   enrolamentoDosBracos,
+  raioDoPisoDoDisco,
   fimDaCauda,
   joelhoDoPiso,
   perfilDoBraco,
@@ -87,7 +89,7 @@ describe('o vento das quentes — Vink, de Koter & Lamers 2001', () => {
     // Achernar tem a receita (B3, 15,5 kK), mas o vento fica abaixo do limiar: só o disco
     const ach = gasDaEstrela(estrelaVisitavelPorNome('Achernar')!)!;
     expect(ach.vento).toBeUndefined();
-    expect(ach.disco?.raioExterno).toBe(1.7);
+    expect(ach.disco?.expoente).toBe(3.5);
   });
 
   it('o gás tem teto: acima do vento de Rigel cresce com o logaritmo e nunca passa do fluxo do disco', () => {
@@ -126,6 +128,34 @@ describe('o vento das quentes — Vink, de Koter & Lamers 2001', () => {
     expect(emissividadeDoVento(0.5, fim)).toBe(emissividadeDoVento(1, fim));
     expect(emissividadeDoVento(1.3, fim)).toBeLessThan(emissividadeDoVento(1.1, fim));
     expect(emissividadeDoVento(fim, fim)).toBe(0);
+  });
+});
+
+describe('o disco de gás sem borda: a lei até o piso', () => {
+  const reg = estrelaVisitavelPorNome('Achernar')!.discoDeGas!;
+  const d = gasDaEstrela(estrelaVisitavelPorNome('Achernar')!)!.disco!;
+  it('com n = 3,5 a coluna de frente chega a 1 % do pico no contorno de 1 % medido (2,3 raios)', () => {
+    expect(colunaDoDisco(d.raioDoPiso, d) / colunaDoDisco(1, d)).toBeCloseTo(PISO_DO_INSTRUMENTO, 6);
+    expect(Math.abs(d.raioDoPiso - reg.contornoDe1PorCentoEmRaios.v)).toBeLessThan(0.1);
+    expect(raioDoPisoDoDisco(d.expoente)).toBe(d.raioDoPiso);
+    // o alcance (a coluna de perfil no piso) vai além do raio do piso
+    expect(d.alcance).toBeGreaterThan(d.raioDoPiso);
+  });
+  it('sem degrau: de 1,69 a 1,71 raio o brilho cai só o que a lei manda', () => {
+    const lei = 1 - (1.71 / 1.69) ** -(2 * d.expoente - 1.5);
+    expect(1 - colunaDoDisco(1.71, d) / colunaDoDisco(1.69, d)).toBeLessThan(lei + 0.005);
+  });
+  it('a espessura é a de ρ²: a coluna é ∫ρ² dz com ρ ∝ exp(−z²/H²)', () => {
+    const r = 1.5;
+    const h = d.h0 * r ** 1.5;
+    let s = 0;
+    const n = 4000;
+    for (let i = 0; i < n; i++) {
+      const z = -6 * h + ((i + 0.5) * 12 * h) / n;
+      s += Math.exp(-(z * z) / (h * h)) ** 2 * ((12 * h) / n);
+    }
+    expect(colunaDoDisco(r, d) / (r ** (-2 * d.expoente) * s)).toBeCloseTo(1, 6);
+    expect(d.pico).toBeCloseTo(d.normal * d.h0 * Math.sqrt(Math.PI / 2), 12);
   });
 });
 

@@ -829,9 +829,9 @@ export const PT = {
   'ficha.estrela.hidrogenioEmVolta': 'o Hα é visto até {max} raios, quase todo dentro de {ate}, mais forte perto de {pico}',
   'ficha.estrela.vento': 'perde {mdot} massas do Sol por ano, num vento de ~{v} km/s',
   'ficha.estrela.discoDeGas':
-    'até ~{raios} raios do equador; medido de 2013 ao fim de {ate}, e o estado de hoje não foi medido',
+    'some para fora sem borda: 1 % do pico a ~{um} raios do equador e 2 % a ~{dois}; medido de 2013 ao fim de {ate}, e o estado de hoje não foi medido',
   'ficha.estrela.formaDoDisco':
-    'meia abertura de ~{graus}° na base, alargando para fora; a densidade cai com a distância à potência {n}',
+    'meia abertura de ~{graus}° na base, alargando para fora; a densidade cai com a distância à potência {n}, a de um disco viscoso estável',
   'ficha.estrela.ventoDoModelo':
     'perde {mdot} massas do Sol por ano (medido); a velocidade, ~{v} km/s, é a do modelo ajustado, não medida direta',
   'ficha.estrela.regiaoDaLinha': 'o hidrogênio brilha até ~{raios} raios da estrela',

@@ -890,6 +890,8 @@ describe('um motor, qualquer estrela — os parâmetros novos são neutros no So
     const gas = gasDaEstrela(estrelaVisitavelPorNome('Achernar')!)!;
     const com = malhas({ teffK: 15539, gas }, null);
     expect(com).toHaveLength(2);
+    // a emissão (ρ²) do disco na escala H/√2
+    expect(frag(com[0])).toContain(`${literalGlsl(gas.disco!.h0 * Math.SQRT1_2)} * rc * sqrt(rc)`);
     expect((com[1].material as THREE.ShaderMaterial).side).toBe(THREE.FrontSide);
     expect((com[1].geometry as THREE.SphereGeometry).parameters.radius).toBeCloseTo(2.2 * RAIO_DA_FRENTE_DO_GAS, 9);
     expect(RAIO_DA_FRENTE_DO_GAS).toBeGreaterThan(1);

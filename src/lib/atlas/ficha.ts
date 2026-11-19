@@ -1052,7 +1052,8 @@ function linhasDoGas(e: EstrelaVisitavel): (LinhaDaFicha | null)[] {
       ? linha(
           t('ficha.campo.discoDeGas'),
           t('ficha.estrela.discoDeGas', {
-            raios: numeroDoIdioma(d.raioExternoEmRaios.v),
+            um: numeroDoIdioma(d.contornoDe1PorCentoEmRaios.v),
+            dois: numeroDoIdioma(d.contornoDe2PorCentoEmRaios.v),
             // o ano, sem separador de milhar ("2.015")
             ate: String(Math.floor(d.medidoAte)),
           }),

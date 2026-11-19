@@ -85,7 +85,6 @@ import {
 import { perfilDeELR, wDaRazaoDosRaios } from './giroDaEstrela';
 import {
   BRACOS_DO_VENTO,
-  CAUDA_DO_DISCO,
   normalDosBracos,
   PERFIL_DO_VENTO,
   GANHO_DO_GAS,
@@ -2243,14 +2242,11 @@ const GLSL_ROSA_DO_GAS = /* glsl */ `
           float t = clamp((c.r - ${literalGlsl(TETO_DO_VERMELHO_DO_GAS)}) / max(c.r - y, 1e-6), 0.0, ${literalGlsl(BRANCO_MAXIMO_DO_GAS)});
           return mix(c, vec3(y), t);
         }`;
-/** o raio (em raios equatoriais) até onde o gás vai: o vento até o fim da cauda, o disco até a cauda e a abertura */
+/** o raio (em raios equatoriais) até onde o gás vai: o vento até o fim da cauda, o disco até o alcance (`alcanceDoDisco`) e a abertura */
 export function raioDoGas(gas: GasDoMotor | undefined): number {
   if (!gas) return 1;
   const d = gas.disco;
-  return Math.max(
-    gas.vento ? gas.vento.fim : 1,
-    d ? Math.hypot(CAUDA_DO_DISCO.ate * d.raioExterno, 4 * d.h0 * (CAUDA_DO_DISCO.ate * d.raioExterno) ** 1.5) : 1
-  );
+  return Math.max(gas.vento ? gas.vento.fim : 1, d ? Math.hypot(d.alcance, 4 * d.h0 * d.alcance ** 1.5) : 1);
 }
 /**
  * AS ASAS DO VÉU COM GÁS (17/11, a cor): as asas do véu — a de sempre
@@ -2366,7 +2362,8 @@ function glslDoGas(gas: GasDoMotor, rGas: number, kAch: number, frente = false):
             float tz = abs(gD.y) > 1e-6 ? clamp(-gO.y / gD.y, ta, tb) : tm;
             vec3 pz = gO + gD * tz;
             float rc = max(length(pz.xz), 1.0);
-            float hz = ${literalGlsl(d.h0)} * rc * sqrt(rc);
+            // a escala da EMISSÃO: ρ² vai com exp(−2z²/H²) = exp(−z²/(H/√2)²)
+            float hz = ${literalGlsl(d.h0 * Math.SQRT1_2)} * rc * sqrt(rc);
             // a linha que corta o plano: a gaussiana exata no segmento, no raio do cruzamento;
             // a rasante (quase no plano): no meio do segmento — o cruzamento ali é mal definido
             // e, preso a uma ponta, caía fora da cauda e apagava a frente vista de lado
@@ -2374,13 +2371,13 @@ function glslDoGas(gas: GasDoMotor, rGas: number, kAch: number, frente = false):
             if (!gCorta) {
               pz = gO + gD * tm;
               rc = max(length(pz.xz), 1.0);
-              hz = ${literalGlsl(d.h0)} * rc * sqrt(rc);
+              hz = ${literalGlsl(d.h0 * Math.SQRT1_2)} * rc * sqrt(rc);
             }
             float col = gCorta
               ? hz * 0.8862269 / abs(gD.y) * abs(erfDoGas(zb / hz) - erfDoGas(za / hz))
               : exp(-pz.y * pz.y / (hz * hz)) * dt;
-            gas += uLuzDoDisco * exp2(${literalGlsl(-2 * d.expoente)} * log2(rc))
-              * (1.0 - smoothstep(${literalGlsl(CAUDA_DO_DISCO.de * d.raioExterno)}, ${literalGlsl(CAUDA_DO_DISCO.ate * d.raioExterno)}, rc)) * col;`
+            // sem corte: a lei desce até o piso do instrumento, que faz a borda
+            gas += uLuzDoDisco * exp2(${literalGlsl(-2 * d.expoente)} * log2(rc)) * col;`
                 : ''
             }
           }

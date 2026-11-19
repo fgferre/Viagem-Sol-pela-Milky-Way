@@ -25,7 +25,9 @@
 //  · DISCO (dado da estrela, `discoDeGas`): ρ = ρ0·(r/R)^−n·exp(−z²/H²),
 //    H = H0·(r/R)^1,5, H0 = tan(meia abertura) — a meia espessura em 1/e
 //    da densidade (Rivinius, Carciofi & Martayan 2013, A&ARv 21, 69); a
-//    época por lista medida (`faseDoDisco`), nunca por ciclo inventado.
+//    emissão, ρ², vai com exp(−2z²/H²). Sem borda: o disco acaba onde a
+//    lei chega ao piso do instrumento (`raioDoPisoDoDisco`). A época por
+//    lista medida (`faseDoDisco`), nunca por ciclo inventado.
 // ============================================================
 import { VENTO_DE_RIGEL, rotacaoDe, type DiscoDeGas, type EstrelaVisitavel, type Numero } from '../../lib/atlas/estrelasVisitaveis';
 
@@ -359,13 +361,8 @@ export function fluxoDoDisco(bordaU: number): number {
   return Math.PI * (1 - bordaU / 3);
 }
 
-/** a cauda do disco de gás em volta do raio externo: de 0,95 a 1,0 × ele, borda definida (ARTÍSTICO) */
-export const CAUDA_DO_DISCO = { de: 0.95, ate: 1.0 } as const;
-
 /** o disco em números de desenho */
 export interface DiscoDoMotor {
-  /** raio externo, em raios equatoriais */
-  readonly raioExterno: number;
   /** H0 = tan(meia abertura na base), em raios */
   readonly h0: number;
   /** o expoente n da densidade */
@@ -374,8 +371,12 @@ export interface DiscoDoMotor {
   readonly epocas: readonly (readonly [ano: number, fase: number])[];
   /** a luz do disco na fase 1, na unidade do desenho (G·fluxo do disco ÷ ∫ε dV) */
   readonly normal: number;
-  /** o PICO do disco na fase 1: a coluna de frente rente ao equador (normal·H0·√π) — a base do piso */
+  /** o PICO do disco na fase 1: a coluna de frente rente ao equador (normal·H0·√(π/2)) — a base do piso */
   readonly pico: number;
+  /** o raio do piso (`raioDoPisoDoDisco`): onde a coluna de frente chega a 1 % do pico — o fim da luz que a normalização conta */
+  readonly raioDoPiso: number;
+  /** o alcance (`alcanceDoDisco`): onde até a coluna de perfil chega ao piso — até onde a casca vai */
+  readonly alcance: number;
 }
 
 /** o gás que o motor desenha: o vento e/ou o disco, já em números de desenho */
@@ -395,18 +396,44 @@ export interface GasDoMotor {
   readonly disco?: DiscoDoMotor;
 }
 
-/** a emissividade do disco de gás no plano (z = 0) a rc raios do eixo, já integrada em z: rc^(−2n)·H√π·cauda */
-function colunaDoDisco(rc: number, d: Pick<DiscoDoMotor, 'raioExterno' | 'h0' | 'expoente'>): number {
+/**
+ * a emissividade do disco de gás a rc raios do eixo, já integrada em z (a
+ * coluna de frente com ρ0 = 1): ρ² = rc^(−2n)·exp(−2z²/H²), e
+ * ∫exp(−2z²/H²)dz = H·√(π/2) — sem corte: o piso do instrumento faz a borda
+ */
+export function colunaDoDisco(rc: number, d: Pick<DiscoDoMotor, 'h0' | 'expoente'>): number {
   const r = Math.max(rc, 1);
-  const h = d.h0 * r ** 1.5;
-  const cauda = 1 - suave(CAUDA_DO_DISCO.de * d.raioExterno, CAUDA_DO_DISCO.ate * d.raioExterno, r);
-  return r ** (-2 * d.expoente) * h * Math.sqrt(Math.PI) * cauda;
+  return r ** (-2 * d.expoente) * d.h0 * r ** 1.5 * Math.sqrt(Math.PI / 2);
 }
 
-/** ∫ ε dV do disco de gás com ρ0 = 1 (a gaussiana em z: ∫e^(−z²/H²)dz = H√π) */
-export function integralDoDisco(d: Pick<DiscoDoMotor, 'raioExterno' | 'h0' | 'expoente'>): number {
+/**
+ * O RAIO DO PISO do disco: a coluna de frente cai como r^−(2n − 1,5) e chega
+ * ao piso do instrumento (1 % do pico, `PISO_DO_INSTRUMENTO`) em
+ * piso^(−1/(2n − 1,5)). Com n = 3,5, 2,31 raios — o contorno de 1 % medido
+ * em Achernar (2,3; Dalla Vedova et al. 2017) é a conferência, não a tesoura.
+ */
+export function raioDoPisoDoDisco(expoente: number): number {
+  return PISO_DO_INSTRUMENTO ** (-1 / (2 * expoente - 1.5));
+}
+
+/**
+ * O ALCANCE do disco: a linha de perfil, no plano, soma
+ * ∫(b² + t²)^−n dt = b^(1−2n)·∫cos^(2n−2)φ dφ (t = b·tan φ) — a maior coluna
+ * em qualquer vista a b raios do centro; onde ela chega ao piso, nenhuma
+ * vista mostra mais o gás, e a casca acaba ali sem borda.
+ */
+export function alcanceDoDisco(d: Pick<DiscoDoMotor, 'h0' | 'expoente'>): number {
+  let w = 0;
+  const n = 2000;
+  for (let i = 0; i < n; i++) w += Math.cos(-Math.PI / 2 + ((i + 0.5) * Math.PI) / n) ** (2 * d.expoente - 2);
+  w *= Math.PI / n;
+  return (w / (PISO_DO_INSTRUMENTO * colunaDoDisco(1, d))) ** (1 / (2 * d.expoente - 1));
+}
+
+/** ∫ ε dV do disco de gás com ρ0 = 1, de 1 ao raio do piso (`colunaDoDisco` no anel) */
+export function integralDoDisco(d: Pick<DiscoDoMotor, 'h0' | 'expoente'>): number {
   let s = 0;
-  const fim = CAUDA_DO_DISCO.ate * d.raioExterno;
+  const fim = raioDoPisoDoDisco(d.expoente);
   const n = 8000;
   const h = (fim - 1) / n;
   for (let i = 0; i < n; i++) {
@@ -442,7 +469,6 @@ export function faseDoDisco(epocas: readonly (readonly [number, number])[], ano:
 /** o disco da ficha em números de desenho */
 export function discoDoMotor(d: DiscoDeGas, bordaU: number): DiscoDoMotor {
   const base = {
-    raioExterno: d.raioExternoEmRaios.v,
     h0: Math.tan((d.meiaAberturaGraus.v * Math.PI) / 180),
     expoente: d.expoenteDaDensidade.v,
   };
@@ -451,7 +477,9 @@ export function discoDoMotor(d: DiscoDeGas, bordaU: number): DiscoDoMotor {
     ...base,
     epocas: d.epocas.map((e) => [e.ano, e.fase] as const),
     normal,
-    pico: normal * base.h0 * Math.sqrt(Math.PI),
+    pico: normal * colunaDoDisco(1, base),
+    raioDoPiso: raioDoPisoDoDisco(base.expoente),
+    alcance: alcanceDoDisco(base),
   };
 }
 
