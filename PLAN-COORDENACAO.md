@@ -50,7 +50,8 @@ commit, linha de plano ou resposta do dono.
 
 ## Antes de publicar (publicar só com a palavra dele; ele disse *"ainda não"*)
 
-- A licença do perfil de Björn Jónsson usado nos anéis.
+- A licença do perfil de Björn Jónsson usado nos anéis: RESOLVIDO em 19/11 (0532aa6d). A página do autor libera o uso sem permissão especial e pede a citação da origem; a ficha de Saturno ganhou a linha "o desenho" com o nome dele, nas duas línguas (texto lido guardado em `.cache/revisoes/licenca-jonsson/`).
+- Conferência de 19/11, a pedido dele ("Sim, confira antes"): ensaio da publicação neste PC passou (lint, `data:verify`, 4.126 testes, build de 802 MB); seis telas do site construído olhadas (`capturas/ensaio-publicacao-19-11/prancha-site-construido.jpg`); os anéis gravados em movimento a 1× e a 1.000× (`aneis-girando.mp4`, `aneis-girando-rapido-v2.mp4`, sem pisca: maior salto de brilho entre quadros 0,4 em 255) e enviados a ele. ESPERA ELE: ver os dois vídeos, abrir no celular pela rede de casa (servidor `vite-lan`), e aceitar ou não Betelgeuse de perto como está.
 - O que está em "não convence" acima, ou a decisão dele de publicar assim mesmo.
 - As 14 cópias de trabalho da máquina antiga foram fechadas em 18/11 (*"Sim, arrume"*), com as provas que só existiam
   nelas guardadas antes em `capturas/copias/`. No GitHub saíram 22 ramos já aproveitados; na máquina antiga, 82.
