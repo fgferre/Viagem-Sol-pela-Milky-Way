@@ -27,6 +27,20 @@ describe('Galaxy.dispose (13/11/2026)', () => {
   });
 });
 
+describe('a galáxia nova nasce com as camadas de AGORA (19/11/2026)', () => {
+  it('a camada religada no painel continua ligada, e a desligada continua desligada', async () => {
+    const galaxia = await galaxiaDeTeste();
+    const vista = galaxia as unknown as { showGlow: boolean; showDisc: boolean };
+    // o que a URL do boot semearia: o brilho desligado
+    galaxia.setLayerHidden('noglow', true);
+    galaxia.vestirCamadas(new Set(['nodisc', 'nocat']));
+    expect(vista.showGlow).toBe(true);
+    expect(vista.showDisc).toBe(false);
+    galaxia.dispose();
+    vi.unstubAllGlobals();
+  });
+});
+
 describe('a captura espera a camada WebGPU só onde ela desenha (13/11/2026)', () => {
   it('de dentro do disco a camada a caminho não segura a captura; de fora, segura', async () => {
     const galaxia = await galaxiaDeTeste();

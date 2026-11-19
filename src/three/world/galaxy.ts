@@ -760,6 +760,12 @@ export class Galaxy {
     return true;
   }
 
+  /** a galáxia NOVA (troca de qualidade) nasce com as três camadas como
+   *  estão AGORA — ligadas e desligadas —, não como a URL do boot as semeou */
+  vestirCamadas(escondidas: ReadonlySet<string>) {
+    for (const f of ['nodisc', 'noglow', 'nogdust']) this.setLayerHidden(f, escondidas.has(f));
+  }
+
   /** τ⊥ da coluna (o τRT inteiro, canal A), para quem mais precisar da mesma extinção (forges). */
   get tauMapTexture(): THREE.Texture | null {
     if (this.tauNuvens && this.showGDust) {

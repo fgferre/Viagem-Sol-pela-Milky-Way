@@ -11,6 +11,7 @@ import {
   GRAMPO_DO_PASSO_S,
   NEBULOSA_POR_NIVEL,
   fatorDoRelevo,
+  lerPortaExposicao,
   lerPortaGas,
   lerPortaNebulosa,
   lerPortaGalaxia,
@@ -1492,7 +1493,8 @@ export class Director {
     // ficou sem doença. Item 4 das pendências.)
     this.noNebula = this.debug.has('nonebula');
     this.shotMode = this.debug.has('shot');
-    this.expOverride = this.debug.has('exp');
+    // só um `?exp=` que a leitura validada aceita trava a exposição
+    this.expOverride = lerPortaExposicao(this.debug.get('exp')) !== null;
     // ?luz= — a política da primeira lei de luz (Onda 6, D2/D8), pela
     // lei única da porta (`lerPortaLuz`, selo.ts); pedido inválido cai
     // no default do Atlas, nunca num caminho terceiro.
@@ -3556,7 +3558,7 @@ export class Director {
       this.publicarQualidade();
     };
     g.anunciarCaminho();
-    for (const f of this.hide) g.setLayerHidden(f, true);
+    g.vestirCamadas(this.hide);
     g.setCartography(this.debug.has('discoff') ? 'off' : this.cartMode);
     // a fração de partículas (item 149) é a mesma lei de `aplicarParticulas`
     // — só que aplicada na galáxia NOVA, antes de ela existir em `this.galaxy`
