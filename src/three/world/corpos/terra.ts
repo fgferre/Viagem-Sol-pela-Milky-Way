@@ -371,6 +371,8 @@ export class TerraResolvida {
    *  chega TARDE (?jd= no boot) e o mesmo jd com fonte nova tem de
    *  recomputar — senão o globo ficaria no retrato para sempre. */
   private fonteEscrita: FonteDeEfemerides | null = null;
+  /** o pino também: entrar ou sair do filme na mesma data recalcula */
+  private pinoEscrito: THREE.Vector3 | undefined = undefined;
   private rUA = Number.NaN;
   private armado = false;
   /** a PRESENÇA do globo (0..1), rampada rumo a `emQuadro` — a única
@@ -575,12 +577,15 @@ export class TerraResolvida {
 
     let saltoDeData = false;
     if (
-      (q.jdTdb !== this.jdEscrito || q.fonte !== this.fonteEscrita) &&
+      (q.jdTdb !== this.jdEscrito ||
+        q.fonte !== this.fonteEscrita ||
+        q.centroPinadoPc !== this.pinoEscrito) &&
       Number.isFinite(q.jdTdb)
     ) {
       saltoDeData = true;
       this.jdEscrito = q.jdTdb;
       this.fonteEscrita = q.fonte;
+      this.pinoEscrito = q.centroPinadoPc;
       // O PINO MANDA SEMPRE QUE EXISTE (item 108, 30/08). Até aqui ele
       // valia só SEM efeméride (`!q.fonte`) — e por isso não salvava o
       // quadro quando o relógio do filme era sequestrado por um `?jd=`

@@ -311,6 +311,8 @@ export class LuaResolvida {
   private readonly centro = new THREE.Vector3(Number.NaN, Number.NaN, Number.NaN);
   private jdEscrito = Number.NaN;
   private fonteEscrita: FonteDeEfemerides | null = null;
+  /** o pino também: entrar ou sair do filme na mesma data recalcula */
+  private pinoEscrito: THREE.Vector3 | undefined = undefined;
   private rUA = Number.NaN;
   private armado = false;
   /** a PRESENÇA do globo (0..1), rampada rumo a `emQuadro` (terra.ts). */
@@ -407,12 +409,15 @@ export class LuaResolvida {
 
     let saltoDeData = false;
     if (
-      (q.jdTdb !== this.jdEscrito || q.fonte !== this.fonteEscrita) &&
+      (q.jdTdb !== this.jdEscrito ||
+        q.fonte !== this.fonteEscrita ||
+        q.centroPinadoPc !== this.pinoEscrito) &&
       Number.isFinite(q.jdTdb)
     ) {
       saltoDeData = true;
       this.jdEscrito = q.jdTdb;
       this.fonteEscrita = q.fonte;
+      this.pinoEscrito = q.centroPinadoPc;
       // O PINO MANDA SEMPRE QUE EXISTE, e por isso vem ANTES da fonte
       // (item 108, 30/08). Até aqui ele era o último recurso — só sem
       // efeméride —, e por isso não salvava o quadro quando o relógio do

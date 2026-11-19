@@ -540,6 +540,16 @@ describe('4. gate, carga preguiçosa e o contrato "sem efeméride não há Lua"'
     lua.dispose();
   });
 
+  it('o pino que entra ou sai na MESMA data e fonte refaz o centro', () => {
+    const { lua } = luaDeTeste();
+    const pin = centroPc(JD + 1);
+    const livre = lua.atualizar(quadro(pin)).centroPc.clone();
+    expect(livre.distanceTo(pin)).toBeGreaterThan(RAIO_LUA_PC * 4);
+    expect(lua.atualizar(quadro(pin, { centroPinadoPc: pin })).centroPc.distanceTo(pin)).toBe(0);
+    expect(lua.atualizar(quadro(pin)).centroPc.distanceTo(livre)).toBe(0);
+    lua.dispose();
+  });
+
   it('SEM efeméride não há Lua: centro NaN, nunca em quadro, nada inventado', async () => {
     const { lua } = luaDeTeste();
     const perto = centroPc(JD);

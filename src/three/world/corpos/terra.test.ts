@@ -1023,6 +1023,16 @@ describe('6d. o pino do filme manda sobre a efeméride (item 108, 30/08)', () =>
     expect(comPino.diametroPx).toBeGreaterThan(0);
     terra.dispose();
   });
+
+  it('o pino que entra ou sai na MESMA data e fonte refaz o centro', () => {
+    const { terra } = terraDeTeste();
+    const pin = centroPc(JD + 1);
+    const livre = terra.atualizar(quadro(pin)).centroPc.clone();
+    expect(livre.distanceTo(pin)).toBeGreaterThan(RAIO_EQ_TERRA_PC * 4);
+    expect(terra.atualizar(quadro(pin, { centroPinadoPc: pin })).centroPc.distanceTo(pin)).toBe(0);
+    expect(terra.atualizar(quadro(pin)).centroPc.distanceTo(livre)).toBe(0);
+    terra.dispose();
+  });
 });
 
 describe('7. texto-fonte (as leis do cabeçalho, pinadas)', () => {
