@@ -50,6 +50,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'hud.falhaNoBootTitulo': 'The journey could not begin',
   'hud.falhaEmVooNota': 'the scene stopped being drawn — reload to start again',
   'hud.falhaNoBootNota': 'the cartography stopped at stage {i}/{total} — {rotulo}',
+  'hud.falhaMaisLeve': 'trying again restarts the journey with lighter images',
   'hud.tentarNovamente': 'Try again',
   'hud.falhaDetalhes': 'Technical details',
   'hud.fatalTick': 'The Journey stopped drawing: ',

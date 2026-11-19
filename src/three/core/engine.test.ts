@@ -37,6 +37,7 @@ import {
   PISO_DO_NEAR_EM_RAIOS,
   PRESETS,
   tierMedido,
+  enderecoDoRecomeco,
 } from './engine';
 import type { QualityLevel, ToneMapMode } from './engine';
 
@@ -375,6 +376,22 @@ describe('?tone= — só um modo que existe de verdade atravessa', () => {
     expect(lerPortaTom('constructor')).toBeNull();
     expect(lerPortaTom('__proto__')).toBeNull();
     expect(lerPortaTom('hasOwnProperty')).toBeNull();
+  });
+});
+
+describe('o recomeço depois de a placa desistir (19/11)', () => {
+  it('desce UM degrau com o mesmo filme e instante; fora do contexto perdido ou no chão, recarrega igual', () => {
+    const momento = new URL('https://x.test/?filme=solar&t=412.3&play=1&q=auto');
+    const leve = enderecoDoRecomeco(true, 'cinema', momento);
+    expect(leve?.searchParams.get('q')).toBe('alta');
+    expect(leve?.searchParams.get('filme')).toBe('solar');
+    expect(leve?.searchParams.get('t')).toBe('412.3');
+    expect(leve?.searchParams.get('play')).toBe('1');
+    expect(enderecoDoRecomeco(true, 'alta', momento)?.searchParams.get('q')).toBe('performance');
+    expect(enderecoDoRecomeco(true, 'performance', momento)).toBeNull();
+    expect(enderecoDoRecomeco(false, 'cinema', momento)).toBeNull();
+    // o endereço de agora não muda até o clique
+    expect(momento.searchParams.get('q')).toBe('auto');
   });
 });
 

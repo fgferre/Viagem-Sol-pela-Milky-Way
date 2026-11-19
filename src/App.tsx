@@ -15,7 +15,7 @@ import type { NamedStar } from './three/config';
 import { cartografiaMedida } from './three/cartography/galacticAssets';
 import type { EstadoDaPoeira } from './three/selo';
 import { HUD_POR_FASE, arrastoFazAlgo } from './three/fases';
-import { PRESETS, TIER_DE_PRODUTO } from './three/core/engine';
+import { PRESETS, TIER_DE_PRODUTO, enderecoDoRecomeco } from './three/core/engine';
 import { LABORATORIO_PADRAO } from './three/world/laboratorioDaGalaxia';
 import { temVistaDosAneis } from './three/world/pontoDoAnel';
 import { LabelCanvas } from './components/LabelCanvas';
@@ -311,6 +311,8 @@ export default function App() {
     if (gl.webgl2) return '';
     return t(gl.suportado ? 'hud.semWebgl2' : 'hud.semWebgl');
   });
+  /** a falha foi a placa desistindo (contexto WebGL perdido): o retry desce um degrau */
+  const [contextoPerdido, setContextoPerdido] = useState(false);
   const [loadStage, setLoadStage] = useState<LoadStage>(LOAD_STAGES[0]);
   /**
    * A TELA DE CARGA: `no-ar` do boot até perto do fim do desfecho (a
@@ -508,6 +510,7 @@ export default function App() {
     setQuality,
     setLoadStage,
     setLoadError,
+    contextoPerdido: () => setContextoPerdido(true),
     setNomeadas,
     setEstadoDaPoeira,
     setFoco,
@@ -1018,6 +1021,15 @@ export default function App() {
     alternarCamada,
     espelharFilme,
   } = useEspelhoDaUrl({ directorRef, phase, foco, indice, quality });
+
+  // O "TENTAR NOVAMENTE" DEPOIS DA PLACA DESISTIR (19/11) recomeça um
+  // degrau abaixo, no mesmo filme e instante; o endereço é o espelho da
+  // troca de qualidade (`replaceState`) e quem recarrega é o clique
+  const recomecar = () => {
+    const url = enderecoDoRecomeco(contextoPerdido, quality.tier, urlComMomento());
+    if (url) window.history.replaceState(null, '', `${url.pathname}${url.search}`);
+    window.location.reload();
+  };
 
   // O TEXTO GRANDE (auditoria celular, 13/09) — UMA leitura só do limiar
   // (`ehTextoGrande`/`uiScale.ts`): a ficha e a barra do Atlas no celular
@@ -1700,8 +1712,9 @@ export default function App() {
           foto={shotMode}
           reduzido={movimentoReduzido}
           erro={loadError}
+          maisLeve={enderecoDoRecomeco(contextoPerdido, quality.tier, new URL(window.location.href)) !== null}
           emVoo={phase !== 'loading'}
-          onRetry={() => window.location.reload()}
+          onRetry={recomecar}
           aoSair={setCarga}
           motorPronto={motorPronto}
         />

@@ -123,6 +123,7 @@ export function TelaDeCarga({
   estado,
   emVoo,
   erro,
+  maisLeve,
   foto,
   reduzido,
   onRetry,
@@ -141,6 +142,8 @@ export function TelaDeCarga({
   emVoo: boolean;
   /** mensagem técnica da falha */
   erro?: string;
+  /** a placa desistiu e o retry recomeça um degrau abaixo (`enderecoDoRecomeco`) */
+  maisLeve: boolean;
   /** `?shot=`: um quadro parado por etapa e nenhum desfecho */
   foto: boolean;
   /** prefers-reduced-motion, ao vivo */
@@ -441,6 +444,7 @@ export function TelaDeCarga({
                   rotulo: etapa.label,
                 })}
           </div>
+          {maisLeve && <div className="tc-falha-detalhe">{t('hud.falhaMaisLeve')}</div>}
           {erro && (
             <details className="tc-falha-tecnico">
               <summary>{t('hud.falhaDetalhes')}</summary>

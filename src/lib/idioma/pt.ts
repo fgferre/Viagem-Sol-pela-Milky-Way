@@ -47,6 +47,7 @@ export const PT = {
   'hud.falhaNoBootTitulo': 'A viagem não pôde começar',
   'hud.falhaEmVooNota': 'a cena deixou de ser desenhada — recarregue para começar de novo',
   'hud.falhaNoBootNota': 'a cartografia parou na etapa {i}/{total} — {rotulo}',
+  'hud.falhaMaisLeve': 'ao tentar de novo, a viagem recomeça com imagens mais leves',
   'hud.tentarNovamente': 'Tentar novamente',
   'hud.falhaDetalhes': 'Detalhes técnicos',
   'hud.fatalTick': 'A Viagem parou de desenhar: ',

@@ -108,6 +108,8 @@ export interface FiosDoDirector {
   setQuality: (v: EstadoDaQualidade) => void;
   setLoadStage: (v: LoadStage) => void;
   setLoadError: (v: string) => void;
+  /** a placa desistiu (contexto WebGL perdido) — o retry recomeça mais leve */
+  contextoPerdido: () => void;
   setNomeadas: (v: readonly NamedStar[]) => void;
   setEstadoDaPoeira: (v: EstadoDaPoeira) => void;
   setFoco: (v: string | null) => void;
@@ -141,6 +143,7 @@ export function useDirector(fios: FiosDoDirector) {
     setQuality,
     setLoadStage,
     setLoadError,
+    contextoPerdido,
     setNomeadas,
     setEstadoDaPoeira,
     setFoco,
@@ -207,6 +210,9 @@ export function useDirector(fios: FiosDoDirector) {
       return () => labels.clear();
     }
     directorRef.current = d;
+    // ouvido DEPOIS do do Director (o véu já recebeu a mensagem): só marca
+    // que a falha foi a placa, para o "Tentar novamente" descer um degrau
+    d.engine.onContextoPerdido(contextoPerdido);
     // gancho de inspeção (só dev): estado da câmera/fase no console
     if (import.meta.env.DEV) {
       (window as unknown as { __director?: Director }).__director = d;
