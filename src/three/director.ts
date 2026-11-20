@@ -269,6 +269,8 @@ export type { EstadoDaQualidade } from './core/engine';
 interface DirectorEvents {
   onPhase: (p: Phase) => void;
   onCaption: (index: number, caption: string, sub?: string) => void;
+  /** a saída da legenda (1 → 0 no fim da janela); fora do React, como o `onWarp` */
+  onCaptionOpacity: (opacidade: number) => void;
   onProgress: (k: number) => void;
   onLabels: (labels: StarLabel[]) => void;
   onWarp: (k: number) => void;
@@ -1035,6 +1037,7 @@ export class Director {
   private lastCaptionIdx = -1;
   /** a frase que está NO AR — o índice sozinho não vê a troca de idioma */
   private lastCaptionTexto = '';
+  private lastCaptionOpacidade = -1;
   /** a luz do roteiro está no ar (k > 0)? — o latch de `onLuzDoRoteiro` */
   private luzDoRoteiroNoAr = false;
   private relogioParado = false;
@@ -4160,11 +4163,17 @@ export class Director {
 
       // A LEGENDA E A LÍNGUA VIVA (item 130/F3): a regra mora em
       // `reemitirLegenda`, pura, no topo deste arquivo.
-      const { index, key } = this.rig.captionAt(t);
+      const { index, key, opacidade } = this.rig.captionAt(t);
       if (reemitirLegenda(index, key.caption, this.lastCaptionIdx, this.lastCaptionTexto)) {
         this.lastCaptionIdx = index;
         this.lastCaptionTexto = key.caption;
         this.events.onCaption(index, key.caption, key.sub);
+      }
+      // sem legenda fica em 0: a que acabou de sair não pisca de volta no
+      // quadro que o React leva para tirá-la da tela
+      if (opacidade !== this.lastCaptionOpacidade) {
+        this.lastCaptionOpacidade = opacidade;
+        this.events.onCaptionOpacity(opacidade);
       }
 
       // ...e a viagem CONGELADA não termina sozinha. O teto do `seek`

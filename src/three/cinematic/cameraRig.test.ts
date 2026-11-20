@@ -63,6 +63,7 @@ const {
   DECADAS_DA_ABERTURA,
   TERRA_PC,
   LUA_PC,
+  SAIDA_DA_LEGENDA_S,
   auditarRoteiro,
   distanciaDaAbertura,
 } = await import('./journey');
@@ -320,6 +321,16 @@ describe('a auditoria editorial do filme', () => {
     expect(journey.captionAt(36.04).key.caption).toBe('');
     expect(journey.captionAt(79.84).key.caption).toBe('Casa');
     expect(journey.captionAt(79.86).key.caption).toBe('');
+  });
+
+  it('a legenda esmaece no último meio segundo da janela, em tempo de filme, e some onde sumia', () => {
+    const sirius = auditoria.captions.find((caption) => caption.text === 'Sirius')!;
+    expect(journey.captionAt(sirius.t0).opacidade).toBe(1);
+    expect(journey.captionAt(sirius.t1 - SAIDA_DA_LEGENDA_S).opacidade).toBeCloseTo(1, 10);
+    expect(journey.captionAt(sirius.t1 - SAIDA_DA_LEGENDA_S / 2).opacidade).toBeCloseTo(0.5, 10);
+    expect(journey.captionAt(sirius.t1 - 1e-6).opacidade).toBeLessThan(1e-5);
+    expect(journey.captionAt(sirius.t1).key.caption).toBe('');
+    expect(journey.captionAt(sirius.t1).opacidade).toBe(0);
   });
 
   it('Sagittarius A* só é nomeado durante a curva rasante', () => {

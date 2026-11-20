@@ -223,12 +223,14 @@
   bottom: calc(11.6vh + 1.4rem);
 }
 /* a VIDA da legenda agora é do roteiro (janelas em tempo de viagem no
-   journey.ts) — o CSS só anima a entrada; a saída é a janela fechando */
+   journey.ts) — o CSS anima a entrada; a saída é do roteiro também: o
+   último meio segundo da janela desce `--legenda-opacidade` de 1 a 0, em
+   tempo de filme (`captionAt`), e a legenda acaba onde a janela fecha */
 .caption-wrap.show {
   animation: captionIn 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 @keyframes captionIn {
-  to { opacity: 1; transform: translateY(0); }
+  to { opacity: var(--legenda-opacidade, 1); transform: translateY(0); }
 }
 /* LOTE 8 (PLAN-UI.md §3.7, maquete M7): título em Fraunces 300, igual
    à `.atlas-marca` (mesmo peso, mesmo `letter-spacing: 0`; a sombra é

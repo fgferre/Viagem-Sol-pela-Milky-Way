@@ -789,6 +789,9 @@ export interface JourneyMeta {
   camadas?: Shot['camadas'];
 }
 
+/** a legenda esmaece no último trecho da janela dela, em tempo de filme */
+export const SAIDA_DA_LEGENDA_S = 0.5;
+
 export class Journey {
   readonly duration: number;
   private readonly planos: readonly Shot[];
@@ -853,16 +856,27 @@ export class Journey {
   /**
    * Legenda ativa como FUNÇÃO PURA de t (janela [entrada, entrada+dur)):
    * seek, scrub e 2× mostram exatamente o que o espectador deve ver.
+   * A SAÍDA (20/11/2026) também: `opacidade` desce de 1 a 0 no último
+   * `SAIDA_DA_LEGENDA_S` da janela e chega a zero quando ela fecha — antes a
+   * legenda sumia de um quadro para o outro. Sem legenda no ar, 0.
    */
-  captionAt(t: number): { index: number; key: { caption: string; sub?: string } } {
+  captionAt(t: number): {
+    index: number;
+    opacidade: number;
+    key: { caption: string; sub?: string };
+  } {
     for (let i = this.janelas.length - 1; i >= 0; i--) {
       const w = this.janelas[i];
       if (t >= w.t0 && t < w.t1) {
         const fala = legendaNaLingua(w);
-        return { index: i, key: { caption: fala.text, sub: fala.sub } };
+        return {
+          index: i,
+          opacidade: Math.min(1, (w.t1 - t) / SAIDA_DA_LEGENDA_S),
+          key: { caption: fala.text, sub: fala.sub },
+        };
       }
     }
-    return { index: -1, key: { caption: '' } };
+    return { index: -1, opacidade: 0, key: { caption: '' } };
   }
 
   metaAt(t: number): JourneyMeta {
