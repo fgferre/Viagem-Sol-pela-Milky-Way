@@ -52,7 +52,7 @@ Fotos em `capturas/auditoria-filmes-19-11/nomes-*.png` (filme parado em `?t=`): 
 - Trancos de velocidade: estelar `rumoASirius` 179,57 s e Betelgeuse 32 s; galáctico 111 s (mergulho aprovado). GRAVADOS em 19/11 (`ver-estelar-179.mp4`, `ver-estelar-032.mp4`, `ver-galactico-111.mp4`). Os quatro trechos foram entregues ao dono em 20/11.
 
 ## Do dono (texto ou imagem aprovada; levar com recomendação, uma pergunta por vez)
-- Galáctico 61 s: Betelgeuse "engoliria a órbita de Júpiter" está errado (764 raios do Sol = 3,55 UA; a ficha e o filme estelar dizem Marte). Recomendo trocar para Marte nas duas línguas (texto pinado em `scripts/visual/filme-smoke.mjs:196`).
+- [x] Galáctico 61 s: Betelgeuse "engoliria a órbita de Júpiter" estava errado (764 raios do Sol = 3,55 UA; a ficha e o filme estelar dizem Marte). TROCADO para Marte nas duas línguas em 20/11, com a palavra dele ("Sim, troque"); visto na tela em pt e en (`capturas/auditoria-filmes-19-11/betelgeuse-marte-{pt,en}.jpg`). Não publicado.
 - Galáctico 99–104 s, "O berçário": as quatro estrelas citadas já ficaram 1.300 pc atrás; nenhuma ganha nome. Trocar o texto ou mover o momento.
 - Legenda some sem esmaecer (o CSS diz que é de propósito): fazer a saída suave e mostrar antes/depois.
 - Nome do corpo que não cede quando o disco enche a tela (uma linha em `rotulos.ts`; muda o que o solar mostra).

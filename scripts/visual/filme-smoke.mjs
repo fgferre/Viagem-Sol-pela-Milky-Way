@@ -193,7 +193,7 @@ const JANELAS = [
   { t: 48.9, title: '', sub: '' },
   { t: 50, title: 'Um passo ao lado', sub: 'Alnilam está 1.200 anos-luz mais ao fundo — a fila era um ponto de vista' },
   { t: 54.95, title: '', sub: '' },
-  { t: 61, title: 'Betelgeuse', sub: 'supergigante vermelha à beira de explodir — engoliria a órbita de Júpiter' },
+  { t: 61, title: 'Betelgeuse', sub: 'supergigante vermelha à beira de explodir — engoliria a órbita de Marte' },
   { t: 66, title: '', sub: '' },
   { t: 68.5, title: 'Rigel', sub: 'supergigante azul a 12.000 K — 40.000 sóis em poucos milhões de anos' },
   { t: 72.85, title: '', sub: '' },

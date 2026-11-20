@@ -38,10 +38,10 @@
       "legendas": [{
         "em": 0.08,
         "texto": "Betelgeuse",
-        "subtexto": "supergigante vermelha à beira de explodir — engoliria a órbita de Júpiter",
+        "subtexto": "supergigante vermelha à beira de explodir — engoliria a órbita de Marte",
         "en": {
           "texto": "Betelgeuse",
-          "subtexto": "a red supergiant on the verge of exploding — it would swallow the orbit of Jupiter"
+          "subtexto": "a red supergiant on the verge of exploding — it would swallow the orbit of Mars"
         },
         "duracao": 5.4
       }]

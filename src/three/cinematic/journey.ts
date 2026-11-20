@@ -527,7 +527,7 @@ const SHOTS: Shot[] = [
   }),
   // Betelgeuse À FRENTE: ela nasce do bordo inferior e INCHA — de 95 a
   // 14 pc o diâmetro aparente cresce ~7×, e é esse crescimento que vende
-  // "engoliria a órbita de Júpiter" antes de a legenda dizer. Depois a
+  // "engoliria a órbita de Marte" antes de a legenda dizer. Depois a
   // passagem da supergigante em órbita de ASSUNTO (contemplar o alvo não
   // é voar de lado), Rigel de raspão em fly-under (6 pc abaixo, sem
   // parar) e a dobradiça: meia-volta RÁPIDA de 180° para o VAZIO onde o
