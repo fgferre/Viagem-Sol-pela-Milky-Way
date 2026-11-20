@@ -48,6 +48,10 @@ commit, linha de plano ou resposta do dono.
 - Uma rodada só de dados, com comando dele: números do Gaia, giro das estrelas (ζ Puppis 1,78 d), a curva de brilho
   de Betelgeuse; a poeira da galáxia em blocos sobre Saturno.
 
+## PUBLICADO em 20/11/2026 (`f50fc1d3`, com a palavra dele: *"Sim, publique"*)
+
+Catorze commits sobre o de 19/11: o conserto da queda do filme solar por memória, a câmera e os nomes da auditoria dos filmes. Estado, prova no ar e o que ficou de fora: `PLAN-AUDITORIA-FILMES.md`.
+
 ## PUBLICADO em 19/11/2026 (`2ec8f118`, com a palavra dele: *"Sim, publique"*)
 
 O site no ar era de 18/10 (`6988ff7e`); foram 454 commits de uma vez. A construção no GitHub passou em 5 minutos (antes dela, oito testes pesados ganharam folga de tempo: a máquina de lá já derrubou duas publicações por isso). Conferido no ar: a página cita os mesmos arquivos de programa da construção local, dois dados batem por sha256, o crédito do modelo dos anéis está no programa publicado, e as telas da galáxia e de Saturno saem idênticas às do ensaio (`capturas/ensaio-publicacao-19-11/no-ar-*`). Foi ao ar SEM: celular de verdade, Safari e Firefox, e o juiz de acessibilidade (congela neste PC); ele viu os vídeos dos anéis e a prancha e mandou publicar.
