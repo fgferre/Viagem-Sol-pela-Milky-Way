@@ -2,9 +2,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
-import type { CamadaWebgpu } from './galaxiaWebgpu/camadaWebgpu';
+import type { CamadaPedida, CamadaWebgpu } from './galaxiaWebgpu/camadaWebgpu';
 
-async function galaxiaDeTeste() {
+async function galaxiaDeTeste(pedirWebgpu?: () => CamadaPedida | null) {
   vi.stubGlobal('window', { location: { search: '' } });
   const { Galaxy } = await import('./galaxy');
   // duas partículas de disco (tipo 0) bastam para haver células
@@ -12,7 +12,7 @@ async function galaxiaDeTeste() {
   bright.set([0, 0, 0, 1, 1, 1, 2, 1], 0);
   bright.set([100, 0, 0, 1, 1, 1, 2, 1], 8);
   const mapa = new THREE.DataTexture(new Uint8Array(4), 1, 1);
-  return new Galaxy({ bright, brightCount: 2 }, mapa, mapa, { soParticulas: true, tetoLodMilhoes: 1 });
+  return new Galaxy({ bright, brightCount: 2 }, mapa, mapa, { soParticulas: true, tetoLodMilhoes: 1, pedirWebgpu });
 }
 
 describe('Galaxy.dispose (13/11/2026)', () => {
@@ -113,6 +113,123 @@ describe('o WebGPU que atrasa ou cai avisa e tenta de novo (18/11/2026)', () => 
     expect(await pedir()).toBeNull();
     expect(webgpu.motivoDaQuedaDoWebgpu()).toBe('semWebgpu');
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+});
+
+describe('a camada WebGPU só fora de casa (19/11/2026)', () => {
+  it('a regra: pedida longe de casa; em casa fica, e é solta depois de 20 s seguidos', async () => {
+    vi.stubGlobal('window', { location: { search: '' } });
+    const { destinoDaCamadaWebgpu, SEGUNDOS_EM_CASA_PARA_SOLTAR } = await import('./galaxy');
+    const { LIMIAR_SISTEMA_SOLAR_PC } = await import('../escala');
+    expect(SEGUNDOS_EM_CASA_PARA_SOLTAR).toBe(20);
+    expect(destinoDaCamadaWebgpu(LIMIAR_SISTEMA_SOLAR_PC * 1.01, 999)).toBe('pedir');
+    expect(destinoDaCamadaWebgpu(LIMIAR_SISTEMA_SOLAR_PC, 0)).toBe('manter');
+    expect(destinoDaCamadaWebgpu(1e-8, 19.9)).toBe('manter');
+    expect(destinoDaCamadaWebgpu(1e-8, 20)).toBe('soltar');
+    vi.unstubAllGlobals();
+  });
+
+  it('o galáctico a pede pelo menos 30 s antes de ela poder aparecer; o solar nunca a pede', async () => {
+    vi.stubGlobal('window', { location: { search: '' } });
+    const { Journey } = await import('../cinematic/journey');
+    const { montarFilmeSolar } = await import('../cinematic/filmes/solar/montar');
+    const { destinoDaCamadaWebgpu, dentroDoDisco } = await import('./galaxy');
+    // o caminho da câmera a cada 0,1 s: (a) o primeiro pedido, (b) a primeira
+    // vez fora do miolo do disco, onde a camada pode entrar no quadro.
+    // Medido em 19/11: o galáctico pede em 26,2 s e ela aparece em 141,9 s;
+    // a camada leva ~10–12 s para nascer numa carga fria
+    const medir = (j: InstanceType<typeof Journey>) => {
+      let pede = -1;
+      let aparece = -1;
+      for (let i = 0; i <= Math.round(j.duration * 10); i++) {
+        const pos = j.at(i / 10).pos;
+        if (pede < 0 && destinoDaCamadaWebgpu(pos.length(), 0) === 'pedir') pede = i / 10;
+        if (aparece < 0 && dentroDoDisco(pos) < 1) aparece = i / 10;
+      }
+      return { pede, aparece };
+    };
+    const galactico = medir(new Journey());
+    expect(galactico.pede).toBeGreaterThanOrEqual(0);
+    expect(galactico.aparece - galactico.pede).toBeGreaterThanOrEqual(30);
+    const solar = montarFilmeSolar();
+    expect(medir(new Journey(solar.shots, solar.starts)).pede).toBe(-1);
+    vi.unstubAllGlobals();
+  });
+
+  it('pede uma vez só; solta a que voa e a retoma se a câmera sair de novo; solta a que chegou', async () => {
+    let chegar!: (c: CamadaWebgpu | null) => void;
+    const pedir = vi.fn(
+      (): CamadaPedida => ({ pronta: new Promise((r) => (chegar = r)), atrasou: new Promise(() => {}) })
+    );
+    const galaxia = await galaxiaDeTeste(pedir);
+    const camada = () => ({ mesh: new THREE.Object3D(), falhou: false, pendentes: 0, update: vi.fn(), dispose: vi.fn() });
+    // em casa, carga fria: nada pedido
+    galaxia.seguirCamadaWebgpu('manter');
+    expect(pedir).not.toHaveBeenCalled();
+    // saiu: um pedido, e nunca dois
+    galaxia.seguirCamadaWebgpu('pedir');
+    galaxia.seguirCamadaWebgpu('pedir');
+    expect(pedir).toHaveBeenCalledOnce();
+    expect(galaxia.webgpuACaminho).toBe('subindo');
+    // soltar com ela em voo: deixa de ser esperada; sair de novo a retoma
+    galaxia.seguirCamadaWebgpu('soltar');
+    expect(galaxia.webgpuACaminho).toBeNull();
+    galaxia.seguirCamadaWebgpu('pedir');
+    expect(pedir).toHaveBeenCalledOnce();
+    const primeira = camada();
+    chegar(primeira as unknown as CamadaWebgpu);
+    await Promise.resolve();
+    expect(galaxia.caminho).toBe('webgpu');
+    // ficou em casa: solta, e o WebGL volta a desenhar
+    galaxia.seguirCamadaWebgpu('manter');
+    expect(primeira.dispose).not.toHaveBeenCalled();
+    galaxia.seguirCamadaWebgpu('soltar');
+    expect(primeira.dispose).toHaveBeenCalledOnce();
+    expect(galaxia.caminho).toBe('particulas');
+    // pedida de novo e solta antes de chegar: descartada ao chegar
+    galaxia.seguirCamadaWebgpu('pedir');
+    galaxia.seguirCamadaWebgpu('soltar');
+    const segunda = camada();
+    chegar(segunda as unknown as CamadaWebgpu);
+    await Promise.resolve();
+    expect(pedir).toHaveBeenCalledTimes(2);
+    expect(segunda.dispose).toHaveBeenCalledOnce();
+    expect(galaxia.caminho).toBe('particulas');
+    // mundo descartado com uma em voo: descartada ao chegar
+    galaxia.seguirCamadaWebgpu('pedir');
+    galaxia.dispose();
+    const terceira = camada();
+    chegar(terceira as unknown as CamadaWebgpu);
+    await Promise.resolve();
+    expect(terceira.dispose).toHaveBeenCalledOnce();
+    vi.unstubAllGlobals();
+  });
+
+  it('em casa, com a camada solta pela regra, o painel recebe webgpu sem queda; o console, partículas', async () => {
+    const galaxia = await galaxiaDeTeste(() => null);
+    const webgpu = await import('./galaxiaWebgpu/camadaWebgpu');
+    webgpu.esquecerQuedaDoWebgpu(); // o teste da queda acima a deixa marcada
+    const avisos = vi.spyOn(console, 'info').mockImplementation(() => {});
+    galaxia.anunciarCaminho();
+    expect(avisos).toHaveBeenLastCalledWith('[galáxia] desenhando: particulas');
+    expect(galaxia.caminhoNoPainel).toBe('webgpu');
+    // a queda que o Director publica, pelo texto dele
+    const fonte = readFileSync(new URL('../director.ts', import.meta.url), 'utf8');
+    const cabeca = '  private quedaDaGalaxia(): QuedaDaGalaxia | null {\n';
+    const i = fonte.indexOf(cabeca);
+    const corpo = fonte.slice(i + cabeca.length, fonte.indexOf('\n  }\n', i));
+    const queda = () =>
+      new Function('motivoDaQuedaDoWebgpu', `return function () {\n${corpo}\n};`)(webgpu.motivoDaQuedaDoWebgpu).call({
+        galaxy: galaxia,
+        trocaPedida: null,
+        galaxiaForcada: null,
+        engine: { preset: { galaxia: 'webgpu' } },
+      });
+    expect(fonte).toContain('galaxiaViva: this.galaxy?.caminhoNoPainel');
+    expect(queda()).toBeNull();
+    galaxia.dispose();
+    avisos.mockRestore();
     vi.unstubAllGlobals();
   });
 });

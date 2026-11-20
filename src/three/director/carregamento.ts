@@ -203,6 +203,9 @@ export async function montarCarga(opts: {
   galaxia: CaminhoDaGalaxia | null;
   /** os sorteios do motor WebGPU escolhidos à mão (laboratório, `?sorteios=`); `null` = os do tier */
   sorteios: number | null;
+  /** a camada WebGPU é querida já (`destinoDaCamadaWebgpu`: a câmera longe
+   *  de casa); senão ela só nasce quando a câmera sair (`seguirCamadaWebgpu`) */
+  camadaQuerida: boolean;
   aoAvancar: (etapa: EtapaDaCadeia) => void;
 }): Promise<CargaDoMundo> {
   const { catalogos, tier, aoAvancar } = opts;
@@ -234,13 +237,27 @@ export async function montarCarga(opts: {
     { ...pedido, nuvens: pedido.soParticulas },
     aoAvancar
   );
-  const extras = Array.from({ length: sorteios - 1 }, (_, i) =>
-    assarCargaEmWorker(
-      { ...pedido, seed: SEMENTE_DA_GALAXIA + (i + 1) * 7919, paraOMotor: true },
-      () => {}
-    ).then((c) => c.pacote!)
-  );
-  const camada = caminho === 'webgpu' ? CamadaWebgpu.criar(principal, sorteios, (s) => extras[s - 1]) : null;
+  // A CAMADA SÓ FORA DE CASA (19/11/2026): a carga em casa não a cria nem
+  // assa os sorteios extras. Quando a câmera sai, a galáxia a pede por aqui
+  // de novo — a principal assada outra vez com a mesma semente (a galáxia
+  // não guarda as partículas depois de subi-las), a mesma imagem.
+  const pedirCamada = (prima: Promise<CargaAssada>) => {
+    const extras = Array.from({ length: sorteios - 1 }, (_, i) =>
+      assarCargaEmWorker(
+        { ...pedido, seed: SEMENTE_DA_GALAXIA + (i + 1) * 7919, paraOMotor: true },
+        () => {}
+      ).then((c) => c.pacote!)
+    );
+    return CamadaWebgpu.criar(prima, sorteios, (s) => extras[s - 1]);
+  };
+  const pedirWebgpu =
+    caminho === 'webgpu'
+      ? () =>
+          webgpuFalhouNestaPagina()
+            ? null
+            : pedirCamada(assarCargaEmWorker({ ...pedido, nuvens: true }, () => {}))
+      : null;
+  const camada = pedirWebgpu && opts.camadaQuerida ? pedirCamada(principal) : null;
   const assar = async (soParticulas: boolean, pronta?: Promise<CargaAssada>) => {
     const carga = await (pronta ?? assarCargaEmWorker({ ...pedido, soParticulas }, aoAvancar));
     const dustMapTexture = texturaDoMapa(carga.poeira);
@@ -249,6 +266,7 @@ export async function montarCarga(opts: {
       const galaxy = new Galaxy(carga, dustMapTexture, structureMapTexture, {
         soParticulas,
         tetoLodMilhoes: orcamento.tetoLodMilhoes,
+        pedirWebgpu: soParticulas ? pedirWebgpu : null,
       });
       return { carga, galaxy, dustMapTexture, structureMapTexture };
     } catch (e) {

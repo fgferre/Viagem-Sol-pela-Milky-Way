@@ -30,10 +30,12 @@ import {
 } from './geradorDaGalaxia';
 import { porCurva } from '../core/engine';
 import type { CaminhoDaGalaxia } from '../core/engine';
+import { webgpuFalhouNestaPagina } from './galaxiaWebgpu/camadaWebgpu';
 import type { CamadaPedida, CamadaWebgpu } from './galaxiaWebgpu/camadaWebgpu';
 import type { GalaxyBuffers } from './geradorDaGalaxia';
 import { controleDoLaboratorio, opcoesWebgpu, LABORATORIO_PADRAO } from './laboratorioDaGalaxia';
 import type { Laboratorio } from './laboratorioDaGalaxia';
+import { LIMIAR_SISTEMA_SOLAR_PC } from '../escala';
 
 // A FACHADA da onda da arquitetura (corte 5): a base e o gerador
 // moram ao lado e são reexportados daqui — o director (Parte 1 da
@@ -48,6 +50,33 @@ export type { GalaxyBuffers, StructureField } from './geradorDaGalaxia';
 
 
 export type CartographyMode = 'blend' | 'off' | 'observed';
+
+/**
+ * Quanto a câmera fica em casa, seguidos, antes de a camada WebGPU ser
+ * solta. Quem volta para casa e sai de novo (o fim do filme galáctico, um
+ * passeio do Atlas até a borda do Sistema Solar) não paga outra vez os
+ * ~10–12 s de nascer e o re-assar dos sorteios; quem fica (os filmes de
+ * casa, o Atlas) devolve à placa a memória dela.
+ */
+export const SEGUNDOS_EM_CASA_PARA_SOLTAR = 20;
+
+/**
+ * A CAMADA SÓ FORA DE CASA (19/11/2026). Dentro do disco ela não desenha
+ * nada (galaxyFade = 0), mas segurava ~0,6 GB na placa o tempo todo — e o
+ * filme solar em Cinema caía por memória ao carregar a Terra. O princípio é
+ * o do `PalcoDoRoteiro`: o motor segura só o que a câmera pode ver. Fora do
+ * Sistema Solar ela é pedida (o filme galáctico sai de casa ~116 s antes de
+ * a galáxia entrar no quadro: galaxy.test.ts confere a folga); em casa ela
+ * fica enquanto a volta for recente, e é solta depois de
+ * `SEGUNDOS_EM_CASA_PARA_SOLTAR` seguidos de relógio.
+ */
+export function destinoDaCamadaWebgpu(
+  dHomePc: number,
+  segundosEmCasa: number
+): 'pedir' | 'manter' | 'soltar' {
+  if (dHomePc > LIMIAR_SISTEMA_SOLAR_PC) return 'pedir';
+  return segundosEmCasa >= SEGUNDOS_EM_CASA_PARA_SOLTAR ? 'soltar' : 'manter';
+}
 
 export class Galaxy {
   readonly group = new THREE.Group();
@@ -134,6 +163,13 @@ export class Galaxy {
   private webgpuEmVoo = false;
   /** ... e já passou do prazo: a captura não espera mais, mas ela entra se chegar */
   private webgpuAtrasada = false;
+  /** ... e foi solta antes de chegar: é descartada quando chegar */
+  private webgpuDispensada = false;
+  /** o pedido em voo — o prazo de um pedido velho não fala pelo novo */
+  private pedidaEmVoo: CamadaPedida | null = null;
+  /** como pedir a camada outra vez (`montarCarga`); null fora do caminho WebGPU,
+   *  e a função devolve null quando o WebGPU já falhou nesta página */
+  private readonly pedirWebgpu: (() => CamadaPedida | null) | null;
   /** a fração da luz das partículas que cabe à camada WebGPU, do último `update` */
   private cessao = 0;
   /** a lei de longe é toda da camada WebGPU neste quadro: o WebGL só desenha a de perto */
@@ -253,10 +289,16 @@ export class Galaxy {
     dustMap: THREE.Texture,
     structureMap: THREE.Texture,
     /** o desenho que a carga montou (`montarCarga`): só-partículas ou o
-     *  clássico das lâminas, e o teto de instâncias do tier (?lodmax=) */
-    desenho: { soParticulas: boolean; tetoLodMilhoes: number } = { soParticulas: false, tetoLodMilhoes: 5 }
+     *  clássico das lâminas, o teto de instâncias do tier (?lodmax=) e, no
+     *  caminho WebGPU, como pedir a camada (`seguirCamadaWebgpu`) */
+    desenho: {
+      soParticulas: boolean;
+      tetoLodMilhoes: number;
+      pedirWebgpu?: (() => CamadaPedida | null) | null;
+    } = { soParticulas: false, tetoLodMilhoes: 5 }
   ) {
     this.soParticulas = desenho.soParticulas;
+    this.pedirWebgpu = desenho.pedirWebgpu ?? null;
     this.nuvensEmMeia = buffers.nuvens ?? null;
     this.tetoDoTier = desenho.tetoLodMilhoes;
     this.tetoLod = desenho.tetoLodMilhoes * 1e6;
@@ -1237,7 +1279,8 @@ export class Galaxy {
 
   /**
    * Liga a camada WebGPU pedida pela carga (`CamadaWebgpu.criar`, que já
-   * sobe em paralelo com ela). Sem WebGPU (ou com a ponte quebrada) a
+   * sobe em paralelo com ela) ou, mais tarde, pela câmera que saiu de casa
+   * (`seguirCamadaWebgpu`). Sem WebGPU (ou com a ponte quebrada) a
    * camada não chega e o WebGL segue; numa galáxia clássica ela é solta.
    * Passado o prazo o painel é avisado, e a camada que chega atrasada
    * entra mesmo assim (18/11/2026).
@@ -1248,15 +1291,21 @@ export class Galaxy {
       return;
     }
     this.webgpuEmVoo = true;
+    this.webgpuAtrasada = false;
+    this.pedidaEmVoo = pedida;
     void pedida.atrasou.then(() => {
-      if (!this.webgpuEmVoo) return;
+      if (this.pedidaEmVoo !== pedida) return;
       this.webgpuAtrasada = true;
+      if (this.webgpuDispensada) return;
       console.warn('[galáxia] o WebGPU passou do prazo (placa ocupada?) — o WebGL desenha até ele chegar.');
       this.anunciarCaminho();
     });
     void pedida.pronta.then((camada) => {
+      const dispensada = this.webgpuDispensada;
       this.webgpuEmVoo = false;
-      if (camada && this.descartada) camada.dispose();
+      this.webgpuDispensada = false;
+      this.pedidaEmVoo = null;
+      if (camada && (this.descartada || dispensada)) camada.dispose();
       else if (camada) {
         this.camadaWebgpu = camada;
         this.group.add(camada.mesh);
@@ -1286,8 +1335,51 @@ export class Galaxy {
     }
   }
 
-  /** a camada caiu (dispositivo perdido, erro da GPU): a luz volta ao WebGL */
+  /**
+   * A CAMADA SEGUE A CÂMERA (`destinoDaCamadaWebgpu`, chamada a cada quadro
+   * antes do `update`). Pedir quando não há camada nem pedido em voo; um
+   * pedido dispensado que ainda voa volta a ter dono em vez de abrir outro
+   * — nunca duas criações ao mesmo tempo. Enquanto ela não chega, o WebGL
+   * desenha, como numa carga fria.
+   */
+  seguirCamadaWebgpu(destino: 'pedir' | 'manter' | 'soltar') {
+    if (destino === 'soltar') this.soltarWebgpu();
+    if (destino !== 'pedir' || !this.soParticulas || this.descartada) return;
+    if (this.webgpuDispensada) {
+      this.webgpuDispensada = false;
+      this.anunciarCaminho();
+    }
+    if (this.camadaWebgpu || this.webgpuEmVoo || !this.pedirWebgpu) return;
+    const pedida = this.pedirWebgpu();
+    if (pedida) this.ligarWebgpu(pedida);
+  }
+
+  /**
+   * O CAMINHO QUE O PAINEL MOSTRA. A camada solta em casa pela regra (ou
+   * nunca pedida, a carga em casa) não é queda nem troca de galáxia: para o
+   * painel a galáxia é a WebGPU, saudável, e ela volta quando a câmera sair.
+   * O console (`anunciarCaminho`) segue dizendo quem de fato desenha.
+   */
+  get caminhoNoPainel(): CaminhoDaGalaxia {
+    const emCasa =
+      this.soParticulas &&
+      this.pedirWebgpu !== null &&
+      !this.camadaWebgpu &&
+      this.webgpuACaminho === null &&
+      !webgpuFalhouNestaPagina();
+    return emCasa ? 'webgpu' : this.caminho;
+  }
+
+  /**
+   * Solta a camada: caiu (dispositivo perdido, erro da GPU) ou a câmera
+   * ficou em casa (`seguirCamadaWebgpu`). A luz volta ao WebGL; a que ainda
+   * voa é descartada quando chegar.
+   */
   private soltarWebgpu() {
+    if (this.webgpuEmVoo && !this.webgpuDispensada) {
+      this.webgpuDispensada = true;
+      this.anunciarCaminho();
+    }
     const camada = this.camadaWebgpu;
     if (!camada) return;
     this.camadaWebgpu = null;
@@ -1313,13 +1405,13 @@ export class Galaxy {
    * se a câmera sai antes de ela chegar, a espera volta no mesmo quadro.
    */
   get desenhoEmVoo(): boolean {
-    const aCaminho = this.webgpuEmVoo && !this.webgpuAtrasada;
+    const aCaminho = this.webgpuEmVoo && !this.webgpuAtrasada && !this.webgpuDispensada;
     return (aCaminho || (this.camadaWebgpu?.pendentes ?? 0) > 0) && this.desenhaDeFora;
   }
 
   /** o WebGPU pedido ainda não chegou: `subindo` no prazo, `atrasado` depois dele */
   get webgpuACaminho(): 'subindo' | 'atrasado' | null {
-    if (!this.webgpuEmVoo) return null;
+    if (!this.webgpuEmVoo || this.webgpuDispensada) return null;
     return this.webgpuAtrasada ? 'atrasado' : 'subindo';
   }
 

@@ -14,7 +14,19 @@ vi.hoisted(() => {
 });
 const assarCarga = vi.fn();
 vi.mock('../world/cadeiaDaCarga', () => ({ assarCarga: (...a: unknown[]) => assarCarga(...a) }));
-vi.mock('../world/galaxy', () => ({ Galaxy: class {} }));
+const desenhos: { pedirWebgpu?: (() => unknown) | null }[] = [];
+vi.mock('../world/galaxy', () => ({
+  Galaxy: class {
+    constructor(_c: unknown, _p: unknown, _e: unknown, desenho: (typeof desenhos)[number]) {
+      desenhos.push(desenho);
+    }
+  },
+}));
+const criar = vi.fn(() => ({ pronta: new Promise(() => {}), atrasou: new Promise(() => {}) }));
+vi.mock('../world/galaxiaWebgpu/camadaWebgpu', () => ({
+  CamadaWebgpu: { criar: (...a: unknown[]) => criar(...(a as [])) },
+  webgpuFalhouNestaPagina: () => false,
+}));
 
 import { montarCarga } from './carregamento';
 
@@ -59,6 +71,7 @@ describe('montarCarga: o worker que devolve erro', () => {
       tier: 'performance',
       galaxia: 'classica',
       sorteios: null,
+      camadaQuerida: false,
       aoAvancar: () => {},
     });
     expect(aviso).toHaveBeenCalledOnce();
@@ -66,5 +79,32 @@ describe('montarCarga: o worker que devolve erro', () => {
     expect(WorkerFalso.ultimo!.terminado).toBe(true);
     expect(assarCarga).toHaveBeenCalledOnce();
     expect(carga.coberturaDeJovens).toBe(3);
+  });
+});
+
+describe('montarCarga: a camada WebGPU só fora de casa (19/11/2026)', () => {
+  it('na carga em casa ela não nasce nem assa os sorteios extras; a galáxia a pede quando a câmera sair', async () => {
+    const mapa = () => new Uint8Array(DUST_MAP_SIZE * DUST_MAP_SIZE * 4);
+    assarCarga.mockReset();
+    assarCarga.mockResolvedValue({ poeira: mapa(), estrutura: mapa(), pacote: {} });
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await montarCarga({
+      catalogos: null,
+      tier: 'performance',
+      galaxia: 'webgpu',
+      sorteios: 3,
+      camadaQuerida: false,
+      aoAvancar: () => {},
+    });
+    // só a principal
+    expect(assarCarga).toHaveBeenCalledOnce();
+    expect(criar).not.toHaveBeenCalled();
+    // a câmera saiu: a principal outra vez (com as nuvens) e os dois sorteios extras
+    desenhos.at(-1)!.pedirWebgpu!();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(criar).toHaveBeenCalledOnce();
+    expect(assarCarga).toHaveBeenCalledTimes(4);
+    expect(assarCarga.mock.calls[1][0]).toMatchObject({ seed: assarCarga.mock.calls[0][0].seed, nuvens: true });
+    vi.restoreAllMocks();
   });
 });
