@@ -10,13 +10,15 @@
 // ============================================================
 import { filmeDe } from '../cinematic/filme';
 import type { EntradaDaBusca } from '../../lib/buscaEstrelas';
+import { UA_POR_PC } from '../../lib/unidades';
 import type { CenaDaCamada } from '../world/galaxy';
 
 /**
  * A cena de abertura. `alvoDoFoco` resolve o `?foco=` como o `useDirector`
  * (o índice da busca e o atalho dos anéis). `?pos=` é voo livre;
  * `?atlas`/`?foco=` é o Atlas — na estrela ou no lugar do céu enquadrado
- * (todos a mais de 1 pc: a distância deles), no corpo ou sem foco, em casa.
+ * (todos a mais de 1 pc: a distância deles), no corpo pela distância dele
+ * (o exoplaneta, longe; os do Sistema Solar, em casa) ou sem foco, em casa.
  * Sem eles é o filme escolhido em cena: tocando (`?t=`/`?play=`) ou na intro.
  */
 export function cenaDaAbertura(
@@ -33,7 +35,9 @@ export function cenaDaAbertura(
   if (query.has('atlas') || foco) {
     const alvo = foco ? alvoDoFoco(foco) : null;
     const p = alvo?.tipo === 'estrela' ? alvo.estrela : alvo?.tipo === 'lugar' ? alvo.lugar : null;
-    return { fase: 'atlas', revealT, dHomePc: p ? Math.hypot(p.x, p.y, p.z) : 0 };
+    // o corpo pela distância dele: o exoplaneta está na anfitriã (20/11/2026)
+    const dCorpo = alvo?.tipo === 'corpo' && Number.isFinite(alvo.corpo.rUA) ? alvo.corpo.rUA / UA_POR_PC : 0;
+    return { fase: 'atlas', revealT, dHomePc: p ? Math.hypot(p.x, p.y, p.z) : dCorpo };
   }
   const tocando = query.has('t') || !!query.get('play');
   // com filme em cena a regra não lê a distância

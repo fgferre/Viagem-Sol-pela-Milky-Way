@@ -228,6 +228,19 @@ describe('a camada WebGPU só onde a câmera pode vir a vê-la (19/11/2026)', ()
     avisos.mockRestore();
     vi.unstubAllGlobals();
   });
+
+  it('a camada que renasce pela regra avisa o painel que está subindo (20/11/2026)', async () => {
+    const pedir = (): CamadaPedida => ({ pronta: new Promise(() => {}), atrasou: new Promise(() => {}) });
+    const galaxia = await galaxiaDeTeste(pedir);
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const avisos: string[] = [];
+    galaxia.aoMudarCaminho = () => avisos.push(`${galaxia.caminhoNoPainel}/${galaxia.webgpuACaminho}`);
+    galaxia.seguirCamadaWebgpu('pedir');
+    expect(avisos).toEqual(['particulas/subindo']);
+    galaxia.dispose();
+    info.mockRestore();
+    vi.unstubAllGlobals();
+  });
 });
 
 describe('a cópia JS das partículas sai do heap mesmo de fora do disco (13/11/2026)', () => {

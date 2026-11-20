@@ -14,7 +14,11 @@ const nasce = (search: string) =>
         ? { tipo: 'estrela', estrela: { n: 'Sirius', x: 2.6, y: 0, z: 0 } as NamedStar }
         : foco === 'saturn'
           ? { tipo: 'corpo', corpo: { id: 'saturn', nome: 'Saturno', classe: 'planeta', rUA: 9.5 } }
-          : null
+          : foco === 'trappist-1e'
+            ? { tipo: 'corpo', corpo: { id: 'trappist-1e', nome: 'TRAPPIST-1 e', classe: 'exoplaneta', rUA: 12.47 * 206264.8 } }
+            : foco === 'sem-meta'
+              ? { tipo: 'corpo', corpo: { id: 'sem-meta', nome: 'Sem meta', classe: 'exoplaneta', rUA: Number.NaN } }
+              : null
     )
   );
 
@@ -32,5 +36,10 @@ describe('a cena em que a visita abre, lida na carga (19/11/2026)', () => {
     expect(nasce('?atlas=1&t=150')).toBe(false);
     expect(nasce('?foco=Sirius')).toBe(true);
     expect(nasce('?atlas=1&foco=saturn')).toBe(false);
+  });
+
+  it('o link de um exoplaneta nasce com a camada na carga, e um rUA sem número fica em casa', () => {
+    expect(nasce('?foco=trappist-1e')).toBe(true);
+    expect(nasce('?foco=sem-meta')).toBe(false);
   });
 });

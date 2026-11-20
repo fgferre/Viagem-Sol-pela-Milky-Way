@@ -870,3 +870,35 @@ describe('a vista dos anéis de Saturno (`ver=aneis`, 16/11): chegar à mão at�
     expect(depois.lon).toBeCloseTo(esperado.lon, 9);
   });
 });
+
+describe('a troca de idioma reemite o foco vivo na língua nova (20/11/2026)', () => {
+  it('corpo e lugar trocam o texto, a câmera fica; sem foco, nada renasce', async () => {
+    const { definirIdioma, idiomaAtual } = await import('../../lib/idioma');
+    const antes = idiomaAtual();
+    definirIdioma('pt-BR');
+    const { escada, camera, focos } = bancada();
+    const andromeda = LUGARES_DA_BUSCA.find((l) => l.id === 'andromeda')!;
+    const reemitido = (idioma: 'pt-BR' | 'en') => {
+      definirIdioma(idioma);
+      escada.reemitirFoco();
+      return focos.at(-1);
+    };
+    escada.focarNoCorpo('earth', 'corpo');
+    const pose = camera.position.toArray();
+    expect(reemitido('en')).toBe('Earth');
+    expect(camera.position.toArray()).toEqual(pose);
+    expect(escada.escadaViva).toMatchObject({ degrau: 'corpo', corpoId: 'earth' });
+    expect(reemitido('pt-BR')).toBe('Terra');
+    // o lugar escolhido pela busca (sem nome guardado) e pelo clique (com o nome da língua velha)
+    escada.visitarLugar(andromeda);
+    const emPt = focos.at(-1);
+    expect(reemitido('en')).toBe(andromeda.nomeEn);
+    expect(andromeda.nomeEn).not.toBe(emPt);
+    escada.selecionarPonto(new THREE.Vector3(andromeda.x, andromeda.y, andromeda.z), 1, andromeda.nomeEn!, andromeda);
+    expect(reemitido('pt-BR')).toBe(emPt);
+    // de volta à casa: o foco é nenhum, e continua nenhum
+    escada.focarNoSistema();
+    expect(reemitido('en')).toBeNull();
+    definirIdioma(antes);
+  });
+});

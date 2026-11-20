@@ -258,8 +258,9 @@ const MEDIR_TEXELS = `(() => {
     if (!t || !t.isTexture || vistas.has(t)) return;
     vistas.add(t);
     const im = t.image || {};
-    const w = im.width || (t.source && t.source.data && t.source.data.width) || 0;
-    const h = im.height || (t.source && t.source.data && t.source.data.height) || 0;
+    // o bitmap do corpo é fechado depois da subida (largura 0): o tamanho fica no userData
+    const w = im.width || (t.source && t.source.data && t.source.data.width) || (t.userData && t.userData.largura) || 0;
+    const h = im.height || (t.source && t.source.data && t.source.data.height) || (t.userData && t.userData.altura) || 0;
     if (!w || !h) return;
     const mip = t.generateMipmaps !== false && t.minFilter !== 1003 && t.minFilter !== 1006;
     n++;

@@ -1371,7 +1371,10 @@ export class Galaxy {
     }
     if (this.camadaWebgpu || this.webgpuEmVoo || !this.pedirWebgpu) return;
     const pedida = this.pedirWebgpu();
-    if (pedida) this.ligarWebgpu(pedida);
+    if (!pedida) return;
+    this.ligarWebgpu(pedida);
+    // o painel passa a dizer "subindo" enquanto ela renasce (na carga quem avisa é o `vestirGalaxia`)
+    this.anunciarCaminho();
   }
 
   /**

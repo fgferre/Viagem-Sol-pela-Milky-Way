@@ -47,7 +47,7 @@ import type { Planetas } from '../world/planetas/planetas';
 import type { FreeRoam } from '../cinematic/cameraRig';
 import type { CorpoBuscavel, LugarBuscavel } from '../../lib/buscaEstrelas';
 import { nomeDoLugar } from '../../lib/buscaEstrelas';
-import { poseDePertoDaEstrelaS, poseDoLugar, type PoseDoLugar } from '../world/lugaresDoCeu';
+import { LUGARES_DA_BUSCA, poseDePertoDaEstrelaS, poseDoLugar, type PoseDoLugar } from '../world/lugaresDoCeu';
 import { poseDaSonda } from '../world/sondas';
 import {
   PLANETA_DO_PONTO_DO_ANEL,
@@ -1080,6 +1080,29 @@ export class Escada {
 
   private emitirEscada() {
     this.events.onEscada(this.escada);
+  }
+
+  /**
+   * O NOME DO ALVO VIVO NA LÍNGUA DE AGORA (20/11/2026): o `onFoco` é um
+   * texto já traduzido, e a troca de idioma o reemite pelo mesmo alvo —
+   * só o texto muda, a câmera e o degrau não.
+   */
+  reemitirFoco() {
+    if (this.phase !== 'atlas') return;
+    this.events.onFoco(this.nomeDoFocoVivo());
+  }
+
+  private nomeDoFocoVivo(): string | null {
+    if (this.focoCorpoId) return nomeDoCorpo(this.focoCorpoId);
+    if (this.pequeno) return this.objetoPequeno(this.pequeno.id)?.nome ?? null;
+    if (!this.focoEstrela) return null;
+    // estrela tem nome de catálogo; o lugar do céu é o único que traduz
+    const nome = this.estrelaFocada ? this.estrelaFocada.nome : null;
+    const alvo = this.lugarFocado?.alvo;
+    const lugar = LUGARES_DA_BUSCA.find((l) =>
+      this.estrelaFocada ? nome === l.nome || nome === l.nomeEn : alvo?.x === l.x && alvo.y === l.y && alvo.z === l.z
+    );
+    return lugar ? nomeDoLugar(lugar) : nome;
   }
 
   /**
