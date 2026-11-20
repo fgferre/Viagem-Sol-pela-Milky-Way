@@ -66,10 +66,10 @@ import type { OclusorDeRotulo, StarLabel } from './world/labels';
 import { ClaraoDeAsas, veuDaLenteNaTela, type LuzDaLenteNoQuadro } from './world/clarao';
 import { SondaDaLente } from './lente/sondaDaLente';
 import { amplitudeDaLente, G_DA_LENTE, multiplicadorDaForca } from './lente/passeDaLente';
-import { Galaxy, GAL, dentroDoDisco, destinoDaCamadaWebgpu } from './world/galaxy';
+import { Galaxy, GAL, camadaWebgpuQuerida, dentroDoDisco, destinoDaCamadaWebgpu } from './world/galaxy';
 import { esquecerQuedaDoWebgpu, motivoDaQuedaDoWebgpu } from './world/galaxiaWebgpu/camadaWebgpu';
 import { GalaxiasVizinhas, sortearVizinhas } from './world/vizinhas';
-import type { CartographyMode } from './world/galaxy';
+import type { CartographyMode, CenaDaCamada } from './world/galaxy';
 import { ObservedClouds } from './world/observedClouds';
 import { StarForges } from './world/starForges';
 import { WrappedStars, resolvedCatalogCurve } from './world/wrappedStars';
@@ -100,7 +100,7 @@ import { montarContadorDeFps } from '../lib/contadorDeFps';
 import { EPOCA_JD_TDB } from './world/planetas/retrato2026';
 import { lerPortaJd } from './tempoDoAtlas';
 import type { EstadoDoTempo, SentidoDoTempo } from './tempoDoAtlas';
-import { LIMIAR_SISTEMA_SOLAR_PC, RAIO_DO_SOL_NA_CENA } from './escala';
+import { RAIO_DO_SOL_NA_CENA } from './escala';
 import { EXPO_M0, SIGMA_PX } from './luzDaCasa';
 // A LEI DA ESTRELA (M1): a repartição única do Sol virou UMA função
 // pura (`repartir`, estrela.ts) — quem a chama por quadro é o módulo
@@ -148,7 +148,7 @@ import {
   montarCenaDeAquecimento,
   montarCorposDoPalco,
 } from './director/carregamento';
-import { distanciaDaAberturaPc } from './director/abertura';
+import { cenaDaAbertura } from './director/abertura';
 import { construirIndice, resolverFoco } from '../lib/buscaEstrelas';
 import { LUGARES_DA_BUSCA } from './world/lugaresDoCeu';
 import { ID_DO_PONTO_DO_ANEL, PLANETA_DO_PONTO_DO_ANEL } from './world/pontoDoAnel';
@@ -1099,14 +1099,21 @@ export class Director {
    * `Nebula.bake` — custa um `sort` de ≤300 números por quadro.
    */
   private ultimoQuadroPerf = performance.now();
-  /** desde quando (relógio, ms) a câmera está em casa sem sair — `destinoDaCamadaWebgpu` */
-  private emCasaDesde: number | null = null;
+  /** desde quando (relógio, ms) a camada WebGPU segue sem ser querida — `destinoDaCamadaWebgpu` */
+  private semQuererDesde: number | null = null;
   /** o dHome do último quadro; null antes do primeiro (a câmera ainda é a provisória) */
   private dHomeDoQuadro: number | null = null;
 
-  /** a distância ao Sol de onde a visita abre, pela URL (`abertura.ts`) */
-  private dHomeDaAbertura(): number {
-    return distanciaDaAberturaPc(window.location.search, (foco) =>
+  /**
+   * A cena que a regra da camada WebGPU lê fora do quadro (a carga e o
+   * re-assar): antes do primeiro quadro, a de abertura pela URL
+   * (`abertura.ts`); depois, a do último quadro.
+   */
+  private cenaDaCamada(): CenaDaCamada {
+    if (this.dHomeDoQuadro !== null) {
+      return { fase: this.phase, revealT: this.filme.revealT, dHomePc: this.dHomeDoQuadro };
+    }
+    return cenaDaAbertura(window.location.search, (foco) =>
       resolverFoco(
         foco === ID_DO_PONTO_DO_ANEL ? PLANETA_DO_PONTO_DO_ANEL : foco,
         construirIndice(this.escada.nomeadas, this.escada.corpos, LUGARES_DA_BUSCA)
@@ -2185,9 +2192,10 @@ export class Director {
       galaxia: this.galaxiaForcada,
       sorteios: this.laboratorio.sorteios,
       // na carga a câmera ainda está no lugar provisório do engine: quem diz
-      // onde a visita abre é a URL (`distanciaDaAberturaPc`), e um link longe
-      // de casa nasce com a camada em paralelo com a carga, como desde 13/11
-      camadaQuerida: destinoDaCamadaWebgpu(this.dHomeDaAbertura(), 0) === 'pedir',
+      // onde a visita abre é a URL (`cenaDaAbertura`). Querida já na abertura
+      // (a intro do galáctico, um link longe), a camada nasce em paralelo
+      // com a carga, como desde 13/11
+      camadaQuerida: camadaWebgpuQuerida(this.cenaDaCamada()),
       aoAvancar: (etapa) => this.rotular(etapa),
     });
     if (this.disposed) {
@@ -3487,7 +3495,7 @@ export class Director {
     // PEDIR O WEBGPU DEPOIS DE UMA QUEDA É TENTAR DE NOVO (18/11/2026): a
     // queda deixa de valer pela página e o mundo é reassado mesmo com o
     // mesmo pedido de antes. Um WebGPU ainda a caminho não é pedido duas vezes,
-    // nem o que está só solto em casa (ele volta quando a câmera sair).
+    // nem o que está só solto pela regra (ele volta quando for querido).
     if (caminho === 'webgpu' && this.galaxy?.caminhoNoPainel !== 'webgpu' && !this.galaxy?.webgpuACaminho) {
       esquecerQuedaDoWebgpu();
       this.chaveDoMundoNaTela = null;
@@ -3690,9 +3698,9 @@ export class Director {
         tier: q,
         galaxia: this.galaxiaForcada,
         sorteios: this.laboratorio.sorteios,
-        // antes do primeiro quadro (a reconciliação do fim do init) a câmera
-        // ainda é a provisória: vale a pose de abertura
-        camadaQuerida: destinoDaCamadaWebgpu(this.dHomeDoQuadro ?? this.dHomeDaAbertura(), 0) === 'pedir',
+        // antes do primeiro quadro (a reconciliação do fim do init) vale a
+        // cena de abertura (`cenaDaCamada`)
+        camadaQuerida: camadaWebgpuQuerida(this.cenaDaCamada()),
         // o loader não aparece: a troca é viva, e o rótulo de etapa é do
         // carregamento. O visitante vê o mundo velho até o mundo novo
         // estar pronto — que é a promessa inteira da letra C.
@@ -4721,14 +4729,18 @@ export class Director {
         };
       }
     }
-    // A CAMADA WEBGPU SÓ FORA DE CASA (19/11/2026), decidida antes do
-    // `update` e da captura. Com um mundo novo no forno a velha não pede:
-    // o forno já pediu a dele, e nunca há duas criações ao mesmo tempo.
+    // A CAMADA WEBGPU SÓ ONDE A CÂMERA PODE VIR A VÊ-LA (19/11/2026,
+    // `camadaWebgpuQuerida`), decidida antes do `update` e da captura. Com um
+    // mundo novo no forno a velha não pede: o forno já pediu a dele.
     const agoraMs = performance.now();
     this.dHomeDoQuadro = dHome;
-    if (dHome > LIMIAR_SISTEMA_SOLAR_PC) this.emCasaDesde = null;
-    else this.emCasaDesde ??= agoraMs;
-    const destinoDaCamada = destinoDaCamadaWebgpu(dHome, (agoraMs - (this.emCasaDesde ?? agoraMs)) / 1000);
+    const cenaDaCamada: CenaDaCamada = { fase: this.phase, revealT: this.filme.revealT, dHomePc: dHome };
+    if (camadaWebgpuQuerida(cenaDaCamada)) this.semQuererDesde = null;
+    else this.semQuererDesde ??= agoraMs;
+    const destinoDaCamada = destinoDaCamadaWebgpu(
+      cenaDaCamada,
+      (agoraMs - (this.semQuererDesde ?? agoraMs)) / 1000
+    );
     if (destinoDaCamada !== 'pedir' || this.trocaPedida === null) {
       this.galaxy?.seguirCamadaWebgpu(destinoDaCamada);
     }

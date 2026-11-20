@@ -1108,7 +1108,7 @@ describe('a troca de tier que LANÇA não prende o app (auditoria B, item 4)', (
       StellarBody: class {},
       SOL_PARAMS: {},
       faseDoCiclo: () => 0,
-      destinoDaCamadaWebgpu: () => 'manter',
+      camadaWebgpuQuerida: () => false,
     };
     const reassar = new Function(...Object.keys(livres), `return async function (q) {\n${corpo}\n};`)(
       ...Object.values(livres)
@@ -1129,7 +1129,7 @@ describe('a troca de tier que LANÇA não prende o app (auditoria B, item 4)', (
       publicarQualidade: () => publicadas++,
       passoBlindado: (_c: string, _r: string, fn: () => void) => fn(),
       engine: { renderer: {} },
-      dHomeDoQuadro: 0,
+      cenaDaCamada: () => ({}),
       laboratorio: { sorteios: null },
     };
     const aviso = vi.spyOn(console, 'warn').mockImplementation(() => {});

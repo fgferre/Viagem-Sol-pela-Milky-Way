@@ -82,8 +82,8 @@ describe('montarCarga: o worker que devolve erro', () => {
   });
 });
 
-describe('montarCarga: a camada WebGPU só fora de casa (19/11/2026)', () => {
-  it('na carga em casa ela não nasce nem assa os sorteios extras; a galáxia a pede quando a câmera sair', async () => {
+describe('montarCarga: a camada WebGPU só quando querida (19/11/2026)', () => {
+  it('na carga em que não é querida ela não nasce nem assa os sorteios extras; a galáxia a pede quando passar a ser', async () => {
     const mapa = () => new Uint8Array(DUST_MAP_SIZE * DUST_MAP_SIZE * 4);
     assarCarga.mockReset();
     assarCarga.mockResolvedValue({ poeira: mapa(), estrutura: mapa(), pacote: {} });
@@ -99,7 +99,7 @@ describe('montarCarga: a camada WebGPU só fora de casa (19/11/2026)', () => {
     // só a principal
     expect(assarCarga).toHaveBeenCalledOnce();
     expect(criar).not.toHaveBeenCalled();
-    // a câmera saiu: a principal outra vez (com as nuvens) e os dois sorteios extras
+    // passou a ser querida: a principal outra vez (com as nuvens) e os dois sorteios extras
     desenhos.at(-1)!.pedirWebgpu!();
     await new Promise((r) => setTimeout(r, 0));
     expect(criar).toHaveBeenCalledOnce();

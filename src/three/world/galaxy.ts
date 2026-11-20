@@ -36,6 +36,7 @@ import type { GalaxyBuffers } from './geradorDaGalaxia';
 import { controleDoLaboratorio, opcoesWebgpu, LABORATORIO_PADRAO } from './laboratorioDaGalaxia';
 import type { Laboratorio } from './laboratorioDaGalaxia';
 import { LIMIAR_SISTEMA_SOLAR_PC } from '../escala';
+import type { Phase } from '../fases';
 
 // A FACHADA da onda da arquitetura (corte 5): a base e o gerador
 // moram ao lado e são reexportados daqui — o director (Parte 1 da
@@ -52,30 +53,49 @@ export type { GalaxyBuffers, StructureField } from './geradorDaGalaxia';
 export type CartographyMode = 'blend' | 'off' | 'observed';
 
 /**
- * Quanto a câmera fica em casa, seguidos, antes de a camada WebGPU ser
- * solta. Quem volta para casa e sai de novo (o fim do filme galáctico, um
- * passeio do Atlas até a borda do Sistema Solar) não paga outra vez os
- * ~10–12 s de nascer e o re-assar dos sorteios; quem fica (os filmes de
- * casa, o Atlas) devolve à placa a memória dela.
+ * Quanto tempo seguido a camada WebGPU fica sem ser querida antes de ser
+ * solta. Só segura o vai-e-vem na fronteira (o voo livre ou o Atlas
+ * cruzando a borda do Sistema Solar); curto de propósito: quem sai do
+ * filme para o Atlas e clica na Terra já carrega as texturas dela com a
+ * memória da camada devolvida à placa.
  */
-export const SEGUNDOS_EM_CASA_PARA_SOLTAR = 20;
+export const SEGUNDOS_SEM_QUERER_PARA_SOLTAR = 5;
+
+/** o que a regra da camada lê da cena: a fase, o filme em cartaz e a câmera */
+export interface CenaDaCamada {
+  fase: Phase;
+  /** o `revealT` do filme em cartaz: `null` = um filme que não mostra a galáxia de fora */
+  revealT: number | null;
+  /** a distância da câmera ao Sol, em pc */
+  dHomePc: number;
+}
 
 /**
- * A CAMADA SÓ FORA DE CASA (19/11/2026). Dentro do disco ela não desenha
- * nada (galaxyFade = 0), mas segurava ~0,6 GB na placa o tempo todo — e o
- * filme solar em Cinema caía por memória ao carregar a Terra. O princípio é
- * o do `PalcoDoRoteiro`: o motor segura só o que a câmera pode ver. Fora do
- * Sistema Solar ela é pedida (o filme galáctico sai de casa ~116 s antes de
- * a galáxia entrar no quadro: galaxy.test.ts confere a folga); em casa ela
- * fica enquanto a volta for recente, e é solta depois de
- * `SEGUNDOS_EM_CASA_PARA_SOLTAR` seguidos de relógio.
+ * A CAMADA SÓ ONDE A CÂMERA PODE VIR A VÊ-LA (19/11/2026). Dentro do disco
+ * ela não desenha nada (galaxyFade = 0), mas segura ~1,4 GB no processo da
+ * placa — e o filme solar em Cinema caía por memória ao carregar a Terra.
+ * O princípio é o do `PalcoDoRoteiro`: o motor segura só o que a câmera
+ * pode ver.
+ *  • Com um filme em cena (intro, journey, end): querida se o filme mostra a
+ *    galáxia de fora (`revealT`). A distância não entra: o estelar sai de
+ *    casa e nunca deixa o disco. O galáctico a pede desde a abertura, e o
+ *    nascimento (que congela a tela por instantes) fica na carga.
+ *  • Sem filme (voo livre, Atlas): querida longe do Sistema Solar.
+ * Solta depois de `SEGUNDOS_SEM_QUERER_PARA_SOLTAR` seguidos de relógio sem
+ * ser querida.
  */
+export function camadaWebgpuQuerida({ fase, revealT, dHomePc }: CenaDaCamada): boolean {
+  if (fase === 'intro' || fase === 'journey' || fase === 'end') return revealT !== null;
+  return dHomePc > LIMIAR_SISTEMA_SOLAR_PC;
+}
+
+/** o que fazer com a camada neste quadro, dado quanto tempo ela segue sem ser querida */
 export function destinoDaCamadaWebgpu(
-  dHomePc: number,
-  segundosEmCasa: number
+  cena: CenaDaCamada,
+  segundosSemQuerer: number
 ): 'pedir' | 'manter' | 'soltar' {
-  if (dHomePc > LIMIAR_SISTEMA_SOLAR_PC) return 'pedir';
-  return segundosEmCasa >= SEGUNDOS_EM_CASA_PARA_SOLTAR ? 'soltar' : 'manter';
+  if (camadaWebgpuQuerida(cena)) return 'pedir';
+  return segundosSemQuerer >= SEGUNDOS_SEM_QUERER_PARA_SOLTAR ? 'soltar' : 'manter';
 }
 
 export class Galaxy {
@@ -1279,7 +1299,7 @@ export class Galaxy {
 
   /**
    * Liga a camada WebGPU pedida pela carga (`CamadaWebgpu.criar`, que já
-   * sobe em paralelo com ela) ou, mais tarde, pela câmera que saiu de casa
+   * sobe em paralelo com ela) ou, mais tarde, quando ela passa a ser querida
    * (`seguirCamadaWebgpu`). Sem WebGPU (ou com a ponte quebrada) a
    * camada não chega e o WebGL segue; numa galáxia clássica ela é solta.
    * Passado o prazo o painel é avisado, e a camada que chega atrasada
@@ -1336,7 +1356,7 @@ export class Galaxy {
   }
 
   /**
-   * A CAMADA SEGUE A CÂMERA (`destinoDaCamadaWebgpu`, chamada a cada quadro
+   * A CAMADA SEGUE A REGRA (`destinoDaCamadaWebgpu`, chamada a cada quadro
    * antes do `update`). Pedir quando não há camada nem pedido em voo; um
    * pedido dispensado que ainda voa volta a ter dono em vez de abrir outro
    * — nunca duas criações ao mesmo tempo. Enquanto ela não chega, o WebGL
@@ -1355,24 +1375,25 @@ export class Galaxy {
   }
 
   /**
-   * O CAMINHO QUE O PAINEL MOSTRA. A camada solta em casa pela regra (ou
-   * nunca pedida, a carga em casa) não é queda nem troca de galáxia: para o
-   * painel a galáxia é a WebGPU, saudável, e ela volta quando a câmera sair.
-   * O console (`anunciarCaminho`) segue dizendo quem de fato desenha.
+   * O CAMINHO QUE O PAINEL MOSTRA. A camada solta pela regra (ou nunca
+   * pedida, numa carga em que ela não era querida) não é queda nem troca de
+   * galáxia: para o painel a galáxia é a WebGPU, saudável, e ela volta
+   * quando for querida de novo. O console (`anunciarCaminho`) segue dizendo
+   * quem de fato desenha.
    */
   get caminhoNoPainel(): CaminhoDaGalaxia {
-    const emCasa =
+    const dormindo =
       this.soParticulas &&
       this.pedirWebgpu !== null &&
       !this.camadaWebgpu &&
       this.webgpuACaminho === null &&
       !webgpuFalhouNestaPagina();
-    return emCasa ? 'webgpu' : this.caminho;
+    return dormindo ? 'webgpu' : this.caminho;
   }
 
   /**
-   * Solta a camada: caiu (dispositivo perdido, erro da GPU) ou a câmera
-   * ficou em casa (`seguirCamadaWebgpu`). A luz volta ao WebGL; a que ainda
+   * Solta a camada: caiu (dispositivo perdido, erro da GPU) ou deixou de
+   * ser querida (`seguirCamadaWebgpu`). A luz volta ao WebGL; a que ainda
    * voa é descartada quando chegar.
    */
   private soltarWebgpu() {

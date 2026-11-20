@@ -203,8 +203,8 @@ export async function montarCarga(opts: {
   galaxia: CaminhoDaGalaxia | null;
   /** os sorteios do motor WebGPU escolhidos à mão (laboratório, `?sorteios=`); `null` = os do tier */
   sorteios: number | null;
-  /** a camada WebGPU é querida já (`destinoDaCamadaWebgpu`: a câmera longe
-   *  de casa); senão ela só nasce quando a câmera sair (`seguirCamadaWebgpu`) */
+  /** a camada WebGPU é querida já (`camadaWebgpuQuerida`); senão ela só
+   *  nasce quando passar a ser (`seguirCamadaWebgpu`) */
   camadaQuerida: boolean;
   aoAvancar: (etapa: EtapaDaCadeia) => void;
 }): Promise<CargaDoMundo> {
@@ -237,9 +237,9 @@ export async function montarCarga(opts: {
     { ...pedido, nuvens: pedido.soParticulas },
     aoAvancar
   );
-  // A CAMADA SÓ FORA DE CASA (19/11/2026): a carga em casa não a cria nem
-  // assa os sorteios extras. Quando a câmera sai, a galáxia a pede por aqui
-  // de novo — a principal assada outra vez com a mesma semente (a galáxia
+  // A CAMADA SÓ QUANDO QUERIDA (19/11/2026, `camadaWebgpuQuerida`): a carga
+  // em que ela não é querida não a cria nem assa os sorteios extras. Quando
+  // passa a ser, a galáxia a pede por aqui de novo — a principal assada outra vez com a mesma semente (a galáxia
   // não guarda as partículas depois de subi-las), a mesma imagem.
   const pedirCamada = (prima: Promise<CargaAssada>) => {
     const extras = Array.from({ length: sorteios - 1 }, (_, i) =>

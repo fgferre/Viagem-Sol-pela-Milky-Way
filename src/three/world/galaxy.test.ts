@@ -117,62 +117,58 @@ describe('o WebGPU que atrasa ou cai avisa e tenta de novo (18/11/2026)', () => 
   });
 });
 
-describe('a camada WebGPU só fora de casa (19/11/2026)', () => {
-  it('a regra: pedida longe de casa; em casa fica, e é solta depois de 20 s seguidos', async () => {
+describe('a camada WebGPU só onde a câmera pode vir a vê-la (19/11/2026)', () => {
+  it('a regra: filme com a galáxia pede; filme sem ela, nunca; sem filme, pela distância; solta após 5 s', async () => {
     vi.stubGlobal('window', { location: { search: '' } });
-    const { destinoDaCamadaWebgpu, SEGUNDOS_EM_CASA_PARA_SOLTAR } = await import('./galaxy');
+    const { destinoDaCamadaWebgpu, SEGUNDOS_SEM_QUERER_PARA_SOLTAR } = await import('./galaxy');
     const { LIMIAR_SISTEMA_SOLAR_PC } = await import('../escala');
-    expect(SEGUNDOS_EM_CASA_PARA_SOLTAR).toBe(20);
-    expect(destinoDaCamadaWebgpu(LIMIAR_SISTEMA_SOLAR_PC * 1.01, 999)).toBe('pedir');
-    expect(destinoDaCamadaWebgpu(LIMIAR_SISTEMA_SOLAR_PC, 0)).toBe('manter');
-    expect(destinoDaCamadaWebgpu(1e-8, 19.9)).toBe('manter');
-    expect(destinoDaCamadaWebgpu(1e-8, 20)).toBe('soltar');
+    const longe = LIMIAR_SISTEMA_SOLAR_PC * 1.01;
+    expect(SEGUNDOS_SEM_QUERER_PARA_SOLTAR).toBe(5);
+    // o galáctico em cena, ainda em casa: pedida (o nascimento fica na carga)
+    expect(destinoDaCamadaWebgpu({ fase: 'intro', revealT: 146, dHomePc: 1e-8 }, 999)).toBe('pedir');
+    // um filme sem galáxia longe de casa (o estelar): não pedida, solta após 5 s
+    expect(destinoDaCamadaWebgpu({ fase: 'journey', revealT: null, dHomePc: 400 }, 4.9)).toBe('manter');
+    expect(destinoDaCamadaWebgpu({ fase: 'journey', revealT: null, dHomePc: 400 }, 5)).toBe('soltar');
+    // voo livre longe: pedida, qualquer que seja o filme em cartaz
+    expect(destinoDaCamadaWebgpu({ fase: 'free', revealT: null, dHomePc: longe }, 999)).toBe('pedir');
+    // Atlas em casa, mesmo com o galáctico em cartaz: solta após 5 s
+    expect(destinoDaCamadaWebgpu({ fase: 'atlas', revealT: 146, dHomePc: 1e-8 }, 4.9)).toBe('manter');
+    expect(destinoDaCamadaWebgpu({ fase: 'atlas', revealT: 146, dHomePc: 1e-8 }, 5)).toBe('soltar');
     vi.unstubAllGlobals();
   });
 
-  it('o galáctico a pede pelo menos 30 s antes de ela poder aparecer; o solar nunca a pede', async () => {
+  it('o revealT diz a verdade: tem galáxia a revelar o filme cujo caminho sai do disco, e só ele', async () => {
     vi.stubGlobal('window', { location: { search: '' } });
-    const { Journey } = await import('../cinematic/journey');
-    const { montarFilmeSolar } = await import('../cinematic/filmes/solar/montar');
-    const { destinoDaCamadaWebgpu, dentroDoDisco } = await import('./galaxy');
-    // o caminho da câmera a cada 0,1 s: (a) o primeiro pedido, (b) a primeira
-    // vez fora do miolo do disco, onde a camada pode entrar no quadro.
-    // Medido em 19/11: o galáctico pede em 26,2 s e ela aparece em 141,9 s;
-    // a camada leva ~10–12 s para nascer numa carga fria
-    const medir = (j: InstanceType<typeof Journey>) => {
-      let pede = -1;
-      let aparece = -1;
-      for (let i = 0; i <= Math.round(j.duration * 10); i++) {
-        const pos = j.at(i / 10).pos;
-        if (pede < 0 && destinoDaCamadaWebgpu(pos.length(), 0) === 'pedir') pede = i / 10;
-        if (aparece < 0 && dentroDoDisco(pos) < 1) aparece = i / 10;
+    const { FILMES_EM_CARTAZ, filmeDe } = await import('../cinematic/filme');
+    const { dentroDoDisco } = await import('./galaxy');
+    for (const id of FILMES_EM_CARTAZ) {
+      const { journey, revealT } = filmeDe(id);
+      // o caminho da câmera a cada 0,1 s
+      let saiDoDisco = false;
+      for (let i = 0; i <= Math.round(journey.duration * 10) && !saiDoDisco; i++) {
+        saiDoDisco = dentroDoDisco(journey.at(i / 10).pos) < 1;
       }
-      return { pede, aparece };
-    };
-    const galactico = medir(new Journey());
-    expect(galactico.pede).toBeGreaterThanOrEqual(0);
-    expect(galactico.aparece - galactico.pede).toBeGreaterThanOrEqual(30);
-    const solar = montarFilmeSolar();
-    expect(medir(new Journey(solar.shots, solar.starts)).pede).toBe(-1);
+      expect(revealT !== null, id).toBe(saiDoDisco);
+    }
     vi.unstubAllGlobals();
   });
 
-  it('pede uma vez só; solta a que voa e a retoma se a câmera sair de novo; solta a que chegou', async () => {
+  it('pede uma vez só; solta a que voa e a retoma se voltar a ser querida; solta a que chegou', async () => {
     let chegar!: (c: CamadaWebgpu | null) => void;
     const pedir = vi.fn(
       (): CamadaPedida => ({ pronta: new Promise((r) => (chegar = r)), atrasou: new Promise(() => {}) })
     );
     const galaxia = await galaxiaDeTeste(pedir);
     const camada = () => ({ mesh: new THREE.Object3D(), falhou: false, pendentes: 0, update: vi.fn(), dispose: vi.fn() });
-    // em casa, carga fria: nada pedido
+    // não querida, carga fria: nada pedido
     galaxia.seguirCamadaWebgpu('manter');
     expect(pedir).not.toHaveBeenCalled();
-    // saiu: um pedido, e nunca dois
+    // querida: um pedido, e nunca dois
     galaxia.seguirCamadaWebgpu('pedir');
     galaxia.seguirCamadaWebgpu('pedir');
     expect(pedir).toHaveBeenCalledOnce();
     expect(galaxia.webgpuACaminho).toBe('subindo');
-    // soltar com ela em voo: deixa de ser esperada; sair de novo a retoma
+    // soltar com ela em voo: deixa de ser esperada; querida de novo, é retomada
     galaxia.seguirCamadaWebgpu('soltar');
     expect(galaxia.webgpuACaminho).toBeNull();
     galaxia.seguirCamadaWebgpu('pedir');
@@ -181,7 +177,7 @@ describe('a camada WebGPU só fora de casa (19/11/2026)', () => {
     chegar(primeira as unknown as CamadaWebgpu);
     await Promise.resolve();
     expect(galaxia.caminho).toBe('webgpu');
-    // ficou em casa: solta, e o WebGL volta a desenhar
+    // deixou de ser querida: solta, e o WebGL volta a desenhar
     galaxia.seguirCamadaWebgpu('manter');
     expect(primeira.dispose).not.toHaveBeenCalled();
     galaxia.seguirCamadaWebgpu('soltar');
@@ -206,7 +202,7 @@ describe('a camada WebGPU só fora de casa (19/11/2026)', () => {
     vi.unstubAllGlobals();
   });
 
-  it('em casa, com a camada solta pela regra, o painel recebe webgpu sem queda; o console, partículas', async () => {
+  it('com a camada solta pela regra, o painel recebe webgpu sem queda; o console, partículas', async () => {
     const galaxia = await galaxiaDeTeste(() => null);
     const webgpu = await import('./galaxiaWebgpu/camadaWebgpu');
     webgpu.esquecerQuedaDoWebgpu(); // o teste da queda acima a deixa marcada
