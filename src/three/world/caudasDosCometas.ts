@@ -475,7 +475,9 @@ void main() {
   float meia = sqrt(R * R - p * p);
   float s0 = max(sc - meia, 0.0);
   float s1 = sc + meia;
-  if (p < uNucKm) {
+  // o núcleo só tapa o raio que vai na direção dele (sc > 0): de costas,
+  // de dentro da coma, não há núcleo na frente para recortar
+  if (sc > 0.0 && p < uNucKm) {
     float sn = sc - sqrt(uNucKm * uNucKm - p * p);
     s1 = min(s1, sn);
   }

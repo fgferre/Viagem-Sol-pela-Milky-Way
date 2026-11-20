@@ -4444,7 +4444,9 @@ export class Director {
     // O NÚCLEO DO COMETA EM FOCO também é superfície (pilar 4): quilômetros
     // de corpo que o near do Sol cortaria de perto
     const nucleo = this.caudas?.superficieDoFoco(cam.position, this.escada.focoCometa) ?? null;
-    if (nucleo && !(superficie.dSuperficiePc <= nucleo.dSuperficiePc)) superficie = nucleo;
+    if (nucleo && Number.isFinite(nucleo.dSuperficiePc) && !(superficie.dSuperficiePc <= nucleo.dSuperficiePc)) {
+      superficie = nucleo;
+    }
     this.engine.updateClip(Math.min(dHome, dGC), superficie.dSuperficiePc, superficie.raioPc);
 
     // A Via Láctea não é um plano: os fades de AMBIENTE respondem à

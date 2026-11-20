@@ -165,6 +165,7 @@ export function numeroPtBr(v: number): string {
  * `decimalDoIdioma` não pode mexer.
  */
 export function numeroDoIdioma(v: number): string {
+  if (!Number.isFinite(v)) return '—';
   const [, inteiro, resto] = /^(-?\d+)(.*)$/.exec(decimalDoIdioma(v.toFixed(1).replace(/\.0$/, '')))!;
   // separador de MILHAR da língua (3.237 · 3,237) a partir de quatro algarismos
   return inteiro!.replace(/\B(?=(\d{3})+$)/g, idiomaAtual() === 'en' ? ',' : '.') + resto;

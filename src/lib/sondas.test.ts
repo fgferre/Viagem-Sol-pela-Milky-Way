@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 import type { MetaEfemerides } from './atlas/efemerides';
 import { decodeEfemerides, MotorEfemerides } from './atlas/efemerides';
 import { AU_KM } from './atlas/elementosOrbitais';
-import { SONDAS, estadoDaSonda, janelaDaSonda, nosDaSonda } from './sondas';
+import { COMETAS, conjuntoVigente, estadoDoCometa } from './cometas';
+import { SONDAS, estadoDaSonda, janelaDaSonda, nosDaSonda, propagarKepler } from './sondas';
 
 const DATA_DIR = fileURLToPath(new URL('../../public/data/atlas/', import.meta.url));
 
@@ -81,5 +82,92 @@ describe('as sondas', () => {
     const plutao = maisPerto('new-horizons', 'pluto', 2457217.99);
     expect(Math.abs(netuno - 29_241)).toBeLessThan(1_000);
     expect(Math.abs(plutao - 13_680)).toBeLessThan(1_000);
+  });
+});
+
+const MU = 0.01720209895 ** 2;
+
+/** a cônica de um estado, pela equação de Kepler clássica (não pelas
+ *  variáveis universais): excentricidade, periélio, h, energia, o tempo
+ *  desde o periélio e o período (null na hipérbole) */
+function conica(s: readonly number[]) {
+  const [x, y, z, vx, vy, vz] = s;
+  const r = Math.hypot(x, y, z);
+  const rv = x * vx + y * vy + z * vz;
+  const h = [y * vz - z * vy, z * vx - x * vz, x * vy - y * vx];
+  const alfa = 2 / r - (vx * vx + vy * vy + vz * vz) / MU;
+  const p = (h[0] ** 2 + h[1] ** 2 + h[2] ** 2) / MU;
+  const e = Math.sqrt(Math.max(0, 1 - alfa * p));
+  const n = Math.sqrt(MU * Math.abs(alfa) ** 3);
+  let t: number;
+  if (alfa > 0) {
+    const E = Math.atan2(rv * Math.sqrt(alfa / MU), 1 - r * alfa);
+    t = (E - e * Math.sin(E)) / n;
+  } else {
+    const H = Math.asinh((rv * Math.sqrt(-alfa / MU)) / e);
+    t = (e * Math.sinh(H) - H) / n;
+  }
+  return { e, q: p / (1 + e), h, alfa, t, periodo: alfa > 0 ? (2 * Math.PI) / n : null };
+}
+
+/** quanto o tempo desde o periélio de `s` erra `esperado` (dias, módulo o período) */
+function erroDoTempo(s: readonly number[], esperado: number): number {
+  const c = conica(s);
+  let d = c.t - esperado;
+  if (c.periodo) d -= c.periodo * Math.round(d / c.periodo);
+  return Math.abs(d) / Math.max(1, Math.abs(esperado));
+}
+
+describe('propagarKepler', () => {
+  it('cometas e sondas, 1950–2050: tudo finito e na cônica certa, no instante certo', () => {
+    // o pior erro relativo de todas as datas (NaN conta como Infinity)
+    let pior = 0;
+    const anota = (erro: number) => {
+      pior = Math.max(pior, Number.isNaN(erro) ? Infinity : erro);
+    };
+    for (const c of COMETAS) {
+      for (let jd = 2433282.5; jd <= 2469807.5; jd += 3) {
+        const s = estadoDoCometa(c.id, jd)!;
+        const k = conjuntoVigente(c.id, jd)!;
+        const o = conica(s);
+        anota(s.every(Number.isFinite) ? 0 : Infinity);
+        anota(Math.abs(o.e - k[2]));
+        anota(Math.abs(o.q - k[1]) / k[1]);
+        anota(erroDoTempo(s, jd - k[6]));
+      }
+    }
+    for (const sd of SONDAS) {
+      const nos = nosDaSonda(sd.id);
+      for (let i = 0; i + 1 < nos.length; i++) {
+        const a = nos[i];
+        const ca = conica(a.slice(1));
+        for (let jd = a[0]; jd <= nos[i + 1][0]; jd += Math.min(5, (nos[i + 1][0] - a[0]) / 4)) {
+          const s = propagarKepler(a, jd);
+          const o = conica(s);
+          anota(s.every(Number.isFinite) ? 0 : Infinity);
+          anota(Math.abs(o.alfa - ca.alfa) / Math.max(1, Math.abs(ca.alfa)));
+          anota(Math.hypot(o.h[0] - ca.h[0], o.h[1] - ca.h[1], o.h[2] - ca.h[2]) / Math.hypot(...ca.h));
+          anota(erroDoTempo(s, ca.t + jd - a[0]));
+        }
+      }
+    }
+    expect(pior).toBeLessThan(1e-9);
+  });
+
+  it('onde o Newton de antes já acertava, a posição é a mesma (fixada antes da troca)', () => {
+    const fixados: [string, number, number, number, number][] = [
+      ['halley', 2446470.5, 0.34233379055109003, -0.4465925412636795, 0.16779698446562652],
+      ['hale-bopp', 2450538.5, -0.11675717761436295, 0.5607676655731841, 0.7127600103611289],
+      ['neowise', 2459034.5, 0.21368058875649495, 0.1395216828402726, 0.14763846560025817],
+      ['3i-atlas', 2460978.5, -1.3179211504704338, -0.3087094401183493, 0.08997726626973664],
+    ];
+    for (const [id, jd, x, y, z] of fixados) {
+      const s = estadoDoCometa(id, jd)!;
+      expect(Math.hypot(s[0] - x, s[1] - y, s[2] - z)).toBeLessThan(1e-10);
+    }
+    const v1 = propagarKepler(nosDaSonda('voyager-1')[30], 2444485.5);
+    expect(Math.hypot(v1[0] + 8.878632674494334, v1[1] - 0.18747304046838104, v1[2] - 0.34789340674938507)).toBeLessThan(
+      1e-10
+    );
   });
 });

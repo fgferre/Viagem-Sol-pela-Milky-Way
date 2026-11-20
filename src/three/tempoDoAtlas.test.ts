@@ -39,6 +39,7 @@ import {
   grampearJd,
   lerPortaJd,
   mesmoMostrador,
+  numeroDoIdioma,
   taxaDoDegrau,
 } from './tempoDoAtlas';
 
@@ -253,6 +254,12 @@ describe('5. os rótulos são pt-BR e DERIVADOS do número', () => {
 
   it('instante impossível não vira NaN na tela', () => {
     expect(formatarInstante(Number.NaN)).toBe('instante indefinido');
+  });
+
+  it('número impossível não derruba a ficha nem vira NaN na tela', () => {
+    expect(numeroDoIdioma(Number.NaN)).toBe('—');
+    expect(numeroDoIdioma(Number.POSITIVE_INFINITY)).toBe('—');
+    expect(numeroDoIdioma(3237.04)).toBe('3.237');
   });
 });
 

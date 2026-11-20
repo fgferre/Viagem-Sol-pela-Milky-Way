@@ -219,23 +219,63 @@ function stumpff(z: number): [number, number] {
  * Dois corpos em torno do Sol, de um estado [jd, r, v] até `jd` —
  * variáveis universais (Curtis, algoritmos 3.3 e 3.4). Devolve
  * [x, y, z, vx, vy, vz].
+ *
+ * A raiz sai por Laguerre–Conway (n = 5) com o chute do regime (Vallado,
+ * algoritmo 8: Barker perto da parábola, o logarítmico na hipérbole, a
+ * anomalia média na elipse). F' = r > 0, então a raiz é única e
+ * |x| ≤ √μ·|dt|/q (r nunca fica abaixo do periélio q): o passo que sai
+ * desse intervalo vira bisseção. Na hipérbole o intervalo para em
+ * √(−z) = 600, onde cosh/sinh ainda não estouram. O Newton de antes, com
+ * chute linear, ia a NaN ou 1e281 UA em 3I/ATLAS, Hale-Bopp e NEOWISE.
  */
 export function propagarKepler(e: readonly number[], jd: number): number[] {
   const dt = jd - e[0];
   const r0 = Math.hypot(e[1], e[2], e[3]);
   const v2 = e[4] * e[4] + e[5] * e[5] + e[6] * e[6];
-  const vr0 = (e[1] * e[4] + e[2] * e[5] + e[3] * e[6]) / r0;
+  const rv = e[1] * e[4] + e[2] * e[5] + e[3] * e[6];
+  const sigma = rv / RAIZ_MU;
   const alfa = 2 / r0 - v2 / MU_SOL;
-  let x = RAIZ_MU * Math.abs(alfa) * dt;
-  if (Math.abs(alfa) < 1e-6 || !Number.isFinite(x)) x = (RAIZ_MU * dt) / r0;
+  const B = 1 - alfa * r0;
+  const hx = e[2] * e[6] - e[3] * e[5];
+  const hy = e[3] * e[4] - e[1] * e[6];
+  const hz = e[1] * e[5] - e[2] * e[4];
+  const p = (hx * hx + hy * hy + hz * hz) / MU_SOL;
+  const exc = Math.sqrt(Math.max(0, 1 - alfa * p));
+  const q = Math.max(p / (1 + exc), 1e-12);
+  let lim = (RAIZ_MU * Math.abs(dt)) / q;
+  if (alfa < 0) lim = Math.min(lim, 600 / Math.sqrt(-alfa));
+  let lo = dt < 0 ? -lim : 0;
+  let hi = dt < 0 ? 0 : lim;
+  let x = NaN;
+  if (Math.abs(1 - exc) < 0.01) {
+    const s = 0.5 * Math.atan(1 / (3 * Math.sqrt(MU_SOL / (p * p * p)) * dt));
+    const w = Math.atan(Math.cbrt(Math.tan(s)));
+    x = (2 * Math.sqrt(p)) / Math.tan(2 * w);
+  } else if (alfa > 0) {
+    x = RAIZ_MU * dt * alfa;
+  } else {
+    const sinal = Math.sign(dt);
+    const arg = (-2 * MU_SOL * alfa * dt) / (rv + sinal * Math.sqrt(-MU_SOL / alfa) * (1 - r0 * alfa));
+    if (arg > 1 && Number.isFinite(arg)) x = sinal * Math.sqrt(-1 / alfa) * Math.log(arg);
+  }
+  if (!(x >= lo && x <= hi)) x = (RAIZ_MU * dt) / r0;
+  if (!(x >= lo && x <= hi)) x = 0.5 * (lo + hi);
   for (let i = 0; i < 60; i++) {
     const z = alfa * x * x;
     const [S, C] = stumpff(z);
-    const F = ((r0 * vr0) / RAIZ_MU) * x * x * C + (1 - alfa * r0) * x * x * x * S + r0 * x - RAIZ_MU * dt;
-    const dF = ((r0 * vr0) / RAIZ_MU) * x * (1 - z * S) + (1 - alfa * r0) * x * x * C + r0;
-    const passo = F / dF;
-    x -= passo;
-    if (Math.abs(passo) < 1e-13 * Math.max(1, Math.abs(x))) break;
+    const F = sigma * x * x * C + B * x * x * x * S + r0 * x - RAIZ_MU * dt;
+    if (F > 0) hi = x;
+    else lo = x;
+    const dF = sigma * x * (1 - z * S) + B * x * x * C + r0;
+    const d2F = sigma * (1 - z * C) + B * x * (1 - z * S);
+    const raiz = Math.sqrt(Math.abs(16 * dF * dF - 20 * F * d2F));
+    const passo = (5 * F) / (dF + (dF >= 0 ? raiz : -raiz));
+    if (Math.abs(passo) < 1e-13 * Math.max(1, Math.abs(x))) {
+      x -= passo;
+      break;
+    }
+    const novo = x - passo;
+    x = novo > lo && novo < hi ? novo : 0.5 * (lo + hi);
   }
   const z = alfa * x * x;
   const [S, C] = stumpff(z);
