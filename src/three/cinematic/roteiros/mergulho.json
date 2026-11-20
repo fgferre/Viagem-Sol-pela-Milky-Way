@@ -44,7 +44,16 @@
         "efeitoDeVelocidade": { "tipo": "rampa", "de": 0, "para": 0.85, "ritmo": "quadratic" }
       },
       "assuntos": ["Antares"],
-      "fundoSilencioso": true
+      "fundoSilencioso": true,
+      "legendas": [{
+        "em": 0.15, "texto": "O berçário",
+        "subtexto": "Shaula, Dschubba, Lesath — o berçário de Escorpião no caminho",
+        "en": {
+          "texto": "The nursery",
+          "subtexto": "Shaula, Dschubba, Lesath — the Scorpius nursery along the way"
+        },
+        "duracao": 4.8
+      }]
     },
     {
       "qa": { "bercario": 0.6 },
@@ -72,15 +81,6 @@
             "subtexto": "the Sagittarius Arm: dust dims and reddens the stars"
           },
           "duracao": 4.2
-        },
-        {
-          "em": 0.5, "texto": "O berçário",
-          "subtexto": "Shaula, Dschubba, Lesath — o berçário de Escorpião no caminho",
-          "en": {
-            "texto": "The nursery",
-            "subtexto": "Shaula, Dschubba, Lesath — the Scorpius nursery along the way"
-          },
-          "duracao": 4.8
         }
       ]
     },

@@ -29,6 +29,7 @@
 // ============================================================
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
+import { AL_POR_PC } from '../../lib/unidades';
 import { LIMIAR_SISTEMA_SOLAR_PC, RAIO_SOL_PC } from '../escala';
 import { diametroAparentePx } from '../world/corpos/corpos';
 import { farPlanePc, nearPlanePc } from '../core/engine';
@@ -338,8 +339,14 @@ describe('a auditoria editorial do filme', () => {
   it('o berçário é nomeado onde as estrelas reais passam', () => {
     const bercario = auditoria.captions.find((c) => c.text === 'O berçário');
     expect(bercario).toBeDefined();
-    expect(bercario!.t0).toBeGreaterThanOrEqual(94);
-    expect(bercario!.t1).toBeLessThanOrEqual(104);
+    // Shaula, Dschubba e Lesath ficam a 440–580 anos-luz do Sol: a legenda
+    // toca enquanto a câmera cruza essa faixa (até 20/11/2026 tocava aos
+    // 99–104 s, com a câmera já a milhares de anos-luz dali)
+    for (const t of [bercario!.t0, bercario!.t1]) {
+      const anosLuzDoSol = journey.at(t).pos.length() * AL_POR_PC;
+      expect(anosLuzDoSol).toBeGreaterThan(380);
+      expect(anosLuzDoSol).toBeLessThan(600);
+    }
   });
 
   it('o play contínuo chega na Lua olhando para casa — pular o tempo não é o único caminho', () => {
