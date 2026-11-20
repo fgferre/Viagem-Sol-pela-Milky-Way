@@ -921,7 +921,10 @@ export class EstrelasNoQuadro {
         p.cedeu = cede;
       }
       a.clarao.soltura = leiA.solturaDoClarao;
-      if (p.indice >= 0 ? (stars?.points.visible ?? false) : !escondido) this.candidatas.push(a.clarao);
+      // a candidata vale com o ponto do catálogo apagado (longe de casa,
+      // `?nocat`): sem ela a nomeada caía no laço comum do clarão, com a
+      // cruz plena por cima da fotosfera (auditoria de 20/11/2026, item 10.2)
+      if (!escondido) this.candidatas.push(a.clarao);
       if (p.pontoProprio) {
         p.pontoProprio.points.visible = !escondido;
         p.pontoProprio.escrever({

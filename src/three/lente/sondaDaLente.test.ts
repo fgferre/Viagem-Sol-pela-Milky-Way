@@ -87,4 +87,24 @@ describe('a sonda da lente — quanto do disco do Sol está à vista', () => {
     expect(s.atualizar(quadro(cam, 1 / 30))).toBe(stepRampToward(1, 0, 1 / 30, RAMP_DURATION_MS));
     s.dispose();
   });
+
+  it('a fonte que ANDA (a companheira em órbita) segue medida: só trocar de identidade zera as respostas', () => {
+    // auditoria de 20/11/2026, item 10.1: com o relógio andando a companheira
+    // muda de lugar a cada tique, e a igualdade de posição apagava a lente
+    const s = new SondaDaLente();
+    const cam = camera();
+    const companheira = {};
+    const fonte = (x: number, candidata: object) => ({ pos: new THREE.Vector3(x, 0, 0), raioPc: 1e-9, candidata });
+    expect(s.atualizar({ ...quadro(cam, 0.05), fonte: fonte(1e-8, companheira) })).toBe(0); // chegou, espera a medida
+    for (let i = 0; i < TOQUES_DA_LENTE; i++) registrar(s, i, true);
+    for (let t = 1; t <= 5; t++) {
+      expect(s.atualizar({ ...quadro(cam, 0.05), fonte: fonte(1e-8 * (1 + 0.01 * t), companheira) })).toBe(1);
+    }
+    // os toques andam com ela
+    expect(s.group.children[0].position.x).toBeCloseTo(1.05e-8, 20);
+    // outra estrela no mesmo lugar é outra fonte: as respostas eram da anterior
+    expect(s.atualizar({ ...quadro(cam, 0.05), fonte: fonte(1.05e-8, {}) })).toBe(0);
+    expect((s as unknown as { respostas: (boolean | null)[] }).respostas.every((r) => r === null)).toBe(true);
+    s.dispose();
+  });
 });

@@ -93,7 +93,13 @@ export interface QuadroDaSondaDaLente {
   tanHalfFov: number;
   dtS: number;
   /** a fonte quando não é o Sol (a visitada de maior irradiância); ausente = o Sol */
-  fonte?: { readonly pos: THREE.Vector3; readonly raioPc: number } | null;
+  fonte?: {
+    readonly pos: THREE.Vector3;
+    readonly raioPc: number;
+    /** a identidade da fonte (a candidata ao clarão que ela é): a mesma
+     *  fonte que ANDA não é outra fonte. Ausente = vale o lugar */
+    readonly candidata?: object | null;
+  } | null;
 }
 
 export class SondaDaLente {
@@ -119,6 +125,8 @@ export class SondaDaLente {
   private readonly origem = new THREE.Vector3();
   /** onde os toques estão (a fonte do último quadro) */
   private readonly posDaFonte = new THREE.Vector3();
+  /** quem é a fonte do último quadro (`null` = o Sol, ou fonte sem identidade) */
+  private idDaFonte: object | null = null;
 
   constructor() {
     for (let i = 0; i < TOQUES_DA_LENTE; i++) {
@@ -154,10 +162,19 @@ export class SondaDaLente {
   atualizar(q: QuadroDaSondaDaLente): number {
     const cam = q.camera;
     const pos = q.fonte ? q.fonte.pos : this.origem;
-    // a fonte mudou de lugar: as respostas em voo eram de outro disco
-    if (!this.posDaFonte.equals(pos)) {
+    const id = q.fonte?.candidata ?? null;
+    const andou = !this.posDaFonte.equals(pos);
+    // a fonte mudou: as respostas em voo eram de outro disco. Mudar é
+    // trocar de IDENTIDADE — a companheira em órbita anda a cada tique do
+    // relógio e continua a mesma estrela (auditoria de 20/11/2026, item
+    // 10.1); só sem identidade o lugar decide
+    const outra = id !== this.idDaFonte || (id === null && andou);
+    this.idDaFonte = id;
+    if (andou) {
       this.posDaFonte.copy(pos);
       for (const m of this.meshes) m.position.copy(pos);
+    }
+    if (outra) {
       for (const c of this.consultas) c.invalidar();
       this.respostas.fill(null);
       this.medido = false;

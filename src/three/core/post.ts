@@ -210,12 +210,15 @@ function domarPassaAlta(bloom: UnrealBloomPass) {
  *  - o PRINCIPAL veste a pirâmide da LEI (`governarPiramide`) e cobre o
  *    que vive na camada 0 — Sol, planetas, galáxia, nebulosa: é o kernel
  *    do M2, o que passou 11/11 com 20 px na âncora de 15.800 UA;
- *  - o passe do CAMPO (`ClaraoDoCampo`) desenha só as três camadas de
- *    estrelas na `CAMADA_DO_CAMPO` e veste nelas o kernel do FILME,
+ *  - o passe do CAMPO (`ClaraoDoCampo`) desenha só a `CAMADA_DO_CAMPO` —
+ *    hoje, os gêmeos do clarão das estrelas fortes (os pontos do catálogo
+ *    saíram dela em 20/11/2026: no rascunho com a faixa de guarda todo
+ *    fragmento deles caía no `discard`) — e veste nela o kernel do FILME,
  *    inteiro — a forma [1; 0,8; 0,6; 0,4; 0,2] com raio 0,58 que dava ao
  *    céu o respiro que o dono cobrou de volta.
  *
- * O LIMIAR do campo já chega na régua de referência SEM conta nova: o
+ * O LIMIAR do campo já chega na régua de referência SEM conta nova (escrito
+ * quando os pontos do catálogo ainda entravam aqui): o
  * depósito das três camadas é ×pr² no vertex desde a parte 2 da
  * invariância — escalar o limiar por pr² aqui seria compensar duas vezes.
  * Galáxia e nebulosa ficam FORA do passe do campo na primeira leva, por
@@ -431,7 +434,7 @@ export function criarSomaComRecorte(): THREE.ShaderMaterial {
  * passe de addons mostrou um caminho mais barato que a flag: o
  * `UnrealBloomPass` já deposita o clarão puro numa textura própria
  * (`renderTargetsHorizontal[0]`) ANTES do blend aditivo final. Então o
- * passe (1) desenha só o campo — catálogo, cascas, heroes, via
+ * passe (1) desenha só o campo — os gêmeos do clarão, via
  * `CAMADA_DO_CAMPO` — no buffer OCIOSO do composer (o writeBuffer: o
  * bloom principal não troca buffers, e knee/OutputPass reescrevem cada
  * pixel dele depois — rascunho de graça, zero alvo novo na VRAM);
@@ -1087,6 +1090,10 @@ export class Post {
       0.82 // limiar — preserva a fotosfera e faz estrelas HDR florescerem
     );
     this.composer.addPass(this.bloom);
+    // o `addPass` acabou de dimensionar o bloom em px FÍSICOS (o composer
+    // multiplica pelo pixel ratio); a pirâmide vive em px de CSS — a mesma
+    // conta de `setSize`, que só roda no primeiro resize (item 3, 20/11/2026)
+    this.bloom.setSize(css.x, css.y);
     this.domarOBloom();
     this.governarPiramide();
     // o segundo cobertor: o clarão do campo entra ANTES do knee/ACES,

@@ -2296,13 +2296,12 @@ export class Director {
     this.engine.scene.add(this.galaxy.group);
     if (this.vizinhas) this.engine.scene.add(this.vizinhas.group);
     // O COBERTOR DO CAMPO (R2 do item 44, "cada camada com seu cobertor"):
-    // as três camadas de estrelas vivem TAMBÉM na CAMADA_DO_CAMPO — é por
-    // ela que o ClaraoDoCampo (post.ts) as re-desenha para vestir o kernel
-    // do filme SÓ nelas. Sol, clarão, planetas, poeira, galáxia e nebulosa
-    // ficam na camada 0, sob a pirâmide da lei.
-    this.stars.points.layers.enable(CAMADA_DO_CAMPO);
-    this.stars.pontosNaFrente.layers.enable(CAMADA_DO_CAMPO);
-    this.wrappedStars.points.layers.enable(CAMADA_DO_CAMPO);
+    // na CAMADA_DO_CAMPO só moram os gêmeos do clarão (`ClaraoDeAsas`,
+    // acima). As três camadas de pontos do catálogo FICAM FORA: o
+    // `prenderPontoNoClip` delas mede com a altura do quadro, e no
+    // rascunho com a faixa de guarda (maior que o quadro) todo fragmento
+    // caía no `discard` — custavam o vértice de cada estrela por quadro e
+    // não punham um pixel (auditoria de 20/11/2026, item 2.a).
     // Os 11 pontos fotométricos (Onda 4, D3). Grupo PRÓPRIO na cena,
     // NUNCA dentro de `sun.group` — de lá herdaria a escala 0,005 do
     // doador e o `return` antecipado quando o disco apaga.

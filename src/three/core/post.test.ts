@@ -61,6 +61,24 @@ describe('a faixa de guarda do cobertor do campo (item 70)', () => {
     expect(post).toMatch(/larga\.copy\(camera, false\)/);
     expect(post).not.toMatch(/\n\s*camera\.setViewOffset\(/);
   });
+
+  it('os pontos do catálogo NÃO entram no rascunho — lá todo fragmento deles cai no discard', () => {
+    // auditoria de 20/11/2026, item 2.a: o `prenderPontoNoClip` deles mede
+    // com a altura do QUADRO, e o rascunho é maior. Voltar a pô-los na
+    // camada é pagar o vértice de cada estrela por quadro por zero pixel
+    // (provado bit a bit em 1280×720 e 844×390 sem eles)
+    expect(director).not.toMatch(/(stars|pontosNaFrente|points)\.layers\.enable\(CAMADA_DO_CAMPO\)/);
+  });
+});
+
+describe('o bloom principal nasce em px de CSS (item 3, 20/11/2026)', () => {
+  it('o construtor desfaz o tamanho físico que o `addPass` dá ao bloom', () => {
+    // A REVERSÃO: sem a linha, em DPR 2 a pirâmide fica com 4× a área e
+    // meio σ até o primeiro resize — a sessão inteira de quem não mexe na janela
+    const ctor = post.slice(post.indexOf('this.composer.addPass(this.bloom);'));
+    const ate = ctor.slice(0, ctor.indexOf('this.composer.addPass(this.claraoDoCampo)'));
+    expect(ate).toMatch(/this\.bloom\.setSize\(css\.x, css\.y\)/);
+  });
 });
 
 describe('a soma com recorte (a armadilha do premultiplied)', () => {

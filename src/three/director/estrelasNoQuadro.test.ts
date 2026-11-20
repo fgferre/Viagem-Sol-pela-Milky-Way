@@ -218,6 +218,15 @@ describe('a nomeada fora da lista à mão ganha piloto pelo foco', () => {
     expect(quadro.candidatasAoClarao().map((c) => c.vaga)).toEqual([2 * vega]);
     passo(null);
   });
+
+  it('com o ponto do catálogo apagado (longe de casa) a nomeada com corpo segue candidata — sem cruz plena por cima do disco', () => {
+    // auditoria de 20/11/2026, item 10.2
+    stars.points.visible = false;
+    passo('Arcturus');
+    expect(quadro.candidatasAoClarao().map((c) => c.nomeada)).toEqual([named.length - 1]);
+    passo(null);
+    stars.points.visible = true;
+  });
 });
 
 describe('o lugar da célula quente (compatível com as imagens de 2019–2020, não medido)', () => {

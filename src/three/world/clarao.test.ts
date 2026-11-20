@@ -21,6 +21,7 @@ import { readFileSync } from 'node:fs';
 import * as THREE from 'three';
 import { describe, expect, it } from 'vitest';
 import type { StarsMeta } from '../config';
+import { MARGEM_DO_CAMPO } from '../core/post';
 import {
   BV_MEDIDO,
   ClaraoDeAsas,
@@ -648,6 +649,24 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     const uMeiaPx = ((doSol.material as THREE.ShaderMaterial).uniforms.uMeiaPx as { value: number })
       .value;
     expect(uMeiaPx).toBeCloseTo(esperado, 6);
+    c.dispose();
+  });
+
+  it('o gêmeo do campo mede a tela pela altura do RASCUNHO — quadro + faixa de guarda —, não a do quadro', () => {
+    // auditoria de 20/11/2026, item 2.b: com a altura do quadro o halo do
+    // campo saía inflado por (h + 2·margem)/h — ×1,36 em 720p
+    const c = new ClaraoDeAsas(META.named, { camadaDoCampo: 1 });
+    const pr = 2;
+    for (let i = 0; i < 30; i++) c.atualizar({ ...quadroEmCasa(true), screenH: 900 * pr, pr });
+    const interna = c as unknown as {
+      mats: THREE.ShaderMaterial[];
+      matsDoCampo: THREE.ShaderMaterial[];
+      meshesDoCampo: THREE.Mesh[];
+    };
+    const k = interna.meshesDoCampo.findIndex((m) => m.visible);
+    expect(k).toBeGreaterThanOrEqual(0);
+    expect(interna.mats[k].uniforms.uScreenH.value).toBe(900 * pr);
+    expect(interna.matsDoCampo[k].uniforms.uScreenH.value).toBe((900 + 2 * MARGEM_DO_CAMPO) * pr);
     c.dispose();
   });
 

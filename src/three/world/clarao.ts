@@ -61,6 +61,7 @@ import {
 } from '../shaders/estrelasDaLente';
 import { alcanceDoEspinhoPx, ganhoDeEntradaDoFlare, raioVisivelDaAsaPx } from '../estrela';
 import { M_V_SOL_DO_CAMPO, picoDaPsf, psfPointSizePx, sigmaDaPsfPx } from '../luzDaCasa';
+import { MARGEM_DO_CAMPO } from '../core/post';
 import { RAMP_DURATION_MS, stepRampToward } from './lodStellar';
 import { SondaDeOclusao } from './sondaDeOclusao';
 import { U_PERFIL_BASE, U_PERFIL_ESCALA, type AnelComPerfil } from './corpos/gigante';
@@ -1323,7 +1324,10 @@ export class ClaraoDeAsas {
         g.uGanho.value = u.uGanho.value * fatia;
         g.uMeiaPx.value = meiaPx;
         g.uNucleoPx.value = u.uNucleoPx.value;
-        g.uScreenH.value = q.screenH;
+        // o gêmeo só desenha no rascunho do campo, que é o quadro MAIS a
+        // faixa de guarda: com a altura do quadro ele saía inflado por
+        // (h + 2·margem)/h (auditoria de 20/11/2026, item 2.b)
+        g.uScreenH.value = q.screenH + 2 * MARGEM_DO_CAMPO * pr;
       }
     }
     this.cederAoMaisForte(q, radPorPx, cssH, sigma, pr);
