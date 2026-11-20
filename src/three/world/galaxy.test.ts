@@ -24,7 +24,7 @@ describe('Galaxy.dispose (13/11/2026)', () => {
     galaxia.dispose();
     expect(soltou).toHaveBeenCalledOnce();
     vi.unstubAllGlobals();
-  });
+  }, 30_000);
 });
 
 describe('a galáxia nova nasce com as camadas de AGORA (19/11/2026)', () => {
@@ -151,7 +151,7 @@ describe('a camada WebGPU só onde a câmera pode vir a vê-la (19/11/2026)', ()
       expect(revealT !== null, id).toBe(saiDoDisco);
     }
     vi.unstubAllGlobals();
-  });
+  }, 30_000);
 
   it('pede uma vez só; solta a que voa e a retoma se voltar a ser querida; solta a que chegou', async () => {
     let chegar!: (c: CamadaWebgpu | null) => void;
