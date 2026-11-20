@@ -852,7 +852,9 @@ try {
     voltouLua === 'Lua'
       && urlDaLua.includes('foco=lua')
       && /[?&]d=/.test(urlDaLua)
-      && !urlDaLua.includes('ver=')
+      // no degrau do corpo o link leva `ver=corpo` (20/11/2026: o link
+      // reproduz o que se vê); a distância segue no `d`
+      && urlDaLua.includes('ver=corpo')
       && Math.abs(raiosDeVolta / raiosNaLua - 1) < 5e-4,
     `a vista da Lua reproduz por URL com a DISTÂNCIA dentro (${urlDaLua} →`
       + ` "${voltouLua}" a ${raiosDeVolta.toFixed(4)} raios, contra`

@@ -1266,10 +1266,13 @@ try {
   })()`);
   conferir(engoliu === 'true', `e a rolagem da página morre no canvas (defaultPrevented=${engoliu})`);
 
-  // ---- 15b: `?d=` ENTRA NO ESPELHO; `?ver=` VIRA SÓ LEITURA -------
+  // ---- 15b: `?d=` ENTRA NO ESPELHO; `?ver=` SÓ FORA DA ÓRBITA -----
   // A distância era a única grandeza da vista que o link não sabia
   // contar: `?ver=` diz "no corpo" e não sabe dizer "no corpo, a 2,4
-  // raios dele". As duas metades da porta se medem aqui, e nenhuma
+  // raios dele". Desde 20/11/2026 o espelho escreve `?ver=` quando o
+  // visitante NÃO está no degrau da órbita (o link reproduz o que se
+  // vê: "Aproximar" abria de longe); aqui o degrau é o da órbita, e o
+  // `?ver=` segue de fora. As duas metades da porta se medem aqui, e nenhuma
   // delas cabe numa bancada — o escritor é o `urlComMomento` do React e
   // o leitor é o boot, e entre um e outro há uma NAVEGAÇÃO.
   //
@@ -1304,7 +1307,7 @@ try {
   );
   conferir(
     !linkComD.includes('ver='),
-    `...e NÃO escreve mais ?ver= (${linkComD})`
+    `...e no degrau da órbita NÃO escreve ?ver= (${linkComD})`
   );
   await sessao.ir(linkComD.replace(/^\?/, ''));
   await sessao.assentar();
