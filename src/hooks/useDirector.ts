@@ -223,7 +223,10 @@ export function useDirector(fios: FiosDoDirector) {
     void d
       .init()
       .then(() => {
-        if (cancelled) return;
+        // a placa desistiu na carga (item 4.1): nada de escolher filme,
+        // entrar no Atlas ou dar play num Director morto — o véu fica, e
+        // o "Tentar novamente" relê o endereço como ele chegou
+        if (cancelled || d.desistiuDaSessao) return;
         const query = new URLSearchParams(window.location.search);
         // ?filme= — QUAL FILME o play toca. Vem antes das marcas, que são
         // do filme escolhido; ausente é o galáctico, e um id desconhecido
@@ -338,7 +341,15 @@ export function useDirector(fios: FiosDoDirector) {
         }
       })
       .catch((error: unknown) => {
-        if (cancelled || (error instanceof DOMException && error.name === 'AbortError')) return;
+        // a sessão que desistiu já pôs a mensagem certa no véu; o que o
+        // boot rejeitar depois (o aborto das buscas, um passo que estoura
+        // no contexto morto) é consequência e não a troca (item 4.2)
+        if (
+          cancelled ||
+          d.desistiuDaSessao ||
+          (error instanceof DOMException && error.name === 'AbortError')
+        )
+          return;
         console.error(error);
         // a tela de erro fica; o contexto WebGL e os render targets já
         // criados no construtor, não — a sessão morta não renderiza mais

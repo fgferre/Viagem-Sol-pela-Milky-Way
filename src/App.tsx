@@ -1026,7 +1026,17 @@ export default function App() {
   // degrau abaixo, no mesmo filme e instante; o endereço é o espelho da
   // troca de qualidade (`replaceState`) e quem recarrega é o clique
   const recomecar = () => {
-    const url = enderecoDoRecomeco(contextoPerdido, quality.tier, urlComMomento());
+    const momento = urlComMomento();
+    // no degrau mais baixo (`performance`) não há tier abaixo, mas o
+    // MOMENTO ainda vai ao endereço (auditoria rodada 2, item 4.3) — só
+    // quando a placa desistiu: uma exceção em quadro naquele instante
+    // voltaria ao mesmo instante e cairia de novo, em laço. O tier vai
+    // fixo, como no degrau abaixo: `?q=auto` nasceria em cinema
+    let url = enderecoDoRecomeco(contextoPerdido, quality.tier, momento);
+    if (!url && contextoPerdido) {
+      url = momento;
+      url.searchParams.set('q', quality.tier);
+    }
     if (url) window.history.replaceState(null, '', `${url.pathname}${url.search}`);
     window.location.reload();
   };

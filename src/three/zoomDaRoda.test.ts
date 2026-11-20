@@ -468,9 +468,8 @@ describe('Director — a roda está ligada, e ligada do jeito que funciona', () 
 // ============================================================
 // A PORTA `?d=` — o espelho da roda (item 73, 22/08). A distância era a
 // única grandeza da vista que o link não sabia contar. O que se cobra
-// aqui é a FIAÇÃO: que haja UM escritor, UM leitor, e que `?ver=` tenha
-// perdido a caneta — duas portas para a mesma grandeza são duas
-// verdades (AGENTS §4), e a que sabe menos ganharia na leitura.
+// aqui é a FIAÇÃO: que haja UM escritor, UM leitor, e que o `?ver=` vá
+// junto dizendo o degrau — a régua em que o `?d=` foi medido (20/11).
 // A ida e volta viva é do `atlas-smoke`: entre o escritor e o leitor há
 // uma NAVEGAÇÃO, que bancada nenhuma tem.
 // ============================================================
@@ -478,18 +477,25 @@ const ESPELHO = readFileSync(new URL('../hooks/useEspelhoDaUrl.ts', import.meta.
 const BOOT = readFileSync(new URL('../hooks/useDirector.ts', import.meta.url), 'utf8');
 const SELO = readFileSync(new URL('./selo.ts', import.meta.url), 'utf8');
 
-describe('?d= entra no espelho; ?ver= vira só leitura', () => {
-  it('o espelho ESCREVE a distância e APAGA o degrau', () => {
+describe('?d= entra no espelho; ?ver= diz o degrau dele', () => {
+  // A REGRA MUDOU em 20/11 (auditoria rodada 2, item 12.1): este teste
+  // cobrava que o `?ver=` não fosse escrito (só a vista dos anéis), e era
+  // isso que fazia o link copiado depois do "Aproximar" reabrir o alvo de
+  // longe — sem pino não há `?d=`, e com pino o `?d=` é medido na régua do
+  // degrau do corpo, que o leitor só usa se o degrau vier junto. A regra
+  // agora é a do dono: o link reproduz o que o visitante vê.
+  it('o espelho ESCREVE a distância e o degrau em que ela foi medida', () => {
     const escritor = ESPELHO.slice(
       ESPELHO.indexOf('  const urlComMomento = () => {'),
       ESPELHO.indexOf('  const changeQuality')
     );
     expect(escritor).toContain("url.searchParams.set('d', String(Number(emRaios.toPrecision(4))))");
+    // o degrau vivo (corpo ou anéis) vai à URL; a órbita é o padrão e sai
+    expect(escritor).toContain("const ver = phase === 'atlas' && emQuadro ? d.verDaEscada : 'orbita';");
+    expect(escritor).toContain("if (ver !== 'orbita') url.searchParams.set('ver', ver);");
     expect(escritor).toContain("url.searchParams.delete('ver');");
-    // ...e não há um segundo caminho que ressuscite a escrita do degrau: a
-    // única é a vista dos anéis (16/11), um ponto de vista que o `?d=` não diz
+    // um escritor só: nenhum segundo caminho grava o degrau
     expect(ESPELHO.match(/searchParams\.set\('ver'/g)).toHaveLength(1);
-    expect(escritor).toContain("url.searchParams.set('ver', 'aneis')");
   });
 
   it('a porta se declara no REGISTRO do selo, como toda porta da casa', () => {

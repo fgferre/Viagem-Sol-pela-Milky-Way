@@ -34,13 +34,47 @@ describe('?loader= é ferramenta de captura (auditoria item 4)', () => {
 
   it('o link copiado NUNCA propaga loader — urlComMomento o apaga na entrada', () => {
     // o delete mora no próprio urlComMomento, antes de qualquer retorno
-    // (inclusive o `if (!d) return url` do boot sem Director)
+    // (inclusive o retorno do boot sem Director ou ainda na carga)
     const funcao = ESPELHO.indexOf('const urlComMomento = ');
     const apaga = ESPELHO.indexOf("url.searchParams.delete('loader')");
-    const semDirector = ESPELHO.indexOf('if (!d) return url;');
+    const semDirector = ESPELHO.indexOf("if (!d || phase === 'loading') return url;");
     expect(funcao).toBeGreaterThan(0);
     expect(apaga).toBeGreaterThan(funcao);
     expect(apaga).toBeLessThan(semDirector);
+  });
+});
+
+// auditoria rodada 2 (20/11): o endereço do "Tentar novamente" e do link copiado
+describe('o recomeço guarda onde o visitante estava (item 4.3)', () => {
+  it('na carga o endereço volta como chegou; no degrau mais baixo o momento é escrito só com a placa perdida', () => {
+    const escritor = ESPELHO.slice(
+      ESPELHO.indexOf('const urlComMomento = '),
+      ESPELHO.indexOf('  const changeQuality')
+    );
+    const retorno = escritor.indexOf("if (!d || phase === 'loading') return url;");
+    // antes de qualquer espelho do estado — nada de `filme`/`atlas`/`foco` apagados
+    expect(retorno).toBeGreaterThan(0);
+    expect(retorno).toBeLessThan(escritor.indexOf("url.searchParams.delete('filme')"));
+    const recomecar = FONTE.slice(FONTE.indexOf('const recomecar = () => {'), FONTE.indexOf('window.location.reload();'));
+    expect(recomecar).toContain('let url = enderecoDoRecomeco(contextoPerdido, quality.tier, momento);');
+    expect(recomecar).toContain('if (!url && contextoPerdido) {');
+    expect(recomecar).toContain("url.searchParams.set('q', quality.tier);");
+  });
+});
+
+describe('o link não carrega o que a vista já não é (item 12.2)', () => {
+  it('apaga pos/look/fov/freeze e, sem instante a escrever, t/play — depois do retorno da carga', () => {
+    const escritor = ESPELHO.slice(
+      ESPELHO.indexOf('const urlComMomento = '),
+      ESPELHO.indexOf('  const changeQuality')
+    );
+    const retorno = escritor.indexOf("if (!d || phase === 'loading') return url;");
+    const portas = escritor.indexOf("for (const porta of ['pos', 'look', 'fov', 'freeze']) url.searchParams.delete(porta);");
+    expect(portas).toBeGreaterThan(retorno);
+    const semInstante = escritor.slice(escritor.indexOf('} else {', escritor.indexOf("url.searchParams.set('play', '1');")));
+    expect(semInstante).toContain("url.searchParams.delete('t');");
+    expect(semInstante).toContain("url.searchParams.delete('play');");
+    expect(retorno).toBeGreaterThan(0);
   });
 });
 

@@ -181,7 +181,15 @@ export function useEspelhoDaUrl(dep: {
     // quem a abrisse com ?shot= — e sem ?shot= seria porta morta.
     url.searchParams.delete('loader');
     const d = directorRef.current;
-    if (!d) return url;
+    // NA CARGA O ENDEREÇO É O PEDIDO (auditoria rodada 2, item 4.3): o
+    // Director existe antes de o boot ler a URL, e espelhar o estado dele
+    // apagava `?filme=`, `?atlas`, `?foco`, `?ver` e `?d` — a placa que
+    // caía na carga recomeçava na tela de título. Ninguém mudou nada ainda.
+    if (!d || phase === 'loading') return url;
+    // PORTAS DE CAPTURA E INSPEÇÃO não viajam (item 12.2): o app não as
+    // escreve, e um link copiado de quem chegou por `?pos=` reabriria a
+    // câmera velha por cima de tudo (ela tem precedência no boot)
+    for (const porta of ['pos', 'look', 'fov', 'freeze']) url.searchParams.delete(porta);
     // O FILME ESCOLHIDO viaja junto, e só quando não é o padrão: a URL
     // espelha a ESCOLHA, nunca o padrão (um `?filme=` desconhecido já
     // caiu no galáctico e sai daqui)
@@ -212,24 +220,20 @@ export function useEspelhoDaUrl(dep: {
     const emQuadro = foco === null ? null : chaveDoFoco(foco, indice);
     if (phase === 'atlas' && emQuadro) url.searchParams.set('foco', emQuadro);
     else url.searchParams.delete('foco');
-    // `?ver=` VIRA SÓ LEITURA (item 73, 22/08). Ele espelhava o DEGRAU
-    // — "no corpo" ou "na órbita" —, e o degrau deixou de ser a
-    // grandeza que descreve a vista no dia em que a roda virou zoom
-    // contínuo: entre "no corpo" e "no corpo, a 2,4 raios dele" a porta
-    // não sabe distinguir. Quem espelha agora é `?d=`, e escrever as
-    // duas seriam DUAS PORTAS PARA A MESMA GRANDEZA (AGENTS §4), com a
-    // pior consequência possível — a que sabe menos ganhando na leitura.
-    //
-    // LER continua valendo, e é o contrato: todo link `?foco=x&ver=corpo`
-    // já copiado pousa no MESMO enquadramento de sempre (`lerPortaVer`
-    // em `selo.ts` e o bloco do `useDirector` ficam inteiros). O que
-    // some é a ESCRITA — e ela some sempre, inclusive quando a porta
-    // chegou pela URL: espelho reescreve o que a vista diz agora.
-    //
-    // A EXCEÇÃO É A VISTA DOS ANÉIS (16/11): ela não é uma distância que o
-    // `?d=` saiba dizer, é OUTRO ponto de vista do mesmo corpo — sem ela o
-    // link copiado dentro do anel abriria Saturno visto de longe.
-    if (phase === 'atlas' && emQuadro && d.verDaEscada === 'aneis') url.searchParams.set('ver', 'aneis');
+    // `?ver=` ESPELHA O DEGRAU DE NOVO (auditoria rodada 2, item 12.1,
+    // 20/11). O item 73 (22/08) o tinha feito só leitura, achando que o
+    // `?d=` bastava para dizer a vista; não bastava. Depois do "Aproximar"
+    // sem mexer na roda não há pino, e o link saía só com `?foco=` — o
+    // alvo reabria visto da órbita. E com pino o `?d=` é medido na RÉGUA
+    // do degrau (o raio do corpo no degrau do corpo, o do enquadramento
+    // da órbita no outro): sem o degrau junto, o leitor aplicava os raios
+    // do corpo sobre a régua da órbita e a câmera reabria longe. A regra
+    // agora é a do dono: o link reproduz o que o visitante vê. O degrau
+    // diz em que vista e em que régua; o `?d=`, a distância nela — não
+    // são duas portas para a mesma grandeza. A órbita é o padrão e sai da
+    // URL; a vista dos anéis (16/11) é o terceiro valor.
+    const ver = phase === 'atlas' && emQuadro ? d.verDaEscada : 'orbita';
+    if (ver !== 'orbita') url.searchParams.set('ver', ver);
     else url.searchParams.delete('ver');
     // A DISTÂNCIA AO ALVO, em RAIOS dele — 4 algarismos significativos.
     // Ela entra SÓ quando o visitante pinou (mexeu na roda ou chegou com
@@ -260,6 +264,12 @@ export function useEspelhoDaUrl(dep: {
     if (instante !== null && instante > 0.5) {
       url.searchParams.set('t', instante.toFixed(1));
       url.searchParams.set('play', '1');
+    } else {
+      // sem instante a escrever, o `?t=` de quem chegou por um link do
+      // filme e foi ao voo livre ou à capa é VELHO (item 12.2); na carga
+      // ele sobrevive pelo retorno antecipado lá em cima
+      url.searchParams.delete('t');
+      url.searchParams.delete('play');
     }
     return url;
   };

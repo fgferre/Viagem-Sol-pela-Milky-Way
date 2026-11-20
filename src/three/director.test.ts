@@ -144,6 +144,47 @@ describe('a falha depois do boot chega à tela', () => {
     );
   });
 
+  // auditoria rodada 2, item 4.1 — medido em 20/11: a placa caindo na etapa
+  // 1 da carga, o init seguia, religava o laço (56 ticks/s debaixo do véu),
+  // levava a fase a `journey` e trocava "não pôde começar" por "parou no meio"
+  it('a placa que desiste na carga não religa o laço nem deixa o React agir no Director morto', () => {
+    const fimDoInit = FONTE.slice(
+      // depois do bloco do aquecimento, para cobrir o `?shot=` também
+      FONTE.indexOf('        this.warmup = null;'),
+      FONTE.indexOf('    this.engine.start();')
+    );
+    expect(fimDoInit).toContain('if (this.disposed || this.desistiu) return;');
+    expect(fimDoInit).toContain("this.setPhase('intro');");
+    const BOOT = readFileSync(new URL('../hooks/useDirector.ts', import.meta.url), 'utf8');
+    const depoisDoInit = BOOT.slice(BOOT.indexOf('.then(() => {'));
+    expect(depoisDoInit.indexOf('if (cancelled || d.desistiuDaSessao) return;')).toBeGreaterThan(0);
+    expect(depoisDoInit.indexOf('if (cancelled || d.desistiuDaSessao) return;')).toBeLessThan(
+      depoisDoInit.indexOf('d.escolherFilme(')
+    );
+  });
+
+  // item 4.2: a cena morta solta o que segura, DEPOIS de o véu ter a mensagem,
+  // e o boot que rejeitar por causa do aborto não troca essa mensagem
+  it('desistir solta a camada WebGPU, as buscas e as cargas dos corpos sem trocar a mensagem do véu', () => {
+    const corpo = FONTE.slice(
+      FONTE.indexOf('  private desistir(mensagem: string) {'),
+      FONTE.indexOf('  dispose() {')
+    );
+    const aviso = corpo.indexOf('this.events.onErro(mensagem);');
+    for (const solta of [
+      "this.galaxy?.seguirCamadaWebgpu('soltar')",
+      'this.abortController.abort()',
+      'posto.corpo.dispose()',
+    ]) {
+      expect(corpo.indexOf(solta), solta).toBeGreaterThan(aviso);
+    }
+    expect(corpo).toContain('this.noPalco = [];');
+    const BOOT = readFileSync(new URL('../hooks/useDirector.ts', import.meta.url), 'utf8');
+    const pegaErro = BOOT.slice(BOOT.indexOf('.catch((error: unknown) => {'));
+    expect(pegaErro.indexOf('d.desistiuDaSessao')).toBeGreaterThan(0);
+    expect(pegaErro.indexOf('d.desistiuDaSessao')).toBeLessThan(pegaErro.indexOf('setLoadError('));
+  });
+
   it('o véu VOLTA a montar quando o erro chega depois do desfecho', () => {
     // sem o segundo termo a camada some no fim da saída da tela de carga
     // e a falha em voo não tem onde aparecer

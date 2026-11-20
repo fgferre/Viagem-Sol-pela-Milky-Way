@@ -241,6 +241,22 @@ export class MotorDaGalaxia {
         maxStorageBufferBindingSize: adaptador.limits.maxStorageBufferBindingSize,
       },
     });
+    // daqui em diante o dispositivo é NOSSO: quem chama só recebe `null`
+    // na falha e não teria como destruí-lo (auditoria rodada 2, item 4.4)
+    try {
+      const formato = linear ? 'rgba16float' : navigator.gpu.getPreferredCanvasFormat();
+      return await MotorDaGalaxia.montar(gpu, tela, capacidade, formato, nuvens);
+    } catch (erro) {
+      gpu.destroy();
+      throw erro;
+    }
+  }
+
+  /** o resto do `criar`, depois do `requestDevice` */
+  private static async montar(
+    gpu: GPUDevice, tela: HTMLCanvasElement | OffscreenCanvas, capacidade: number,
+    formato: string, nuvens?: Uint16Array | Promise<Uint16Array | undefined>
+  ): Promise<MotorDaGalaxia> {
     const modulo = async (code: string, nome: string) => {
       const m = gpu.createShaderModule({ code });
       for (const msg of (await m.getCompilationInfo()).messages) {
@@ -248,7 +264,6 @@ export class MotorDaGalaxia {
       }
       return m;
     };
-    const formato = linear ? 'rgba16float' : navigator.gpu.getPreferredCanvasFormat();
     const mTom = await modulo(WGSL_TOM, 'tom');
     // as versões ASSÍNCRONAS (13/11/2026): as síncronas compilavam na
     // thread e a seguravam ~0,5 s logo no começo da carga

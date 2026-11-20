@@ -2410,6 +2410,12 @@ export class Director {
       if (this.disposed) return;
     }
 
+    // A PLACA DESISTIU NO MEIO DA CARGA (auditoria rodada 2, item 4.1):
+    // sem esta guarda o init seguia até aqui sobre o contexto morto,
+    // religava o laço a 60 Hz debaixo do véu e trocava "não pôde
+    // começar" por "parou no meio". Depois do bloco do aquecimento para
+    // cobrir também o `?shot=`.
+    if (this.disposed || this.desistiu) return;
     this.setPhase('intro');
     this.engine.start();
     // A CORRIDA DO PAINEL ABERTO DURANTE A CARGA (`?ajustes=1`): um
@@ -5025,18 +5031,35 @@ export class Director {
    * chegar juntos, e o segundo aviso só trocaria a mensagem do primeiro
    * pela consequência dele.
    *
-   * NÃO CHAMA `dispose()`, ao contrário do `.catch` do boot. Ali não há
-   * nada na tela a preservar; aqui o véu desenha POR CIMA do último
-   * quadro, e desmontar o mundo trocaria a imagem congelada por um
-   * canvas vazio sem devolver nada — a página inteira morre no
-   * "Tentar novamente", que recarrega.
+   * NÃO CHAMA `dispose()`, ao contrário do `.catch` do boot: o mundo
+   * inteiro morre no "Tentar novamente", que recarrega. Solta só o que
+   * pesa ou ainda trabalha (a camada WebGPU, as buscas, os corpos com as
+   * cargas deles) — nada disso redesenha, porque o laço já parou.
    */
   private desistiu = false;
+  /** a sessão desistiu (ver `desistir`): o boot do React não age sobre ela */
+  get desistiuDaSessao(): boolean {
+    return this.desistiu;
+  }
   private desistir(mensagem: string) {
     if (this.desistiu || this.disposed) return;
     this.desistiu = true;
     this.engine.parar();
     this.events.onErro(mensagem);
+    // O QUE A CENA MORTA AINDA SEGURA (auditoria rodada 2, item 4.2) é
+    // solto DEPOIS do aviso, um passo blindado cada, para que um estouro
+    // no dispositivo morto não engula a mensagem: a camada WebGPU da
+    // galáxia (centenas de MB), as buscas em voo — o boot que estiver no
+    // meio rejeita, e o `.catch` do `useDirector` não troca o véu de uma
+    // sessão que desistiu — e as cargas dos corpos, cujo `dispose` aborta
+    // o lote e fecha o bitmap já decodificado. Os corpos saem da lista
+    // para o `teardown` não os descartar duas vezes. Nada disto redesenha:
+    // o laço já parou.
+    const step = (label: string, fn: () => void) => this.passoBlindado('desistir', label, fn);
+    step('galaxy', () => this.galaxy?.seguirCamadaWebgpu('soltar'));
+    step('abort', () => this.abortController.abort());
+    for (const posto of this.noPalco) step(posto.id, () => posto.corpo.dispose());
+    this.noPalco = [];
   }
 
   dispose() {
