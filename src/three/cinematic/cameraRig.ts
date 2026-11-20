@@ -300,8 +300,12 @@ export class JourneyRig {
       // A MOLA É DO FILME, não do relógio de parede: com o filme pausado
       // logo depois de uma junta grande (Encélado → Titã, 166°) ela
       // seguia andando com o `dt` de parede e a câmera girava 141,6° com
-      // a imagem congelada. Pausada, a junta espera o play.
-      this.andarDesvio(dt);
+      // a imagem congelada. Pausada, a junta espera o play. E anda no
+      // TEMPO DO FILME, como a junta acima e a velocidade do roteiro: com
+      // o `dt` de parede, a 2× e 4× a velocidade herdada (rad por segundo
+      // de filme) era integrada em segundos de parede e a junta dava um
+      // tranco e invadia os planos curtos seguintes.
+      this.andarDesvio(Math.max(0, t - this.tAnterior));
     }
     this.plano = s.plano;
     this.tAnterior = t;

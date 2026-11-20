@@ -968,4 +968,20 @@ describe('o corte seco (F4) — o plano que abre num corte não herda a junta', 
     const giro = cam.getWorldDirection(new THREE.Vector3()).angleTo(parada);
     expect(THREE.MathUtils.radToDeg(giro)).toBeGreaterThan(1);
   });
+
+  it('a 4× a junta é a mesma: em cada instante do filme a câmera não depende da velocidade do play', () => {
+    /** a mira em cada quadro de filme (1/30 s) depois da junta, tocando com `dt` de parede por quadro */
+    const miras = (dtDeParede: number) => {
+      const rig = new JourneyRig(filme());
+      const cam = new THREE.PerspectiveCamera();
+      const saida: number[][] = [];
+      for (let q = 0; q <= 60; q++) {
+        rig.apply(cam, q / 30, dtDeParede);
+        if (q >= 30) saida.push(cam.getWorldDirection(new THREE.Vector3()).toArray());
+      }
+      return saida;
+    };
+    // a 4× o filme anda 1/30 s enquanto a parede anda 1/120 s
+    expect(miras(1 / 120)).toEqual(miras(1 / 30));
+  });
 });
