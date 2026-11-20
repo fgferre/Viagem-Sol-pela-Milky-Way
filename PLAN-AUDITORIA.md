@@ -1,4 +1,4 @@
-# Auditoria do Gemini Neon: conferir e consertar (19/11/2026) — frentes FEITAS; fica aberto só o que espera o dono
+# Auditoria do Gemini Neon: conferir e consertar (19/11/2026) — rodada 1 FEITA; a RODADA 2 (20/11) está ABERTA, ver a seção dela
 
 O dono trouxe um relatório de 13 itens e pediu: "analisado e endereçado, coordene". O texto dele está em `.cache/revisoes/auditoria-gemini-neon-2026-11-19.md` (fora do git). Três revisores independentes conferiram cada afirmação contra o código (f5bad02e); os vereditos, com arquivo:linha, estão ao lado: `veredito-auditoria-A-shaders-gpu.md`, `-B-logica-estado.md`, `-C-interface-site-fichas.md`. Regra da rodada: só entra conserto de afirmação CONFIRMADA, o menor possível, com um teste por comportamento; nenhuma refatoração grande.
 
@@ -18,6 +18,18 @@ Ele releu os dez commits e confirmou o resto; três pontos, conferidos no códig
 - [x] **O conserto do perfil do anel estava pela metade** (9574c270): a falha deixava de ficar guardada, mas o único pedido era o do nascimento da casca, e ninguém pedia de novo — Saturno seguia sem anel até recarregar. Agora `atualizar` pede de novo a cada 10 s do relógio do quadro, com o corpo na tela (o corpo não tem relógio próprio: o teste do cabeçalho barra `performance.now`).
 - [x] **"Aproximar" e "Sistema" da ficha largavam o foco no corpo da página** (o botão clicado some), e o Esc morria com a ficha aberta; o "Anéis" ao lado já devolvia o foco. Os dois passaram a devolver. Na tela: o botão some, o foco fica na ficha, o 1º Esc a fecha e o 2º sobe um degrau.
 - [x] **Os três pequenos, que tinham ficado só anotados** (o dono: "se são problemas já detectados, vamos consertar agora"): a cerca do motor (`cercaDoMotor`) é apagada quando a tela de carga sai e na desmontagem; o oráculo `aoClicarEmBrilho` e o clique de verdade leem a MESMA lista (`FORCADOS_QUE_O_CLIQUE_SOLTA`, `selo.ts`), e faltar uma chave num dos lados não compila — na tela, o código antigo e o novo soltam os mesmos controles; e o motor da galáxia envia 1 quadro depois de carregar, não 5 (a troca de fatia sozinha não conta como mudança com a extinção completa), com as fotos idênticas ponto a ponto.
+
+## Rodada 2 (20/11/2026) — ABERTA
+
+O dono trouxe um segundo relatório, de 12 itens (cerca de 25 afirmações), "para análise, coordenação e resolução". O texto dele: `.cache/revisoes/auditoria-gemini-rodada2-2026-11-20.md`. Mesmo método da rodada 1. Ponto de partida: `7b06df02`; `src/three/director/rotulos.ts` segue modificado e sem guardar (espera a palavra dele), fica de fora de tudo.
+
+**Regra do dono para esta rodada (20/11, corrigindo a minha lista):** consertar TODOS os confirmados, mesmo os que mudam a imagem — "se isso for alterar o visual, a gente depois conserta o visual também"; visual aprovado não é motivo para deixar defeito. Depois de cada conserto que muda pixel: acertar o visual e mostrar antes e depois. Seguem pedindo a palavra dele: publicar e regenerar `public/data`.
+
+- [ ] **1. Conferir no código** — três conferentes (Opus, só leitura), vereditos por afirmação em `.cache/revisoes/veredito-rodada2-A-render.md` (itens 2, 3, 7, 10, 11), `-B-numerica-fisica.md` (1, 5, 6, 9), `-C-ciclo-links-ferramentas.md` (4, 8, 12). Cada veredito diz: confirmado ou não, se o visitante chega lá, se o conserto muda pixel, arquivos.
+- [ ] **2. Conferir na tela, um de cada vez** (duas cópias do app ao mesmo tempo é o problema de memória deste PC): item 2 (tirar as estrelas da camada do clarão e comparar o quadro), item 3 (tamanho dos alvos do bloom com DPR > 1, na carga e depois de redimensionar), item 4 (provocar a perda de contexto com `WEBGL_lose_context`), item 9 (de que lado da lua fica o rastro, contra uma imagem de referência).
+- [ ] **3. Consertar** — frentes cortadas por ARQUIVO, não por número de item (`director.ts` aparece nos itens 1, 4, 7, 11; `post.ts` nos 2 e 3; `nebula.ts` nos 7 e 11; os ganchos da URL nos 4 e 12). Cópias de trabalho feitas à mão a partir do HEAD. Item 2 tem dois consertos de efeito oposto (tirar as estrelas da camada = imagem de hoje com menos trabalho; uniforme novo = clarão que hoje não existe): decidir aqui, pelo que é fisicamente certo.
+- [ ] **4. Conferência junta** (`--maxWorkers=6`), guardar, backup. Nada disto publica.
+- [ ] **5. Antes e depois ao dono** do que mudou na imagem.
 
 ## Não entra nesta rodada (dito ao dono)
 
