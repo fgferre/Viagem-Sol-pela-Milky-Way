@@ -201,7 +201,7 @@ const JANELAS = [
   { t: 79.95, title: '', sub: '' },
   { t: 84, title: 'Antares', sub: 'brasa a 550 anos-luz, no alinhamento do centro da galáxia' },
   { t: 87.95, title: '', sub: '' },
-  { t: 90, title: 'O berçário', sub: 'Shaula, Dschubba, Lesath — o berçário de Escorpião no caminho' },
+  { t: 90, title: 'O berçário', sub: 'Antares nasceu aqui: o berçário de grandes estrelas mais próximo do Sol' },
   { t: 93.9, title: '', sub: '' },
   { t: 98, title: 'O mergulho', sub: 'braço de Sagitário: a poeira extingue e avermelha as estrelas' },
   { t: 98.9, title: '', sub: '' },

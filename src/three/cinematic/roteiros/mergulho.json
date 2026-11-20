@@ -47,10 +47,10 @@
       "fundoSilencioso": true,
       "legendas": [{
         "em": 0.15, "texto": "O berçário",
-        "subtexto": "Shaula, Dschubba, Lesath — o berçário de Escorpião no caminho",
+        "subtexto": "Antares nasceu aqui: o berçário de grandes estrelas mais próximo do Sol",
         "en": {
           "texto": "The nursery",
-          "subtexto": "Shaula, Dschubba, Lesath — the Scorpius nursery along the way"
+          "subtexto": "Antares was born here: the nearest nursery of massive stars to the Sun"
         },
         "duracao": 4.8
       }]
