@@ -1158,7 +1158,7 @@ export class RochosoResolvido {
                 ? [CANAL_MAP, CANAL_NORMAL]
                 : [CANAL_MAP],
       rede: opcoes,
-      oQueNaoNasce: 'o corpo não nasce nesta sessão',
+      oQueNaoNasce: 'o corpo não nasce',
       publicar: (porCanal) => {
         this.garantirCasca();
         // o procedural chega com o lote VAZIO — o shader dele não lê mapa

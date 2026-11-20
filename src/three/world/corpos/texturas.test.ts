@@ -23,6 +23,7 @@ import {
   ESPERA_PELO_DESTINO_S,
   PRAZO_SEM_BYTES_S,
   RECARGAS_ATE_DESISTIR,
+  ESPERA_DA_NOVA_TENTATIVA_S,
   LIMIAR_DA_IMAGEM_PX,
   MARGEM_DO_LIMIAR,
   MARGEM_DO_QUADRO_RAD,
@@ -260,7 +261,7 @@ function bancadaDaTroca(tierInicial: QualityLevel = 'alta') {
     canais: [CANAL_MAP],
     rede,
     etiqueta: 'terra',
-    oQueNaoNasce: 'o globo não nasce nesta sessão',
+    oQueNaoNasce: 'o globo não nasce',
     publicar: (porCanal) => publicados.push([...porCanal.keys()]),
     soltar: () => soltas.push(publicados.length),
   });
@@ -508,7 +509,7 @@ describe('o double-buffer por corpo: trocar de tier não tira o globo da tela', 
           return new THREE.Texture();
         },
       },
-      oQueNaoNasce: 'o corpo não nasce nesta sessão',
+      oQueNaoNasce: 'o corpo não nasce',
       publicar: () => undefined,
       soltar: () => soltou++,
     });
@@ -551,9 +552,9 @@ describe('"falhou" não é sentença: um segurador que sai e VOLTA ressuscita (i
     expect(avisos[0]).toContain('[terra]');
     expect(avisos[0]).toContain('carga de textura falhou');
 
-    // continua segurado, sem sair e voltar: NENHUM pedido novo —
-    // martelar a rede a cada tick contra quem já disse não três vezes é
-    // o defeito que a ressurreição por BORDA existe para não repetir
+    // continua segurado, sem sair e voltar e com o relógio parado:
+    // NENHUM pedido novo — martelar a rede a cada tick contra quem já
+    // disse não três vezes é o defeito que a ressurreição não repete
     const antesDeSoltar = b.pedidos.length;
     for (let i = 0; i < 5; i++) b.tick({ tela: true });
     expect(b.pedidos).toHaveLength(antesDeSoltar);
@@ -566,6 +567,39 @@ describe('"falhou" não é sentença: um segurador que sai e VOLTA ressuscita (i
     expect(b.pedidos.length, 'a volta pediu de novo').toBe(antesDeSoltar + 1);
     await b.entregar();
     expect(b.casa.pronta).toBe(true);
+  });
+
+  it('SEGURADO SEM PARAR (a janela do filme): uma tentativa calada por espera, e a rede que volta traz o corpo', async () => {
+    const b = bancadaDaTroca('cinema');
+    b.derrubarARede(true);
+    const avisos: string[] = [];
+    const warn = console.warn;
+    console.warn = (m: string) => avisos.push(m);
+    try {
+      for (let i = 0; i < 1 + RECARGAS_ATE_DESISTIR; i++) {
+        b.tick({ filme: true });
+        await b.entregar();
+      }
+      const aoDesistir = b.pedidos.length;
+      b.tick({ filme: true }); // o primeiro tick segurado marca a desistência
+      b.tick({ filme: true }, ESPERA_DA_NOVA_TENTATIVA_S - 1);
+      expect(b.pedidos, 'antes da espera, nada').toHaveLength(aoDesistir);
+      // a espera venceu com a rede ainda fora: UMA tentativa, que cai...
+      b.tick({ filme: true }, 1);
+      await b.entregar();
+      expect(b.pedidos).toHaveLength(aoDesistir + 1);
+      // ...e não vira martelo: a seguinte espera a espera inteira de novo
+      for (let i = 0; i < 5; i++) b.tick({ filme: true });
+      expect(b.pedidos).toHaveLength(aoDesistir + 1);
+      // a rede volta, o filme nunca soltou: a tentativa seguinte traz o corpo
+      b.derrubarARede(false);
+      b.tick({ filme: true }, ESPERA_DA_NOVA_TENTATIVA_S);
+      await b.entregar();
+    } finally {
+      console.warn = warn;
+    }
+    expect(b.casa.pronta).toBe(true);
+    expect(avisos, 'o aviso é um só, as tentativas espaçadas caem caladas').toHaveLength(1);
   });
 });
 
@@ -980,7 +1014,7 @@ describe('a vez da imagem: o lote só é entregue depois de TODAS subirem, uma p
         buscarManifest: async () => MANIFEST,
         carregarTextura,
       },
-      oQueNaoNasce: 'o globo não nasce nesta sessão',
+      oQueNaoNasce: 'o globo não nasce',
       publicar: (porCanal) => publicados.push([...porCanal.keys()]),
       soltar: () => {},
     });

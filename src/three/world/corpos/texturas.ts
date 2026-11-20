@@ -48,7 +48,7 @@ import * as THREE from 'three';
 import type { QualityLevel } from '../../core/engine';
 
 /**
- * RECARGAS além da primeira tentativa antes de `'falhou'` virar terminal
+ * RECARGAS além da primeira tentativa antes de o estado virar `'falhou'`
  * (auditoria item 6: um 404 transitório matava o globo a sessão inteira).
  * O precedente é o backoff CONTADO dos 3 `pointerlockerror` da Onda 5
  * (`ERROS_ATE_DESISTIR`, cameraRig.ts): 1 carga + 2 recargas = 3
@@ -57,6 +57,18 @@ import type { QualityLevel } from '../../core/engine';
  * alguém precisa ler.
  */
 export const RECARGAS_ATE_DESISTIR = 2;
+
+/**
+ * A ESPERA entre a desistência e a tentativa seguinte de quem continua
+ * SEGURADO (a janela do filme, o visitante parado no corpo). Sem ela o
+ * corpo só renascia se o segurador saísse e voltasse (item 225) — num
+ * filme, nunca: a rede caía um instante e o planeta sumia até recarregar
+ * a página. Uma tentativa por espera, calada.
+ */
+// ponytail: espera fixa e sem o evento `online` do navegador (ele mente
+// atrás de um roteador sem internet, e 5 s já cobrem); crescer a espera
+// se um arquivo que falta de verdade pesar no servidor
+export const ESPERA_DA_NOVA_TENTATIVA_S = 5;
 
 /**
  * O filtro ANISOTRÓPICO de todo mapa de corpo (o teto do three é o da
@@ -1004,9 +1016,11 @@ export async function carregarCanaisDoCorpo(
  * A POLÍTICA DE RECARGA, uma vez para os quatro (auditoria item 6): UMA
  * falha não é sentença — volta a 'fria' e o MESMO gatilho de sempre
  * (gate armado ou fase atlas) rearma no tick seguinte, até
- * `RECARGAS_ATE_DESISTIR`. Só então 'falhou' é terminal, com o aviso
+ * `RECARGAS_ATE_DESISTIR`. Só então o estado é 'falhou', com o aviso
  * ÚNICO: três falhas seguidas não são degradação projetada, são um
- * defeito que alguém precisa ler. Quem desiste degrada honesto — o
+ * defeito que alguém precisa ler. `recargas` sai ACIMA do teto, e é
+ * isso que cala as tentativas espaçadas de quem segue segurado
+ * (`ESPERA_DA_NOVA_TENTATIVA_S`). Quem desiste degrada honesto — o
  * planeta conserva o PONTO com a fotometria certa, a lua simplesmente
  * não nasce — e a captura REPROVA em vez de fingir (o `captura` do
  * Director segura com o gate armado a frio).
@@ -1021,10 +1035,13 @@ function estadoAposFalha(
   if (recargas < RECARGAS_ATE_DESISTIR) {
     return { texturas: 'fria', recargas: recargas + 1 };
   }
-  console.warn(
-    `[${etiqueta}] carga de textura falhou ${1 + RECARGAS_ATE_DESISTIR}×; ${oQueNaoNasce}`
-  );
-  return { texturas: 'falhou', recargas };
+  if (recargas === RECARGAS_ATE_DESISTIR) {
+    console.warn(
+      `[${etiqueta}] carga de textura falhou ${1 + RECARGAS_ATE_DESISTIR}×; ${oQueNaoNasce}` +
+        ` — nova tentativa a cada ${ESPERA_DA_NOVA_TENTATIVA_S} s enquanto seguir em cena`
+    );
+  }
+  return { texturas: 'falhou', recargas: RECARGAS_ATE_DESISTIR + 1 };
 }
 
 // ------------------------------------------------------------
@@ -1383,6 +1400,9 @@ export class TexturasDoCorpo {
    * novo. Começa `true` — ninguém segura antes do primeiro tick.
    */
   private ninguemSegurava = true;
+  /** `tS` do primeiro tick SEGURADO em 'falhou' — o relógio da nova
+   *  tentativa (`ESPERA_DA_NOVA_TENTATIVA_S`); `null` fora de 'falhou' */
+  private falhouDesde: number | null = null;
   /**
    * O ABORTO do lote EM VOO (item 115, peça 3). A geração já invalidava
    * o lote — mas invalidar é decidir que os bytes não servem, não parar
@@ -1493,15 +1513,24 @@ export class TexturasDoCorpo {
     // RESSURREIÇÃO: qualquer segurador que volte zera o relógio da
     // carência — é o `clearTimeout` do `acquire` deles.
     this.soltoDesde = null;
-    // E 'falhou' TAMBÉM RESSUSCITA (item 225) — mas só na BORDA de um
-    // segurador que VOLTA depois de ter ido embora, nunca a cada tick:
-    // martelar a rede a 60 Hz contra quem já disse não três vezes é o
-    // mesmo defeito que a carência evita do outro lado. O teto de
-    // `RECARGAS_ATE_DESISTIR` reabre por ciclo de armação — um 404 de
-    // uma visita não deve envenenar a visita seguinte.
-    if (this.estado === 'falhou' && this.ninguemSegurava) {
-      this.estado = 'fria';
-      this.recargas = 0;
+    // E 'falhou' TAMBÉM RESSUSCITA (item 225), por dois caminhos e nunca
+    // a cada tick — martelar a rede a 60 Hz contra quem já disse não
+    // três vezes é o mesmo defeito que a carência evita do outro lado:
+    //  - na BORDA de um segurador que VOLTA depois de ter ido embora, e
+    //    o teto de `RECARGAS_ATE_DESISTIR` reabre por ciclo de armação —
+    //    um 404 de uma visita não deve envenenar a visita seguinte;
+    //  - SEGURADO SEM PARAR (a janela do filme não solta), uma tentativa
+    //    a cada `ESPERA_DA_NOVA_TENTATIVA_S`, com `recargas` deixado
+    //    acima do teto: a que cai, cai calada, e a rede que voltou traz o
+    //    corpo sem recarregar a página.
+    if (this.estado === 'falhou') {
+      if (this.falhouDesde === null) this.falhouDesde = tS;
+      const voltou = this.ninguemSegurava;
+      if (voltou || tS - this.falhouDesde >= ESPERA_DA_NOVA_TENTATIVA_S) {
+        this.estado = 'fria';
+        this.falhouDesde = null;
+        if (voltou) this.recargas = 0;
+      }
     }
     this.ninguemSegurava = false;
     this.vigiar(tS);

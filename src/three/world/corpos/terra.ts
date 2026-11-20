@@ -515,7 +515,7 @@ export class TerraResolvida {
       canais,
       rede: opcoes,
       etiqueta: 'terra',
-      oQueNaoNasce: 'o globo não nasce nesta sessão',
+      oQueNaoNasce: 'o globo não nasce',
       publicar: (porCanal) => {
         this.garantirCascas();
         const uS = this.matSuperficie!.uniforms;

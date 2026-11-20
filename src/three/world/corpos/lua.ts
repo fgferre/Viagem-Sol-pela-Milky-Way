@@ -364,7 +364,7 @@ export class LuaResolvida {
       // sem textura não há globo — mas desde o item 108 sobra o PONTO
       // fotométrico, que não depende de textura nenhuma: a Lua deixa de
       // ser um mundo e volta a ser o que é de longe, uma luz
-      oQueNaoNasce: 'a Lua não nasce nesta sessão',
+      oQueNaoNasce: 'a Lua não nasce',
       publicar: (porCanal) => {
         this.garantirCasca();
         // o lote é ATÔMICO (texturas.ts): ou vieram os dois, ou nenhum —
