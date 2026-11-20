@@ -395,7 +395,10 @@ export function deltaMagDeFase(
 export function betaEfetivoAnel(betaE: number, betaS: number): number {
   if (betaE === 0 || betaS === 0) return 0;
   if (Math.sign(betaE) !== Math.sign(betaS)) return 0;
-  return Math.sign(betaE) * Math.sqrt(Math.abs(betaE * betaS));
+  // a raiz é POSITIVA nas duas faces: Sol e observador ao sul veem a face
+  // sul acesa, e o anel abre igual ([MH18] §4.6: V = −0,55 em 2032-12-25,
+  // com a face sul aberta)
+  return Math.sqrt(betaE * betaS);
 }
 
 function phiDeDeltaMag(dm: number): number {

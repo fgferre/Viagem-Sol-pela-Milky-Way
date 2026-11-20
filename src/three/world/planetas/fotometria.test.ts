@@ -418,8 +418,25 @@ describe('fotometria — MH18 (D10, domínio e costura)', () => {
     expect(betaEfetivoAnel(0.2, 0.2)).toBeCloseTo(0.2, 12);
     expect(betaEfetivoAnel(0.1, 0.4)).toBeCloseTo(Math.sqrt(0.04), 12);
     expect(betaEfetivoAnel(0.2, -0.2)).toBe(0);
-    expect(betaEfetivoAnel(-0.2, -0.8)).toBeCloseTo(-Math.sqrt(0.16), 12);
+    // face sul acesa e vista: a raiz é positiva, como na face norte
+    expect(betaEfetivoAnel(-0.2, -0.8)).toBeCloseTo(Math.sqrt(0.16), 12);
     expect(betaEfetivoAnel(0, 0.3)).toBe(0);
+  });
+
+  it('Saturno: o máximo publicado, V = −0,55 em 2032-12-25 com a face sul aberta [MH18] §4.6', () => {
+    // geometria de 2032-12-25 0h TT (VSOP87 + saturnring, Meeus cap. 45)
+    const rUA = 9.01499;
+    const dUA = 8.0316;
+    const alfa = (0.1058 * Math.PI) / 180;
+    const betaE = (-26.2438 * Math.PI) / 180;
+    const betaS = (-26.3479 * Math.PI) / 180;
+    const B = betaEfetivoAnel(betaE, betaS);
+    const V = magAparente(
+      aMagBaseDe(FOTOMETRIA.saturn.H, rUA),
+      dUA,
+      fatorDeFaseDoPonto('saturn', alfa, B)
+    );
+    expect(Math.abs(V - -0.55)).toBeLessThan(0.01);
   });
 });
 

@@ -494,8 +494,11 @@ describe("registro de constantes do shader (a F2c interpola daqui)", () => {
 });
 
 describe("PARES_DE_ECLIPSE — contratos da tabela", () => {
-  it("são os 15 pares do doador + as 5 luas de Urano + as 2 marcianas da F3 (data-only)", () => {
-    expect(Object.keys(PARES_DE_ECLIPSE)).toHaveLength(23);
+  it("são os 15 pares do doador + as 5 luas de Urano + as 2 marcianas da F3 + as 7 pequenas de Saturno (data-only)", () => {
+    expect(Object.keys(PARES_DE_ECLIPSE)).toHaveLength(30);
+    for (const lua of ["pan", "daphnis", "atlas", "prometheus", "pandora", "janus", "epimetheus"]) {
+      expect(PARES_DE_ECLIPSE[lua]).toBe("saturn");
+    }
     for (const lua of ["miranda", "ariel", "umbriel", "titania", "oberon"]) {
       expect(PARES_DE_ECLIPSE[lua]).toBe("uranus");
     }

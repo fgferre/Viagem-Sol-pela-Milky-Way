@@ -492,7 +492,12 @@ export function bakeGalacticStructureMap(
       : 1;
 
   for (let index = 0; index < length; index++) {
-    if (inferredGasField[index] === 0 && gas[index] === 0) continue;
+    // só pula o texel em que os DOIS campos são nulos: o braço jovem
+    // (`inferredYoung`) segue positivo onde o gás inferido zera
+    if (
+      inferredGasField[index] === 0 && gas[index] === 0 &&
+      inferredYoungField[index] === 0 && young[index] === 0
+    ) continue;
     // TETO na influência do observado. A cobertura APOGEE/CO é uma
     // pegada de survey heliocêntrica, não uma afirmação de que o outro
     // lado não tem poeira. Deixá-la dominar 100% onde cobre punha m=1 na

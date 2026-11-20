@@ -41,6 +41,27 @@ const {
   excentricidadeKm: EXCENTRICIDADE_KM,
 } = ANEL_DE_SATURNO.veus.f;
 
+/**
+ * O RUÍDO NA FASE, sem costura. `uFase` corre em (−2π, 0] e volta a 0 a
+ * cada corotação (a redução a uma volta é a precisão de float32, ver
+ * `gigante.ts`), mas `ruido` não é periódico: lido direto na fase, a dobra
+ * e os grumos saltavam uma vez por volta. Duas amostras a uma volta de
+ * distância fecham o ciclo: no fim da volta a segunda amostra vale o que a
+ * primeira vale no começo. A troca fica só no último quarto da volta, então
+ * nos outros três quartos o desenho é o de antes, valor a valor.
+ * Vem DEPOIS de `GLSL_RUIDO_DE_VALOR` e de `uniform float uFase`.
+ */
+export const GLSL_RUIDO_NA_FASE = /* glsl */ `
+float ruidoNaFase(vec2 xy, float k) {
+  float t = smoothstep(0.75, 1.0, -uFase / 6.28318530718);
+  return mix(
+    ruido(vec3(xy, uFase * k)),
+    ruido(vec3(xy, (uFase + 6.28318530718) * k)),
+    t
+  );
+}
+`;
+
 /** Quantos segmentos em azimute — o `PlaneGeometry(1, 1, 1024, 1)` dele. */
 const SEGMENTOS_DO_F = 1024;
 
@@ -68,14 +89,15 @@ varying float vLado;
 varying float vTheta;
 
 ${GLSL_RUIDO_DE_VALOR}
+${GLSL_RUIDO_NA_FASE}
 
 void main() {
   // a dobra dele é mx_noise_float (Perlin, centrado em zero); o ruído de
   // valor da casa devolve [0, 1], então centra-se aqui — é a mesma tradução
   // que a S3c fez no grão do esculpido
-  float dobra = (ruido(vec3(
-    cos(aTheta) * 3.0 + uSemente * 7.3, sin(aTheta) * 3.0, uFase * 0.15
-  )) * 2.0 - 1.0) * uDobra;
+  float dobra = (ruidoNaFase(vec2(
+    cos(aTheta) * 3.0 + uSemente * 7.3, sin(aTheta) * 3.0
+  ), 0.15) * 2.0 - 1.0) * uDobra;
   float ecc = cos(aTheta + uSemente * 2.1) * uExcentricidade;
   float r = uRaioBase + dobra + ecc + aLado * uLargura;
   vPos = vec3(r * cos(aTheta), r * sin(aTheta), 0.0);
@@ -104,6 +126,7 @@ varying float vTheta;
 
 vec3 normSeguro(vec3 v) { return v / max(length(v), 1.0e-6); }
 ${GLSL_RUIDO_DE_VALOR}
+${GLSL_RUIDO_NA_FASE}
 SOMBRA_DO_PLANETA
 
 void main() {
@@ -114,14 +137,15 @@ void main() {
   float dLon = vTheta - uPrometeuLon;
   float phi = atan(sin(dLon), cos(dLon));
   float q = phi / 0.55;
-  float rastro = exp(-q * q) * smoothstep(-0.02, 0.02, phi);
+  // a lua anda no sentido de vTheta crescente: atrás dela é phi < 0
+  float rastro = exp(-q * q) * smoothstep(-0.02, 0.02, -phi);
   float pente = sin(phi * 52.0) * 0.5 + 0.5;
   float canais = 1.0 - rastro * pente * 0.72;
 
   // os grumos ao longo da fita
-  float grumo = ruido(vec3(
-    cos(vTheta) * 14.0 + uSemente * 3.1, sin(vTheta) * 14.0, uFase * 0.3
-  ));
+  float grumo = ruidoNaFase(vec2(
+    cos(vTheta) * 14.0 + uSemente * 3.1, sin(vTheta) * 14.0
+  ), 0.3);
   float atravessa = pow(1.0 - clamp(abs(vLado) * 2.0, 0.0, 1.0), 2.0);
 
   vec3 view = normSeguro(uCamLocal - vPos);

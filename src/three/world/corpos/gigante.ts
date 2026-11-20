@@ -1342,7 +1342,8 @@ float ondasDeDafnis(float uBase, float ang, float dafnisLon) {
   float phi = atan(sin(dTheta), cos(dTheta));
   float q = phi / SIGMA;
   float envelope = exp(-q * q);
-  float atras = smoothstep(-0.02, 0.02, phi);
+  // a lua anda no sentido de ang crescente: phi > 0 é À FRENTE dela
+  float atras = smoothstep(-0.02, 0.02, -phi);
   float faixa = smoothstep(U_KEELER - BANDA, U_KEELER, uBase)
     * (1.0 - smoothstep(U_KEELER, U_KEELER + BANDA, uBase));
   float dentro = 1.0 - smoothstep(U_KEELER - CORTE, U_KEELER + CORTE, uBase);

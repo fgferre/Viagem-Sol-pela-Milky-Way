@@ -26,7 +26,9 @@ import { subSolarPoint } from '../../../lib/atlas/orientacao';
 import { eclipticaParaEquatorial, AU_PARA_PC } from '../../../lib/atlas/frameGalactico';
 import { AU_KM } from '../../../lib/atlas/elementosOrbitais';
 import { BODY_AXES, IAU_ORIENTATIONS } from '../../../lib/atlas/iauOrientation';
-import { orientacaoInercialDoAnelNaCena } from './orientacaoNaCena';
+import { componentesNoFrameDoAnel, orientacaoInercialDoAnelNaCena } from './orientacaoNaCena';
+import { posicaoKepler } from '../../../lib/atlas/kepler';
+import { GLSL_RUIDO_NA_FASE } from './aneisTenues';
 import { RAIO_SOL_KM } from '../../escala';
 import { EPOCA_JD_TDB } from '../planetas/retrato2026';
 import { eixosDoMesh } from './terra';
@@ -1130,5 +1132,83 @@ describe('o perfil do anel que falha não fica guardado', () => {
     await expect(pedirPerfilDoAnel('/')).rejects.toThrow('a rede caiu');
     await expect(pedirPerfilDoAnel('/')).resolves.toBeUndefined();
     expect(fetchBinaryFalso.mock.calls.filter(([url]) => String(url).endsWith(arquivo))).toHaveLength(2);
+  });
+});
+
+describe('Saturno: os rastros das luas e o ruído do anel F (auditoria, rodada 2)', () => {
+  const FONTE_DO_F = readFileSync(new URL('./aneisTenues.ts', import.meta.url), 'utf8');
+
+  it('as luas andam no sentido de ang crescente: borda interna e canais do lado certo', () => {
+    // a mesma ponte de `azimuteDaLuaNoAnel`
+    const azimute = (id: string, jd: number) => {
+      const b = orientacaoInercialDoAnelNaCena(IAU_ORIENTATIONS.saturn, jd);
+      const rel = posicaoKepler(id, jd);
+      const eq = eclipticaParaEquatorial([rel.x, rel.y, rel.z]);
+      const v = componentesNoFrameDoAnel(
+        new THREE.Vector3(eq[0], eq[1], eq[2]),
+        new THREE.Vector3(...b.colunaX),
+        new THREE.Vector3(...b.colunaY),
+        new THREE.Vector3(...b.colunaZ),
+        new THREE.Vector3()
+      );
+      return Math.atan2(v.y, v.x);
+    };
+    for (const id of ['daphnis', 'prometheus']) {
+      const d = azimute(id, EPOCA_JD_TDB + 0.01) - azimute(id, EPOCA_JD_TDB);
+      expect(Math.atan2(Math.sin(d), Math.cos(d))).toBeGreaterThan(0);
+    }
+    // logo phi > 0 é À FRENTE: Dáfnis tem a onda interna à frente e a
+    // externa atrás; os canais de Prometeu ficam atrás (PIA08397)
+    expect(ANEL_FRAG).toContain('float atras = smoothstep(-0.02, 0.02, -phi);');
+    expect(FONTE_DO_F).toContain('float rastro = exp(-q * q) * smoothstep(-0.02, 0.02, -phi);');
+  });
+
+  it('o ruído na fase do F não salta quando a fase dá a volta', () => {
+    // espelho em JS de `ruido` (corpos.ts) e de `ruidoNaFase`
+    const fract = (x: number) => x - Math.floor(x);
+    const hash = (x: number, y: number, z: number) =>
+      fract(Math.sin(x * 127.1 + y * 311.7 + z * 74.7) * 43758.5453);
+    const ruido = (x: number, y: number, z: number) => {
+      const ix = Math.floor(x), iy = Math.floor(y), iz = Math.floor(z);
+      const s = (f: number) => f * f * (3 - 2 * f);
+      const fx = s(x - ix), fy = s(y - iy), fz = s(z - iz);
+      const m = (a: number, b: number, t: number) => a + (b - a) * t;
+      const c = (dz: number) =>
+        m(
+          m(hash(ix, iy, iz + dz), hash(ix + 1, iy, iz + dz), fx),
+          m(hash(ix, iy + 1, iz + dz), hash(ix + 1, iy + 1, iz + dz), fx),
+          fy
+        );
+      return m(c(0), c(1), fz);
+    };
+    const smooth = (a: number, b: number, x: number) => {
+      const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
+      return t * t * (3 - 2 * t);
+    };
+    const DOIS_PI = 2 * Math.PI;
+    const naFase = (x: number, y: number, fase: number, k: number) => {
+      const t = smooth(0.75, 1.0, -fase / DOIS_PI);
+      return ruido(x, y, fase * k) * (1 - t) + ruido(x, y, (fase + DOIS_PI) * k) * t;
+    };
+    const eps = 1e-6;
+    let saltoNovo = 0;
+    let saltoVelho = 0;
+    for (let i = 0; i < 256; i++) {
+      const th = (i / 256) * DOIS_PI;
+      const x = Math.cos(th) * 14 + 0.5 * 3.1;
+      const y = Math.sin(th) * 14;
+      // antes da volta (fase → −2π) e depois dela (fase = 0)
+      saltoNovo = Math.max(saltoNovo, Math.abs(naFase(x, y, -DOIS_PI + eps, 0.3) - naFase(x, y, 0, 0.3)));
+      saltoVelho = Math.max(saltoVelho, Math.abs(ruido(x, y, (-DOIS_PI + eps) * 0.3) - ruido(x, y, 0)));
+    }
+    expect(saltoNovo).toBeLessThan(1e-4);
+    // o controle: lido direto na fase, o ruído salta
+    expect(saltoVelho).toBeGreaterThan(0.3);
+    // e o shader usa exatamente esta mistura nos dois lugares
+    expect(GLSL_RUIDO_NA_FASE).toContain('float t = smoothstep(0.75, 1.0, -uFase / 6.28318530718);');
+    expect(GLSL_RUIDO_NA_FASE).toContain('ruido(vec3(xy, (uFase + 6.28318530718) * k))');
+    expect(FONTE_DO_F).toContain('ruidoNaFase(vec2(');
+    expect(FONTE_DO_F).not.toContain('uFase * 0.15');
+    expect(FONTE_DO_F).not.toContain('uFase * 0.3');
   });
 });

@@ -425,7 +425,8 @@ export const pisoUmbralDoEclipsador = (
  * simplesmente nunca escurece; cada receptor custa um resolve por
  * quadro enquanto está em cena.
  *
- * Os 15 pares do doador + as 5 luas de Urano. O doador deixava as
+ * Os 15 pares do doador + as 5 luas de Urano (e, depois, as marcianas
+ * e as 7 pequenas internas de Saturno). O doador deixava as
  * uranianas de fora de propósito (Urano deitado ⇒ temporadas de
  * eclipse a cada ~42 anos — um belo fato de ensino) e documentava
  * "adicionar uma é mudança data-only"; a matriz da fusão REVERTEU a
@@ -455,6 +456,15 @@ export const PARES_DE_ECLIPSE: Readonly<Record<string, string>> = {
   rhea: "saturn",
   titan: "saturn",
   iapetus: "saturn",
+  // As sete pequenas internas (data-only): orbitam dentro de 2,6 raios,
+  // então passam pela sombra de Saturno uma vez por órbita.
+  pan: "saturn",
+  daphnis: "saturn",
+  atlas: "saturn",
+  prometheus: "saturn",
+  pandora: "saturn",
+  janus: "saturn",
+  epimetheus: "saturn",
   // As cinco uranianas — a exceção do doador, revertida (data-only).
   miranda: "uranus",
   ariel: "uranus",
