@@ -518,8 +518,9 @@ export class Nebula {
    * O ATLAS da pirâmide, dono à parte dela (E3c): nasce antes do clique
    * (`prepararPiramide`) ou na chegada (`setPiramide`), e SOBREVIVE à
    * pirâmide solta — voltar a "Hoje" e ligar de novo não paga de novo a
-   * reserva de 20 MB. Só sai quando outra forma o substitui ou no
-   * `dispose`. `aquecimento` é o passo do pré-aquecimento: 'reservar'
+   * reserva de 20 MB. Só sai quando outra forma o substitui, no
+   * `dispose` ou, ocioso, fora dos tiers de computador
+   * (`soltarAtlasOcioso`). `aquecimento` é o passo do pré-aquecimento: 'reservar'
    * (a GPU ainda nem o conhece), 'tocar' (reservado, falta a primeira
    * subida, onde o driver o inicializa de verdade) e 'pronto'.
    */
@@ -861,6 +862,12 @@ export class Nebula {
    */
   get lePoeira(): boolean {
     return this.modoEsperado !== 0;
+  }
+
+  /** o gás atual lê as nuvens-semente da câmera (`setSeedClouds`)? Só o
+   *  antigo — fino e macio leem as do bake */
+  get leSementes(): boolean {
+    return this.variante === 'antigo';
   }
 
   /**
@@ -1330,7 +1337,16 @@ export class Nebula {
     // zerando os 20 MB por conta própria, preguiçoso); subir os zeros daqui
     // custa 140–300 ms no `initTexture` — e o buffer é solto logo depois
     const zeros = new Uint16Array(texels[0] * texels[1] * texels[2]);
-    this.atlas = { textura: texturaDoAtlas(zeros, texels), texels: [...texels], aquecimento: 'reservar' };
+    const textura = texturaDoAtlas(zeros, texels);
+    // os zeros já subiram: o buffer de 20 MB não fica preso na textura, pelo
+    // `initTexture` de `prepararPiramide` ou pelo primeiro desenho depois de
+    // `setPiramide` (as subidas seguintes são por `copyTextureToTexture`,
+    // que nunca lê `image.data` do atlas)
+    textura.onUpdate = () => {
+      textura.image.data = null;
+      textura.onUpdate = null;
+    };
+    this.atlas = { textura, texels: [...texels], aquecimento: 'reservar' };
     return a?.textura ?? null;
   }
 
@@ -1363,8 +1379,6 @@ export class Nebula {
     const a = this.atlas!;
     if (a.aquecimento === 'reservar') {
       renderer.initTexture(a.textura);
-      // os zeros já subiram: o buffer de 20 MB não fica preso na textura
-      a.textura.image.data = null;
       a.aquecimento = 'tocar';
       return;
     }
@@ -1381,6 +1395,15 @@ export class Nebula {
     u.uPoeiraAtlas.value = a.textura;
     this.aquecerPiramide(renderer);
     u.uPoeiraAtlas.value = this.fallbackAtlas;
+  }
+
+  /** o atlas que nenhuma pirâmide usa sai da GPU — o director chama fora
+   *  dos tiers de computador, onde `prepararPiramide` não o mantém; o
+   *  próximo `prepararPiramide`/`setPiramide` reserva outro */
+  soltarAtlasOcioso() {
+    if (this.piramide || !this.atlas) return;
+    this.atlas.textura.dispose();
+    this.atlas = null;
   }
 
   /** o orçamento da pirâmide no ar (`null` = nenhuma) — o director
@@ -1583,7 +1606,8 @@ export class Nebula {
     const amps = u.uSeedCloudAmp.value as Float32Array;
     const n = Math.min(count, 32);
     // as sementes chegam a cada 0,25 s (nuvensSemente.tique) com a câmera
-    // parada ou não: só o que MUDOU suja o quadro congelado
+    // parada ou não: só o que MUDOU suja o quadro congelado, e só no gás
+    // que as lê
     let mudou = u.uSeedCloudCount.value !== n;
     for (let i = 0; i < n; i++) {
       const o = i * 5;
@@ -1598,7 +1622,7 @@ export class Nebula {
       }
     }
     u.uSeedCloudCount.value = n;
-    if (mudou) this.sujo = true;
+    if (mudou && this.leSementes) this.sujo = true;
   }
 
   /**

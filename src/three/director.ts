@@ -3361,7 +3361,13 @@ export class Director {
    * no-op se a variante pedida já é a que está no ar).
    */
   private aplicarGas() {
+    const liaSementes = this.nebula.leSementes;
     this.nebula.setVariante(this.gasForcado ?? this.engine.preset.gas);
+    // as nuvens-semente da câmera só andam no gás antigo (o único que as
+    // lê): ao voltar a ele, as do lugar de agora já no primeiro quadro
+    if (this.nebula.leSementes && !liaSementes) {
+      this.nuvensSemente.zerar(this.engine.camera.position, this.nebula);
+    }
   }
 
   /**
@@ -4461,8 +4467,9 @@ export class Director {
     const markerFade = THREE.MathUtils.smoothstep(dHome, 1700, 3300);
 
     this.rotulos.tique(dt);
-    // nuvens-semente do raymarch + cavidade do observador itinerante
-    this.nuvensSemente.tique(dt, nebulaFade, cam.position, this.nebula);
+    // nuvens-semente do raymarch (só o gás antigo as lê) + cavidade do
+    // observador itinerante
+    if (this.nebula.leSementes) this.nuvensSemente.tique(dt, nebulaFade, cam.position, this.nebula);
     // a MESMA cavidade em todos os consumidores da densidade: raymarch,
     // extinção das estrelas e brilho da poeira próxima
     const cavityGate = THREE.MathUtils.smoothstep(dHome, 600, 1300);
@@ -4928,11 +4935,15 @@ export class Director {
     // solta a memória). Sem ninguém que a leia (`gasLeAPiramide`), nada
     // disso roda. `rawTime`: o relógio de parede, o da carência.
     this.garantirPiramide();
-    this.prepararPiramide();
     if (this.gasLeAPiramide) {
+      this.prepararPiramide();
       if (this.piramideDesejada !== null) this.nebula.aquecerPiramide(this.engine.renderer);
       this.nebula.atualizarPiramide(this.engine.renderer, rawTime, cam);
     }
+    // fora dos tiers de computador, sem a poeira pedida, nada mantém o
+    // atlas preparado: ele sai da GPU (o Cinema/Alta o reserva de novo)
+    const tierDeComputador = this.engine.quality === 'cinema' || this.engine.quality === 'alta';
+    if (!tierDeComputador && this.piramideDesejada === null) this.nebula.soltarAtlasOcioso();
     // gate 0.02: na casca externa do fade a contribuição é invisível
     // pós-ACES, mas o raymarch custaria integral
     if (this.noNebula || nebulaFade <= 0.02) {

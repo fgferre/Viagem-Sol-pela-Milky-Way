@@ -108,16 +108,29 @@ describe('o quadro congelado da nebulosa (item 144)', () => {
     nebula.setFade(0.5);
     nebula.render(renderer, camera);
     expect(desenhos()).toBe(133);
-    const sementes = new Float32Array([1, 2, 3, 4, 0.5]);
-    nebula.setSeedClouds(sementes, 1);
-    nebula.render(renderer, camera);
-    expect(desenhos()).toBe(135);
-    nebula.setSeedClouds(sementes, 1);
-    nebula.render(renderer, camera);
-    expect(desenhos()).toBe(135);
     nebula.setSunOccluder(new THREE.Vector3(0, 0, 0), 2);
     nebula.render(renderer, camera);
-    expect(desenhos()).toBe(137);
+    expect(desenhos()).toBe(135);
+  });
+
+  it('as nuvens-semente da câmera só sujam o quadro no gás antigo, o único que as lê', () => {
+    const { renderer, camera, nebula, desenhos } = bancada();
+    nebula.render(renderer, camera);
+    const noMacio = desenhos();
+    nebula.setSeedClouds(new Float32Array([1, 2, 3, 4, 0.5]), 1);
+    nebula.render(renderer, camera);
+    expect(desenhos()).toBe(noMacio);
+    nebula.setVariante('antigo');
+    expect(nebula.leSementes).toBe(true);
+    nebula.render(renderer, camera);
+    const noAntigo = desenhos();
+    nebula.setSeedClouds(new Float32Array([5, 6, 7, 8, 0.5]), 1);
+    nebula.render(renderer, camera);
+    expect(desenhos()).toBeGreaterThan(noAntigo);
+    const mudou = desenhos();
+    nebula.setSeedClouds(new Float32Array([5, 6, 7, 8, 0.5]), 1);
+    nebula.render(renderer, camera);
+    expect(desenhos()).toBe(mudou);
   });
 
   it('a LUT invalidada por salto ou por curva nova também acorda o quadro', () => {
@@ -791,6 +804,39 @@ describe('a pirâmide da poeira na GPU (E3c) — a Nebula', () => {
     const descarteDoOutro = vi.spyOn(outro, 'dispose');
     nebula.dispose();
     expect(descarteDoOutro).toHaveBeenCalledTimes(1);
+  });
+
+  it('o atlas nascido pelo clique solta os zeros da CPU depois da primeira subida', () => {
+    const { nebula, entranhas } = comPoeira('fino');
+    const orcamento = montarOrcamento(16, 2 ** 22, 2048);
+    const { piramide, fonte } = piramideDeTeste();
+    nebula.setPiramide({ piramide, fonte, orcamento });
+    const atlas = entranhas().piramide!.atlas;
+    const [x, y, z] = orcamento.layout.texels;
+    expect((atlas.image.data as Uint16Array).length).toBe(x * y * z);
+    // o renderer chama `onUpdate` depois de subir (o da bancada não sobe)
+    atlas.onUpdate!(atlas);
+    expect(atlas.image.data).toBeNull();
+    expect(atlas.onUpdate).toBeNull();
+  });
+
+  it('o atlas ocioso sai da GPU por pedido e volta no próximo preparo; com a pirâmide no ar, fica', () => {
+    const { renderer, nebula, entranhas } = comPoeira('fino');
+    const orcamento = montarOrcamento(16, 2 ** 22, 2048);
+    nebula.prepararPiramide(orcamento, renderer);
+    const [preparado] = (renderer.initTexture as ReturnType<typeof vi.fn>).mock.calls[0] as [THREE.Data3DTexture];
+    const descarte = vi.spyOn(preparado, 'dispose');
+    nebula.soltarAtlasOcioso();
+    expect(descarte).toHaveBeenCalledTimes(1);
+    nebula.prepararPiramide(orcamento, renderer);
+    expect(renderer.initTexture).toHaveBeenCalledTimes(2);
+    const { piramide, fonte } = piramideDeTeste();
+    nebula.setPiramide({ piramide, fonte, orcamento });
+    const doAr = entranhas().piramide!.atlas;
+    const descarteDoAr = vi.spyOn(doAr, 'dispose');
+    nebula.soltarAtlasOcioso();
+    expect(descarteDoAr).not.toHaveBeenCalled();
+    expect(entranhas().piramide!.atlas).toBe(doAr);
   });
 
   it('antes do clique a preparação compila e desenha a frio os materiais, com o atlas amarrado e fora de quadro de bake; o clique troca sem desenho novo', () => {
