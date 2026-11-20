@@ -377,7 +377,12 @@ export function useDirector(fios: FiosDoDirector) {
     () =>
       assinarIdioma(() => {
         const d = directorRef.current;
-        if (d) setTicks(d.progressTicks);
+        if (!d) return;
+        setTicks(d.progressTicks);
+        // o nome do alvo na barra do topo é texto JÁ traduzido na hora em
+        // que foi publicado: sem repetir, a barra ficava "The Milky Way ›
+        // Solar System › Terra" (auditoria de 20/11/2026, item 12.3)
+        d.reemitirFoco();
       }),
     [directorRef, setTicks]
   );

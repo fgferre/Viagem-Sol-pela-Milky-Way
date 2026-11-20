@@ -240,7 +240,9 @@ function ContextoDoAlvo({
   // dois juntos, `App.tsx`): os dois `useRealce` são estados React
   // separados, mas disparam no mesmo commit, então a migalha de pão e a
   // ficha acendem juntas sem precisar compartilhar estado nenhum.
-  const vezesFoco = useRealce(foco);
+  // a língua cala o realce: "Terra" virar "Earth" na troca de idioma não
+  // é o visitante confirmando alvo (auditoria de 20/11/2026, item 12.3)
+  const vezesFoco = useRealce(foco, useIdioma());
   const todos = trechosDoContexto(
     escada,
     foco,

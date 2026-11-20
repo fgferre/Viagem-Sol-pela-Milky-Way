@@ -2794,6 +2794,11 @@ export class Director {
     this.escada.focarNoSistema();
   }
 
+  /** a troca de língua repete o nome do alvo vivo na língua nova */
+  reemitirFoco() {
+    this.escada.reemitirFoco();
+  }
+
   /** o destino do clique num rótulo, escolhido pelo NOME (busca, F3) */
   visitarEstrela(estrela: { n: string; x: number; y: number; z: number }) {
     this.escada.visitarEstrela(estrela);
