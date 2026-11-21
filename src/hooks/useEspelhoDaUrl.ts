@@ -251,9 +251,9 @@ export function useEspelhoDaUrl(dep: {
     // época a porta sai da URL em vez de gravar o valor padrão.
     //
     // LIDO DO DIRECTOR NA HORA, como o `?d=` logo acima — não do estado
-    // empurrado. O mostrador deixou de publicar a cada segundo (o `jd`
-    // anda, mas a data tem resolução de minuto: ver `mesmoMostrador`), e
-    // um `?jd=` que viesse do último empurrão congelaria no minuto. Este
+    // empurrado. O mostrador só publica quando o que o relógio ESCREVE muda
+    // (ver `mesmoMostrador`: o segundo ao vivo, o minuto na viagem rápida),
+    // e um `?jd=` que viesse do último empurrão ficaria até esse passo atrás. Este
     // texto é escrito em GESTO — copiar link, trocar de tier, voltar ao
     // brilho real —, nunca num relógio, então "na hora" é sempre a hora
     // certa. De quebra o link ficou EXATO: antes ele saía com o instante

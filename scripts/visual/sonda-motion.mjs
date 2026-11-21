@@ -203,14 +203,15 @@ const SEL_AJUSTES_PAINEL = '[data-dialogo="ajustes"]';
 const SEL_AJUSTES_DESEMPENHO = '[aria-controls="ajustes-painel-desempenho"]';
 const SEL_AJUSTES_SESSAO = '[aria-controls="ajustes-painel-sessao"]';
 const jsSegQualidade = () => `document.querySelector('${SEL_AJUSTES_PAINEL} .ajustes-seg--qualidade')`;
-// OS BOTÕES DA MÁQUINA DO TEMPO, pela mesma razão: o `aria-label` deles
-// é traduzido ("Avançar no tempo" não existe sob `--query=lang=en`, achado
-// rodando `--sequencia` em inglês, 11/09). Os três segmentados de
-// `.atlas-tempo-botoes` têm ordem fixa em HudDoAtlas.tsx — transporte
-// (voltar, pausar, avançar), velocidade, referência (ao vivo, …) — e os
-// botões são os filhos DIRETOS de cada um. Expressão JS, como a de cima.
-const jsBotaoDoTempo = (grupo, indice) =>
-  `Array.from(document.querySelectorAll('.atlas-tempo-botoes .ajustes-seg'))[${grupo}]?.querySelectorAll(':scope > button')[${indice}]`;
+// OS CONTROLES DO RELÓGIO DO ATLAS (20/11), pela mesma razão: o
+// `aria-label` deles é traduzido ("Avançar no tempo" não existe sob
+// `--query=lang=en`, achado rodando `--sequencia` em inglês, 11/09). Por
+// isso cada um é nomeado pela CLASSE, dentro do relógio do rodapé.
+const SEL_RELOGIO = '.atlas-rodape .relogio';
+const SEL_RELOGIO_ABRIR = `${SEL_RELOGIO} .relogio-abrir`;
+const SEL_RELOGIO_LEITURA = `${SEL_RELOGIO} .relogio-leitura`;
+const SEL_RELOGIO_DOBRA = `${SEL_RELOGIO} .relogio-dobra`;
+const jsControleDoRelogio = (sel) => `document.querySelector('${SEL_RELOGIO} ${sel}')`;
 const SEL_BUSCA_GATILHO = '[data-abre-dialogo="busca"]';
 const SEL_BUSCA_PAINEL = '[data-dialogo="busca"]';
 const SEL_FICHA_PAINEL = '[data-dialogo="ficha"]';
@@ -1203,10 +1204,12 @@ async function rodarSequencia() {
         `document.querySelector('.ajustes-copiar-estado')?.textContent ?? null`
       ));
 
-      // 5) FECHAR COM ESC; PASSAR O MOUSE NA MÁQUINA DO TEMPO, AVANÇAR,
-      // TROCAR A VELOCIDADE E VOLTAR AO VIVO (se o botão existir).
+      // 5) FECHAR COM ESC; ABRIR O PAINEL DO RELÓGIO, AVANÇAR, TROCAR A
+      // VELOCIDADE E VOLTAR AO PRESENTE (se o botão existir). Desde 20/11 o
+      // relógio abre por CLIQUE (não há hover), e a leitura não pode saltar
+      // quando o painel nasce em cima dela.
       const dataAntes = await sessao.js(
-        `document.querySelector('.atlas-tempo-data')?.getBoundingClientRect().top ?? null`
+        `document.querySelector('${SEL_RELOGIO_LEITURA}')?.getBoundingClientRect().top ?? null`
       );
       await pressionarEscape(sessao);
       await esperarPor(
@@ -1214,34 +1217,32 @@ async function rodarSequencia() {
         `document.querySelector('${SEL_AJUSTES_PAINEL}') === null`,
         teto(3000)
       );
-      const linhaDoTempo = await retanguloDe(sessao, '.atlas-tempo');
-      if (linhaDoTempo) {
-        await moverMouse(sessao, linhaDoTempo.x + linhaDoTempo.width / 2, linhaDoTempo.y + linhaDoTempo.height / 2);
-        await esperarPor(
-          { js: sessao.js },
-          `getComputedStyle(document.querySelector('.atlas-tempo-botoes')).opacity === '1'`,
-          teto(3000)
-        );
-      }
+      await clicarReal(sessao, SEL_RELOGIO_ABRIR);
+      await esperarPor(
+        { js: sessao.js },
+        `getComputedStyle(document.querySelector('${SEL_RELOGIO_DOBRA}')).opacity === '1'`,
+        teto(3000)
+      );
       const dataDepois = await sessao.js(
-        `document.querySelector('.atlas-tempo-data')?.getBoundingClientRect().top ?? null`
+        `document.querySelector('${SEL_RELOGIO_LEITURA}')?.getBoundingClientRect().top ?? null`
       );
       guardar('linhaDaData', { antes: dataAntes, depois: dataDepois });
 
-      await clicarNaExpressao(sessao, jsBotaoDoTempo(0, 2), 'o botão "avançar no tempo"');
+      const jsAvancar = jsControleDoRelogio('.relogio-sentido button:last-child');
+      await clicarNaExpressao(sessao, jsAvancar, 'o botão "Avançar" do relógio');
       await esperarPor(
         { js: sessao.js },
-        `document.querySelector('.atlas-tempo-nudge-futuro') !== null`,
+        `${jsAvancar}?.getAttribute('aria-pressed') === 'true'`,
         teto(3000)
       );
-      guardar('avancarNudge', await sessao.js(`document.querySelector('.atlas-tempo-nudge-futuro') !== null`));
+      guardar('avancarMarcado', await sessao.js(`${jsAvancar}?.getAttribute('aria-pressed') === 'true'`));
 
-      await clicarReal(sessao, '.atlas-tempo-taxa');
+      await clicarReal(sessao, `${SEL_RELOGIO} .relogio-escala input`);
       await pausa(300);
 
-      const aoVivoExiste = await sessao.js(`Boolean(${jsBotaoDoTempo(2, 0)})`);
-      if (aoVivoExiste) {
-        await clicarNaExpressao(sessao, jsBotaoDoTempo(2, 0), 'o botão "ao vivo"');
+      const presenteExiste = await sessao.js(`Boolean(${jsControleDoRelogio('.relogio-agora')})`);
+      if (presenteExiste) {
+        await clicarNaExpressao(sessao, jsControleDoRelogio('.relogio-agora'), 'o botão "Voltar ao presente"');
         await pausa(300);
       }
     };
@@ -1299,7 +1300,7 @@ async function rodarSequencia() {
       `trecho de contexto ganhou .realce-texto: ${checagens.contextoRealceTexto === true}`,
       `seção da ficha: aria-expanded=${checagens.secaoAberta?.expandida ?? '?'} rotate=${checagens.secaoAberta?.rotate ?? '?'}`,
       `copiar link: anel=${checagens.copiarAnel === true} estado="${checagens.copiarEstado ?? ''}"`,
-      `"Avançar no tempo" ganhou a classe de nudge: ${checagens.avancarNudge === true}`,
+      `"Avançar" do relógio ficou marcado (aria-pressed): ${checagens.avancarMarcado === true}`,
       `linha da data: topo ${checagens.linhaDaData?.antes ?? '?'} → ${checagens.linhaDaData?.depois ?? '?'}`,
       `JSON: ${destinoJson}`,
     ];

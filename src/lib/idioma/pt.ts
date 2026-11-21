@@ -369,33 +369,35 @@ export const PT = {
   'atlas.cliqueAssistida': '{oQueSeVe} — clique: voltar à luz assistida',
   'atlas.cliqueReal': 'clique: voltar ao real — {oQueSeVe}',
   'atlas.endireitar': 'Endireitar o horizonte',
-  'atlas.instanteDoCeu': 'instante do céu',
   'atlas.maquinaDoTempo': 'Máquina do tempo',
   'atlas.tempo': 'Tempo',
-  'atlas.tempoBotao': 'Tempo',
   'atlas.fecharTempo': 'Fechar a máquina do tempo',
-  // O TOGGLE DA BARRA DE MESA EM REPOUSO (item A1.1) — a linha "INSTANTE
-  // DO CÉU" começa recolhida, e este par de aria diz o que o botão "▸"/"▾"
-  // faz, no mesmo molde de `atlas.fecharTempo`.
-  'atlas.mostrarControlesDoTempo': 'Mostrar os controles do tempo',
-  'atlas.esconderControlesDoTempo': 'Esconder os controles do tempo',
-  'atlas.voltarNoTempo': 'Voltar no tempo',
-  'atlas.pararOTempo': 'Parar o tempo',
-  'atlas.avancarNoTempo': 'Avançar no tempo',
-  'atlas.taxaAria': 'Velocidade do tempo: {taxa}. Clique para o próximo degrau.',
-  'atlas.aoVivo': 'Ao vivo',
-  'atlas.aoVivoAria': 'Seguir o tempo real',
-  'atlas.epoca': 'Época',
-  'atlas.epocaAria': 'Voltar ao instante do retrato de 2026',
-  // OS RÓTULOS DAS TRÊS LINHAS (`comRotulos`), só na gaveta — a barra da
-  // mesa não os usa porque os próprios botões já dizem o que cada grupo é.
-  'atlas.tempoTransporte': 'Transporte',
-  'atlas.tempoVelocidade': 'Velocidade',
-  'atlas.tempoReferencia': 'Referência',
-  // O "?" do cabeçalho da gaveta e da barra (redesenho, pedido do dono:
-  // "aplica o mesmo padrão no painel de Tempo") — ≤45 palavras.
-  'atlas.tempoAjuda':
-    'A máquina do tempo move o céu e os planetas. ◀ ⏸ ▶ escolhem o sentido; o botão de velocidade cicla do tempo real a ~116 dias por segundo. Ao vivo segue o relógio do visitante; Época volta ao retrato J2000. Efemérides cobrem 1950–2050.',
+  // O RELÓGIO DO ATLAS (aprovado em 20/11) — o mostrador, o painel da
+  // velocidade e a alça do telefone. A data curta segue a ordem de cada
+  // língua ("20 nov 2026" aqui, "Nov 20, 2026" em inglês, como `tempo.data`).
+  'relogio.aria': 'Relógio do Atlas',
+  'relogio.aoVivo': 'Ao vivo',
+  'relogio.pausado': 'Pausado',
+  'relogio.avancando': 'Avançando',
+  'relogio.recuando': 'Recuando',
+  'relogio.retrato': 'Retrato',
+  'relogio.carregando': 'Carregando',
+  'relogio.limite': 'Limite',
+  'relogio.pausar': 'Pausar o tempo',
+  'relogio.retomar': 'Retomar do instante pausado',
+  'relogio.ajustar': 'Ajustar o tempo',
+  'relogio.velocidade': 'Velocidade',
+  'relogio.porSegundo': 'no céu por segundo real',
+  'relogio.reguaValor': '{taxa} de céu por segundo real',
+  'relogio.utc': 'Tempo Universal Coordenado',
+  'relogio.recuar': 'Recuar',
+  'relogio.avancar': 'Avançar',
+  'relogio.presente': 'Voltar ao presente',
+  'relogio.retrato2026': 'Retrato de 2026',
+  'relogio.dataCurta': '{dia} {mes} {ano}',
+  'relogio.diaCurto': '{dia} {mes}',
+  'relogio.alca': 'Tempo · {estado}',
+  'relogio.alcaTitulo': 'Tempo · {estado} · {instante} UTC',
 
   // ---- a paleta de busca (`components/PaletaDeBusca.tsx`) -----------
   'busca.titulo': 'Busca',
@@ -1104,9 +1106,6 @@ export const PT = {
   /** a ORDEM da data por extenso muda de língua: pt "1 de janeiro de 2026", en "January 1, 2026" */
   'tempo.data': '{dia} de {mes} de {ano}, {hh}:{mm}',
   'tempo.instanteIndefinido': 'instante indefinido',
-  'tempo.parado': 'parado',
-  'tempo.tempoReal': 'tempo real',
-  'tempo.taxa': '{valor} {unidade} por segundo',
   'tempo.segundo': 'segundo',
   'tempo.segundos': 'segundos',
   'tempo.minuto': 'minuto',
@@ -1115,7 +1114,6 @@ export const PT = {
   'tempo.horas': 'horas',
   'tempo.dia': 'dia',
   'tempo.dias': 'dias',
-  'tempo.ano': 'ano',
   'tempo.anos': 'anos',
   'tempo.semEfemeride': 'sem efeméride: a camada está congelada no retrato',
   'tempo.buscando': 'buscando a efeméride…',

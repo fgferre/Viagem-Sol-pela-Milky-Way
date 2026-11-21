@@ -96,18 +96,6 @@
   .atlas-rodape {
     left: 4vw;
   }
-  .atlas-tempo-linha {
-    flex-wrap: wrap;
-    gap: 0.4rem;
-  }
-  /* a quebra dos CONTROLES subiu para a fatia 4: ela vale em toda
-     largura, não só aqui. O teto do botão da taxa fica: na coluna de
-     borda a borda os 11rem dele cabem em quase toda tela, mas numa
-     janela de 320 px com o texto em 140% não cabem — e mínimo maior que
-     o contêiner transborda por definição, com quebra ou sem. */
-  .atlas-tempo-taxa {
-    min-width: 0;
-  }
 
   /* `stretch` porque a coluna passa a ter as duas bordas (left E right):
      é o que devolve à legenda a largura inteira que ela tinha aqui

@@ -164,42 +164,32 @@ describe('3. a marca da escolha é a mesma em toda a casa', () => {
 describe('4. TODA moldura de segmentado passa pelo mesmo mecanismo', () => {
   // A regra que impede o desenho de se partir em dois: um `.ajustes-seg`
   // desenhado à mão sem o hook ficaria SEM filete nenhum — e ele convive
-  // na mesma tela com os que têm (o rodapé do tempo e o painel de
-  // Ajustes, na mesa, ao mesmo tempo).
+  // na mesma tela com os que têm (o painel de Ajustes e as gavetas).
   const COMPONENTES = readdirSync(new URL('../components/', import.meta.url))
     .filter((nome) => nome.endsWith('.tsx'))
     .map((nome) => readFileSync(new URL(`../components/${nome}`, import.meta.url), 'utf8'))
     .join('\n');
 
   it('cada `.ajustes-seg` do JSX recebe o ref de `useFileteDoSegmentado`', () => {
-    const molduras = [...COMPONENTES.matchAll(/className="ajustes-seg[^"]*"[^>]*>/g)];
+    // as duas grafias: o literal (`className="ajustes-seg…"`) e a expressão
+    // do `Segmentado` (`className={… 'ajustes-seg'}`)
+    const molduras = [
+      ...COMPONENTES.matchAll(/className=(?:"ajustes-seg[^"]*"|\{[^}]*ajustes-seg[^}]*\})[^>]*>/g),
+    ];
     expect(molduras.length).toBeGreaterThan(0);
     for (const m of molduras) expect(m[0]).toContain('ref={');
   });
 });
 
-describe('5. o respiro do mouse na máquina do tempo tem UMA casa', () => {
-  // O número que decide quanto a linha do tempo espera antes de fechar
-  // cronometra DUAS coisas: o esmaecer, no CSS, e o desmonte, no
-  // TypeScript. Escrito nas duas, um dia elas discordam — e aí ou o corpo
-  // some antes de acabar de apagar, ou fica um instante invisível
-  // esperando o temporizador.
-  const BARRA = readFileSync(
-    new URL('../components/HudDoAtlas.tsx', import.meta.url),
-    'utf8'
-  );
-
-  it('o token é declarado uma vez só, no CSS', () => {
-    expect(CSS.match(/--t-respiro:/g)?.length).toBe(1);
-  });
-
-  it('...e é ele que cronometra o esmaecer', () => {
-    expect(corpoDaRegra('.atlas-tempo-botoes.sumindo')).toContain('var(--t-respiro)');
-  });
-
-  it('...e o desmonte PERGUNTA por ele, em vez de repetir o número', () => {
-    expect(BARRA).toContain("getPropertyValue('--t-respiro')");
-    expect(BARRA).not.toContain('setHover(false), 350)');
+describe('5. o relógio do Atlas obedece ao movimento reduzido pelos tokens', () => {
+  // O painel da velocidade dobra e desdobra, a régua desliza e o
+  // segundeiro anda sozinho em volta do ▶. Os três primeiros se apagam
+  // pela política da casa (o token que zera); o segundeiro, que é
+  // movimento por si, some — e é a única regra própria do relógio.
+  it('a dobra cronometra com um token que zera, e o segundeiro some', () => {
+    expect(corpoDaRegra('.relogio-dobra')).toContain('grid-template-rows var(--t-assenta)');
+    const reduzido = /@media \(prefers-reduced-motion: reduce\) \{\s*\.relogio-segundeiro \{\s*display: none;/;
+    expect(CSS).toMatch(reduzido);
   });
 });
 

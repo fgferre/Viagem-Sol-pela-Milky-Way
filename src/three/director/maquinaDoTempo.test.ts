@@ -13,7 +13,7 @@
 // ============================================================
 import { describe, expect, it, vi } from 'vitest';
 import { MaquinaDoTempo } from './maquinaDoTempo';
-import { AVISO_FORA_DA_JANELA, JANELA_EFEMERIDES } from '../tempoDoAtlas';
+import { AVISO_FORA_DA_JANELA, DEGRAUS_DE_TEMPO, JANELA_EFEMERIDES } from '../tempoDoAtlas';
 import type { EstadoDoTempo } from '../tempoDoAtlas';
 
 function bancada(jdPedido: number) {
@@ -110,6 +110,63 @@ describe('a parede do tempo — o relógio assenta em vez de piscar', () => {
     maquina.andarNoTempo(0);
     expect(maquina.tempo.sentido).toBe(0);
     expect(maquina.naParede).toBe(false);
+  });
+});
+
+describe('os gestos do relógio do Atlas (20/11) — a semântica mora na máquina', () => {
+  const meio = (JANELA_EFEMERIDES.jdInicio + JANELA_EFEMERIDES.jdFim) / 2;
+
+  it('a régua escolhe o degrau direto, sem dar a volta na escada', () => {
+    const { maquina, publicados } = bancada(meio);
+    expect(maquina.escolherDegrau(5)).toBe(5);
+    expect(maquina.escolherDegrau(2)).toBe(2);
+    expect(maquina.escolherDegrau(99)).toBe(DEGRAUS_DE_TEMPO - 1);
+    expect(publicados.map((e) => e.degrau)).toEqual([5, 2, DEGRAUS_DE_TEMPO - 1]);
+    expect(maquina.tempo.sentido).toBe(0);
+  });
+
+  it('▶/⏸ lembra o último sentido — e a lembrança sobrevive à folha do telefone fechar e abrir', () => {
+    const { maquina } = bancada(meio);
+    maquina.andarNoTempo(-1);
+    maquina.tocarOuPausar();
+    expect(maquina.tempo.sentido).toBe(0);
+    // a folha desmonta e remonta o relógio: nada nele guarda o sentido,
+    // é a máquina (que não desmonta) quem responde ao próximo ▶
+    maquina.tocarOuPausar();
+    expect(maquina.tempo.sentido).toBe(-1);
+  });
+
+  it('pausar a partir do ao vivo vai ao degrau 0 e para', () => {
+    const { maquina } = bancada(meio);
+    maquina.escolherDegrau(4);
+    maquina.voltarAoPresente();
+    maquina.tocarOuPausar();
+    expect(maquina.tempo).toMatchObject({ aoVivo: false, sentido: 0, degrau: 0 });
+    maquina.tocarOuPausar();
+    expect(maquina.tempo.sentido).toBe(1);
+  });
+
+  it('ao vivo, um degrau acima do real sai andando para a frente; um sentido parte do degrau 0', () => {
+    const { maquina } = bancada(meio);
+    maquina.voltarAoPresente();
+    maquina.escolherDegrau(0);
+    expect(maquina.tempo.aoVivo).toBe(true);
+    maquina.escolherDegrau(5);
+    expect(maquina.tempo).toMatchObject({ aoVivo: false, sentido: 1, degrau: 5 });
+
+    maquina.voltarAoPresente();
+    maquina.escolherSentido(-1);
+    expect(maquina.tempo).toMatchObject({ aoVivo: false, sentido: -1, degrau: 0 });
+  });
+
+  it('o mostrador publica no máximo 4 vezes por segundo, mesmo com os segundos correndo', () => {
+    const { maquina, publicados } = bancada(meio);
+    maquina.escolherDegrau(2); // 100 s/s: o segundo escrito muda a cada quadro
+    maquina.andarNoTempo(1);
+    publicados.length = 0;
+    for (let i = 0; i < 60; i++) maquina.andarORelogio(1 / 60);
+    expect(publicados.length).toBeGreaterThanOrEqual(3);
+    expect(publicados.length).toBeLessThanOrEqual(4);
   });
 });
 

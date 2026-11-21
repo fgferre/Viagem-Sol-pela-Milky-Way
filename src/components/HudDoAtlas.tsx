@@ -13,13 +13,14 @@
 // uma peça portalizada para o `body` (ou aninhada numa outra) apareceria
 // nas 18 vistas oficiais e o filme perderia pixel.
 // ============================================================
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import type { ReactElement } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { EstadoDaBussola } from '../three/cinematic/atlasRig';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';
 import { CAMADAS_POR_FAMILIA, familiaEmTexto } from '../three/atlasConfig';
 import type { Camada, FamiliaDeCamada } from '../three/atlasConfig';
-import { t } from '../lib/idioma';
+import { idiomaAtual, t } from '../lib/idioma';
+import type { ChaveDeTexto } from '../lib/idioma';
 import { useIdioma } from '../hooks/useIdioma';
 import { useDicaPresa } from '../hooks/useDicaPresa';
 import { usePresenca } from '../hooks/usePresenca';
@@ -27,12 +28,17 @@ import { useRealce } from '../hooks/useRealce';
 import { Ajuda } from './Ajuda';
 import { CabecalhoDoPainel } from './CabecalhoDoPainel';
 import { Icone } from './Icone';
-import { useFileteDoSegmentado } from '../hooks/useFileteDoSegmentado';
-import { cancelar, ir, lerTokens, REPOUSO } from '../hooks/movimentoDaGaveta';
-import { semMovimento } from '../hooks/useGavetas';
 import { estadoDoSelo, legendaDaProcedencia } from '../three/selo';
 import type { EstadoDaPoeira, EstadoDaVista } from '../three/selo';
-import type { EstadoDoTempo, SentidoDoTempo } from '../three/tempoDoAtlas';
+import type { EstadoDoTempo } from '../three/tempoDoAtlas';
+import {
+  DEGRAUS_DE_TEMPO,
+  formatarEtapa,
+  instanteCivil,
+  numeroDoIdioma,
+  regimeDoMostrador,
+  taxaDoDegrau,
+} from '../three/tempoDoAtlas';
 
 /**
  * A GAVETA DE CAMADAS — a ÚNICA porta das camadas desde 22/08 (item 61).
@@ -611,547 +617,275 @@ export function Bussola({ estado, onEndireitar }: {
   );
 }
 
-/** quanto uma animação em curso ainda desloca o nó na vertical (0 em
- *  repouso) — o transform COMPUTADO é o único que sabe o quadro de agora */
-const translacaoY = (no: Element): number => {
-  const transform = getComputedStyle(no).transform;
-  return transform === 'none' ? 0 : new DOMMatrixReadOnly(transform).m42;
-};
-
-/** o topo do nó na tela SEM o deslocamento que ele mesmo estiver fazendo —
- *  medir no meio de uma animação não pode gravar um "antes" torto */
-const topoDeRepouso = (no: Element): number => no.getBoundingClientRect().top - translacaoY(no);
+// ============================================================
+// O RELÓGIO DO ATLAS (aprovado pelo dono em 20/11, a partir do protótipo
+// de demonstração do Codex). Uma leitura — o ▶/⏸ dentro da
+// coroa, o estado e o instante — e, aberto, o painel da velocidade: a
+// régua (um `input range` de verdade), Recuar/Avançar, "Voltar ao
+// presente" e "Retrato de 2026". O estado chega por prop (o `onTempo` do
+// Director, guardado no App); toda a semântica dos gestos mora na máquina
+// do tempo (`maquinaDoTempo.ts`), não aqui.
+// ============================================================
 
 /**
- * A MÁQUINA DO TEMPO (F4/D2). Uma linha de leitura — o instante do céu
- * em pt-BR — e seis controles: o sentido em três botões, a velocidade
- * num que cicla a escada, o AO VIVO e a volta à época do retrato.
- *
- * O QUE ELA NÃO É: o slider de capítulos do filme. Aquele é o tempo da
- * VIAGEM e não entra no Atlas (D6); este é o tempo do CÉU, e os dois
- * andam em réguas que não se encontram — um mede minutos de narrativa,
- * o outro, séculos de efeméride.
- *
- * ALTURA FIXA, pela mesma razão do selo: o retângulo útil do
- * enquadramento (`atlasRig.ts`) desconta esta faixa, e um bloco que
- * cresce quando aparece um aviso moveria a câmera. Por isso a linha do
- * aviso está SEMPRE montada — vazia quando não há o que avisar — e é
- * ela, e não uma que aparece e some, que carrega o `aria-live`: região
- * viva que nasce junto com a mensagem costuma não ser anunciada.
- *
- * A velocidade CICLA num botão só, no precedente do `1×/2×/4×` do
- * filme: o rótulo diz sempre em que degrau se está, e oito botões de
- * taxa seriam um painel, não um HUD.
- *
- * REDESENHO (06/09, pedido do dono: "aplica o mesmo padrão no painel de
- * Tempo") — os seis botões viram TRÊS GRUPOS SEGMENTADOS (`.ajustes-seg`,
- * a mesma peça de `Ajustes.tsx`): sentido, velocidade e referência. Nem
- * `aria-label` nem `aria-pressed` mudam — só a moldura, e o `.on` que a
- * pele já sabe pintar em dourado. NENHUM RÓTULO NOVO nasce para as três
- * fileiras: "transporte"/"velocidade"/"referência" não têm chave no
- * dicionário, e o pedido do dono foi claro em não inventar texto além da
- * dica do "?" — os próprios ícones e rótulos dos botões já dizem o que
- * cada grupo é, como sempre disseram.
- *
- * O "?" É CONDICIONAL (`comAjuda`): na gaveta ele mora no cabeçalho
- * (`CabecalhoDoPainel`, ao lado de "Tempo"), e nascer de novo aqui
- * duplicaria a mesma dica. Na barra de mesa, sem cabeçalho, ele mora
- * aqui, depois da data — e abre PARA CIMA (CSS), porque a barra vive no
- * rodapé.
+ * O QUE O RELÓGIO E A ALÇA ESCREVEM, lido do estado publicado — a mesma
+ * conta para os dois, e o regime é o mesmo de `mesmoMostrador`.
  */
-export function BarraDoTempo({
+function leituraDoRelogio(tempo: EstadoDoTempo) {
+  const { aoVivo, sentido, aviso } = tempo;
+  const regime = regimeDoMostrador(tempo);
+  const civil = instanteCivil(tempo.jd);
+  const iso = civil.toISOString();
+  // dois algarismos no "20 nov" do pt-BR; o inglês da casa escreve "Nov 5"
+  const dia =
+    idiomaAtual() === 'en' ? String(civil.getUTCDate()) : String(civil.getUTCDate()).padStart(2, '0');
+  const mes = t(`tempo.mes.${civil.getUTCMonth()}` as ChaveDeTexto).slice(0, 3);
+  const dataCurta = t('relogio.dataCurta', { dia, mes, ano: civil.getUTCFullYear() });
+  const estado =
+    aviso === t('tempo.semEfemeride')
+      ? t('relogio.retrato')
+      : aviso === t('tempo.buscando')
+        ? t('relogio.carregando')
+        : aviso
+          ? t('relogio.limite')
+          : aoVivo
+            ? t('relogio.aoVivo')
+            : sentido === 0
+              ? t('relogio.pausado')
+              : sentido < 0
+                ? t('relogio.recuando')
+                : t('relogio.avancando');
+  const tipo = aviso ? 'aviso' : aoVivo ? 'vivo' : sentido === 0 ? 'pausa' : 'viagem';
+  const instanteNaAlca =
+    regime === 'data' ? t('relogio.diaCurto', { dia, mes }) : iso.slice(11, regime === 'minutos' ? 16 : 19);
+  return { regime, civil, iso, dataCurta, estado, tipo, instanteNaAlca };
+}
+
+/** os gestos do relógio — cada um é um método do Director */
+export interface AcoesDoRelogio {
+  onTocar: () => void;
+  onDegrau: (degrau: number) => void;
+  onSentido: (sentido: -1 | 1) => void;
+  onPresente: () => void;
+  onEpoca: () => void;
+}
+
+export function Relogio({
   tempo,
-  onSentido,
-  onDegrau,
-  onAoVivo,
-  onEpoca,
-  comAjuda = true,
-  comRotulos = false,
-  recolhivel = true,
+  celular = false,
+  acoes,
 }: {
   tempo: EstadoDoTempo;
-  onSentido: (sentido: SentidoDoTempo) => void;
-  onDegrau: () => void;
-  onAoVivo: () => void;
-  onEpoca: () => void;
-  /** falso dentro da gaveta — lá o "?" já mora no cabeçalho dela */
-  comAjuda?: boolean;
-  /**
-   * VERDADEIRO SÓ DENTRO DA GAVETA (item 06/09, os controles renderizados
-   * em 40% de largura sem nome de linha): lá cada grupo ganha o rótulo
-   * ("Transporte"/"Velocidade"/"Referência") no molde `.ajustes-item`
-   * — rótulo à esquerda, controle à direita. Na barra de mesa os próprios
-   * botões já dizem o que cada grupo é, e um rótulo a mais seria ruído.
-   */
-  comRotulos?: boolean;
-  /**
-   * A BARRA DE MESA EM REPOUSO (A1.1, relatório de UI de 09/09) — VERDADE
-   * POR PADRÃO, porque é o rodapé PERMANENTE de mesa (App.tsx) quem a
-   * quer, e App.tsx não chama esta peça nomeando prop nenhuma. Recolhida
-   * mostra só a linha "INSTANTE DO CÉU + data", o "▸" e o "?"; sem
-   * guardar a escolha (recolhida de novo a cada carga). `GavetaDoTempo`
-   * (a folha do celular, que o visitante já abriu de propósito) é quem
-   * desliga — ali os seis controles continuam inteiros, sempre.
-   */
-  recolhivel?: boolean;
+  /** dentro da folha do telefone: o painel fica sempre aberto */
+  celular?: boolean;
+  acoes: AcoesDoRelogio;
 }) {
   useIdioma();
-  const { data, taxa, sentido, aoVivo, naEpoca, aviso } = tempo;
-  const parado = sentido === 0 && !aoVivo;
+  const [aberto, setAberto] = useState(false);
+  const detalhe = useRef<HTMLButtonElement>(null);
+  const tocar = useRef<HTMLButtonElement>(null);
+  const caixa = useRef<HTMLElement>(null);
+  const idDaRegua = useId();
+  const { aoVivo, sentido, degrau, aviso } = tempo;
+  const { regime, civil, iso, dataCurta, estado, tipo } = leituraDoRelogio(tempo);
+  const marcha = aoVivo || sentido !== 0;
+  const nivel = aoVivo ? 0 : degrau;
+  const veloz = regime !== 'segundos';
+  const dias = regime === 'data';
+  const ultimo = DEGRAUS_DE_TEMPO - 1;
+  const hora = iso.slice(11, 16);
+  const angulo = (civil.getUTCSeconds() * Math.PI) / 30;
+
   /**
-   * OS TRÊS SINAIS DE MODO (C3f, U26–U28) — `useRealce` conta quantas
-   * vezes cada valor MUDOU desde que esta barra nasceu; quem confirma
-   * escreve `key={vezes}` num trecho decorativo, e o React remonta só
-   * ELE a cada mudança — nunca o botão, nunca o filete que já anda
-   * sozinho. Guardado aqui, uma vez, porque as três famílias abaixo
-   * (sentido, taxa, ao vivo) o leem.
-   */
-  const realceSentido = useRealce(sentido);
-  const realceTaxa = useRealce(taxa);
-  const realceAoVivo = useRealce(aoVivo);
-  /**
-   * OS TRÊS GRUPOS DESTA BARRA USAM `.ajustes-seg` CRU (o componente
-   * `Segmentado` não os serve: aqui ação e alternância convivem no mesmo
-   * grupo), e mesmo assim o filete da escolha tem de ser O MESMO da casa
-   * — inclusive andando. O hook é o mecanismo único; a marcação continua
-   * sendo a daqui. O grupo da velocidade é um botão de AÇÃO sozinho,
-   * nunca marcado: nele o filete simplesmente não aparece.
-   */
-  const molduraTransporte = useFileteDoSegmentado();
-  const molduraTaxa = useFileteDoSegmentado();
-  const molduraReferencia = useFileteDoSegmentado();
-  /** envolve o grupo com o rótulo da linha SÓ quando `comRotulos` pede */
-  const grupo = (rotulo: string, conteudo: ReactElement) =>
-    comRotulos ? (
-      <div className="atlas-tempo-grupo">
-        <span className="atlas-tempo-rotulo">{rotulo}</span>
-        {conteudo}
-      </div>
-    ) : (
-      conteudo
-    );
-  // A DICA DESTE "?", só existe quando `comAjuda` a usa — o mesmo padrão
-  // de `useDicaPresa` dos outros diálogos, mas sem o `onKeyDownCapture`
-  // deles: a barra não é diálogo (não tem Esc que feche nada), então só
-  // falta o clique fora para desfixar.
-  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica } = useDicaPresa();
-  /**
-   * ABRE NO HOVER (pedido do dono, 09/09) — o mesmo desenho do "?" de
-   * `Ajuda.tsx`: `presa` é o clique (TRANCA aberta), `hover` é o mouse
-   * parado em cima (só `pointerType === 'mouse'` — toque não deixa hover
-   * preso, mesma guarda de `Ajuda`) e `foco` é o Tab chegando de fora,
-   * para o teclado ver as linhas sem precisar clicar. `aberta` é a soma
-   * dos três — SÓ quando `recolhivel`: dentro da gaveta do celular
-   * (`recolhivel=false`) nada disto entra em jogo, e `presa` sozinha já
-   * vale `true` para sempre (o `!recolhivel` do `useState` abaixo).
-   */
-  const [presa, setPresa] = useState(!recolhivel);
-  const [hover, setHover] = useState(false);
-  const [foco, setFoco] = useState(false);
-  const aberta = recolhivel ? presa || hover || foco : presa;
-  /**
-   * A LINHA NÃO SALTA QUANDO O CORPO NASCE (C3f) — a coluna do rodapé é
-   * ancorada pela BASE (`.atlas-rodape`, `bottom`) e cresce para CIMA:
-   * sem isto, o instante em que `.atlas-tempo-botoes` monta empurra esta
-   * linha alguns pixels para cima no MESMO quadro, porque tudo o que já
-   * estava ACIMA do conteúdo novo sobe junto com o topo da coluna. FLIP —
-   * o "antes" vem da chamada ANTERIOR deste mesmo efeito (a régua do
-   * plano: layout effect no abrir, não por quadro), remedido quando a
-   * coluna ou a janela mudam de tamanho no meio-tempo; o "depois" é
-   * medido já com o corpo montado; a diferença anima com a MESMA entrada
-   * da casa (`--t-entrada`/`--curva`, lidos uma vez) em vez de a linha
-   * simplesmente aparecer deslocada.
-   */
-  const linhaRef = useRef<HTMLDivElement>(null);
-  /** o topo de REPOUSO da linha na última medida válida (`topoDeRepouso`) */
-  const topoAntesDaLinha = useRef<number | null>(null);
-  /**
-   * O CORPO ESTÁ INDO EMBORA — o mouse saiu e o respiro está correndo.
-   * É só isto que separa "some de um quadro para o outro" de "esmaece":
-   * o corpo JÁ ficava montado durante a espera, faltava dizer ao CSS que
-   * ele está de saída.
-   *
-   * `!presa && !foco` não é detalhe: com a linha trancada pelo clique, ou
-   * com o teclado dentro dela, o mouse pode sair à vontade e nada fecha —
-   * esmaecer ali deixaria um painel VIVO e invisível. A classe cai
-   * sozinha quando qualquer um dos dois chega, e a animação cai com ela.
-   */
-  const [saindo, setSaindo] = useState(false);
-  const sumindo = saindo && !presa && !foco;
-  /** o atraso de saída (~350 ms), cancelado a cada novo hover/clique e
-   *  limpo no desmonte — para não vazar um `setTimeout` de uma barra que
-   *  já não existe */
-  const timerFechar = useRef<ReturnType<typeof setTimeout> | null>(null);
-  /**
-   * O CABEÇALHO SOBE QUANDO ABRE — a coluna cresce PARA CIMA (ancorada
-   * pela base, `.atlas-rodape`), então o pixel exato onde o mouse ficou
-   * PARADO deixa de ser o cabeçalho assim que a coluna cresce, e volta a
-   * SER o cabeçalho assim que ela encolhe de novo. Sem esta guarda, um
-   * mouse parado nesse pixel via um "entrar" de mentira toda vez que a
-   * coluna encolhe (o cabeçalho volta para debaixo dele) — abre, o vão
-   * sem controle que sobra ali quando cresce manda fechar, fechar traz o
-   * cabeçalho de volta, reabre, para sempre. Só conta como hover quem
-   * MEXEU o mouse de verdade: `aoEntrarComMouse` compara com o último
-   * ponto real e ignora um "entrar" que chega nas MESMAS coordenadas.
-   */
-  const ultimaPosicaoRealDoMouse = useRef<{ x: number; y: number } | null>(null);
-  useEffect(
-    () => () => {
-      if (timerFechar.current !== null) clearTimeout(timerFechar.current);
-    },
-    []
-  );
-  const aoEntrarComMouse = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!recolhivel || e.pointerType !== 'mouse') return;
-    const mesmoPonto =
-      ultimaPosicaoRealDoMouse.current?.x === e.clientX
-      && ultimaPosicaoRealDoMouse.current?.y === e.clientY;
-    ultimaPosicaoRealDoMouse.current = { x: e.clientX, y: e.clientY };
-    if (mesmoPonto) return;
-    if (timerFechar.current !== null) {
-      clearTimeout(timerFechar.current);
-      timerFechar.current = null;
-    }
-    setSaindo(false);
-    setHover(true);
-  };
-  const aoSairComMouse = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!recolhivel || e.pointerType !== 'mouse') return;
-    if (timerFechar.current !== null) clearTimeout(timerFechar.current);
-    setSaindo(true);
-    /**
-     * O RESPIRO É PERGUNTADO AO CSS (`--t-respiro`, em `04-atlas.css`),
-     * porque lá ele também cronometra o esmaecer: dois números iguais em
-     * duas casas são duas chances de discordarem no dia em que alguém
-     * mudar um deles, e aí ou o corpo some antes de acabar de apagar ou
-     * fica um instante invisível esperando o temporizador.
-     * Sem o token, fecha NO ATO: um menu preso aberto é pior que um menu
-     * que não esmaece.
-     */
-    const corpo = e.currentTarget.querySelector('.atlas-tempo-botoes');
-    const respiro = corpo
-      ? Number.parseFloat(getComputedStyle(corpo).getPropertyValue('--t-respiro'))
-      : Number.NaN;
-    timerFechar.current = setTimeout(() => {
-      setHover(false);
-      setSaindo(false);
-    }, Number.isFinite(respiro) ? respiro : 0);
-  };
-  const aoFocarDentro = () => {
-    if (recolhivel) setFoco(true);
-  };
-  const aoDesfocarDentro = (e: React.FocusEvent<HTMLDivElement>) => {
-    if (!recolhivel || e.currentTarget.contains(e.relatedTarget as Node | null)) return;
-    setFoco(false);
-  };
-  /** o clique TRANCA/DESTRANCA `presa` — e ao destrancar solta hover/foco
-   *  junto (mesma régua de `Ajuda.tsx`): sem isso, quem clicou com o mouse
-   *  ainda em cima, ou quem chegou pelo teclado, via a linha reabrir
-   *  sozinha por um hover/foco que o clique não tinha apagado. */
-  const alternarPresa = () => {
-    if (timerFechar.current !== null) {
-      clearTimeout(timerFechar.current);
-      timerFechar.current = null;
-    }
-    const nova = !presa;
-    setPresa(nova);
-    if (!nova) {
-      setHover(false);
-      setFoco(false);
-    }
-  };
-  /**
-   * O Esc RECOLHE quando ABERTA (A1.1) — mesma doutrina do `Selo` acima:
-   * captura em `window`, para rodar ANTES do Esc da escada (`useAtalhos`,
-   * que só sobe degrau se `!event.defaultPrevented`). A ORDEM da casa:
-   * DIÁLOGO ABERTO come o Esc primeiro (a guarda `[data-dialogo]`); a
-   * DICA PRESA deste "?" vem depois (a mesma prioridade que
-   * `decidirEscDaDica` já dá aos outros diálogos, `useDicaPresa.ts`); só
-   * então a linha recolhe — soltando as TRÊS travas (presa, hover, foco),
-   * senão o mouse ainda em cima ou o foco ainda dentro reabririam sozinhos.
+   * AS DUAS SAÍDAS DO PAINEL NA MESA — Esc e clique fora —, no molde do
+   * `Selo` acima: captura em `window`, diálogo aberto come o Esc primeiro
+   * (a guarda `[data-dialogo]`), e o `preventDefault` é o que impede o Esc
+   * da escada (`useAtalhos`) de subir um degrau junto. O foco volta ao
+   * botão que abriu o painel.
    */
   useEffect(() => {
-    if (!recolhivel || (!aberta && dicaPresa !== 'tempo-barra')) return;
+    if (!aberto || celular) return;
     const onTecla = (e: KeyboardEvent) => {
       if (e.key !== 'Escape' || document.querySelector('[data-dialogo]')) return;
-      if (dicaPresa === 'tempo-barra') {
-        e.preventDefault();
-        limparDica();
-        return;
-      }
       e.preventDefault();
-      if (timerFechar.current !== null) {
-        clearTimeout(timerFechar.current);
-        timerFechar.current = null;
-      }
-      setPresa(false);
-      setHover(false);
-      setFoco(false);
+      setAberto(false);
+      detalhe.current?.focus();
+    };
+    const onFora = (e: Event) => {
+      if (!caixa.current?.contains(e.target as Node)) setAberto(false);
     };
     window.addEventListener('keydown', onTecla, true);
-    return () => window.removeEventListener('keydown', onTecla, true);
-  }, [recolhivel, aberta, dicaPresa, limparDica]);
-  /**
-   * O FLIP DA LINHA (C3f) — só o "depois" é medido AQUI: o "antes" já
-   * está em `topoAntesDaLinha`, gravado pela chamada anterior deste
-   * MESMO efeito ou pelo remedir logo abaixo (por isso ele roda a cada
-   * `aberta`, e não a cada quadro: enquanto `aberta` não muda, a linha
-   * não se move por este motivo). `useLayoutEffect`, não `useEffect`: tem de medir e escrever
-   * o transform de partida ANTES do primeiro paint em que o corpo já
-   * nasceu, senão o olho vê o salto de qualquer jeito e a animação só
-   * mostraria a volta.
-   */
-  useLayoutEffect(() => {
-    const no = linhaRef.current;
-    if (!no) return;
-    const emCurso = translacaoY(no);
-    const depois = topoDeRepouso(no);
-    const antes = topoAntesDaLinha.current;
-    topoAntesDaLinha.current = depois;
-    // Só quando já existe um "antes" para comparar (nunca na primeira
-    // pintura — nascer não é abrir).
-    // NOS DOIS SENTIDOS: ao fechar, o corpo some ao fim do respiro e a
-    // linha cairia de uma vez para o lugar de repouso — o mesmo salto,
-    // só que para baixo, logo depois de o corpo terminar de esmaecer
-    if (antes === null) return;
-    const delta = antes - depois;
-    if (!delta) return;
-    const raiz = no.closest('.hud-root') ?? no;
-    const { duracao, curva } = lerTokens(raiz, '--t-entrada', '--curva');
-    // O MESMO DONO DO MOVIMENTO DAS GAVETAS (`ir`, movimentoDaGaveta.ts):
-    // a última intenção vence e parte de onde a linha ESTÁ — o
-    // deslocamento em curso entra no "de", então abrir e fechar de novo
-    // antes de assentar não pula —, e ligar "reduzir movimento" ou
-    // redimensionar a janela no meio assenta a linha na hora.
-    ir(no, `translateY(${delta + emCurso}px)`, REPOUSO, {
-      duracao: semMovimento() ? 0 : duracao,
-      curva,
-      segurar: false,
-    });
-  }, [aberta]);
-  /**
-   * O "ANTES" ACOMPANHA A TELA: a coluna é ancorada pela base, então a
-   * janela mudar de altura, ou o aviso da verdade, o idioma e a escala
-   * mudarem o tamanho da coluna ENTRE uma abertura e outra, move a linha
-   * sem que `aberta` mude — e o próximo FLIP partiria de um lugar onde
-   * ela já não estava. Remedir por evento (o observador de tamanho da
-   * coluna e o `resize` da janela), nunca por quadro.
-   */
-  useEffect(() => {
-    const no = linhaRef.current;
-    const coluna = no?.closest<HTMLElement>('.atlas-rodape') ?? no?.parentElement;
-    if (!no || !coluna) return;
-    const remedir = () => {
-      topoAntesDaLinha.current = topoDeRepouso(no);
-    };
-    const observador = new ResizeObserver(remedir);
-    observador.observe(coluna);
-    window.addEventListener('resize', remedir);
+    window.addEventListener('pointerdown', onFora, true);
     return () => {
-      observador.disconnect();
-      window.removeEventListener('resize', remedir);
-      cancelar(no);
+      window.removeEventListener('keydown', onTecla, true);
+      window.removeEventListener('pointerdown', onFora, true);
     };
-  }, []);
-  // O BADGE DA VERDADE ("sem efeméride" etc.) É UM SÓ ELEMENTO, montado em
-  // UM dos dois lugares por vez: na linha fechada (abaixo) enquanto os
-  // controles estão fora do fluxo, ou depois de `.atlas-tempo-botoes`
-  // quando abrem — nunca os dois, e nunca nenhum: o visitante não pode
-  // perder a leitura só porque recolheu a barra.
-  const avisoDoTempo = (
-    <p className="atlas-tempo-aviso" role="status" aria-live="polite">
-      {aviso}
-    </p>
+  }, [aberto, celular]);
+
+  /** "Voltar ao presente" some quando o ao vivo liga: o foco passa antes ao ▶/⏸ */
+  const agora = () => {
+    tocar.current?.focus({ preventScroll: true });
+    acoes.onPresente();
+  };
+  const rotuloPlay = t(marcha ? 'relogio.pausar' : 'relogio.retomar');
+  const painelVisivel = aberto || celular;
+  const voltarAoPresente = (
+    <button type="button" className="relogio-agora" onClick={agora}>
+      <Icone nome="retomar" tamanho={14} />
+      {t('relogio.presente')}
+    </button>
   );
   return (
-    <div
-      className="atlas-tempo"
-      data-aberta={aberta}
-      onClick={() => {
-        if (comAjuda && dicaPresa) limparDica();
-      }}
-      onPointerEnter={aoEntrarComMouse}
-      onPointerLeave={aoSairComMouse}
-      onFocus={aoFocarDentro}
-      onBlur={aoDesfocarDentro}
+    <section
+      ref={caixa}
+      className="relogio"
+      data-tipo={tipo}
+      data-detalhes={aberto || !aoVivo}
+      aria-label={t('relogio.aria')}
     >
-      <div className="atlas-tempo-linha" ref={linhaRef}>
-        {/* RECOLHIDA (A1.1): a própria linha "instante do céu" vira o
-            gatilho — clicar nela alterna, no molde do `<button>` que já
-            abre/fecha as seções da ficha (`.atlas-ficha-titulo button`).
-            O "▸"/"▾" no fim da linha (abaixo, depois do "?") é o SEGUNDO
-            jeito de fazer a mesma coisa, o que a régua do dono pede. */}
-        {recolhivel ? (
-          <button
-            type="button"
-            className="atlas-tempo-cabecalho"
-            onClick={alternarPresa}
-          >
-            <span className="atlas-tempo-olho">{t('atlas.instanteDoCeu')}</span>
-            <span className="atlas-tempo-data">{data}</span>
-          </button>
-        ) : (
-          <>
-            <span className="atlas-tempo-olho">{t('atlas.instanteDoCeu')}</span>
-            <span className="atlas-tempo-data">{data}</span>
-          </>
-        )}
-        {recolhivel && !aberta && avisoDoTempo}
-        {comAjuda && (
-          <Ajuda
-            id="tempo-barra"
-            rotulo={t('atlas.tempo')}
-            texto={t('atlas.tempoAjuda')}
-            presa={dicaPresa === 'tempo-barra'}
-            onAlternar={() => alternarDica('tempo-barra')}
-          />
-        )}
-        {recolhivel && (
-          <button
-            type="button"
-            className="atlas-tempo-alternar"
-            onClick={alternarPresa}
-            aria-expanded={aberta}
-            aria-label={t(
-              aberta ? 'atlas.esconderControlesDoTempo' : 'atlas.mostrarControlesDoTempo'
+      <div className="relogio-leitura">
+        <button
+          type="button"
+          className="relogio-play"
+          ref={tocar}
+          title={rotuloPlay}
+          aria-label={rotuloPlay}
+          onClick={acoes.onTocar}
+        >
+          <svg className="relogio-coroa" viewBox="0 0 48 48" aria-hidden="true">
+            <circle className="relogio-trilho" cx="24" cy="24" r="20" />
+            {Array.from({ length: 12 }, (_, i) => (
+              <path
+                key={i}
+                d={i % 3 === 0 ? 'M24 2v4' : 'M24 3v2'}
+                transform={`rotate(${i * 30} 24 24)`}
+              />
+            ))}
+            {nivel === 0 && (
+              <circle
+                className="relogio-segundeiro"
+                cx={24 + 20 * Math.sin(angulo)}
+                cy={24 - 20 * Math.cos(angulo)}
+                r="2.4"
+              />
             )}
-          >
-            <Icone nome={aberta ? 'chevronBaixo' : 'chevronDireita'} tamanho={12} />
-          </button>
-        )}
+          </svg>
+          <Icone nome={marcha ? 'pausa' : 'play'} tamanho={16} />
+        </button>
+        <div className="relogio-mostrador">
+          <div className="relogio-meta">
+            <strong role="status" className="relogio-estado">
+              <i aria-hidden="true" />
+              {estado}
+            </strong>
+            <span className="relogio-data">{dias ? `${hora} UTC` : dataCurta}</span>
+          </div>
+          <div className="relogio-hora">
+            <time dateTime={iso} className={dias ? 'relogio-dia' : undefined}>
+              {dias ? dataCurta : hora}
+              {!veloz && <small>{iso.slice(16, 19)}</small>}
+            </time>
+            {!dias && <abbr title={t('relogio.utc')}>UTC</abbr>}
+            {sentido !== 0 && (
+              <span className="relogio-taxa-curta">
+                {nivel === 0 ? '1×' : `${formatarEtapa(nivel)}/s`}
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="relogio-acoes">
+          {!celular && (
+            <button
+              type="button"
+              className="relogio-abrir"
+              ref={detalhe}
+              onClick={() => setAberto(!aberto)}
+              aria-expanded={aberto}
+              title={t('relogio.ajustar')}
+              aria-label={t('relogio.ajustar')}
+            >
+              <Icone nome="chevronCima" tamanho={16} />
+            </button>
+          )}
+        </div>
       </div>
-      {(!recolhivel || aberta) && (
-      <>
-      <div
-        className={'atlas-tempo-botoes' + (sumindo ? ' sumindo' : '')}
-        role="group"
-        aria-label={t('atlas.maquinaDoTempo')}
-      >
-        {grupo(
-          t('atlas.tempoTransporte'),
-          <div className="ajustes-seg" ref={molduraTransporte}>
-            <button
-              type="button"
-              className={sentido === -1 ? 'on' : ''}
-              aria-pressed={sentido === -1}
-              aria-label={t('atlas.voltarNoTempo')}
-              onClick={() => onSentido(sentido === -1 ? 0 : -1)}
-            >
-              {/* O SENTIDO ACENA UMA VEZ (C3f) — o `key` muda a cada troca
-                  de sentido (`useRealce`), mas só o botão ESCOLHIDO ganha
-                  a classe que anima; os outros dois remontam o `<span>`
-                  sem efeito nenhum, do mesmo jeito inerte que um `<span>`
-                  sem classe sempre foi. O BOTÃO em si nunca remonta — só
-                  este filho decorativo. */}
-              <span
-                key={realceSentido}
-                className={
-                  sentido === -1 && realceSentido > 0 ? 'atlas-tempo-nudge-passado' : undefined
-                }
-              >
-                <Icone nome="voltarCapitulo" tamanho={16} />
-              </span>
-            </button>
-            <button
-              type="button"
-              aria-label={t('atlas.pararOTempo')}
-              disabled={parado}
-              onClick={() => onSentido(0)}
-            >
-              <span
-                key={realceSentido}
-                className={
-                  sentido === 0 && realceSentido > 0 ? 'atlas-tempo-nudge-parado' : undefined
-                }
-              >
-                <Icone nome="pausa" tamanho={16} />
-              </span>
-            </button>
-            <button
-              type="button"
-              className={sentido === 1 ? 'on' : ''}
-              aria-pressed={sentido === 1}
-              aria-label={t('atlas.avancarNoTempo')}
-              onClick={() => onSentido(sentido === 1 ? 0 : 1)}
-            >
-              <span
-                key={realceSentido}
-                className={
-                  sentido === 1 && realceSentido > 0 ? 'atlas-tempo-nudge-futuro' : undefined
-                }
-              >
-                <Icone nome="avancarCapitulo" tamanho={16} />
-              </span>
-            </button>
-          </div>,
-        )}
-        {grupo(
-          t('atlas.tempoVelocidade'),
-          <div className="ajustes-seg atlas-tempo-taxa-seg" ref={molduraTaxa}>
-            <button
-              type="button"
-              className="atlas-tempo-taxa"
-              aria-label={t('atlas.taxaAria', { taxa })}
-              onClick={onDegrau}
-            >
-              {/* ITEM 4 (Lote 4, 07/09): `taxa` chega minúscula quando é
-                  "tempo real" (`tempoDoAtlas.ts`, `formatarTaxa`) — certo
-                  no meio de uma frase (o `aria-label` acima), errado como
-                  rótulo sozinho. O `::first-letter` (abaixo) corrige só a
-                  TELA; o dado e o `aria-label` continuam intocados. */}
-              {/* A TAXA CONFIRMA UMA VEZ (C3f) — `.realce-texto` da casa
-                  (01-base.css), só depois da primeira troca real
-                  (`realceTaxa > 0`): nascer com o painel não é confirmar
-                  escolha nenhuma. */}
-              <span
-                key={realceTaxa}
-                className={'atlas-tempo-taxa-texto' + (realceTaxa > 0 ? ' realce-texto' : '')}
-              >
-                {taxa}
-              </span>
-              <span className="atlas-tempo-taxa-seta" aria-hidden="true">
-                ›
-              </span>
-            </button>
-          </div>,
-        )}
-        {grupo(
-          t('atlas.tempoReferencia'),
-          <div className="ajustes-seg" ref={molduraReferencia}>
-            <button
-              type="button"
-              className={aoVivo ? 'on' : ''}
-              aria-pressed={aoVivo}
-              aria-label={t('atlas.aoVivoAria')}
-              onClick={onAoVivo}
-            >
-              {/* `<span>` (C2): a pressão afunda o filho, não o botão que
-                  o filete do segmentado mede. */}
-              <span>{t('atlas.aoVivo')}</span>
-              {/* O ANEL CONFIRMA SÓ QUANDO LIGA (C3f) — nunca ao desligar,
-                  e nunca na primeira pintura (`realceAoVivo > 0` exige
-                  uma troca real já ocorrida). `.realce-anel` é da casa
-                  (01-base.css); o botão precisa de `position: relative`
-                  (`.atlas-tempo-botoes .ajustes-seg button`, 04-atlas.css). */}
-              {aoVivo && realceAoVivo > 0 && (
-                <span className="realce-anel" aria-hidden="true" key={realceAoVivo} />
-              )}
-            </button>
-            <button
-              type="button"
-              aria-label={t('atlas.epocaAria')}
-              disabled={naEpoca && parado}
-              onClick={onEpoca}
-            >
-              <span>{t('atlas.epoca')}</span>
-            </button>
-          </div>,
-        )}
-      </div>
-      {avisoDoTempo}
-      </>
+      {aviso && (
+        <p className="relogio-aviso" role="status">
+          {aviso}
+        </p>
       )}
-    </div>
+      <div className="relogio-extras">
+        <div
+          className="relogio-dobra"
+          data-aberta={painelVisivel}
+          inert={!painelVisivel}
+          aria-hidden={!painelVisivel}
+        >
+          <div className="relogio-recorte">
+            <div className="relogio-painel">
+              <div className="relogio-titulo">
+                <label htmlFor={idDaRegua}>{t('relogio.velocidade')}</label>
+                <span>{numeroDoIdioma(taxaDoDegrau(nivel))}×</span>
+              </div>
+              <p className="relogio-equivalencia">
+                <b>{formatarEtapa(nivel, true)}</b> {t('relogio.porSegundo')}
+              </p>
+              <div
+                className="relogio-escala"
+                style={{ '--posicao': `${(100 * nivel) / ultimo}%` } as CSSProperties}
+              >
+                <div className="relogio-marcas" aria-hidden="true">
+                  {Array.from({ length: DEGRAUS_DE_TEMPO }, (_, i) => (
+                    <i key={i} data-ativa={i <= nivel} />
+                  ))}
+                </div>
+                <div className="relogio-curso" aria-hidden="true">
+                  <i />
+                </div>
+                <input
+                  id={idDaRegua}
+                  type="range"
+                  min="0"
+                  max={ultimo}
+                  step="1"
+                  value={nivel}
+                  aria-valuetext={t('relogio.reguaValor', { taxa: formatarEtapa(nivel, true) })}
+                  onChange={(e) => acoes.onDegrau(Number(e.target.value))}
+                />
+              </div>
+              <div className="relogio-extremos" aria-hidden="true">
+                <span>{formatarEtapa(0)}</span>
+                <span>{formatarEtapa(ultimo)}</span>
+              </div>
+              <div className="relogio-sentido">
+                <button
+                  type="button"
+                  aria-pressed={!aoVivo && sentido === -1}
+                  onClick={() => acoes.onSentido(-1)}
+                >
+                  <Icone nome="setaEsquerda" tamanho={16} /> {t('relogio.recuar')}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={!aoVivo && sentido === 1}
+                  onClick={() => acoes.onSentido(1)}
+                >
+                  {t('relogio.avancar')} <Icone nome="setaEsquerda" tamanho={16} />
+                </button>
+              </div>
+              <div className="relogio-referencias">
+                {painelVisivel && !aoVivo && voltarAoPresente}
+                <button type="button" className="relogio-epoca" onClick={acoes.onEpoca}>
+                  <Icone nome="relogio" tamanho={15} />
+                  {t('relogio.retrato2026')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {!aoVivo && !painelVisivel && voltarAoPresente}
+      </div>
+    </section>
   );
 }
 
@@ -1159,35 +893,25 @@ export function BarraDoTempo({
  * A MÁQUINA DO TEMPO DENTRO DE UMA GAVETA (item 62, 23/08) — a resposta
  * do dono aos mockups, em duas palavras: *"3) vira alça"*.
  *
- * É a MESMA `BarraDoTempo` de sempre, e isso é o ponto: no telefone ela
- * sai do rodapé permanente (a fatia 9 esconde a de LÁ, nomeando o
- * rodapé) e passa a ser desenhada aqui dentro, atrás da alça ⏱ Tempo.
- * Nenhum controle novo, nenhum segundo estado, nenhuma segunda régua —
- * e na mesa nada disto existe: a barra continua no rodapé e
- * `TEMPO_FRACAO` continua governando a base declarada.
+ * É o MESMO `Relogio` do rodapé da mesa, e isso é o ponto: no telefone
+ * ele sai do rodapé permanente (a fatia 9 esconde o de LÁ, nomeando o
+ * rodapé) e passa a ser desenhado aqui dentro, atrás da alça ⏱ Tempo,
+ * com o painel da velocidade sempre aberto. Nenhum segundo estado: a
+ * máquina do tempo é a mesma, e o último sentido mora nela.
  *
- * Por que uma gaveta e não a barra flutuando: os seis controles do tempo
- * ocupam duas linhas de altura permanente num aparelho estreito, e
- * altura de rodapé é DISTÂNCIA DE CÂMERA (`retanguloUtilDoAtlas`). Atrás
- * de uma alça eles custam uma linha de 44 px quando ninguém os está
- * usando.
+ * Por que uma gaveta e não o relógio flutuando: altura de rodapé é
+ * DISTÂNCIA DE CÂMERA (`retanguloUtilDoAtlas`), e num aparelho estreito
+ * o painel aberto custaria meia tela. Atrás da alça ele custa uma linha
+ * de 44 px quando ninguém o está usando.
  *
- * REDESENHO (06/09) — o cabeçalho ganha o "?" do mesmo átomo das outras
- * três gavetas (`components/Ajuda.tsx`), com o MESMO padrão de dica
- * presa: fixa no clique, um clique em qualquer lugar do diálogo desfixa,
- * e Esc desfixa ANTES de fechar (a doutrina de `Ajustes.tsx`/
- * `GavetaDeCamadas`, repetida aqui palavra por palavra). `BarraDoTempo`
- * recebe `comAjuda={false}`: o "?" dela ficaria duplicado com este.
+ * SEM "?" desde o relógio de 20/11: a folha aprovada pelo dono não tem dica.
  */
 export function GavetaDoTempo({
   aberta,
   ativa,
   onFechar,
   tempo,
-  onSentido,
-  onDegrau,
-  onAoVivo,
-  onEpoca,
+  acoes,
   celular = false,
 }: {
   aberta: boolean;
@@ -1196,75 +920,59 @@ export function GavetaDoTempo({
   ativa: boolean;
   onFechar: () => void;
   tempo: EstadoDoTempo;
-  onSentido: (sentido: SentidoDoTempo) => void;
-  onDegrau: () => void;
-  onAoVivo: () => void;
-  onEpoca: () => void;
+  acoes: AcoesDoRelogio;
   /** alça de arrasto no cabeçalho (`CabecalhoDoPainel`) — só na folha do celular */
   celular?: boolean;
 }) {
   const dialogo = useDialogFocus('tempo', ativa, onFechar);
   useIdioma();
-  const { presa: dicaPresa, alternar: alternarDica, limpar: limparDica, aoTeclarEsc } = useDicaPresa();
   if (!aberta) return null;
   return (
     <div
       className="hud-cartao hud-dialogo atlas-gaveta"
       aria-label={t('atlas.maquinaDoTempo')}
       {...dialogo}
-      onClick={() => {
-        if (dicaPresa) limparDica();
-      }}
-      onKeyDownCapture={aoTeclarEsc}
     >
       <CabecalhoDoPainel
         titulo={t('atlas.tempo')}
-        ajuda={
-          <Ajuda
-            id="tempo"
-            rotulo={t('atlas.tempo')}
-            texto={t('atlas.tempoAjuda')}
-            presa={dicaPresa === 'tempo'}
-            onAlternar={() => alternarDica('tempo')}
-          />
-        }
         onFechar={onFechar}
         rotuloFechar={t('atlas.fecharTempo')}
         celular={celular}
       />
-      <BarraDoTempo
-        tempo={tempo}
-        onSentido={onSentido}
-        onDegrau={onDegrau}
-        onAoVivo={onAoVivo}
-        onEpoca={onEpoca}
-        comAjuda={false}
-        comRotulos
-        recolhivel={false}
-      />
+      <Relogio tempo={tempo} acoes={acoes} celular />
     </div>
   );
 }
 
-/** A alça ⏱ Tempo — só existe no telefone, e só na fase que a hospeda. */
+/**
+ * A alça ⏱ Tempo — só existe no telefone, e só na fase que a hospeda.
+ * Desde o relógio novo (20/11) ela diz o estado e o instante, pela mesma
+ * leitura do relógio (`leituraDoRelogio`).
+ */
 export function BotaoDoTempo({
   aberta,
   onAlternar,
+  tempo,
 }: {
   aberta: boolean;
   onAlternar: () => void;
+  tempo: EstadoDoTempo;
 }) {
   useIdioma();
+  const { estado, tipo, instanteNaAlca } = leituraDoRelogio(tempo);
   return (
     <button
       type="button"
-      className="hud-btn small"
+      className="hud-btn small alca-tempo"
+      data-tipo={tipo}
       onClick={onAlternar}
-      aria-label={t('atlas.maquinaDoTempo')}
+      aria-label={t('relogio.alca', { estado })}
+      title={t('relogio.alcaTitulo', { estado, instante: instanteNaAlca })}
       {...gatilhoDoDialogo('tempo', aberta)}
     >
       <Icone nome="relogio" tamanho={16} />
-      <span>{t('atlas.tempoBotao')}</span>
+      <span className="alca-tempo-estado">{estado}</span>
+      <span className="alca-tempo-instante">{instanteNaAlca}</span>
     </button>
   );
 }

@@ -1,4 +1,4 @@
-// Serve: chão — a escada de tempo é log de verdade, o grampo nunca deixa o motor sair da janela real, e o mostrador só repinta quando o minuto muda
+// Serve: chão — a escada de tempo é log de verdade, o grampo nunca deixa o motor sair da janela real, e o mostrador só repinta quando o que o relógio escreve muda
 // ============================================================
 // A MÁQUINA DO TEMPO, parte pura (Onda 5, F4/D2). Cinco assuntos:
 //
@@ -20,7 +20,8 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { MetaEfemerides } from '../lib/atlas/efemerides';
-import { dateToTDB } from '../lib/atlas/time';
+import { dateToTDB, tdbToDate } from '../lib/atlas/time';
+import { definirIdioma } from '../lib/idioma';
 import { EPOCA_ISO, EPOCA_JD_TDB } from './world/planetas/retrato2026';
 import {
   ANOS_DA_JANELA,
@@ -35,11 +36,13 @@ import {
   estadoDoTempo,
   foraDaJanela,
   formatarInstante,
-  formatarTaxa,
+  formatarEtapa,
   grampearJd,
+  instanteDoMostrador,
   lerPortaJd,
   mesmoMostrador,
   numeroDoIdioma,
+  regimeDoMostrador,
   taxaDoDegrau,
 } from './tempoDoAtlas';
 
@@ -198,36 +201,28 @@ describe('4. a porta ?jd= lê a palavra e o número', () => {
 // ============================================================
 // 5. Os rótulos
 // ============================================================
-describe('5. os rótulos são pt-BR e DERIVADOS do número', () => {
-  it('a escada inteira, degrau a degrau', () => {
-    expect(TAXAS_DE_TEMPO.map(formatarTaxa)).toEqual([
-      'tempo real',
-      '10 segundos por segundo',
-      '1,7 minuto por segundo',
-      '16,7 minutos por segundo',
-      '2,8 horas por segundo',
-      '1,2 dia por segundo',
-      '11,6 dias por segundo',
-      '115,7 dias por segundo',
+describe('5. os rótulos são DERIVADOS do número', () => {
+  const escada = (porExtenso: boolean) =>
+    TAXAS_DE_TEMPO.map((_, i) => formatarEtapa(i, porExtenso));
+
+  it('a escada inteira, degrau a degrau, curta e por extenso', () => {
+    expect(escada(false)).toEqual([
+      '1 s', '10 s', '1,7 min', '16,7 min', '2,8 h', '1,2 d', '11,6 d', '115,7 d',
+    ]);
+    expect(escada(true)).toEqual([
+      '1 segundo', '10 segundos', '1,7 minuto', '16,7 minutos',
+      '2,8 horas', '1,2 dia', '11,6 dias', '115,7 dias',
     ]);
   });
 
-  it('singular abaixo de dois, plural a partir de dois', () => {
-    expect(formatarTaxa(90)).toBe('1,5 minuto por segundo');
-    expect(formatarTaxa(120)).toBe('2 minutos por segundo');
-    expect(formatarTaxa(86400 * 365.25 * 3)).toBe('3 anos por segundo');
-  });
-
-  it('taxa impossível não vira NaN na tela', () => {
-    expect(formatarTaxa(Number.NaN)).toBe('parado');
-    expect(formatarTaxa(0)).toBe('parado');
-    expect(formatarTaxa(-5)).toBe('parado');
-  });
-
-  it('nenhum rótulo tem inglês nem número com ponto decimal', () => {
-    for (const t of TAXAS_DE_TEMPO.map(formatarTaxa)) {
-      expect(/\b(per|second|day|year|hour|real time)\b/i.test(t)).toBe(false);
-      expect(/\d\.\d/.test(t)).toBe(false);
+  it('o inglês tem ponto decimal e plural fora do 1 exato', () => {
+    definirIdioma('en');
+    try {
+      expect(formatarEtapa(0, true)).toBe('1 second');
+      expect(formatarEtapa(5, true)).toBe('1.2 days');
+      expect(formatarEtapa(7)).toBe('115.7 d');
+    } finally {
+      definirIdioma('pt-BR');
     }
   });
 
@@ -286,17 +281,32 @@ describe('6. mesmoMostrador cala o que já foi dito', () => {
   });
 
   /**
-   * O CASO QUE PAGA O CONSERTO. Ao vivo o `jd` anda a cada segundo, mas a
-   * data tem resolução de MINUTO: durante quase todo minuto o mostrador
-   * publicava um estado cuja única diferença é um número que não está na
-   * tela — e cada publicação re-renderizava o App inteiro. Medido antes do
-   * conserto: 13,8 ms/s de JS com a ficha fechada, ~3,5 ms por publicação.
+   * O RELÓGIO DE 20/11 ESCREVE O QUE O REGIME PEDE, e a publicação segue o
+   * que ele escreve: ao vivo, parado e nos degraus lentos, o SEGUNDO; a
+   * partir de 1.000 s/s, o MINUTO; com dias por segundo, a data com hora e
+   * minuto. Um `jd` que andou menos que a resolução do regime continua
+   * calado — o caso que pagou o conserto de 24/08 (3,5 ms por publicação).
    */
-  it('meio minuto depois, o jd andou e o mostrador NÃO tem o que dizer', () => {
-    const depois = em(T0 + 20 / 86400);
-    expect(depois.jd).not.toBe(em(T0).jd);
-    expect(depois.data).toBe(em(T0).data);
-    expect(mesmoMostrador(em(T0), depois)).toBe(true);
+  it('o regime decide a fala: segundo ao vivo, minuto rápido, data com dias por segundo', () => {
+    // o instante de partida cai no segundo :15 de um minuto, longe das
+    // duas viradas (a do segundo arredondado e a do minuto da `data`)
+    const ms = tdbToDate(T0).getTime();
+    const T = T0 + (Math.floor(ms / 60000) * 60000 + 15000 - ms) / 86400000;
+    const s = 1 / 86400;
+    const viagem = (degrau: number, jd: number) =>
+      estadoDoTempo({ ...base, aoVivo: false, sentido: 1, degrau, jdPedido: jd });
+
+    expect(regimeDoMostrador(em(T))).toBe('segundos');
+    expect(mesmoMostrador(em(T), em(T + 0.3 * s))).toBe(true);
+    expect(mesmoMostrador(em(T), em(T + 2 * s))).toBe(false);
+
+    expect(regimeDoMostrador(viagem(3, T))).toBe('minutos');
+    expect(mesmoMostrador(viagem(3, T), viagem(3, T + 8 * s))).toBe(true);
+    expect(mesmoMostrador(viagem(3, T), viagem(3, T + 120 * s))).toBe(false);
+
+    expect(regimeDoMostrador(viagem(5, T))).toBe('data');
+    expect(instanteDoMostrador(viagem(5, T))).toHaveLength(16);
+    expect(mesmoMostrador(viagem(5, T), viagem(5, T + 8 * s))).toBe(true);
   });
 
   it('o MINUTO virando é fala nova — é o que o visitante vê mudar', () => {

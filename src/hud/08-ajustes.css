@@ -482,8 +482,8 @@
   outline-offset: 2px;
 }
 /* ALVO DE TOQUE ≥ 44 px SÓ DENTRO DOS DIÁLOGOS (Lote 2b, item 3: "botões
-   de painel") — a máquina do tempo do RODAPÉ da mesa usa a MESMA
-   `.ajustes-seg` (`BarraDoTempo`, `HudDoAtlas.tsx`) fora de qualquer
+   de painel") — até 20/11 a máquina do tempo do RODAPÉ da mesa usava a MESMA
+   `.ajustes-seg` (a barra antiga, `HudDoAtlas.tsx`) fora de qualquer
    `.hud-dialogo`, e essa altura é RESERVA DE CÂMERA declarada em
    `retanguloDoAtlas.ts` (Lote 4, fora de escopo aqui) — crescer ali sem
    remedir fez o juiz de a11y reprovar (base medida > declarada). Dentro

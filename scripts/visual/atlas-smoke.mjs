@@ -553,7 +553,7 @@ try {
   // peça pendurada fora de `.hud-root`.
   await sessao.ir(`atlas=1&${PIN}`);
   const barra = await sessao.js(`(() => {
-    const e = document.querySelector('.atlas-tempo');
+    const e = document.querySelector('.atlas-rodape .relogio');
     const raiz = document.querySelector('.hud-root');
     let anc = e;
     while (anc && anc.parentElement !== raiz) anc = anc.parentElement;
@@ -567,7 +567,7 @@ try {
   const b = JSON.parse(barra);
   conferir(
     b.existe && b.apagavel && !b.desenhada,
-    `a barra do tempo pende de .hud-root e o ?shot=2 a esconde (${barra})`
+    `o relógio do Atlas pende de .hud-root e o ?shot=2 a esconde (${barra})`
   );
 
   // ---- 9: SEM REDE, a camada congela no retrato e ninguém grita ----
@@ -585,7 +585,7 @@ try {
   );
   await sessao.ir('atlas=1&jd=2465000&q=cinema&shot=1');
   const badge = await sessao.js(
-    "(document.querySelector('.atlas-tempo-aviso')||{}).textContent||''"
+    "(document.querySelector('.atlas-rodape .relogio-aviso')||{}).textContent||''"
   );
   conferir(
     /sem efem[ée]ride/.test(badge),
@@ -613,36 +613,48 @@ try {
   //
   // `?shot=1` e não `shot=2`: o objeto do juízo são os botões.
   const relogio = () => sessao.js('JSON.stringify(window.__director.tempo)');
-  // A BARRA DE MESA REPOUSA RECOLHIDA (A1.1, relatório de UI de 09/09): os
-  // botões de transporte/velocidade/referência somem do DOM até alguém
-  // abrir `.atlas-tempo-alternar` — em `?shot=1` o HUD é interativo. O
-  // clique que expande vai num `Runtime.evaluate` PRÓPRIO, separado do
-  // que procura e aperta o botão-alvo: dentro do MESMO `evaluate` o
-  // `setAberta` do React ainda não tinha comprometido no DOM (medido —
-  // o clique duplo bater na mesma chamada achava `aria-expanded="false"`
-  // logo depois de clicar), e só a volta ao laço de eventos do navegador,
-  // entre uma chamada CDP e outra, deixa o commit acontecer.
-  const apertar = async (rotulo) => {
-    const fechado = await sessao.js(
-      "document.querySelector('.atlas-tempo-alternar')?.getAttribute('aria-expanded') === 'false'"
-    );
-    if (fechado) await sessao.js("document.querySelector('.atlas-tempo-alternar').click()");
+  // O RELÓGIO DO ATLAS (20/11) — o ▶/⏸ fica sempre à vista; Recuar,
+  // Avançar e "Retrato de 2026" moram no painel da velocidade, que abre
+  // pelo botão `.relogio-abrir`; "Voltar ao presente" aparece sempre que
+  // o relógio não está ao vivo. Os gestos são nomeados pelo SELETOR, não
+  // pelo rótulo: o rótulo muda de língua e de estado ("Pausar"/"Retomar").
+  // O clique que abre o painel vai num `Runtime.evaluate` PRÓPRIO,
+  // separado do que aperta o botão-alvo: dentro do MESMO `evaluate` o
+  // estado do React ainda não comprometeu no DOM, e só a volta ao laço de
+  // eventos do navegador, entre uma chamada CDP e outra, deixa o commit
+  // acontecer.
+  const ALVOS_DO_RELOGIO = {
+    presente: '.relogio-agora',
+    tocar: '.relogio-play',
+    avancar: '.relogio-sentido button:last-child',
+    epoca: '.relogio-epoca',
+  };
+  const apertar = async (gesto) => {
+    const R = '.atlas-rodape .relogio';
+    if (gesto === 'avancar' || gesto === 'epoca') {
+      const fechado = await sessao.js(
+        `document.querySelector('${R} .relogio-abrir')?.getAttribute('aria-expanded') === 'false'`
+      );
+      if (fechado) await sessao.js(`document.querySelector('${R} .relogio-abrir').click()`);
+    }
+    // "Voltar ao presente" não existe quando o relógio JÁ está ao vivo
+    // (o Atlas abre ao vivo): nada a apertar, e o veredito lê o estado
     return sessao.js(`(() => {
-      const b = [...document.querySelectorAll('.atlas-tempo button')]
-        .find((e) => (e.getAttribute('aria-label') || '').startsWith(${JSON.stringify(rotulo)}));
-      b.click();
+      const b = document.querySelector('${R} ${ALVOS_DO_RELOGIO[gesto]}');
+      if (b) b.click();
+      return Boolean(b);
     })()`);
   };
 
   await sessao.ir('atlas=1&q=cinema&shot=1');
-  await apertar('Seguir o tempo real');
+  await apertar('presente');
   await dorme(300);
   const vivo = JSON.parse(await relogio());
   conferir(vivo.aoVivo === true, `AO VIVO liga o relógio do calendário (${vivo.data})`);
-  // ⏸ com AO VIVO ligado: o botão está habilitado e promete "Parar o
-  // tempo". Enquanto `andarNoTempo(0)` não desligava o AO VIVO, ele
-  // apagava o sentido (que já era zero) e a data seguia andando a 1 Hz.
-  await apertar('Parar o tempo');
+  // ⏸ com AO VIVO ligado: o botão promete "Pausar o tempo". Enquanto
+  // `andarNoTempo(0)` não desligava o AO VIVO, ele apagava o sentido (que
+  // já era zero) e a data seguia andando a 1 Hz.
+  await apertar('tocar');
   await dorme(200);
   const parado = JSON.parse(await relogio());
   await dorme(1600);
@@ -657,7 +669,7 @@ try {
   await sessao.ir('t=100&q=cinema&shot=1');
   await sessao.js('window.__director.entrarNoAtlas({ instantaneo: true })');
   await dorme(200);
-  await apertar('Avançar no tempo');
+  await apertar('avancar');
   await dorme(300);
   const andando = JSON.parse(await relogio());
   await sessao.js('window.__director.partirDoAtlas()');
@@ -1884,13 +1896,11 @@ try {
     return JSON.stringify({
       alvo: d.atlas.alvo.toArray(),
       dist: d.engine.camera.position.distanceTo(d.atlas.alvo),
-      taxa: d.tempo.taxa });
+      degrau: d.tempo.degrau });
   })()`);
   const antesDoRelogio = JSON.parse(await leitura());
-  for (let i = 0; i < 12; i++) {
-    if (/115/.test(JSON.parse(await sessao.js('JSON.stringify(window.__director.tempo)')).taxa)) break;
-    await sessao.js('window.__director.ciclarDegrau()');
-  }
+  // o topo da escada (115,7 dias por segundo): a régua grampeia o 99 no último degrau
+  await sessao.js('window.__director.escolherDegrau(99)');
   await sessao.js('window.__director.andarNoTempo(1)');
   // espera de ESTADO, não 2 s de parede (item 113): o veredito cobra o
   // alvo andando >100× o raio do enquadramento, então espera-se o
@@ -2427,7 +2437,7 @@ try {
         // BAIXO da ficha do objeto (z 46 contra z 40) — no pior caso
         // possível, que é o de quem acabou de focar um corpo. Quem
         // mede sobreposição de HUD mede contra o HUD INTEIRO.
-        encosta: ['.controls-bar', '.atlas-selo', '.atlas-tempo', '.free-hint',
+        encosta: ['.controls-bar', '.atlas-selo', '.relogio', '.free-hint',
           '.atlas-alcas', '[data-dialogo]', '.letterbox']
           .flatMap((sel) => [...document.querySelectorAll(sel)]
             .map((n) => ({ sel, o: n.getBoundingClientRect() })))
@@ -2624,12 +2634,12 @@ try {
     );
   }
 
-  // ---- 25: A MÁQUINA DO TEMPO — "Época" traz o relógio de volta -----
+  // ---- 25: A MÁQUINA DO TEMPO — "Retrato de 2026" traz o relógio de volta
   // A prova 10 já cobra que ⏸ e "Partir" parem o relógio, mas só lê o
-  // ESTADO do director; faltava o terceiro botão da mesma barra
-  // (`onEpoca` em App.tsx → `director.voltarAEpoca()`) e o SINAL do
-  // próprio botão "Ao vivo" MARCADO (aria-pressed) — os dois entraram
-  // na lista aprovada do Lote 9.
+  // ESTADO do director; faltava o botão do retrato (`onEpoca` em App.tsx
+  // → `director.voltarAEpoca()`) e o SINAL de "ao vivo" no próprio relógio
+  // (`data-tipo="vivo"` e o estado escrito) — os dois entraram na lista
+  // aprovada do Lote 9; desde 20/11 são do relógio novo.
   {
     await sessao.ir('atlas=1&q=cinema&shot=1');
     // a MESMA constante que o botão usa, lida do próprio director — e
@@ -2637,27 +2647,27 @@ try {
     const jdDeReferencia = await sessao.js(
       '(() => { window.__director.voltarAEpoca(); return window.__director.tempo.jd; })()'
     );
-    await apertar('Seguir o tempo real');
+    await dorme(300);
+    await apertar('presente');
     await dorme(1500);
     const vivoAgora = JSON.parse(await relogio());
     const marcado = JSON.parse(await sessao.js(`JSON.stringify((() => {
-      const b = [...document.querySelectorAll('.atlas-tempo button')]
-        .find((e) => (e.getAttribute('aria-label') || '') === 'Seguir o tempo real');
+      const r = document.querySelector('.atlas-rodape .relogio');
       return {
-        pressionado: b ? b.getAttribute('aria-pressed') : null,
-        ligado: b ? b.classList.contains('on') : false,
+        tipo: r ? r.dataset.tipo : null,
+        estado: (r && r.querySelector('.relogio-estado') || {}).textContent || '',
       };
     })())`));
     conferir(
-      vivoAgora.aoVivo === true && marcado.pressionado === 'true' && marcado.ligado,
-      `"Ao vivo" MARCA o próprio botão: aria-pressed=${marcado.pressionado}, classe .on=${marcado.ligado}`
+      vivoAgora.aoVivo === true && marcado.tipo === 'vivo' && /ao vivo/i.test(marcado.estado),
+      `"Voltar ao presente" MARCA o relógio: data-tipo=${marcado.tipo}, estado "${marcado.estado}"`
     );
-    await apertar('Voltar ao instante do retrato de 2026');
+    await apertar('epoca');
     await dorme(300);
     const naEpoca = JSON.parse(await relogio());
     conferir(
       naEpoca.aoVivo === false && naEpoca.jd === jdDeReferencia,
-      `"Época" traz o jd de volta ao retrato: ${vivoAgora.jd} → ${naEpoca.jd}`
+      `"Retrato de 2026" traz o jd de volta ao retrato: ${vivoAgora.jd} → ${naEpoca.jd}`
         + ` (referência ${jdDeReferencia}) e desliga o AO VIVO`
     );
   }

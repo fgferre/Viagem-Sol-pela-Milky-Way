@@ -849,6 +849,7 @@ export function BarraOuAlcas({
         <BotaoDoTempo
           aberta={gaveta === 'tempo'}
           onAlternar={() => alternarGaveta('tempo')}
+          tempo={tempo}
         />
       )}
       {botaoDeAjustes}

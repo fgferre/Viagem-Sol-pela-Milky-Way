@@ -96,8 +96,8 @@ const MEDIR_CELULAR = `(() => {
       && caixaDaFileira.y + caixaDaFileira.h <= H + 0.5),
     selo,
     cobreSelo: bate(caixaDaFileira, selo),
-    // a máquina do tempo PERMANENTE do rodapé; a de dentro da gaveta é outra
-    tempoNoRodape: cx('.atlas-rodape .atlas-tempo'),
+    // o relógio PERMANENTE do rodapé (o da mesa); o de dentro da gaveta é outro
+    tempoNoRodape: cx('.atlas-rodape .relogio'),
     seletorVisivel: Boolean(seletor && seletor.getClientRects().length > 0),
     // A BARRA ENCOSTA NO TOPO DA TELA (item 61, 23/08). Era "está dentro
     // da tarja"; a tarja saiu do telefone, e a promessa que sobra é a que
@@ -950,12 +950,15 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUi
   // ---- PARTE 6: A GAVETA DO TEMPO POR DENTRO (pedido do dono, 08/09) --
   // As partes 1 e 2 só medem a folha por FORA (moldura, cobertura); por
   // dentro, nunca — a gaveta podia perder um controle e nenhum juiz
-  // veria. Conta os mesmos seis que a mesa mostra (`BarraDoTempo` com
-  // `comRotulos`: transporte×3, velocidade×1, referência×2, cada grupo
-  // um `.atlas-tempo-grupo`) e cobra o Esc que o contrato genérico do
-  // `dialogFocus` só roda em tela de mesa — nunca em aparelho, aqui.
+  // veria. Desde 20/11 a folha é o relógio do Atlas com o painel sempre
+  // aberto: conta o instante escrito e os seis controles dele (▶/⏸, a
+  // régua de velocidade, Recuar/Avançar, Voltar ao presente quando não
+  // está ao vivo, Retrato de 2026) e cobra o Esc que o contrato genérico
+  // do `dialogFocus` só roda em tela de mesa — nunca em aparelho, aqui.
+  // A folha é aberta PAUSADA, que é o estado em que os seis existem.
   await vestirAparelho(s, ...APARELHOS[0]);
   await s.ir(`atlas=1&${PIN}`);
+  await s.js('window.__director.voltarAEpoca()');
   await s.js(`(() => {
     const b = document.querySelector('[data-abre-dialogo="tempo"]');
     b.focus();
@@ -965,18 +968,24 @@ export async function julgarCelular(s, { conferir, medirCobertura, PIN, trocarUi
   const gaveta = await s.js(`(() => {
     const d = document.querySelector('[data-dialogo="tempo"]');
     if (!d) return null;
-    const grupos = [...d.querySelectorAll('.atlas-tempo-grupo')];
+    const tem = (sel) => d.querySelectorAll(sel).length;
     return {
-      data: (d.querySelector('.atlas-tempo-data') || {}).textContent || '',
-      grupos: grupos.length,
-      botoesPorGrupo: grupos.map((g) => g.querySelectorAll('button').length),
+      data: (d.querySelector('.relogio-hora time') || {}).textContent || '',
+      controles: {
+        tocar: tem('.relogio-play'),
+        regua: tem('input[type=range]'),
+        sentido: tem('.relogio-sentido button'),
+        presente: tem('.relogio-agora'),
+        retrato: tem('.relogio-epoca'),
+      },
     };
   })()`);
   conferir(
-    Boolean(gaveta) && gaveta.data.trim().length > 0 && gaveta.grupos === 3
-      && JSON.stringify(gaveta.botoesPorGrupo) === JSON.stringify([3, 1, 2]),
-    'celular · gaveta do tempo: data + 3 grupos (transporte 3, velocidade 1, ao vivo/época 2)'
-      + ` — data "${gaveta && gaveta.data.trim()}", grupos ${JSON.stringify(gaveta && gaveta.botoesPorGrupo)}`
+    Boolean(gaveta) && gaveta.data.trim().length > 0
+      && JSON.stringify(gaveta.controles)
+        === JSON.stringify({ tocar: 1, regua: 1, sentido: 2, presente: 1, retrato: 1 }),
+    'celular · gaveta do tempo: instante + ▶/⏸, régua, Recuar/Avançar, presente e retrato'
+      + ` — instante "${gaveta && gaveta.data.trim()}", ${JSON.stringify(gaveta && gaveta.controles)}`
   );
   await s.teclar('Escape');
   // ESPERA MEDIDA e não `dorme` fixo: o fechamento e a devolução do foco

@@ -30,9 +30,10 @@ import {
   GavetaDeCamadas,
   GavetaDoTempo,
   Selo,
-  BarraDoTempo,
+  Relogio,
 } from './components/HudDoAtlas';
-import type { EstadoDoTempo, SentidoDoTempo } from './three/tempoDoAtlas';
+import type { AcoesDoRelogio } from './components/HudDoAtlas';
+import type { EstadoDoTempo } from './three/tempoDoAtlas';
 import { PaletaDeBusca } from './components/PaletaDeBusca';
 import { FichaDoObjeto } from './components/FichaDoObjeto';
 import { construirIndice } from './lib/buscaEstrelas';
@@ -381,9 +382,18 @@ export default function App() {
   /**
    * O MOSTRADOR DA MÁQUINA DO TEMPO (F4). Estado e não leitura direta
    * como a do selo: o relógio do céu anda sozinho, e é a chegada deste
-   * evento — a 4 Hz, nunca por quadro — que faz o HUD redesenhar.
+   * evento — no máximo 4 por segundo, uma por segundo ao vivo, nunca por
+   * quadro — que faz o HUD redesenhar.
    */
   const [tempo, setTempo] = useState<EstadoDoTempo | null>(null);
+  /** os gestos do relógio do Atlas (20/11) — a semântica mora na máquina */
+  const acoesDoRelogio: AcoesDoRelogio = {
+    onTocar: () => directorRef.current?.tocarOuPausar(),
+    onDegrau: (n) => directorRef.current?.escolherDegrau(n),
+    onSentido: (s) => directorRef.current?.escolherSentido(s),
+    onPresente: () => directorRef.current?.voltarAoPresente(),
+    onEpoca: () => directorRef.current?.voltarAEpoca(),
+  };
   /**
    * O VISITANTE JÁ ARRASTOU dentro do Atlas (item 73)? Uma vez só por
    * sessão, e só para APAGAR a dica dos gestos: quem girou aprendeu o
@@ -899,10 +909,11 @@ export default function App() {
    * anda. Trocar de fase é raro e acontece atrás do véu — os 9 ms de
    * reconstrução cabem lá.
    *
-   * O 4 Hz MORREU em 24/08 (`mesmoMostrador`): o relógio ao vivo publica
-   * quando a data vira de minuto, não quatro vezes por segundo. O
-   * `useMemo` FICA — a viagem no tempo em degrau rápido ainda publica
-   * depressa, e é dela que estas 5 mil chaves precisam de abrigo.
+   * O 4 Hz MORREU em 24/08 (`mesmoMostrador`), e desde o relógio de 20/11
+   * o ao vivo publica uma vez por SEGUNDO (é o segundo que ele escreve).
+   * O `useMemo` FICA — o ao vivo e a viagem no tempo em degrau rápido
+   * (até 4 por segundo) publicam depressa, e é deles que estas 5 mil
+   * chaves precisam de abrigo.
    *
    * OS CORPOS DO SISTEMA entram no Atlas E no voo livre (item 129: a
    * busca é uma só). No voo livre a escolha de um corpo não VOA — a lei
@@ -1416,15 +1427,7 @@ export default function App() {
               fatia 9, pelo rodapé, e não este `if`: a caixa continua no
               fluxo enquanto a fase a hospeda, e é a fatia que decide a
               tela. */}
-          {hud.tempo && tempo && (
-            <BarraDoTempo
-              tempo={tempo}
-              onSentido={(s: SentidoDoTempo) => directorRef.current?.andarNoTempo(s)}
-              onDegrau={() => directorRef.current?.ciclarDegrau()}
-              onAoVivo={() => directorRef.current?.alternarAoVivo()}
-              onEpoca={() => directorRef.current?.voltarAEpoca()}
-            />
-          )}
+          {hud.tempo && tempo && <Relogio tempo={tempo} acoes={acoesDoRelogio} />}
           {/* A DICA DOS GESTOS SAIU DO ATLAS (item A1.3, relatório de UI de
               09/09) — o convite do primeiro acesso (`Convite`, mais
               abaixo) já ensina os quatro gestos, e a linha permanente
@@ -1539,8 +1542,8 @@ export default function App() {
         celular={celular}
       />
 
-      {/* A MÁQUINA DO TEMPO ATRÁS DA ALÇA (item 62) — a MESMA
-          `BarraDoTempo` do rodapé, só que numa gaveta, e só no telefone.
+      {/* A MÁQUINA DO TEMPO ATRÁS DA ALÇA (item 62) — o MESMO
+          `Relogio` do rodapé, só que numa gaveta, e só no telefone.
           Filha DIRETA de .hud-root como as outras. */}
       {alcas && hud.tempo && tempo && (
         <GavetaDoTempo
@@ -1548,10 +1551,7 @@ export default function App() {
           ativa={gaveta === 'tempo'}
           onFechar={() => fecharGaveta('tempo')}
           tempo={tempo}
-          onSentido={(s: SentidoDoTempo) => directorRef.current?.andarNoTempo(s)}
-          onDegrau={() => directorRef.current?.ciclarDegrau()}
-          onAoVivo={() => directorRef.current?.alternarAoVivo()}
-          onEpoca={() => directorRef.current?.voltarAEpoca()}
+          acoes={acoesDoRelogio}
           celular={celular}
         />
       )}

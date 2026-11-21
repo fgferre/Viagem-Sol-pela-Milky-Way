@@ -368,13 +368,14 @@ export async function capturarAFita(porta = 9411) {
       const jdParado = await js('window.__director.tempo.jd');
       const quadrosAntes = await js('window.__f || 0');
 
-      // O degrau troca com o relógio PARADO: `ciclarDegrau` dá a volta na
-      // escada, e passar pelo degrau 7 (~116 dias/s) com o relógio andando
-      // atiraria o `jd` para longe do alvo antes do pouso.
+      // O degrau troca com o relógio PARADO (`escolherDegrau`, a régua do
+      // relógio do Atlas, vai direto ao degrau): trocar com o relógio
+      // andando num degrau alto atiraria o `jd` para longe do alvo antes
+      // do pouso.
       const andarAte = async (degrau, alvoEmDias) => {
         await js(
           '(() => { const d = window.__director; d.andarNoTempo(0);'
-          + ` while (d.tempo.degrau !== ${degrau}) d.ciclarDegrau();`
+          + ` d.escolherDegrau(${degrau});`
           + ' d.andarNoTempo(1); })()'
         );
         const prazo = Date.now() + TETO_DA_ANDADA_MS;

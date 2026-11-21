@@ -3158,8 +3158,21 @@ export class Director {
     this.maquinaDoTempo.andarNoTempo(sentido);
   }
 
-  ciclarDegrau(): number {
-    return this.maquinaDoTempo.ciclarDegrau();
+  // o relógio do Atlas (20/11): a semântica mora na máquina
+  escolherDegrau(n: number): number {
+    return this.maquinaDoTempo.escolherDegrau(n);
+  }
+
+  tocarOuPausar() {
+    this.maquinaDoTempo.tocarOuPausar();
+  }
+
+  escolherSentido(sentido: -1 | 1) {
+    this.maquinaDoTempo.escolherSentido(sentido);
+  }
+
+  voltarAoPresente() {
+    this.maquinaDoTempo.voltarAoPresente();
   }
 
   alternarAoVivo() {

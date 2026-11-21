@@ -15,7 +15,6 @@ import {
   grampearJd,
   mesmoMostrador,
   taxaDoDegrau,
-  DEGRAUS_DE_TEMPO,
 } from '../tempoDoAtlas';
 import type { EstadoDoTempo, FaseDaEfemeride, SentidoDoTempo } from '../tempoDoAtlas';
 import { dateToTDB } from '../../lib/atlas/time';
@@ -25,10 +24,10 @@ import { carregarEfemerides } from '../config';
 
 /**
  * De quanto em quanto tempo o modo AO VIVO relê o relógio do visitante,
- * em segundos. Um: é a resolução em que a máquina do tempo fala (o
- * mostrador é minuto a minuto) e o passo em que a camada recalcula os
- * dez corpos — reler a 60 Hz seria pagar efeméride por quadro para
- * mostrar o mesmo minuto sessenta vezes (D2).
+ * em segundos. Um: é a resolução em que o relógio do Atlas fala (ao vivo
+ * ele escreve os segundos) e o passo em que a camada recalcula os dez
+ * corpos — reler a 60 Hz seria pagar efeméride por quadro para mostrar
+ * o mesmo segundo sessenta vezes (D2).
  */
 const PASSO_DO_AO_VIVO_S = 1;
 
@@ -43,8 +42,9 @@ const PASSO_DO_AO_VIVO_S = 1;
  * perguntar "mudou?"); quem decide se o React é acordado é
  * `mesmoMostrador`. Na viagem rápida o mostrador anda e as quatro
  * conferências por segundo viram quatro publicações, que é o que a viagem
- * precisa; no AO VIVO a data vira de minuto em minuto e as mesmas quatro
- * conferências viram UMA publicação por minuto.
+ * precisa (é este o teto de 4 por segundo); no AO VIVO o relógio escreve
+ * o segundo, e as mesmas quatro conferências viram UMA publicação por
+ * segundo (desde o relógio de 20/11; antes era uma por minuto).
  */
 const PASSO_DO_MOSTRADOR_S = 0.25;
 
@@ -80,6 +80,12 @@ export class MaquinaDoTempo {
   sentidoDoTempo: SentidoDoTempo = 0;
   /** o relógio segue o tempo real do visitante */
   aoVivo = false;
+  /**
+   * O ÚLTIMO SENTIDO EM QUE O RELÓGIO ANDOU — o ▶ do relógio retoma por
+   * ele. Mora aqui, e não no componente, para sobreviver à folha do
+   * telefone fechando e abrindo; ao vivo e o retrato o devolvem a ▶.
+   */
+  ultimoSentido: -1 | 1 = 1;
   /** a fonte viva; `null` enquanto ninguém pediu, ou se a rede faltou */
   /**
    * O MOTOR, e não a fatia dele. O campo era declarado como
@@ -210,6 +216,7 @@ export class MaquinaDoTempo {
    * andando a 1 Hz: o rótulo prometia uma coisa e o método fazia outra.
    */
   andarNoTempo(sentido: SentidoDoTempo) {
+    if (sentido !== 0) this.ultimoSentido = sentido;
     // O PEDIDO CONTRA A PAREDE NÃO ACONTECE (item 115). Limpar
     // `naParede` sem olhar o sentido fazia o ⏵ piscar na borda da
     // tabela: este aperto publicava um quadro de mentira — o aviso
@@ -233,14 +240,50 @@ export class MaquinaDoTempo {
     this.publicarTempo();
   }
 
-  /** o próximo degrau da escada, dando a volta — precedente do `1×/2×/4×` */
-  ciclarDegrau(): number {
-    this.degrau = degrauValido((this.degrau + 1) % DEGRAUS_DE_TEMPO);
+  /**
+   * A RÉGUA DO RELÓGIO escolhe o degrau direto. Ao vivo, um degrau
+   * acima do tempo real é pedido de viagem: sai do ao vivo andando para
+   * a frente; o degrau 0 ao vivo continua ao vivo.
+   */
+  escolherDegrau(n: number): number {
+    const destino = degrauValido(n);
+    const viaja = this.aoVivo && destino !== 0;
+    this.degrau = destino;
+    if (viaja) {
+      this.andarNoTempo(1);
+      return this.degrau;
+    }
     this.garantirEfemerides();
-    // troca de taxa muda o que a tela vai mostrar no quadro seguinte
     this.fios.perturbar();
     this.publicarTempo();
     return this.degrau;
+  }
+
+  /**
+   * O ▶/⏸ DO RELÓGIO. Andando (ou ao vivo), pausa e guarda o sentido;
+   * pausar o ao vivo vai ao degrau 0 e para. Parado, retoma pelo último
+   * sentido.
+   */
+  tocarOuPausar() {
+    if (this.aoVivo || this.sentidoDoTempo !== 0) {
+      this.ultimoSentido = this.sentidoDoTempo === -1 ? -1 : 1;
+      if (this.aoVivo) this.degrau = 0;
+      this.andarNoTempo(0);
+      return;
+    }
+    this.andarNoTempo(this.ultimoSentido);
+  }
+
+  /** Recuar/Avançar do relógio — ao vivo, parte do degrau 0 */
+  escolherSentido(sentido: -1 | 1) {
+    if (this.aoVivo) this.degrau = 0;
+    this.andarNoTempo(sentido);
+  }
+
+  /** "Voltar ao presente": liga o ao vivo (nunca desliga) */
+  voltarAoPresente() {
+    if (!this.aoVivo) this.alternarAoVivo();
+    this.ultimoSentido = 1;
   }
 
   /**
@@ -267,6 +310,7 @@ export class MaquinaDoTempo {
    */
   voltarAEpoca() {
     this.jdPedido = EPOCA_JD_TDB;
+    this.ultimoSentido = 1;
     this.sentidoDoTempo = 0;
     this.aoVivo = false;
     this.naParede = false;
@@ -281,8 +325,8 @@ export class MaquinaDoTempo {
    * A GUARDA (24/08): publicar é acordar o React no RAIZ — `onTempo` é
    * `setTempo` no `App`, e o App re-renderiza o HUD inteiro. Enquanto o
    * relógio anda AO VIVO isso acontecia 4×/s para dizer exatamente a mesma
-   * coisa, porque a data tem resolução de minuto. Agora quem não mudou não
-   * fala. Ver `mesmoMostrador` (`tempoDoAtlas`) para o que conta como
+   * coisa. Agora quem não mudou não fala: ao vivo o relógio escreve o
+   * segundo, então fala uma vez por segundo. Ver `mesmoMostrador` (`tempoDoAtlas`) para o que conta como
    * "mudou" — e por que o `jd` não conta.
    *
    * NÃO É CACHE E NÃO É SEGUNDA VERDADE: `this.tempo` continua sendo

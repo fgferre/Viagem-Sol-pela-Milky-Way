@@ -829,7 +829,7 @@ describe('5. a copy do selo', () => {
     // a ocupar TRÊS linhas quando ESTA frase chega a 86 caracteres. Com
     // os 53 de hoje ela continua em DUAS, e a base do selo fica em
     // 0,1769 — o MESMO número de antes da frase crescer, contra 0,24
-    // declarados (e quem domina a base é a `.atlas-tempo`, com 0,1809).
+    // declarados (e quem dominava a base era a barra antiga do tempo, com 0,1809).
     // Ou seja: esta redação não move um fio do juízo de a11y.
     expect(oQue.length).toBeLessThanOrEqual(85);
   });

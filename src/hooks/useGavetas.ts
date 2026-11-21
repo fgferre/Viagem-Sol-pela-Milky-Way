@@ -28,8 +28,8 @@ import {
 } from './movimentoDaGaveta';
 
 /**
- * A QUINTA É DO TELEFONE (item 62, 23/08): `tempo` é a MESMA
- * `BarraDoTempo` do rodapé, desenhada dentro de uma gaveta quando a
+ * A QUINTA É DO TELEFONE (item 62, 23/08): `tempo` é o MESMO
+ * `Relogio` do rodapé, desenhado dentro de uma gaveta quando a
  * janela é de celular. O enum cresce em vez de ganhar um estado paralelo
  * — "uma aberta por vez" tem de valer entre as cinco, não entre quatro e
  * mais uma. Quem a gateia por largura é o App (`useCelular`); aqui ela é

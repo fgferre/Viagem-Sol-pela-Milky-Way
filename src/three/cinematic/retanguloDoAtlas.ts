@@ -145,75 +145,6 @@ const BARRA_QUEBRADA_FRACAO = 0.065;
 const SELO_FRACAO = 0.07;
 
 /**
- * O DEGRAU DA MÁQUINA DO TEMPO, REMEDIDO NO LOTE 4 (07/09) — os
- * controles chegaram ao alvo de 44 px e o texto ao piso de 12/18 px do
- * item 3 (eram 44/13 px sem reserva própria — o comentário antigo do
- * `04-atlas.css` dizia "o tamanho fica pequeno aqui... Lote 4"; esta é a
- * obra que paga essa dívida).
- *
- * A MESMA DUPLA ALTURA DE `CONTEXTO_FRACAO` vale aqui — a âncora
- * `bottom: 7,4vh` do rodapé também não encolhe com `ui`, e a sessão
- * NATURAL do Chrome (1.200×900 pedidos, 813 de viewport) entra na conta
- * ao lado da grade oficial (900 px exatos):
- *
- *   largura   altura  ui     base medida   linhas de `.atlas-tempo-botoes`
- *   1.200 px  900     0,85   19,13%        1 (sem degrau)
- *   1.200 px  813     0,85   20,38%        1 ← pior RAZÃO (÷0,85 = 23,98%), governa TEMPO_FRACAO
- *   1.200 px  813     1,00   22,60%        1
- *   1.000 px  900     1,00   29,51%        2
- *   768 px    900     0,85   26,28%        2
- *   768 px    900     1,00   31,32%        2
- *   1.200 px  813     1,25   37,88%        2
- *   1.000 px  900     1,25   37,36%        2
- *   1.200 px  813     1,40   44,42%        2 ← pior EM DUAS linhas da mesa LARGA, governa TEMPO_QUEBRADO_FRACAO
- *   1.000 px  900     1,40   40,84%        2
- *
- * (a medição do Lote 4 também tinha 768×900 a `ui` 1,25/1,40 em TRÊS
- * linhas — 45,02% e 52,48% — e uma `TEMPO_EM_TRES_LINHAS_FRACAO` própria.
- * As duas morreram no CONSERTO DO RODAPÉ DE MESA ESTREITA, 09/09 —
- * ver abaixo — e saem desta tabela e do arquivo.)
- *
- * `TEMPO_FRACAO` sai da pior RAZÃO sem degrau (1.200×813, ui=0,85:
- * 0,2038/0,85 = 0,2398) — 0,245 cobre com ~0,005 de folga por `ui`.
- *
- * `TEMPO_QUEBRADO_FRACAO` (a 2ª linha) sai do pior caso EM DUAS linhas
- * (1.200×813, ui=1,4): `0,245×1,4 + Q ≥ 0,4442` → `Q ≥ 0,1012` — 0,107
- * cobre com ~0,006.
- *
- * REMEDIDO DE NOVO NO CONSERTO 1 (07/09) — a data cai para 16 px e os
- * controles para 40 px na mesa (§2 item 1), e `--selo-base` cai junto
- * (ver `SELO_FRACAO`): a máquina do tempo mede bem menos. MEDIDO
- * (`a11y.mjs` depois do conserto), pior razão medido/`ui` SEM degrau =
- * 0,149/0,85 = 0,1753 (1.200x813, `ui = 0,85`). `TEMPO_FRACAO` =
- * 0,1753 + 0,01 = 0,19.
- *
- * Pior caso EM DUAS linhas da mesa LARGA (1.200x813, `ui = 1,4`, 36,5%):
- * `0,19×1,4 + Q ≥ 0,365` → `Q ≥ 0,099`.
- *
- * ---- O RODAPÉ NUMA FILEIRA EM QUALQUER MESA (09/09, decisão do dono:
- * "o telefone deitado continua com a interface da mesa; só o orçamento
- * de largura do rodapé muda"). O CSS dá ao `.atlas-rodape`
- * `max(46vw, min(63vw, 30rem))` (04-atlas.css) e o `rem` da raiz cresce
- * com `--ui`, então o teto de 30rem cresce junto. O conteúdo mede
- * 471,1 px a `ui = 1` (medido sem quebra) e cabe em 63vw a partir de
- * 471,1/0,63 = 747,8 px — o piso da mesa (761 px) já cabe; a `ui = 1` a
- * 2ª linha não existe em largura nenhuma de mesa. Bisseção no navegador
- * com texto grande: quebra entre 913 e 914 px a `ui = 1,25` e entre
- * 1.011 e 1.012 px a `ui = 1,4` (o texto cresce um pouco menos que
- * `ui`); 750×`ui` (937 e 1.050) cobre os dois pelo lado seguro, chamando
- * de "quebrado" um trecho curto que já é uma linha só — o mesmo preço
- * que `LARGURA_DA_QUEBRA_PX` paga na barra de cima, pelo mesmo motivo
- * (dois eixos, largura×`ui`, resumidos num limiar só). Não há mais
- * terceira linha nem limiar separado para a mesa larga.
- *
- * A FRAÇÃO da 2ª linha: o pior caso medido é 0,3726 (761/768 px,
- * `ui = 1,4`) e pede `0,19×1,4 + Q ≥ 0,3726` → `Q ≥ 0,1066`; o
- * `TEMPO_QUEBRADO_FRACAO` de sempre (0,11) cobre com 0,0034 de folga.
- */
-const LARGURA_DA_QUEBRA_DO_TEMPO_PX = 750;
-const TEMPO_QUEBRADO_FRACAO = 0.11;
-
-/**
  * A LARGURA DE REFERÊNCIA — a tela de mesa em que as frações acima
  * foram medidas e em que o juiz de a11y roda. É o default do produtor:
  * quem o chama sem largura (o vitest da função pura) recebe o
@@ -224,8 +155,7 @@ export const LARGURA_DE_MESA_PX = 1200;
 /**
  * ATÉ ONDE A DECLARAÇÃO VALE, em largura de CSS — medido, não estimado.
  * De 768 px para cima o retângulo declarado cobre o HUD real em toda a
- * faixa de `?ui=` (0,85 a 1,4), com os dois degraus da máquina do tempo
- * acima. Era 900 até 2026-08-20, e o que baixou o número foi o item 9:
+ * faixa de `?ui=` (0,85 a 1,4). Era 900 até 2026-08-20, e o que baixou o número foi o item 9:
  * a linha dos controles passou a QUEBRAR em vez de ser pintada fora da
  * coluna, então o que ela ocupa virou altura declarável em vez de
  * transbordo invisível.
@@ -246,14 +176,33 @@ export const LARGURA_UTIL_MINIMA_PX = 768;
  * selo. Ela e o selo dividem a mesma faixa de baixo, e por isso o que
  * entra no retângulo é o MAIOR dos dois e não a soma: descontar as
  * duas alturas empurraria a câmera para trás por uma faixa que ninguém
- * ocupa inteira. O NÚMERO em si — e o degrau de quebra dela, que desde
- * 09/09 é DOIS limiares de largura (mesa estreita e mesa larga, cada
- * uma com o CSS e a conta próprios) — está declarado e medido de novo
- * junto de `LARGURA_DA_QUEBRA_DO_TEMPO_PX`, no alto deste arquivo: sem
- * tarja nenhuma na conta de mesa, e com os controles no tamanho cheio do
- * item 3, é ela — e não mais o selo — quem sempre decide o `Math.max`.
- * REMEDIDO DE NOVO NO CONSERTO 1 (07/09): 0,19 — a conta está no
- * comentário de `LARGURA_DA_QUEBRA_DO_TEMPO_PX`, junto dos dois limiares.
+ * ocupa inteira. É ela — e não o selo — quem sempre decide o `Math.max`.
+ *
+ * REMEDIDO PARA O RELÓGIO DE 20/11 (o relógio aprovado pelo dono no lugar
+ * da barra antiga). O painel da velocidade abre PARA CIMA, fora do fluxo,
+ * e é painel que o visitante abriu (como a ficha), então não entra; o que
+ * entra é o relógio FECHADO, no pior dos dois estados: ao vivo (só a
+ * leitura) ou PAUSADO, quando a faixa "Voltar ao presente" fica de pé em
+ * cima dela. Medido no navegador (`?atlas=1&foco=saturno&ver=corpo`,
+ * janelas exatas por `setDeviceMetricsOverride`), do topo do relógio à
+ * borda de baixo da janela:
+ *
+ *   ui     ao vivo   pausado   pausado a 813 px   ÷ ui
+ *   0,85   84,7 px   128,7 px  15,83%             18,62%  ← pior RAZÃO, governa
+ *   1,00   97,2 px   141,2 px  17,37%             17,37%
+ *   1,25   121,0 px  165,0 px  20,30%             16,24%
+ *   1,40   135,3 px  179,3 px  22,05%             15,75%
+ *
+ * (o selo, na mesma faixa: 38,7 a 56,8 px — nunca decide.) O relógio tem
+ * largura própria (20,5rem) e NÃO QUEBRA em largura nenhuma de mesa: as
+ * alturas a 768, 1.000 e 1.200 px são idênticas em todo `ui`. Por isso o
+ * degrau da "2ª linha" da barra antiga (`LARGURA_DA_QUEBRA_DO_TEMPO_PX` e
+ * `TEMPO_QUEBRADO_FRACAO`) saiu: ele reservava 0,11 de altura a mais
+ * abaixo de 750 px por unidade de `ui`, para uma linha que não existe.
+ *
+ * O 0,19 FICA: cobre o pior caso medido (0,19 × 0,85 = 0,1615 ≥ 0,1583)
+ * com 0,003 de folga no canto mais apertado e mais nos outros — e mantém o
+ * enquadramento da mesa, em `ui` de fábrica, exatamente o de antes.
  */
 const TEMPO_FRACAO = 0.19;
 
@@ -524,11 +473,7 @@ export function retanguloUtilDoAtlas(
       CONTEXTO_FRACAO * k +
       (largura < LARGURA_DA_QUEBRA_PX * k ? BARRA_QUEBRADA_FRACAO : 0),
     base:
-      Math.max(SELO_FRACAO, TEMPO_FRACAO) * k +
-      // a 2ª linha do rodapé entra quando a largura não a segura — um
-      // limiar só por unidade de `ui` desde 09/09 (a derivação está em
-      // `LARGURA_DA_QUEBRA_DO_TEMPO_PX`, no alto)
-      (largura < LARGURA_DA_QUEBRA_DO_TEMPO_PX * k ? TEMPO_QUEBRADO_FRACAO : 0) +
-      reservaBase,
+      // o relógio não quebra em largura nenhuma de mesa (ver `TEMPO_FRACAO`)
+      Math.max(SELO_FRACAO, TEMPO_FRACAO) * k + reservaBase,
   };
 }

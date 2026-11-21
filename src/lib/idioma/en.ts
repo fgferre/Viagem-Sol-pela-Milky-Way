@@ -354,34 +354,35 @@ export const EN: Record<keyof typeof PT, string> = {
   'atlas.cliqueAssistida': '{oQueSeVe} — click: bring the assisted light back',
   'atlas.cliqueReal': 'click: back to real — {oQueSeVe}',
   'atlas.endireitar': 'Level the horizon',
-  'atlas.instanteDoCeu': 'sky time',
   'atlas.maquinaDoTempo': 'Time machine',
   'atlas.tempo': 'Time',
-  'atlas.tempoBotao': 'Time',
   'atlas.fecharTempo': 'Close the time machine',
-  // THE DESKTOP BAR TOGGLE AT REST (item A1.1) — the "SKY TIME" line
-  // starts collapsed, and this pair of aria strings names what the
-  // "▸"/"▾" button does, in the same mold as `atlas.fecharTempo`.
-  'atlas.mostrarControlesDoTempo': 'Show the time controls',
-  'atlas.esconderControlesDoTempo': 'Hide the time controls',
-  'atlas.voltarNoTempo': 'Go back in time',
-  'atlas.pararOTempo': 'Stop time',
-  'atlas.avancarNoTempo': 'Go forward in time',
-  'atlas.taxaAria': 'Time speed: {taxa}. Click for the next step.',
-  'atlas.aoVivo': 'Live',
-  'atlas.aoVivoAria': 'Follow real time',
-  'atlas.epoca': 'Epoch',
-  'atlas.epocaAria': 'Back to the instant of the 2026 portrait',
-  // THE THREE ROW LABELS (`comRotulos`), sheet only — the desktop bar
-  // skips them because the buttons themselves already say what each
-  // group is.
-  'atlas.tempoTransporte': 'Transport',
-  'atlas.tempoVelocidade': 'Speed',
-  'atlas.tempoReferencia': 'Reference',
-  // The "?" in the gaveta header and the bar (redesign, the owner's
-  // request: "apply the same pattern to the Time panel") — ≤45 words.
-  'atlas.tempoAjuda':
-    'The time machine moves the sky and the planets. ◀ ⏸ ▶ set the direction; the speed button cycles from real time to ~116 days per second. "Live" follows the visitor\'s clock; "Epoch" freezes the J2000 reference portrait. Ephemerides cover 1950–2050.',
+  // THE ATLAS CLOCK (approved 20/11) — the readout, the speed panel and
+  // the phone handle. The short date follows the house's English order
+  // (month first, like `tempo.data`: "Nov 23, 2026").
+  'relogio.aria': 'Atlas clock',
+  'relogio.aoVivo': 'Live',
+  'relogio.pausado': 'Paused',
+  'relogio.avancando': 'Advancing',
+  'relogio.recuando': 'Reversing',
+  'relogio.retrato': 'Portrait',
+  'relogio.carregando': 'Loading',
+  'relogio.limite': 'Limit',
+  'relogio.pausar': 'Pause time',
+  'relogio.retomar': 'Resume from the paused instant',
+  'relogio.ajustar': 'Adjust time',
+  'relogio.velocidade': 'Speed',
+  'relogio.porSegundo': 'of sky per real second',
+  'relogio.reguaValor': '{taxa} of sky per real second',
+  'relogio.utc': 'Coordinated Universal Time',
+  'relogio.recuar': 'Reverse',
+  'relogio.avancar': 'Advance',
+  'relogio.presente': 'Back to the present',
+  'relogio.retrato2026': '2026 portrait',
+  'relogio.dataCurta': '{mes} {dia}, {ano}',
+  'relogio.diaCurto': '{mes} {dia}',
+  'relogio.alca': 'Time · {estado}',
+  'relogio.alcaTitulo': 'Time · {estado} · {instante} UTC',
 
   // ---- the search palette ------------------------------------------
   'busca.titulo': 'Search',
@@ -1065,9 +1066,6 @@ export const EN: Record<keyof typeof PT, string> = {
   'tempo.mes.11': 'December',
   'tempo.data': '{mes} {dia}, {ano}, {hh}:{mm}',
   'tempo.instanteIndefinido': 'undefined instant',
-  'tempo.parado': 'stopped',
-  'tempo.tempoReal': 'real time',
-  'tempo.taxa': '{valor} {unidade} per second',
   'tempo.segundo': 'second',
   'tempo.segundos': 'seconds',
   'tempo.minuto': 'minute',
@@ -1076,7 +1074,6 @@ export const EN: Record<keyof typeof PT, string> = {
   'tempo.horas': 'hours',
   'tempo.dia': 'day',
   'tempo.dias': 'days',
-  'tempo.ano': 'year',
   'tempo.anos': 'years',
   'tempo.semEfemeride': 'no ephemeris: the layer is frozen at the portrait',
   'tempo.buscando': 'fetching the ephemeris…',

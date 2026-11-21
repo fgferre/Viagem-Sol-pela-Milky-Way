@@ -1137,431 +1137,451 @@
      gaveta dele (as duas, logo acima). */
   pointer-events: none;
 }
-/* A MÁQUINA DO TEMPO VOLTA A RECEBER O CLIQUE (08/09, pedido do dono: "quero
-   verificar se nos modos de tela maior os cliques no time-machine estão
-   funcionando"): desde o Lote 4 os controles dela são `.ajustes-seg`, não
-   `.hud-btn`, e o `none` da coluna (acima) os engolia — `elementFromPoint`
-   no centro de cada botão devolvia o canvas, em toda tela de mesa. Os
-   juízes não viram porque clicam por `.click()`, que não passa pelo teste
-   de acerto. Só os controles voltam, nunca a coluna: o arrasto continua
-   passando pelos vãos. */
-.atlas-rodape .atlas-tempo-botoes .ajustes-seg,
-.atlas-rodape .atlas-tempo .hud-ajuda {
+/* ---- O RELÓGIO DO ATLAS (aprovado pelo dono em 20/11) ----------------
+   A pele do protótipo de demonstração aprovado, com os nomes
+   da casa. Na mesa mora no `.atlas-rodape` e o painel da velocidade abre
+   PARA CIMA, fora do fluxo (`.relogio-extras`, absoluto) — a altura do
+   rodapé, que é distância de câmera, não muda ao abrir. No telefone o
+   mesmo componente mora na folha `[data-dialogo="tempo"]` (abaixo, em
+   `.atlas-gaveta .relogio`). Movimento reduzido: os tempos são os tokens
+   que zeram (01-base.css), e só o segundeiro, que anda sozinho, some.
+   `?shot=`: `.shot-mode *` (07-foto.css) já zera toda transição. */
+.atlas-rodape .relogio {
+  /* a coluna é `pointer-events: none` (não rouba o arrasto); o relógio
+     é controle inteiro */
   pointer-events: auto;
 }
-/* O HOVER PARA ABRIR (09/09, pedido do dono) pede o MESMO acerto, um
-   degrau antes: sem `auto` aqui, o mouse de verdade nunca alcançava
-   `.atlas-tempo-cabecalho`/`.atlas-tempo-alternar` (`elementFromPoint`
-   devolvia o `scene-canvas`, o `none` da coluna por trás) — só o
-   `.click()` de teste furava o `none`, o gesto de hover não tem
-   equivalente sintético. A coluna continua sem roubar o arrasto fora
-   destes dois botões. */
-.atlas-rodape .atlas-tempo-cabecalho,
-.atlas-rodape .atlas-tempo-alternar {
-  pointer-events: auto;
-}
-/* E O BLOCO INTEIRO É ALVO ENQUANTO ABERTO: com o `none` herdado da coluna,
-   o vão entre as fileiras devolvia o canvas, e o mouse parado num vão por
-   mais de 350 ms fechava a máquina do tempo no meio do uso. Aberto (por
-   hover, foco ou clique — `data-aberta`, HudDoAtlas.tsx) o bloco vira
-   painel e segura o ponteiro; recolhido, só os dois botões acima. */
-.atlas-rodape .atlas-tempo[data-aberta='true'] {
-  pointer-events: auto;
-}
-.atlas-rodape .atlas-tempo {
-  position: static;
+.relogio {
+  width: 20.5rem;
   max-width: 100%;
-}
-.atlas-tempo {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
-}
-/* a leitura em cima, os controles embaixo. Uma linha só cabia à custa
-   de encostar no selo quando o rótulo da taxa crescia — e rótulo que
-   muda de comprimento a cada clique não pode governar o layout.
-   `position: relative` ANCORA o "?" da barra (`comAjuda`, HudDoAtlas.tsx)
-   — mesma régua de `.ajustes-item`/`.atlas-gaveta-linha`: a dica flutua
-   sobre a LINHA, não sobre a caixinha de 1rem do botão. */
-.atlas-tempo-linha {
+  box-sizing: border-box;
   position: relative;
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
+  isolation: isolate;
+  background: var(--fundo-painel);
+  color: var(--texto);
+  border: 1px solid var(--borda-forte);
+  border-radius: var(--raio-painel);
+  box-shadow: 0 5px 22px #0007;
+  text-shadow: none;
+  font: 400 0.875rem/1.3 var(--fonte-ui);
+  letter-spacing: normal;
 }
-/* A LINHA RECOLHÍVEL DA MESA EM REPOUSO (A1.1) — dois botões zerados que
-   fazem a MESMA coisa: `.atlas-tempo-cabecalho` embrulha o eyebrow e a
-   data (o mesmo `gap`/`align-items` de `.atlas-tempo-linha`, porque um
-   `<button>` não é `display: contents`), e `.atlas-tempo-alternar` é o
-   "▸"/"▾" no fim da linha, empurrado para lá por `margin-left: auto` —
-   nenhum dos dois muda o desenho de `.atlas-tempo-olho`/`.atlas-tempo-data`.
-   Só existem quando `recolhivel` (a barra permanente da mesa); a gaveta
-   do celular não os monta. */
-.atlas-tempo-cabecalho {
-  display: flex;
-  align-items: baseline;
-  gap: 0.5rem;
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
+.relogio * {
+  box-sizing: border-box;
 }
-.atlas-tempo-alternar {
+.relogio button {
   display: inline-flex;
   align-items: center;
-  margin-left: auto;
-  padding: 0.2rem;
-  border: 0;
-  background: none;
-  color: var(--texto-3);
-  cursor: pointer;
-}
-.atlas-tempo-alternar:hover {
-  color: var(--texto);
-}
-.atlas-tempo-cabecalho:focus-visible,
-.atlas-tempo-alternar:focus-visible {
-  outline: 2px solid var(--foco);
-  outline-offset: 2px;
-}
-/* O TAMANHO CHEGA AO PISO DO ITEM 3 (Lote 4, 07/09) — eyebrow "INSTANTE
-   DO CÉU" 11 px caps, data 18 px, na MESA e na gaveta do celular por
-   igual. CONSERTO 1 (mesmo lote, mesmo dia) encolhe de novo só a MESA
-   (data 16 px, abaixo) para caber no orçamento de "topo + base <= 22%
-   da altura" do §2 item 1 — a gaveta do celular, que não paga reserva
-   de câmera nenhuma, mantém os 18 px cheios. */
-.atlas-tempo-olho {
-  font-size: 0.6875rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--texto-3);
-}
-.atlas-tempo-data {
-  font-size: 1.125rem;
-  font-weight: 300;
-  letter-spacing: 0.02em;
-  font-variant-numeric: tabular-nums;
-  color: var(--texto);
-}
-/* CONSERTO 1: o rodapé de MESA fica compacto (data 16 px, controles
-   40 px de altura — abaixo, junto de `.atlas-tempo-botoes`); a gaveta
-   do celular (`.atlas-gaveta`, que nunca abre na mesa — só o telefone
-   vira a máquina do tempo em alça) não é alcançada por este seletor e
-   segue com os 18/44 px de sempre. */
-@media (min-width: 761px) {
-  .hud-root[data-fase='atlas'] .atlas-rodape .atlas-tempo-data {
-    font-size: 1rem;
-  }
-}
-/* A GAVETA (celular) segue a cor de leitura mais próxima do texto —
-   a mesma régua de sempre, só a cor mudava do rodapé de mesa para cá. */
-.atlas-gaveta .atlas-tempo-olho {
-  color: var(--texto-2);
-}
-.atlas-gaveta .atlas-tempo-data {
-  font-weight: 400;
-  letter-spacing: 0;
-}
-/* REDESENHO (06/09, pedido do dono: "aplica o mesmo padrão no painel de
-   Tempo") — os seis botões viram TRÊS GRUPOS `.ajustes-seg` (a peça de
-   `Ajustes.tsx`/08-ajustes.css: moldura, `.on` dourado e tudo o mais já
-   vêm de lá; aqui só mora o que é PRÓPRIO da máquina do tempo). A LINHA
-   QUEBRA em QUALQUER largura, e não só na quebra estreita do CSS: os
-   grupos são pedidos em `rem` (crescem com `?ui=`) dentro de uma coluna
-   em `vw` (que não cresce), e o que não cabe era PINTADO FORA da coluna
-   até 2026-08-20 — ver `LARGURA_DA_QUEBRA_DO_TEMPO_PX`, que é a
-   declaração que paga por esta quebra. */
-.atlas-tempo-botoes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.28rem;
-  /* O RESPIRO DO MOUSE — quanto a máquina do tempo espera antes de fechar
-     depois que o mouse sai dela (pedido do dono em 09/09: abrir no hover,
-     com meio segundo de folga para quem tira o mouse sem querer).
-     MORA AQUI, e não no TypeScript, porque tem DOIS leitores: a animação
-     de saída logo abaixo, que esmaece o corpo DURANTE a espera, e o
-     `BarraDoTempo`, que lê este token para saber quando desmontar. Um
-     número, uma casa — a lei que o plano de motion cobra. */
-  --t-respiro: 350ms;
-  animation: apareceRelogio var(--t-entrada) var(--curva) both;
-}
-/* ...E O DESAPARECER É UM ESMAECER (pedido do dono em 10/09: *"quando
-   passamos o mouse na data, nao seria interessante uma animacao de fade
-   in rápida para aparecer e fade-out para sumir"*). O corpo já ficava
-   montado durante o respiro; o que faltava era mostrar que ele está
-   indo. Quem volta com o mouse no meio do caminho cancela a classe, a
-   animação some com ela e o corpo volta inteiro no ato. */
-.atlas-tempo-botoes.sumindo {
-  animation: sumeRelogio var(--t-respiro) var(--curva) both;
-}
-/* A ENTRADA SOBE, e não só acende. A primeira versão era um fade de
-   120 ms e o dono não conseguia vê-lo — *"nao conseigo perceber o
-   fade-in para entrar a barra de tempo na tela, só percebo o
-   fade-out"*. Ele estava certo, e por dois motivos somados: 120 ms
-   contra os 350 do sair é rápido demais para o olho pegar, e a linha da
-   data PULA de lugar no mesmo instante (a coluna é ancorada na base e
-   cresce para cima), o que rouba a atenção do que está acontecendo
-   embaixo. Movimento se percebe muito melhor que claridade: os
-   controles agora SOBEM 8 px para o lugar, no tempo de entrada da casa.
-   `transform` não participa de layout, então a coluna não cresce duas
-   vezes nem a câmera remede nada por causa disto. */
-@keyframes apareceRelogio {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-@keyframes sumeRelogio {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
-}
-/* MOVIMENTO REDUZIDO: aparece e some, sem esmaecer. O RESPIRO CONTINUA —
-   ele é tempo de espera, não movimento, e tirá-lo faria a máquina do
-   tempo fechar no instante em que o mouse escorrega. Quem declara o
-   movimento é quem declara a ausência dele. */
-@media (prefers-reduced-motion: reduce) {
-  .atlas-tempo-botoes,
-  .atlas-tempo-botoes.sumindo {
-    animation: none;
-  }
-}
-/* SEM BORDA ENTRE ELES: os três grupos são peças distintas (sentido,
-   velocidade, referência), e uma borda contínua os leria como um só. */
-.atlas-tempo-botoes .ajustes-seg {
-  border-radius: 2px;
-}
-/* A BARRA DE MESA NÃO DIVIDE A LINHA EM TERÇOS — a régua de `.ajustes-seg`
-   vem com `flex: 1` no botão (para preencher a coluna fixa de um painel),
-   e herdada sem ajuste aqui ela ENCOLHIA os três grupos até truncar
-   "AO VI…"/"ÉPOCA" antes de a linha quebrar: cada grupo é tamanho de
-   CONTEÚDO, e quem não cabe vai para a linha de baixo (`flex-wrap`, acima),
-   nunca fica espremido na de cima. */
-.atlas-rodape .atlas-tempo-botoes {
-  gap: 0.6rem;
-}
-.atlas-rodape .atlas-tempo-botoes .ajustes-seg {
-  flex: 0 0 auto;
-  width: auto;
-}
-.atlas-rodape .atlas-tempo-botoes .ajustes-seg button {
-  flex: 0 0 auto;
-  width: auto;
-  white-space: nowrap;
-  min-width: max-content;
-  overflow: visible;
-  text-overflow: clip;
-}
-/* OS CONTROLES DA MÁQUINA DO TEMPO COMO INSTRUMENTO (Lote 4, item 3):
-   44 px de alvo — o transporte ◂ ‖ ▸, a velocidade e a referência —, com
-   o texto no piso do §2 item 2 (12 px controles). `.ajustes-seg button`
-   (08-ajustes.css) é 0,54rem/sem `min-height` de propósito: ele serve os
-   32 controles do painel de Ajustes, que não têm reserva de câmera atrás
-   deles. Aqui, escopado ao `.atlas-tempo-botoes` (único em toda a casa),
-   o tamanho sobe sem mexer no resto — a régua "declarado ≥ medido" de
-   `retanguloDoAtlas.ts` (TEMPO_FRACAO e os dois degraus de quebra) foi
-   remedida para este tamanho novo. */
-.atlas-tempo-botoes .ajustes-seg button {
-  /* ÂNCORA DO ANEL DE CONFIRMAÇÃO (C3f, `.realce-anel`, 01-base.css) —
-     sem isto o `position: absolute; inset: 0` do anel subiria até o
-     primeiro ancestral posicionado de verdade, que aqui é a MOLDURA
-     inteira (`.ajustes-seg`), não o botão do "ao vivo" sozinho. */
-  position: relative;
-  min-height: 2.75rem;
-  padding: 0.5rem 0.65rem;
-  font-size: 0.8125rem;
-  letter-spacing: 0;
-}
-/* CONSERTO 1 (Lote 4, 07/09): a linha de controles da MESA desce para
-   40 px — a meta de "topo + base <= 22%" do §2 item 1. Só o rodapé de
-   mesa (`.atlas-rodape`, mouse — não é alvo de toque); a alça do
-   celular (`.atlas-gaveta`, item 5 do §2: "alvos >= 44x44 px") não é
-   alcançada por este seletor e mantém os 44 px. */
-@media (min-width: 761px) {
-  .hud-root[data-fase='atlas'] .atlas-rodape .atlas-tempo-botoes .ajustes-seg button {
-    min-height: 2.5rem;
-  }
-}
-/* ⏸ (já parado) e Época (já na época, já parado) — a mesma pele apagada
-   que `.ajustes-seg` não precisava até aqui, porque nenhum segmento de
-   Ajustes se desabilita. */
-.atlas-tempo-botoes .ajustes-seg button:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-/* O SENTIDO ACENA UMA VEZ (C3f, U27) — o ícone do botão ESCOLHIDO da
-   direção nudga na própria direção e volta; parado faz um pequeno
-   recolhimento. Os nudges de direção usam `translate` SOZINHO: a
-   pressão do dedo escreve a própria escala neste MESMO filho
-   (`:active > *`, 01-base.css) e as duas propriedades COMPÕEM em vez de
-   uma apagar a outra. O recolhimento do "parado" passou para `transform:
-   scale(...)` na C3e (reaudit) — a pressão da casa virou a propriedade
-   INDIVIDUAL `scale`, e as duas escalas no mesmo `scale` brigariam pelo
-   mesmo filho; em `transform` elas voltam a compor. Sem `0%`/`100%`
-   explícitos: o navegador completa com o valor de repouso (nenhuma
-   translação/escala), que é exatamente para onde cada uma volta sozinha. */
-@keyframes tempoNudgePassado {
-  30% {
-    translate: -4px 0;
-  }
-}
-@keyframes tempoNudgeFuturo {
-  30% {
-    translate: 4px 0;
-  }
-}
-@keyframes tempoAssentaParado {
-  45% {
-    transform: scale(0.88);
-  }
-}
-.atlas-tempo-nudge-passado {
-  animation: tempoNudgePassado var(--t-assenta) var(--curva) both;
-}
-.atlas-tempo-nudge-futuro {
-  animation: tempoNudgeFuturo var(--t-assenta) var(--curva) both;
-}
-.atlas-tempo-nudge-parado {
-  animation: tempoAssentaParado var(--t-assenta) var(--curva) both;
-}
-/* O RÓTULO DA TAXA muda de comprimento a cada degrau (de "1×" a "115,7
-   dias/s"), e sem largura mínima os grupos vizinhos dançariam a cada
-   clique — a mesma razão de sempre, agora no GRUPO em vez do botão só.
-   `min(13rem, 100%)` continua sendo pior que o absoluto: a porcentagem
-   fica indefinida no cálculo de largura intrínseca (comentário histórico
-   em `retanguloDoAtlas.ts`). 13rem é o piso do rótulo mais comprido da
-   escada ("16,7 minutos por segundo"/"16.7 minutes per second") com a
-   largura de conteúdo que a barra de mesa ganhou acima — sem ele o grupo
-   ainda pulava de tamanho a cada clique. */
-.atlas-tempo-taxa-seg {
-  min-width: 13rem;
-}
-/* O RÓTULO EM SI é dourado FIXO — item 149's redesign: a taxa não é um
-   interruptor de dois estados (não tem "desligada"), é uma AÇÃO que
-   sempre avança um degrau, e o "›" ao lado é quem diz isso. Pintá-la só
-   quando "ativa" (como os outros segmentos) mentiria uma alternância que
-   não existe. */
-.atlas-tempo-taxa {
-  display: flex;
-  align-items: center;
   justify-content: center;
-  gap: 0.25rem;
-  color: var(--texto);
-  letter-spacing: 0;
+  gap: 0.5rem;
+  min-height: 44px;
+  color: inherit;
+  font: inherit;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: background-color var(--t-rapido), color var(--t-rapido);
 }
-/* ITEM 4 (Lote 4, 07/09): "tempo real" (a única taxa com nome próprio,
-   `formatarTaxa`) chega minúscula — `::first-letter` só funciona em
-   contêiner de bloco, daí o `inline-block` aqui; um flex não aceita o
-   pseudo-elemento. */
-.atlas-tempo-taxa-texto {
-  display: inline-block;
+.relogio button:hover {
+  background: var(--hover);
 }
-.atlas-tempo-taxa-texto::first-letter {
-  text-transform: uppercase;
+.relogio :focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: -3px;
 }
-.atlas-tempo-taxa-seta {
-  color: var(--acento);
-  font-size: 0.62rem;
-}
-.atlas-tempo-aviso {
-  margin: 0.22rem 0 0;
-  min-height: 0.8rem;
-  font-size: 0.5rem;
-  letter-spacing: 0.14em;
-  color: var(--acento);
-}
-
-/* ---- A GAVETA (telefone) — as mesmas peças, em COLUNA ----------------
-   Cada `.ajustes-seg` vira sua própria LINHA cheia (a leitura do
-   mockup: TRANSPORTE / VELOCIDADE / REFERÊNCIA, uma embaixo da outra),
-   em vez de flutuarem lado a lado como na barra de mesa. Só CSS muda —
-   a marcação de `BarraDoTempo` é a mesma nos dois lugares (item 3 do
-   pedido do dono). */
-.atlas-gaveta .atlas-tempo {
-  /* a coluna da barra de mesa alinha ao início; na folha tudo estica,
-     senão os grupos ficam com a largura do mais largo (208 px, foto 06/09) */
-  align-items: stretch;
-}
-.atlas-gaveta .atlas-tempo-botoes {
-  flex-direction: column;
-  align-items: stretch;
-  margin-top: 0.5rem;
-  width: 100%;
-}
-.atlas-gaveta .atlas-tempo-botoes .ajustes-seg {
-  width: 100%;
-}
-/* O RÓTULO DE CADA GRUPO (`comRotulos`, HudDoAtlas.tsx) — só existe dentro
-   da gaveta: mesmo átomo `.ajustes-item` (rótulo à esquerda, controle à
-   direita), com o nome que a barra de mesa dispensa porque os próprios
-   botões já dizem o que cada grupo é. Abaixo de 760px o rótulo sobe para
-   a própria linha e o controle ocupa a largura toda — a mesma quebra de
-   `.ajustes-item` em 08-ajustes.css. */
-.atlas-tempo-grupo {
-  display: grid;
-  grid-template-columns: 1fr 15rem;
-  align-items: center;
-  column-gap: 0.8rem;
-  width: 100%;
-  /* LINHA ≥ 44 px, no molde de `.atlas-gaveta-linha`/`.ajustes-item`. */
-  min-height: 2.75rem;
-  padding: 0.2rem 0;
-}
-/* FILETE ENTRE AS TRÊS LINHAS (maquete `m10-cel-tempo-pele-b.png`, Lote
-   7) — mesma régua de `.atlas-gaveta-linha`: no topo de toda linha
-   menos a primeira, que encosta no filete da data (`.atlas-gaveta
-   .atlas-tempo-linha`, acima). */
-.atlas-tempo-grupo + .atlas-tempo-grupo {
-  border-top: 1px solid var(--borda);
-}
-.atlas-tempo-rotulo {
-  font-size: 0.875rem;
-  font-weight: 400;
-  letter-spacing: 0;
-  text-transform: none;
-  white-space: nowrap;
-  color: var(--texto);
-}
-.atlas-tempo-grupo .ajustes-seg,
-/* mais específico que a regra da barra de mesa (`.atlas-rodape … .ajustes-seg`,
-   flex 0 0 auto / width auto): na folha do celular a gaveta mora DENTRO do
-   rodapé, e sem isto o grupo ficava com metade da largura (foto 06/09) */
-.atlas-rodape .atlas-gaveta .atlas-tempo-grupo .ajustes-seg,
-.atlas-rodape .atlas-gaveta .atlas-tempo-botoes .ajustes-seg {
+.relogio-leitura {
   display: flex;
-  flex: 1 1 auto;
-  width: 100%;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 4.45rem;
+  padding: 0.6rem 0.45rem 0.6rem 0.85rem;
 }
-.atlas-rodape .atlas-gaveta .atlas-tempo-botoes .ajustes-seg button {
-  flex: 1 1 0;
+.relogio-mostrador {
   min-width: 0;
 }
-@media (max-width: 760px) {
-  .atlas-tempo-grupo {
-    grid-template-columns: 1fr;
-    row-gap: 0.3rem;
-  }
+.relogio-meta,
+.relogio-hora,
+.relogio-acoes,
+.relogio-estado {
+  display: flex;
+  align-items: center;
 }
-/* A LINHA "INSTANTE DO CÉU" no padrão `.ajustes-item`: rótulo à esquerda,
-   valor em EVIDÊNCIA à direita — `.atlas-tempo-data` (acima) já dá o
-   tamanho e os números tabulares; aqui só a altura mínima da linha. */
-.atlas-gaveta .atlas-tempo-linha {
+.relogio-meta {
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  color: var(--texto-2);
+  font-size: 0.8rem;
+  margin-bottom: 0.13rem;
+}
+.relogio-estado {
+  gap: 0.36rem;
+  color: var(--acento);
+  font-size: 0.73rem;
+  letter-spacing: 0.075em;
+  line-height: 1.4;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+.relogio-estado i {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: currentColor;
+}
+.relogio[data-tipo='vivo'] .relogio-estado {
+  color: var(--ok);
+}
+.relogio[data-tipo='pausa'] .relogio-estado i {
+  border-radius: 0;
+  background: linear-gradient(to right, currentColor 34%, transparent 34% 66%, currentColor 66%);
+}
+.relogio-data {
+  border-left: 1px solid var(--borda-forte);
+  padding-left: 0.5rem;
+  white-space: nowrap;
+}
+.relogio-hora {
+  gap: 0.45rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.relogio-hora time {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.65rem;
+  font-weight: 500;
+  letter-spacing: -0.05em;
+  line-height: 1.15;
+}
+.relogio-hora time small {
+  font-size: 0.78em;
+  color: var(--texto-2);
+  letter-spacing: -0.05em;
+}
+.relogio-hora abbr {
+  font-size: 0.73rem;
+  color: var(--texto-2);
+  letter-spacing: 0.06em;
+  text-decoration: none;
+}
+.relogio-hora .relogio-dia {
+  font-size: 1.35rem;
+  letter-spacing: -0.035em;
+}
+.relogio-taxa-curta {
+  font-size: 0.72rem;
+  color: var(--acento);
+  font-variant-numeric: tabular-nums;
+}
+.relogio-acoes {
+  margin-left: auto;
+  flex: none;
+}
+.relogio-acoes button {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--raio-controle);
+}
+.relogio .relogio-play {
+  flex: 0 0 46px;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  position: relative;
+  border-radius: 50%;
+  color: var(--texto);
+  background: var(--hover);
+}
+.relogio-play > svg:not(.relogio-coroa) {
+  transition: transform var(--t-assenta) var(--curva);
+  stroke-width: 1.8;
+}
+.relogio-play:active > svg:not(.relogio-coroa) {
+  transform: scale(0.86);
+}
+.relogio-coroa {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.relogio-coroa path {
+  stroke: var(--texto-3);
+  stroke-width: 1.25;
+}
+.relogio-trilho {
+  stroke: var(--borda-forte);
+  stroke-width: 1;
+  fill: none;
+}
+.relogio-segundeiro {
+  fill: var(--acento);
+  transition: cx var(--t-assenta) var(--curva), cy var(--t-assenta) var(--curva);
+}
+.relogio[data-tipo='vivo'] .relogio-segundeiro {
+  fill: var(--ok);
+}
+.relogio-acoes .relogio-abrir {
+  color: var(--texto-2);
+}
+.relogio-abrir svg {
+  transition: transform var(--t-assenta) var(--curva);
+}
+.relogio-abrir[aria-expanded='true'] svg {
+  transform: rotate(180deg);
+}
+.relogio-aviso {
+  margin: 0;
+  color: var(--acento);
+  padding: 0.3rem 1rem 0.65rem;
+  font-size: 0.78rem;
+}
+.relogio-agora {
+  color: var(--acento) !important;
+  justify-content: flex-start !important;
+  width: 100%;
+  padding: 0 1rem;
+}
+.relogio-extras {
+  position: absolute;
+  bottom: 100%;
+  left: -1px;
+  right: -1px;
+  background: var(--fundo-painel);
+  border-inline: 1px solid var(--borda-forte);
+  border-radius: var(--raio-painel) var(--raio-painel) 0 0;
+  overflow: hidden;
+}
+.relogio[data-detalhes='true'] {
+  border-radius: 0 0 var(--raio-painel) var(--raio-painel);
+}
+.relogio[data-detalhes='true'] .relogio-extras {
+  border-top: 1px solid var(--borda-forte);
+}
+.relogio-dobra {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--t-assenta) var(--curva),
+    opacity var(--t-assenta),
+    visibility 0s var(--t-assenta);
+}
+.relogio-dobra[data-aberta='true'] {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  opacity: 1;
+  transition-delay: 0s;
+}
+.relogio-recorte {
+  min-height: 0;
+  overflow: hidden;
+}
+.relogio-painel {
+  padding: 1rem 1rem 0.25rem;
+}
+.relogio-dobra[data-aberta='true'] + .relogio-agora {
+  border-top: 1px solid var(--borda);
+}
+.relogio-titulo,
+.relogio-extremos {
+  display: flex;
   justify-content: space-between;
-  min-height: 2.75rem;
-  padding: 0.2rem 0;
-  border-bottom: 1px solid var(--borda);
+  align-items: baseline;
+  gap: 0.5rem;
+}
+.relogio-titulo label {
+  font: 400 1.15rem var(--fonte-display);
+  color: var(--texto);
+}
+.relogio-titulo span {
+  color: var(--acento);
+  font-size: 0.73rem;
+  font-variant-numeric: tabular-nums;
+}
+.relogio-equivalencia {
+  margin: 0.75rem 0 0.1rem;
+  color: var(--texto-2);
+  font-size: 0.78rem;
+}
+.relogio-equivalencia b {
+  font-size: 1.1rem;
+  color: var(--texto);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.relogio-escala {
+  height: 44px;
+  position: relative;
+  display: grid;
+  align-items: center;
+}
+.relogio-escala::before {
+  content: '';
+  position: absolute;
+  height: 1px;
+  left: 9px;
+  right: 9px;
+  background: var(--borda-forte);
+}
+.relogio-marcas {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.relogio-marcas i {
+  height: 9px;
+  width: 2px;
+  border-radius: 1px;
+  background: #7a7873;
+}
+.relogio-marcas i[data-ativa='true'] {
+  background: var(--acento);
+}
+.relogio-curso {
+  position: absolute;
+  left: 9px;
+  right: 9px;
+  height: 1px;
+  pointer-events: none;
+}
+.relogio-curso::before {
+  content: '';
+  display: block;
+  height: 2px;
+  width: var(--posicao);
+  background: var(--acento);
+  transition: width var(--t-assenta) var(--curva);
+}
+.relogio-curso i {
+  position: absolute;
+  left: var(--posicao);
+  top: -10px;
+  transform: translateX(-50%);
+  width: 11px;
+  height: 21px;
+  border-radius: 3px;
+  background: var(--acento);
+  box-shadow: 0 0 0 3px var(--fundo-painel);
+  transition: left var(--t-assenta) var(--curva);
+}
+.relogio-curso i::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 5px;
+  width: 1px;
+  background: var(--acento-texto);
+}
+.relogio-escala:has(input:focus-visible) .relogio-curso i {
+  outline: 2px solid var(--foco);
+  outline-offset: 3px;
+}
+.relogio-escala input {
+  appearance: none;
+  opacity: 0;
+  position: relative;
+  margin: 0;
+  width: 100%;
+  height: 44px;
+  cursor: pointer;
+}
+.relogio-escala input::-webkit-slider-thumb {
+  appearance: none;
+  width: 18px;
+  height: 28px;
+}
+.relogio-escala input::-moz-range-thumb {
+  width: 18px;
+  height: 28px;
+}
+.relogio-extremos {
+  margin-top: -0.22rem;
+  color: var(--texto-2);
+  font-size: 0.68rem;
+  font-variant-numeric: tabular-nums;
+}
+.relogio-sentido {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 1px solid var(--borda-forte);
+  border-radius: var(--raio-controle);
+  overflow: hidden;
+  margin-top: 0.85rem;
+}
+.relogio-sentido button {
+  border-radius: 0;
+  font-size: 0.83rem;
+}
+.relogio-sentido button + button {
+  border-left: 1px solid var(--borda-forte);
+}
+.relogio-sentido button + button svg {
+  transform: rotate(180deg);
+}
+.relogio-sentido [aria-pressed='true'] {
+  background: var(--acento-fundo);
+  color: var(--acento);
+}
+.relogio-epoca {
+  color: var(--texto-2) !important;
+  width: 100%;
+  margin-top: 0.2rem;
+  border-radius: var(--raio-controle);
+}
+.relogio-referencias {
+  display: flex;
+  border-top: 1px solid var(--borda);
+  margin-top: 0.4rem;
+}
+.relogio-referencias button {
+  flex: 1;
+  width: auto;
+  margin: 0;
+  padding: 0 0.15rem;
+  font-size: 0.76rem;
+  justify-content: center !important;
+}
+/* NA FOLHA DO TELEFONE o relógio perde a moldura (a folha já é o painel),
+   e o painel da velocidade volta ao fluxo, sempre aberto. */
+.atlas-gaveta .relogio {
+  width: 100%;
+  background: none;
+  box-shadow: none;
+  border: 0;
+}
+.atlas-gaveta .relogio-leitura {
+  padding: 0.25rem 0 0.75rem;
+}
+.atlas-gaveta .relogio-extras {
+  position: static;
+  background: none;
+  border: 0 !important;
+  border-radius: 0;
+}
+.atlas-gaveta .relogio-painel {
+  box-shadow: none;
+  position: static;
+  border: 0;
+  border-top: 1px solid var(--borda);
+  border-radius: 0;
+  padding: 0.85rem 0 0;
+}
+.atlas-gaveta .relogio-hora time {
+  font-size: 2rem;
+}
+.atlas-gaveta .relogio-hora .relogio-dia {
+  font-size: 1.55rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .relogio-segundeiro {
+    display: none;
+  }
 }
 
 /* a gaveta de camadas: mesmo desenho do painel de Ajustes — é o mesmo
@@ -1581,7 +1601,7 @@
      vezes, e agora é dos quatro diálogos. */
 }
 /* O CABEÇALHO da gaveta (Camadas e Tempo) é `CabecalhoDoPainel` (Lote
-   2a/2b) — `.atlas-gaveta-topo`/`.atlas-tempo-topo` (as peças próprias
+   2a/2b) — `.atlas-gaveta-topo` e o topo antigo do tempo (as peças próprias
    de antes) saíram com ele. */
 .atlas-camadas .atlas-gaveta-familia {
   border-top: 1px solid var(--borda);

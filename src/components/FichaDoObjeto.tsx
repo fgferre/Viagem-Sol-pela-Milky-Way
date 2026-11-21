@@ -31,11 +31,11 @@
 //
 // E O "AGORA" RELÊ NO `onTempo`, nunca no laço de quadro (anti-padrão 3 do
 // `docs/NORTE.md`): o `jd` chega por prop, na cadência do mostrador da máquina
-// do tempo. Desde 24/08 essa cadência é o MINUTO enquanto o relógio anda ao
-// vivo (era 4 Hz — ver `mesmoMostrador`), que é a mesma resolução da data na
-// tela: o "AGORA" da ficha e o relógio do rodapé deixaram de contar minutos
-// diferentes. Na viagem em degrau rápido ela continua rápida, porque ali a
-// data realmente muda.
+// do tempo — a mesma do relógio do rodapé, então a ficha e o relógio nunca
+// contam instantes diferentes. Desde o relógio de 20/11 essa cadência é o
+// SEGUNDO enquanto o relógio anda ao vivo (era o minuto desde 24/08, e 4 Hz
+// antes — ver `mesmoMostrador`); na viagem em degrau rápido, até 4 por
+// segundo, porque ali o que o relógio escreve muda a cada conferência.
 // ============================================================
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useDialogFocus, gatilhoDoDialogo } from '../lib/dialogFocus';

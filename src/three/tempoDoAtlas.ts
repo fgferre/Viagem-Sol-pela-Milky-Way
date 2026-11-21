@@ -2,7 +2,8 @@
 // A MÁQUINA DO TEMPO do Atlas — a parte PURA (Onda 5, decisão D2).
 //
 // Aqui moram a escada de taxas, a janela da tabela embarcada, o
-// grampo, a leitura da porta `?jd=` e os dois formatadores em pt-BR.
+// grampo, a leitura da porta `?jd=`, o instante por extenso e a conta do
+// que o relógio do Atlas escreve (`instanteDoMostrador`).
 // O Director é o dono do `jd`; este módulo é o que ele consulta para
 // saber o que a escada oferece e o que o HUD deve dizer.
 //
@@ -11,7 +12,7 @@
 // envelhece calada e em que ninguém consegue dizer por que 30 min/s
 // existe e 45 não. Aqui a escada é uma ESCALA LOG CONTÍNUA amostrada:
 // `taxa(i) = 10^i` segundos de céu por segundo de relógio, oito
-// degraus, e o rótulo é DERIVADO do número por um formatador. Degrau
+// degraus, e o rótulo é DERIVADO do número (o relógio, HudDoAtlas.tsx). Degrau
 // novo é mudar um `8`; rótulo novo não existe, porque rótulo não é
 // dado.
 //
@@ -133,7 +134,7 @@ export function lerPortaJd(valor: string | null | undefined, jdDaEpoca: number):
   return Number.isFinite(numero) ? numero : null;
 }
 
-// ---- os dois formatadores, em pt-BR --------------------------------
+// ---- os números e o instante, na língua do app ---------------------
 
 /**
  * O NOME DO MÊS vem do dicionário (item 130): `tempo.mes.0`…`tempo.mes.11`.
@@ -171,35 +172,28 @@ export function numeroDoIdioma(v: number): string {
   return inteiro!.replace(/\B(?=(\d{3})+$)/g, idiomaAtual() === 'en' ? ',' : '.') + resto;
 }
 
-const UNIDADES: readonly [number, ChaveDeTexto, ChaveDeTexto][] = [
-  [1, 'tempo.segundo', 'tempo.segundos'],
-  [60, 'tempo.minuto', 'tempo.minutos'],
-  [3600, 'tempo.hora', 'tempo.horas'],
-  [86400, 'tempo.dia', 'tempo.dias'],
-  [86400 * 365.25, 'tempo.ano', 'tempo.anos'],
+/** as quatro unidades da régua do relógio: o símbolo curto e o nome por extenso */
+const UNIDADES: readonly [number, string, ChaveDeTexto, ChaveDeTexto][] = [
+  [86400, 'd', 'tempo.dia', 'tempo.dias'],
+  [3600, 'h', 'tempo.hora', 'tempo.horas'],
+  [60, 'min', 'tempo.minuto', 'tempo.minutos'],
+  [1, 's', 'tempo.segundo', 'tempo.segundos'],
 ];
 
 /**
- * O RÓTULO DA TAXA, derivado do número. Escolhe a maior unidade em que
- * o valor ainda é ≥ 1 e escreve "X <unidade> por segundo"; o tempo real
- * tem nome próprio porque "1 segundo por segundo" é uma charada, não
- * uma informação.
- *
- * Plural a partir de 2 (em pt-BR "1,5 dia" é singular e "2,8 horas" é
- * plural) — a mesma regra que a casa usa ao falar de distância.
+ * A TAXA DO DEGRAU, derivada do número: "1,2 d" curto (a régua e o
+ * mostrador), ou "1,2 dia" / "1.2 days" por extenso (o painel e o leitor
+ * de tela). A maior unidade em que o valor ainda é ≥ 1. Plural: em pt-BR
+ * a partir de 2 ("1,5 dia"), em inglês fora do 1 exato ("1.2 days").
  */
-export function formatarTaxa(segPorSeg: number): string {
-  if (!Number.isFinite(segPorSeg) || segPorSeg <= 0) return t('tempo.parado');
-  if (segPorSeg === 1) return t('tempo.tempoReal');
-  let escolhida = UNIDADES[0];
-  for (const u of UNIDADES) {
-    if (segPorSeg >= u[0]) escolhida = u;
-  }
-  const valor = segPorSeg / escolhida[0];
-  return t('tempo.taxa', {
-    valor: numeroDoIdioma(valor),
-    unidade: t(valor >= 2 ? escolhida[2] : escolhida[1]),
-  });
+export function formatarEtapa(degrau: number, porExtenso = false): string {
+  const taxa = taxaDoDegrau(degrau);
+  const [divisor, simbolo, um, varios] = UNIDADES.find(([d]) => taxa >= d) ?? UNIDADES[3];
+  const valor = taxa / divisor;
+  const numero = numeroDoIdioma(valor);
+  if (!porExtenso) return `${numero} ${simbolo}`;
+  const singular = idiomaAtual() === 'en' ? numero === '1' : valor < 2;
+  return `${numero} ${t(singular ? um : varios)}`;
 }
 
 /**
@@ -233,8 +227,6 @@ export interface EstadoDoTempo {
   data: string;
   /** índice do degrau na escada */
   degrau: number;
-  /** o rótulo da taxa do degrau */
-  taxa: string;
   sentido: SentidoDoTempo;
   /** o relógio segue o tempo real do visitante */
   aoVivo: boolean;
@@ -261,6 +253,11 @@ export interface EstadoDoTempo {
  * 16,7 ms/s com ela aberta, ~3,5 ms por publicação — o re-render do App
  * inteiro, que no M1 divide a thread com o WebGL.
  *
+ * DESDE O RELÓGIO NOVO (20/11) a comparação é a do que ELE escreve
+ * (`instanteDoMostrador`): ao vivo isso é o segundo, então o ao vivo fala
+ * uma vez por segundo; na viagem rápida, o minuto. O teto de 4 por segundo
+ * continua sendo a amostragem da máquina (`PASSO_DO_MOSTRADOR_S`).
+ *
  * QUEM PRECISA DO `jd` EXATO não o recebe empurrado: lê `director.tempo` na
  * hora do gesto. É o caso do `?jd=` do "copiar link" (`useEspelhoDaUrl`),
  * que assim passou a sair EXATO em vez de até 250 ms atrasado.
@@ -271,14 +268,49 @@ export interface EstadoDoTempo {
  */
 export function mesmoMostrador(a: EstadoDoTempo, b: EstadoDoTempo): boolean {
   return (
-    a.data === b.data
+    instanteDoMostrador(a) === instanteDoMostrador(b)
+    && a.data === b.data
     && a.degrau === b.degrau
-    && a.taxa === b.taxa
     && a.sentido === b.sentido
     && a.aoVivo === b.aoVivo
     && a.naEpoca === b.naEpoca
     && a.aviso === b.aviso
   );
+}
+
+/**
+ * O QUE O RELÓGIO DO ATLAS ESCREVE (o relógio aprovado em 20/11): segundos
+ * ao vivo, parado e nos degraus lentos; minutos a partir de 1.000 s/s, onde
+ * os segundos virariam borrão; a DATA quando o céu anda dias por segundo
+ * (com a hora e o minuto ao lado). Uma conta só, lida pelo relógio, pela
+ * alça do telefone e por `mesmoMostrador` — a publicação fala exatamente
+ * quando o que está escrito na tela muda.
+ */
+export type RegimeDoMostrador = 'segundos' | 'minutos' | 'data';
+
+/** o primeiro degrau em que o relógio deixa de escrever os segundos */
+const DEGRAU_DOS_MINUTOS = 3;
+
+export function regimeDoMostrador(
+  e: Pick<EstadoDoTempo, 'aoVivo' | 'sentido' | 'degrau'>
+): RegimeDoMostrador {
+  if (e.aoVivo || e.sentido === 0) return 'segundos';
+  if (taxaDoDegrau(e.degrau) >= 86400) return 'data';
+  return e.degrau >= DEGRAU_DOS_MINUTOS ? 'minutos' : 'segundos';
+}
+
+/** o instante civil (UTC) do mostrador, arredondado ao segundo */
+export function instanteCivil(jd: number): Date {
+  return new Date(Math.round(tdbToDate(jd).getTime() / 1000) * 1000);
+}
+
+/**
+ * O instante na resolução que o relógio escreve, em ISO UTC: até o segundo
+ * (`2026-11-20T22:56:54`) ou até o minuto (`2026-11-20T22:56`).
+ */
+export function instanteDoMostrador(e: EstadoDoTempo): string {
+  const iso = instanteCivil(e.jd).toISOString();
+  return iso.slice(0, regimeDoMostrador(e) === 'segundos' ? 19 : 16);
 }
 
 /** De onde vem a efeméride agora — o que decide o aviso. */
@@ -331,7 +363,6 @@ export function estadoDoTempo(entrada: {
     jd,
     data: formatarInstante(jd),
     degrau: degrauValido(entrada.degrau),
-    taxa: formatarTaxa(taxaDoDegrau(entrada.degrau)),
     sentido: entrada.sentido,
     aoVivo: entrada.aoVivo,
     naEpoca: jd === entrada.jdDaEpoca,

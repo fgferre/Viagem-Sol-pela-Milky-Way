@@ -158,7 +158,7 @@ const MEDIR_QUEBRAS = `(() => {
   const W = window.innerWidth;
   const H = window.innerHeight;
   const alvos = [
-    '.controls-bar', '.atlas-ficha', '.atlas-selo', '.atlas-tempo',
+    '.controls-bar', '.atlas-ficha', '.atlas-selo', '.atlas-rodape .relogio',
     '.free-hint', '.ajustes', '.atlas-gaveta', '.progress-wrap', '.dest-line',
   ];
   const pecas = [];
@@ -767,47 +767,38 @@ async function julgarCliqueDeVerdade(s, onde) {
  * UM CLIQUE REAL POR CDP (`Input.dispatchMouseEvent`, dentro de
  * `s.clicar`), não `.click()` em JS — é a diferença que a prova de cima
  * mede, aqui aplicada ao caso exato que a abriu: um botão da máquina do
- * tempo do RODAPÉ da mesa. O de "pausar" nasce DESABILITADO (o Atlas
- * abre no retrato, parado, não ao vivo) e "voltar"/"avançar" podem
- * bater NA PAREDE do fim da tabela de efeméride — aí o pedido "não
- * acontece" por desenho (item 115, `andarNoTempo`) e `aria-pressed`
- * fica em `false` de propósito, o que faria esta prova mentir. O AO
- * VIVO é o único alternador incondicional (`alternarAoVivo` não olha
- * parede nenhuma): um clique inverte `aria-pressed` sempre.
+ * tempo do RODAPÉ da mesa. Desde o relógio de 20/11 o alvo é o ▶/⏸,
+ * que está sempre à vista e é um alternador incondicional longe das
+ * bordas da tabela: andando (ou ao vivo) ele pausa, pausado ele retoma.
+ * O sinal lido é o `data-tipo` do relógio (`vivo`/`viagem` → `pausa` e
+ * de volta), que não depende da língua.
  */
 async function julgarCliqueRealNoTempo(s) {
-  // A LINHA NASCE RECOLHIDA (item A1.1, relatório de UI de 09/09) — só
-  // "INSTANTE DO CÉU + data" e o "▸" ficam na tela até alguém abrir; os
-  // seis controles (e o "Ao vivo" que este clique real testa) só entram
-  // no DOM depois. Abrir é PRECONDIÇÃO desta prova, não o que ela mede —
-  // por isso um `.click()` de JS, não `s.clicar` (a diferença de CDP é o
-  // que o clique de baixo, no "Ao vivo", precisa provar).
-  await s.js(`(() => {
-    const alt = document.querySelector('.atlas-rodape .atlas-tempo-alternar');
-    if (alt && alt.getAttribute('aria-expanded') !== 'true') alt.click();
-  })()`);
-  await dorme(100);
   const pegar = `(() => {
-    const g = document.querySelectorAll('.atlas-rodape .atlas-tempo-botoes .ajustes-seg')[2];
-    const b = g ? g.querySelectorAll('button')[0] : null;
+    const r = document.querySelector('.atlas-rodape .relogio');
+    const b = r ? r.querySelector('.relogio-play') : null;
     if (!b) return null;
-    const r = b.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2, pressed: b.getAttribute('aria-pressed') };
+    const q = b.getBoundingClientRect();
+    return { x: q.left + q.width / 2, y: q.top + q.height / 2, tipo: r.dataset.tipo };
   })()`;
   const antes = await s.js(pegar);
   if (!antes) {
-    conferir(false, 'clique real na mesa: o botão "Ao vivo" da máquina do tempo não foi achado no rodapé');
+    conferir(false, 'clique real na mesa: o ▶/⏸ do relógio do Atlas não foi achado no rodapé');
     return;
   }
   await s.clicar(antes.x, antes.y);
   await dorme(150);
-  const depois = await s.js(pegar);
-  conferir(
-    antes.pressed === 'false' && depois && depois.pressed === 'true',
-    `clique real na mesa: aria-pressed do botão "Ao vivo" ${antes.pressed} → ${depois && depois.pressed}`
-  );
-  // devolve ao estado de antes, para não vazar "ao vivo" às provas seguintes
+  const meio = await s.js(pegar);
   await s.clicar(antes.x, antes.y);
+  await dorme(150);
+  const depois = await s.js(pegar);
+  const andando = (tipo) => tipo === 'vivo' || tipo === 'viagem';
+  conferir(
+    meio && depois && andando(antes.tipo) !== andando(meio.tipo) && andando(depois.tipo) === andando(antes.tipo),
+    `clique real na mesa: o ▶/⏸ do relógio alterna ${antes.tipo} → ${meio && meio.tipo} → ${depois && depois.tipo}`
+  );
+  // devolve ao estado de antes, para não vazar "viagem" às provas seguintes
+  if (antes.tipo === 'vivo') await s.js('window.__director.voltarAoPresente()');
   await dorme(150);
 }
 
@@ -2419,8 +2410,13 @@ async function medirCobertura(s, quando, cobra = true, fatorUi = 1) {
       // A área que a ficha ocupa tem prova PRÓPRIA: julgarAreaDaFicha.
       '.controls-bar', '.atlas-selo', '.free-hint',
       // a máquina do tempo entrou na base pela F4: sem esta linha o
-      // juiz mediria um HUD que não é mais o que está na tela
-      '.atlas-tempo',
+      // juiz mediria um HUD que não é mais o que está na tela. Desde
+      // 20/11 é o relógio do Atlas, FECHADO: a leitura e, quando pausado,
+      // a faixa "Voltar ao presente" de pé em cima dela (.relogio-extras,
+      // que mede zero ao vivo e o medidor descarta). O painel da
+      // velocidade aberto é painel do visitante, como a ficha: o juízo
+      // roda com ele fechado.
+      '.atlas-rodape .relogio', '.atlas-rodape .relogio-extras',
       // A FILEIRA DE ALÇAS (item 62): a base do TELEFONE. Ela não existe
       // acima de 760 px, e o medidor devolve nulo para quem não está no
       // DOM — a mesma linha serve os dois arranjos.
@@ -2682,7 +2678,7 @@ async function julgarEscalaDaUi(s) {
     // `matchMedia` do `useCelular` só troca o DOM (`.atlas-alcas`) num
     // re-render — um `tick` depois. A 600 px (zoom 200%) essa janela
     // pegava a MESA ainda desenhada (barra larga, sem quebra, e
-    // `.atlas-tempo` do rodapé ainda visível porque o CSS que o esconde
+    // o relógio do rodapé ainda visível porque o CSS que o esconde
     // é `:has(.atlas-alcas)`), numa tela de 450 px de altura — e as duas
     // caixas se atropelavam. Antes do Lote 4 a barra de mesa era estreita
     // o bastante para não alcançar o rodapé nessa mesma janela de

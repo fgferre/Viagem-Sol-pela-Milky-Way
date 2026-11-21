@@ -296,12 +296,12 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     // (ui = …, 1200 px de largura)"), não recalculados aqui — é o
     // navegador que mede, este teste só cobra a folga sobre o medido.
     const MEDIDO = [
-      { ui: 0.85, topo: 0.067, base: 0.155 },
-      { ui: 1, topo: 0.079, base: 0.183 },
-      // base remedida em 09/09 (1.200×813): o rodapé cabe numa fileira a
-      // `ui = 1,4` desde o orçamento novo (`max(46vw, min(63vw, 30rem))`);
-      // era 0,342 em duas linhas
-      { ui: 1.4, topo: 0.11, base: 0.254 },
+      // BASE REMEDIDA para o relógio de 20/11 (1.200×813, o pior estado
+      // fechado — pausado, com "Voltar ao presente" de pé; ver
+      // `TEMPO_FRACAO` em retanguloDoAtlas.ts)
+      { ui: 0.85, topo: 0.067, base: 0.158 },
+      { ui: 1, topo: 0.079, base: 0.174 },
+      { ui: 1.4, topo: 0.11, base: 0.221 },
     ];
     // O TETO CRESCEU (era 0,06): o degrau da barra quebrada agora é
     // declarado por UM limiar generoso o bastante para cobrir o pior
@@ -340,12 +340,8 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     const contextoFracao = semDegrau.topo;
     const tempoFracao = semDegrau.base;
     expect(comDegrau.topo - semDegrau.topo).toBeCloseTo(0.065, 12);
-    // e a BASE também anda: a linha dos controles do tempo quebra em
-    // duas abaixo de 750 px por unidade de ui (até 08/09 era 1.060).
-    // 09/09: em qualquer largura de mesa o rodapé cabe numa fileira a
-    // `ui = 1` (63vw), então a 900 px o degrau da barra do tempo NÃO
-    // entra; ele só entra quando o texto cresce (abaixo) — ver
-    // LARGURA_DA_QUEBRA_DO_TEMPO_PX (750 por unidade de `ui`) em retanguloDoAtlas.ts.
+    // e a BASE NÃO anda: o relógio do Atlas (20/11) tem largura própria e
+    // não quebra em largura nenhuma de mesa — ver `TEMPO_FRACAO`.
     expect(comDegrau.base - semDegrau.base).toBeCloseTo(0, 12);
     // o degrau a 1.200 px cai em ui = 1.200 / 920 = 1,3043 — a declaração
     // usa o limiar POR INTEIRO (`LARGURA_DA_QUEBRA_PX`, remedido no Lote
@@ -359,22 +355,10 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
       contextoFracao * 1.31 + 0.065,
       12
     );
-    // A TERCEIRA LINHA DA MÁQUINA DO TEMPO é o mesmo fenômeno um degrau
-    // adiante: com ui = 1,4 os controles cabem em duas linhas a 980 e
-    // 1.000 px e vão para três a 940 — o degrau vive entre 940 e 980 px
-    // por 1,4 de ui. Limiar no topo da faixa (714), o lado seguro.
-    // CONSERTO 1 (07/09): `TEMPO_QUEBRADO_FRACAO`/`TEMPO_EM_TRES_LINHAS_FRACAO`
-    // ficam em 0,11/0,10 — derivam do mesmo retângulo, não são escolha.
-    // a terceira linha não existe mais (09/09): com texto grande a barra
-    // quebra em DUAS linhas, na faixa estreita ou na larga
-    expect(retanguloUtilDoAtlas(1.4, 900).base).toBeCloseTo(
-      tempoFracao * 1.4 + 0.11,
-      12
-    );
-    expect(retanguloUtilDoAtlas(1.4, 1000).base).toBeCloseTo(
-      tempoFracao * 1.4 + 0.11,
-      12
-    );
+    // nem com texto grande: o relógio cresce com `ui`, mas numa linha só
+    // (a 2ª linha da barra antiga, +0,11, saiu com ela em 20/11)
+    expect(retanguloUtilDoAtlas(1.4, 900).base).toBeCloseTo(tempoFracao * 1.4, 12);
+    expect(retanguloUtilDoAtlas(1.4, 1000).base).toBeCloseTo(tempoFracao * 1.4, 12);
     // e a 1.800 px (a janela das vistas oficiais) com ui = 1 nenhum dos
     // dois degraus existe: TOPO e BASE são os de sempre. `direita` NÃO
     // entra nesta comparação desde o Lote 4½: a régua de abas é `px`
@@ -409,9 +393,8 @@ describe('enquadrar — o retângulo útil desconta o HUD', () => {
     expect(celular.topo).toBeCloseTo(0.086 + 0.065, 12);
     expect(celular.base).toBeCloseTo(0.11, 12);
     // ...e a conta de mesa nessa largura é a que ela sempre foi: a barra
-    // quebrada em cima, a primeira quebra da máquina do tempo embaixo (a
-    // segunda só entra abaixo de 714 px). CONSERTO 1 (07/09): 0,09 + 0,065
-    // e 0,19 + 0,11 — deriva do mesmo retângulo do teste anterior.
+    // quebrada em cima (CONSERTO 1, 07/09: 0,09 + 0,065) e o relógio
+    // embaixo, que não quebra — deriva do mesmo retângulo do teste anterior.
     expect(mesa.topo).toBeCloseTo(0.09 + 0.065, 12);
     // 09/09: a 761 px o rodapé da mesa já cabe numa fileira (63vw) — sem degrau
     expect(mesa.base).toBeCloseTo(0.19, 12);

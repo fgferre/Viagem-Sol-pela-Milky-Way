@@ -1107,7 +1107,7 @@ const maquina = readFileSync(
     // a D8 continua inteira, com o fio pinado dos DOIS lados
     for (const metodo of [
       'andarNoTempo(sentido: SentidoDoTempo)',
-      'ciclarDegrau(): number',
+      'escolherDegrau(n: number): number',
       'alternarAoVivo()',
       'voltarAEpoca()',
     ]) {

@@ -239,8 +239,7 @@
   }
   /* O RÓTULO (item 7): `clamp(11px, 3,2vw, 11px × ui)` — o piso do §2
      item 2 (11 px é o mínimo de "eyebrows"), um termo FLUIDO que cede
-     largura antes de a grade ceder (a mesma disciplina de
-     `atlas-tempo-taxa-seg`), e o teto de sempre pelo `?ui=`. Escrito em
+     largura antes de a grade ceder, e o teto de sempre pelo `?ui=`. Escrito em
      `rem` com o termo `vw` multiplicado por `var(--ui)` — a mesma régua
      que `uiScale.test.ts` cobra de todo `font-size` do HUD (nada aqui é
      exceção só por morar numa alça). NO BOTÃO INTEIRO, não só no rótulo
@@ -258,6 +257,35 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+  /* A ALÇA DO TEMPO DIZ O ESTADO E O INSTANTE (relógio aprovado em 20/11):
+     ícone pequeno e estado na primeira linha, o instante embaixo — a cor
+     é a do estado (verde ao vivo, âmbar no resto), como no relógio. */
+  .atlas-alcas > .hud-btn.alca-tempo {
+    display: grid;
+    grid-template-columns: auto auto;
+    align-content: center;
+    justify-content: center;
+    align-items: center;
+    gap: 2px 3px;
+    color: var(--acento);
+  }
+  .atlas-alcas > .hud-btn.alca-tempo[data-tipo='vivo'] {
+    color: var(--ok);
+  }
+  .atlas-alcas > .hud-btn.alca-tempo svg {
+    width: 11px;
+    height: 11px;
+  }
+  .alca-tempo-estado {
+    font-weight: 500;
+  }
+  .alca-tempo-instante {
+    grid-column: 1 / -1;
+    font-size: 1.1em;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    color: var(--texto);
   }
 
   /* ---- O QUE SAI DA TELA PARA DAR LUGAR ------------------------------
@@ -442,11 +470,11 @@
 
   /* A MÁQUINA DO TEMPO PERMANENTE SAI DO RODAPÉ — ela virou a alça ⏱
      Tempo (resposta do dono nos mockups: *"3) vira alça"*). O seletor
-     nomeia o RODAPÉ de propósito: a mesma `BarraDoTempo`, a MESMA peça,
-     continua desenhada dentro da gaveta `tempo`, e um `.atlas-tempo`
-     solto apagaria as duas. Na mesa nada muda — `TEMPO_FRACAO` segue
+     nomeia o RODAPÉ de propósito: o mesmo `Relogio`, a MESMA peça,
+     continua desenhado dentro da gaveta `tempo`, e um `.relogio` solto
+     apagaria os dois. Na mesa nada muda — `TEMPO_FRACAO` segue
      governando a base declarada a partir de 761 px. */
-  .hud-root:has(.atlas-alcas) .atlas-rodape .atlas-tempo {
+  .hud-root:has(.atlas-alcas) .atlas-rodape .relogio {
     display: none;
   }
 
