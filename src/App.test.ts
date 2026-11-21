@@ -151,6 +151,10 @@ describe('a reserva dos rótulos cobre o HUD fixo (item 56)', () => {
     }
   });
 
+  it('o painel do relógio, que SOBE do rodapé, também reserva — só no rodapé (A3)', () => {
+    expect(LISTA).toContain("'.atlas-rodape .relogio-extras'");
+  });
+
   it('da barra reserva os CONTROLES, nunca a caixa com o vão da quebra', () => {
     expect(LISTA).toContain("'.controls-bar > *'");
     // a caixa sozinha apagava nome a 290 px do botão mais próximo

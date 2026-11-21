@@ -30,7 +30,6 @@
 import { tdbToDate } from '../lib/atlas/time';
 import { decimalDoIdioma, idiomaAtual, t } from '../lib/idioma';
 import type { ChaveDeTexto } from '../lib/idioma';
-import { PT } from '../lib/idioma/pt';
 
 // ---- a escada -----------------------------------------------------
 
@@ -233,11 +232,12 @@ export interface EstadoDoTempo {
   /** o instante mostrado é o do retrato congelado */
   naEpoca: boolean;
   /**
-   * O AVISO HONESTO, ou string vazia. É aqui que a máquina do tempo
-   * conta o que não pode fazer: a tabela embarcada acabou, ou ela nem
-   * chegou (sem rede) e o que está na tela é o retrato de sempre.
+   * O AVISO HONESTO, como CÓDIGO, ou `''` (sem aviso). É aqui que a
+   * máquina do tempo conta o que não pode fazer: a tabela embarcada
+   * acabou, ou ela nem chegou (sem rede) e o que está na tela é o
+   * retrato de sempre. A tela traduz ao desenhar (`textosDoAviso`).
    */
-  aviso: string;
+  aviso: AvisoDoTempo;
 }
 
 /**
@@ -317,18 +317,30 @@ export function instanteDoMostrador(e: EstadoDoTempo): string {
 export type FaseDaEfemeride = 'retrato' | 'buscando' | 'viva' | 'indisponivel';
 
 /**
- * OS TRÊS AVISOS EM pt-BR — o valor que as guardas comparam, tirado do
- * dicionário para não haver duas redações da mesma frase. A TELA não lê
- * daqui: `estadoDoTempo` monta o aviso com `t()`, na língua de agora
- * (item 130). Em pt-BR os dois caminhos dão a MESMA string, que é o que
- * mantém as guardas de sempre medindo o que sempre mediram.
+ * O AVISO É CÓDIGO, NÃO TEXTO (A2, rodada 3): a máquina publica o que
+ * aconteceu e a tela traduz ao desenhar. Texto pronto congelava na
+ * língua da publicação — trocar a língua com o relógio parado deixava a
+ * faixa na língua velha e o rótulo errado até o próximo gesto.
  */
-export const AVISO_SEM_EFEMERIDE = PT['tempo.semEfemeride'];
-export const AVISO_BUSCANDO = PT['tempo.buscando'];
-export const AVISO_FORA_DA_JANELA = PT['tempo.foraDaJanela'].replace(
-  '{anos}',
-  ANOS_DA_JANELA
-);
+export type AvisoDoTempo = '' | 'semEfemeride' | 'buscando' | 'limite';
+
+/**
+ * O RÓTULO E A FAIXA DE UM AVISO, na língua de AGORA — lidos a cada
+ * desenho, então a troca de língua chega sem ninguém republicar.
+ * Sem aviso, `null`: o rótulo é o do relógio (ao vivo, pausado…).
+ */
+export function textosDoAviso(aviso: AvisoDoTempo): { rotulo: string; faixa: string } | null {
+  switch (aviso) {
+    case 'semEfemeride':
+      return { rotulo: t('relogio.retrato'), faixa: t('tempo.semEfemeride') };
+    case 'buscando':
+      return { rotulo: t('relogio.carregando'), faixa: t('tempo.buscando') };
+    case 'limite':
+      return { rotulo: t('relogio.limite'), faixa: t('tempo.foraDaJanela', { anos: ANOS_DA_JANELA }) };
+    case '':
+      return null;
+  }
+}
 
 /**
  * O ESTADO COMPLETO, puro — a mesma conta que o teste julga e que o
@@ -351,13 +363,13 @@ export function estadoDoTempo(entrada: {
   naParede?: boolean;
 }): EstadoDoTempo {
   const jd = grampearJd(entrada.jdPedido);
-  const aviso =
+  const aviso: AvisoDoTempo =
     entrada.efemeride === 'indisponivel'
-      ? t('tempo.semEfemeride')
+      ? 'semEfemeride'
       : entrada.efemeride === 'buscando'
-        ? t('tempo.buscando')
+        ? 'buscando'
         : entrada.naParede === true || foraDaJanela(entrada.jdPedido)
-          ? t('tempo.foraDaJanela', { anos: ANOS_DA_JANELA })
+          ? 'limite'
           : '';
   return {
     jd,

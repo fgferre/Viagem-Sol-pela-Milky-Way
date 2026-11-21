@@ -239,7 +239,7 @@ export function FichaDoObjeto({
     secoes: readonly IdDeSecao[];
   } | null>(null);
   const [introducaoExpandida, setIntroducaoExpandida] = useState<string | null>(null);
-  const alvo = corpoId ?? estrelaEmFoco;
+  const alvo = corpoId ?? (lugar ? `lugar:${lugar.id}` : estrelaEmFoco);
   const escolhidas = abertas && abertas.corpo === alvo ? abertas.secoes : null;
   // A CONFIRMAÇÃO DA ESCOLHA (C3b, reaudit) — o ID ESTÁVEL do alvo, nunca
   // o nome/classe traduzidos: trocar de idioma muda o TEXTO sem trocar de

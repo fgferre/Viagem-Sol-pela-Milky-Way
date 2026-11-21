@@ -167,6 +167,12 @@ const AREAS_RESERVADAS = [
   // quem olha — a mesma razão das tarjas. Fechada, o seletor não casa
   // com nada e não reserva nada.
   '.atlas-selo-detalhe',
+  // O PAINEL DO RELÓGIO (A3, rodada 3) pela mesma razão: `.relogio-extras`
+  // é `absolute` e SOBE do rodapé, com a velocidade aberta ou o cartão
+  // "Voltar ao presente". Fechado e ao vivo tem altura 0 e não reserva.
+  // O escopo do rodapé é de propósito: na folha do telefone o relógio se
+  // move por animação e já mora dentro do `[data-dialogo]` reservado.
+  '.atlas-rodape .relogio-extras',
   // A BÚSSOLA (item 102): botão redondo preso na borda direita, à meia
   // altura — bem no meio da faixa em que os rótulos de estrela vivem.
   // Apagada ela tem `visibility: hidden` e retângulo de largura cheia,

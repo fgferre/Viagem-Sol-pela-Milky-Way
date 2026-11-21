@@ -13,7 +13,7 @@
 // ============================================================
 import { describe, expect, it, vi } from 'vitest';
 import { MaquinaDoTempo } from './maquinaDoTempo';
-import { AVISO_FORA_DA_JANELA, DEGRAUS_DE_TEMPO, JANELA_EFEMERIDES } from '../tempoDoAtlas';
+import { DEGRAUS_DE_TEMPO, JANELA_EFEMERIDES } from '../tempoDoAtlas';
 import type { EstadoDoTempo } from '../tempoDoAtlas';
 
 function bancada(jdPedido: number) {
@@ -56,7 +56,7 @@ describe('a parede do tempo — o relógio assenta em vez de piscar', () => {
     // (aviso de volta, sentido 0). É exatamente o pisca-pisca.
     expect(publicados).toEqual([]);
     expect(maquina.tempo.sentido).toBe(0);
-    expect(maquina.tempo.aviso).toBe(AVISO_FORA_DA_JANELA);
+    expect(maquina.tempo.aviso).toBe('limite');
     // ...e o aperto impossível não reinicia a estabilidade da captura
     expect(contas.perturbou).toBe(0);
   });
@@ -72,7 +72,7 @@ describe('a parede do tempo — o relógio assenta em vez de piscar', () => {
 
     expect(publicados).toEqual([]);
     expect(maquina.tempo.sentido).toBe(0);
-    expect(maquina.tempo.aviso).toBe(AVISO_FORA_DA_JANELA);
+    expect(maquina.tempo.aviso).toBe('limite');
   });
 
   it('da parede do FIM, voltar continua livre — a guarda é do sentido, não da borda', () => {
@@ -144,6 +144,24 @@ describe('os gestos do relógio do Atlas (20/11) — a semântica mora na máqui
     expect(maquina.tempo).toMatchObject({ aoVivo: false, sentido: 0, degrau: 0 });
     maquina.tocarOuPausar();
     expect(maquina.tempo.sentido).toBe(1);
+  });
+
+  it('voltar à época a partir do ao vivo vai ao degrau 0 (M2)', () => {
+    const { maquina } = bancada(meio);
+    maquina.escolherDegrau(5);
+    maquina.voltarAoPresente();
+    maquina.voltarAEpoca();
+    // sem o caminho único o degrau 5 escondido pelo ao vivo reaparecia
+    expect(maquina.tempo).toMatchObject({ aoVivo: false, sentido: 0, degrau: 0 });
+  });
+
+  it('a régua a partir do ao vivo fica no degrau escolhido, numa publicação só (M2)', () => {
+    const { maquina, publicados } = bancada(meio);
+    maquina.voltarAoPresente();
+    publicados.length = 0;
+    maquina.escolherDegrau(5);
+    // UMA publicação, já no degrau 5 — nada de um quadro em 1× antes
+    expect(publicados.map((e) => [e.aoVivo, e.degrau])).toEqual([[false, 5]]);
   });
 
   it('ao vivo, um degrau acima do real sai andando para a frente; um sentido parte do degrau 0', () => {

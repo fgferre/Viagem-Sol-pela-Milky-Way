@@ -38,6 +38,7 @@ import {
   numeroDoIdioma,
   regimeDoMostrador,
   taxaDoDegrau,
+  textosDoAviso,
 } from '../three/tempoDoAtlas';
 
 /**
@@ -641,24 +642,22 @@ function leituraDoRelogio(tempo: EstadoDoTempo) {
     idiomaAtual() === 'en' ? String(civil.getUTCDate()) : String(civil.getUTCDate()).padStart(2, '0');
   const mes = t(`tempo.mes.${civil.getUTCMonth()}` as ChaveDeTexto).slice(0, 3);
   const dataCurta = t('relogio.dataCurta', { dia, mes, ano: civil.getUTCFullYear() });
-  const estado =
-    aviso === t('tempo.semEfemeride')
-      ? t('relogio.retrato')
-      : aviso === t('tempo.buscando')
-        ? t('relogio.carregando')
-        : aviso
-          ? t('relogio.limite')
-          : aoVivo
-            ? t('relogio.aoVivo')
-            : sentido === 0
-              ? t('relogio.pausado')
-              : sentido < 0
-                ? t('relogio.recuando')
-                : t('relogio.avancando');
+  // o aviso chega como CÓDIGO e é traduzido aqui, a cada desenho (A2)
+  const textosDoAvisoAgora = textosDoAviso(aviso);
+  const estado = textosDoAvisoAgora
+    ? textosDoAvisoAgora.rotulo
+    : aoVivo
+      ? t('relogio.aoVivo')
+      : sentido === 0
+        ? t('relogio.pausado')
+        : sentido < 0
+          ? t('relogio.recuando')
+          : t('relogio.avancando');
   const tipo = aviso ? 'aviso' : aoVivo ? 'vivo' : sentido === 0 ? 'pausa' : 'viagem';
   const instanteNaAlca =
     regime === 'data' ? t('relogio.diaCurto', { dia, mes }) : iso.slice(11, regime === 'minutos' ? 16 : 19);
-  return { regime, civil, iso, dataCurta, estado, tipo, instanteNaAlca };
+  const faixaDoAviso = textosDoAvisoAgora?.faixa ?? '';
+  return { regime, civil, iso, dataCurta, estado, tipo, instanteNaAlca, faixaDoAviso };
 }
 
 /** os gestos do relógio — cada um é um método do Director */
@@ -686,8 +685,8 @@ export function Relogio({
   const tocar = useRef<HTMLButtonElement>(null);
   const caixa = useRef<HTMLElement>(null);
   const idDaRegua = useId();
-  const { aoVivo, sentido, degrau, aviso } = tempo;
-  const { regime, civil, iso, dataCurta, estado, tipo } = leituraDoRelogio(tempo);
+  const { aoVivo, sentido, degrau } = tempo;
+  const { regime, civil, iso, dataCurta, estado, tipo, faixaDoAviso } = leituraDoRelogio(tempo);
   const marcha = aoVivo || sentido !== 0;
   const nivel = aoVivo ? 0 : degrau;
   const veloz = regime !== 'segundos';
@@ -809,11 +808,12 @@ export function Relogio({
           )}
         </div>
       </div>
-      {aviso && (
-        <p className="relogio-aviso" role="status">
-          {aviso}
-        </p>
-      )}
+      {/* SEMPRE MONTADA (M4): a região viva precisa existir antes da
+          frase para o leitor de tela anunciá-la; vazia casa `:empty` e
+          não tem altura */}
+      <p className="relogio-aviso" role="status">
+        {faixaDoAviso}
+      </p>
       <div className="relogio-extras">
         <div
           className="relogio-dobra"

@@ -1336,6 +1336,11 @@
   padding: 0.3rem 1rem 0.65rem;
   font-size: 0.78rem;
 }
+/* sempre montada (é a região viva); vazia não ocupa altura — nunca
+   `display: none`, que a tiraria da árvore de acessibilidade */
+.relogio-aviso:empty {
+  padding: 0;
+}
 .relogio-agora {
   color: var(--acento) !important;
   justify-content: flex-start !important;

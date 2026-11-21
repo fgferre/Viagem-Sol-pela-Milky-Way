@@ -25,9 +25,6 @@ import { definirIdioma } from '../lib/idioma';
 import { EPOCA_ISO, EPOCA_JD_TDB } from './world/planetas/retrato2026';
 import {
   ANOS_DA_JANELA,
-  AVISO_BUSCANDO,
-  AVISO_FORA_DA_JANELA,
-  AVISO_SEM_EFEMERIDE,
   DEGRAUS_DE_TEMPO,
   JANELA_EFEMERIDES,
   PALAVRA_DA_EPOCA,
@@ -44,6 +41,7 @@ import {
   numeroDoIdioma,
   regimeDoMostrador,
   taxaDoDegrau,
+  textosDoAviso,
 } from './tempoDoAtlas';
 
 const meta = JSON.parse(
@@ -132,8 +130,8 @@ describe('3. o grampo protege o motor, e o pedido fora vira aviso', () => {
       efemeride: 'viva',
     });
     expect(e.jd).toBe(JANELA_EFEMERIDES.jdFim);
-    expect(e.aviso).toBe(AVISO_FORA_DA_JANELA);
-    expect(e.aviso).toContain(ANOS_DA_JANELA);
+    expect(e.aviso).toBe('limite');
+    expect(textosDoAviso(e.aviso)?.faixa).toContain(ANOS_DA_JANELA);
   });
 
   it('sem efeméride o aviso é o da camada congelada, e ele GANHA da janela', () => {
@@ -145,7 +143,7 @@ describe('3. o grampo protege o motor, e o pedido fora vira aviso', () => {
       aoVivo: false,
       efemeride: 'indisponivel',
     });
-    expect(e.aviso).toBe(AVISO_SEM_EFEMERIDE);
+    expect(e.aviso).toBe('semEfemeride');
   });
 
   it('enquanto busca, o aviso diz que está buscando', () => {
@@ -157,7 +155,47 @@ describe('3. o grampo protege o motor, e o pedido fora vira aviso', () => {
       aoVivo: false,
       efemeride: 'buscando',
     });
-    expect(e.aviso).toBe(AVISO_BUSCANDO);
+    expect(e.aviso).toBe('buscando');
+  });
+
+  it('o aviso é CÓDIGO: em PT e em EN a máquina publica o mesmo, e a tela traduz ao desenhar (A2)', () => {
+    const pedidos = [
+      { efemeride: 'indisponivel' as const, jdPedido: EPOCA_JD_TDB },
+      { efemeride: 'buscando' as const, jdPedido: EPOCA_JD_TDB },
+      { efemeride: 'viva' as const, jdPedido: JANELA_EFEMERIDES.jdFim + 5000 },
+      { efemeride: 'viva' as const, jdPedido: EPOCA_JD_TDB },
+    ];
+    const publicar = () =>
+      pedidos.map(
+        (p) => estadoDoTempo({ ...p, jdDaEpoca: EPOCA_JD_TDB, degrau: 0, sentido: 0, aoVivo: false }).aviso
+      );
+    const emPt = publicar();
+    expect(emPt).toEqual(['semEfemeride', 'buscando', 'limite', '']);
+    expect(textosDoAviso('')).toBeNull();
+    expect(textosDoAviso('semEfemeride')).toEqual({
+      rotulo: 'Retrato',
+      faixa: 'sem efeméride: a camada está congelada no retrato',
+    });
+    expect(textosDoAviso('buscando')).toEqual({ rotulo: 'Carregando', faixa: 'buscando a efeméride…' });
+    expect(textosDoAviso('limite')).toEqual({
+      rotulo: 'Limite',
+      faixa: `fora de ${ANOS_DA_JANELA} TDB: a tabela embarcada para aqui`,
+    });
+    definirIdioma('en');
+    try {
+      expect(publicar()).toEqual(emPt);
+      expect(textosDoAviso('semEfemeride')).toEqual({
+        rotulo: 'Portrait',
+        faixa: 'no ephemeris: the layer is frozen at the portrait',
+      });
+      expect(textosDoAviso('buscando')).toEqual({ rotulo: 'Loading', faixa: 'fetching the ephemeris…' });
+      expect(textosDoAviso('limite')).toEqual({
+        rotulo: 'Limit',
+        faixa: `outside ${ANOS_DA_JANELA} TDB: the embedded table stops here`,
+      });
+    } finally {
+      definirIdioma('pt-BR');
+    }
   });
 
   it('na época, com efeméride, não há aviso nenhum — e `naEpoca` é verdade', () => {
@@ -344,8 +382,8 @@ describe('6. mesmoMostrador cala o que já foi dito', () => {
   it('o AVISO que chega e o que sai são fala nova — a honestidade não pode calar', () => {
     const buscando = estadoDoTempo({ ...base, efemeride: 'buscando' });
     const indisponivel = estadoDoTempo({ ...base, efemeride: 'indisponivel' });
-    expect(buscando.aviso).toBe(AVISO_BUSCANDO);
-    expect(indisponivel.aviso).toBe(AVISO_SEM_EFEMERIDE);
+    expect(buscando.aviso).toBe('buscando');
+    expect(indisponivel.aviso).toBe('semEfemeride');
     expect(mesmoMostrador(em(T0), buscando)).toBe(false);
     expect(mesmoMostrador(buscando, indisponivel)).toBe(false);
     expect(mesmoMostrador(buscando, em(T0))).toBe(false);

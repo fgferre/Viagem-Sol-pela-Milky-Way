@@ -82,6 +82,14 @@ describe('o botão "Aproximar" segue só a escada', () => {
   });
 });
 
+// O ALVO DE UM LUGAR DO CÉU (M5, rodada 3): o `foco` de um lugar é o NOME
+// TRADUZIDO, então trocar a língua fechava as seções e piscava o realce.
+describe('a ficha guarda o alvo pelo id estável', () => {
+  it('o alvo de um lugar do céu é o id do lugar, não o nome traduzido', () => {
+    expect(FONTE).toContain('const alvo = corpoId ?? (lugar ? `lugar:${lugar.id}` : estrelaEmFoco);');
+  });
+});
+
 // O BOTÃO "ANÉIS" (15/11; vista do corpo desde 16/11): o anel não é um
 // lugar, é Saturno — o botão leva à vista dos anéis do corpo em foco, pelo
 // mesmo caminho do `?ver=aneis`, e some dentro dela.

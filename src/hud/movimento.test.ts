@@ -191,6 +191,14 @@ describe('5. o relógio do Atlas obedece ao movimento reduzido pelos tokens', ()
     const reduzido = /@media \(prefers-reduced-motion: reduce\) \{\s*\.relogio-segundeiro \{\s*display: none;/;
     expect(CSS).toMatch(reduzido);
   });
+
+  it('a linha do aviso do relógio é sempre montada, e vazia não tem altura (M4)', () => {
+    const hud = readFileSync(new URL('../components/HudDoAtlas.tsx', import.meta.url), 'utf8');
+    expect(hud).not.toContain('{aviso && (');
+    expect(hud).toContain('<p className="relogio-aviso" role="status">');
+    expect(corpoDaRegra('.relogio-aviso:empty')).toContain('padding: 0;');
+    expect(corpoDaRegra('.relogio-aviso:empty')).not.toContain('display: none');
+  });
 });
 
 describe('6. nenhum `transition` de transform escapa da preferência reduzida (E5)', () => {

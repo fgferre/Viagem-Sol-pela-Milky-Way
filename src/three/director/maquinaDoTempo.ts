@@ -228,13 +228,13 @@ export class MaquinaDoTempo {
     if (contraAParede(this.jdPedido, sentido)) {
       this.sentidoDoTempo = 0;
       this.naParede = true;
-      this.aoVivo = false;
+      this.sairDoAoVivo();
       this.publicarTempo();
       return;
     }
     this.sentidoDoTempo = sentido;
     this.naParede = false;
-    this.aoVivo = false;
+    this.sairDoAoVivo();
     if (sentido !== 0) this.garantirEfemerides();
     this.fios.perturbar();
     this.publicarTempo();
@@ -247,12 +247,15 @@ export class MaquinaDoTempo {
    */
   escolherDegrau(n: number): number {
     const destino = degrauValido(n);
-    const viaja = this.aoVivo && destino !== 0;
-    this.degrau = destino;
-    if (viaja) {
+    if (this.aoVivo && destino !== 0) {
+      // sai do ao vivo ANTES de escrever o degrau: sair zera, e a régua
+      // nasceria em 1×; `andarNoTempo` publica uma vez só
+      this.sairDoAoVivo();
+      this.degrau = destino;
       this.andarNoTempo(1);
       return this.degrau;
     }
+    this.degrau = destino;
     this.garantirEfemerides();
     this.fios.perturbar();
     this.publicarTempo();
@@ -267,7 +270,6 @@ export class MaquinaDoTempo {
   tocarOuPausar() {
     if (this.aoVivo || this.sentidoDoTempo !== 0) {
       this.ultimoSentido = this.sentidoDoTempo === -1 ? -1 : 1;
-      if (this.aoVivo) this.degrau = 0;
       this.andarNoTempo(0);
       return;
     }
@@ -276,7 +278,6 @@ export class MaquinaDoTempo {
 
   /** Recuar/Avançar do relógio — ao vivo, parte do degrau 0 */
   escolherSentido(sentido: -1 | 1) {
-    if (this.aoVivo) this.degrau = 0;
     this.andarNoTempo(sentido);
   }
 
@@ -292,7 +293,8 @@ export class MaquinaDoTempo {
    * conta de milissegundos aqui dentro.
    */
   alternarAoVivo() {
-    this.aoVivo = !this.aoVivo;
+    if (this.aoVivo) this.sairDoAoVivo();
+    else this.aoVivo = true;
     this.naParede = false;
     if (this.aoVivo) {
       this.sentidoDoTempo = 0;
@@ -312,10 +314,20 @@ export class MaquinaDoTempo {
     this.jdPedido = EPOCA_JD_TDB;
     this.ultimoSentido = 1;
     this.sentidoDoTempo = 0;
-    this.aoVivo = false;
+    this.sairDoAoVivo();
     this.naParede = false;
     this.fios.perturbar();
     this.publicarTempo();
+  }
+
+  /**
+   * SAIR DO AO VIVO — o caminho único (M2, rodada 3). Ao vivo a régua
+   * mostra 1× e esconde o degrau velho; quem sai do ao vivo parte do
+   * degrau 0, por qualquer gesto. Fora do ao vivo não mexe no degrau.
+   */
+  private sairDoAoVivo() {
+    if (this.aoVivo) this.degrau = 0;
+    this.aoVivo = false;
   }
 
   /**
