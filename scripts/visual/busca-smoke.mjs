@@ -759,8 +759,10 @@ try {
   const cameraDepois = await posDaCamera();
   conferir(
     // 11 desde a F2b; 13 F3; 30 F5; 36 F6; 39 F7 (+ Vesta/Palas/Hígia);
-    // 48 S3 (+ as nove luas de Saturno, 02/09)
-    nomesDosCorpos.length === 48
+    // 48 S3 (+ as nove luas de Saturno, 02/09); 89 medido em 21/11/2026
+    // (o 48 tinha ficado para trás e reprovava este check sozinho, com o
+    // clique e a câmera certos: 5,6e-16 de movimento)
+    nomesDosCorpos.length === 89
       && nomesDosCorpos.includes(depoisDoClique)
       && degrauDepois === antesDoClique
       && andou(cameraDepois, cameraAntes) < 1e-9,
