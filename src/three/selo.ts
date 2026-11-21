@@ -1126,6 +1126,11 @@ export const REGISTRO: readonly CaminhoDoSelo[] = [
   // língua sem tocar no storage do perfil.
   neutra('lang', 'língua da captura (instrumento, não ajuste de imagem)'),
   neutra('ajustes', 'abrir o painel de ajustes'),
+  // `?profundidade=invertida` (PLAN-PROFUNDIDADE.md, `core/profundidade.ts`):
+  // a profundidade invertida muda QUEM TAPA QUEM perto de uma superfície,
+  // nunca a luz de ninguém — fora desse caso a imagem é a de sempre, ponto
+  // a ponto. Não entra na linha BRILHO.
+  neutra('profundidade', 'profundidade invertida (quem tapa quem, não a luz)'),
   neutra('dbgfade', 'depuração: política de dominância'),
   neutra('dbgstar', 'depuração: projeção de Betelgeuse'),
   neutra('dbgplan', 'depuração: régua dos planetas'),
