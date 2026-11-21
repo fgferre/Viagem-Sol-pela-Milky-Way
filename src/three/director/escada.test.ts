@@ -901,4 +901,22 @@ describe('a troca de idioma reemite o foco vivo na língua nova (20/11/2026)', (
     expect(reemitido('en')).toBeNull();
     definirIdioma(antes);
   });
+
+  it('os lugares do mesmo centro (S2, a Via Láctea de cima) guardam o próprio nome, não o de Sagittarius A✱', async () => {
+    const { definirIdioma, idiomaAtual } = await import('../../lib/idioma');
+    const antes = idiomaAtual();
+    for (const id of ['s2', 'via-lactea']) {
+      definirIdioma('pt-BR');
+      const lugar = LUGARES_DA_BUSCA.find((l) => l.id === id)!;
+      const { escada, focos } = bancada();
+      escada.visitarLugar(lugar);
+      definirIdioma('en');
+      escada.reemitirFoco();
+      expect(focos.at(-1), id).toBe(lugar.nomeEn ?? lugar.nome);
+      definirIdioma('pt-BR');
+      escada.reemitirFoco();
+      expect(focos.at(-1), id).toBe(lugar.nome);
+    }
+    definirIdioma(antes);
+  });
 });

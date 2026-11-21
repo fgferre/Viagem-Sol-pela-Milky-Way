@@ -1096,12 +1096,11 @@ export class Escada {
     if (this.focoCorpoId) return nomeDoCorpo(this.focoCorpoId);
     if (this.pequeno) return this.objetoPequeno(this.pequeno.id)?.nome ?? null;
     if (!this.focoEstrela) return null;
-    // estrela tem nome de catálogo; o lugar do céu é o único que traduz
+    // estrela tem nome de catálogo; o lugar do céu é o único que traduz, e
+    // se acha pelo id: S2, a Via Láctea de cima e Sgr A✱ dividem o centro
     const nome = this.estrelaFocada ? this.estrelaFocada.nome : null;
-    const alvo = this.lugarFocado?.alvo;
-    const lugar = LUGARES_DA_BUSCA.find((l) =>
-      this.estrelaFocada ? nome === l.nome || nome === l.nomeEn : alvo?.x === l.x && alvo.y === l.y && alvo.z === l.z
-    );
+    const id = this.lugarFocado?.id;
+    const lugar = LUGARES_DA_BUSCA.find((l) => (id ? l.id === id : nome === l.nome || nome === l.nomeEn));
     return lugar ? nomeDoLugar(lugar) : nome;
   }
 

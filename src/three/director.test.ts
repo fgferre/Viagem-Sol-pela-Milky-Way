@@ -163,6 +163,22 @@ describe('a falha depois do boot chega à tela', () => {
     );
   });
 
+  // arremates da rodada 2 (20/11): a placa que cai DEPOIS dos catálogos e
+  // antes da galáxia — o init acordava e criava a galáxia, a camada WebGPU,
+  // as lâminas e os corpos sobre o contexto morto, que `desistir` já tinha
+  // passado sem soltar, e a etapa seguia andando debaixo do véu
+  it('toda parada do init e o fôlego do forno param também na sessão que desistiu', () => {
+    const init = FONTE.slice(FONTE.indexOf('  async init() {'), FONTE.indexOf("    this.setPhase('intro');"));
+    expect(init).not.toMatch(/if \(this\.disposed\) (return|\{)/);
+    expect(init.match(/if \(this\.disposed \|\| this\.desistiu\) \{\n\s*descartarCarga\(carga\);/g)?.length).toBe(1);
+    const vale = FONTE.slice(FONTE.indexOf('  private mundoAindaVale('), FONTE.indexOf('  private folego('));
+    expect(vale).toContain('!this.disposed && !this.desistiu &&');
+    // e a etapa do véu para onde a placa caiu, mesmo com o trabalhador avisando as dele
+    const rotular = FONTE.slice(FONTE.indexOf('  private rotular('), FONTE.indexOf('  private async stage('));
+    expect(rotular.indexOf('if (this.desistiu) return;')).toBeLessThan(rotular.indexOf('this.events.onStage('));
+    expect(rotular).toContain('if (this.desistiu) return;');
+  });
+
   // item 4.2: a cena morta solta o que segura, DEPOIS de o véu ter a mensagem,
   // e o boot que rejeitar por causa do aborto não troca essa mensagem
   it('desistir solta a camada WebGPU, as buscas e as cargas dos corpos sem trocar a mensagem do véu', () => {
@@ -1180,6 +1196,24 @@ describe('a troca de tier que LANÇA não prende o app (auditoria B, item 4)', (
     expect(d.trocaPedida, 'a troca ficou presa: o mesmo pedido seria ignorado para sempre').toBeNull();
     expect(publicadas).toBe(1);
     expect(descartadas).toEqual([carga]);
+  });
+});
+
+// arremates da rodada 2 (20/11): no Cinema/Alta com o gás antigo ou a
+// nebulosa desligada o atlas de 19,2 MiB ficava reservado sem leitor
+describe('o atlas da pirâmide sem leitor sai da GPU', () => {
+  it('solta fora do computador ou sem gás que leia a pirâmide; nunca com a poeira pedida', () => {
+    const inicio = FONTE.indexOf('    const tierDeComputador = ');
+    const fim = FONTE.indexOf('this.nebula.soltarAtlasOcioso();', inicio);
+    expect(inicio).toBeGreaterThan(0);
+    const regra = new Function(FONTE.slice(inicio, fim) + 'return true; } return false;');
+    const solta = (quality: string, gasLeAPiramide: boolean, piramideDesejada: string | null) =>
+      regra.call({ engine: { quality }, gasLeAPiramide, piramideDesejada }) as boolean;
+    expect(solta('cinema', true, null)).toBe(false);
+    expect(solta('alta', false, null)).toBe(true);
+    expect(solta('cinema', false, null)).toBe(true);
+    expect(solta('performance', true, null)).toBe(true);
+    expect(solta('cinema', false, 'gaia')).toBe(false);
   });
 });
 

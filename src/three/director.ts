@@ -2055,6 +2055,9 @@ export class Director {
    * `setTimeout(0)` no meio do aviso só atrasaria o rótulo.
    */
   private rotular(id: LoadStageId) {
+    // a sessão que desistiu fica na etapa em que parou: o trabalhador da
+    // carga ainda avisa as dele, e o véu diria uma etapa que não houve
+    if (this.desistiu) return;
     const stage = LOAD_STAGES.find((s) => s.id === id);
     if (stage) this.events.onStage(stage);
   }
@@ -2084,7 +2087,11 @@ export class Director {
       galactic,
       cartMode,
     } = await this.assets;
-    if (this.disposed) return;
+    // TODA parada do init olha também `desistiu` (arremates da rodada 2):
+    // a placa que caía depois dos catálogos deixava o init criar a galáxia,
+    // as lâminas e os corpos sobre o contexto morto, com a etapa andando
+    // debaixo do véu
+    if (this.disposed || this.desistiu) return;
     // as anfitriãs de exoplanetas que o catálogo não nomeia (TRAPPIST-1,
     // Kepler-186, HD 189733) entram nas nomeadas pela posição medida —
     // daqui em diante a busca, os rótulos e as fichas as conhecem
@@ -2168,7 +2175,7 @@ export class Director {
     // partículas e render targets num contexto já destruído, e essa Galaxy
     // não era disposta por ninguém. Achado de auditoria externa.
     await this.stage('dust');
-    if (this.disposed) return;
+    if (this.disposed || this.desistiu) return;
     // AS TRÊS ETAPAS PESADAS NASCEM NO WORKER (montarCarga,
     // carregamento.ts): poeira, campo acoplado e população saem da
     // thread juntos, e os rótulos `structure`/`galaxy` andam pelo aviso
@@ -2201,7 +2208,7 @@ export class Director {
       camadaQuerida: camadaWebgpuQuerida(this.cenaDaCamada()),
       aoAvancar: (etapa) => this.rotular(etapa),
     });
-    if (this.disposed) {
+    if (this.disposed || this.desistiu) {
       descartarCarga(carga);
       return;
     }
@@ -2210,10 +2217,10 @@ export class Director {
     this.galaxy = carga.galaxy;
     this.vestirGalaxia(this.galaxy);
     this.vizinhas = new GalaxiasVizinhas(await vizinhasSorteadas);
-    if (this.disposed) return;
+    if (this.disposed || this.desistiu) return;
     // congela as lâminas (estáticas) em texturas — depois do modo
     await this.stage('layers');
-    if (this.disposed) return;
+    if (this.disposed || this.desistiu) return;
     // FATIADO POR LÂMINA (Ajustes C): eram oito render targets de 1024²
     // num bloco só — a maior tarefa longa que sobrou na thread depois
     // que a carga foi para o worker, e o loader congelava nela. O
@@ -2264,7 +2271,7 @@ export class Director {
           'de suporte em traçadores jovens.'
       );
     }
-    if (this.disposed) return;
+    if (this.disposed || this.desistiu) return;
 
     // canais B/A do dust map alimentam a densidade das cascas (1 fetch
     // no lugar dos braços/warp analíticos por vértice — medido +5 ms)
@@ -2378,7 +2385,7 @@ export class Director {
     // e sob tempo virtual o stall síncrono de sempre não custa nada.
     if (!this.shotMode) {
       await this.stage('shaders');
-      if (this.disposed) return;
+      if (this.disposed || this.desistiu) return;
       // A chave de programa do three inclui o colorSpace de SAÍDA, que é
       // "tela" quando nenhum render target está amarrado — e no frame real
       // tudo renderiza DENTRO do composer (linear). Compilar sem RT gera a
@@ -2407,7 +2414,7 @@ export class Director {
         this.engine.renderer.setRenderTarget(null);
         descartar();
       }
-      if (this.disposed) return;
+      if (this.disposed || this.desistiu) return;
     }
 
     // A PLACA DESISTIU NO MEIO DA CARGA (auditoria rodada 2, item 4.1):
@@ -3656,8 +3663,10 @@ export class Director {
    * dizia Alta. Geração não tem esse buraco: ela é ÚNICA por pedido, e
    * um pedido só pousa se nenhum outro tiver nascido depois dele.
    */
+  // a sessão que desistiu (`desistir`) também não pousa mundo nenhum: o
+  // contexto está morto e o "Tentar novamente" recarrega
   private mundoAindaVale(geracao: number | null) {
-    return !this.disposed && (geracao === null || geracao === this.geracaoDaTroca);
+    return !this.disposed && !this.desistiu && (geracao === null || geracao === this.geracaoDaTroca);
   }
 
   /**
@@ -4965,10 +4974,14 @@ export class Director {
       if (this.piramideDesejada !== null) this.nebula.aquecerPiramide(this.engine.renderer);
       this.nebula.atualizarPiramide(this.engine.renderer, rawTime, cam);
     }
-    // fora dos tiers de computador, sem a poeira pedida, nada mantém o
-    // atlas preparado: ele sai da GPU (o Cinema/Alta o reserva de novo)
+    // fora dos tiers de computador, ou com um gás que não lê a pirâmide (o
+    // antigo, a nebulosa desligada), sem a poeira pedida, nada mantém o
+    // atlas preparado: ele sai da GPU (o Cinema/Alta com o gás que o lê o
+    // reserva de novo). Só gesto troca o gás: não há vai-e-volta por quadro
     const tierDeComputador = this.engine.quality === 'cinema' || this.engine.quality === 'alta';
-    if (!tierDeComputador && this.piramideDesejada === null) this.nebula.soltarAtlasOcioso();
+    if ((!tierDeComputador || !this.gasLeAPiramide) && this.piramideDesejada === null) {
+      this.nebula.soltarAtlasOcioso();
+    }
     // gate 0.02: na casca externa do fade a contribuição é invisível
     // pós-ACES, mas o raymarch custaria integral
     if (this.noNebula || nebulaFade <= 0.02) {

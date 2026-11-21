@@ -62,6 +62,23 @@ describe('o recomeço guarda onde o visitante estava (item 4.3)', () => {
   });
 });
 
+// arremates da rodada 2 (20/11): o filme pausado voltava andando do
+// "Tentar novamente" e do link copiado, porque `play=1` ia sempre
+describe('o momento escrito guarda se o filme estava pausado', () => {
+  it('pausado sai sem `play` (o boot abre congelado); tocando, e de dentro do Atlas, com `play=1`', () => {
+    const inicio = ESPELHO.indexOf('    if (instante !== null && instante > 0.5) {');
+    const fim = ESPELHO.indexOf('    return url;\n  };', inicio);
+    expect(inicio).toBeGreaterThan(0);
+    const escrever = new Function('url', 'instante', 'phase', 'd', ESPELHO.slice(inicio, fim) + 'return url;');
+    const play = (phase: string, pausado: boolean) =>
+      (escrever(new URL('https://x.test/?filme=solar&t=10&play=1'), 150, phase, { pausado }) as URL).searchParams;
+    expect(play('journey', true).has('play')).toBe(false);
+    expect(play('journey', true).get('t')).toBe('150.0');
+    expect(play('journey', false).get('play')).toBe('1');
+    expect(play('atlas', true).get('play')).toBe('1');
+  });
+});
+
 describe('o link não carrega o que a vista já não é (item 12.2)', () => {
   it('apaga pos/look/fov/freeze e, sem instante a escrever, t/play — depois do retorno da carga', () => {
     const escritor = ESPELHO.slice(

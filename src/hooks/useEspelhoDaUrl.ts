@@ -263,7 +263,10 @@ export function useEspelhoDaUrl(dep: {
     else url.searchParams.delete('jd');
     if (instante !== null && instante > 0.5) {
       url.searchParams.set('t', instante.toFixed(1));
-      url.searchParams.set('play', '1');
+      // O FILME PAUSADO VOLTA PAUSADO (arremates da rodada 2, 20/11): o
+      // `?t=` sem `play` já é a porta que o boot abre congelada
+      if (phase === 'journey' && d.pausado) url.searchParams.delete('play');
+      else url.searchParams.set('play', '1');
     } else {
       // sem instante a escrever, o `?t=` de quem chegou por um link do
       // filme e foi ao voo livre ou à capa é VELHO (item 12.2); na carga

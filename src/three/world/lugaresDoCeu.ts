@@ -126,6 +126,10 @@ export function eixoQuePousaEm(dir: THREE.Vector3, polo: THREE.Vector3): THREE.V
 }
 
 export interface PoseDoLugar {
+  /** a linha da tabela (`poseDoLugar`): três lugares dividem o centro
+   *  galáctico, e o nome se acha por ela, não pela posição; ausente na
+   *  pose do degrau de perto de uma estrela S */
+  id?: string;
   alvo: THREE.Vector3;
   raio: number;
   eixoDe: THREE.Vector3;
@@ -205,6 +209,7 @@ export function poseDoLugar(lugar: Pick<LugarBuscavel, 'id' | 'x' | 'y' | 'z'>):
     }
   }
   return {
+    id: lugar.id,
     alvo,
     raio: linha.raioPc,
     eixoDe: eixoQuePousaEm(dir, polo),
