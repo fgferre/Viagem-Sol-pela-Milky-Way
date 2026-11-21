@@ -1605,6 +1605,12 @@
   .relogio-segundeiro {
     display: none;
   }
+  /* o token que zera só vale para a PRÓXIMA dobra; a que já corre quando
+     a preferência liga seguia até o fim (sonda I2c, rodada 3). Sem
+     transição, a que corre é cancelada e a dobra assenta na hora. */
+  .relogio-dobra {
+    transition: none;
+  }
 }
 
 /* a gaveta de camadas: mesmo desenho do painel de Ajustes — é o mesmo

@@ -400,8 +400,12 @@
   /* O NOME, único trecho que sobra (acima) — piso de 4ch antes da
      reticência; `> span > span` alcança o span cru (o wrapper de cada
      trecho é `display: contents`) quando não há `abrirFicha` no celular,
-     e `.atlas-contexto-alvo` cobre o dia em que houver. */
+     e `.atlas-contexto-alvo` cobre o dia em que houver. O trecho que é
+     BOTÃO (`.atlas-contexto-botao`, "Sistema Solar" na vista do
+     sistema) também: sem ele o nome cortava seco ("Sistem") com o texto
+     grande a 320 px (rodada 3). */
   .hud-root:has(.atlas-alcas) .controls-bar .atlas-contexto > span > span,
+  .hud-root:has(.atlas-alcas) .controls-bar .atlas-contexto > span > .atlas-contexto-botao,
   .hud-root:has(.atlas-alcas) .controls-bar .atlas-contexto-alvo {
     flex: 0 1 auto;
     min-width: 4ch;

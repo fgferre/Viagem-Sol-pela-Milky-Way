@@ -185,11 +185,24 @@ describe('5. o relógio do Atlas obedece ao movimento reduzido pelos tokens', ()
   // O painel da velocidade dobra e desdobra, a régua desliza e o
   // segundeiro anda sozinho em volta do ▶. Os três primeiros se apagam
   // pela política da casa (o token que zera); o segundeiro, que é
-  // movimento por si, some — e é a única regra própria do relógio.
+  // movimento por si, some. E a dobra que JÁ corre quando a preferência
+  // liga: o token não a alcança, então ela perde a transição (sonda I2c).
   it('a dobra cronometra com um token que zera, e o segundeiro some', () => {
     expect(corpoDaRegra('.relogio-dobra')).toContain('grid-template-rows var(--t-assenta)');
     const reduzido = /@media \(prefers-reduced-motion: reduce\) \{\s*\.relogio-segundeiro \{\s*display: none;/;
     expect(CSS).toMatch(reduzido);
+  });
+
+  it('a dobra que já corre assenta quando "reduzir movimento" liga no meio (I2c)', () => {
+    const reduzido =
+      /@media \(prefers-reduced-motion: reduce\) \{[^@]*\.relogio-dobra \{\s*transition: none;/;
+    expect(CSS).toMatch(reduzido);
+  });
+
+  it('no celular, o trecho do contexto que é botão também ganha reticências', () => {
+    expect(CSS).toMatch(
+      /\.atlas-contexto > span > \.atlas-contexto-botao,[^{]*\{[^}]*text-overflow: ellipsis;/
+    );
   });
 
   it('a linha do aviso do relógio é sempre montada, e vazia não tem altura (M4)', () => {
