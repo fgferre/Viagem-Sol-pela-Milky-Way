@@ -442,11 +442,11 @@ describe('?relevo= — só realcado atravessa, o resto é o relevo medido', () =
   });
 });
 
-describe('?profundidade= — só invertida liga, o resto é o buffer de sempre', () => {
-  it('invertida passa; ausente ou lixo fica desligado', () => {
-    expect(lerPortaProfundidade('invertida')).toBe(true);
-    for (const ruim of ['Invertida', '1', 'true', '', null, undefined]) {
-      expect(lerPortaProfundidade(ruim), String(ruim)).toBe(false);
+describe('?profundidade= — a invertida é o padrão; só comum volta ao buffer de sempre', () => {
+  it('comum desliga; ausente, lixo e o invertida dos links antigos ficam no padrão', () => {
+    expect(lerPortaProfundidade('comum')).toBe(false);
+    for (const padrao of ['invertida', 'Comum', '1', '', null, undefined]) {
+      expect(lerPortaProfundidade(padrao), String(padrao)).toBe(true);
     }
   });
 });

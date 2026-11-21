@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 
 /**
- * A PROFUNDIDADE INVERTIDA (`?profundidade=invertida`, PLAN-PROFUNDIDADE.md).
+ * A PROFUNDIDADE INVERTIDA (o padrão desde 21/11/2026; `?profundidade=comum`
+ * volta ao buffer de sempre; PLAN-PROFUNDIDADE.md).
  *
  * O near acompanha a superfície mais próxima (`nearPlanePc`) e o far fica
  * em 60.000 pc. Um buffer comum de 24 bits não separa nada além de

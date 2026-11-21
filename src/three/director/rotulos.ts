@@ -45,6 +45,7 @@ import { t } from '../../lib/idioma';
 import { notaDeDistancia } from '../../lib/unidades';
 import { cenaPcParaHeliocentricaEclipticaUA } from '../../lib/atlas/frameGalactico';
 import { UA_POR_PC } from '../world/planetas/planetas';
+import { foraDoAlcance } from '../core/profundidade';
 import type { Planetas } from '../world/planetas/planetas';
 import { RAIO_DO_SOL_NA_CENA, kmParaPc } from '../escala';
 import { CHAVE_DE_CORPO, CORPOS_DO_SISTEMA, HELIO_SEM_PONTO, LUAS_DO_SISTEMA, classeEmTexto } from '../atlasConfig';
@@ -166,7 +167,7 @@ function assuntoEm(raio: number, cam: THREE.PerspectiveCamera): AssuntoNaTela | 
   const centro = _assunto.clone();
   const dist = _assunto.distanceTo(cam.position);
   _assunto.project(cam);
-  if (_assunto.z > 1 || _assunto.z < -1) return null;
+  if (foraDoAlcance(_assunto.z, cam)) return null;
   const raioNdc = raioAparenteNdc(raio, dist, Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2));
   return {
     x: (_assunto.x + 1) / 2,

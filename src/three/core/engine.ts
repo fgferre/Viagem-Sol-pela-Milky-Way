@@ -369,12 +369,15 @@ export function lerPortaEscala(bruto: string | null | undefined): number | null 
 }
 
 /**
- * a lei da porta `?profundidade=`: só a palavra `invertida` pede a
- * profundidade invertida do three (`core/profundidade.ts`,
- * PLAN-PROFUNDIDADE.md); qualquer outra coisa é o buffer de sempre
+ * a lei da porta `?profundidade=`: desde 21/11/2026 a profundidade
+ * invertida do three é o PADRÃO (`core/profundidade.ts`,
+ * PLAN-PROFUNDIDADE.md, palavra do dono: "Sim, vire o padrão"); só a
+ * palavra `comum` volta ao buffer de sempre, que fica como reserva até
+ * provar-se inútil. Qualquer outra coisa (`invertida` dos links antigos,
+ * ausente, lixo) é o padrão.
  */
 export function lerPortaProfundidade(bruto: string | null | undefined): boolean {
-  return bruto === 'invertida';
+  return bruto !== 'comum';
 }
 
 export interface QualityPreset {
@@ -941,7 +944,8 @@ export class Engine {
       // quad — um fullscreen quad não testa profundidade. Medido na
       // época: ~22,9 MB de VRAM devolvidos numa tela retina.
       depth: false,
-      // A PORTA `?profundidade=invertida`. Onde a placa não tem
+      // A PROFUNDIDADE INVERTIDA, padrão (`?profundidade=comum` volta ao
+      // buffer de sempre). Onde a placa não tem
       // `EXT_clip_control` o three avisa no console e fica no buffer de
       // sempre: quem pergunta depois lê `capabilities.reversedDepthBuffer`,
       // nunca a URL.
