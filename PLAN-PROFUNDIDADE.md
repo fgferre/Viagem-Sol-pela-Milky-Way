@@ -49,3 +49,10 @@ Estrelas, clarão, nebulosa e galáxia estão no infinito: se um corpo os cobre 
 - Não remendar material por material.
 - Não entra na leva de 20–21/11.
 - A porta se chama `?profundidade=invertida`; desligada (o padrão) nenhum alvo ganha textura de profundidade e todo shader compila o texto de sempre.
+
+## Padrão (21/11/2026)
+
+- [x] 5. Palavra do dono: "Sim, vire o padrão". Juntada ao principal em `d7af8d14` (desligada); virou padrão em `8a054fbe`: `lerPortaProfundidade` liga com qualquer valor menos `comum`, que volta ao buffer de sempre e fica como reserva até provar-se inútil. A linha de `rotulos.ts` (`foraDoAlcance`) entrou no mesmo commit; a mudança do nome sobre o planeta, que espera a palavra do dono, ficou de fora (guardada em `.cache/pendente-do-dono/rotulos-nome-cede.patch` e reaplicada sem guardar). `npm run done` passou (185 arquivos, 4182 testes).
+- Na tela, pelo caminho do dono (botão "Anéis", girar até o globo sobre o horizonte do anel, near 0,2 m): padrão novo, globo limpo; `?profundidade=comum`, a estrela volta por cima do globo (`capturas/profundidade-do-motor/padrao/par-globo-comum-e-padrao-novo.jpg`).
+- Em medição: custo de GPU por quadro, padrão × comum, cinco vistas, três corridas (`capturas/profundidade-do-motor/padrao/custo/`).
+- Continua sem prova: celular, iPhone, Android, Safari, Firefox. Onde falta `EXT_clip_control` o app fica como era.
