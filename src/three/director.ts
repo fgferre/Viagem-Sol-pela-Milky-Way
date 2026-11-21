@@ -1662,10 +1662,6 @@ export class Director {
     // A PLACA DE VÍDEO DESISTIU (o listener e o porquê de não restaurar
     // moram no Engine, que é quem tem o canvas e o laço).
     this.engine.onContextoPerdido(() => {
-      // a pirâmide da poeira (E3c) cai no n0: buscas abortadas e nada
-      // mais sobe para uma GPU que já não existe
-      this.piramideCarregada = null;
-      this.nebula.setPiramide(null);
       this.desistir(texto('hud.fatalContexto'));
     });
     } catch (e) {
@@ -2097,6 +2093,7 @@ export class Director {
     // daqui em diante a busca, os rótulos e as fichas as conhecem
     this.meta = { ...meta, named: comAnfitrias(meta.named) };
     await this.stage('stars');
+    if (this.disposed || this.desistiu) return;
 
     // expoM0 é o "tempo de exposição": a magnitude aparente cujo pico de
     // PSF chega a 1. Com 3,5 as ~40 estrelas mais brilhantes do céu
@@ -3711,7 +3708,7 @@ export class Director {
     // (`?ajustes=1`); sem esta linha, um clique no meio do init poria
     // DOIS mundos no forno e o segundo poderia pousar antes de o
     // primeiro terminar — sobre um `wrappedStars` que ainda não existe.
-    if (this.disposed || this.phase === 'loading' || this.tierDoMundo === null) return;
+    if (this.disposed || this.desistiu || this.phase === 'loading' || this.tierDoMundo === null) return;
     // O MESMO PEDIDO DUAS VEZES não abre um segundo forno — e não pode
     // tomar geração nova, senão o forno em curso se cancelaria sozinho.
     const chave = this.chaveDoMundo(q);
@@ -5089,6 +5086,25 @@ export class Director {
     const step = (label: string, fn: () => void) => this.passoBlindado('desistir', label, fn);
     step('galaxy', () => this.galaxy?.seguirCamadaWebgpu('soltar'));
     step('abort', () => this.abortController.abort());
+    // a reassada que os sorteios agendaram (400 ms) não acorda para montar
+    // uma carga inteira debaixo do véu; zerado porque "galaxiaReassando"
+    // lê o campo. Os dois ouvintes são os mesmos que o `dispose` solta.
+    step('sorteios', () => {
+      window.clearTimeout(this.esperaDosSorteios);
+      this.esperaDosSorteios = 0;
+    });
+    step('ouvintes', () => {
+      this.preferenciaDeMovimento?.removeEventListener('change', this.aoMudarMovimento);
+      document.removeEventListener('visibilitychange', this.aoMudarVisibilidade);
+    });
+    // a pirâmide da poeira (E3c) cai no n0 e o atlas ocioso sai: buscas
+    // abortadas, nada mais sobe, e a exceção em quadro (contexto VIVO)
+    // não segura a pirâmide inteira até a recarga
+    step('piramide', () => {
+      this.piramideCarregada = null;
+      this.nebula.setPiramide(null);
+      this.nebula.soltarAtlasOcioso();
+    });
     for (const posto of this.noPalco) step(posto.id, () => posto.corpo.dispose());
     this.noPalco = [];
   }

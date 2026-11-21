@@ -201,6 +201,60 @@ describe('a falha depois do boot chega à tela', () => {
     expect(pegaErro.indexOf('d.desistiuDaSessao')).toBeLessThan(pegaErro.indexOf('setLoadError('));
   });
 
+  // auditoria rodada 3, M6: depois de `stage('stars')` o init criava o
+  // campo de estrelas e buscava a poeira com a sessão já morta
+  it('toda etapa do init é seguida pela parada (a dos catálogos para depois dos assets)', () => {
+    const init = FONTE.slice(FONTE.indexOf('  async init() {'), FONTE.indexOf("    this.setPhase('intro');"));
+    const etapas = [...init.matchAll(/await this\.stage\('(\w+)'\);\n\s*(.+)/g)];
+    expect(etapas.map((m) => m[1])).toContain('stars');
+    for (const [, etapa, seguinte] of etapas) {
+      if (etapa === 'catalogs') continue;
+      expect(seguinte, etapa).toBe('if (this.disposed || this.desistiu) return;');
+    }
+  });
+
+  // auditoria rodada 3, M7: a reassada dos sorteios (400 ms) montava uma
+  // carga inteira debaixo do véu, e os ouvintes seguravam o Director morto
+  it('desistir cancela a reassada agendada e solta os ouvintes, e a reassada não começa na sessão que desistiu', () => {
+    const corpo = FONTE.slice(
+      FONTE.indexOf('  private desistir(mensagem: string) {'),
+      FONTE.indexOf('  dispose() {')
+    );
+    const aviso = corpo.indexOf('this.events.onErro(mensagem);');
+    for (const solta of [
+      'window.clearTimeout(this.esperaDosSorteios);',
+      'this.esperaDosSorteios = 0;',
+      "this.preferenciaDeMovimento?.removeEventListener('change', this.aoMudarMovimento);",
+      "document.removeEventListener('visibilitychange', this.aoMudarVisibilidade);",
+    ]) {
+      expect(corpo.indexOf(solta), solta).toBeGreaterThan(aviso);
+    }
+    const reassar = FONTE.slice(FONTE.indexOf('  private async reassarMundo('));
+    expect(reassar.slice(0, reassar.indexOf('const chave = this.chaveDoMundo(q);'))).toContain(
+      'this.desistiu ||'
+    );
+  });
+
+  // auditoria rodada 3, B8: a pirâmide caía fora do passo blindado, antes
+  // de `desistir`, e só no contexto perdido — a exceção em quadro a deixava
+  // montada, com o contexto vivo, até a recarga
+  it('desistir solta a pirâmide e o atlas ocioso num passo blindado, depois do aviso', () => {
+    const corpo = FONTE.slice(
+      FONTE.indexOf('  private desistir(mensagem: string) {'),
+      FONTE.indexOf('  dispose() {')
+    );
+    const passo = corpo.slice(corpo.indexOf("step('piramide', () => {"));
+    expect(corpo.indexOf("step('piramide', () => {")).toBeGreaterThan(
+      corpo.indexOf('this.events.onErro(mensagem);')
+    );
+    const dentro = passo.slice(0, passo.indexOf('});'));
+    expect(dentro).toContain('this.piramideCarregada = null;');
+    expect(dentro).toContain('this.nebula.setPiramide(null);');
+    expect(dentro).toContain('this.nebula.soltarAtlasOcioso();');
+    const perdido = FONTE.slice(FONTE.indexOf('this.engine.onContextoPerdido('));
+    expect(perdido.slice(0, perdido.indexOf('this.desistir('))).not.toContain('setPiramide(null)');
+  });
+
   it('o véu VOLTA a montar quando o erro chega depois do desfecho', () => {
     // sem o segundo termo a camada some no fim da saída da tela de carga
     // e a falha em voo não tem onde aparecer
