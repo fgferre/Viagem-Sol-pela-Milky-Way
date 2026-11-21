@@ -13,6 +13,48 @@ import type { EntradaDaBusca } from '../../lib/buscaEstrelas';
 import { UA_POR_PC } from '../../lib/unidades';
 import type { CenaDaCamada } from '../world/galaxy';
 
+/** O endereço como a visita chegou, e se ela nasceu de um recomeço com lugar. */
+export interface ChegadaDaVisita {
+  search: string;
+  /** o `search` sem as portas do recomeço (`pos`, `look`, `recomeco`) */
+  limpo: string;
+  comLugarDoRecomeco: boolean;
+}
+
+/**
+ * A CHEGADA, sobre a string (auditoria rodada 3, 1b.3). Só a marca
+ * `recomeco` (escrita pelo "Tentar novamente" junto com o lugar) tira o
+ * lugar do endereço; um `?pos=` digitado à mão fica como está.
+ */
+export function lerChegada(search: string): ChegadaDaVisita {
+  const query = new URLSearchParams(search);
+  const comLugarDoRecomeco = query.has('recomeco');
+  if (!comLugarDoRecomeco) return { search, limpo: search, comLugarDoRecomeco };
+  for (const porta of ['pos', 'look', 'recomeco']) query.delete(porta);
+  const resto = query.toString();
+  return { search, limpo: resto ? `?${resto}` : '', comLugarDoRecomeco };
+}
+
+let chegada: ChegadaDaVisita | null = null;
+
+/**
+ * A chegada desta página, lida UMA vez (o recarregar a zera). Na
+ * primeira leitura, se veio de um recomeço com lugar, o lugar sai do
+ * endereço: um F5 ou o endereço copiado da barra não reabrem o voo livre
+ * velho, e a página que cair de novo volta ao começo em vez de ao mesmo
+ * lugar, em laço. O boot e a camada da carga leem o lugar daqui, do
+ * endereço como chegou.
+ */
+export function chegadaDaVisita(): ChegadaDaVisita {
+  if (chegada) return chegada;
+  chegada = lerChegada(window.location.search);
+  if (chegada.comLugarDoRecomeco) {
+    const { pathname, hash } = window.location;
+    window.history.replaceState(null, '', `${pathname}${chegada.limpo}${hash}`);
+  }
+  return chegada;
+}
+
 /**
  * A cena de abertura. `alvoDoFoco` resolve o `?foco=` como o `useDirector`
  * (o índice da busca e o atalho dos anéis). `?pos=` é voo livre;

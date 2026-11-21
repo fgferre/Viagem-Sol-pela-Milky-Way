@@ -64,32 +64,78 @@ describe('o recomeço guarda onde o visitante estava (item 4.3)', () => {
 
 // auditoria rodada 3 (M11): o recomeço volta ao lugar, o link copiado não
 describe('o endereço do recomeço leva o lugar (M11)', () => {
-  it('voo livre: pos/look só no recomeço; começo do filme tocando: play=1; sem fov', () => {
-    const inicio = ESPELHO.indexOf('  const urlDoRecomeco = () => {');
-    const fim = ESPELHO.indexOf('};', inicio);
+  // os dois de verdade, recortados do espelho: o `urlComMomento` (o link
+  // copiado) sobre um endereço que chegou com o lugar, e o recomeço por cima
+  const inicioDoMomento = ESPELHO.indexOf('  const urlComMomento = () => {');
+  const fimDoMomento = ESPELHO.indexOf('    return url;\n  };', inicioDoMomento);
+  const urlComMomento = new Function(
+    'window',
+    'directorRef',
+    'phase',
+    'foco',
+    'indice',
+    'chaveDoFoco',
+    'FILME_PADRAO',
+    ESPELHO.slice(inicioDoMomento, fimDoMomento) + '    return url;\n  }; return urlComMomento;'
+  );
+  const inicio = ESPELHO.indexOf('  const urlDoRecomeco = () => {');
+  const corpo = ESPELHO.slice(inicio, ESPELHO.indexOf('};', inicio) + 5);
+  const monta = new Function(
+    'urlComMomento',
+    'directorRef',
+    'phase',
+    'chegadaDaVisita',
+    corpo + ' return urlDoRecomeco;'
+  );
+  const camera = {
+    position: { x: 1.5, y: 2.25, z: -3, clone: () => ({}) },
+    getWorldDirection: (v: { x?: number; y?: number; z?: number }) => Object.assign(v, { x: 0, y: 0, z: 1 }),
+  };
+  const pagina = { location: { href: 'https://x.test/?filme=solar&pos=1,2,3&look=1,2,4' } };
+  const diretor = (resto: object) => ({
+    filmeEscolhido: 'solar',
+    tempo: { naEpoca: true },
+    pausado: false,
+    currentTime: 0,
+    engine: { camera },
+    ...resto,
+  });
+  const copiado = (phase: string, d: object) =>
+    (urlComMomento(pagina, { current: d }, phase, null, null, null, 'galactico') as () => URL)().searchParams;
+  const recomeco = (phase: string, d: object, comLugarDoRecomeco = false) => {
+    const directorRef = { current: d };
+    const momento = urlComMomento(pagina, directorRef, phase, null, null, null, 'galactico');
+    const chegada = () => ({ comLugarDoRecomeco });
+    return (monta(momento, directorRef, phase, chegada) as () => URL)().searchParams;
+  };
+
+  it('voo livre: pos/look só no recomeço, não no link copiado; começo do filme tocando: play=1; sem fov', () => {
+    expect(inicioDoMomento).toBeGreaterThan(0);
+    expect(fimDoMomento).toBeGreaterThan(inicioDoMomento);
     expect(inicio).toBeGreaterThan(0);
-    const corpo = ESPELHO.slice(inicio, fim + 5);
     expect(corpo).not.toContain("'fov'");
-    const monta = new Function(
-      'urlComMomento',
-      'directorRef',
-      'phase',
-      corpo + ' return urlDoRecomeco;'
-    );
-    const camera = {
-      position: { x: 1.5, y: 2.25, z: -3, clone: () => ({}) },
-      getWorldDirection: (v: { x?: number; y?: number; z?: number }) => Object.assign(v, { x: 0, y: 0, z: 1 }),
-    };
-    const base = () => new URL('https://x.test/?filme=solar');
-    const recomeco = (phase: string, d: object) =>
-      (monta(base, { current: d }, phase) as () => URL)().searchParams;
-    const livre = recomeco('free', { engine: { camera } });
+    const livre = recomeco('free', diretor({}));
     expect(livre.get('pos')).toBe('1.5,2.25,-3');
     expect(livre.get('look')).toBe('1.5,2.25,-2');
     expect(livre.has('fov')).toBe(false);
-    expect(base().searchParams.has('pos')).toBe(false);
-    expect(recomeco('journey', { currentTime: 0.2, pausado: false }).get('play')).toBe('1');
-    expect(recomeco('journey', { currentTime: 0.2, pausado: true }).get('t')).toBe('0');
+    expect(copiado('free', diretor({})).has('pos')).toBe(false);
+    expect(copiado('free', diretor({})).has('look')).toBe(false);
+    expect(recomeco('journey', diretor({ currentTime: 0.2, pausado: false })).get('play')).toBe('1');
+    expect(recomeco('journey', diretor({ currentTime: 0.2, pausado: true })).get('t')).toBe('0');
+  });
+
+  // 1b.3: só a marca faz o boot tirar o lugar do endereço na chegada
+  it('o lugar vai com a marca recomeco=1, e só no voo livre', () => {
+    expect(recomeco('free', diretor({})).get('recomeco')).toBe('1');
+    expect(recomeco('journey', diretor({ currentTime: 0.2 })).has('recomeco')).toBe(false);
+  });
+
+  // 1b.3: o mesmo lugar cairia de novo, em laço
+  it('a página que nasceu de um recomeço com lugar recomeça do começo', () => {
+    const segundo = recomeco('free', diretor({}), true);
+    expect(segundo.has('pos')).toBe(false);
+    expect(segundo.has('look')).toBe(false);
+    expect(segundo.has('recomeco')).toBe(false);
   });
 });
 

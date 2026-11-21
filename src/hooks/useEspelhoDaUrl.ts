@@ -8,6 +8,7 @@ import { lerPortaRotulos3d } from '../lib/beta';
 // ============================================================
 import { useLayoutEffect, useState } from 'react';
 import type { Director, EstadoDaQualidade, Phase } from '../three/director';
+import { chegadaDaVisita } from '../three/director/abertura';
 import type {
   EscolhaDeQualidade,
   GasVolumetrico,
@@ -646,17 +647,23 @@ export function useEspelhoDaUrl(dep: {
    * cheia, o formato que o boot lê); nos primeiros 0,5 s do filme `play=1`
    * (tocando) ou `t=0` (pausado). `fov` fica de fora de propósito: o selo
    * o declararia como lente forçada que o visitante não pediu.
+   *
+   * O lugar vai com a marca `recomeco=1` (1b.3): só com ela o boot o tira
+   * do endereço na chegada. A página que já nasceu de um recomeço com
+   * lugar volta ao começo: o mesmo lugar cairia de novo, em laço.
    */
   const urlDoRecomeco = () => {
     const url = urlComMomento();
     const d = directorRef.current;
     if (!d || phase === 'loading') return url;
     if (phase === 'free') {
+      if (chegadaDaVisita().comLugarDoRecomeco) return url;
       const camera = d.engine.camera;
       const p = camera.position;
       const dir = camera.getWorldDirection(p.clone());
       url.searchParams.set('pos', `${p.x},${p.y},${p.z}`);
       url.searchParams.set('look', `${p.x + dir.x},${p.y + dir.y},${p.z + dir.z}`);
+      url.searchParams.set('recomeco', '1');
     } else if (phase === 'journey' && d.currentTime <= 0.5) {
       if (d.pausado) url.searchParams.set('t', '0');
       else url.searchParams.set('play', '1');

@@ -27,6 +27,7 @@ import type { EntradaDaBusca } from '../lib/buscaEstrelas';
 import { LUGARES_DA_BUSCA } from '../three/world/lugaresDoCeu';
 import { ID_DO_PONTO_DO_ANEL, PLANETA_DO_PONTO_DO_ANEL } from '../three/world/pontoDoAnel';
 import { lerPortaVer } from '../three/selo';
+import { chegadaDaVisita } from '../three/director/abertura';
 import type { EstadoDaPoeira, VerDaEscada } from '../three/selo';
 
 /** os lugares do céu moram no lado three (`world/lugaresDoCeu.ts`): a
@@ -154,6 +155,9 @@ export function useDirector(fios: FiosDoDirector) {
     fecharGavetas,
   } = fios;
   useEffect(() => {
+    // ANTES de tudo o que pode falhar (auditoria rodada 3, 1b.3): o
+    // lugar do "Tentar novamente" sai do endereço já na chegada
+    const chegada = chegadaDaVisita();
     if (!canvasRef.current || !labelCanvasRef.current) return;
     // sem WebGL2 (veredito da sonda, já no estado inicial): não há
     // Director a construir — o véu de erro com retry já está na tela
@@ -269,15 +273,18 @@ export function useDirector(fios: FiosDoDirector) {
             ? (v as [number, number, number])
             : null;
         };
-        const pos = parse(query.get('pos'));
+        // o lugar vem do endereço COMO CHEGOU: o do recomeço já saiu da
+        // barra na primeira linha deste efeito (`chegadaDaVisita`)
+        const lugar = new URLSearchParams(chegada.search);
+        const pos = parse(lugar.get('pos'));
         if (pos) {
-          d.placeCamera(pos, parse(query.get('look')) ?? undefined);
+          d.placeCamera(pos, parse(lugar.get('look')) ?? undefined);
           const fov = Number(query.get('fov'));
           if (Number.isFinite(fov) && fov >= 15 && fov <= 140) {
             d.engine.camera.fov = fov;
             d.engine.camera.updateProjectionMatrix();
           }
-        } else if (query.get('pos')) console.warn('?pos= inválido:', query.get('pos'));
+        } else if (lugar.get('pos')) console.warn('?pos= inválido:', lugar.get('pos'));
 
         // PRECEDÊNCIA DECLARADA: `?pos=` > `?atlas=1`/`?foco=` > `?t=`/`?play=`.
         // `?pos=` é a régua das capturas e não cede a ninguém; `?atlas=1`

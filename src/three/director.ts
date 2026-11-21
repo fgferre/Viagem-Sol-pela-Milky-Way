@@ -148,7 +148,7 @@ import {
   montarCenaDeAquecimento,
   montarCorposDoPalco,
 } from './director/carregamento';
-import { cenaDaAbertura } from './director/abertura';
+import { cenaDaAbertura, chegadaDaVisita } from './director/abertura';
 import { construirIndice, resolverFoco } from '../lib/buscaEstrelas';
 import { LUGARES_DA_BUSCA } from './world/lugaresDoCeu';
 import { ID_DO_PONTO_DO_ANEL, PLANETA_DO_PONTO_DO_ANEL } from './world/pontoDoAnel';
@@ -1130,7 +1130,7 @@ export class Director {
     if (this.dHomeDoQuadro !== null) {
       return { fase: this.phase, revealT: this.filme.revealT, dHomePc: this.dHomeDoQuadro };
     }
-    return cenaDaAbertura(window.location.search, (foco) =>
+    return cenaDaAbertura(chegadaDaVisita().search, (foco) =>
       resolverFoco(
         foco === ID_DO_PONTO_DO_ANEL ? PLANETA_DO_PONTO_DO_ANEL : foco,
         construirIndice(this.escada.nomeadas, this.escada.corpos, LUGARES_DA_BUSCA)
