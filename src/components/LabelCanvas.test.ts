@@ -641,6 +641,60 @@ describe('um lugar por nome — ou cabe ali, ou some', () => {
     }
   });
 
+  it('A5: o nome dirigido conta o recuo do LIMBO do próprio disco — o texto não cai sobre ele', () => {
+    // a Lua da chegada no meio de uma tela de 1080 linhas, com o disco de
+    // 16 a 65 px de raio: o texto pintado e a caixa dele ficam fora do disco
+    for (const raioPx of [16, 25, 40, 65]) {
+      const disco = { x: 0.5, y: 0.5, raio: raioPx / 1080, alem: 1, chave: 'corpo:moon' };
+      const lua: StarLabel = {
+        ...rotulo('corpo:moon', 'Lua', 0.5, 0.5, 25), detalhe: 'lua', dirigido: true, discos: [disco],
+      };
+      const { rotulos, ctx } = bancada(1920, 1080);
+      rotulos.draw([lua]);
+      expect(lua.desenhado, `${raioPx} px`).toBe(true);
+      const nome = ctx.pintadas.find((p) => p.texto.toUpperCase() === 'LUA')!;
+      expect(Math.abs(nome.x - 960), `${raioPx} px`).toBeGreaterThanOrEqual(raioPx + 8);
+      const c = lua.caixaDaDisputa!;
+      const dx = Math.min(Math.max(960, c.left), c.right) - 960;
+      const dy = Math.min(Math.max(540, c.top), c.bottom) - 540;
+      expect(Math.hypot(dx, dy), `${raioPx} px`).toBeGreaterThan(raioPx);
+    }
+    // com o disco menor que o recuo, e fora do filme, o texto fica onde sempre esteve
+    const xDoNome = (dirigido: boolean, raioPx: number | null) => {
+      const l: StarLabel = {
+        ...rotulo('corpo:moon', 'Lua', 0.5, 0.5, 25), detalhe: 'lua', dirigido,
+        discos: raioPx === null ? undefined : [{ x: 0.5, y: 0.5, raio: raioPx / 1080, alem: 1, chave: 'corpo:moon' }],
+      };
+      const { rotulos, ctx } = bancada(1920, 1080);
+      rotulos.draw([l]);
+      return ctx.pintadas.find((p) => p.texto.toUpperCase() === 'LUA')!.x;
+    };
+    expect(xDoNome(true, 6)).toBe(xDoNome(true, null));
+    expect(xDoNome(false, 40)).toBe(xDoNome(false, null));
+  });
+
+  it('A5: o nome dirigido conta o recuo do ASSUNTO inteiro — em Saturno o texto começa fora do anel', () => {
+    // o disco próprio é só o planeta (30 px); o anel leva o assunto a 70 px
+    const planeta = { x: 0.5, y: 0.5, raio: 30 / 1080, alem: 1, chave: 'corpo:saturn' };
+    const saturno: StarLabel = {
+      ...rotulo('corpo:saturn', 'Saturno', 0.5, 0.5, 25), detalhe: 'planeta', dirigido: true,
+      discos: [planeta], raioDoAssunto: 70 / 1080,
+    };
+    const { rotulos, ctx } = bancada(1920, 1080);
+    rotulos.draw([saturno]);
+    expect(saturno.desenhado).toBe(true);
+    const nome = ctx.pintadas.find((p) => p.texto.toUpperCase() === 'SATURNO')!;
+    expect(Math.abs(nome.x - 960)).toBeGreaterThanOrEqual(70 + 8);
+    // fora do filme o raio do assunto não move o nome
+    const xFora = (raioDoAssunto?: number) => {
+      const l: StarLabel = { ...rotulo('corpo:saturn', 'Saturno', 0.5, 0.5, 25), detalhe: 'planeta', raioDoAssunto };
+      const b = bancada(1920, 1080);
+      b.rotulos.draw([l]);
+      return b.ctx.pintadas.find((p) => p.texto.toUpperCase() === 'SATURNO')!.x;
+    };
+    expect(xFora(70 / 1080)).toBe(xFora());
+  });
+
   it('o HUD ocupa PRIMEIRO, e não há segundo lugar para furá-lo', () => {
     const { rotulos } = bancada(1200, 900);
     // um painel no meio da tela: até 23/08 o nome procurava outra vaga

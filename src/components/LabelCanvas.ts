@@ -1194,7 +1194,21 @@ export class LabelCanvas {
     // nem à esquerda da âncora, sai só o nome (a pintura lê o mesmo
     // `detalhes[i]`); o empurrão abaixo fica para o nome que nem sozinho
     // cabe.
-    const recuo = peso.recuoDoTexto * k;
+    //
+    // O NOME DIRIGIDO NÃO PISA NO PRÓPRIO DISCO (A5, 21/11): no filme o
+    // nome do assunto fica à vista até o corpo virar o retrato do quadro,
+    // e com o disco além dos 18 px do recuo o texto caía sobre ele (a Lua
+    // da chegada, de 16 a 65 px de raio). O recuo passa a contar do LIMBO:
+    // o raio do disco do próprio corpo, que já viaja em `discos`, mais os
+    // 8 px que o texto guarda na disputa. Com o disco pequeno vale o recuo
+    // de sempre; quando ele entra na lista (0,02 de raio NDC = 1 % da
+    // altura) o texto anda no máximo `0,01·altura − 10·k` px — nada até
+    // ~1000 linhas CSS, ~4 px numa tela de 1440. O LIMBO É O DO ASSUNTO
+    // INTEIRO (`raioDoAssunto`): em Saturno o disco próprio é só o planeta
+    // e o nome caía sobre o anel.
+    const discoProprio = label.dirigido ? label.discos?.find((d) => d.chave === label.key) : undefined;
+    const limbo = label.dirigido ? Math.max(discoProprio?.raio ?? 0, label.raioDoAssunto ?? 0) : 0;
+    const recuo = Math.max(peso.recuoDoTexto * k, limbo > 0 ? limbo * this.height + 8 * k : 0);
     // A BORDA TEM FOLGA (crítica de 13/11): a mesma distância que o nome
     // guarda de um painel do HUD — os 5 px da caixa mais os 8 da disputa.
     // Sem ela "SAGITTARIUS A✱" no celular terminava no último pixel da
@@ -1231,8 +1245,8 @@ export class LabelCanvas {
     // cabia não muda de lugar. A conta é sobre o TEXTO mais a `margem`.
     const inicioDoTexto = (esquerda: boolean) =>
       esquerda
-        ? ancoraX - peso.recuoDoTexto * k - conteudo
-        : ancoraX + peso.recuoDoTexto * k;
+        ? ancoraX - recuo - conteudo
+        : ancoraX + recuo;
     const desvioDe = (esquerda: boolean) => {
       const inicio = inicioDoTexto(esquerda);
       return Math.min(Math.max(inicio, margem), Math.max(margem, this.width - conteudo - margem)) - inicio;
@@ -1310,7 +1324,7 @@ export class LabelCanvas {
       caixaDoTexto,
       ancoraX,
       ancoraY,
-      textoX: ancoraX + direcao * peso.recuoDoTexto * k + desvioDe(esquerda),
+      textoX: ancoraX + direcao * recuo + desvioDe(esquerda),
       textoY,
       esquerda,
       larguraDoNome,

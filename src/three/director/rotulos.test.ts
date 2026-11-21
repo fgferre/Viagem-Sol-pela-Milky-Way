@@ -20,7 +20,7 @@ import type { NamedStar } from '../config';
 import { CORPOS_DO_SISTEMA, LUAS_DO_SISTEMA } from '../atlasConfig';
 import { definirIdioma } from '../../lib/idioma';
 import type { Planetas } from '../world/planetas/planetas';
-import { raiosDoGigantePc } from '../world/corpos/gigante';
+import { raioDoAssuntoPc, raiosDoGigantePc } from '../world/corpos/gigante';
 import {
   ALFA_DO_TEXTO_APONTADO,
   ALFA_DO_TEXTO_SECUNDARIO,
@@ -1215,14 +1215,17 @@ describe('o corpo da casa como assunto do beat (viagem solar)', () => {
       cam, LUAS_DO_SISTEMA.filter((l) => l.id === 'moon'), Float32Array.of(perto.x, perto.y, perto.z)
     );
     // nada copiado à mão: o que o Atlas projeta, mais o que faz dele assunto
-    // (e os discos do quadro, que a publicação dá a todo nome)
+    // (e os discos do quadro, que a publicação dá a todo nome, e o raio do
+    // assunto, que recua o texto dele, A5)
     expect(lua).toEqual({
       ...doAtlas,
       dirigido: true,
       alfaDoTexto: ALFA_DO_TEXTO_APONTADO,
       alfaDoIcone: ALFA_DO_TEXTO_APONTADO,
       discos: lua.discos,
+      raioDoAssunto: lua.raioDoAssunto,
     });
+    expect(lua.raioDoAssunto).toBeGreaterThan(0);
     expect(lua.opacity).toBe(0.95);
     // classe, prioridade e canal ficam — lua no secundário, planeta no primário
     expect([lua.prioridade, terra.prioridade]).toEqual([
@@ -1243,6 +1246,84 @@ describe('o corpo da casa como assunto do beat (viagem solar)', () => {
     expect(fundo.dirigido).toBeUndefined();
     expect(fundo.alfaDoTexto).toBe(ALFA_DO_TEXTO_SECUNDARIO);
     expect(lista.find((l) => l.key === 'corpo:moon')!.alfaDoTexto).toBe(ALFA_DO_TEXTO_APONTADO);
+  });
+
+  /**
+   * A5 (regra do dono, 21/11): a Lua DE VERDADE (`raioDoAssuntoPc`) no meio
+   * do quadro, com a câmera na distância em que o disco mede `r` de raio
+   * NDC (meia-altura, lente de 58°, tela 1,6). O centro fica longe do Sol
+   * (a origem) e num valor que o Float32 guarda exato.
+   */
+  const RAIO_DA_LUA = raioDoAssuntoPc('moon')!;
+  const LUA_NA_CHEGADA = new THREE.Vector3(Math.fround(1e-5), 0, 0);
+  /** a câmera onde a Lua real mede `r` de raio NDC — a inversa exata de `raioAparenteNdc` */
+  function cameraNaChegada(r: number) {
+    const t = r * Math.tan(THREE.MathUtils.degToRad(58) / 2);
+    const d = (RAIO_DA_LUA * Math.sqrt(1 + t * t)) / t;
+    const cam = new THREE.PerspectiveCamera(58, 1.6, d * 1e-3, d * 1e3);
+    cam.position.set(LUA_NA_CHEGADA.x, 0, d);
+    cam.lookAt(LUA_NA_CHEGADA);
+    cam.updateMatrixWorld();
+    return cam;
+  }
+  /** o nome dirigido da Lua no filme com o disco a `r` de raio NDC */
+  function luaDirigida(r: number): StarLabel | undefined {
+    const publicadas: StarLabel[][] = [];
+    const rotulos = new Rotulos({
+      onLabels: (l) => publicadas.push(l),
+      onDest: () => {},
+      onSol: () => {},
+      onLente: () => {},
+      onCamera: () => {},
+      beatDaViagem: () => ({ target: ['moon'], quiet: true }) as JourneyMeta,
+      raioFisicoDe: (id) => (id === 'moon' ? RAIO_DA_LUA : null),
+    });
+    const posicoes = new Float32Array(CORPOS_DO_SISTEMA.length * 3).fill(Number.NaN);
+    const planetas = { points: { visible: true }, posicoes } as unknown as Planetas;
+    rotulos.escreverPosicaoDeLua('moon', LUA_NA_CHEGADA);
+    rotulos.projetar(cameraNaChegada(r), {
+      fase: 'journey', named: [], dHome: 5, planetas, foco: null,
+      nomesEscondidos: false, iconesEscondidos: false, texto3d: false,
+    });
+    return publicadas.at(-1)!.find((l) => l.key === 'corpo:moon');
+  }
+
+  it('A5: o nome dirigido fica INTEIRO com o disco de 0,02 a 0,10 de raio — onde o Atlas já o calou', () => {
+    for (const r of [0.02, 0.025, 0.03, 0.035, 0.05, 0.07, 0.1]) {
+      expect(luaDirigida(r)?.opacity, `r = ${r}`).toBe(0.95);
+    }
+    // e o nome leva o disco do próprio corpo, de onde o `LabelCanvas` conta
+    // o recuo do limbo (raio na fração da altura: metade do raio NDC)
+    const proprio = luaDirigida(0.05)?.discos?.find((d) => d.chave === 'corpo:moon');
+    expect(proprio?.raio).toBeCloseTo(0.025, 6);
+  });
+
+  it('A5: a partir de 0,35 de raio (o retrato do quadro) o nome dirigido sai da lista', () => {
+    for (const r of [0.35, 0.4, 0.6, 1]) expect(luaDirigida(r), `r = ${r}`).toBeUndefined();
+  });
+
+  it('A5: entre os dois o nome cai sem degrau — pela geometria, não pelo relógio', () => {
+    // um passo de 0,01 de raio: a rampa (`smoothstep` de 0,12 a 0,35) tem
+    // inclinação máxima 1,5/0,23, então nenhum passo tira mais que ~0,062
+    const serie: number[] = [];
+    for (let r = 0.1; r < 0.35; r += 0.01) serie.push(luaDirigida(r)?.opacity ?? 0);
+    expect(serie[0]).toBe(0.95);
+    expect(serie.at(-1)!).toBeGreaterThan(0);
+    for (let i = 1; i < serie.length; i++) {
+      expect(serie[i], `passo ${i}`).toBeLessThanOrEqual(serie[i - 1]);
+      expect(serie[i - 1] - serie[i], `passo ${i}`).toBeLessThan(0.065);
+    }
+    // o mesmo quadro dá o mesmo nome, sem memória do anterior
+    expect(luaDirigida(0.2)?.opacity).toBe(luaDirigida(0.2)?.opacity);
+  });
+
+  it('A5: o Atlas não muda — a mesma Lua cede de 0,02 a 0,03, como antes', () => {
+    const lua = LUAS_DO_SISTEMA.filter((l) => l.id === 'moon');
+    const pos = Float32Array.of(LUA_NA_CHEGADA.x, LUA_NA_CHEGADA.y, LUA_NA_CHEGADA.z);
+    const noAtlas = (r: number) => projectCorpos(cameraNaChegada(r), lua, pos, undefined, () => RAIO_DA_LUA)[0];
+    expect(noAtlas(0.015).opacity).toBe(0.95);
+    expect(noAtlas(0.025).opacity).toBeCloseTo(0.95 * 0.5, 2);
+    expect(noAtlas(0.035).causaDoSumico).toBe('tamanho');
   });
 
   it('sem target, o filme não escreve corpo nenhum — só a régua de sempre', () => {

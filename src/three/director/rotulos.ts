@@ -712,9 +712,10 @@ export class Rotulos {
    * publicam lista vazia, senão a memória de quem sumiu congela em vez
    * de esvair —, e a régua tem de ter dito a última palavra antes dela.
    *
-   * O FILME NÃO ENTRA: lá o assunto do beat é etiqueta forçada, sem
-   * fades, por regra editorial ("o assunto sempre tem nome"), e os
-   * planos são pinados quadro a quadro.
+   * O FILME NÃO ENTRA: lá o assunto do beat não tem rampa — a estrela e
+   * o lugar são etiqueta forçada, sem fades; o corpo da casa tira a
+   * opacidade da geometria e cede só quando vira o retrato do quadro
+   * (A5) —, e os planos são pinados quadro a quadro.
    */
   private publicar(labels: StarLabel[], dt: number, fase: Phase) {
     if (fase !== 'journey') {
@@ -748,9 +749,9 @@ export class Rotulos {
     // a projeção em regime é NOME A NOME a de antes da F4, e é isso que
     // faz esta peça mudar o COMO sem mudar o QUEM.
     //
-    // NO FILME NÃO HÁ RAMPA (o assunto do beat é etiqueta forçada, sem
-    // fades — ver acima), então lá o ocluído sai no MESMO quadro: é
-    // exatamente o `continue` que ele tinha antes desta fase.
+    // NO FILME NÃO HÁ RAMPA (o assunto do beat é etiqueta forçada ou, no
+    // corpo da casa, opacidade da geometria — ver acima), então lá o
+    // ocluído sai no MESMO quadro: é o `continue` de antes desta fase.
     const semRampa = fase === 'journey';
     for (let i = labels.length - 1; i >= 0; i--) {
       const l = labels[i];
@@ -873,7 +874,9 @@ export class Rotulos {
    * PROJEÇÃO é a do Atlas, e o rótulo passa INTEIRO por ela (E4c):
    * `projectCorpos` dá o nome na língua de agora, a classe, a
    * `prioridade`, o canal primário e o globo que esconde, e a etiqueta
-   * some fora do quadro ou atrás de outro corpo. O que faz dele assunto é
+   * some fora do quadro, atrás de outro corpo ou quando o corpo vira o
+   * retrato do quadro (a proximidade do assunto, A5 — não a cessão do
+   * Atlas, que calaria o nome logo no começo). O que faz dele assunto é
    * o `dirigido` que `forcadosDoBeat` põe: peso do foco na disputa,
    * holofote no alfa e o desenho do filme no `LabelCanvas`.
    */
@@ -885,10 +888,26 @@ export class Rotulos {
     const posicoes =
       fonte === 'lua' ? this.luaPosParaRotulo : fonte === 'helio' ? this.helioPosParaRotulo : planetas?.posicoes;
     if (!posicoes) return null;
-    const [l] = projectCorpos(
-      cam, [corpo], posicoes.subarray(i * 3, i * 3 + 3), this.oclusoresDeRotulo
-    );
+    const pos = posicoes.subarray(i * 3, i * 3 + 3);
+    const [l] = projectCorpos(cam, [corpo], pos, this.oclusoresDeRotulo);
     if (!l || l.causaDoSumico === 'oclusao') return null;
+    // O NOME CEDE SÓ QUANDO O CORPO VIRA O RETRATO DO QUADRO (A5, regra do
+    // dono de 21/11): não pela cessão do Atlas (`RAIO_NDC_DE_CESSAO`, que
+    // calava a Lua no começo da aproximação), e sim pela proximidade do
+    // assunto — a mesma régua e o mesmo raio (`raioDoAssuntoPc`, com o
+    // anel que é disco) que recuam o resto do quadro. Sai da geometria,
+    // não do relógio: pausar, pular ou tocar a 4× dá o mesmo nome. O que
+    // cedeu inteiro sai da lista.
+    const raio = raioDoAssuntoPc(corpo.chave.slice(CHAVE_DE_CORPO.length));
+    if (raio !== null) {
+      _assunto.set(pos[0], pos[1], pos[2]);
+      const naTela = assuntoEm(raio, cam);
+      const perto = naTela?.perto ?? 0;
+      if (!(perto < 1)) return null;
+      l.opacity *= 1 - perto;
+      // o mesmo raio recua o texto: o nome começa fora do anel, não só do planeta
+      if (naTela) l.raioDoAssunto = naTela.raioNdc / 2;
+    }
     return l;
   }
 
@@ -1027,8 +1046,8 @@ export class Rotulos {
   projetar(cam: THREE.PerspectiveCamera, quadro: QuadroDeRotulos) {
     const { fase, named, dHome, planetas } = quadro;
     // O TEMPO DAS RAMPAS, consumido de uma vez (ver `dtDeRampa`). O FILME
-    // NÃO ENTRA: lá o assunto do beat é etiqueta forçada, sem fades, por
-    // regra editorial — a rampa é do céu que o visitante navega.
+    // NÃO ENTRA: lá o assunto do beat não tem rampa (ver `publicar`) — a
+    // rampa é do céu que o visitante navega.
     const dtDaRampa = this.dtDeRampa;
     this.dtDeRampa = 0;
     // OS DISCOS DO QUADRO, antes de qualquer projeção: eles valem para
@@ -1123,10 +1142,10 @@ export class Rotulos {
         this.lastLabels.filter((l) => l.perdeuAVaga).map((l) => l.key)
       );
       if (fase === 'journey') {
-        // REGRA EDITORIAL da revisão: o assunto do beat sempre tem nome
-        // (target, etiqueta forçada, sem fades) e o fundo fica mudo
-        // (quiet) ou limitado a 2 durante o beat. SOL e Sagittarius A✱
-        // são sempre isentos do filtro de centro.
+        // REGRA EDITORIAL da revisão: o assunto do beat tem nome (target;
+        // o corpo da casa cede só quando vira o retrato do quadro, A5) e o
+        // fundo fica mudo (quiet) ou limitado a 2 durante o beat. SOL e
+        // Sagittarius A✱ são sempre isentos do filtro de centro.
         const meta = this.fios.beatDaViagem();
         let labels = meta.quiet
           ? []

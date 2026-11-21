@@ -181,6 +181,12 @@ export interface StarLabel {
    */
   discos?: readonly DiscoNaTela[];
   /**
+   * O RAIO APARENTE DO ASSUNTO INTEIRO (A5) — o planeta, ou o anel que é
+   * disco —, em fração da ALTURA como `DiscoNaTela.raio`. Só o nome
+   * dirigido do corpo da casa o traz; o `LabelCanvas` recua o texto dele.
+   */
+  raioDoAssunto?: number;
+  /**
    * PODE ESCREVER DO OUTRO LADO da âncora quando o lado natural está
    * ocupado (13/11) — só o lado, na mesma linha, sem o peso nem o
    * holofote do `dirigido`. É dos planetas do sistema em quadro, irmãos
@@ -393,8 +399,9 @@ export function prioridadeDeEstrela(tier: number | undefined): number {
  *
  * O DIRIGIDO VALE O FOCO: o assunto declarado pelo roteiro é o
  * equivalente do alvo seguido do Eyes (P11, peso 201), e é a linha que
- * mantém a regra editorial do filme ("o assunto sempre tem nome") agora
- * que a disputa é por PESO e não por ordem de chegada.
+ * mantém a regra editorial do filme (o assunto tem nome até virar o
+ * retrato do quadro, A5) agora que a disputa é por PESO e não por ordem
+ * de chegada.
  */
 export function pesoDoRotulo(label: StarLabel): number {
   if (label.dirigido) return PRIORIDADE_DO_ROTULO.foco;
