@@ -7,13 +7,14 @@
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
 import { createGranulation } from './granulation.js';
+import { CameraSemLente } from '../../core/profundidade';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 function bancada() {
   let alvo: THREE.WebGLRenderTarget | null = null;
   const lacos: string[] = [];
   const ctx: any = {
-    quadCamera: new THREE.Camera(),
+    quadCamera: new CameraSemLente(),
     makeFullscreenScene: () => new THREE.Scene(),
     rtType: THREE.HalfFloatType,
     SIM_W: 8,

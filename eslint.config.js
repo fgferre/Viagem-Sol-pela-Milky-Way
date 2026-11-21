@@ -46,16 +46,28 @@ export default defineConfig([
   // toda câmera que passa por `render`, e a base não tem o método: a
   // passagem morre com um erro no console, e só com a porta ligada —
   // nenhum teste nem a imagem de sempre avisam.
+  //
+  // Pega `new THREE.Camera()`, `new Camera()` e `class … extends
+  // THREE.Camera`/`extends Camera` (declaração e expressão), nos testes
+  // também. Isento só `profundidade.ts`, onde mora a `CameraSemLente`, o
+  // único herdeiro legítimo. FORA DE ALCANCE, de propósito: o apelido por
+  // variável (`const C = THREE.Camera`) e o import renomeado
+  // (`import { Camera as C } from 'three'`) — nenhum existe em `src`.
   {
     files: ['src/**/*.{ts,tsx,js}'],
-    ignores: ['**/*.test.ts'],
+    ignores: ['src/three/core/profundidade.ts'],
     rules: {
       'no-restricted-syntax': [
         'error',
-        {
-          selector: "NewExpression[callee.object.name='THREE'][callee.property.name='Camera']",
+        ...[
+          "NewExpression[callee.object.name='THREE'][callee.property.name='Camera']",
+          "NewExpression[callee.name='Camera']",
+          ":matches(ClassDeclaration, ClassExpression)[superClass.object.name='THREE'][superClass.property.name='Camera']",
+          ":matches(ClassDeclaration, ClassExpression)[superClass.name='Camera']",
+        ].map((selector) => ({
+          selector,
           message: 'Câmera sem lente é `CameraSemLente` (src/three/core/profundidade.ts): a `Camera` base quebra o desenho com a profundidade invertida.',
-        },
+        })),
       ],
     },
   },

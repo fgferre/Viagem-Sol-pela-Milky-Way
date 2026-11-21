@@ -637,13 +637,17 @@ try {
       );
       if (fechado) await sessao.js(`document.querySelector('${R} .relogio-abrir').click()`);
     }
-    // "Voltar ao presente" não existe quando o relógio JÁ está ao vivo
-    // (o Atlas abre ao vivo): nada a apertar, e o veredito lê o estado
-    return sessao.js(`(() => {
-      const b = document.querySelector('${R} ${ALVOS_DO_RELOGIO[gesto]}');
+    // Botão ausente REPROVA, sem exceção: um clique que não acontece não
+    // pode passar calado. "Voltar ao presente" só é desenhado fora do ao
+    // vivo, e sob `?shot=1` o Atlas abre PARADO (o ao vivo não liga) — por
+    // isso ele existe nos dois usos, e é o clique nele que liga o ao vivo.
+    const sel = `${R} ${ALVOS_DO_RELOGIO[gesto]}`;
+    const existe = await sessao.js(`(() => {
+      const b = document.querySelector('${sel}');
       if (b) b.click();
       return Boolean(b);
     })()`);
+    if (!existe) conferir(false, `apertar "${gesto}": o botão ${sel} não existe`);
   };
 
   await sessao.ir('atlas=1&q=cinema&shot=1');

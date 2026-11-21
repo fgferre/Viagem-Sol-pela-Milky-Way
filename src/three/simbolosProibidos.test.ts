@@ -542,6 +542,20 @@ const PROIBIDOS: SimboloProibido[] = [
       'setGradacao. Sem ele, um setter exportado não tem onde guardar a dose ' +
       'e a lista fechada do quadro volta a ser a única porta de entrada',
   },
+  // ─── relógio do Atlas (2026-11-20): a barra antiga do tempo morreu ─────
+  // O app trocou a barra pelo relógio, e a sonda de movimento seguiu
+  // medindo seletores que não existiam mais — ausência que passava calada
+  // (rodada 3, A4). A sonda agora mede o relógio; a varredura impede que
+  // um seletor da barra volte a ela.
+  {
+    arquivo: 'scripts/visual/sonda-motion.mjs',
+    padrao: /\.atlas-tempo/,
+    migracao: 'relógio do Atlas',
+    razao:
+      'a barra antiga do tempo não existe mais no HUD: medir um seletor dela ' +
+      'acha nada, e a sonda julgaria o vazio. O relógio é .relogio, com a ' +
+      'dobra .relogio-dobra aberta pelo .relogio-abrir',
+  },
 ];
 
 /**

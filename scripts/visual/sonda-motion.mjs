@@ -117,9 +117,9 @@ const SEQUENCIA = process.argv.includes('--sequencia');
 // propósito). Cobre quatro formas de interrupção: fechar a sanfona
 // "Avançado" no meio de uma abertura e reabri-la no meio de um
 // fechamento; ligar "reduzir movimento" NO MEIO de uma transição
-// (painel entrando/saindo, linha do tempo); redimensionar a janela sem
+// (painel entrando/saindo, a dobra do relógio); redimensionar a janela sem
 // cruzar o ponto de quebra do celular (760px) enquanto algo anima; e
-// interromper a própria linha do tempo com um redimensionamento (I4) ou
+// abrir o relógio depois de um redimensionamento (I4) ou fechá-lo com
 // um Esc (I5). Cada cenário amostra com `amostrarSequencia` (dtMs REAL,
 // nunca o nominal) e imprime PASSA/FALHA a partir dos números — não
 // julga por fora, só mede. Opt-in: sem a flag, nada aqui muda.
@@ -211,6 +211,7 @@ const SEL_RELOGIO = '.atlas-rodape .relogio';
 const SEL_RELOGIO_ABRIR = `${SEL_RELOGIO} .relogio-abrir`;
 const SEL_RELOGIO_LEITURA = `${SEL_RELOGIO} .relogio-leitura`;
 const SEL_RELOGIO_DOBRA = `${SEL_RELOGIO} .relogio-dobra`;
+const SEL_RELOGIO_DATA = `${SEL_RELOGIO} .relogio-data`;
 const jsControleDoRelogio = (sel) => `document.querySelector('${SEL_RELOGIO} ${sel}')`;
 const SEL_BUSCA_GATILHO = '[data-abre-dialogo="busca"]';
 const SEL_BUSCA_PAINEL = '[data-dialogo="busca"]';
@@ -221,12 +222,11 @@ const SEL_FICHA_PAINEL = '[data-dialogo="ficha"]';
 // expande a compacta sem arrasto nenhum (F7/F8).
 const SEL_FICHA_EYEBROW = '.hud-cabecalho-eyebrow';
 const SEL_FICHA_DETALHES = '.atlas-ficha-detalhes';
-// A SANFONA "AVANÇADO" (I1) e A LINHA DO TEMPO (I2c, I4, I5) — únicos
-// alvos novos desta sonda que não são um `[data-dialogo]`.
+// A SANFONA "AVANÇADO" (I1) — alvo desta sonda que não é um
+// `[data-dialogo]`, como a dobra do relógio (`SEL_RELOGIO_DOBRA`, acima),
+// que desde 20/11 é o alvo de I2c, I4 e I5.
 const SEL_AVANCADO_GATILHO = '[aria-controls="ajustes-avancado"]';
 const SEL_AVANCADO_CORPO = '#ajustes-avancado';
-const SEL_TEMPO_CABECALHO = '.atlas-tempo-cabecalho';
-const SEL_TEMPO_LINHA = '.atlas-tempo-linha';
 // OS SEIS TOKENS DE DESLOCAMENTO (movimento.test.ts, `TOKENS_DE_MOVIMENTO`
 // + `--t-rapido`) que a gravação lenta da C3 multiplica por 6 — a mesma
 // lista, e não um subconjunto, porque a sequência inteira (busca, ficha,
@@ -418,6 +418,18 @@ async function retanguloDe(sessao, seletor) {
     const r = el.getBoundingClientRect();
     return { x: r.x, y: r.y, width: r.width, height: r.height };
   })()`);
+}
+
+/** `retanguloDe` para quem PRECISA do elemento (C0, I2c, I4, I5): ausente,
+ *  a sonda reprova lançando, como `clicarReal` — em vez de seguir com
+ *  `null` e virar `TypeError`, um `{ entrada: null }` gravado calado ou um
+ *  INCONCLUSIVO. Só o nulo reprova: um retângulo de altura zero (a dobra
+ *  fechada) é um elemento que existe. `retanguloDe` continua anulável
+ *  para quem mede SUMIÇO. */
+async function retanguloObrigatorio(sessao, seletor, oQue) {
+  const r = await retanguloDe(sessao, seletor);
+  if (!r) throw new Error(`retanguloObrigatorio: ${oQue} ("${seletor}") não encontrado`);
+  return r;
 }
 
 /** o par mousePressed+mouseReleased em coordenadas EXPLÍCITAS — o miolo
@@ -680,26 +692,88 @@ function jsAmostraFolha() {
   })()`;
 }
 
-/** a máquina do tempo não é `[data-dialogo]` — corpo + opacidade + a
- *  linha da data (para flagrar salto no primeiro quadro, item do
- *  passo 2f). */
-function jsAmostraTempo() {
+/** A DOBRA DO RELÓGIO (20/11; C0, I2c, I4, I5) — o painel da velocidade,
+ *  que o `.relogio-abrir` abre por CLIQUE e o Esc ou o clique fora fecham
+ *  (`HudDoAtlas.tsx`). Ela não é `[data-dialogo]` e anima
+ *  `grid-template-rows` + `opacity` por transição CSS (04-atlas.css), não
+ *  `transform`: a amostra leva o estado (`data-aberta`), o computado das
+ *  duas propriedades e da visibilidade, a WAAPI (onde a CSSTransition
+ *  aparece, com o trio `playState`/`duration`/`currentTime` que
+ *  `julgarInterrupcao` lê) e o que não pode saltar quando a dobra nasce: o
+ *  topo da LEITURA e o ponto da DATA. É a leitura única que substituiu as
+ *  três da barra antiga (corpo do hover, transform da linha, `y` da linha). */
+function jsAmostraDobra() {
   return `(() => {
-    const corpo = document.querySelector('.atlas-tempo-botoes');
-    const dataEl = document.querySelector('.atlas-tempo-data');
+    const el = document.querySelector(${JSON.stringify(SEL_RELOGIO_DOBRA)});
+    const leitura = document.querySelector(${JSON.stringify(SEL_RELOGIO_LEITURA)});
+    const dataEl = document.querySelector(${JSON.stringify(SEL_RELOGIO_DATA)});
     const dr = dataEl ? dataEl.getBoundingClientRect() : null;
-    const dataRect = dr ? { x: dr.x, y: dr.y } : null;
-    if (!corpo) return { existe: false, dataRect };
-    const cs = getComputedStyle(corpo);
+    const fora = {
+      leituraY: leitura ? leitura.getBoundingClientRect().y : null,
+      dataRect: dr ? { x: dr.x, y: dr.y } : null,
+    };
+    if (!el) return { existe: false, waapi: [], ...fora };
+    const cs = getComputedStyle(el);
     return {
       existe: true,
-      sumindo: corpo.classList.contains('sumindo'),
+      aberta: el.getAttribute('data-aberta') === 'true',
       opacity: cs.opacity,
-      transform: cs.transform,
-      animationName: cs.animationName,
-      dataRect,
+      visibility: cs.visibility,
+      gridTemplateRows: cs.gridTemplateRows,
+      waapi: el.getAnimations().map((a) => ({
+        playState: a.playState,
+        pending: a.pending,
+        currentTime: a.currentTime === null ? null : Math.round(Number(a.currentTime)),
+        duration: a.effect?.getComputedTiming().duration,
+        propriedade: a.transitionProperty ?? null,
+      })),
+      ...fora,
     };
   })()`;
+}
+
+/** a dobra ASSENTOU no estado pedido (amostra de `jsAmostraDobra`): o
+ *  atributo, a opacidade e a visibilidade do repouso, e nenhuma transição
+ *  correndo — a de `visibility` inclusive, que no fechar espera os 180 ms. */
+const dobraAssentou = (a, aberta) => a.existe === true && a.aberta === aberta
+  && a.opacity === (aberta ? '1' : '0')
+  && a.visibility === (aberta ? 'visible' : 'hidden')
+  && (a.waapi ?? []).every((w) => w.playState !== 'running');
+
+/** espera a dobra chegar ao repouso (aberta ou fechada) pelo estado dela,
+ *  como `esperarSanfonaEmRepouso`; `null` no estouro. */
+const esperarDobraEmRepouso = (sessao, aberta) =>
+  esperarPor({ js: sessao.js }, `(() => {
+    const el = document.querySelector(${JSON.stringify(SEL_RELOGIO_DOBRA)});
+    return !!el && el.getAttribute('data-aberta') === '${aberta}'
+      && getComputedStyle(el).opacity === '${aberta ? 1 : 0}'
+      && el.getAnimations().length === 0;
+  })()`, 3000);
+
+/** o PONTO do clique que abre o relógio, com as duas guardas que o clique
+ *  precisa: o botão e a dobra existem (`retanguloObrigatorio`, lança), e a
+ *  dobra está FECHADA em repouso — o botão ALTERNA (`setAberto(!aberto)`),
+ *  então numa dobra que sobrou aberta o "abrir" a fecharia. Quem chama
+ *  marca o próprio `t0` e clica (`clicarEmPonto`): as idas e voltas
+ *  daqui não entram na conta do tempo. */
+async function prepararAberturaDaDobra(sessao, caso) {
+  await retanguloObrigatorio(sessao, SEL_RELOGIO_DOBRA, `a dobra do relógio (${caso})`);
+  if ((await esperarDobraEmRepouso(sessao, false)) === null) {
+    throw new Error(`${caso}: a dobra do relógio não está fechada em repouso — o clique a fecharia`);
+  }
+  const r = await retanguloObrigatorio(sessao, SEL_RELOGIO_ABRIR, `o botão que abre o relógio (${caso})`);
+  return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+}
+
+/** fecha a dobra pelo Esc — só com ela ABERTA: fechada, o Esc subiria um
+ *  degrau da escada (`useAtalhos`). Espera o repouso fechado; quem vier
+ *  depois confere de novo em `prepararAberturaDaDobra`. */
+async function fecharDobraComEsc(sessao) {
+  const aberta = await sessao.js(
+    `document.querySelector(${JSON.stringify(SEL_RELOGIO_DOBRA)})?.getAttribute('data-aberta') === 'true'`
+  );
+  if (aberta) await pressionarEscape(sessao);
+  await esperarDobraEmRepouso(sessao, false);
 }
 
 /** a leitura composta da SANFONA "Avançado" dos Ajustes (I1,
@@ -750,40 +824,6 @@ const esperarSanfonaEmRepouso = (sessao) =>
       && el.getAnimations().length === 0
       && el.clientHeight >= miolo.scrollHeight - 1;
   })()`, 3000);
-
-/** o `transform` computado da linha do tempo MAIS a WAAPI dela (I2c,
- *  `--interrupcoes`) — não confundir com a leitura cheia de
- *  `jsAmostraTempo` (que é sobre `.atlas-tempo-botoes`, não
- *  `.atlas-tempo-linha`). A WAAPI entrou junto do `transform`: desde que
- *  I2c passou a julgar por `observarAposEvento`, "assentou" precisa do
- *  mesmo par que o painel usa (`playState`/`duration`/`currentTime`),
- *  senão não dá para saber se o FLIP (`ir`, `HudDoAtlas.tsx`) ainda tem
- *  algo em curso ou se já parou de verdade. */
-function jsTransformDaLinhaDoTempo() {
-  return `(() => {
-    const el = document.querySelector(${JSON.stringify(SEL_TEMPO_LINHA)});
-    if (!el) return { transform: null, waapi: [] };
-    return {
-      transform: getComputedStyle(el).transform,
-      waapi: el.getAnimations().map((a) => ({
-        playState: a.playState,
-        pending: a.pending,
-        currentTime: a.currentTime === null ? null : Math.round(Number(a.currentTime)),
-        duration: a.effect?.getComputedTiming().duration,
-      })),
-    };
-  })()`;
-}
-
-/** o `y` da linha do tempo (I4/I5, `--interrupcoes`) — o FLIP de
- *  `HudDoAtlas.tsx` anima esta linha por `translateY`, então a posição
- *  na tela (não o transform bruto) é o que conta um salto de verdade. */
-function jsYDaLinhaDoTempo() {
-  return `(() => {
-    const el = document.querySelector(${JSON.stringify(SEL_TEMPO_LINHA)});
-    return { y: el ? el.getBoundingClientRect().y : null };
-  })()`;
-}
 
 /** amostra em `alvosMs` relativos a `t0` (o instante do comando) — cada
  *  amostra guarda o `dtMs` REAL decorrido, nunca o nominal, porque a
@@ -1486,7 +1526,7 @@ async function rodarInterrupcoes() {
 
     // ---------------------------------------------------------------
     // I2 — "reduzir movimento" ligado NO MEIO da transição: painel
-    // saindo, painel entrando, linha do tempo entrando. Ligar
+    // saindo, painel entrando, dobra do relógio entrando. Ligar
     // `prefers-reduced-motion: reduce` no meio tem de travar o
     // movimento EM CURSO, não só bloquear o próximo. Julgado pelo que a
     // PRÓPRIA página viu (`observarAposEvento`), nunca por +10/+60ms
@@ -1498,8 +1538,8 @@ async function rodarInterrupcoes() {
     });
     const desligarReduzido = () => sessao.send('Emulation.setEmulatedMedia', { features: [] });
 
-    // A MESMA régua para os seis casos de I2/I3 (saída, entrada, linha
-    // do tempo) — só o "assentou?" (`assentouAgora`) muda por `tipo`.
+    // A MESMA régua para os seis casos de I2/I3 (saída, entrada, dobra
+    // do relógio) — só o "assentou?" (`assentouAgora`) muda por `tipo`.
     // INCONCLUSIVO quando o evento não chegou, quando não havia nada
     // rodando ANTES do comando para interromper, ou quando o
     // `restanteNaturalMs` (quanto faltava, pelo relógio da PÁGINA, para
@@ -1531,7 +1571,7 @@ async function rodarInterrupcoes() {
       const assentouAgora = (a) => {
         if (tipo === 'saida') return a.existe === false && (!gatilho || a.active?.gatilho === gatilho);
         if (tipo === 'entrada') return emRepouso(a);
-        return a.transform === 'none' && (a.waapi ?? []).every((w) => w.playState !== 'running');
+        return dobraAssentou(a, true);
       };
       const primeiro = obs.amostras.find(assentouAgora);
       if (!primeiro) {
@@ -1575,19 +1615,26 @@ async function rodarInterrupcoes() {
     await pressionarEscape(sessao);
     await dorme(400);
 
-    // (c) linha do tempo ENTRANDO (hover)
-    const rectCabecalhoI2 = await retanguloDe(sessao, SEL_TEMPO_CABECALHO);
+    // (c) a DOBRA DO RELÓGIO ENTRANDO (clique). Até 20/11 era a linha da
+    // barra antiga, que entrava por HOVER e se movia por FLIP (`transform`
+    // + WAAPI). O relógio novo abre por CLIQUE no `.relogio-abrir`, e a
+    // dobra anima `grid-template-rows` + `opacity` por transição CSS (a
+    // CSSTransition aparece no `getAnimations()` dela): o "assentou" deixou
+    // de ser `transform === 'none'` e passou a ser "aberta, opacidade 1,
+    // nada correndo" (`tipo: 'dobra'`). O botão e a dobra são obrigatórios
+    // (`prepararAberturaDaDobra`): sem a dobra a WAAPI viria vazia e o caso
+    // cairia calado em INCONCLUSIVO.
+    const pontoI2c = await prepararAberturaDaDobra(sessao, 'I2c');
     const t0I2c = Date.now();
-    await moverMouse(sessao, rectCabecalhoI2.x + rectCabecalhoI2.width / 2, rectCabecalhoI2.y + rectCabecalhoI2.height / 2);
+    await clicarEmPonto(sessao, pontoI2c.x, pontoI2c.y);
     await esperarAte(t0I2c, 40);
     const i2c = await julgarInterrupcao(
-      'tempo',
-      { evento: 'reduzido', construirAmostra: jsTransformDaLinhaDoTempo },
+      'dobra',
+      { evento: 'reduzido', construirAmostra: jsAmostraDobra },
       ligarReduzido
     );
     await desligarReduzido();
-    await moverMouse(sessao, 10, 10);
-    await dorme(1000);
+    await fecharDobraComEsc(sessao);
 
     const i2Veredito = combinarVereditos([i2a.veredito, i2b.veredito, i2c.veredito]);
 
@@ -1675,21 +1722,16 @@ async function rodarInterrupcoes() {
     const i3Veredito = combinarVereditos([i3a.veredito, i3b.veredito, i3c.veredito]);
 
     // ---------------------------------------------------------------
-    // I4 — a linha do tempo depois de UM REDIMENSIONAMENTO (mesa): não
-    // pode saltar de onde estava — o FLIP de `HudDoAtlas.tsx` tem de
-    // repartir do topo medido DEPOIS do resize, não de um "antes" que já
-    // não existe.
+    // I4 — ABRIR O RELÓGIO DEPOIS DE UM REDIMENSIONAMENTO (mesa): a
+    // leitura não pode saltar. Até 20/11 a linha da barra antiga se movia
+    // por FLIP, e I4 julgava que o FLIP repartia do topo medido DEPOIS do
+    // resize. O relógio novo não tem FLIP: a dobra abre PARA CIMA, fora do
+    // fluxo (`.relogio-extras` absoluto), e o rodapé não muda de altura. O
+    // análogo é o que a pessoa vê: abrir depois do resize e a LEITURA
+    // (`.relogio-leitura`) ficar onde estava em TODAS as amostras (antes
+    // só a de +15 ms), com a dobra assentada ABERTA em +450 ms — sem essa
+    // segunda condição, um clique que não abrisse nada passaria.
     // ---------------------------------------------------------------
-    const rectCabecalhoI4a = await retanguloDe(sessao, SEL_TEMPO_CABECALHO);
-    await moverMouse(
-      sessao,
-      rectCabecalhoI4a.x + rectCabecalhoI4a.width / 2,
-      rectCabecalhoI4a.y + rectCabecalhoI4a.height / 2
-    );
-    await dorme(700); // abre — garante fechada-depois-aberta, não confia no estado anterior
-    await moverMouse(sessao, 10, 10);
-    await dorme(1000); // fecha (o respiro de ~350ms, com folga)
-
     // SÓ A ALTURA muda (I4 é sobre redimensionamento vertical) — a
     // LARGURA fica igual a `--janela`, nunca cruzando fronteira nenhuma.
     const alturaI4 = Math.max(JANELA_H - 140, 400);
@@ -1697,67 +1739,71 @@ async function rodarInterrupcoes() {
       width: JANELA_W, height: alturaI4, deviceScaleFactor: DPR, mobile: false,
     });
     await dorme(400);
-    const y0I4 = await sessao.js(
-      `document.querySelector('${SEL_TEMPO_LINHA}')?.getBoundingClientRect().y ?? null`
-    );
+    const y0I4 = (await retanguloObrigatorio(sessao, SEL_RELOGIO_LEITURA, 'a leitura do relógio (I4)')).y;
 
     let i4Amostras = [];
-    const rectCabecalhoI4b = await retanguloDe(sessao, SEL_TEMPO_CABECALHO);
+    const pontoI4 = await prepararAberturaDaDobra(sessao, 'I4');
     const quadrosTempo = await gravarClipe(
       sessao,
       { largura: JANELA_W, altura: alturaI4, pastaQuadros: pastaTempo },
       async () => {
         const t0I4 = Date.now();
-        await moverMouse(
-          sessao,
-          rectCabecalhoI4b.x + rectCabecalhoI4b.width / 2,
-          rectCabecalhoI4b.y + rectCabecalhoI4b.height / 2
-        );
-        i4Amostras = await amostrarSequencia(sessao, t0I4, [15, 60, 150, 450], jsYDaLinhaDoTempo);
+        await clicarEmPonto(sessao, pontoI4.x, pontoI4.y);
+        i4Amostras = await amostrarSequencia(sessao, t0I4, [15, 60, 150, 450], jsAmostraDobra);
       }
     );
     const clipeTempo = renderizarClipe(quadrosTempo, resolve(CAPTURAS, `motion-interrupcoes-tempo-${commit}.mp4`));
 
-    const y15 = i4Amostras.find((a) => a.alvoMs === 15)?.y ?? null;
-    const y450 = i4Amostras.find((a) => a.alvoMs === 450)?.y ?? null;
-    const i4SemSalto = y0I4 !== null && y15 !== null && Math.abs(y15 - y0I4) <= 8;
-    const i4Assentou = y0I4 !== null && y450 !== null && y450 < y0I4;
+    const y15 = i4Amostras.find((a) => a.alvoMs === 15)?.leituraY ?? null;
+    const fimI4 = i4Amostras.find((a) => a.alvoMs === 450) ?? null;
+    const y450 = fimI4?.leituraY ?? null;
+    const maiorSaltoI4 = i4Amostras.length > 0 && i4Amostras.every((a) => a.leituraY !== null)
+      ? Math.max(...i4Amostras.map((a) => Math.abs(a.leituraY - y0I4)))
+      : null;
+    const i4SemSalto = maiorSaltoI4 !== null && maiorSaltoI4 <= 8;
+    const i4Assentou = fimI4 !== null && dobraAssentou(fimI4, true);
     const i4Passa = i4SemSalto && i4Assentou;
 
-    await moverMouse(sessao, 10, 10);
-    await dorme(1000);
+    await fecharDobraComEsc(sessao);
     await sessao.send('Emulation.setDeviceMetricsOverride', {
       width: JANELA_W, height: JANELA_H, deviceScaleFactor: DPR, mobile: false,
     });
     await esperarRestaurar();
 
     // ---------------------------------------------------------------
-    // I5 — interromper a PRÓPRIA linha do tempo com um Esc: clicar trava
-    // aberta (`alternarPresa`), o Esc solta as três travas de uma vez
-    // (`presa`/`hover`/`foco`, `HudDoAtlas.tsx`) — não pode saltar na
-    // volta nem ficar presa aberta.
+    // I5 — UM ESC NO MEIO DA ABERTURA DO RELÓGIO. Até 20/11 era a linha da
+    // barra antiga travada aberta por clique e solta pelo Esc (três
+    // travas: presa/hover/foco). O relógio novo tem um estado só
+    // (`aberto`, `HudDoAtlas.tsx`): o clique abre, o Esc fecha. O caso
+    // julga agora: o clique ABRIU (a amostra de +80 ms já diz
+    // `data-aberta`; sem isso o Esc nem é mandado, porque com a dobra
+    // fechada ele subiria um degrau da escada), o Esc no meio da abertura
+    // não faz a LEITURA saltar (+15 ms contra o instante antes do Esc), e
+    // aos +500 ms a dobra assentou FECHADA (opacidade 0, oculta, nada
+    // correndo) com a leitura de volta ao repouso medido antes do clique.
     // ---------------------------------------------------------------
-    await moverMouse(sessao, 10, 10);
-    await dorme(500); // garante fechada antes de medir o repouso de referência
-    const yRepousoFechadaI5 = await sessao.js(
-      `document.querySelector('${SEL_TEMPO_LINHA}')?.getBoundingClientRect().y ?? null`
-    );
-
+    const yRepousoFechadaI5 =
+      (await retanguloObrigatorio(sessao, SEL_RELOGIO_LEITURA, 'a leitura do relógio (I5)')).y;
+    const pontoI5 = await prepararAberturaDaDobra(sessao, 'I5');
     const t0I5 = Date.now();
-    await clicarReal(sessao, SEL_TEMPO_CABECALHO); // trava aberta
+    await clicarEmPonto(sessao, pontoI5.x, pontoI5.y);
     await esperarAte(t0I5, 80);
-    const yPreI5 = await sessao.js(
-      `document.querySelector('${SEL_TEMPO_LINHA}')?.getBoundingClientRect().y ?? null`
-    );
-    const t1I5 = Date.now();
-    await pressionarEscape(sessao);
-    const i5Amostras = await amostrarSequencia(sessao, t1I5, [15, 500], jsYDaLinhaDoTempo);
-    const yPostI5 = i5Amostras.find((a) => a.alvoMs === 15)?.y ?? null;
-    const y500I5 = i5Amostras.find((a) => a.alvoMs === 500)?.y ?? null;
+    const preI5 = await sessao.js(jsAmostraDobra());
+    const yPreI5 = preI5.leituraY;
+    const abriuI5 = preI5.aberta === true;
+    let i5Amostras = [];
+    if (abriuI5) {
+      const t1I5 = Date.now();
+      await pressionarEscape(sessao);
+      i5Amostras = await amostrarSequencia(sessao, t1I5, [15, 500], jsAmostraDobra);
+    }
+    const yPostI5 = i5Amostras.find((a) => a.alvoMs === 15)?.leituraY ?? null;
+    const fimI5 = i5Amostras.find((a) => a.alvoMs === 500) ?? null;
+    const y500I5 = fimI5?.leituraY ?? null;
     const i5SemSalto = yPreI5 !== null && yPostI5 !== null && Math.abs(yPostI5 - yPreI5) <= 12;
-    const i5Assentou =
-      y500I5 !== null && yRepousoFechadaI5 !== null && Math.abs(y500I5 - yRepousoFechadaI5) <= 8;
-    const i5Passa = i5SemSalto && i5Assentou;
+    const i5Assentou = fimI5 !== null && dobraAssentou(fimI5, false)
+      && y500I5 !== null && Math.abs(y500I5 - yRepousoFechadaI5) <= 8;
+    const i5Passa = abriuI5 && i5SemSalto && i5Assentou;
 
     // ---------------------------------------------------------------
     // RELATÓRIO
@@ -1779,10 +1825,10 @@ async function rodarInterrupcoes() {
       i2: { a: i2a, b: i2b, c: i2c, veredito: i2Veredito },
       i3: { a: i3a, b: i3b, c: i3c, veredito: i3Veredito },
       i4: {
-        y0: y0I4, amostras: i4Amostras, passa: i4Passa, clipe: clipeTempo,
+        y0: y0I4, amostras: i4Amostras, maiorSalto: maiorSaltoI4, passa: i4Passa, clipe: clipeTempo,
       },
       i5: {
-        yRepousoFechada: yRepousoFechadaI5, yPre: yPreI5, amostras: i5Amostras, passa: i5Passa,
+        yRepousoFechada: yRepousoFechadaI5, abriu: abriuI5, pre: preI5, amostras: i5Amostras, passa: i5Passa,
       },
     };
     const destinoJson = semSobrescrever(resolve(CAPTURAS, `motion-interrupcoes-${commit}.json`));
@@ -1810,17 +1856,22 @@ async function rodarInterrupcoes() {
         + `${i1Passa ? 'PASSA' : 'FALHA'}`,
       `I2 reduzir movimento no meio: a) saindo ${fmtCaso(i2a)} `
         + `b) entrando ${fmtCaso(i2b)} `
-        + `c) linha do tempo ${fmtCaso(i2c)} — ${i2Veredito}`,
+        + `c) dobra do relógio ${fmtCaso(i2c)} — ${i2Veredito}`,
       `I3 resize no meio sem cruzar 760px: a) mesa saindo ${fmtCaso(i3a)} `
         + `b) mesa entrando ${fmtCaso(i3b)} `
         + `c) celular saindo ${fmtCaso(i3c)} — ${i3Veredito}`,
-      `I4 linha do tempo após resize: Y0=${y0I4} y(+15)=${y15} (Δ=${y0I4 !== null && y15 !== null ? Math.abs(y15 - y0I4).toFixed(1) : '?'}px) y(+450)=${y450} — `
+      `I4 abrir o relógio após resize: leitura Y0=${y0I4} y(+15)=${y15} y(+450)=${y450} `
+        + `(maior Δ=${maiorSaltoI4 !== null ? maiorSaltoI4.toFixed(1) : '?'}px), `
+        + `dobra em +450 aberta=${fimI4?.aberta} opacity=${fimI4?.opacity} — `
         + `${i4Passa ? 'PASSA' : 'FALHA'}`,
-      `I5 interromper a linha com Esc: y_pre=${yPreI5} y_post(+15ms)=${yPostI5} (Δ=${yPreI5 !== null && yPostI5 !== null ? Math.abs(yPostI5 - yPreI5).toFixed(1) : '?'}px) y(+500ms)=${y500I5} repouso fechada=${yRepousoFechadaI5} — `
+      `I5 Esc no meio da abertura do relógio: abriu=${abriuI5} leitura y_pre=${yPreI5} y_post(+15ms)=${yPostI5} `
+        + `(Δ=${yPreI5 !== null && yPostI5 !== null ? Math.abs(yPostI5 - yPreI5).toFixed(1) : '?'}px) `
+        + `y(+500ms)=${y500I5} repouso fechada=${yRepousoFechadaI5}, `
+        + `dobra em +500 aberta=${fimI5?.aberta} opacity=${fimI5?.opacity} visibility=${fimI5?.visibility} — `
         + `${i5Passa ? 'PASSA' : 'FALHA'}`,
       `clipe sanfona: ${clipeSanfona} (${quadrosSanfona.length} quadros)`,
       `folha sanfona: ${folhaSanfona}`,
-      `clipe linha do tempo: ${clipeTempo} (${quadrosTempo.length} quadros)`,
+      `clipe relógio: ${clipeTempo} (${quadrosTempo.length} quadros)`,
       `JSON: ${destinoJson}`,
     ];
     process.stdout.write(`${linhas.join('\n')}\n`);
@@ -5298,23 +5349,28 @@ try {
       iconeDepois: rectIconeDepois,
     };
 
-    // fecha de vez (Escape) antes de passar à máquina do tempo
+    // fecha de vez (Escape) antes de passar ao relógio
     await pressionarEscape(sessao);
     await dorme(500);
 
-    // f) hover na máquina do tempo (abre/fecha sozinha)
-    const linhaDoTempo = await retanguloDe(sessao, '.atlas-tempo');
-    let tempoEntrada = null;
-    let tempoSaida = null;
-    if (linhaDoTempo) {
-      const t0f1 = Date.now();
-      await moverMouse(sessao, linhaDoTempo.x + linhaDoTempo.width / 2, linhaDoTempo.y + linhaDoTempo.height / 2);
-      tempoEntrada = await amostrarSequencia(sessao, t0f1, [45, 120, 450], jsAmostraTempo);
-      const t0f2 = Date.now();
-      await moverMouse(sessao, 10, 10);
-      tempoSaida = await amostrarSequencia(sessao, t0f2, [45, 120, 360, 500], jsAmostraTempo);
+    // f) O RELÓGIO (20/11). A barra antiga abria por HOVER e fechava
+    // sozinha; o relógio novo abre por CLIQUE no `.relogio-abrir` e fecha
+    // pelo Esc (com a dobra aberta o Esc é dela e não sobe a escada). A
+    // amostra é a da dobra (opacidade, `data-aberta`, visibilidade) mais o
+    // ponto da DATA, que não pode saltar no primeiro quadro. Sem o botão,
+    // sem a dobra ou sem abrir, a sonda REPROVA (lança) — antes ela
+    // gravava `{ entrada: null, saida: null }` calada.
+    const pontoF = await prepararAberturaDaDobra(sessao, 'C0');
+    const t0f1 = Date.now();
+    await clicarEmPonto(sessao, pontoF.x, pontoF.y);
+    const relogioEntrada = await amostrarSequencia(sessao, t0f1, [45, 120, 450], jsAmostraDobra);
+    if (relogioEntrada.at(-1).aberta !== true) {
+      throw new Error('C0: o clique no botão do relógio não abriu a dobra');
     }
-    mesa.maquinaDoTempo = { entrada: tempoEntrada, saida: tempoSaida };
+    const t0f2 = Date.now();
+    await pressionarEscape(sessao);
+    const relogioSaida = await amostrarSequencia(sessao, t0f2, [45, 120, 360, 500], jsAmostraDobra);
+    mesa.relogio = { entrada: relogioEntrada, saida: relogioSaida };
 
     // ---------------------------------------------------------------
     // TELEFONE — 390×844, toque emulado
@@ -5503,7 +5559,10 @@ try {
       `E6 giro durante a saída (toque): aos ${amostraGiro.dtMs}ms existe=${amostraGiro.existe} inert=${amostraGiro.inert} animation=${amostraGiro.animationName} — `
         + `${e6Reproduz ? 'reproduz (ainda executando a saída antiga)' : 'não reproduz'}`,
       `segmentado "Qualidade": ${antesSeg} → ${amostrasSeg[amostrasSeg.length - 1]?.onTexto}, --seg-x/--seg-w em ${JSON.stringify(amostrasSeg[amostrasSeg.length - 1]?.segX)}/${JSON.stringify(amostrasSeg[amostrasSeg.length - 1]?.segW)}`,
-      `máquina do tempo (hover): entrada opacity ${tempoEntrada?.[0]?.opacity}→${tempoEntrada?.[tempoEntrada.length - 1]?.opacity}, saída ${tempoSaida?.[0]?.opacity}→${tempoSaida?.[tempoSaida.length - 1]?.opacity}, existe no fim=${tempoSaida?.[tempoSaida.length - 1]?.existe}`,
+      `relógio (clique abre, Esc fecha): entrada opacity ${relogioEntrada[0].opacity}→${relogioEntrada.at(-1).opacity} `
+        + `(aberta=${relogioEntrada.at(-1).aberta}, data y ${relogioEntrada[0].dataRect?.y}→${relogioEntrada.at(-1).dataRect?.y}), `
+        + `saída opacity ${relogioSaida[0].opacity}→${relogioSaida.at(-1).opacity}, `
+        + `no fim aberta=${relogioSaida.at(-1).aberta} visibility=${relogioSaida.at(-1).visibility}`,
       `JSON: ${destinoJson}`,
     ];
     process.stdout.write(`${linhas.join('\n')}\n`);
