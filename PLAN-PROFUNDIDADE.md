@@ -1,6 +1,6 @@
-# Profundidade do motor: o que está longe some da conta quando a câmera encosta numa superfície (aprovada em 21/11/2026 para DEPOIS da leva atual) — NÃO COMEÇADA
+# Profundidade do motor: o que está longe some da conta quando a câmera encosta numa superfície (aprovada em 21/11/2026) — EM OBRA numa conversa paralela, a pedido do dono; cópia `..\Mar-profundidade`, ramo `profundidade-do-motor`; quem junta ao principal é a conversa coordenadora, depois de fechar a leva dela
 
-O dono aprovou ("Sim, depois desta") uma rodada própria para o defeito geral. Só começa depois de fechada a leva de 20–21/11 (auditoria do Gemini rodada 2, relógio do Atlas, anel de Saturno). Ele pediu solução que melhore o app inteiro, não remendo por corpo.
+O dono aprovou ("Sim, depois desta") uma rodada própria para o defeito geral. Depois ele sugeriu abrir uma conversa paralela para a rodada: ela faz os passos 1 a 4 num ramo só dela, sem trocar o padrão; a junção fica para depois de fechada a leva de 20–21/11 (auditoria do Gemini rodada 2, relógio do Atlas, anel de Saturno). Ele pediu solução que melhore o app inteiro, não remendo por corpo.
 
 ## O que se sabe (medido em 20–21/11, `PLAN-AUDITORIA.md`)
 
