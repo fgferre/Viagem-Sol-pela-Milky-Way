@@ -82,6 +82,40 @@ describe('montarCarga: o worker que devolve erro', () => {
   });
 });
 
+describe('montarCarga: o aborto (auditoria R3, M8)', () => {
+  it('encerra os workers em voo (principal e sorteios extras) e rejeita com AbortError, sem cair na thread nem na clássica', async () => {
+    // o worker que assa sem responder: só o aborto o para
+    const workers: WorkerFalso[] = [];
+    g.Worker = class extends WorkerFalso {
+      constructor() {
+        super();
+        workers.push(this);
+      }
+      postMessage() {}
+    };
+    assarCarga.mockReset();
+    const aviso = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const controle = new AbortController();
+    const carga = montarCarga({
+      catalogos: null,
+      tier: 'performance',
+      galaxia: 'webgpu',
+      sorteios: 3,
+      camadaQuerida: true,
+      aoAvancar: () => {},
+      sinal: controle.signal,
+    });
+    controle.abort();
+    await expect(carga).rejects.toMatchObject({ name: 'AbortError' });
+    expect(workers).toHaveLength(3);
+    expect(workers.every((w) => w.terminado)).toBe(true);
+    expect(assarCarga).not.toHaveBeenCalled();
+    expect(aviso).not.toHaveBeenCalled();
+    aviso.mockRestore();
+    criar.mockClear();
+  });
+});
+
 describe('montarCarga: a camada WebGPU só quando querida (19/11/2026)', () => {
   it('na carga em que não é querida ela não nasce nem assa os sorteios extras; a galáxia a pede quando passar a ser', async () => {
     const mapa = () => new Uint8Array(DUST_MAP_SIZE * DUST_MAP_SIZE * 4);

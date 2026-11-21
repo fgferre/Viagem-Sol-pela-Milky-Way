@@ -88,23 +88,44 @@ const SEMENTE_DA_GALAXIA = 20260730;
  * de embed) ou que morre no meio degrada para a conta na thread,
  * honesta e mais lenta — e o que deixa o palco (nuvens observadas,
  * forjas, nuvens-semente) com os MESMOS arrays intactos depois.
+ *
+ * O ABORTO (auditoria R3, M8): placa perdida, troca de tier cancelada e
+ * desmontagem ENCERRAM o worker em vez de deixá-lo assar até o fim (três
+ * cliques seguidos eram três assados vivos de 122,7 MiB). Abortada, a
+ * carga rejeita com `AbortError` e nunca cai na reserva da thread.
  */
 function assarCargaEmWorker(
   pedido: PedidoDaCarga,
-  aoAvancar: (etapa: EtapaDaCadeia) => void
+  aoAvancar: (etapa: EtapaDaCadeia) => void,
+  sinal?: AbortSignal
 ): Promise<CargaAssada> {
-  return new Promise((resolve) => {
+  const abortada = () => new DOMException('a carga foi abortada', 'AbortError');
+  return new Promise((resolve, reject) => {
+    if (sinal?.aborted) {
+      reject(abortada());
+      return;
+    }
+    let worker: Worker | null = null;
+    const aoAbortar = () => {
+      worker?.terminate();
+      reject(abortada());
+    };
+    sinal?.addEventListener('abort', aoAbortar, { once: true });
+    const soltar = () => sinal?.removeEventListener('abort', aoAbortar);
     // sem worker a thread congela como sempre congelou; o fôlego do
     // `setTimeout(0)` entre etapas é o mesmo que o `stage()` dá, para o
-    // rótulo pintar antes do bloqueio seguinte
-    const inline = () =>
-      resolve(
-        assarCarga(pedido, async (etapa) => {
-          aoAvancar(etapa);
-          await new Promise<void>((r) => setTimeout(r, 0));
-        })
-      );
-    let worker: Worker;
+    // rótulo pintar antes do bloqueio seguinte — e é nele que o aborto
+    // é conferido
+    const inline = () => {
+      worker = null;
+      assarCarga(pedido, async (etapa) => {
+        aoAvancar(etapa);
+        await new Promise<void>((r) => setTimeout(r, 0));
+        if (sinal?.aborted) throw abortada();
+      })
+        .then(resolve, reject)
+        .finally(soltar);
+    };
     try {
       worker = new Worker(
         new URL('../world/cargaEmWorker.ts', import.meta.url),
@@ -114,12 +135,15 @@ function assarCargaEmWorker(
       inline();
       return;
     }
-    // a MESMA reserva para o worker que morre e para o que devolve erro
+    const w = worker;
+    // a MESMA reserva para o worker que morre e para o que devolve erro;
+    // depois do aborto, nenhuma das duas
     const reserva = () => {
-      worker.terminate();
-      inline();
+      w.terminate();
+      if (!sinal?.aborted) inline();
     };
-    worker.onmessage = (e: MessageEvent<RespostaDaCarga | ErroDaCarga>) => {
+    w.onmessage = (e: MessageEvent<RespostaDaCarga | ErroDaCarga>) => {
+      if (sinal?.aborted) return;
       if ('etapa' in e.data) {
         aoAvancar(e.data.etapa);
         return;
@@ -129,11 +153,12 @@ function assarCargaEmWorker(
         reserva();
         return;
       }
-      worker.terminate();
+      w.terminate();
+      soltar();
       resolve(e.data);
     };
-    worker.onerror = reserva;
-    worker.postMessage(pedido);
+    w.onerror = reserva;
+    w.postMessage(pedido);
   });
 }
 
@@ -207,8 +232,11 @@ export async function montarCarga(opts: {
    *  nasce quando passar a ser (`seguirCamadaWebgpu`) */
   camadaQuerida: boolean;
   aoAvancar: (etapa: EtapaDaCadeia) => void;
+  /** encerra TODOS os workers que saem daqui, inclusive os que a galáxia
+   *  pede depois (`pedirWebgpu`): vale enquanto o mundo assado viver */
+  sinal?: AbortSignal;
 }): Promise<CargaDoMundo> {
-  const { catalogos, tier, aoAvancar } = opts;
+  const { catalogos, tier, aoAvancar, sinal } = opts;
   // A CADEIA (12/11/2026): WebGPU → partículas no WebGL → clássica. O
   // primeiro degrau é o pedido; um WebGPU que já falhou nesta página não
   // é tentado de novo (a camada cai sozinha para o WebGL, `Galaxy`) — até
@@ -235,7 +263,8 @@ export async function montarCarga(opts: {
   // passava de 12 s. Os sorteios entram no motor na ordem.
   const principal = assarCargaEmWorker(
     { ...pedido, nuvens: pedido.soParticulas },
-    aoAvancar
+    aoAvancar,
+    sinal
   );
   // A CAMADA SÓ QUANDO QUERIDA (19/11/2026, `camadaWebgpuQuerida`): a carga
   // em que ela não é querida não a cria nem assa os sorteios extras. Quando
@@ -245,21 +274,27 @@ export async function montarCarga(opts: {
     const extras = Array.from({ length: sorteios - 1 }, (_, i) =>
       assarCargaEmWorker(
         { ...pedido, seed: SEMENTE_DA_GALAXIA + (i + 1) * 7919, paraOMotor: true },
-        () => {}
+        () => {},
+        sinal
       ).then((c) => c.pacote!)
     );
+    // a camada que cai antes da fila dos sorteios não os espera: o aborto
+    // deles não pode virar rejeição sem dono
+    for (const extra of extras) extra.catch(() => {});
     return CamadaWebgpu.criar(prima, sorteios, (s) => extras[s - 1]);
   };
+  // abortado, o mundo morreu: a galáxia que ainda pede a camada não abre
+  // forno (nem dispositivo) nenhum
   const pedirWebgpu =
     caminho === 'webgpu'
       ? () =>
-          webgpuFalhouNestaPagina()
+          webgpuFalhouNestaPagina() || sinal?.aborted
             ? null
-            : pedirCamada(assarCargaEmWorker({ ...pedido, nuvens: true }, () => {}))
+            : pedirCamada(assarCargaEmWorker({ ...pedido, nuvens: true }, () => {}, sinal))
       : null;
   const camada = pedirWebgpu && opts.camadaQuerida ? pedirCamada(principal) : null;
   const assar = async (soParticulas: boolean, pronta?: Promise<CargaAssada>) => {
-    const carga = await (pronta ?? assarCargaEmWorker({ ...pedido, soParticulas }, aoAvancar));
+    const carga = await (pronta ?? assarCargaEmWorker({ ...pedido, soParticulas }, aoAvancar, sinal));
     const dustMapTexture = texturaDoMapa(carga.poeira);
     const structureMapTexture = texturaDoMapa(carga.estrutura);
     try {
@@ -279,6 +314,8 @@ export async function montarCarga(opts: {
   const montado = await (
     pedido.soParticulas
       ? assar(true, principal).catch((e: unknown) => {
+          // o aborto não é falha das partículas: não abre outra carga
+          if (e instanceof DOMException && e.name === 'AbortError') throw e;
           console.warn('[galáxia] as partículas não montaram — segue a clássica.', e);
           return assar(false);
         })

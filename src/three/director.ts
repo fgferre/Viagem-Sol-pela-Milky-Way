@@ -854,6 +854,18 @@ export class Director {
    * Alta, mundo em Performance, e clicar Alta de novo não consertava.
    */
   private geracaoDaTroca = 0;
+  /**
+   * OS WORKERS DA TROCA (auditoria R3, M8): a geração só tira a vez do
+   * forno; quem PARA os workers dele é o aborto. `controleDoForno` é o do
+   * pedido em voo — o pedido seguinte, a desistência e o dispose o
+   * abortam. No swap ele passa a `controleDoMundo`, porque a galáxia na
+   * tela ainda pede a camada WebGPU com o MESMO sinal: abortá-lo no
+   * clique seguinte a deixaria sem camada. Esse só é abortado quando o
+   * mundo dele sai (troca seguinte, desistência, dispose). O mundo do init
+   * usa o `abortController` do Director.
+   */
+  private controleDoForno: AbortController | null = null;
+  private controleDoMundo: AbortController | null = null;
   /** os catálogos do boot, guardados porque o mundo pode ser reassado.
    *  Os arrays são os MESMOS de sempre: o worker os recebe por CÓPIA. */
   private catalogos: GalacticAssets | null = null;
@@ -2204,6 +2216,9 @@ export class Director {
       // com a carga, como desde 13/11
       camadaQuerida: camadaWebgpuQuerida(this.cenaDaCamada()),
       aoAvancar: (etapa) => this.rotular(etapa),
+      // a desistência e o dispose encerram os workers em voo: a carga
+      // rejeita com AbortError, que o `.catch` do boot já ignora
+      sinal: this.abortController.signal,
     });
     if (this.disposed || this.desistiu) {
       descartarCarga(carga);
@@ -3716,6 +3731,9 @@ export class Director {
     // DAQUI PARA BAIXO É PEDIDO NOVO, e todo pedido novo invalida o
     // anterior: quem estiver no forno perde a vez neste instante.
     const geracao = ++this.geracaoDaTroca;
+    // ...e os workers dele param agora, não quando terminarem a conta
+    this.controleDoForno?.abort();
+    this.controleDoForno = null;
     // VOLTAR AO TIER QUE JÁ ESTÁ NA TELA É CANCELAR, e não é no-op: não
     // há mundo a assar, mas há um mundo em forno que precisa saber que
     // ninguém o espera mais. A geração acima já o invalidou; aqui só se
@@ -3730,8 +3748,11 @@ export class Director {
     // ficava presa (captura e painel esperando para sempre), e o mundo
     // pela metade ficava sem dono. O mundo de antes segue desenhando.
     let emForno: Parameters<typeof descartarCarga>[0] | null = null;
+    const controle = new AbortController();
+    this.controleDoForno = controle;
     try {
       const carga = await montarCarga({
+        sinal: controle.signal,
         catalogos: this.catalogos,
         tier: q,
         galaxia: this.galaxiaForcada,
@@ -3769,12 +3790,16 @@ export class Director {
       );
       // ---- SWAP ATÔMICO — daqui até o fim nada cede a thread ----------
       emForno = null; // daqui em diante o mundo novo é o da tela
+      // o sinal sai do forno e passa a ser o do mundo na tela
+      if (this.controleDoForno === controle) this.controleDoForno = null;
       const velho = {
         galaxy: this.galaxy,
         poeira: this.dustMapTexture,
         estrutura: this.structureMapTexture,
         sol: this.sun,
+        controle: this.controleDoMundo,
       };
+      this.controleDoMundo = controle;
       this.engine.scene.remove(velho.galaxy.group);
       this.galaxy = carga.galaxy;
       this.engine.scene.add(this.galaxy.group);
@@ -3818,6 +3843,7 @@ export class Director {
       passo('dustMap', () => velho.poeira?.dispose());
       passo('structureMap', () => velho.estrutura?.dispose());
       passo('sun', () => velho.sol.dispose());
+      passo('workers', () => velho.controle?.abort());
       // o mundo novo tem OUTRO mapa de poeira: a LUT do raymarch foi
       // medida contra o que acabou de ser descartado
       this.nebula.invalidarLut();
@@ -3825,13 +3851,21 @@ export class Director {
       // o "aplicando…" do laboratório apaga e o caminho novo aparece no painel
       this.publicarQualidade();
     } catch (error) {
-      console.warn('[troca de tier] o mundo novo não montou; segue o de antes.', error);
+      // o aborto é o pedido seguinte, a desistência ou o dispose — não falha
+      const abortada = error instanceof DOMException && error.name === 'AbortError';
+      if (!abortada) console.warn('[troca de tier] o mundo novo não montou; segue o de antes.', error);
       const meia = emForno;
       if (meia) this.passoBlindado('troca de tier', 'mundo pela metade', () => descartarCarga(meia));
+      if (abortada && (this.disposed || this.desistiu)) return;
       if (geracao === this.geracaoDaTroca) {
         this.trocaPedida = null;
         this.publicarQualidade();
       }
+    } finally {
+      // o forno que não virou mundo (descartado, cancelado, lançou) para
+      // os workers que ainda deixou rodando — sorteios extras e camada
+      if (this.controleDoForno === controle) this.controleDoForno = null;
+      if (this.controleDoMundo !== controle) controle.abort();
     }
   }
 
@@ -5085,7 +5119,11 @@ export class Director {
     // o laço já parou.
     const step = (label: string, fn: () => void) => this.passoBlindado('desistir', label, fn);
     step('galaxy', () => this.galaxy?.seguirCamadaWebgpu('soltar'));
-    step('abort', () => this.abortController.abort());
+    step('abort', () => {
+      this.abortController.abort();
+      this.controleDoForno?.abort();
+      this.controleDoMundo?.abort();
+    });
     // a reassada que os sorteios agendaram (400 ms) não acorda para montar
     // uma carga inteira debaixo do véu; zerado porque "galaxiaReassando"
     // lê o campo. Os dois ouvintes são os mesmos que o `dispose` solta.
@@ -5116,8 +5154,10 @@ export class Director {
     this.preferenciaDeMovimento?.removeEventListener('change', this.aoMudarMovimento);
     document.removeEventListener('visibilitychange', this.aoMudarVisibilidade);
     // aborta JÁ (os fetches em voo não interessam mais); o resto pode
-    // esperar
+    // esperar; os workers da troca de tier também
     this.abortController.abort();
+    this.controleDoForno?.abort();
+    this.controleDoMundo?.abort();
     // A pré-compilação do three faz polling por setTimeout lendo
     // `materialProperties.currentProgram` de cada material da lista.
     // Qualquer material.dispose() nosso remove essas propriedades e o

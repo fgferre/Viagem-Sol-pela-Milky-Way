@@ -69,3 +69,34 @@ describe('a galáxia WebGPU parada não redesenha', () => {
     expect(fila.submit).toHaveBeenCalledTimes(1 + 4);
   });
 });
+
+describe('a carga abortada não é falha do WebGPU (auditoria R3, M8)', () => {
+  it('a principal que rejeita com AbortError destrói o dispositivo, devolve null e não marca a página', async () => {
+    const destroy = vi.fn();
+    const dispositivo = {
+      destroy,
+      createShaderModule: () => ({ getCompilationInfo: async () => ({ messages: [] }) }),
+      createComputePipelineAsync: async () => ({}),
+      createRenderPipelineAsync: async () => ({}),
+    };
+    const adaptador = {
+      features: new Set<string>(),
+      limits: { maxBufferSize: 1, maxStorageBufferBindingSize: 1 },
+      requestDevice: async () => dispositivo,
+    };
+    vi.stubGlobal('window', { location: { search: '' }, setTimeout: () => 0 });
+    vi.stubGlobal('OffscreenCanvas', class {});
+    vi.stubGlobal('navigator', { gpu: { requestAdapter: async () => adaptador } });
+    const { CamadaWebgpu: Camada, webgpuFalhouNestaPagina, esquecerQuedaDoWebgpu } = await import('./camadaWebgpu');
+    esquecerQuedaDoWebgpu();
+    const aviso = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const principal = Promise.reject(new DOMException('a carga foi abortada', 'AbortError'));
+    const pedida = Camada.criar(principal, 2, () => new Promise(() => {}));
+    expect(await pedida.pronta).toBeNull();
+    expect(destroy).toHaveBeenCalledTimes(1);
+    expect(webgpuFalhouNestaPagina()).toBe(false);
+    expect(aviso).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+});

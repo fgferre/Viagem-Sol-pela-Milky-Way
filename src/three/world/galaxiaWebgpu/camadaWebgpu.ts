@@ -193,17 +193,27 @@ export class CamadaWebgpu {
     sorteios: number,
     sortear: (s: number) => Promise<SorteioEmpacotado>
   ): Promise<CamadaWebgpu | null> {
+    // O ABORTO DA CARGA (auditoria R3, M8) chega por `principal`: troca de
+    // tier cancelada, placa perdida, desmontagem. Não é falha do WebGPU —
+    // marcar a página jogaria a galáxia no WebGL até recarregar. O motor
+    // espera as nuvens por último, e o `criar` que rejeita já destruiu o
+    // dispositivo dele.
+    const abortada = (e: unknown) => e instanceof DOMException && e.name === 'AbortError';
+    const nuvens = principal.then((b) => b.nuvens ?? undefined);
+    // quem sai antes de esperar por elas não deixa rejeição sem dono
+    principal.catch(() => {});
+    nuvens.catch(() => {});
     if (falhaDaPagina !== null) return null;
     const tela = new OffscreenCanvas(2, 2);
-    const motor = await MotorDaGalaxia.criar(
-      tela,
-      sorteios * CAPACIDADE_POR_SORTEIO,
-      true,
-      principal.then((b) => b.nuvens ?? undefined)
-    ).catch((e: unknown) => {
-      falhar('erro', 'erro ao iniciar', e);
-      return null;
-    });
+    let abortou = false;
+    const motor = await MotorDaGalaxia.criar(tela, sorteios * CAPACIDADE_POR_SORTEIO, true, nuvens).catch(
+      (e: unknown) => {
+        if (abortada(e)) abortou = true;
+        else falhar('erro', 'erro ao iniciar', e);
+        return null;
+      }
+    );
+    if (abortou) return null;
     if (!motor) {
       falhar('semWebgpu', 'sem adaptador');
       return null;
@@ -225,7 +235,14 @@ export class CamadaWebgpu {
       camada.falhou = true;
       falhar('perdido', `dispositivo perdido: ${info.message}`);
     });
-    const buffers = await principal;
+    // o motor só existe depois de `principal` (as nuvens vêm dela), então
+    // isto não rejeita hoje; se rejeitar, o dispositivo não fica sem dono
+    const buffers = await principal.catch((e: unknown) => {
+      camada.dispose();
+      if (abortada(e)) return null;
+      throw e;
+    });
+    if (!buffers) return null;
     try {
       motor.acrescentar(buffers.bright, buffers.brightCount);
     } catch (e) {
@@ -245,7 +262,9 @@ export class CamadaWebgpu {
         .then((b) => {
           if (camada.vivo && !camada.falhou) motor.acrescentarPacote(b);
         })
-        .catch((e: unknown) => console.warn('[galáxia] um sorteio extra falhou — segue com menos.', e))
+        .catch((e: unknown) => {
+          if (!abortada(e)) console.warn('[galáxia] um sorteio extra falhou — segue com menos.', e);
+        })
         .finally(() => camada.pendentes--);
     }
     return camada;
