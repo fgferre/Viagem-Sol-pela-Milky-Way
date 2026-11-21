@@ -6,6 +6,7 @@ import * as THREE from 'three';
 import type { NamedStar } from '../config';
 import { GAL } from './baseGalactica';
 import { classeEmTexto, nomeDoCorpo, nomeNaLingua } from '../atlasConfig';
+import { foraDoAlcance } from '../core/profundidade';
 
 /** o marcador de casa ("SOL" / "SUN"): o nome do corpo na língua de agora,
  *  em caixa alta como sempre foi — o rótulo é produzido por quadro, então a
@@ -793,7 +794,7 @@ function projectPoint(
   p: THREE.Vector3 | { x: number; y: number; z: number }
 ): { x: number; y: number } | null {
   _v.set(p.x, p.y, p.z).project(camera);
-  if (_v.z > 1 || _v.z < -1) return null; // atrás da câmera
+  if (foraDoAlcance(_v.z, camera)) return null; // atrás da câmera
   const x = (_v.x + 1) / 2;
   const y = (1 - _v.y) / 2;
   // O RETÂNGULO É O DA TELA INTEIRA (item 125, F4) — a decisão do §7 do
@@ -926,7 +927,7 @@ export function discosNaTela(
     const raioNdc = raioAparenteNdc(o.raio, dist, tanHalfFov);
     if (!(raioNdc > RAIO_NDC_DE_CESSAO)) continue;
     _aoCorpo.project(camera);
-    if (_aoCorpo.z > 1 || _aoCorpo.z < -1) continue;
+    if (foraDoAlcance(_aoCorpo.z, camera)) continue;
     out.push({
       x: (_aoCorpo.x + 1) / 2,
       y: (1 - _aoCorpo.y) / 2,

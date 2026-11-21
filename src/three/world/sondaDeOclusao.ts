@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { alemDoFundo } from '../core/profundidade';
 
 // ─── A MECÂNICA DA SONDA — consulta de oclusão sem nunca bloquear ─────────
 //
@@ -21,10 +22,10 @@ interface ConsultaEmVoo {
   id: number;
 }
 
-/** A regra de "na tela" das sondas: o ponto em NDC dentro do quadro e
- *  antes do plano de fundo. */
-export function ndcNaTela(ndc: THREE.Vector3): boolean {
-  return Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1 && ndc.z <= 1;
+/** A regra de "na tela" das sondas: o ponto em NDC (o de `project(camera)`)
+ *  dentro do quadro e antes do plano de fundo. */
+export function ndcNaTela(ndc: THREE.Vector3, camera: THREE.Camera): boolean {
+  return Math.abs(ndc.x) <= 1 && Math.abs(ndc.y) <= 1 && !alemDoFundo(ndc.z, camera);
 }
 
 export class SondaDeOclusao {

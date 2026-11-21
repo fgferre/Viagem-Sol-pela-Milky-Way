@@ -1884,12 +1884,22 @@ export function cirurgiaDaCoroaOcultavel(vertexShader: string, raioPc: number): 
     float zCoroaCentro = -(viewMatrix * vec4(modelMatrix[3].xyz, 1.0)).z;
     float ${MARCA_DA_COROA_OCULTAVEL} = min(0.5 * zCoroaCentro, zCoroaCentro - ${raioDaFrente});
     float zCoroaAntes = gl_Position.z / gl_Position.w;
+    // (a mesma conta nas duas convenções de profundidade — na invertida o
+    // near é z = 1 e o fundo é z = 0: \`core/profundidade.ts\`)
+    #ifdef USE_REVERSED_DEPTH_BUFFER
+    if (gl_Position.w > 0.0 && zCoroaAntes >= 0.0 && zCoroaAntes <= 1.0) {
+      vec4 cCoroaFrente = projectionMatrix * vec4(0.0, 0.0, -${MARCA_DA_COROA_OCULTAVEL}, 1.0);
+      float zCoroaDepois = ${MARCA_DA_COROA_OCULTAVEL} > 0.0 ? cCoroaFrente.z / cCoroaFrente.w : 1.0;
+      gl_Position.z = clamp(max(zCoroaDepois, 0.0), zCoroaAntes, 1.0) * gl_Position.w;
+    }
+    #else
     if (gl_Position.w > 0.0 && zCoroaAntes >= -1.0 && zCoroaAntes <= 1.0) {
       vec4 cCoroaFrente = projectionMatrix * vec4(0.0, 0.0, -${MARCA_DA_COROA_OCULTAVEL}, 1.0);
       float zCoroaDepois = ${MARCA_DA_COROA_OCULTAVEL} > 0.0 ? cCoroaFrente.z / cCoroaFrente.w : -1.0;
       zCoroaDepois = min(zCoroaDepois, 1.0 - 4.8e-7);
       gl_Position.z = clamp(zCoroaDepois, -1.0, zCoroaAntes) * gl_Position.w;
     }
+    #endif
   }`
   );
 }

@@ -60,7 +60,12 @@ void main() {
   float pxNaVista = 2.0 * max(-c.z, 1e-12) / (projectionMatrix[1][1] * uScreenH);
   c.xy += (position.xy * uMeiaPx + uDeslocPx) * pxNaVista;
   gl_Position = projectionMatrix * c;
+  // (na profundidade invertida o fundo é z = 0: \`core/profundidade.ts\`)
+  #ifdef USE_REVERSED_DEPTH_BUFFER
+  gl_Position.z = max(gl_Position.z, 0.0);
+  #else
   gl_Position.z = min(gl_Position.z, gl_Position.w * (1.0 - 4.8e-7));
+  #endif
 }
 `;
 
@@ -231,7 +236,7 @@ export class SondaDaLente {
       // mostra fica como está: apagar à espera da resposta piscava dois
       // quadros a lente inteira (filme solar, t = 196,6 s, 12/11).
       if (!this.medido && !vinhaNoAlcance) {
-        this.esperando = ndcNaTela(ndc);
+        this.esperando = ndcNaTela(ndc, cam);
         this.valor = this.esperando ? 0 : 1;
       }
     } else if (!this.medido && (this.esperando || !vinhaNoAlcance)) {
@@ -262,7 +267,7 @@ export class SondaDaLente {
     const ndc = this.vNdc.setFromMatrixPosition(toque.matrixWorld).project(camera);
     ndc.x += (2 * this.desloc[i * 2]) / this.larguraPx;
     ndc.y += (2 * this.desloc[i * 2 + 1]) / this.alturaPx;
-    return ndcNaTela(ndc);
+    return ndcNaTela(ndc, camera);
   }
 
   /** O ÚNICO lugar que escreve `respostas` — a consulta de cada toque

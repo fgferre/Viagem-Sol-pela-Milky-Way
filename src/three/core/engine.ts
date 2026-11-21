@@ -12,6 +12,7 @@
 import type { Laboratorio } from '../world/laboratorioDaGalaxia';
 import * as THREE from 'three';
 import { LIMIAR_SISTEMA_SOLAR_PC } from '../escala';
+import { prepararAInvertida } from './profundidade';
 
 export type QualityLevel = 'cinema' | 'alta' | 'performance';
 
@@ -365,6 +366,15 @@ export const ESCALAS_DE_RESOLUCAO = [0.5, 0.75, 1] as const;
 export function lerPortaEscala(bruto: string | null | undefined): number | null {
   const v = Number(bruto);
   return ESCALAS_DE_RESOLUCAO.find((f) => f === v) ?? null;
+}
+
+/**
+ * a lei da porta `?profundidade=`: só a palavra `invertida` pede a
+ * profundidade invertida do three (`core/profundidade.ts`,
+ * PLAN-PROFUNDIDADE.md); qualquer outra coisa é o buffer de sempre
+ */
+export function lerPortaProfundidade(bruto: string | null | undefined): boolean {
+  return bruto === 'invertida';
 }
 
 export interface QualityPreset {
@@ -931,12 +941,20 @@ export class Engine {
       // quad — um fullscreen quad não testa profundidade. Medido na
       // época: ~22,9 MB de VRAM devolvidos numa tela retina.
       depth: false,
+      // A PORTA `?profundidade=invertida`. Onde a placa não tem
+      // `EXT_clip_control` o three avisa no console e fica no buffer de
+      // sempre: quem pergunta depois lê `capabilities.reversedDepthBuffer`,
+      // nunca a URL.
+      reversedDepthBuffer: lerPortaProfundidade(
+        new URLSearchParams(window.location.search).get('profundidade')
+      ),
     });
     this.setToneMapping(TOM_PADRAO);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.autoClear = true;
 
     this.camera = new THREE.PerspectiveCamera(58, 16 / 9, 0.001, 9000);
+    prepararAInvertida(this.renderer, this.camera);
     this.camera.position.set(0.03, 0.015, 0.07);
     this.timer.connect(document);
 

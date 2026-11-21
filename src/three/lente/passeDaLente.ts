@@ -57,6 +57,7 @@ import {
   type Risco,
   type Sujeira,
 } from './presets';
+import { CameraSemLente } from '../core/profundidade';
 
 /**
  * G — o brilho do Sol na entrada da lente, o MESMO para todas as lentes
@@ -765,7 +766,7 @@ export class PasseDaLente extends Pass {
   private readonly malhaDosFantasmas: THREE.Mesh;
   private readonly malhaDoAnel: THREE.Mesh;
   private readonly cenaMacia = new THREE.Scene();
-  private readonly cameraNula = new THREE.Camera();
+  private readonly cameraNula = new CameraSemLente();
   private readonly quadLuz: FullScreenQuad;
   private readonly quadBorraoH: FullScreenQuad;
   private readonly quadBorraoV: FullScreenQuad;

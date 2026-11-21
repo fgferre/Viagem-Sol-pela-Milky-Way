@@ -66,8 +66,13 @@ void main() {
 
   vec4 mv = modelViewMatrix * vec4(position, 1.0);
   gl_Position = projectionMatrix * mv;
-  // além do far: puxa para dentro (ver o cabeçalho)
+  // além do far: puxa para dentro (ver o cabeçalho; na profundidade
+  // invertida o far é z = 0: \`core/profundidade.ts\`)
+  #ifdef USE_REVERSED_DEPTH_BUFFER
+  if (gl_Position.z < 0.0) gl_Position.z = 0.0;
+  #else
   if (gl_Position.z > gl_Position.w) gl_Position.z = gl_Position.w * 0.999999;
+  #endif
   gl_PointSize = escritoPx;
   vColor = vec3(0.0);
   vAlpha = 0.0;

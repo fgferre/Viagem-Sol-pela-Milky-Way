@@ -425,6 +425,7 @@ import { FOTOMETRIA, IDS_FOTOMETRIA } from './planetas/fotometria';
 // Eyes as duas peças penduram no MESMO `VisibleInterval` da MESMA
 // entidade e morrem juntas; aqui elas penduram na mesma função.
 import { cessaoPorTamanhoAparente, proximidadeDoAssunto, raioAparenteNdc } from './labels';
+import { alemDoFundo, foraDoAlcance } from '../core/profundidade';
 import { raioDoAssuntoPc } from './corpos/gigante';
 import { raiosDoRochosoPc } from './corpos/rochoso';
 import { BODY_AXES } from '../../lib/atlas/iauOrientation';
@@ -1722,7 +1723,7 @@ export class Orbitas {
       // sobre a própria elipse, e as luas não o têm nesta escala.
       if (daLua || !podeCeder) continue;
       this.rascunhoNdc.copy(this.pontoDoCorpo).project(camera);
-      if (this.rascunhoNdc.z > 1) continue;
+      if (alemDoFundo(this.rascunhoNdc.z, camera)) continue;
       alvo.set(
         (this.rascunhoNdc.x * 0.5 + 0.5) * quadro.larguraPx,
         (this.rascunhoNdc.y * 0.5 + 0.5) * quadro.alturaPx,
@@ -1868,8 +1869,8 @@ export class Orbitas {
           .project(cam);
         // atrás da câmera (ou fora do near/far): mesmo corte de
         // `projectPoint` (labels.ts) — o segmento não tem pixel que preste
-        if (this.pickInicio.z > 1 || this.pickInicio.z < -1) continue;
-        if (this.pickFim.z > 1 || this.pickFim.z < -1) continue;
+        if (foraDoAlcance(this.pickInicio.z, cam)) continue;
+        if (foraDoAlcance(this.pickFim.z, cam)) continue;
         const ax = ((this.pickInicio.x + 1) / 2) * larguraPx;
         const ay = ((1 - this.pickInicio.y) / 2) * alturaPx;
         const bx = ((this.pickFim.x + 1) / 2) * larguraPx;

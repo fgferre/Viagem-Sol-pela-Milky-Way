@@ -30,6 +30,7 @@ import {
   lerPortaForcaDaLente,
   lerPortaLente,
   lerPortaPoeira,
+  lerPortaProfundidade,
   lerPortaRelevo,
   lerPortaTom,
   medidaDeResizeValida,
@@ -437,6 +438,15 @@ describe('?relevo= — só realcado atravessa, o resto é o relevo medido', () =
     expect(lerPortaRelevo('real')).toBe('real');
     for (const ruim of ['realçado', 'Realcado', '3', '', 'constructor', '__proto__', null, undefined]) {
       expect(lerPortaRelevo(ruim), String(ruim)).toBe('real');
+    }
+  });
+});
+
+describe('?profundidade= — só invertida liga, o resto é o buffer de sempre', () => {
+  it('invertida passa; ausente ou lixo fica desligado', () => {
+    expect(lerPortaProfundidade('invertida')).toBe(true);
+    for (const ruim of ['Invertida', '1', 'true', '', null, undefined]) {
+      expect(lerPortaProfundidade(ruim), String(ruim)).toBe(false);
     }
   });
 });

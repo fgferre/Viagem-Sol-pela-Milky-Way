@@ -970,7 +970,9 @@ export class Galaxy {
     const t0 = performance.now();
     const u = this.brightMat.uniforms;
     Galaxy.frustum.setFromProjectionMatrix(
-      Galaxy.mTmp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse)
+      Galaxy.mTmp.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse),
+      camera.coordinateSystem,
+      camera.reversedDepth
     );
     // o teto: o plano é monótono em (ρ, fK), então uma bisseção num
     // parâmetro só — t ∈ [1, 2] encolhe as filhas (fK = t − 1, o K de
