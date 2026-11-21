@@ -83,13 +83,19 @@ export function ordemDosTransparentes(a: ItemDaLista, b: ItemDaLista): number {
 }
 
 /**
- * Instala as duas ordens no renderer que nasceu com a profundidade
- * invertida. O three vira a lista DEPOIS de ordenar, mesmo com ordenação
- * sob medida: por isso cada comparação entra com os lados trocados. Sem a
- * invertida não faz nada, e a ordenação é a do three, como sempre.
+ * Prepara o renderer e a câmera do app que nasceram com a profundidade
+ * invertida. (1) As duas ordens: o three vira a lista DEPOIS de ordenar,
+ * mesmo com ordenação sob medida, por isso cada comparação entra com os
+ * lados trocados. (2) A câmera já nasce na convenção invertida: o three só
+ * a troca no primeiro desenho, e o primeiro quadro (rótulos, sondas, o
+ * `?dbgplan`) lia o `z` de `project()` na convenção de sempre — o juiz
+ * `planeta-pixel` via dois blocos diferentes na mesma vista parada. Sem a
+ * invertida não faz nada.
  */
-export function ordenarSobAInvertida(renderer: THREE.WebGLRenderer): void {
+export function prepararAInvertida(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera): void {
   if (!renderer.capabilities.reversedDepthBuffer) return;
   renderer.setOpaqueSort((a: ItemDaLista, b: ItemDaLista) => ordemDosOpacos(b, a));
   renderer.setTransparentSort((a: ItemDaLista, b: ItemDaLista) => ordemDosTransparentes(b, a));
+  (camera as unknown as { _reversedDepth: boolean })._reversedDepth = true;
+  camera.updateProjectionMatrix();
 }

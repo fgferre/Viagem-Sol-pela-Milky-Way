@@ -12,7 +12,7 @@
 import type { Laboratorio } from '../world/laboratorioDaGalaxia';
 import * as THREE from 'three';
 import { LIMIAR_SISTEMA_SOLAR_PC } from '../escala';
-import { ordenarSobAInvertida } from './profundidade';
+import { prepararAInvertida } from './profundidade';
 
 export type QualityLevel = 'cinema' | 'alta' | 'performance';
 
@@ -949,12 +949,12 @@ export class Engine {
         new URLSearchParams(window.location.search).get('profundidade')
       ),
     });
-    ordenarSobAInvertida(this.renderer);
     this.setToneMapping(TOM_PADRAO);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.autoClear = true;
 
     this.camera = new THREE.PerspectiveCamera(58, 16 / 9, 0.001, 9000);
+    prepararAInvertida(this.renderer, this.camera);
     this.camera.position.set(0.03, 0.015, 0.07);
     this.timer.connect(document);
 

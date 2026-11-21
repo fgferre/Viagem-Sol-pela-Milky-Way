@@ -73,7 +73,7 @@ describe('a ordem de desenho sob a profundidade invertida', () => {
     expect(comoOThree([outroMaterial, longe, perto, antes], ordemDosOpacos).map((i) => i.id)).toEqual([7, 5, 4, 6]);
   });
 
-  it('o three ainda vira a lista inteira: quando isto falhar, `ordenarSobAInvertida` tem de sair', () => {
+  it('o three ainda vira a lista inteira: quando isto falhar, as ordens de `prepararAInvertida` têm de sair', () => {
     const fonte = readFileSync('node_modules/three/src/renderers/webgl/WebGLRenderLists.js', 'utf8');
     expect(fonte).toMatch(/if \( reversedDepth \) \{\s*opaque\.reverse\(\);\s*transmissive\.reverse\(\);\s*transparent\.reverse\(\);/);
   });
