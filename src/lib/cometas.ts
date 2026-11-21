@@ -625,6 +625,7 @@ export function escalaDoBrilho(M1: number): number {
  * magnitudes mais fraco) não há o que desenhar.
  */
 export function brilhoRelativo(c: Cometa, r: number): number {
+  if (!(r > 0)) return 0;
   return (escalaDoBrilho(c.brilho.M1) * producaoRelativa(r, c.brilho.K1)) / (r * r);
 }
 

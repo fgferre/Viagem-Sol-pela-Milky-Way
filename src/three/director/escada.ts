@@ -1027,6 +1027,9 @@ export class Escada {
     this.focoEstrela = true;
     this.focoSonda = null;
     this.ver = 'corpo';
+    // o lugar em foco (a Via Láctea de cima) FICA: o Esc sobe por ele de
+    // volta à vista do lugar. A barra diz o que está na tela: Sgr A✱
+    this.events.onFoco(this.nomeDoFocoVivo());
     this.emitirEscada();
     this.teletransportou();
   }
@@ -1097,9 +1100,13 @@ export class Escada {
     if (this.pequeno) return this.objetoPequeno(this.pequeno.id)?.nome ?? null;
     if (!this.focoEstrela) return null;
     // estrela tem nome de catálogo; o lugar do céu é o único que traduz, e
-    // se acha pelo id: S2, a Via Láctea de cima e Sgr A✱ dividem o centro
+    // se acha pelo id: S2, a Via Láctea de cima e Sgr A✱ dividem o centro.
+    // De perto no centro sem degrau próprio do lugar é o buraco
+    // (`aproximarDoBuraco`): o nome é o dele, não o do lugar que fica guardado
+    const l = this.lugarFocado;
+    const noBuraco = this.ver === 'corpo' && this.focoNoCentro && !l?.raioDePerto && !l?.estrelaDePerto;
     const nome = this.estrelaFocada ? this.estrelaFocada.nome : null;
-    const id = this.lugarFocado?.id;
+    const id = noBuraco ? 'sagittarius-a' : l?.id;
     const lugar = LUGARES_DA_BUSCA.find((l) => (id ? l.id === id : nome === l.nome || nome === l.nomeEn));
     return lugar ? nomeDoLugar(lugar) : nome;
   }
@@ -1865,6 +1872,8 @@ export class Escada {
       });
       this.enquadrarAgora();
       this.ver = 'orbita';
+      // do buraco, a barra volta ao nome do lugar
+      this.events.onFoco(this.nomeDoFocoVivo());
       this.emitirEscada();
       this.teletransportou();
       return true;

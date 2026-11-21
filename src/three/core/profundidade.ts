@@ -84,6 +84,17 @@ export function ordemDosTransparentes(a: ItemDaLista, b: ItemDaLista): number {
 }
 
 /**
+ * A CONVENÇÃO DE PROFUNDIDADE DA CÓPIA igual à da original: `Camera.copy`
+ * do three copia matrizes e `coordinateSystem`, mas não `_reversedDepth`,
+ * e a cópia refaria a projeção na convenção de sempre até o three virá-la
+ * no primeiro desenho. O campo privado do three só se toca aqui; quem
+ * chamar `updateProjectionMatrix` (ou `setViewOffset`) depois já sai certo.
+ */
+export function igualarAConvencao(copia: THREE.Camera, original: Pick<THREE.Camera, 'reversedDepth'>): void {
+  (copia as unknown as { _reversedDepth: boolean })._reversedDepth = original.reversedDepth;
+}
+
+/**
  * Prepara o renderer e a câmera do app que nasceram com a profundidade
  * invertida. (1) As duas ordens: o three vira a lista DEPOIS de ordenar,
  * mesmo com ordenação sob medida, por isso cada comparação entra com os
@@ -101,7 +112,7 @@ export function prepararAInvertida(renderer: THREE.WebGLRenderer, camera: THREE.
   if (!renderer.capabilities.reversedDepthBuffer) return;
   renderer.setOpaqueSort((a: ItemDaLista, b: ItemDaLista) => ordemDosOpacos(b, a));
   renderer.setTransparentSort((a: ItemDaLista, b: ItemDaLista) => ordemDosTransparentes(b, a));
-  (camera as unknown as { _reversedDepth: boolean })._reversedDepth = true;
+  igualarAConvencao(camera, { reversedDepth: true });
   camera.updateProjectionMatrix();
   const resetDoThree = renderer.resetState.bind(renderer);
   renderer.resetState = () => {

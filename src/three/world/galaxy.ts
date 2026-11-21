@@ -1184,7 +1184,9 @@ export class Galaxy {
       if (this.camadaWebgpu?.falhou) this.soltarWebgpu();
       this.longeNoWebgpu = !!(this.soParticulas && this.camadaWebgpu && camera && screenW);
       let longe = externalFade;
-      let ganhoPerto = brightFade / (brightFade + Galaxy.GANHO_DAS_LAMINAS * externalFade);
+      // as duas rampas em zero (só os marcadores à vista): ganho 0, não 0/0
+      const somaDasRampas = brightFade + Galaxy.GANHO_DAS_LAMINAS * externalFade;
+      let ganhoPerto = somaDasRampas > 0 ? brightFade / somaDasRampas : 0;
       if (this.longeNoWebgpu) {
         // O GANHO DA LEI DE LONGE com a rampa adiantada. A luz das lâminas
         // (6,99·externalFade) entra pela lei de longe; com a rampa de sempre
@@ -1206,7 +1208,7 @@ export class Galaxy {
                 (1 - (1 - Galaxy.LUZ_DO_WEBGL_NA_SAIDA) * perto)) /
               longe
             : brightFade;
-        ganhoPerto = (perto * brightFade) / ganhoLonge;
+        ganhoPerto = ganhoLonge > 0 ? (perto * brightFade) / ganhoLonge : 0;
         u.uFade.value = ganhoLonge / this.fracaoDeParticulas;
         // A camada leva, de cada partícula, a lei de longe (longe ×
         // smoothstep(300, 1500, d)) e, no fim, também a de perto (1 − perto);

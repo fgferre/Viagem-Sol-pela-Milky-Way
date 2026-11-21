@@ -15,6 +15,7 @@
 // ============================================================
 import { describe, expect, it } from 'vitest';
 import { GALAXY_VERT, TETO_DE_AMOSTRAS, amostrasDaExtincao } from './galaxyShaders';
+import { WGSL_DEPOSITO } from '../world/galaxiaWebgpu/motorWgsl';
 
 describe('?samples= tem teto, e não só piso', () => {
   it('o default e a faixa útil passam intactos — a imagem não se move', () => {
@@ -75,5 +76,12 @@ describe('a galáxia profunda consome a lei de tela NA RÉGUA', () => {
     // internos da lei, e é `fluxoDaTela` que já vem na régua
     const main = GALAXY_VERT.slice(GALAXY_VERT.indexOf('void main()'));
     expect(main).not.toMatch(/shrink|subPix/);
+  });
+
+  it('as resolvidas passam de tenda a gaussiana na mesma rampa de 2–4 px no WebGL e no WebGPU', () => {
+    // o corte seco em 2 px do WebGPU era um estalo de grão em movimento
+    expect(GALAXY_VERT).toContain('smoothstep(2.0, 4.0, px)');
+    expect(WGSL_DEPOSITO).toContain('1.0 - smoothstep(2.0, 4.0, px)');
+    expect(WGSL_DEPOSITO).toContain('mix(g, tenda * 0.690376, tB)');
   });
 });

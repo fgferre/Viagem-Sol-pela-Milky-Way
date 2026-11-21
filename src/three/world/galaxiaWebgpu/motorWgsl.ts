@@ -257,8 +257,12 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
   let kk = select(1u, u.k, e > 0.0);
   let f = cor * (er * er) * (fluxo / f32(kk));
   if (max(f.x, max(f.y, f.z)) <= 0.0) { return; }
-  // objeto resolvido maior que a tenda: a gaussiana do tamanho dele
+  // objeto resolvido maior que a tenda: a gaussiana do tamanho dele, que
+  // nasce da tenda entre 2 e 4 px pela rampa do WebGL (tendaB em
+  // galaxyShaders.ts, mesma escala). Em 2 px a tenda × 0,690376 × norma é
+  // a bilinear de baixo: sem estalo no limiar
   let larg = select(0.0, pxDep, tipo > 2.5 && tipo < 5.5 && px > 2.0);
+  let tB = 1.0 - smoothstep(2.0, 4.0, px);
   // A PEGADA DO ESPAÇAMENTO: a população contínua esparsa (o alto do bojo e
   // do disco espesso, vistos de ~1 kpc acima do plano na saída do filme)
   // espalha a luz numa tenda que cresce com o espaçamento entre vizinhas
@@ -298,8 +302,12 @@ fn main(@builtin(global_invocation_id) id: vec3u) {
         for (var ix = x0; ix <= x1; ix++) {
           let d = vec2f(f32(ix) - sx, f32(iy) - sy) / R;
           let r2 = dot(d, d);
-          if (r2 > 1.0) { continue; }
-          deposita(ix, iy, f * (exp(-4.5 * r2) * norma), sem + u32(ix * 7919 + iy));
+          // a gaussiana para no círculo; a tenda vai aos cantos do quadrado
+          let g = select(exp(-4.5 * r2), 0.0, r2 > 1.0);
+          let tenda = max(1.0 - abs(d.x), 0.0) * max(1.0 - abs(d.y), 0.0);
+          let w = mix(g, tenda * 0.690376, tB);
+          if (w <= 0.0) { continue; }
+          deposita(ix, iy, f * (w * norma), sem + u32(ix * 7919 + iy));
         }
       }
     } else if (meia > 1.0) {

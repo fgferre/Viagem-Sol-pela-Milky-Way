@@ -227,9 +227,12 @@ function stumpff(z: number): [number, number] {
  * desse intervalo vira bisseção. Na hipérbole o intervalo para em
  * √(−z) = 600, onde cosh/sinh ainda não estouram. O Newton de antes, com
  * chute linear, ia a NaN ou 1e281 UA em 3I/ATLAS, Hale-Bopp e NEOWISE.
+ * Data não finita (ou tão longe que a conta estoura) vale a época dos
+ * elementos: devolve números, não lança (uma exceção no quadro derrubaria
+ * a viagem).
  */
 export function propagarKepler(e: readonly number[], jd: number): number[] {
-  const dt = jd - e[0];
+  const dt = Number.isFinite(jd - e[0]) ? jd - e[0] : 0;
   const r0 = Math.hypot(e[1], e[2], e[3]);
   const v2 = e[4] * e[4] + e[5] * e[5] + e[6] * e[6];
   const rv = e[1] * e[4] + e[2] * e[5] + e[3] * e[6];
@@ -274,6 +277,7 @@ export function propagarKepler(e: readonly number[], jd: number): number[] {
       x -= passo;
       break;
     }
+    // o passo não finito (NaN, ±∞) falha as duas comparações: bisseção
     const novo = x - passo;
     x = novo > lo && novo < hi ? novo : 0.5 * (lo + hi);
   }
@@ -287,7 +291,10 @@ export function propagarKepler(e: readonly number[], jd: number): number[] {
   const r = Math.hypot(rx, ry, rz);
   const fd = (RAIZ_MU / (r * r0)) * (z * x * S - x);
   const gd = 1 - ((x * x) / r) * C;
-  return [rx, ry, rz, fd * e[1] + gd * e[4], fd * e[2] + gd * e[5], fd * e[3] + gd * e[6]];
+  const s = [rx, ry, rz, fd * e[1] + gd * e[4], fd * e[2] + gd * e[5], fd * e[3] + gd * e[6]];
+  // um dt finito mas absurdo (1e240 dias) estoura alfa·x² na elipse: o
+  // estado da época, finito, em vez do NaN
+  return s.every(Number.isFinite) ? s : e.slice(1, 7);
 }
 
 /**

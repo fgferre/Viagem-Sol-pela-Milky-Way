@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { alemDoFundo, foraDoAlcance, ordemDosOpacos, ordemDosTransparentes, prepararAInvertida } from './profundidade';
+import { alemDoFundo, foraDoAlcance, igualarAConvencao, ordemDosOpacos, ordemDosTransparentes, prepararAInvertida } from './profundidade';
 
 /** a câmera como o renderer a deixa depois do primeiro desenho com a invertida */
 function camera(invertida: boolean, near: number, far: number): THREE.PerspectiveCamera {
@@ -104,6 +104,19 @@ describe('prepararAInvertida', () => {
     r.resetState();
     expect(estado.resets).toBe(1);
     expect(estado.invertida).toBe(true);
+  });
+
+  it('a cópia da câmera (a larga do clarão) sai na convenção da original, não na de sempre', () => {
+    const { r } = renderer(true);
+    const cam = new THREE.PerspectiveCamera(58, 16 / 9, 0.001, 60000);
+    prepararAInvertida(r, cam);
+    const copia = new THREE.PerspectiveCamera();
+    copia.copy(cam, false);
+    expect(copia.reversedDepth).toBe(false);
+    igualarAConvencao(copia, cam);
+    copia.updateProjectionMatrix();
+    expect(copia.reversedDepth).toBe(true);
+    expect(copia.projectionMatrix.equals(cam.projectionMatrix)).toBe(true);
   });
 
   it('sem a extensão não toca em nada', () => {

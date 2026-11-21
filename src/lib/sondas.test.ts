@@ -170,4 +170,15 @@ describe('propagarKepler', () => {
       1e-10
     );
   });
+
+  it('data absurda devolve números, nunca NaN nem exceção (o NaN no quadro vira tela branca com o bloom)', () => {
+    // elipse, quase parábola e hipérbole, a 1 UA do Sol
+    const conicas = [0.0172, 0.02432, 0.04].map((v) => [2451545, 1, 0, 0, 0, v, 0.001]);
+    for (const e of conicas) {
+      expect(propagarKepler(e, NaN)).toEqual(e.slice(1));
+      expect(propagarKepler(e, Infinity)).toEqual(e.slice(1));
+      expect(propagarKepler(e, -Infinity)).toEqual(e.slice(1));
+      for (const dt of [1e240, -1e240, 1e300]) expect(propagarKepler(e, e[0] + dt).every(Number.isFinite), `${e[5]} ${dt}`).toBe(true);
+    }
+  });
 });

@@ -85,4 +85,9 @@ describe('os cometas — a atividade', () => {
     expect(brilhoRelativo(halley, 0.587)).toBeGreaterThan(1);
     expect(brilhoRelativo(halley, 35)).toBeLessThan(LIMIAR_DE_ATIVIDADE);
   });
+
+  it('no centro do Sol (ou com r absurdo) o brilho é 0, não o NaN de 0/0', () => {
+    const halley = cometaPorId('halley')!;
+    for (const r of [0, -1, NaN]) expect(brilhoRelativo(halley, r)).toBe(0);
+  });
 });

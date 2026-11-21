@@ -15,6 +15,7 @@ import { BETA_DA_ASA, FRACAO_DA_ASA } from '../estrela';
 import { porCurva, type ModoDaLente, type QualityLevel } from './engine';
 import type { PoliticaDeLuz } from '../../lib/atlas/luz';
 import { PasseDaLente, type FonteDoReflexo } from '../lente/passeDaLente';
+import { igualarAConvencao } from './profundidade';
 
 // KNEE pré-ACES (rodada 19): compressão asinh do compósito HDR — o tone
 // map de divulgação da referência (Lupton 2004; Filmic/AgX) comprime
@@ -692,6 +693,9 @@ class ClaraoDoCampo extends Pass {
     // na câmera (um rig, uma luz pendurada) isto clonaria a árvore inteira
     // a cada quadro.
     larga.copy(camera, false);
+    // a `copy` não leva a convenção de profundidade: igualada ANTES do
+    // `setViewOffset`, que refaz a projeção já na convenção certa
+    igualarAConvencao(larga, camera);
     // a matriz de mundo vem PRONTA da câmera do app (ela pode estar num
     // rig, e recalcular a partir do local devolveria outra pose)
     larga.matrixWorld.copy(camera.matrixWorld);

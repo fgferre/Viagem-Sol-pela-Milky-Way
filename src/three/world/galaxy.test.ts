@@ -255,3 +255,24 @@ describe('a cópia JS das partículas sai do heap mesmo de fora do disco (13/11/
     expect(fonte).toMatch(/brightBuffer\.onUpload\(/);
   });
 });
+
+describe('o ganho de perto com as duas rampas em zero (B6, 21/11/2026)', () => {
+  it('só os marcadores à vista: o ganho é 0, não o NaN de 0/0, no WebGL e com a camada WebGPU', async () => {
+    const galaxia = await galaxiaDeTeste();
+    const ganho = () => (galaxia as unknown as { brightMat: THREE.ShaderMaterial }).brightMat.uniforms.uGanhoPerto.value;
+    const cam = new THREE.Vector3(0, 0, 0);
+    galaxia.update(cam, 720, 0.55, 0, 0, 1, 0);
+    expect(ganho()).toBe(0);
+    let chegar!: (c: CamadaWebgpu) => void;
+    galaxia.ligarWebgpu({ pronta: new Promise((r) => (chegar = r)), atrasou: new Promise(() => {}) });
+    const camada = { mesh: new THREE.Object3D(), falhou: false, pendentes: 0, update: vi.fn(), dispose: vi.fn() };
+    chegar(camada as unknown as CamadaWebgpu);
+    await Promise.resolve();
+    galaxia.update(cam, 720, 0.55, 0, 0, 1, 0, new THREE.PerspectiveCamera(), 1280);
+    // o ramo da camada rodou (só ele chama o update dela)
+    expect(camada.update).toHaveBeenCalled();
+    expect(ganho()).toBe(0);
+    galaxia.dispose();
+    vi.unstubAllGlobals();
+  });
+});

@@ -919,4 +919,23 @@ describe('a troca de idioma reemite o foco vivo na língua nova (20/11/2026)', (
     }
     definirIdioma(antes);
   });
+
+  it('"Aproximar" da Via Láctea de cima chama a barra de Sagittarius A✱, e o Esc devolve o nome do lugar', async () => {
+    const { definirIdioma, idiomaAtual } = await import('../../lib/idioma');
+    const antes = idiomaAtual();
+    definirIdioma('pt-BR');
+    const lugar = (id: string) => LUGARES_DA_BUSCA.find((l) => l.id === id)!;
+    const [via, sgr] = [lugar('via-lactea'), lugar('sagittarius-a')];
+    const { escada, focos } = bancada();
+    escada.visitarLugar(via);
+    escada.aproximarDoCorpo();
+    expect(focos.at(-1)).toBe(sgr.nome);
+    definirIdioma('en');
+    escada.reemitirFoco();
+    expect(focos.at(-1)).toBe(sgr.nomeEn ?? sgr.nome);
+    definirIdioma('pt-BR');
+    expect(escada.subirDegrau()).toBe(true);
+    expect(focos.at(-1)).toBe(via.nome);
+    definirIdioma(antes);
+  });
 });
