@@ -381,8 +381,7 @@ export const EN: Record<keyof typeof PT, string> = {
   'relogio.retrato2026': '2026 portrait',
   'relogio.dataCurta': '{mes} {dia}, {ano}',
   'relogio.diaCurto': '{mes} {dia}',
-  'relogio.alca': 'Time · {estado}',
-  'relogio.alcaTitulo': 'Time · {estado} · {instante} UTC',
+  'relogio.alca': 'Time · {estado} · {instante} UTC',
 
   // ---- the search palette ------------------------------------------
   'busca.titulo': 'Search',

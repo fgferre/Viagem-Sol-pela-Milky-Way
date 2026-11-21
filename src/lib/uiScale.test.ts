@@ -36,6 +36,8 @@ const HUD_CSS = readdirSync(HUD_DIR)
   .join('\n');
 const INDEX_CSS = readFileSync(new URL('../index.css', import.meta.url), 'utf8');
 const DECLARACOES = [...HUD_CSS.matchAll(/font-size:\s*([^;]+);/g)].map((m) => m[1].trim());
+/** A UMA trava de letra em 1,2 do celular (A1): `calc(<letra> * min(var(--ui), 1.2) / var(--ui))`. */
+const TRAVA = /^calc\(\s*(.*?)\s*\*\s*min\(var\(--ui\),\s*1\.2\)\s*\/\s*var\(--ui\)\s*\)$/s;
 
 describe('1. a porta ?ui=', () => {
   it('ausente ou lixo é o tamanho de sempre — nunca NaN na raiz', () => {
@@ -93,7 +95,8 @@ describe('2. a regra do CSS: nenhum texto do HUD ignora a raiz', () => {
   });
 
   it('TODA declaração de font-size é rem, em, ou clamp com o vw multiplicado por var(--ui)', () => {
-    const fora = DECLARACOES.filter((d) => {
+    // a trava de 1,2 (abaixo) é uma moldura: vale o que ela trava
+    const fora = DECLARACOES.map((d) => d.replace(TRAVA, '$1')).filter((d) => {
       // o termo fluido (vw/vh/vmin/vmax) só vale acompanhado do fator
       const termos = [...d.matchAll(/[\d.]+v(?:w|h|min|max)/g)].map((m) => m[0]);
       if (termos.length === 0) return !/^(clamp\(.*\)|[\d.]+r?em)$/.test(d);
@@ -106,6 +109,19 @@ describe('2. a regra do CSS: nenhum texto do HUD ignora a raiz', () => {
 
   it('nenhum texto do HUD é cravado em px — px não reage à raiz nem ao zoom de fonte', () => {
     expect(DECLARACOES.filter((d) => /[\d.]+px/.test(d))).toEqual([]);
+  });
+
+  it('a letra da fileira do celular para em 1,2: a trava multiplica o clamp INTEIRO (A1)', () => {
+    // travar só o termo do meio não para nada: o piso `0.6875rem` já vale 11 px × ui
+    const fileira = HUD_CSS.match(/\.atlas-alcas > \.hud-btn \{\s*font-size:\s*([^;]+);/);
+    expect(fileira?.[1].trim()).toMatch(TRAVA);
+    expect(fileira?.[1].trim().replace(TRAVA, '$1')).toMatch(/^clamp\(/);
+  });
+
+  it('a letra do contexto no topo do celular para em 1,2, com a MESMA trava da fileira', () => {
+    const contexto = HUD_CSS.match(/\.controls-bar \.atlas-contexto \{[^}]*?font-size:\s*([^;]+);/);
+    expect(contexto?.[1].trim()).toMatch(TRAVA);
+    expect(contexto?.[1].trim().replace(TRAVA, '$1')).toBe('0.8125rem');
   });
 });
 

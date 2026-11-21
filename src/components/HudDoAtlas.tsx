@@ -28,6 +28,7 @@ import { useRealce } from '../hooks/useRealce';
 import { Ajuda } from './Ajuda';
 import { CabecalhoDoPainel } from './CabecalhoDoPainel';
 import { Icone } from './Icone';
+import type { NomeDoIcone } from './Icone';
 import { estadoDoSelo, legendaDaProcedencia } from '../three/selo';
 import type { EstadoDaPoeira, EstadoDaVista } from '../three/selo';
 import type { EstadoDoTempo } from '../three/tempoDoAtlas';
@@ -945,9 +946,24 @@ export function GavetaDoTempo({
 }
 
 /**
+ * O SÍMBOLO DO ESTADO NA ALÇA (A1, opção Q, escolhida pelo dono em 21/11):
+ * a palavra do estado não cabe numa coluna igual às outras quatro, então
+ * ela vira o ícone da alça. Mesma ordem de `leituraDoRelogio` — o aviso
+ * manda; "Carregando" é espera, não aviso.
+ */
+function simboloDoTempo({ aoVivo, sentido, aviso }: Pick<EstadoDoTempo, 'aoVivo' | 'sentido' | 'aviso'>): NomeDoIcone {
+  if (aviso === 'buscando') return 'espera';
+  if (aviso) return 'alerta';
+  if (aoVivo) return 'aoVivo';
+  if (sentido === 0) return 'pausa';
+  return sentido < 0 ? 'recuar' : 'avancar';
+}
+
+/**
  * A alça ⏱ Tempo — só existe no telefone, e só na fase que a hospeda.
- * Desde o relógio novo (20/11) ela diz o estado e o instante, pela mesma
- * leitura do relógio (`leituraDoRelogio`).
+ * O estado é o ÍCONE (`simboloDoTempo`) e o instante é o rótulo, como
+ * "Buscar" nas outras alças; a palavra do estado mora no nome acessível
+ * e no `title`, com o instante (A1, opção Q).
  */
 export function BotaoDoTempo({
   aberta,
@@ -960,18 +976,18 @@ export function BotaoDoTempo({
 }) {
   useIdioma();
   const { estado, tipo, instanteNaAlca } = leituraDoRelogio(tempo);
+  const rotulo = t('relogio.alca', { estado, instante: instanteNaAlca });
   return (
     <button
       type="button"
       className="hud-btn small alca-tempo"
       data-tipo={tipo}
       onClick={onAlternar}
-      aria-label={t('relogio.alca', { estado })}
-      title={t('relogio.alcaTitulo', { estado, instante: instanteNaAlca })}
+      aria-label={rotulo}
+      title={rotulo}
       {...gatilhoDoDialogo('tempo', aberta)}
     >
-      <Icone nome="relogio" tamanho={16} />
-      <span className="alca-tempo-estado">{estado}</span>
+      <Icone nome={simboloDoTempo(tempo)} tamanho={16} />
       <span className="alca-tempo-instante">{instanteNaAlca}</span>
     </button>
   );

@@ -142,9 +142,11 @@
      saída ANTES do portão 2, e o dono reprovou a fileira cortada a
      320 px com `ui` 1,4 (uma alça saindo pela borda é pior que rolar,
      mas nenhuma das duas é a promessa de "cinco portas sempre à mão").
-     `grid-template-columns: repeat(5, 1fr)` reserva a QUINTA coluna
-     mesmo quando a Ficha ainda não existe (sem seleção): as quatro
-     primeiras não pulam de lugar no instante em que ela aparece. NUNCA
+     `grid-template-columns: repeat(5, minmax(0, 1fr))` reserva a QUINTA
+     coluna mesmo quando a Ficha ainda não existe (sem seleção): as quatro
+     primeiras não pulam de lugar no instante em que ela aparece. O
+     `minmax(0, …)` é o que faz IGUAIS de verdade: `1fr` sozinho tem piso
+     no conteúdo, e um rótulo mais largo alargava a sua coluna (A1). NUNCA
      ROLA, NUNCA CORTA: quem cede é o RÓTULO (`clamp`, abaixo), nunca a
      grade. */
   .atlas-alcas {
@@ -154,7 +156,7 @@
     bottom: 0;
     z-index: 45;
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     height: calc(var(--alcas-altura) + env(safe-area-inset-bottom));
     padding-bottom: env(safe-area-inset-bottom);
     background: linear-gradient(to top, rgba(3, 5, 10, 0.88), rgba(3, 5, 10, 0));
@@ -247,9 +249,15 @@
      escrevem o nome como texto solto, sem `<span>` — e um nó de texto
      herda `font-size` do pai normalmente, só não tem caixa própria para
      `text-overflow` (por isso a ficha, cujo nome VARIA de tamanho, ganhou
-     o `<span>` que os outros quatro, com palavras fixas, não precisam). */
+     o `<span>` que os outros quatro, com palavras fixas, não precisam).
+     PARA EM 1,2 COMO O ÍCONE (A1, opção Q): cinco colunas iguais a 320 px
+     com texto grande só cabem com a letra parada. A trava multiplica o
+     `clamp` INTEIRO — `rem` já vale 16 px × ui, então travar só o termo
+     do meio deixaria o piso `0.6875rem` crescer sozinho. */
   .atlas-alcas > .hud-btn {
-    font-size: clamp(0.6875rem, calc(3.2vw * var(--ui)), calc(0.6875rem * var(--ui)));
+    font-size: calc(
+      clamp(0.6875rem, calc(3.2vw * var(--ui)), calc(0.6875rem * var(--ui))) * min(var(--ui), 1.2) / var(--ui)
+    );
     letter-spacing: 0;
   }
   .atlas-alca-rotulo {
@@ -258,31 +266,17 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  /* A ALÇA DO TEMPO DIZ O ESTADO E O INSTANTE (relógio aprovado em 20/11):
-     ícone pequeno e estado na primeira linha, o instante embaixo — a cor
-     é a do estado (verde ao vivo, âmbar no resto), como no relógio. */
+  /* A ALÇA DO TEMPO (A1, opção Q): o ícone É o estado e o instante é o
+     rótulo, no mesmo empilhamento das outras quatro. A cor é a do estado
+     (verde ao vivo, âmbar no resto), como no relógio; o instante fica na
+     tinta do texto. */
   .atlas-alcas > .hud-btn.alca-tempo {
-    display: grid;
-    grid-template-columns: auto auto;
-    align-content: center;
-    justify-content: center;
-    align-items: center;
-    gap: 2px 3px;
     color: var(--acento);
   }
   .atlas-alcas > .hud-btn.alca-tempo[data-tipo='vivo'] {
     color: var(--ok);
   }
-  .atlas-alcas > .hud-btn.alca-tempo svg {
-    width: 11px;
-    height: 11px;
-  }
-  .alca-tempo-estado {
-    font-weight: 500;
-  }
   .alca-tempo-instante {
-    grid-column: 1 / -1;
-    font-size: 1.1em;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
     color: var(--texto);
@@ -339,11 +333,16 @@
   .hud-root:has(.atlas-alcas) .controls-bar .hud-btn {
     min-height: 2.5rem;
   }
-  /* Voo e Retomar ficam só com ícones; Filmes conserva o rótulo. */
-  .hud-root:has(.atlas-alcas) .controls-bar [data-so-icones] .hud-btn:not(.filme-mais-gatilho) > span {
+  /* Voo e Retomar ficam só com ícones; Filmes conserva o rótulo ONDE ELE
+     CABE (`data-com-palavra`, topo, saída B, 21/11): some só com texto
+     grande em tela estreita, onde empurrava o nome do lugar para a
+     reticência. A pergunta "estreita e grande" é a do `ContextoDoAlvo`
+     (`larguraEstreita` e `textoGrande`, BarraOuAlcas.tsx) — a casa não
+     escreve um segundo número de largura em CSS. */
+  .hud-root:has(.atlas-alcas) .controls-bar [data-so-icones] .hud-btn:not([data-com-palavra]) > span {
     display: none;
   }
-  .hud-root:has(.atlas-alcas) .controls-bar [data-so-icones] .hud-btn:not(.filme-mais-gatilho) {
+  .hud-root:has(.atlas-alcas) .controls-bar [data-so-icones] .hud-btn:not([data-com-palavra]) {
     min-width: 2.75rem;
     padding-inline: 0;
     justify-content: center;
@@ -396,6 +395,11 @@
     overflow: hidden;
     align-self: flex-start;
     align-items: flex-start;
+    /* A LETRA PARA EM 1,2, com a MESMA trava da fileira de baixo (A1,
+       opção Q): o `0.8125rem` da mesa (04-atlas.css) vezes
+       `min(var(--ui), 1.2) / var(--ui)`. O botão do trecho herda
+       (`font: inherit`). */
+    font-size: calc(0.8125rem * min(var(--ui), 1.2) / var(--ui));
   }
   /* O NOME, único trecho que sobra (acima) — piso de 4ch antes da
      reticência; `> span > span` alcança o span cru (o wrapper de cada

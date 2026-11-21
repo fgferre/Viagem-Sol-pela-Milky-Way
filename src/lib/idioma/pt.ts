@@ -396,8 +396,7 @@ export const PT = {
   'relogio.retrato2026': 'Retrato de 2026',
   'relogio.dataCurta': '{dia} {mes} {ano}',
   'relogio.diaCurto': '{dia} {mes}',
-  'relogio.alca': 'Tempo · {estado}',
-  'relogio.alcaTitulo': 'Tempo · {estado} · {instante} UTC',
+  'relogio.alca': 'Tempo · {estado} · {instante} UTC',
 
   // ---- a paleta de busca (`components/PaletaDeBusca.tsx`) -----------
   'busca.titulo': 'Busca',

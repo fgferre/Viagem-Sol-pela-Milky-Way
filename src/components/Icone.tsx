@@ -49,7 +49,11 @@ export type NomeDoIcone =
   | 'qualidade'
   | 'voltarCapitulo'
   | 'avancarCapitulo'
-  | 'velocidade';
+  | 'velocidade'
+  | 'aoVivo'
+  | 'avancar'
+  | 'recuar'
+  | 'espera';
 
 /** O miolo de cada ícone — só os elementos de desenho, sem o `<svg>` em
  *  volta (isso é o componente, embaixo). Uma entrada por nome, na mesma
@@ -216,6 +220,36 @@ const CAMINHOS: Record<NomeDoIcone, () => ReactElement> = {
     <>
       <path d="m12 14 4-4" />
       <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+    </>
+  ),
+  // OS ESTADOS DO TEMPO NA ALÇA DO CELULAR (A1, opção Q, ícones escolhidos
+  // pelo dono em 21/11): o ponto é o do relógio aberto (`.relogio-estado
+  // i`), o único cheio do conjunto, MAIOR que lá — r 6 mais o traço de 1,5
+  // dão 13,5 de 24, 11 px numa caixa de 20; os outros três são
+  // `fast-forward`, `rewind` e `loader` (os raios, PARADO) do Lucide.
+  aoVivo: () => <circle cx="12" cy="12" r="6" fill="currentColor" />,
+  avancar: () => (
+    <>
+      <path d="M12 6a2 2 0 0 1 3.414-1.414l6 6a2 2 0 0 1 0 2.828l-6 6A2 2 0 0 1 12 18z" />
+      <path d="M2 6a2 2 0 0 1 3.414-1.414l6 6a2 2 0 0 1 0 2.828l-6 6A2 2 0 0 1 2 18z" />
+    </>
+  ),
+  recuar: () => (
+    <>
+      <path d="M12 6a2 2 0 0 0-3.414-1.414l-6 6a2 2 0 0 0 0 2.828l6 6A2 2 0 0 0 12 18z" />
+      <path d="M22 6a2 2 0 0 0-3.414-1.414l-6 6a2 2 0 0 0 0 2.828l6 6A2 2 0 0 0 22 18z" />
+    </>
+  ),
+  espera: () => (
+    <>
+      <path d="M12 2v4" />
+      <path d="m16.2 7.8 2.9-2.9" />
+      <path d="M18 12h4" />
+      <path d="m16.2 16.2 2.9 2.9" />
+      <path d="M12 18v4" />
+      <path d="m4.9 19.1 2.9-2.9" />
+      <path d="M2 12h4" />
+      <path d="m4.9 4.9 2.9 2.9" />
     </>
   ),
 };

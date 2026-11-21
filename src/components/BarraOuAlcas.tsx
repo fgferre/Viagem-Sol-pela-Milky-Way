@@ -332,7 +332,8 @@ export function BarraOuAlcas({
    */
   const regua = hud.saidasDoAtlas && !alcas;
   /**
-   * A LARGURA ESTREITA (item 6/§3.3, "≤ 360 px: só o último trecho"),
+   * A LARGURA ESTREITA (item 6/§3.3, "≤ 360 px: só o último trecho"; e,
+   * com texto grande, "Filmes" só ícone — topo, saída B, 21/11),
    * lida por `matchMedia` COM OUVINTE — o mesmo padrão de `useCelular.ts`
    * e de `FichaDoObjeto.tsx` (`data-ficha-largura`), e NÃO um segundo
    * `@media` em `09-celular.css`: a casa tem uma regra testada
@@ -480,6 +481,11 @@ export function BarraOuAlcas({
         onMaisAberto(!maisAberto);
       }}
       onKeyDown={fecharMenuComEscape}
+      // no celular a palavra some com texto grande em tela estreita
+      // (09-celular.css); o nome mora no rótulo, como o de Voo livre
+      data-com-palavra={larguraEstreita && textoGrande ? undefined : ''}
+      aria-label={alcas ? t('barra.maisFilmes') : undefined}
+      title={alcas ? t('barra.maisFilmes') : undefined}
       aria-expanded={maisAberto}
       aria-controls="barra-mais-ferramentas"
     >
@@ -629,7 +635,7 @@ export function BarraOuAlcas({
       {(hud.saidasDoAtlas || (hud.botaoPartir && temFilmeGuardado)) && (
         <div
           className="atlas-barra-grupo"
-          // Voo e Retomar ficam compactos no celular; Filmes mantém o rótulo.
+          // Voo e Retomar ficam compactos no celular; Filmes só onde a palavra não cabe.
           data-so-icones={alcas ? '' : undefined}
         >
           {hud.saidasDoAtlas && (
