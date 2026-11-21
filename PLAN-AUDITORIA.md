@@ -97,6 +97,20 @@ O dono trouxe a terceira leitura do Gemini Neon, sobre os 47 commits de 20–21/
 
 **Fica sem conserto, dito:** B2 (a textura de profundidade que sobra no alvo de resolução é limite da API do three); o prazo de 30 s do `galaxy.test.ts` e os testes que recortam fonte por `new Function` (sem dano visto).
 
+### Onda 1b — o que a conferência da conversa principal achou nos consertos (21/11; a onda 1 entrou no principal em `65402f77`, sem a Frente E)
+
+Conferência: tipos, lint e 4.209 testes verdes no commit exato que entrou; M10 e M12 lidos na conversa principal (M10: só os materiais "+pirâmide" leem o atlas, e só gesto troca o gás); uma segunda leitura (Opus, sem ver os vereditos) dos quatro commits de carga e desistência achou seis falhas. Cada uma se confere no código antes de mexer; um teste por comportamento.
+
+- [ ] **1b.1 A pirâmide que chega depois da desistência monta de novo** (`director.ts`, o `.then` do pedido só olha `disposed` e o número do pedido; `carregarPiramideDePoeira` usa `allSettled` e devolve os níveis que já tinham chegado). O `.then` do volume da poeira tem a mesma falta. Decisão: a desistência invalida os dois pedidos (o mesmo caminho do número do pedido), nada monta depois dela.
+- [ ] **1b.2 O perfil do anel conta o "primeiro minuto" com Saturno fora da tela** (`gigante.ts`, `novoPerfil.vence(q.tS, this.armado)`): falha cedo, Saturno aparece mais de 60 s depois e as esperas já estão em 10–60 s, pior que os 10 s fixos de antes. Decisão: a janela do primeiro minuto conta a partir de o corpo estar na tela (o relógio recomeça quando ele volta a ela), como nas texturas seguradas.
+- [ ] **1b.3 O "Tentar novamente" deixa `pos`/`look` no endereço para sempre** (M11): F5 ou link copiado depois reabrem no voo livre do lugar velho, por cima de Atlas, foco e `t` (quebra a 12.2); e no degrau mais baixo um lugar que derruba a placa reabre nele mesmo sem saída. Decisão: o recomeço leva uma marca junto (`recomeco=1`); o boot lê `pos`/`look` e tira os três do endereço logo no começo, antes de qualquer coisa que possa falhar (um `?pos=` digitado à mão, sem a marca, fica como é); e, na página que nasceu de um recomeço com lugar, o recomeço seguinte não leva o lugar (volta ao começo). O campo de visão segue de fora, dito ao dono.
+- [ ] **1b.4 O relógio da nova tentativa de textura não zera quando o corpo é solto no meio de uma busca** (`texturas.ts`, `aoSoltar` leva a `fria` sem zerar `novaCarga`): a visita seguinte herda a espera longa. Decisão: soltar zera o relógio.
+- [ ] **1b.5 O mundo do começo não tem controle próprio** (M8): a primeira troca de qualidade não encerra os workers dele. Decisão: o mundo inicial nasce com o mesmo controle dos outros.
+- [ ] **1b.6 `App.test.ts`: `expect(base().searchParams.has('pos')).toBe(false)` passa sempre** (olha um endereço novo, não o `urlComMomento`). Decisão: cobrar o `urlComMomento` de verdade.
+- [ ] **B8, o resto:** o aborto do perfil do anel e do manifesto entra (a regra do dono: confirmado se conserta).
+- [ ] **A4, a prova:** a sonda do movimento passa dos seletores e morre no vídeo, porque o `ffmpeg` deste PC não conhece mais `-vsync` (hoje é `-fps_mode`). Trocar e rodar a sonda até o fim.
+- [ ] **"Sistem…" cortado no topo a 320 px com texto grande** (visto na onda 1): conserta junto do A1, medido nas duas línguas e três larguras.
+
 ### Onda 2 — depois de a onda 1 entrar no principal (a conversa principal manda)
 
 - [ ] **Juízes no código final** (M17): rodar os 15 uma vez cada, um por vez; para cada reprovação dizer se é defeito do app, juiz velho ou este PC, e consertar os dois primeiros lendo a mudança do juiz linha a linha. Conhecidos: `luz-do-quadro` (70 px > 68,9), `planeta-pixel` (11 × 12 linhas do `?dbgplan`), `atlas-smoke` (3 de 83), `memoria` (1 check), `estabilidade-temporal` (passo 4), `poeira-shaders`, `busca-smoke` (rodar de novo), os que derrubam o Chrome (`beira-*`, `dobra-*`, `colar-da-fita`) e os que congelam (`a11y*`). Juiz NOVO pede a palavra do dono.
