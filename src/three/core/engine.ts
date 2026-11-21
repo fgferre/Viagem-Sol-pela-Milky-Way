@@ -587,7 +587,8 @@ export function tierMedido(
  * O RECOMEÇO MAIS LEVE (19/11): a placa desistiu (contexto perdido) e o
  * "Tentar novamente" recomeça UM degrau abaixo do tier em uso, pela mesma
  * porta `?q=` do seletor — o `momento` é o `urlComMomento`, que já traz
- * filme, instante e `play=1`. O tier gravado é o de baixo mesmo vindo do
+ * filme e instante, e `play=1` só se o filme estava tocando (pausado, ele
+ * volta pausado). O tier gravado é o de baixo mesmo vindo do
  * Auto: `?q=auto` nasce em cinema e cairia de novo. `null` = recarregar
  * igual (outra falha, ou já no degrau mais baixo).
  */
