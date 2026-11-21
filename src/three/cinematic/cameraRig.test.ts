@@ -64,6 +64,7 @@ const {
   TERRA_PC,
   LUA_PC,
   SAIDA_DA_LEGENDA_S,
+  ENTRADA_DA_LEGENDA_S,
   auditarRoteiro,
   distanciaDaAbertura,
 } = await import('./journey');
@@ -331,6 +332,33 @@ describe('a auditoria editorial do filme', () => {
     expect(journey.captionAt(sirius.t1 - 1e-6).opacidade).toBeLessThan(1e-5);
     expect(journey.captionAt(sirius.t1).key.caption).toBe('');
     expect(journey.captionAt(sirius.t1).opacidade).toBe(0);
+  });
+
+  it('a legenda entra em tempo de filme, na curva cubic-bezier(0.22, 1, 0.36, 1) que o CSS usava', () => {
+    // a curva calculada à parte: bisseção pura em x(s) = p, depois y(s)
+    const bz = (s: number, a: number, b: number) => 3 * (1 - s) ** 2 * s * a + 3 * (1 - s) * s * s * b + s ** 3;
+    const css = (p: number) => {
+      let lo = 0;
+      let hi = 1;
+      for (let n = 0; n < 60; n++) {
+        const m = (lo + hi) / 2;
+        if (bz(m, 0.22, 0.36) < p) lo = m;
+        else hi = m;
+      }
+      return bz((lo + hi) / 2, 1, 1);
+    };
+    const sirius = auditoria.captions.find((caption) => caption.text === 'Sirius')!;
+    expect(ENTRADA_DA_LEGENDA_S).toBe(1.4);
+    expect(journey.captionAt(sirius.t0).entrada).toBe(0);
+    expect(journey.captionAt(sirius.t0 + 0.7).entrada).toBeCloseTo(css(0.5), 3);
+    expect(journey.captionAt(sirius.t0 + 1.4).entrada).toBeCloseTo(1, 10);
+    expect(journey.captionAt(sirius.t0 + 3).entrada).toBe(1);
+  });
+
+  it('a última legenda do filme fecha antes do fim, mesmo com a janela passando dele', () => {
+    const terra = journey.captionAt(journey.duration - SAIDA_DA_LEGENDA_S / 2);
+    expect(terra.key.caption).toBe('A Terra');
+    expect(terra.opacidade).toBeCloseTo(0.5, 10);
   });
 
   it('Sagittarius A* só é nomeado durante a curva rasante', () => {

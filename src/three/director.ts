@@ -269,8 +269,9 @@ export type { EstadoDaQualidade } from './core/engine';
 interface DirectorEvents {
   onPhase: (p: Phase) => void;
   onCaption: (index: number, caption: string, sub?: string) => void;
-  /** a saída da legenda (1 → 0 no fim da janela); fora do React, como o `onWarp` */
-  onCaptionOpacity: (opacidade: number) => void;
+  /** a legenda no tempo do filme: opacidade = entrada × saída, e a subida
+   *  (14 → 0 px) da entrada; fora do React, como o `onWarp` */
+  onCaptionOpacity: (opacidade: number, subidaPx: number) => void;
   onProgress: (k: number) => void;
   onLabels: (labels: StarLabel[]) => void;
   onWarp: (k: number) => void;
@@ -1050,6 +1051,7 @@ export class Director {
   /** a frase que está NO AR — o índice sozinho não vê a troca de idioma */
   private lastCaptionTexto = '';
   private lastCaptionOpacidade = -1;
+  private lastCaptionSubida = -1;
   /** a luz do roteiro está no ar (k > 0)? — o latch de `onLuzDoRoteiro` */
   private luzDoRoteiroNoAr = false;
   private relogioParado = false;
@@ -2687,6 +2689,8 @@ export class Director {
     this.journeyT = 0;
     this.lastCaptionIdx = -1;
     this.lastCaptionTexto = '';
+    this.lastCaptionOpacidade = -1;
+    this.lastCaptionSubida = -1;
     this.freezeJourney = false;
     this.playbackRate = 1;
     this.rig.reset();
@@ -4234,17 +4238,22 @@ export class Director {
 
       // A LEGENDA E A LÍNGUA VIVA (item 130/F3): a regra mora em
       // `reemitirLegenda`, pura, no topo deste arquivo.
-      const { index, key, opacidade } = this.rig.captionAt(t);
+      const { index, key, opacidade: saida, entrada } = this.rig.captionAt(t);
       if (reemitirLegenda(index, key.caption, this.lastCaptionIdx, this.lastCaptionTexto)) {
         this.lastCaptionIdx = index;
         this.lastCaptionTexto = key.caption;
         this.events.onCaption(index, key.caption, key.sub);
       }
       // sem legenda fica em 0: a que acabou de sair não pisca de volta no
-      // quadro que o React leva para tirá-la da tela
-      if (opacidade !== this.lastCaptionOpacidade) {
+      // quadro que o React leva para tirá-la da tela. A entrada anda no
+      // tempo do filme (M12): a opacidade é entrada × saída, como o
+      // keyframe do CSS fazia, e a subida de 14 px segue só a entrada.
+      const opacidade = entrada * saida;
+      const subida = 14 * (1 - entrada);
+      if (opacidade !== this.lastCaptionOpacidade || subida !== this.lastCaptionSubida) {
         this.lastCaptionOpacidade = opacidade;
-        this.events.onCaptionOpacity(opacidade);
+        this.lastCaptionSubida = subida;
+        this.events.onCaptionOpacity(opacidade, subida);
       }
 
       // ...e a viagem CONGELADA não termina sozinha. O teto do `seek`
@@ -4794,7 +4803,9 @@ export class Director {
       const pts = (this.galaxy as unknown as { brightPts?: THREE.Points })?.brightPts;
       if (pts) {
         const fr = new THREE.Frustum().setFromProjectionMatrix(
-          new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse)
+          new THREE.Matrix4().multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse),
+          cam.coordinateSystem,
+          cam.reversedDepth
         );
         const pos = pts.geometry.attributes.position;
         const v = new THREE.Vector3();

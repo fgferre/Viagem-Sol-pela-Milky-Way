@@ -52,6 +52,13 @@ describe('o véu de legibilidade', () => {
     expect(rodape).not.toMatch(/z-index/);
     expect(corpo(FILME, '.dest-line.veu-legivel')).toMatch(/z-index:\s*auto/);
   });
+
+  it('a legenda entra pelo tempo do filme: a regra dela não usa a animação de relógio de parede', () => {
+    const legenda = corpo(FILME, '.caption-wrap.show');
+    expect(legenda).not.toMatch(/animation:\s*captionIn/);
+    expect(legenda).toMatch(/opacity:\s*var\(--legenda-opacidade/);
+    expect(legenda).toMatch(/translateY\(var\(--legenda-subida/);
+  });
 });
 
 describe('o véu do topo do filme', () => {

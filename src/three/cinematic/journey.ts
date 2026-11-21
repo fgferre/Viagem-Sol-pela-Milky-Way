@@ -791,6 +791,39 @@ export interface JourneyMeta {
 
 /** a legenda esmaece no último trecho da janela dela, em tempo de filme */
 export const SAIDA_DA_LEGENDA_S = 0.5;
+/** ...e entra no primeiro trecho, também em tempo de filme (antes era
+ *  animação CSS em tempo de parede: a 4× comia 65% da janela) */
+export const ENTRADA_DA_LEGENDA_S = 1.4;
+
+/**
+ * A curva da entrada: a MESMA `cubic-bezier(0.22, 1, 0.36, 1)` que o CSS
+ * usava. Resolve x(s) = p por Newton e, se a derivada some, por bisseção;
+ * devolve y(s). Fora de [0, 1], os extremos exatos (sem NaN).
+ */
+function curvaDaEntrada(p: number): number {
+  if (!(p > 0)) return 0;
+  if (p >= 1) return 1;
+  const [x1, y1, x2, y2] = [0.22, 1, 0.36, 1];
+  const coord = (s: number, a: number, b: number) => 3 * (1 - s) * (1 - s) * s * a + 3 * (1 - s) * s * s * b + s * s * s;
+  let s = p;
+  for (let n = 0; n < 8; n++) {
+    const erro = coord(s, x1, x2) - p;
+    if (Math.abs(erro) < 1e-7) return coord(s, y1, y2);
+    const d = 3 * (1 - s) * (1 - s) * x1 + 6 * (1 - s) * s * (x2 - x1) + 3 * s * s * (1 - x2);
+    if (Math.abs(d) < 1e-6) break;
+    s -= erro / d;
+    if (s < 0 || s > 1) break;
+  }
+  let lo = 0;
+  let hi = 1;
+  s = p;
+  for (let n = 0; n < 40; n++) {
+    if (coord(s, x1, x2) < p) lo = s;
+    else hi = s;
+    s = (lo + hi) / 2;
+  }
+  return coord(s, y1, y2);
+}
 
 export class Journey {
   readonly duration: number;
@@ -858,25 +891,32 @@ export class Journey {
    * seek, scrub e 2× mostram exatamente o que o espectador deve ver.
    * A SAÍDA (20/11/2026) também: `opacidade` desce de 1 a 0 no último
    * `SAIDA_DA_LEGENDA_S` da janela e chega a zero quando ela fecha — antes a
-   * legenda sumia de um quadro para o outro. Sem legenda no ar, 0.
+   * legenda sumia de um quadro para o outro. A saída mede até o fim do
+   * filme quando a janela passa dele (a última legenda fecha antes do fim).
+   * A ENTRADA (21/11/2026) é `entrada`, 0 → 1 no primeiro
+   * `ENTRADA_DA_LEGENDA_S`, separada para `opacidade` seguir sendo só a
+   * saída. Sem legenda no ar, as duas em 0.
    */
   captionAt(t: number): {
     index: number;
     opacidade: number;
+    entrada: number;
     key: { caption: string; sub?: string };
   } {
     for (let i = this.janelas.length - 1; i >= 0; i--) {
       const w = this.janelas[i];
       if (t >= w.t0 && t < w.t1) {
         const fala = legendaNaLingua(w);
+        const fim = Math.min(w.t1, this.duration);
         return {
           index: i,
-          opacidade: Math.min(1, (w.t1 - t) / SAIDA_DA_LEGENDA_S),
+          opacidade: Math.max(0, Math.min(1, (fim - t) / SAIDA_DA_LEGENDA_S)),
+          entrada: curvaDaEntrada((t - w.t0) / ENTRADA_DA_LEGENDA_S),
           key: { caption: fala.text, sub: fala.sub },
         };
       }
     }
-    return { index: -1, opacidade: 0, key: { caption: '' } };
+    return { index: -1, opacidade: 0, entrada: 0, key: { caption: '' } };
   }
 
   metaAt(t: number): JourneyMeta {

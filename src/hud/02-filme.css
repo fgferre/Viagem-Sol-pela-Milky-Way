@@ -59,6 +59,7 @@
 
 /* --- legenda da fase --- */
 .caption-wrap {
+  /* o ponto de partida é a entrada em 0 (`--legenda-subida` = 14px) */
   opacity: 0;
   transform: translateY(14px);
   /* LARGURA (Lote 8): a legenda para antes do cartão de transporte, que
@@ -222,15 +223,15 @@
   right: 6vw;
   bottom: calc(11.6vh + 1.4rem);
 }
-/* a VIDA da legenda agora é do roteiro (janelas em tempo de viagem no
-   journey.ts) — o CSS anima a entrada; a saída é do roteiro também: o
-   último meio segundo da janela desce `--legenda-opacidade` de 1 a 0, em
-   tempo de filme (`captionAt`), e a legenda acaba onde a janela fecha */
+/* a VIDA da legenda é toda do roteiro (janelas em tempo de viagem no
+   journey.ts): a ENTRADA (1,4 s, a mesma cubic-bezier(0.22, 1, 0.36, 1)
+   que a animação `captionIn` usava) e a SAÍDA (o último meio segundo da
+   janela) andam em tempo de filme (`captionAt`) — pausa, 4× e salto não
+   descolam do filme. O motor publica a opacidade (entrada × saída) e a
+   subida; sem motor, a legenda fica inteira, como no fim da animação. */
 .caption-wrap.show {
-  animation: captionIn 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-@keyframes captionIn {
-  to { opacity: var(--legenda-opacidade, 1); transform: translateY(0); }
+  opacity: var(--legenda-opacidade, 1);
+  transform: translateY(var(--legenda-subida, 0));
 }
 /* LOTE 8 (PLAN-UI.md §3.7, maquete M7): título em Fraunces 300, igual
    à `.atlas-marca` (mesmo peso, mesmo `letter-spacing: 0`; a sombra é

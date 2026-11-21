@@ -166,8 +166,9 @@ export function useDirector(fios: FiosDoDirector) {
       d = new Director(canvasRef.current, {
       onPhase: setPhase,
       onCaption: (idx, text, sub) => setCaption({ idx, text, sub }),
-      onCaptionOpacity: (opacidade) => {
+      onCaptionOpacity: (opacidade, subidaPx) => {
         rootRef.current?.style.setProperty('--legenda-opacidade', `${opacidade}`);
+        rootRef.current?.style.setProperty('--legenda-subida', `${subidaPx}px`);
       },
       onProgress: (progress) => {
         progressRef.current?.style.setProperty('--journey-progress', `${progress}`);
