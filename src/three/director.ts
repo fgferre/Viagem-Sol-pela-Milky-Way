@@ -1937,7 +1937,8 @@ export class Director {
     const desejada = this.piramideDesejada;
     if (desejada !== this.piramideFonteTentada) {
       // uma fonte nova com o gás que não a lê (antigo, ou sem nebulosa)
-      // espera: nada é baixado até alguém ir lê-la (a que já chegou fica)
+      // espera: nada é baixado até alguém ir lê-la (os índices da que já
+      // chegou ficam na CPU; a GPU dela o quadro solta — ver o tick)
       if (desejada !== null && !this.gasLeAPiramide) return;
       this.piramideFonteTentada = desejada;
       const meuPedido = ++this.piramidePedidoId;
@@ -1969,10 +1970,11 @@ export class Director {
 
   /** a pirâmide baixada vai à Nebula com o orçamento do tier de agora
    *  (vagas, cache e raios) — o mesmo de antes (cinema ↔ alta) mantém a
-   *  que está no ar */
+   *  que está no ar. Sem gás que a leia nada monta (nem a chegada, nem o
+   *  tier): `piramideTier` fica nulo e o gás que volta a ler a remonta */
   private montarPiramide() {
     const carregada = this.piramideCarregada;
-    if (!carregada) return;
+    if (!carregada || !this.gasLeAPiramide) return;
     this.piramideTier = this.engine.quality;
     const orcamento = orcamentoDaPiramide(this.engine.quality, sondarGl().max3DTextureSize);
     const noAr = this.nebula.orcamentoDaPiramide;
@@ -5004,13 +5006,20 @@ export class Director {
       this.prepararPiramide();
       if (this.piramideDesejada !== null) this.nebula.aquecerPiramide(this.engine.renderer);
       this.nebula.atualizarPiramide(this.engine.renderer, rawTime, cam);
+    } else if (this.piramideDesejada !== null && this.nebula.orcamentoDaPiramide !== null) {
+      // o gás deixou de ler a pirâmide montada (o antigo, a nebulosa
+      // desligada): a GPU e a residência saem; os índices ficam na CPU
+      // (`piramideCarregada`) e a volta do gás a remonta sem baixá-los
+      this.nebula.setPiramide(null);
+      this.piramideTier = null;
     }
-    // fora dos tiers de computador, ou com um gás que não lê a pirâmide (o
-    // antigo, a nebulosa desligada), sem a poeira pedida, nada mantém o
-    // atlas preparado: ele sai da GPU (o Cinema/Alta com o gás que o lê o
-    // reserva de novo). Só gesto troca o gás: não há vai-e-volta por quadro
+    // o atlas sai da GPU quando ninguém o lê: um gás que não lê a pirâmide
+    // (o antigo, a nebulosa desligada), com ou sem a poeira pedida, ou fora
+    // dos tiers de computador sem ela (ali nada o mantém preparado). A
+    // volta paga a reserva de novo; só gesto troca o gás: não há
+    // vai-e-volta por quadro
     const tierDeComputador = this.engine.quality === 'cinema' || this.engine.quality === 'alta';
-    if ((!tierDeComputador || !this.gasLeAPiramide) && this.piramideDesejada === null) {
+    if (!this.gasLeAPiramide || (!tierDeComputador && this.piramideDesejada === null)) {
       this.nebula.soltarAtlasOcioso();
     }
     // gate 0.02: na casca externa do fade a contribuição é invisível

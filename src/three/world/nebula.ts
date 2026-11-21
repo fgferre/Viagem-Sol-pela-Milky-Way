@@ -517,10 +517,12 @@ export class Nebula {
   /**
    * O ATLAS da pirâmide, dono à parte dela (E3c): nasce antes do clique
    * (`prepararPiramide`) ou na chegada (`setPiramide`), e SOBREVIVE à
-   * pirâmide solta — voltar a "Hoje" e ligar de novo não paga de novo a
-   * reserva de 20 MB. Só sai quando outra forma o substitui, no
-   * `dispose` ou, ocioso, fora dos tiers de computador
-   * (`soltarAtlasOcioso`). `aquecimento` é o passo do pré-aquecimento: 'reservar'
+   * pirâmide solta enquanto algum gás o lê — voltar a "Hoje" e ligar de
+   * novo não paga de novo a reserva de 20 MB. Sai quando outra forma o
+   * substitui, no `dispose` ou, ocioso, quando ninguém o lê (gás antigo,
+   * nebulosa desligada, ou fora dos tiers de computador sem a poeira
+   * pedida — `soltarAtlasOcioso`); a volta paga a reserva de novo.
+   * `aquecimento` é o passo do pré-aquecimento: 'reservar'
    * (a GPU ainda nem o conhece), 'tocar' (reservado, falta a primeira
    * subida, onde o driver o inicializa de verdade) e 'pronto'.
    */
@@ -1397,9 +1399,10 @@ export class Nebula {
     u.uPoeiraAtlas.value = this.fallbackAtlas;
   }
 
-  /** o atlas que nenhuma pirâmide usa sai da GPU — o director chama fora
-   *  dos tiers de computador, onde `prepararPiramide` não o mantém; o
-   *  próximo `prepararPiramide`/`setPiramide` reserva outro */
+  /** o atlas que nenhuma pirâmide usa sai da GPU — o director chama
+   *  quando ninguém o lê (gás que não lê a pirâmide, ou fora dos tiers de
+   *  computador, onde `prepararPiramide` não o mantém); o próximo
+   *  `prepararPiramide`/`setPiramide` reserva outro */
   soltarAtlasOcioso() {
     if (this.piramide || !this.atlas) return;
     this.atlas.textura.dispose();

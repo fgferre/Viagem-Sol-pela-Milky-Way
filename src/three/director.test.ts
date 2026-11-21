@@ -1254,9 +1254,11 @@ describe('a troca de tier que LANÇA não prende o app (auditoria B, item 4)', (
 });
 
 // arremates da rodada 2 (20/11): no Cinema/Alta com o gás antigo ou a
-// nebulosa desligada o atlas de 19,2 MiB ficava reservado sem leitor
+// nebulosa desligada o atlas de 19,2 MiB ficava reservado sem leitor;
+// auditoria rodada 3, M10: também com a poeira pedida (a pirâmide montada
+// o segurava) — sai quando ninguém o lê, e a volta paga a reserva
 describe('o atlas da pirâmide sem leitor sai da GPU', () => {
-  it('solta fora do computador ou sem gás que leia a pirâmide; nunca com a poeira pedida', () => {
+  it('solta sem gás que leia a pirâmide (com ou sem a poeira pedida) e fora do computador sem ela', () => {
     const inicio = FONTE.indexOf('    const tierDeComputador = ');
     const fim = FONTE.indexOf('this.nebula.soltarAtlasOcioso();', inicio);
     expect(inicio).toBeGreaterThan(0);
@@ -1267,7 +1269,44 @@ describe('o atlas da pirâmide sem leitor sai da GPU', () => {
     expect(solta('alta', false, null)).toBe(true);
     expect(solta('cinema', false, null)).toBe(true);
     expect(solta('performance', true, null)).toBe(true);
-    expect(solta('cinema', false, 'gaia')).toBe(false);
+    expect(solta('cinema', false, 'gaia')).toBe(true);
+    expect(solta('performance', true, 'gaia')).toBe(false);
+  });
+
+  // M10: o tick solta a pirâmide sem leitor com `piramideTier = null`; a
+  // última linha de `garantirPiramide` não pode remontá-la no quadro seguinte
+  it('sem gás que leia, garantirPiramide não remonta a pirâmide solta; o gás que volta a remonta', () => {
+    const linha = '    if (this.piramideCarregada && this.piramideTier !== this.engine.quality) this.montarPiramide();';
+    expect(FONTE).toContain(linha);
+    const cabeca = '\n  private montarPiramide() {\n';
+    const i = FONTE.indexOf(cabeca);
+    expect(i, '`montarPiramide` sumiu do director.ts').toBeGreaterThan(0);
+    const montar = new Function(
+      'orcamentoDaPiramide',
+      'sondarGl',
+      'mesmoOrcamento',
+      FONTE.slice(i + cabeca.length, FONTE.indexOf('\n  }\n', i))
+    );
+    const garantirFim = new Function(linha);
+    const montadas: unknown[] = [];
+    const d = {
+      gasLeAPiramide: false,
+      piramideCarregada: {},
+      piramideTier: null as string | null,
+      engine: { quality: 'cinema' },
+      nebula: { orcamentoDaPiramide: null, setPiramide: (e: unknown) => montadas.push(e) },
+      montarPiramide() {
+        montar.call(this, () => ({ vagas: 256 }), () => ({ max3DTextureSize: 2048 }), () => false);
+      },
+    };
+    garantirFim.call(d);
+    garantirFim.call(d);
+    expect(montadas, 'a pirâmide sem leitor voltou à GPU').toEqual([]);
+    expect(d.piramideTier).toBeNull();
+    d.gasLeAPiramide = true;
+    garantirFim.call(d);
+    expect(montadas).toHaveLength(1);
+    expect(d.piramideTier).toBe('cinema');
   });
 });
 
