@@ -51,6 +51,7 @@ import * as THREE from 'three';
 import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 import type { QualityLevel } from '../../core/engine';
 import { ANEL_DE_SATURNO, omegaDoAnelCpu, regiaoDoAnelCpu } from './descricaoDoAnel';
+import { CameraSemLente } from '../../core/profundidade';
 
 const KM_POR_RAIO = ANEL_DE_SATURNO.raioEquatorialKm;
 
@@ -1254,6 +1255,28 @@ export function distanciaDaProfundidade(d: number, n: number, dMin = PERTO_MINIM
   return (1 + FOLGA_DO_RECORTE) * n + t * (2 * n - (1 + FOLGA_DO_RECORTE) * n);
 }
 
+/**
+ * A CONVENÇÃO DE PROFUNDIDADE VIVA, para quem escreve profundidade à mão
+ * com os termos da projeção (`p22`, `p32`): o z de NDC `p32 / d − p22` vale
+ * nas duas; o que muda com a invertida (`core/profundidade.ts`) é o near
+ * recuperado da matriz, o lado do grampo no near (NDC 1, não −1) e a
+ * passagem para a janela (o próprio NDC, sem a metade). Sem a invertida, as
+ * três contas de sempre, texto por texto.
+ */
+const GLSL_CONVENCAO_DA_PROFUNDIDADE = /* glsl */ `
+#ifndef NDC_PARA_JANELA
+#ifdef USE_REVERSED_DEPTH_BUFFER
+#define NEAR_DA_LENTE(p22, p32) ((p32) / ((p22) + 1.0))
+#define NDC_GRAMPEADO_NO_NEAR(z) min(z, 1.0)
+#define NDC_PARA_JANELA(z) (z)
+#else
+#define NEAR_DA_LENTE(p22, p32) ((p32) / ((p22) - 1.0))
+#define NDC_GRAMPEADO_NO_NEAR(z) max(z, -1.0)
+#define NDC_PARA_JANELA(z) (0.5 * (z) + 0.5)
+#endif
+#endif
+`;
+
 /** O SORTEIO, no vértice e no fragmento: INTEIRO (exato em qualquer GPU, e o mesmo da CPU em `misturar`). */
 const GLSL_SORTEIO = /* glsl */ `
 const float PI = 3.14159265358979;
@@ -2030,10 +2053,11 @@ void luzPronta(vec3 vistaKm, int j) {
 // projeção; o z é escrito à mão pela própria função de profundidade da
 // lente com a distância comprimida de [5 cm, 2n] para [n, 2n] — nada é
 // cortado, a ordem entre os pedaços fica, e o resto da cena não muda.
+${GLSL_CONVENCAO_DA_PROFUNDIDADE}
 vec4 comProfundidade(vec4 pos) {
   float p22 = projectionMatrix[2][2];
   float p32 = projectionMatrix[3][2];
-  float n = p32 / (p22 - 1.0);
+  float n = NEAR_DA_LENTE(p22, p32);
   float d = pos.w;
   float dMin = ${glslF(PERTO_MINIMO_KM)} * gRaioMundo / KM_POR_RAIO;
   if (d <= 0.0 || d >= 2.0 * n || 2.0 * n <= dMin) return pos;
@@ -2323,7 +2347,7 @@ ${['sampler2D', 'samplerCube', 'sampler3D', 'sampler2DArray', 'sampler2DShadow',
   .map((s) => `precision highp ${s};`)
   .join('\n')}
 #define texture2D texture
-`;
+${GLSL_CONVENCAO_DA_PROFUNDIDADE}`;
 const PREFIXO_DO_VERTICE_CRU = /* glsl */ `${PREFIXO_CRU}
 #define attribute in
 #define varying out
@@ -2382,14 +2406,14 @@ void main() {
   gl_Position = projectionMatrix * vec4(gCV * vMundo, 1.0);
   float p22 = projectionMatrix[2][2];
   float p32 = projectionMatrix[3][2];
-  float pn = p32 / (p22 - 1.0);
+  float pn = NEAR_DA_LENTE(p22, p32);
   float pMin = ${glslF(PERTO_MINIMO_KM)} * vMundo;
   // (a meia espessura dela ao longo da visada: a esfera achatada e girada)
   float frente = raioQ * length(vEixos * vec3(vGiro[0][2], vGiro[1][2], vGiro[2][2]));
   float pd = max((-gCV.z - ${glslF(1.02)} * frente) * vMundo, 0.5 * pMin);
   if (pd < 2.0 * pn && 2.0 * pn > pMin)
     pd = mix(${glslF(1 + FOLGA_DO_RECORTE)} * pn, 2.0 * pn, clamp((pd - pMin) / (2.0 * pn - pMin), 0.0, 1.0));
-  gl_Position.z = max(p32 / pd - p22, -1.0) * gl_Position.w;
+  gl_Position.z = NDC_GRAMPEADO_NO_NEAR(p32 / pd - p22) * gl_Position.w;
   // o teto de 48 px da casa (POINTS acima de 64 trava o Mac)
   gl_PointSize = min(2.0 * raioQ * uPxPorRad / max(-gCV.z, raioQ) + 1.5, 48.0);
   luzDaPedra(gCV);
@@ -2705,11 +2729,11 @@ void main() {
   float pd = -d.z * t * vMundo;
   float p22 = projectionMatrix[2][2];
   float p32 = projectionMatrix[3][2];
-  float pn = p32 / (p22 - 1.0);
+  float pn = NEAR_DA_LENTE(p22, p32);
   float pMin = ${glslF(PERTO_MINIMO_KM)} * vMundo;
   if (pd > 0.0 && pd < 2.0 * pn && 2.0 * pn > pMin)
     pd = mix(${glslF(1 + FOLGA_DO_RECORTE)} * pn, 2.0 * pn, clamp((pd - pMin) / (2.0 * pn - pMin), 0.0, 1.0));
-  gl_FragDepth = 0.5 * (p32 / max(pd, 1.0e-30) - p22) + 0.5;
+  gl_FragDepth = NDC_PARA_JANELA(p32 / max(pd, 1.0e-30) - p22);
   // a opacidade da entrada (1 no ponto opaco; o que esmaece mistura)
   gl_FragColor = vec4(c, vFica.x);
 }
@@ -2847,7 +2871,7 @@ void main() {
  * elipsoide (o achatamento \`uKPolar\`, a mesma conta de \`sombraDoPlaneta\`)
  * é descartado.
  */
-export const GLSL_PROFUNDIDADE_DO_DISCO = /* glsl */ `
+export const GLSL_PROFUNDIDADE_DO_DISCO = /* glsl */ `${GLSL_CONVENCAO_DA_PROFUNDIDADE}
 uniform vec4 uTelaDoDisco;
 flat varying vec4 vProjDoDisco;
 flat varying vec4 vProfDoDisco;
@@ -2874,11 +2898,11 @@ void profundidadeDoDisco() {
   float pd = -d.z * t * vProfDoDisco.z;
   float p22 = vProfDoDisco.x;
   float p32 = vProfDoDisco.y;
-  float pn = p32 / (p22 - 1.0);
+  float pn = NEAR_DA_LENTE(p22, p32);
   float pMin = ${glslF(PERTO_MINIMO_KM)} * vProfDoDisco.z;
   if (pd > 0.0 && pd < 2.0 * pn && 2.0 * pn > pMin)
     pd = mix(${glslF(1 + FOLGA_DO_RECORTE)} * pn, 2.0 * pn, clamp((pd - pMin) / (2.0 * pn - pMin), 0.0, 1.0));
-  gl_FragDepth = 0.5 * (p32 / max(pd, 1.0e-30) - p22) + 0.5;
+  gl_FragDepth = NDC_PARA_JANELA(p32 / max(pd, 1.0e-30) - p22);
 }
 `;
 
@@ -4801,7 +4825,7 @@ export class PedrasDoAnel {
   private renderer: THREE.WebGLRenderer | null = null;
   private alvoPre: THREE.WebGLRenderTarget | null = null;
   private readonly cenaPre = new THREE.Scene();
-  private readonly cameraPre = new THREE.Camera();
+  private readonly cameraPre = new CameraSemLente();
   /** o maior τ perto de um raio, do perfil medido (null até o perfil chegar) */
   private tauMaximo: ((rhoKm: number) => number) | null = null;
   /**
@@ -4997,14 +5021,20 @@ const float R_EXT = ${opcoes.rExt};`;
       });
       // a profundidade do ponto acertado nunca fica mais perto que a do
       // vértice (a frente do corpo): com a extensão, a GPU descarta antes de
-      // sombrear o que está atrás; sem ela, a mesma imagem, mais cara
+      // sombrear o que está atrás; sem ela, a mesma imagem, mais cara.
+      // Na profundidade invertida "mais longe" é MENOR (`depth_less`), e o
+      // material cru não recebe do three a marca da convenção: entra aqui.
       if (!malha)
         m.onBeforeCompile = (s, r) => {
+          const invertida = r.capabilities.reversedDepthBuffer;
+          const marca = invertida ? '#define USE_REVERSED_DEPTH_BUFFER\n' : '';
+          s.vertexShader = marca + s.vertexShader;
           s.fragmentShader = s.fragmentShader.replace(
             'PROFUNDIDADE_SO_CRESCE',
-            r.extensions.has('EXT_conservative_depth')
-              ? '#extension GL_EXT_conservative_depth : enable\nlayout (depth_greater) out highp float gl_FragDepth;'
-              : ''
+            marca +
+              (r.extensions.has('EXT_conservative_depth')
+                ? `#extension GL_EXT_conservative_depth : enable\nlayout (${invertida ? 'depth_less' : 'depth_greater'}) out highp float gl_FragDepth;`
+                : '')
           );
         };
       return m;

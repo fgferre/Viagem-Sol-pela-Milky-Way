@@ -550,7 +550,11 @@ describe('F4 — a coroa testa profundidade contra os globos, na frente do próp
     const novo = cirurgiaDaCoroaOcultavel(vertexDoRaymarch, RAIO_SOL_PC);
     expect(novo.match(/gl_Position = projectionMatrix \* viewMatrix \* w;/g)).toHaveLength(1);
     expect(novo).toContain('vWorld = w.xyz;');
-    expect(novo.match(/gl_Position\.z = /g)).toHaveLength(1);
+    // uma escrita de z por convenção de profundidade: só uma das duas compila
+    const [invertida, comum] = novo.split('#else');
+    expect(invertida).toContain('#ifdef USE_REVERSED_DEPTH_BUFFER');
+    expect(invertida.match(/gl_Position\.z = /g)).toHaveLength(1);
+    expect(comum.match(/gl_Position\.z = /g)).toHaveLength(1);
     expect(novo).not.toMatch(/gl_Position\.(x|y|w|xy|xyz|xyw)\s*=/);
     // a metade do caminho, o plano tangente com folga de 5 % do raio (de
     // perto) e o teto de quatro degraus antes do fundo — o da sonda do clarão

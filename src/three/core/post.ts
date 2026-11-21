@@ -384,6 +384,18 @@ const LIMIAR_DO_CAMPO = 0;
  * premultipliedAlpha: true` — a sabotagem passava porque a palavra continuava
  * escrita, num comentário.
  */
+/**
+ * A PROFUNDIDADE DOS DOIS ALVOS EM QUE A CENA É RASTERIZADA (o da cena e
+ * o rascunho do campo), sob a profundidade invertida
+ * (`core/profundidade.ts`): ponto flutuante de 32 bits. Em 24 bits
+ * inteiros a invertida não separa nada além de near × 2^24, como a de
+ * sempre; é o ponto flutuante que dá precisão relativa à distância. Sem a
+ * invertida não entra nada: o alvo fica com a profundidade padrão do three.
+ */
+function profundidadeDoAlvo(invertida: boolean): { depthTexture?: THREE.DepthTexture } {
+  return invertida ? { depthTexture: new THREE.DepthTexture(1, 1, THREE.FloatType) } : {};
+}
+
 export function criarSomaComRecorte(): THREE.ShaderMaterial {
   return new THREE.ShaderMaterial({
     uniforms: {
@@ -491,7 +503,8 @@ class ClaraoDoCampo extends Pass {
     camera: THREE.Camera,
     largura: number,
     altura: number,
-    pixelRatio: number
+    pixelRatio: number,
+    profundidadeInvertida: boolean
   ) {
     super();
     this.cena = cena;
@@ -524,7 +537,10 @@ class ClaraoDoCampo extends Pass {
     domarPassaAlta(this.bloom);
     const fatores = m.compositeMaterial.uniforms.bloomFactors.value as number[];
     for (let i = 0; i < fatores.length; i++) fatores[i] = FORMA_DO_FILME[i];
-    this.rascunho = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType });
+    this.rascunho = new THREE.WebGLRenderTarget(1, 1, {
+      type: THREE.HalfFloatType,
+      ...profundidadeDoAlvo(profundidadeInvertida),
+    });
     this.rascunho.texture.name = 'ClaraoDoCampo.rascunho';
     this.redimensionar(largura, altura, pixelRatio);
   }
@@ -877,7 +893,8 @@ class CenaResolvidaUmaVez extends Pass {
     cena: THREE.Scene,
     camera: THREE.Camera,
     amostras: number,
-    destino: THREE.WebGLRenderTarget
+    destino: THREE.WebGLRenderTarget,
+    profundidadeInvertida: boolean
   ) {
     super();
     this.cena = cena;
@@ -888,6 +905,7 @@ class CenaResolvidaUmaVez extends Pass {
       type: THREE.HalfFloatType,
       samples: amostras,
       resolveDepthBuffer: false,
+      ...profundidadeDoAlvo(profundidadeInvertida),
     });
     this.alvo.texture = destino.texture;
     // OS DOIS VIVEM OU MORREM JUNTOS. O composer redimensiona e dispõe o
@@ -1060,7 +1078,8 @@ export class Post {
       scene,
       camera,
       this.amostrasForcadas ?? AMOSTRAS_DO_ALVO,
-      this.composer.renderTarget1
+      this.composer.renderTarget1,
+      renderer.capabilities.reversedDepthBuffer
     );
     this.composer.addPass(this.cena);
 
@@ -1104,7 +1123,8 @@ export class Post {
       camera,
       tamanho.x,
       tamanho.y,
-      renderer.getPixelRatio()
+      renderer.getPixelRatio(),
+      renderer.capabilities.reversedDepthBuffer
     );
     this.composer.addPass(this.claraoDoCampo);
     // os fantasmas da lente de cinema: HDR, depois do bloom (fantasma não

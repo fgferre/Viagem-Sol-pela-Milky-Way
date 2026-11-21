@@ -64,6 +64,7 @@ import { M_V_SOL_DO_CAMPO, picoDaPsf, psfPointSizePx, sigmaDaPsfPx } from '../lu
 import { MARGEM_DO_CAMPO } from '../core/post';
 import { RAMP_DURATION_MS, stepRampToward } from './lodStellar';
 import { SondaDeOclusao } from './sondaDeOclusao';
+import { alemDoFundo } from '../core/profundidade';
 import { U_PERFIL_BASE, U_PERFIL_ESCALA, type AnelComPerfil } from './corpos/gigante';
 import { regiaoDoAnelCpu } from './corpos/descricaoDoAnel';
 
@@ -384,7 +385,12 @@ void main() {
   }
   gl_Position.xy += position.xy * extent * vec2(projectionMatrix[0][0], projectionMatrix[1][1]);
   // nunca no fundo do depth: z de NDC 1 − 4,8e−7 = depth 1 − 2,4e−7
+  // (na profundidade invertida o fundo é z = 0: \`core/profundidade.ts\`)
+  #ifdef USE_REVERSED_DEPTH_BUFFER
+  gl_Position.z = max(gl_Position.z, 0.0);
+  #else
   gl_Position.z = min(gl_Position.z, gl_Position.w * (1.0 - 4.8e-7));
+  #endif
 }
 `;
 
@@ -1430,7 +1436,9 @@ export class ClaraoDeAsas {
     // atrás da câmera a projeção espelha o ponto para dentro do quadro
     if (v.clone().applyMatrix4(camera.matrixWorldInverse).z >= 0) return false;
     v.project(camera);
-    return Math.abs(v.x) <= ALCANCE_DA_SONDA_NDC && Math.abs(v.y) <= ALCANCE_DA_SONDA_NDC && v.z <= 1;
+    return (
+      Math.abs(v.x) <= ALCANCE_DA_SONDA_NDC && Math.abs(v.y) <= ALCANCE_DA_SONDA_NDC && !alemDoFundo(v.z, camera)
+    );
   }
 
   /** O ÚNICO lugar que escreve `oculta` — a consulta de oclusão da vaga

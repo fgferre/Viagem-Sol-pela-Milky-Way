@@ -367,6 +367,15 @@ export function lerPortaEscala(bruto: string | null | undefined): number | null 
   return ESCALAS_DE_RESOLUCAO.find((f) => f === v) ?? null;
 }
 
+/**
+ * a lei da porta `?profundidade=`: só a palavra `invertida` pede a
+ * profundidade invertida do three (`core/profundidade.ts`,
+ * PLAN-PROFUNDIDADE.md); qualquer outra coisa é o buffer de sempre
+ */
+export function lerPortaProfundidade(bruto: string | null | undefined): boolean {
+  return bruto === 'invertida';
+}
+
 export interface QualityPreset {
   pixelRatio: number;
   nebulosa: NivelDaNebulosa;
@@ -931,6 +940,13 @@ export class Engine {
       // quad — um fullscreen quad não testa profundidade. Medido na
       // época: ~22,9 MB de VRAM devolvidos numa tela retina.
       depth: false,
+      // A PORTA `?profundidade=invertida`. Onde a placa não tem
+      // `EXT_clip_control` o three avisa no console e fica no buffer de
+      // sempre: quem pergunta depois lê `capabilities.reversedDepthBuffer`,
+      // nunca a URL.
+      reversedDepthBuffer: lerPortaProfundidade(
+        new URLSearchParams(window.location.search).get('profundidade')
+      ),
     });
     this.setToneMapping(TOM_PADRAO);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;

@@ -133,8 +133,13 @@ export class CamadaWebgpu {
         uPeso: { value: 0 },
       },
       // no plano do fundo: qualquer corpo opaco na frente vence o teste
+      // (na profundidade invertida o fundo é z = 0: `core/profundidade.ts`)
       vertexShader: /* glsl */ `
-        void main() { gl_Position = vec4(position.xy, 1.0 - 4.8e-7, 1.0); }`,
+        #ifdef USE_REVERSED_DEPTH_BUFFER
+        void main() { gl_Position = vec4(position.xy, 0.0, 1.0); }
+        #else
+        void main() { gl_Position = vec4(position.xy, 1.0 - 4.8e-7, 1.0); }
+        #endif`,
       fragmentShader: /* glsl */ `
         uniform sampler2D uGalaxia;
         uniform vec2 uAlvo;
