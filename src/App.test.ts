@@ -62,6 +62,37 @@ describe('o recomeço guarda onde o visitante estava (item 4.3)', () => {
   });
 });
 
+// auditoria rodada 3 (M11): o recomeço volta ao lugar, o link copiado não
+describe('o endereço do recomeço leva o lugar (M11)', () => {
+  it('voo livre: pos/look só no recomeço; começo do filme tocando: play=1; sem fov', () => {
+    const inicio = ESPELHO.indexOf('  const urlDoRecomeco = () => {');
+    const fim = ESPELHO.indexOf('};', inicio);
+    expect(inicio).toBeGreaterThan(0);
+    const corpo = ESPELHO.slice(inicio, fim + 5);
+    expect(corpo).not.toContain("'fov'");
+    const monta = new Function(
+      'urlComMomento',
+      'directorRef',
+      'phase',
+      corpo + ' return urlDoRecomeco;'
+    );
+    const camera = {
+      position: { x: 1.5, y: 2.25, z: -3, clone: () => ({}) },
+      getWorldDirection: (v: { x?: number; y?: number; z?: number }) => Object.assign(v, { x: 0, y: 0, z: 1 }),
+    };
+    const base = () => new URL('https://x.test/?filme=solar');
+    const recomeco = (phase: string, d: object) =>
+      (monta(base, { current: d }, phase) as () => URL)().searchParams;
+    const livre = recomeco('free', { engine: { camera } });
+    expect(livre.get('pos')).toBe('1.5,2.25,-3');
+    expect(livre.get('look')).toBe('1.5,2.25,-2');
+    expect(livre.has('fov')).toBe(false);
+    expect(base().searchParams.has('pos')).toBe(false);
+    expect(recomeco('journey', { currentTime: 0.2, pausado: false }).get('play')).toBe('1');
+    expect(recomeco('journey', { currentTime: 0.2, pausado: true }).get('t')).toBe('0');
+  });
+});
+
 // arremates da rodada 2 (20/11): o filme pausado voltava andando do
 // "Tentar novamente" e do link copiado, porque `play=1` ia sempre
 describe('o momento escrito guarda se o filme estava pausado', () => {

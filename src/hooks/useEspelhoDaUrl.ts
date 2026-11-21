@@ -639,6 +639,31 @@ export function useEspelhoDaUrl(dep: {
     window.history.replaceState(null, '', comParam(flag, ligar ? null : '1'));
   };
 
+  /**
+   * O ENDEREÇO DO "TENTAR NOVAMENTE" (auditoria rodada 3, M11): irmã de
+   * `urlComMomento`, que segue sem levar posição (12.2). Só o recomeço
+   * leva o lugar: no voo livre `pos`/`look` (unidade da cena, precisão
+   * cheia, o formato que o boot lê); nos primeiros 0,5 s do filme `play=1`
+   * (tocando) ou `t=0` (pausado). `fov` fica de fora de propósito: o selo
+   * o declararia como lente forçada que o visitante não pediu.
+   */
+  const urlDoRecomeco = () => {
+    const url = urlComMomento();
+    const d = directorRef.current;
+    if (!d || phase === 'loading') return url;
+    if (phase === 'free') {
+      const camera = d.engine.camera;
+      const p = camera.position;
+      const dir = camera.getWorldDirection(p.clone());
+      url.searchParams.set('pos', `${p.x},${p.y},${p.z}`);
+      url.searchParams.set('look', `${p.x + dir.x},${p.y + dir.y},${p.z + dir.z}`);
+    } else if (phase === 'journey' && d.currentTime <= 0.5) {
+      if (d.pausado) url.searchParams.set('t', '0');
+      else url.searchParams.set('play', '1');
+    }
+    return url;
+  };
+
   return {
     tom,
     lente,
@@ -648,6 +673,7 @@ export function useEspelhoDaUrl(dep: {
     escalaUi,
     setEscondidas,
     urlComMomento,
+    urlDoRecomeco,
     changeQuality,
     trocarAmostras,
     trocarNebulosa,

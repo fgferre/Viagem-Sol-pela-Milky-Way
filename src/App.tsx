@@ -1009,6 +1009,7 @@ export default function App() {
     escondidas,
     escalaUi,
     urlComMomento,
+    urlDoRecomeco,
     changeQuality,
     trocarAmostras,
     trocarNebulosa,
@@ -1037,7 +1038,7 @@ export default function App() {
   // degrau abaixo, no mesmo filme e instante; o endereço é o espelho da
   // troca de qualidade (`replaceState`) e quem recarrega é o clique
   const recomecar = () => {
-    const momento = urlComMomento();
+    const momento = urlDoRecomeco();
     // no degrau mais baixo (`performance`) não há tier abaixo, mas o
     // MOMENTO ainda vai ao endereço (auditoria rodada 2, item 4.3) — só
     // quando a placa desistiu: uma exceção em quadro naquele instante
