@@ -808,7 +808,7 @@
      vão de 3vw de sempre = 88vw − rodapé. Na mesa larga não decide
      (a 1.060 px sobra 445 px, mais que 21rem); na estreita o chip
      cede e corta com reticências (`.atlas-selo-resumo-texto`). */
-  max-width: min(21rem, 42vw, calc(100vw - 2rem), calc(88vw - max(46vw, min(63vw, 30rem))));
+  max-width: min(21rem, 42vw, calc(100vw - 2rem), calc(88vw - 20.5rem));
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -828,6 +828,10 @@
 @media (max-height: 520px) {
   .atlas-selo {
     right: var(--regua-largura, 3vw);
+    /* o orçamento da mesa vale aqui também, e desconta a régua: 91vw =
+       100vw − 3vw (a margem do selo) − 6vw (o `left` do rodapé), menos
+       o relógio e a régua (que ocupa o lugar do `3vw` de fallback). */
+    max-width: min(21rem, 42vw, calc(100vw - 2rem), calc(91vw - 20.5rem - var(--regua-largura, 3vw)));
   }
 }
 /* A LINHA FECHADA, CHIP DO SELO (Lote 2b, item 3): FILETE de 2 px à
@@ -1108,7 +1112,7 @@
      com a ficha por fora é O PAI. 47 fica acima de QUALQUER diálogo (46) e
      abaixo do Spotlight/convite (48, que tem de vencer tudo); a coluna
      também carrega a máquina do tempo e a dica dos gestos, mas os dois
-     moram à ESQUERDA (`left: 6vw`, `max-width: max(46vw, min(63vw, 30rem))`) e a garantia
+     moram à ESQUERDA (`left: 6vw`, `max-width: max(46vw, min(63vw, 20.5rem))`) e a garantia
      geométrica logo abaixo ("nunca começa antes de 55vw") já impede
      qualquer diálogo — todos ancorados à direita — de cruzar com eles: só
      o selo (`right: 3vw`, reancorado à direita dentro deste pai) tinha o
@@ -1119,15 +1123,13 @@
   gap: 0.7rem;
   /* O ORÇAMENTO DE LARGURA (09/09, decisão do dono: o telefone deitado
      continua com a interface da mesa; só o rodapé muda de conta): a
-     fileira dos controles mede 471 px a `ui = 1` (medido sem quebra) e
-     cabe em `30rem` — o `rem` da raiz cresce com `--ui`, então o teto
-     cresce junto. `46vw` é a conta da mesa larga de sempre; abaixo de
-     1.044 px ela não segura a fileira, e o `min(63vw, 30rem)` assume:
-     no piso da mesa (761 px) 63vw = 479 px, ainda uma fileira só. Sem
-     `@media` — toda quebra de largura do HUD é a do celular (teste em
-     uiScale.test.ts); a câmera reserva a 2ª linha pelo mesmo número,
-     ver `LARGURA_DA_QUEBRA_DO_TEMPO_PX` em retanguloDoAtlas.ts. */
-  max-width: max(46vw, min(63vw, 30rem));
+     coluna do rodapé é a do `.relogio` (`width: 20.5rem`, o `rem` da
+     raiz cresce com `--ui`, então o teto cresce junto). `46vw` é a conta
+     da mesa larga de sempre; abaixo disso o `min(63vw, 20.5rem)` assume.
+     O selo (`.atlas-selo`) desconta a MESMA largura do que sobra à
+     direita. Sem `@media` — toda quebra de largura do HUD é a do
+     celular (teste em uiScale.test.ts). */
+  max-width: max(46vw, min(63vw, 20.5rem));
   /* O RETÂNGULO DA COLUNA NÃO ROUBA O ARRASTO — mesma lei do
      `.filme-rodape`. Um `div` sem fundo continua recebendo o ponteiro
      dentro da própria caixa, e na tela estreita esta caixa passou a ir
@@ -1382,6 +1384,17 @@
 .relogio-recorte {
   min-height: 0;
   overflow: hidden;
+  /* TETO (M3): em tela baixa o painel aberto (245 px a `ui = 1`) subia
+     por cima da barra e da marca do topo; o recorte rola POR DENTRO.
+     100vh menos o fim da barra, menos a reserva do selo (a base do
+     relógio), menos a leitura fechada (4,45rem + 2px de borda), menos
+     0,75rem para a marca do topo, que termina um pouco abaixo da barra. */
+  max-height: calc(100vh - var(--barra-fim) - var(--selo-base) - 4.45rem - 2px - 0.75rem);
+  overflow-y: auto;
+}
+/* com o aviso na tela o relógio cresce duas linhas: o teto desconta. */
+.relogio:has(.relogio-aviso:not(:empty)) .relogio-recorte {
+  max-height: calc(100vh - var(--barra-fim) - var(--selo-base) - 4.45rem - 2px - 0.75rem - 2.6rem);
 }
 .relogio-painel {
   padding: 1rem 1rem 0.25rem;
@@ -1562,6 +1575,11 @@
 }
 .atlas-gaveta .relogio-leitura {
   padding: 0.25rem 0 0.75rem;
+}
+.atlas-gaveta .relogio-recorte,
+.atlas-gaveta .relogio:has(.relogio-aviso:not(:empty)) .relogio-recorte {
+  max-height: none;
+  overflow: visible;
 }
 .atlas-gaveta .relogio-extras {
   position: static;

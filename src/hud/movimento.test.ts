@@ -249,3 +249,20 @@ describe('7. o corte da sanfona vive na própria dobra (12/09)', () => {
     expect(BASE).not.toMatch(/@keyframes (abre|fecha)Sanfona/);
   });
 });
+
+describe('M3 e B3: o painel do relógio e o selo cabem em tela baixa', () => {
+  it('o recorte do painel do relógio tem teto e rola; na folha do telefone o teto sai', () => {
+    const corpo = corpoDaRegra('.relogio-recorte');
+    expect(corpo).toMatch(/max-height: calc\(100vh - var\(--barra-fim\) - var\(--selo-base\)/);
+    expect(corpo).toContain('overflow-y: auto');
+    const folha = /\.atlas-gaveta \.relogio-recorte,[^{]*\{([^}]*)\}/.exec(CSS)?.[1] ?? '';
+    expect(folha).toContain('max-height: none');
+    expect(folha).toContain('overflow: visible');
+  });
+
+  it('o orçamento do selo desconta a largura do relógio, e na janela baixa desconta também a régua', () => {
+    expect(corpoDaRegra('.atlas-selo')).toContain('calc(88vw - 20.5rem)');
+    expect(corpoDaRegra('.atlas-rodape')).toContain('max-width: max(46vw, min(63vw, 20.5rem))');
+    expect(CSS).toContain('calc(91vw - 20.5rem - var(--regua-largura, 3vw))');
+  });
+});
