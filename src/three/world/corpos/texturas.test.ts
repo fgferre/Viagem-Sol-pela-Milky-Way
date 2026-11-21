@@ -29,6 +29,7 @@ import {
   MARGEM_DO_QUADRO_RAD,
   TexturasDoCorpo,
   alvoDePixels,
+  novaTentativa,
   vezDoCarregador,
   buscarManifestUmaVez,
   carregarCanaisDoCorpo,
@@ -600,6 +601,61 @@ describe('"falhou" não é sentença: um segurador que sai e VOLTA ressuscita (i
     }
     expect(b.casa.pronta).toBe(true);
     expect(avisos, 'o aviso é um só, as tentativas espaçadas caem caladas').toHaveLength(1);
+  });
+
+  it('a política de nova tentativa: 5 s no primeiro minuto desde a primeira falha, depois dobra até 60; sem rede não tenta, e a rede que volta tenta na hora', () => {
+    // o primeiro minuto conta da PRIMEIRA falha: a tentativa não o zera
+    expect(novaTentativa(4, 0, 0, 5, false, false)).toEqual({ tentarAgora: false, esperaS: 5 });
+    expect(novaTentativa(5, 0, 0, 5, false, false).tentarAgora).toBe(true);
+    expect(novaTentativa(59, 0, 55, 5, false, false).esperaS).toBe(5);
+    // depois do minuto a espera dobra até o teto
+    let espera = ESPERA_DA_NOVA_TENTATIVA_S;
+    const esperas: number[] = [];
+    for (const falha of [60, 70, 90, 130, 190]) {
+      espera = novaTentativa(falha, 0, falha, espera, false, false).esperaS;
+      esperas.push(espera);
+    }
+    expect(esperas).toEqual([10, 20, 40, 60, 60]);
+    // sem rede não tenta, nem com a espera vencida
+    expect(novaTentativa(100, 0, 0, 5, true, false).tentarAgora).toBe(false);
+    // a BORDA da rede que volta tenta antes da espera
+    expect(novaTentativa(1, 0, 0, 5, false, true).tentarAgora).toBe(true);
+  });
+
+  it('a SUBIDA RECUSADA volta a ser tentada com o corpo segurado, calada, e sobe quando a rede volta', async () => {
+    const b = bancadaDaTroca('alta');
+    b.tick({ tela: true });
+    await b.entregar();
+    b.derrubarARede(true);
+    b.escolher('cinema');
+    const avisos: string[] = [];
+    const warn = console.warn;
+    console.warn = (m: string) => avisos.push(m);
+    try {
+      for (let i = 0; i < 1 + RECARGAS_ATE_DESISTIR; i++) {
+        b.tick({ tela: true });
+        await b.entregar();
+      }
+      const aoRecusar = b.pedidos.length;
+      b.tick({ tela: true }); // o primeiro tick segurado marca a recusa
+      b.tick({ tela: true }, ESPERA_DA_NOVA_TENTATIVA_S - 1);
+      expect(b.pedidos, 'antes da espera, nada').toHaveLength(aoRecusar);
+      // a espera venceu com a rede fora: UMA tentativa, que cai recusada na hora
+      b.tick({ tela: true }, 1);
+      await b.entregar();
+      expect(b.pedidos).toHaveLength(aoRecusar + 1);
+      expect(b.casa.tierNaTela).toBe('alta');
+      for (let i = 0; i < 5; i++) b.tick({ tela: true });
+      expect(b.pedidos).toHaveLength(aoRecusar + 1);
+      // a rede volta, o corpo nunca saiu: a tentativa seguinte sobe
+      b.derrubarARede(false);
+      b.tick({ tela: true }, ESPERA_DA_NOVA_TENTATIVA_S);
+      await b.entregar();
+    } finally {
+      console.warn = warn;
+    }
+    expect(b.casa.tierNaTela).toBe('cinema');
+    expect(avisos, 'o aviso é o da primeira recusa, a recaída cai calada').toHaveLength(1);
   });
 });
 

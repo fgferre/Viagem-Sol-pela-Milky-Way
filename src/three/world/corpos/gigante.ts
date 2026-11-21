@@ -87,7 +87,13 @@ import { ANEL_VERT_DAS_PEDRAS,GLSL_CESSAO_DAS_PEDRAS, GLSL_PROFUNDIDADE_DO_DISCO
 import { ANEL_DE_SATURNO, regiaoDoAnelCpu } from './descricaoDoAnel';
 import { posicaoKepler } from '../../../lib/atlas/kepler';
 import { cessaoAlvo, gateBinario, saltoGuardado } from './terra';
-import { CANAL_MAP, type Seguradores, TexturasDoCorpo, diametroPedidoPelaTela } from './texturas';
+import {
+  CANAL_MAP,
+  RelogioDaNovaTentativa,
+  type Seguradores,
+  TexturasDoCorpo,
+  diametroPedidoPelaTela,
+} from './texturas';
 import type { MiraDaTela, OpcoesDeTextura } from './texturas';
 import {
   componentesNoFrameDoAnel,
@@ -786,8 +792,6 @@ let perfilDoAnelVivo: {
   brilho: { textura: THREE.DataTexture; dados: Uint16Array } | null;
 } | null = null;
 let perfilDoAnelPedido: Promise<void> | null = null;
-/** a espera, em segundos do relógio do quadro, entre dois pedidos do perfil que falhou (rede): não martela offline */
-const ESPERA_DO_PERFIL_S = 10;
 
 /**
  * O BRILHO MEDIDO, pelo mesmo `fetchBinary` do perfil. Arquivo ausente ou
@@ -1729,9 +1733,9 @@ export class GiganteResolvido {
   /** um salto que caiu com o globo fora de quadro (`saltoGuardado`) */
   private saltoPendente = false;
   private armado = false;
-  /** o pedido do perfil do anel falhou e espera para repetir; `perfilFalhouEm` é o `tS` do 1º quadro depois da falha */
+  /** o pedido do perfil do anel falhou e espera para repetir, no relógio `novoPerfil` */
   private perfilFalhou = false;
-  private perfilFalhouEm: number | null = null;
+  private readonly novoPerfil = new RelogioDaNovaTentativa();
   private readonly sombra = criaSombraNaCena();
 
   /** o estado das texturas — a casa dele é o pipeline (`texturas.ts`) */
@@ -1919,15 +1923,12 @@ export class GiganteResolvido {
 
     // O PERFIL DO ANEL QUE A REDE DERRUBOU: o único pedido era o do
     // nascimento da casca, e a falha deixava Saturno sem anel até recarregar
-    // a página. Com o corpo na tela, pede de novo a cada `ESPERA_DO_PERFIL_S`,
-    // contados no relógio do quadro (o corpo não tem relógio próprio).
-    if (this.perfilFalhou) {
-      this.perfilFalhouEm ??= q.tS;
-      if (this.armado && q.tS - this.perfilFalhouEm >= ESPERA_DO_PERFIL_S) {
-        this.perfilFalhou = false;
-        this.perfilFalhouEm = null;
-        void this.ligarPerfilDoAnel();
-      }
+    // a página. Com o corpo na tela, pede de novo pela política das texturas
+    // (`novaTentativa`), contada no relógio do quadro (o corpo não tem
+    // relógio próprio); fora da tela o relógio corre, mas ninguém pede.
+    if (this.perfilFalhou && this.novoPerfil.vence(q.tS, this.armado)) {
+      this.perfilFalhou = false;
+      void this.ligarPerfilDoAnel();
     }
 
     const emQuadro =
@@ -2331,6 +2332,7 @@ export class GiganteResolvido {
       this.perfilFalhou = true;
       return;
     }
+    this.novoPerfil.zerar();
     if (this.disposto || !perfilDoAnelVivo) return;
     const { textura, bytes, brilho } = perfilDoAnelVivo;
     if (this.matAnel) {

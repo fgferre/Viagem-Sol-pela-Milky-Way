@@ -63,12 +63,91 @@ export const RECARGAS_ATE_DESISTIR = 2;
  * SEGURADO (a janela do filme, o visitante parado no corpo). Sem ela o
  * corpo só renascia se o segurador saísse e voltasse (item 225) — num
  * filme, nunca: a rede caía um instante e o planeta sumia até recarregar
- * a página. Uma tentativa por espera, calada.
+ * a página. Uma tentativa por espera, calada. É a espera do primeiro
+ * minuto de `novaTentativa`.
  */
-// ponytail: espera fixa e sem o evento `online` do navegador (ele mente
-// atrás de um roteador sem internet, e 5 s já cobrem); crescer a espera
-// se um arquivo que falta de verdade pesar no servidor
 export const ESPERA_DA_NOVA_TENTATIVA_S = 5;
+/** o minuto, contado da PRIMEIRA falha da sequência, em que a espera fica em 5 s */
+const MINUTO_DA_ESPERA_CURTA_S = 60;
+/** o teto da espera que dobra depois do primeiro minuto */
+const TETO_DA_ESPERA_S = 60;
+
+/**
+ * A POLÍTICA ÚNICA DE NOVA TENTATIVA (M9 + B7): a carga que desistiu, a
+ * subida de resolução recusada e o perfil do anel. No primeiro minuto
+ * contado DESDE A PRIMEIRA FALHA da sequência (a tentativa não o zera),
+ * uma tentativa a cada `ESPERA_DA_NOVA_TENTATIVA_S`; depois a espera
+ * dobra (10, 20, 40) até `TETO_DA_ESPERA_S`. Sem rede, nada; a rede que
+ * VOLTA (a borda, vista no tick — sem ouvinte para o `dispose` lembrar)
+ * tenta na hora. O 404 segue a mesma espera. Pura: quem chama guarda os
+ * instantes e lê a rede (`semRede`).
+ */
+export function novaTentativa(
+  agoraS: number,
+  primeiraFalhaS: number,
+  ultimaFalhaS: number,
+  esperaAnteriorS: number,
+  semRedeAgora: boolean,
+  estavaSemRede: boolean
+): { tentarAgora: boolean; esperaS: number } {
+  const esperaS =
+    ultimaFalhaS - primeiraFalhaS < MINUTO_DA_ESPERA_CURTA_S
+      ? ESPERA_DA_NOVA_TENTATIVA_S
+      : Math.min(TETO_DA_ESPERA_S, 2 * esperaAnteriorS);
+  if (semRedeAgora) return { tentarAgora: false, esperaS };
+  return { tentarAgora: estavaSemRede || agoraS - ultimaFalhaS >= esperaS, esperaS };
+}
+
+/**
+ * O navegador diz que está SEM REDE. Só o `false` é confiável (o `true`
+ * mente atrás de um roteador sem internet), e a leitura é guardada: o
+ * vitest roda em Node, sem `navigator` (ou sem `onLine`).
+ */
+export function semRede(): boolean {
+  return typeof navigator !== 'undefined' && navigator.onLine === false;
+}
+
+/**
+ * Os INSTANTES de uma sequência de falhas, para `novaTentativa` — cada
+ * lugar que tenta de novo guarda o seu. `vence` é chamado a cada tick em
+ * falha; a falha que chega depois de uma tentativa é marcada no primeiro
+ * tick seguinte. `zerar` quando a sequência acaba (deu certo, descarregou,
+ * um segurador voltou).
+ */
+export class RelogioDaNovaTentativa {
+  private primeiraFalhaS: number | null = null;
+  private ultimaFalhaS: number | null = null;
+  private esperaS = ESPERA_DA_NOVA_TENTATIVA_S;
+  private estavaSemRede = false;
+
+  /** true = tentar agora; `podeTentar` falso só deixa o relógio correr */
+  vence(tS: number, podeTentar = true): boolean {
+    this.primeiraFalhaS ??= tS;
+    this.ultimaFalhaS ??= tS;
+    const semRedeAgora = semRede();
+    const r = novaTentativa(
+      tS,
+      this.primeiraFalhaS,
+      this.ultimaFalhaS,
+      this.esperaS,
+      semRedeAgora,
+      this.estavaSemRede
+    );
+    if (semRedeAgora) this.estavaSemRede = true;
+    if (!r.tentarAgora || !podeTentar) return false;
+    this.estavaSemRede = false;
+    this.esperaS = r.esperaS;
+    this.ultimaFalhaS = null;
+    return true;
+  }
+
+  zerar(): void {
+    this.primeiraFalhaS = null;
+    this.ultimaFalhaS = null;
+    this.esperaS = ESPERA_DA_NOVA_TENTATIVA_S;
+    this.estavaSemRede = false;
+  }
+}
 
 /**
  * O filtro ANISOTRÓPICO de todo mapa de corpo (o teto do three é o da
@@ -1038,7 +1117,8 @@ function estadoAposFalha(
   if (recargas === RECARGAS_ATE_DESISTIR) {
     console.warn(
       `[${etiqueta}] carga de textura falhou ${1 + RECARGAS_ATE_DESISTIR}×; ${oQueNaoNasce}` +
-        ` — nova tentativa a cada ${ESPERA_DA_NOVA_TENTATIVA_S} s enquanto seguir em cena`
+        ` — nova tentativa a cada ${ESPERA_DA_NOVA_TENTATIVA_S} s no primeiro minuto, depois` +
+        ' mais espaçada, enquanto seguir em cena'
     );
   }
   return { texturas: 'falhou', recargas: RECARGAS_ATE_DESISTIR + 1 };
@@ -1400,9 +1480,16 @@ export class TexturasDoCorpo {
    * novo. Começa `true` — ninguém segura antes do primeiro tick.
    */
   private ninguemSegurava = true;
-  /** `tS` do primeiro tick SEGURADO em 'falhou' — o relógio da nova
-   *  tentativa (`ESPERA_DA_NOVA_TENTATIVA_S`); `null` fora de 'falhou' */
-  private falhouDesde: number | null = null;
+  /** o relógio da nova tentativa de quem desistiu ('falhou') segurado */
+  private readonly novaCarga = new RelogioDaNovaTentativa();
+  /**
+   * O relógio da SUBIDA recusada (B7): vencida a espera, o par
+   * (`tierRecusado`, `degrauRecusado`) fica LIBERADO para uma tentativa;
+   * se ela cair, o par é recusado de novo na hora e calado — o aviso foi
+   * o da primeira recusa.
+   */
+  private readonly novaSubida = new RelogioDaNovaTentativa();
+  private recusadoLiberado = false;
   /**
    * O ABORTO do lote EM VOO (item 115, peça 3). A geração já invalidava
    * o lote — mas invalidar é decidir que os bytes não servem, não parar
@@ -1519,17 +1606,17 @@ export class TexturasDoCorpo {
     //  - na BORDA de um segurador que VOLTA depois de ter ido embora, e
     //    o teto de `RECARGAS_ATE_DESISTIR` reabre por ciclo de armação —
     //    um 404 de uma visita não deve envenenar a visita seguinte;
-    //  - SEGURADO SEM PARAR (a janela do filme não solta), uma tentativa
-    //    a cada `ESPERA_DA_NOVA_TENTATIVA_S`, com `recargas` deixado
-    //    acima do teto: a que cai, cai calada, e a rede que voltou traz o
-    //    corpo sem recarregar a página.
+    //  - SEGURADO SEM PARAR (a janela do filme não solta), pela política
+    //    de `novaTentativa`, com `recargas` deixado acima do teto: a que
+    //    cai, cai calada, e a rede que voltou traz o corpo sem recarregar
+    //    a página.
     if (this.estado === 'falhou') {
-      if (this.falhouDesde === null) this.falhouDesde = tS;
-      const voltou = this.ninguemSegurava;
-      if (voltou || tS - this.falhouDesde >= ESPERA_DA_NOVA_TENTATIVA_S) {
+      if (this.ninguemSegurava) {
         this.estado = 'fria';
-        this.falhouDesde = null;
-        if (voltou) this.recargas = 0;
+        this.recargas = 0;
+        this.novaCarga.zerar();
+      } else if (this.novaCarga.vence(tS)) {
+        this.estado = 'fria';
       }
     }
     this.ninguemSegurava = false;
@@ -1570,7 +1657,18 @@ export class TexturasDoCorpo {
       }
     }
     const nadaATrocar = tier === this.tierVivo && degrau === this.degrauVivo;
-    const recusado = tier === this.tierRecusado && degrau === this.degrauRecusado;
+    // a SUBIDA RECUSADA volta a ser tentada pela mesma política enquanto
+    // o corpo segue segurado — sem sair e voltar (B7)
+    if (
+      !this.recusadoLiberado &&
+      tier === this.tierRecusado &&
+      degrau === this.degrauRecusado &&
+      this.novaSubida.vence(tS)
+    ) {
+      this.recusadoLiberado = true;
+    }
+    const recusado =
+      !this.recusadoLiberado && tier === this.tierRecusado && degrau === this.degrauRecusado;
     if (this.lugar && !this.lugar.descendo) {
       // NA FILA, nada desceu ainda: o lote segue o pedido de agora, ou sai
       if (nadaATrocar || recusado) {
@@ -1734,6 +1832,8 @@ export class TexturasDoCorpo {
     this.tierRecusado = null;
     this.degrauVivo = 0;
     this.degrauRecusado = 0;
+    this.recusadoLiberado = false;
+    this.novaSubida.zerar();
     this.recargas = 0;
     this.soltoDesde = null;
   }
@@ -1859,6 +1959,9 @@ export class TexturasDoCorpo {
         this.degrauVivo = degrau;
         this.tierRecusado = null;
         this.degrauRecusado = 0;
+        this.recusadoLiberado = false;
+        this.novaSubida.zerar();
+        this.novaCarga.zerar();
         this.recargas = 0;
         this.estado = 'pronta';
         sair();
@@ -1873,6 +1976,12 @@ export class TexturasDoCorpo {
           this.estado = r.texturas;
           return;
         }
+        // a nova tentativa da subida recusada que CAI: recusada de novo na
+        // hora e calada, e o relógio segue a mesma sequência
+        if (this.recusadoLiberado && tier === this.tierRecusado && degrau === this.degrauRecusado) {
+          this.recusadoLiberado = false;
+          return;
+        }
         // A TROCA QUE CAI não é sentença nem véu: o corpo continua com
         // os pixels que tem. A política de recarga é a mesma da primeira
         // carga (uma falha não é sentença), e o aviso é OUTRO porque a
@@ -1884,6 +1993,8 @@ export class TexturasDoCorpo {
         this.recargas = 0;
         this.tierRecusado = tier;
         this.degrauRecusado = degrau;
+        this.recusadoLiberado = false;
+        this.novaSubida.zerar();
         console.warn(
           `[${etiqueta}] troca de qualidade falhou ${1 + RECARGAS_ATE_DESISTIR}×; ` +
             `o corpo segue no tier '${this.tierVivo}' (degrau ${this.degrauVivo})`
