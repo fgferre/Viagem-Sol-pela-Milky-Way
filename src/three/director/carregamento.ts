@@ -359,10 +359,13 @@ export function montarCorposDoPalco(opts: {
   tier: () => QualityLevel;
   maxTextureSize: number | undefined;
   base: string;
+  /** o sinal da SESSÃO (o do Director): corta os pedidos partilhados
+   *  dos corpos (manifest, perfil do anel) na desistência e no dispose */
+  sinal: AbortSignal;
   /** os pinos do filme em cartaz (`Filme.pinos`), pelo id do corpo */
   pinos: () => ReadonlyMap<string, THREE.Vector3>;
 }) {
-  const { tier, maxTextureSize, base, pinos } = opts;
+  const { tier, maxTextureSize, base, sinal, pinos } = opts;
   // OS PINOS SÃO DO FILME (E1 da viagem solar): no galáctico, a TERRA e
   // a LUA no instante das 16:00 (`TERRA_PC`/`LUA_PC`, journey.ts) — sem
   // eles a coda mira um globo a 1,7 milhão de km. A Lua
@@ -371,18 +374,18 @@ export function montarCorposDoPalco(opts: {
   // isso que o fallback frio precisa saber para não segurar a captura
   // para sempre. O par (temPonto true, temRetrato false) é também o que
   // manda o `palco.ts` publicar o centro DELA na camada de pontos.
-  const terra = corpoNoPalco(new TerraResolvida({ tier, maxTextureSize, base }), 'earth', {
+  const terra = corpoNoPalco(new TerraResolvida({ tier, maxTextureSize, base, sinal }), 'earth', {
     temPonto: true,
     temRetrato: true,
     rotuloDeLua: false,
   }, pinos);
-  const lua = corpoNoPalco(new LuaResolvida({ tier, maxTextureSize, base }), 'moon', {
+  const lua = corpoNoPalco(new LuaResolvida({ tier, maxTextureSize, base, sinal }), 'moon', {
     temPonto: true,
     temRetrato: false,
     rotuloDeLua: true,
   }, pinos);
   const rochosos = ROCHOSOS.map((config) => {
-    const corpo = new RochosoResolvido({ config, tier, maxTextureSize, base });
+    const corpo = new RochosoResolvido({ config, tier, maxTextureSize, base, sinal });
     return corpoNoPalco(corpo, corpo.id, {
       // planeta cai no retrato e tem ponto; lua rochosa (Fobos, Io…)
       // não tem nem um nem outro, e é ela que ganha rótulo próprio
@@ -392,7 +395,7 @@ export function montarCorposDoPalco(opts: {
     }, pinos);
   });
   const gigantes = GIGANTES.map(({ id }) =>
-    corpoNoPalco(new GiganteResolvido({ id, tier, maxTextureSize, base }), id, {
+    corpoNoPalco(new GiganteResolvido({ id, tier, maxTextureSize, base, sinal }), id, {
       temPonto: true,
       temRetrato: true,
       rotuloDeLua: false,

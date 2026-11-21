@@ -1101,7 +1101,7 @@ describe('7. texto-fonte (as leis do cabeçalho, pinadas)', () => {
       new URL('../../director/carregamento.ts', import.meta.url),
       'utf8'
     );
-    expect(carregamento).toContain("new TerraResolvida({ tier, maxTextureSize, base }), 'earth'");
+    expect(carregamento).toContain("new TerraResolvida({ tier, maxTextureSize, base, sinal }), 'earth'");
     // o passo do palco roda ANTES do near ler a superfície: sem lag de
     // 1 quadro entre o globo entrar em quadro e o clip enxergá-lo
     const tickPalco = director.indexOf('passoDoPalco(this.noPalco');

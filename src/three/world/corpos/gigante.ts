@@ -801,10 +801,11 @@ let perfilDoAnelPedido: Promise<void> | null = null;
  * pediria formato renderizável, que meia-precisão não é sem extensão.
  */
 async function pedirBrilhoDoAnel(
-  base: string
+  base: string,
+  sinal?: AbortSignal
 ): Promise<{ textura: THREE.DataTexture; dados: Uint16Array } | null> {
   try {
-    const cru = await fetchBinary(`${base}${ANEL_DE_SATURNO.brilho.arquivo}`);
+    const cru = await fetchBinary(`${base}${ANEL_DE_SATURNO.brilho.arquivo}`, sinal);
     const esperado = PERFIL_DO_ANEL.caixas * 4 * 2;
     if (cru.byteLength !== esperado) {
       throw new Error(`${cru.byteLength} B, esperado ${esperado}`);
@@ -847,17 +848,22 @@ async function pedirBrilhoDoAnel(
     textura.needsUpdate = true;
     return { textura, dados };
   } catch (erro) {
+    // a sessão abortou: o perfil inteiro cai junto, sem guardar um anel
+    // sem brilho no módulo
+    if (sinal?.aborted) throw erro;
     console.warn('[gigante] brilho medido do anel não veio; fica o anel de hoje', erro);
     return null;
   }
 }
 
-export async function pedirPerfilDoAnel(base: string): Promise<void> {
+/** `sinal` é o da SESSÃO, o mesmo para todos os corpos: a promessa é
+ *  partilhada, então nenhum corpo sozinho pode cancelá-la */
+export async function pedirPerfilDoAnel(base: string, sinal?: AbortSignal): Promise<void> {
   perfilDoAnelPedido ??= (async () => {
     // pelo MESMO caminho de rede dos outros .bin da casa: `fetchBinary`
     // prefere o irmão .gz e descomprime no cliente (o Pages serve o cru
     // opaco); só o .gz é publicado
-    const bytes = new Uint8Array(await fetchBinary(`${base}${PERFIL_DO_ANEL.arquivo}`));
+    const bytes = new Uint8Array(await fetchBinary(`${base}${PERFIL_DO_ANEL.arquivo}`, sinal));
     const esperado = PERFIL_DO_ANEL.caixas * 4;
     if (bytes.length !== esperado) {
       throw new Error(`perfil do anel: ${bytes.length} B, esperado ${esperado}`);
@@ -873,7 +879,7 @@ export async function pedirPerfilDoAnel(base: string): Promise<void> {
     textura.wrapS = THREE.ClampToEdgeWrapping;
     textura.wrapT = THREE.ClampToEdgeWrapping;
     textura.needsUpdate = true;
-    const brilho = BRILHO_MEDIDO_DO_ANEL ? await pedirBrilhoDoAnel(base) : null;
+    const brilho = BRILHO_MEDIDO_DO_ANEL ? await pedirBrilhoDoAnel(base, sinal) : null;
     perfilDoAnelVivo = { textura, bytes, brilho };
   })().catch((erro: unknown) => {
     perfilDoAnelPedido = null; // a falha (de rede) não fica guardada: o próximo pede de novo
@@ -1769,6 +1775,8 @@ export class GiganteResolvido {
   private ringshine: RingshineDoAnel | null = null;
   /** BASE_URL do vite, para buscar o perfil medido do anel */
   private readonly base: string;
+  /** o sinal da SESSÃO (`OpcoesDeTextura.sinal`): a desistência corta o perfil */
+  private readonly sinal: AbortSignal | undefined;
 
   private readonly vX = new THREE.Vector3();
   private readonly vY = new THREE.Vector3();
@@ -1827,6 +1835,7 @@ export class GiganteResolvido {
   constructor(opcoes: OpcoesDoGigante) {
     this.idCorpo = opcoes.id;
     this.base = opcoes.base;
+    this.sinal = opcoes.sinal;
     this.tierVivo = opcoes.tier;
     const { a, c, b } = raiosDoGigantePc(this.idCorpo);
     this.raioA = a;
@@ -1907,6 +1916,7 @@ export class GiganteResolvido {
     const diametroPx = diametroAparentePx(this.raioA, dPc, q.screenHPx, q.fovDeg);
     e.diametroPx = diametroPx;
 
+    const estavaArmado = this.armado;
     this.armado = gateBinario(this.armado, diametroPx);
 
     // OS MESMOS TRÊS SEGURADORES das irmãs (lei 4, item 115): tela, foco
@@ -1925,8 +1935,12 @@ export class GiganteResolvido {
     // nascimento da casca, e a falha deixava Saturno sem anel até recarregar
     // a página. Com o corpo na tela, pede de novo pela política das texturas
     // (`novaTentativa`), contada no relógio do quadro (o corpo não tem
-    // relógio próprio); fora da tela o relógio corre, mas ninguém pede.
-    if (this.perfilFalhou && this.novoPerfil.vence(q.tS, this.armado)) {
+    // relógio próprio). Fora da tela o relógio NÃO anda; na volta à tela
+    // ele zera e pede na hora — a regra das texturas para o segurador que
+    // volta (auditoria R3, 1b.2).
+    const voltou = this.armado && !estavaArmado;
+    if (voltou) this.novoPerfil.zerar();
+    if (this.perfilFalhou && this.armado && (voltou || this.novoPerfil.vence(q.tS))) {
       this.perfilFalhou = false;
       void this.ligarPerfilDoAnel();
     }
@@ -2325,8 +2339,10 @@ export class GiganteResolvido {
    */
   private async ligarPerfilDoAnel(): Promise<void> {
     try {
-      await pedirPerfilDoAnel(this.base);
+      await pedirPerfilDoAnel(this.base, this.sinal);
     } catch (erro) {
+      // abortado pela SESSÃO (desistência, dispose): não é falha a contar
+      if (this.sinal?.aborted) return;
       console.warn('[gigante] perfil do anel não veio', erro);
       // `atualizar` pede de novo depois da espera, com o corpo na tela
       this.perfilFalhou = true;

@@ -191,6 +191,29 @@ describe('furo (c): o manifest desce UMA vez', () => {
     expect(pedidos).toEqual(['data/atlas/texturas.json']);
   });
 
+  // auditoria R3, B8: a desistência corta o manifest partilhado pelo sinal
+  // da SESSÃO; o do lote é de um corpo só e não pode derrubá-lo
+  it('o manifest leva o sinal da SESSÃO, não o do lote', async () => {
+    const sessao = new AbortController();
+    const lote = new AbortController();
+    const sinais: (AbortSignal | undefined)[] = [];
+    const opcoes: OpcoesDeTextura = {
+      tier: () => 'cinema',
+      maxTextureSize: 16384,
+      base: '',
+      webp: true,
+      sinal: sessao.signal,
+      buscarManifest: async (_url, sinal) => {
+        sinais.push(sinal);
+        return MANIFEST;
+      },
+      carregarTextura: async () => new THREE.Texture(),
+    };
+    await carregarCanaisDoCorpo('mars', [CANAL_MAP], opcoes, 'cinema', nunca, lote.signal);
+    expect(sinais).toHaveLength(1);
+    expect(sinais[0]).toBe(sessao.signal);
+  });
+
   it('e nas cargas seguintes também — a promessa fica em cache', async () => {
     const { pedidos, opcoes } = opcoesQueContam();
     await carregarCanaisDoCorpo('mars', [CANAL_MAP], opcoes, 'cinema', nunca);
@@ -232,7 +255,7 @@ describe('furo (c): o manifest desce UMA vez', () => {
  * corpo COM um lote em voo, que é o instante inteiro do item 59: o
  * visitante trocou de qualidade e o globo tem de continuar na tela.
  */
-function bancadaDaTroca(tierInicial: QualityLevel = 'alta') {
+function bancadaDaTroca(tierInicial: QualityLevel = 'alta', sinalDaSessao?: AbortSignal) {
   let tier = tierInicial;
   const pedidos: string[] = [];
   /** o `AbortSignal` de CADA pedido, na ordem — a régua da peça 3 */
@@ -246,6 +269,7 @@ function bancadaDaTroca(tierInicial: QualityLevel = 'alta') {
     maxTextureSize: 16384,
     base: '',
     webp: true,
+    sinal: sinalDaSessao,
     buscarManifest: async () => MANIFEST,
     carregarTextura: (url, sinal) =>
       new Promise((resolver, rejeitar) => {
@@ -601,6 +625,45 @@ describe('"falhou" não é sentença: um segurador que sai e VOLTA ressuscita (i
     }
     expect(b.casa.pronta).toBe(true);
     expect(avisos, 'o aviso é um só, as tentativas espaçadas caem caladas').toHaveLength(1);
+  });
+
+  // auditoria R3, 1b.4: soltar no meio da tentativa deixava a sequência
+  // velha viva, e a visita seguinte esperava 10 s ou mais, não 5
+  it('soltar no MEIO de uma tentativa zera o relógio e as recargas, como soltar em "falhou"', async () => {
+    const b = bancadaDaTroca('cinema');
+    b.derrubarARede(true);
+    const warn = console.warn;
+    console.warn = () => {};
+    try {
+      for (let i = 0; i < 1 + RECARGAS_ATE_DESISTIR; i++) {
+        b.tick({ filme: true });
+        await b.entregar();
+      }
+      b.tick({ filme: true }); // marca a desistência
+      // passado o minuto, a tentativa sai e fica em voo...
+      b.tick({ filme: true }, 61);
+      await b.respirar();
+      const naTentativa = b.pedidos.length;
+      // ...e o filme solta o corpo no meio dela
+      b.tick();
+      // a volta recomeça do zero: as recargas rápidas de uma visita nova
+      for (let i = 0; i < 1 + RECARGAS_ATE_DESISTIR; i++) {
+        b.tick({ filme: true });
+        await b.entregar();
+      }
+      expect(b.pedidos, 'as recargas da visita nova').toHaveLength(
+        naTentativa + 1 + RECARGAS_ATE_DESISTIR
+      );
+      const aoDesistir = b.pedidos.length;
+      b.tick({ filme: true }); // marca a desistência nova
+      b.tick({ filme: true }, ESPERA_DA_NOVA_TENTATIVA_S - 1);
+      expect(b.pedidos).toHaveLength(aoDesistir);
+      b.tick({ filme: true }, 1);
+      await b.respirar();
+      expect(b.pedidos, 'a tentativa seguinte sai em 5 s').toHaveLength(aoDesistir + 1);
+    } finally {
+      console.warn = warn;
+    }
   });
 
   it('a política de nova tentativa: 5 s no primeiro minuto desde a primeira falha, depois dobra até 60; sem rede não tenta, e a rede que volta tenta na hora', () => {
@@ -1039,6 +1102,27 @@ describe('o abort: pedido sem dono para de descer (peça 3)', () => {
     expect(c.sinais[0]!.aborted).toBe(false);
     c.casa.dispose();
     expect(c.sinais[0]!.aborted).toBe(true);
+  });
+
+  // auditoria R3, B8: o que cai porque a SESSÃO desistiu não é recarga
+  // perdida nem aviso
+  it('a carga que a SESSÃO abortou cai calada, sem contar recarga', async () => {
+    const sessao = new AbortController();
+    const b = bancadaDaTroca('cinema', sessao.signal);
+    b.derrubarARede(true);
+    sessao.abort();
+    const avisos: string[] = [];
+    const warn = console.warn;
+    console.warn = (m: string) => avisos.push(m);
+    try {
+      for (let i = 0; i < 1 + RECARGAS_ATE_DESISTIR; i++) {
+        b.tick({ tela: true });
+        await b.entregar();
+      }
+    } finally {
+      console.warn = warn;
+    }
+    expect(avisos).toHaveLength(0);
   });
 });
 

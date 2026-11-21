@@ -255,6 +255,42 @@ describe('a falha depois do boot chega à tela', () => {
     expect(perdido.slice(0, perdido.indexOf('this.desistir('))).not.toContain('setPiramide(null)');
   });
 
+  // auditoria rodada 3, 1b.1: a pirâmide (e o volume) que chegavam depois
+  // da desistência montavam de novo o que o passo blindado tinha soltado
+  it('desistir tira a vez da pirâmide e do volume em voo, antes de parar o laço', () => {
+    const corpo = FONTE.slice(
+      FONTE.indexOf('  private desistir(mensagem: string) {'),
+      FONTE.indexOf('  dispose() {')
+    );
+    const parar = corpo.indexOf('this.engine.parar();');
+    const desistiu = corpo.indexOf('this.desistiu = true;');
+    for (const vez of ['this.piramidePedidoId++;', 'this.poeiraPedidoId++;']) {
+      expect(corpo.indexOf(vez), vez).toBeGreaterThan(desistiu);
+      expect(corpo.indexOf(vez), vez).toBeLessThan(parar);
+    }
+  });
+
+  // auditoria rodada 3, 1b.5: o mundo do init levava o sinal da sessão, e
+  // a primeira troca de qualidade não tinha como encerrar os workers dele
+  it('o mundo do init nasce com controle próprio, guardado como o da troca', () => {
+    const init = FONTE.slice(FONTE.indexOf('  async init() {'), FONTE.indexOf("    this.setPhase('intro');"));
+    const carga = init.slice(init.indexOf('await montarCarga({'));
+    const chamada = carga.slice(0, carga.indexOf('});'));
+    expect(init.indexOf('this.controleDoMundo = controle;')).toBeGreaterThan(0);
+    expect(init.indexOf('this.controleDoMundo = controle;')).toBeLessThan(
+      init.indexOf('await montarCarga({')
+    );
+    expect(chamada).toContain('sinal: controle.signal,');
+    expect(chamada).not.toContain('this.abortController.signal');
+  });
+
+  // auditoria rodada 3, B8: o manifest e o perfil do anel seguiam descendo
+  // depois da desistência — os corpos recebem o sinal da SESSÃO
+  it('os corpos do palco levam o sinal da sessão', () => {
+    const palco = FONTE.slice(FONTE.indexOf('const corpos = montarCorposDoPalco({'));
+    expect(palco.slice(0, palco.indexOf('});'))).toContain('sinal: this.abortController.signal,');
+  });
+
   it('o véu VOLTA a montar quando o erro chega depois do desfecho', () => {
     // sem o segundo termo a camada some no fim da saída da tela de carga
     // e a falha em voo não tem onde aparecer
@@ -287,7 +323,7 @@ describe('a fiação de um posto do palco no Director (a da Lua)', () => {
     // custaria um `window` falso global no arquivo; o fato é de texto até
     // a peça ser alcançável sem o mundo junto.
     expect(CARREGAMENTO).toContain(
-      "new LuaResolvida({ tier, maxTextureSize, base }), 'moon'"
+      "new LuaResolvida({ tier, maxTextureSize, base, sinal }), 'moon'"
     );
     // COM ponto fotométrico desde 30/08 (item 108 — a cessão dela é
     // escrita como a das irmãs), SEM retrato congelado (sem efeméride

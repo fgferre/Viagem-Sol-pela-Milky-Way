@@ -863,7 +863,7 @@ export class Director {
    * tela ainda pede a camada WebGPU com o MESMO sinal: abortá-lo no
    * clique seguinte a deixaria sem camada. Esse só é abortado quando o
    * mundo dele sai (troca seguinte, desistência, dispose). O mundo do init
-   * usa o `abortController` do Director.
+   * nasce com o seu próprio, já em `controleDoMundo` (auditoria R3, 1b.5).
    */
   private controleDoForno: AbortController | null = null;
   private controleDoMundo: AbortController | null = null;
@@ -2209,6 +2209,11 @@ export class Director {
     // AS VIZINHAS sorteiam no trabalhador DELAS, em paralelo com a Via
     // Láctea: ~0,2 s contra os segundos da carga, então ninguém espera
     const vizinhasSorteadas = sortearVizinhas(1);
+    // O MUNDO DO INIT TEM CONTROLE PRÓPRIO (auditoria R3, 1b.5), guardado
+    // como o da troca: a primeira troca de qualidade encerra os workers
+    // dele, e a camada WebGPU da galáxia na tela segue ligada até lá
+    const controle = new AbortController();
+    this.controleDoMundo = controle;
     const carga = await montarCarga({
       catalogos: this.catalogos,
       tier: this.tierDoMundo,
@@ -2220,9 +2225,10 @@ export class Director {
       // com a carga, como desde 13/11
       camadaQuerida: camadaWebgpuQuerida(this.cenaDaCamada()),
       aoAvancar: (etapa) => this.rotular(etapa),
-      // a desistência e o dispose encerram os workers em voo: a carga
-      // rejeita com AbortError, que o `.catch` do boot já ignora
-      sinal: this.abortController.signal,
+      // a desistência e o dispose (que abortam `controleDoMundo`) encerram
+      // os workers em voo: a carga rejeita com AbortError, que o `.catch`
+      // do boot já ignora
+      sinal: controle.signal,
     });
     if (this.disposed || this.desistiu) {
       descartarCarga(carga);
@@ -2373,6 +2379,9 @@ export class Director {
         ehTelefone(LARGURA_DO_CELULAR_PX)
       ),
       base: import.meta.env.BASE_URL,
+      // o sinal da SESSÃO: a desistência e o dispose cortam o manifest e o
+      // perfil do anel, partilhados por todos os corpos (auditoria R3, B8)
+      sinal: this.abortController.signal,
       pinos: () => this.filme.pinos,
     });
     this.lua = corpos.lua;
@@ -5126,6 +5135,11 @@ export class Director {
   private desistir(mensagem: string) {
     if (this.desistiu || this.disposed) return;
     this.desistiu = true;
+    // a pirâmide e o volume em voo perdem a vez: a resposta que chegar
+    // depois não monta de novo o que o passo abaixo solta (auditoria R3,
+    // 1b.1). Antes de `parar`/`onErro`, que não são blindados
+    this.piramidePedidoId++;
+    this.poeiraPedidoId++;
     this.engine.parar();
     this.events.onErro(mensagem);
     // O QUE A CENA MORTA AINDA SEGURA (auditoria rodada 2, item 4.2) é

@@ -1121,6 +1121,76 @@ describe('o perfil do anel que falha não fica guardado', () => {
     corpo.dispose();
   });
 
+  // auditoria R3, 1b.2: fora da tela o relógio corria desde a falha, e o
+  // Saturno que chegava passado o minuto esperava 10 s, não 5
+  it('o perfil que caiu com Saturno fora da tela é pedido na hora em que ele entra, e o seguinte espera 5 s', async () => {
+    const { arquivo } = ANEL_DE_SATURNO.perfil;
+    const pedidos = () =>
+      fetchBinaryFalso.mock.calls.filter(([url]) => String(url).endsWith(arquivo)).length;
+    fetchBinaryFalso.mockClear();
+    fetchBinaryFalso.mockRejectedValue(new Error('sem rede'));
+    const { corpo } = giganteDeTeste('saturn');
+    // longe e segurado pelo roteiro do filme: a casca nasce e o perfil cai
+    const longe = (tS: number) => quadro('saturn', 100_000, { tS, pedidoDoRoteiro: true });
+    corpo.atualizar(longe(0));
+    await flush();
+    corpo.atualizar(longe(0));
+    await flush();
+    expect(pedidos()).toBe(1);
+    corpo.atualizar(longe(1));
+    corpo.atualizar(longe(30));
+    await flush();
+    expect(pedidos()).toBe(1); // fora da tela ninguém pede
+    // entra na tela passado o minuto: pede na hora, e cai de novo
+    corpo.atualizar(quadro('saturn', 4, { tS: 80 }));
+    await flush();
+    expect(pedidos()).toBe(2);
+    corpo.atualizar(quadro('saturn', 4, { tS: 81 }));
+    corpo.atualizar(quadro('saturn', 4, { tS: 85 }));
+    await flush();
+    expect(pedidos()).toBe(2);
+    corpo.atualizar(quadro('saturn', 4, { tS: 87 }));
+    await flush();
+    expect(pedidos()).toBe(3); // o primeiro minuto da sequência nova
+    corpo.dispose();
+  });
+
+  // auditoria R3, B8: a desistência corta o perfil pelo sinal da SESSÃO,
+  // e o aborto não fica guardado nem é falha a contar
+  it('o perfil vai à rede com o sinal da sessão, e o Saturno da sessão abortada não avisa', async () => {
+    const { arquivo } = ANEL_DE_SATURNO.perfil;
+    fetchBinaryFalso.mockClear();
+    fetchBinaryFalso.mockRejectedValue(new DOMException('abortado', 'AbortError'));
+    const sessao = new AbortController();
+    sessao.abort();
+    const corpo = new GiganteResolvido({
+      id: 'saturn',
+      tier: () => 'cinema',
+      maxTextureSize: 16384,
+      base: '',
+      webp: true,
+      sinal: sessao.signal,
+      buscarManifest: async () => MANIFEST,
+      carregarTextura: async () => new THREE.Texture(),
+    });
+    const avisos: unknown[] = [];
+    const warn = console.warn;
+    console.warn = (m: unknown) => avisos.push(m);
+    try {
+      corpo.atualizar(quadro('saturn', 4, { tS: 0 }));
+      await flush();
+      corpo.atualizar(quadro('saturn', 4, { tS: 0 }));
+      await flush();
+    } finally {
+      console.warn = warn;
+    }
+    const doPerfil = fetchBinaryFalso.mock.calls.filter(([url]) => String(url).endsWith(arquivo));
+    expect(doPerfil).toHaveLength(1);
+    expect(doPerfil[0]![1]).toBe(sessao.signal);
+    expect(avisos.filter((m) => String(m).includes('perfil do anel'))).toHaveLength(0);
+    corpo.dispose();
+  });
+
   it('depois de uma falha de rede, o próximo pedido vai à rede de novo e entra', async () => {
     const { arquivo, caixas } = ANEL_DE_SATURNO.perfil;
     fetchBinaryFalso.mockClear(); // os outros Saturnos do arquivo já pediram

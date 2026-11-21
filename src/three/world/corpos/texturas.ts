@@ -120,8 +120,8 @@ export class RelogioDaNovaTentativa {
   private esperaS = ESPERA_DA_NOVA_TENTATIVA_S;
   private estavaSemRede = false;
 
-  /** true = tentar agora; `podeTentar` falso só deixa o relógio correr */
-  vence(tS: number, podeTentar = true): boolean {
+  /** true = tentar agora */
+  vence(tS: number): boolean {
     this.primeiraFalhaS ??= tS;
     this.ultimaFalhaS ??= tS;
     const semRedeAgora = semRede();
@@ -134,7 +134,7 @@ export class RelogioDaNovaTentativa {
       this.estavaSemRede
     );
     if (semRedeAgora) this.estavaSemRede = true;
-    if (!r.tentarAgora || !podeTentar) return false;
+    if (!r.tentarAgora) return false;
     this.estavaSemRede = false;
     this.esperaS = r.esperaS;
     this.ultimaFalhaS = null;
@@ -508,7 +508,10 @@ export function diametroPedidoPelaTela(
  *  o item 59 um único leitor — `TexturasDoCorpo`, aqui dentro. */
 type EstadoDasTexturas = 'fria' | 'buscando' | 'pronta' | 'falhou';
 
-export type BuscadorDeManifest = (url: string) => Promise<ManifestDeTexturas>;
+export type BuscadorDeManifest = (
+  url: string,
+  sinal?: AbortSignal
+) => Promise<ManifestDeTexturas>;
 /**
  * O carregador de UMA imagem. O `sinal` é a peça 3 do bloco A: pedido
  * que perdeu o dono no meio do caminho para de descer. `aoChegar` é
@@ -571,6 +574,13 @@ export interface OpcoesDeTextura {
   maxTextureSize?: number;
   /** BASE_URL do vite — o Director injeta; teste injeta ''. */
   base: string;
+  /**
+   * O sinal da SESSÃO (o `abortController` do Director), o mesmo para
+   * todos os corpos: a desistência e o dispose cortam os pedidos
+   * partilhados (o manifest, o perfil do anel). Nunca o de um lote — a
+   * promessa partilhada não pode cair porque um corpo só desistiu.
+   */
+  sinal?: AbortSignal;
   /** injeção de teste; default = detectarWebp() no primeiro uso. */
   webp?: boolean;
   /** injeção de teste do fetch do manifest. */
@@ -677,8 +687,8 @@ export interface Seguradores {
  */
 export const CARENCIA_DA_DESCARGA_S = 15;
 
-const buscarPelaRede: BuscadorDeManifest = async (url) => {
-  const r = await fetch(url);
+const buscarPelaRede: BuscadorDeManifest = async (url, sinal) => {
+  const r = await fetch(url, { signal: sinal });
   if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
   return r.json() as Promise<ManifestDeTexturas>;
 };
@@ -798,7 +808,9 @@ const manifestosEmVoo = new WeakMap<
 
 export function buscarManifestUmaVez(
   buscar: BuscadorDeManifest,
-  url: string
+  url: string,
+  /** o da SESSÃO (`OpcoesDeTextura.sinal`), nunca o de um lote */
+  sinal?: AbortSignal
 ): Promise<ManifestDeTexturas> {
   let porUrl = manifestosEmVoo.get(buscar);
   if (!porUrl) {
@@ -807,7 +819,7 @@ export function buscarManifestUmaVez(
   }
   const emVoo = porUrl.get(url);
   if (emVoo) return emVoo;
-  const nova = buscar(url);
+  const nova = buscar(url, sinal);
   porUrl.set(url, nova);
   // o `.catch` cria um RAMO — a promessa devolvida ao chamador continua
   // sendo `nova`, com o erro dele para tratar; o ramo só limpa o cache
@@ -1025,7 +1037,12 @@ export async function carregarCanaisDoCorpo(
   const webpOk = opcoes.webp ?? detectarWebp();
   const umaPorVez = vez?.ligada ? vez : null;
 
-  const manifest = await buscarManifestUmaVez(buscar, `${base}data/atlas/texturas.json`);
+  // o sinal da SESSÃO, não o `sinal` do lote: o manifest é partilhado
+  const manifest = await buscarManifestUmaVez(
+    buscar,
+    `${base}data/atlas/texturas.json`,
+    opcoes.sinal
+  );
 
   const lote = await Promise.allSettled(
     canais.map(async (pedido) => {
@@ -1791,6 +1808,10 @@ export class TexturasDoCorpo {
       this.cancelarEmVoo();
       this.estado = 'fria';
       this.soltoDesde = null;
+      // soltar no meio de uma tentativa encerra a sequência, como soltar
+      // em 'falhou' (auditoria R3, 1b.4)
+      this.recargas = 0;
+      this.novaCarga.zerar();
       return;
     }
     // TROCA DE TIER EM VOO: os pixels velhos continuam servindo, então
@@ -1969,6 +1990,9 @@ export class TexturasDoCorpo {
       .catch(() => {
         if (vencida()) return;
         sair();
+        // abortada pela SESSÃO (desistência, dispose): não é recarga
+        // perdida nem aviso — a sessão acabou
+        if (rede.sinal?.aborted) return;
         const etiqueta = this.pedido.etiqueta ?? corpo;
         if (daPrimeiraVez) {
           const r = estadoAposFalha(this.recargas, etiqueta, this.pedido.oQueNaoNasce);
