@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { alemDoFundo, foraDoAlcance, ordemDosOpacos, ordemDosTransparentes } from './profundidade';
+import { alemDoFundo, foraDoAlcance, ordemDosOpacos, ordemDosTransparentes, prepararAInvertida } from './profundidade';
 
 /** a câmera como o renderer a deixa depois do primeiro desenho com a invertida */
 function camera(invertida: boolean, near: number, far: number): THREE.PerspectiveCamera {
@@ -76,5 +76,42 @@ describe('a ordem de desenho sob a profundidade invertida', () => {
   it('o three ainda vira a lista inteira: quando isto falhar, as ordens de `prepararAInvertida` têm de sair', () => {
     const fonte = readFileSync('node_modules/three/src/renderers/webgl/WebGLRenderLists.js', 'utf8');
     expect(fonte).toMatch(/if \( reversedDepth \) \{\s*opaque\.reverse\(\);\s*transmissive\.reverse\(\);\s*transparent\.reverse\(\);/);
+  });
+});
+
+describe('prepararAInvertida', () => {
+  /** o pedaço do WebGLRenderer que a preparação toca, e o reset do three: desliga a invertida */
+  const renderer = (invertida: boolean) => {
+    const estado = { invertida, resets: 0 };
+    const r = {
+      capabilities: { reversedDepthBuffer: invertida },
+      setOpaqueSort: () => {},
+      setTransparentSort: () => {},
+      resetState: () => {
+        estado.resets++;
+        estado.invertida = false;
+      },
+      state: { buffers: { depth: { setReversed: (v: boolean) => { estado.invertida = v; } } } },
+    };
+    return { r: r as unknown as THREE.WebGLRenderer, estado };
+  };
+
+  it('a câmera nasce invertida e o reset do three (a ejeção do Sol o chama) não desliga a invertida', () => {
+    const { r, estado } = renderer(true);
+    const cam = new THREE.PerspectiveCamera(58, 16 / 9, 0.001, 60000);
+    prepararAInvertida(r, cam);
+    expect(cam.reversedDepth).toBe(true);
+    r.resetState();
+    expect(estado.resets).toBe(1);
+    expect(estado.invertida).toBe(true);
+  });
+
+  it('sem a extensão não toca em nada', () => {
+    const { r } = renderer(false);
+    const reset = r.resetState;
+    const cam = new THREE.PerspectiveCamera(58, 16 / 9, 0.001, 60000);
+    prepararAInvertida(r, cam);
+    expect(cam.reversedDepth).toBe(false);
+    expect(r.resetState).toBe(reset);
   });
 });

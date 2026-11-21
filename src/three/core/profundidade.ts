@@ -89,8 +89,12 @@ export function ordemDosTransparentes(a: ItemDaLista, b: ItemDaLista): number {
  * lados trocados. (2) A câmera já nasce na convenção invertida: o three só
  * a troca no primeiro desenho, e o primeiro quadro (rótulos, sondas, o
  * `?dbgplan`) lia o `z` de `project()` na convenção de sempre — o juiz
- * `planeta-pixel` via dois blocos diferentes na mesma vista parada. Sem a
- * invertida não faz nada.
+ * `planeta-pixel` via dois blocos diferentes na mesma vista parada. (3) O
+ * `resetState()` do three DESLIGA a invertida (`state.reset()` chama
+ * `setReversed(false)`) e não a religa; a ejeção de massa do Sol
+ * (`sol/cme.js`) o chama a cada passo da simulação, e daí em diante a
+ * câmera invertida desenharia contra um buffer na convenção de sempre.
+ * Religada logo depois de todo reset. Sem a invertida não faz nada.
  */
 export function prepararAInvertida(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera): void {
   if (!renderer.capabilities.reversedDepthBuffer) return;
@@ -98,4 +102,9 @@ export function prepararAInvertida(renderer: THREE.WebGLRenderer, camera: THREE.
   renderer.setTransparentSort((a: ItemDaLista, b: ItemDaLista) => ordemDosTransparentes(b, a));
   (camera as unknown as { _reversedDepth: boolean })._reversedDepth = true;
   camera.updateProjectionMatrix();
+  const resetDoThree = renderer.resetState.bind(renderer);
+  renderer.resetState = () => {
+    resetDoThree();
+    renderer.state.buffers.depth.setReversed(true);
+  };
 }
