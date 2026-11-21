@@ -1,4 +1,4 @@
-# Relógio do Atlas aprovado: levar o protótipo do Codex para o app (20/11/2026) — ABERTO
+# Relógio do Atlas aprovado: levar o protótipo do Codex para o app (20/11/2026) — NO PRINCIPAL (e36d9225), não publicado; falta só a sonda de movimento
 
 O dono aprovou o relógio novo e pediu: usar o código do Codex como base, substituir o relógio antigo no computador e no celular, conferir contra o vídeo, e só então remover a interface antiga, os estilos e textos sem uso e os arquivos da demonstração. Validar PT/EN, teclado e movimento reduzido, `npm run done`, UM commit local, sem publicar. Coordenar com a auditoria em andamento (`PLAN-AUDITORIA.md`, rodada 2).
 
@@ -22,10 +22,18 @@ O dono aprovou o relógio novo e pediu: usar o código do Codex como base, subst
 
 ## Passos
 
-- [ ] 1. Implementar numa cópia (`..\Mar-relogio`, ramo `relogio-atlas`): componente, máquina, publicação, textos, estilo, ligação no `App`, testes.
-- [ ] 2. Fotos nos estados do vídeo, computador e celular (390×844), PT e EN, em `capturas/relogio-atlas-integracao/`; esta conversa compara com o vídeo.
-- [ ] 3. Remover o antigo e a demonstração; juízes e testes reescritos.
-- [ ] 4. Juntar ao principal depois das frentes da auditoria que tocam os mesmos arquivos (`tempoDoAtlas.ts`, `director.ts`, `useDirector.ts`); `npm run done`; um commit; backup. Não publica.
+- [x] 1. Implementado na cópia `..\Mar-relogio` (ramo `relogio-atlas`): componente, máquina, publicação, textos, estilo, ligação no `App`, testes.
+- [x] 2. Fotos nos estados do vídeo, computador e celular, PT e EN, em `capturas/relogio-atlas-integracao/`; comparadas aqui com o vídeo e a prancha aprovados: batem.
+- [x] 3. Removidos a barra antiga (~545 linhas), o CSS `.atlas-tempo*` (~430 linhas), 20 textos por língua, `ciclarDegrau`, `formatarTaxa` e os três arquivos da demonstração. Juízes `atlas-smoke`, `a11y`, `a11y-celular` e `colar-da-fita` reescritos para o relógio novo.
+- [x] 4. Juntado ao principal em UM commit (`e36d9225`), depois das seis frentes da auditoria; `npm run done` passou (184 arquivos, 4171 testes); backup. Visto no app do principal: ao vivo, e avançando a 1,2 d/s com o painel aberto. Não publicado.
+- [ ] 5. `scripts/visual/sonda-motion.mjs` ficou convertida pela metade: a sequência C3 já julga o relógio novo; as checagens de interrupção I2c, I4, I5 e a amostragem de entrada e saída (`jsAmostraTempo`) ainda descrevem a barra antiga (linha que abria no hover), que não tem equivalente direto. Converter para a dobra do painel novo ou retirar, dizendo.
+
+## Medidas e escolhas desta conversa
+
+- Inglês: data na ordem da casa ("Nov 23, 2026"); botões "Reverse" / "Advance", estados "Reversing" / "Advancing".
+- `TEMPO_FRACAO` segue 0,19 (pior caso medido 18,6 %: pausado com a faixa "Voltar ao presente", ui 0,85). A reserva da segunda linha morreu: o relógio novo não quebra. Com texto grande em janela estreita o assunto fica um pouco mais baixo e maior.
+- Custo de uma publicação com a ficha aberta: ~8 ms ao vivo (1 por segundo); a ficha só troca texto, sem piscar.
+- Com a ficha aberta e o foco no relógio, Esc não fecha o painel (igual ao selo e à barra antiga).
 
 ## Fora
 
