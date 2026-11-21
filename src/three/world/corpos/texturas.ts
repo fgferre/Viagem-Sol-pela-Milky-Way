@@ -122,13 +122,12 @@ export class RelogioDaNovaTentativa {
 
   /** true = tentar agora */
   vence(tS: number): boolean {
-    this.primeiraFalhaS ??= tS;
-    this.ultimaFalhaS ??= tS;
+    this.anotar(tS);
     const semRedeAgora = semRede();
     const r = novaTentativa(
       tS,
-      this.primeiraFalhaS,
-      this.ultimaFalhaS,
+      this.primeiraFalhaS ?? tS,
+      this.ultimaFalhaS ?? tS,
       this.esperaS,
       semRedeAgora,
       this.estavaSemRede
@@ -139,6 +138,18 @@ export class RelogioDaNovaTentativa {
     this.esperaS = r.esperaS;
     this.ultimaFalhaS = null;
     return true;
+  }
+
+  /** Marca a falha que ainda não tem instante (as duas linhas que o `vence` já fazia). */
+  anotar(tS: number): void {
+    this.primeiraFalhaS ??= tS;
+    this.ultimaFalhaS ??= tS;
+  }
+
+  /** A janela do primeiro minuto recomeça; o intervalo desde a última tentativa e a falta de rede ficam. */
+  recomecarJanela(): void {
+    this.primeiraFalhaS = null;
+    this.esperaS = ESPERA_DA_NOVA_TENTATIVA_S;
   }
 
   zerar(): void {

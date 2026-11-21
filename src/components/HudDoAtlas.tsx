@@ -976,15 +976,14 @@ export function BotaoDoTempo({
 }) {
   useIdioma();
   const { estado, tipo, instanteNaAlca } = leituraDoRelogio(tempo);
-  const rotulo = t('relogio.alca', { estado, instante: instanteNaAlca });
   return (
     <button
       type="button"
       className="hud-btn small alca-tempo"
       data-tipo={tipo}
       onClick={onAlternar}
-      aria-label={rotulo}
-      title={rotulo}
+      aria-label={t('relogio.alca', { estado })}
+      title={t('relogio.alcaTitulo', { estado, instante: instanteNaAlca })}
       {...gatilhoDoDialogo('tempo', aberta)}
     >
       <Icone nome={simboloDoTempo(tempo)} tamanho={16} />

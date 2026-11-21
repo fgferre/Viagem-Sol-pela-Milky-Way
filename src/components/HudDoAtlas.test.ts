@@ -38,10 +38,14 @@ describe('a alça do Tempo diz o estado por ícone, e o instante por rótulo', (
     expect(alca).not.toMatch(/>\s*\{estado\}\s*</);
   });
 
-  it('o nome acessível diz o estado E o instante, nas duas línguas', () => {
-    expect(alca).toContain("t('relogio.alca', { estado, instante: instanteNaAlca })");
-    expect(alca).toContain('aria-label={rotulo}');
+  it('o nome acessível é estável (só o estado) e o title leva a hora, nas duas línguas', () => {
+    expect(alca).toContain("aria-label={t('relogio.alca', { estado })}");
+    expect(alca).toContain("title={t('relogio.alcaTitulo', { estado, instante: instanteNaAlca })}");
     for (const texto of [PT['relogio.alca'], EN['relogio.alca']]) {
+      expect(texto).toContain('{estado}');
+      expect(texto).not.toContain('{instante}');
+    }
+    for (const texto of [PT['relogio.alcaTitulo'], EN['relogio.alcaTitulo']]) {
       expect(texto).toContain('{estado}');
       expect(texto).toContain('{instante}');
     }

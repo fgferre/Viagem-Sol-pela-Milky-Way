@@ -1936,11 +1936,12 @@ export class GiganteResolvido {
     // a página. Com o corpo na tela, pede de novo pela política das texturas
     // (`novaTentativa`), contada no relógio do quadro (o corpo não tem
     // relógio próprio). Fora da tela o relógio NÃO anda; na volta à tela
-    // ele zera e pede na hora — a regra das texturas para o segurador que
-    // volta (auditoria R3, 1b.2).
+    // a janela do primeiro minuto recomeça, mas o pedido passa pela porta de
+    // sempre (sem rede não tenta; respeita o intervalo mínimo — auditoria R3, 1c).
     const voltou = this.armado && !estavaArmado;
-    if (voltou) this.novoPerfil.zerar();
-    if (this.perfilFalhou && this.armado && (voltou || this.novoPerfil.vence(q.tS))) {
+    if (this.perfilFalhou) this.novoPerfil.anotar(q.tS);
+    if (voltou) this.novoPerfil.recomecarJanela();
+    if (this.perfilFalhou && this.armado && this.novoPerfil.vence(q.tS)) {
       this.perfilFalhou = false;
       void this.ligarPerfilDoAnel();
     }

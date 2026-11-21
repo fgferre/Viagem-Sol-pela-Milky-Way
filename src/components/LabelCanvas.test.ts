@@ -695,6 +695,20 @@ describe('um lugar por nome — ou cabe ali, ou some', () => {
     expect(xFora(70 / 1080)).toBe(xFora());
   });
 
+  it('A5: no retrato, o nome dirigido que não cabe fora do disco não se desenha neste quadro', () => {
+    const desenhado = (raioPx: number) => {
+      const disco = { x: 0.5, y: 0.5, raio: raioPx / 844, alem: 1, chave: 'corpo:moon' };
+      const l: StarLabel = {
+        ...rotulo('corpo:moon', 'Hiperion de Saturno', 0.5, 0.5, 25), detalhe: 'lua', dirigido: true,
+        discos: [disco], raioDoAssunto: raioPx / 844,
+      };
+      bancada(390, 844).rotulos.draw([l]);
+      return l.desenhado;
+    };
+    expect(desenhado(60)).toBe(false);
+    expect(desenhado(20)).toBe(true);
+  });
+
   it('o HUD ocupa PRIMEIRO, e não há segundo lugar para furá-lo', () => {
     const { rotulos } = bancada(1200, 900);
     // um painel no meio da tela: até 23/08 o nome procurava outra vaga

@@ -1155,6 +1155,40 @@ describe('o perfil do anel que falha não fica guardado', () => {
     corpo.dispose();
   });
 
+  it('a volta à tela do Saturno sem perfil passa pela porta de sempre: sem rede ou antes do intervalo, não pede', async () => {
+    const { arquivo } = ANEL_DE_SATURNO.perfil;
+    const pedidos = () =>
+      fetchBinaryFalso.mock.calls.filter(([url]) => String(url).endsWith(arquivo)).length;
+    fetchBinaryFalso.mockClear();
+    fetchBinaryFalso.mockRejectedValue(new Error('sem rede'));
+    const { corpo } = giganteDeTeste('saturn');
+    const longe = (tS: number) => quadro('saturn', 100_000, { tS, pedidoDoRoteiro: true });
+    corpo.atualizar(longe(0));
+    await flush();
+    corpo.atualizar(longe(0));
+    await flush();
+    expect(pedidos()).toBe(1);
+    // vai e volta antes de 5 s: a volta não pede
+    corpo.atualizar(quadro('saturn', 4, { tS: 1 }));
+    corpo.atualizar(longe(2));
+    corpo.atualizar(quadro('saturn', 4, { tS: 3 }));
+    await flush();
+    expect(pedidos()).toBe(1);
+    // sem rede na volta: não pede, nem passado o intervalo
+    const antes = Object.getOwnPropertyDescriptor(globalThis.navigator, 'onLine');
+    Object.defineProperty(globalThis.navigator, 'onLine', { value: false, configurable: true });
+    try {
+      corpo.atualizar(longe(10));
+      corpo.atualizar(quadro('saturn', 4, { tS: 20 }));
+      await flush();
+      expect(pedidos()).toBe(1);
+    } finally {
+      if (antes) Object.defineProperty(globalThis.navigator, 'onLine', antes);
+      else delete (globalThis.navigator as { onLine?: boolean }).onLine;
+    }
+    corpo.dispose();
+  });
+
   // auditoria R3, B8: a desistência corta o perfil pelo sinal da SESSÃO,
   // e o aborto não fica guardado nem é falha a contar
   it('o perfil vai à rede com o sinal da sessão, e o Saturno da sessão abortada não avisa', async () => {

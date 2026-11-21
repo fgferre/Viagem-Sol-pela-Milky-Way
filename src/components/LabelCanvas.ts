@@ -1251,6 +1251,12 @@ export class LabelCanvas {
       const inicio = inicioDoTexto(esquerda);
       return Math.min(Math.max(inicio, margem), Math.max(margem, this.width - conteudo - margem)) - inicio;
     };
+    // O NOME QUE NÃO CABE FORA DO DISCO NÃO SE DESENHA NESTE QUADRO: se o
+    // recuo veio do limbo e nenhum lado cabe, o empurrão o poria por cima do
+    // disco. `FORA` tira também a marca (ficaria no centro do disco).
+    if (recuo > peso.recuoDoTexto * k && desvioDe(false) !== 0 && desvioDe(true) !== 0) {
+      return LabelCanvas.FORA;
+    }
     let ladoPreferido =
       desvioDe(ladoNatural) !== 0 &&
       Math.abs(desvioDe(!ladoNatural)) < Math.abs(desvioDe(ladoNatural))
