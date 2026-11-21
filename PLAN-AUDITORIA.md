@@ -36,9 +36,12 @@ O dono trouxe um segundo relatório, de 12 itens (cerca de 25 afirmações), "pa
   - [x] **Poeira e nebulosa** (7.1, 7.2a, 7.2b, 11.1) — `87d8cf3b`; imagem igual byte a byte na vista do centro, gás padrão e antigo. Sem prova com a poeira do Gaia ligada.
   - [x] **Cometas e órbita** (1.a, 1.b, 1.c, 9.c) — `4612acf9`; na tela: `?foco=3i-atlas&ver=corpo&jd=2451545` apagava a página inteira (TypeError em `numeroDoIdioma`), agora abre a ficha. Número impossível vira travessão (decisão daqui: sem a palavra "undefined" na tela). 9.c sem prova na tela (cometa inativo na data).
   - [x] **Brilho e lente** (2.a, 2.b, 3.a/3.b, 10.1, 10.2) — `28152fb6`; 2.a com 0 pixels diferentes; 2.b e 3 mudam a imagem, pares em `capturas/auditoria-gemini-rodada2/par-*-antes-e-depois.jpg` (olhados aqui: halo de Sírius um pouco menor; bloom mais largo e macio em DPR 2). 10.x só por teste.
-  - [ ] **Saturno e galáxia** (5, 6, 9.a, 9.b, 9.d) — consertador trabalhando em `..\Mar-r2-saturno`.
-  - [ ] **Falha da placa e links** (4.1–4.4, 12.1, 12.2) — consertador trabalhando em `..\Mar-r2-ciclo`, com prova em Chrome à parte.
-  - [ ] **Pequenos** (8.1 `memoria.mjs`, 8.2 `abertura.ts`, 8.3 `galaxy.ts`, 12.3 idioma na barra) — na fila, falta lançar.
+  - [x] **Saturno e galáxia** (5, 6, 9.a, 9.b, 9.d) — `349cc97a`; pares em `par-saturno-dafnis-`, `par-saturno-prometeu-`, `par-galaxia-jovens-antes-e-depois.jpg` (galáxia: 1 % dos pixels, no máximo 9/255). Brilho de Saturno e eclipses só por teste. No anel F, o contraste dos grumos cai até ~30 % no último quarto de cada volta (é o preço de fechar o ciclo).
+  - [x] **Falha da placa e links** (4.1–4.4, 12.1, 12.2) — `172b7742`, mais os juízes `89556249`; provas `falha-*` (perda na carga, em voo e no tier mais leve, antes e depois, em Chrome à parte).
+  - [x] **Pequenos** (8.1, 8.2, 8.3) — `53828c32`; **12.3** (idioma na barra) — `ec5274d6`, ligado aqui e visto na tela ("Terra" → "Earth", sem o realce).
+  - **Notado e NÃO consertado (fora da encomenda; dito ao dono):** filme pausado + perda de contexto volta TOCANDO (`urlComMomento` sempre escreve `play=1`); na tela de falha durante a carga o número da etapa ainda avança de 05 a 07.
+  - **Sem prova na tela:** poeira do Gaia ligada (7.x), coma do cometa (9.c), lente em estrela dupla e cruz sobre estrela com corpo (10.x), brilho de Saturno e eclipses das sete luas (6, 9.b).
+  - **A rodar no fechamento, uma vez:** `atlas-smoke.mjs`, `busca-smoke.mjs` (os dois tiveram a regra do `ver=` reescrita) e `memoria.mjs`.
   - Em paralelo, fora da auditoria: o relógio aprovado (`PLAN-RELOGIO.md`), em `..\Mar-relogio`.
 - [ ] **3. Consertar** — frentes cortadas por ARQUIVO, não por número de item (`director.ts` aparece nos itens 1, 4, 7, 11; `post.ts` nos 2 e 3; `nebula.ts` nos 7 e 11; os ganchos da URL nos 4 e 12). Cópias de trabalho feitas à mão a partir do HEAD. Item 2 tem dois consertos de efeito oposto (tirar as estrelas da camada = imagem de hoje com menos trabalho; uniforme novo = clarão que hoje não existe): decidir aqui, pelo que é fisicamente certo.
 - [ ] **4. Conferência junta** (`--maxWorkers=6`), guardar, backup. Nada disto publica.
