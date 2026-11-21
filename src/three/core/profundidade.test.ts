@@ -1,6 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
-import { alemDoFundo, foraDoAlcance } from './profundidade';
+import { alemDoFundo, foraDoAlcance, ordemDosOpacos, ordemDosTransparentes } from './profundidade';
 
 /** a câmera como o renderer a deixa depois do primeiro desenho com a invertida */
 function camera(invertida: boolean, near: number, far: number): THREE.PerspectiveCamera {
@@ -44,5 +45,36 @@ describe('quem lê o z de project(camera) pergunta a `core/profundidade`', () =>
     conferir(camera(true, 9.66e-17, 60000));
     const comum = camera(false, 9.66e-17, 60000);
     expect(new THREE.Vector3(0, 0, 600).project(comum).z).toBe(1);
+  });
+});
+
+describe('a ordem de desenho sob a profundidade invertida', () => {
+  // o z de recorte da invertida CAI com a distância: 3 é o mais perto, 1 o mais longe
+  const item = (id: number, renderOrder: number, z: number, material = 1, groupOrder = 0) => ({
+    id,
+    groupOrder,
+    renderOrder,
+    z,
+    material: { id: material },
+  });
+  /** o que o three faz com a ordenação sob medida: ordena e VIRA a lista */
+  const comoOThree = <T>(lista: T[], ordem: (a: T, b: T) => number) =>
+    [...lista].sort((a, b) => ordem(b, a)).reverse();
+
+  it('a ordem pedida manda, e só o empate olha a distância', () => {
+    const disco = item(1, 0, 2);
+    const folha = item(2, 10, 1);
+    const nevoa = item(3, 11, 3);
+    const longe = item(4, 0, 1);
+    expect(comoOThree([nevoa, folha, longe, disco], ordemDosTransparentes).map((i) => i.id)).toEqual([4, 1, 2, 3]);
+    const perto = item(5, 0, 3);
+    const outroMaterial = item(6, 0, 3, 2);
+    const antes = item(7, -1, 1, 9);
+    expect(comoOThree([outroMaterial, longe, perto, antes], ordemDosOpacos).map((i) => i.id)).toEqual([7, 5, 4, 6]);
+  });
+
+  it('o three ainda vira a lista inteira: quando isto falhar, `ordenarSobAInvertida` tem de sair', () => {
+    const fonte = readFileSync('node_modules/three/src/renderers/webgl/WebGLRenderLists.js', 'utf8');
+    expect(fonte).toMatch(/if \( reversedDepth \) \{\s*opaque\.reverse\(\);\s*transmissive\.reverse\(\);\s*transparent\.reverse\(\);/);
   });
 });

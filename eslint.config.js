@@ -41,4 +41,22 @@ export default defineConfig([
       globals: { ...globals.node, ...globals.es2023, WebSocket: 'readonly' },
     },
   },
+  // A `Camera` BASE DO THREE NÃO DESENHA (PLAN-PROFUNDIDADE.md). Com a
+  // profundidade invertida o three chama `updateProjectionMatrix()` em
+  // toda câmera que passa por `render`, e a base não tem o método: a
+  // passagem morre com um erro no console, e só com a porta ligada —
+  // nenhum teste nem a imagem de sempre avisam.
+  {
+    files: ['src/**/*.{ts,tsx,js}'],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "NewExpression[callee.object.name='THREE'][callee.property.name='Camera']",
+          message: 'Câmera sem lente é `CameraSemLente` (src/three/core/profundidade.ts): a `Camera` base quebra o desenho com a profundidade invertida.',
+        },
+      ],
+    },
+  },
 ])
