@@ -47,7 +47,9 @@ import { semSobrescrever } from './luz-ab.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const CAPTURAS = resolve(ROOT, 'capturas');
-const FFMPEG = process.env.FFMPEG || '/opt/homebrew/bin/ffmpeg';
+// o do Homebrew no Mac; fora dele, o `ffmpeg` do PATH (o PC Windows, 21/11)
+const FFMPEG =
+  process.env.FFMPEG || (process.platform === 'darwin' ? '/opt/homebrew/bin/ffmpeg' : 'ffmpeg');
 
 const argApp = process.argv.find((a) => a.startsWith('--app='));
 const APP = argApp ? argApp.slice('--app='.length) : 'http://localhost:58697';
@@ -1006,7 +1008,8 @@ function renderizarClipe(quadros, destinoFinal) {
     // cabeçalho deste arquivo. Em toda largura/altura PAR de sempre isto
     // é identidade (`trunc(x/2)*2 === x`) — nenhum clipe existente muda.
     '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
-    '-vsync', 'vfr', '-pix_fmt', 'yuv420p', destino,
+    // `-fps_mode` (ffmpeg ≥ 5.1): o `-vsync` antigo já não existe no 9
+    '-fps_mode', 'vfr', '-pix_fmt', 'yuv420p', destino,
   ], { stdio: 'pipe' });
   if (r.status !== 0) {
     throw new Error(`ffmpeg falhou (${r.status}): ${(r.stderr || '').toString().slice(-800)}`);
