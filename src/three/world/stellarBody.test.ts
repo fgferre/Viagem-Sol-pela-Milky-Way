@@ -1057,3 +1057,115 @@ describe('o dispose do corpo estelar leva o que mora fora do group', () => {
     expect(corpo.quadsDasCenas).toHaveLength(0);
   });
 });
+
+describe('o assentado do Sol não pisca com o bake de 8 Hz ciclando', () => {
+  // sem WebGL o construtor não roda: o `update` de verdade gira num corpo
+  // à mão, sem dínamo (o retorno antes da atmosfera) e sem o `prime` — num
+  // corpo de verdade o `prime` já publica no construtor
+  const DT = 1 / 64; // binário exato: as duas corridas somam o mesmo relógio
+  const fingir = () => {
+    const u = <T,>(value: T) => ({ value });
+    const conjunto = () => ({ s: { texture: new THREE.Texture() }, c: { texture: new THREE.Texture() } });
+    const ctx = {
+      sunUniforms: {
+        uCamDist: u(0), uWorldFade: u(1), uTime: u(0), uMaxK: u(0), uBakeMix: u(1),
+        uChromoTex: u(null), uChromoFar: u(null), uChromoTexP: u(null), uChromoFarP: u(null),
+      },
+      renderer: { toneMapping: THREE.NoToneMapping },
+      paleta: u(new THREE.Vector3()), corFria: u(new THREE.Vector3()), corQuente: u(new THREE.Vector3()),
+      corDoLimbo: u(new THREE.Vector3()), paletaDaCoroa: u(new THREE.Vector3()),
+      sunMesh: new THREE.Mesh(), sunInvRot: new THREE.Matrix3(),
+      TP: { simStep: 1 / 60 }, gran: { stepSimulation: () => {} },
+      chromo: { bakeChromoSlice: () => {}, snapshotBakeInputs: () => {} },
+      act: { updateActiveRegions: () => {} },
+      // o estado de nascença de `chromo.js`
+      bakeSets: [conjunto(), conjunto(), conjunto()],
+      bakeStep: -1, bakeTime: 0, bakeCur: 0, bakePrev: 0, bakeWrite: 1, bakeSwapT: 0, bakeCycleDt: 0.25,
+      elapsed: 0, tempoDoCiclo: 0, solarMaxK: 0, CVOL_STEPS: 0,
+    };
+    const corpo = Object.create(StellarBody.prototype) as Record<string, unknown>;
+    Object.assign(corpo, {
+      ctx, group: new THREE.Group(), scale: 1, params: { rotPeriodDays: SOL_ROT_PERIOD_DAYS },
+      lastTime: -1, simAccum: 0, chromoAccum: 0, camRel: new THREE.Vector3(), camDirN: new THREE.Vector3(),
+      sunRotM4: new THREE.Matrix4(), semDinamo: true, outraCor: false, pesoDaLei: 1, pesoDasCamadas: u(1),
+      qEixo: null, rotSpeed: 0, giro: 0, jdDaCena: null, reassar: null, cicloAssado: 0, retratoPublicado: false,
+    });
+    const camera = new THREE.PerspectiveCamera(42);
+    camera.position.set(0, 0, 50);
+    const sol = corpo as unknown as Pick<StellarBody, 'update' | 'assentado'> & { group: THREE.Group; ctx: typeof ctx };
+    let quadro = 0;
+    const passo = () => {
+      sol.update(quadro++ * DT, camera);
+      const c = sol.ctx;
+      return {
+        assentado: sol.assentado,
+        // o que a tela lê e o que o bake escreve
+        estado: [c.bakeStep, c.bakeCur, c.bakePrev, c.bakeWrite, c.sunUniforms.uBakeMix.value, c.elapsed],
+      };
+    };
+    return { sol, passo };
+  };
+
+  it('falso antes da 1ª publicação; depois, verdadeiro em TODOS os quadros, com o bake quase sempre a meio', () => {
+    const { sol, passo } = fingir();
+    let publicacoes = 0;
+    let quadrosComBakeAMeio = 0;
+    let antes = 0;
+    for (let i = 0; i < 200; i++) {
+      const cur = sol.ctx.bakeCur;
+      const { assentado } = passo();
+      const c = sol.ctx;
+      // o bake escreve no terceiro conjunto, que a tela nunca lê
+      expect(c.bakeWrite === c.bakeCur || c.bakeWrite === c.bakePrev).toBe(false);
+      if (c.bakeCur !== cur) publicacoes++;
+      if (publicacoes === 0) {
+        expect(assentado).toBe(false);
+        antes++;
+        continue;
+      }
+      if (c.bakeStep >= 0) quadrosComBakeAMeio++;
+      expect(assentado).toBe(true);
+    }
+    expect(antes).toBeGreaterThan(8);
+    expect(publicacoes).toBeGreaterThan(15);
+    // o ciclo seguinte começa logo depois da publicação: 7 quadros de cada 8
+    expect(quadrosComBakeAMeio).toBeGreaterThan(150);
+  });
+
+  it('o Sol que sai do quadro no meio do ciclo e volta: o bake congela e retoma igual, e o assentado não cai', () => {
+    const semSair = fingir();
+    const saiEVolta = fingir();
+    // regime: três publicações e o 4º ciclo pela metade
+    for (const s of [semSair, saiEVolta]) {
+      let publicacoes = 0;
+      while (publicacoes < 3 || s.sol.ctx.bakeStep !== 4) {
+        const cur = s.sol.ctx.bakeCur;
+        s.passo();
+        if (s.sol.ctx.bakeCur !== cur) publicacoes++;
+      }
+    }
+    const congelado = saiEVolta.passo().estado;
+    const trajeto = [semSair.passo().estado];
+    expect(trajeto[0]).toEqual(congelado);
+    saiEVolta.sol.group.visible = false;
+    for (let i = 0; i < 40; i++) {
+      const q = saiEVolta.passo();
+      expect(q.assentado).toBe(true);
+      expect(q.estado).toEqual(congelado);
+    }
+    saiEVolta.sol.group.visible = true;
+    // de volta, os próximos 24 quadros (três publicações) refazem quadro a
+    // quadro o caminho de quem nunca saiu: passo, conjuntos, mix e relógio
+    for (let i = 0; i < 24; i++) {
+      const a = semSair.passo();
+      const b = saiEVolta.passo();
+      trajeto.push(a.estado);
+      expect(b.estado).toEqual(a.estado);
+      expect(b.assentado).toBe(true);
+    }
+    // a 1ª publicação depois da volta cai com o mix cheio, como sem sair
+    const pub = trajeto.findIndex((e, i) => i > 0 && e[0] === -1);
+    expect(pub).toBeGreaterThan(0);
+    expect(trajeto[pub - 1][4]).toBe(1);
+  });
+});

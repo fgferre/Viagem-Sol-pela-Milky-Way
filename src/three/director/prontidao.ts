@@ -100,8 +100,10 @@ export interface TermosDaProntidao {
  *    de entrada, inércia). Aí a cena muda por construção e prontidão não
  *    quer dizer nada. Sob `?shot=` o relógio visual é 0, o `?t=` do
  *    harness congela e o `?pos=` entra com `snapCanonical`.
- *  - `sun.assentado`: o Sol tem retrato completo publicado — sem bake
- *    fatiado no meio e com a coroa volumétrica já publicada.
+ *  - `sun.assentado`: o Sol tem retrato completo publicado e a coroa
+ *    volumétrica pronta. O bake de 8 Hz que fatia o retrato seguinte num
+ *    conjunto fora da tela não conta: com a cena parada ele roda sempre, e
+ *    o pronto piscava 1 quadro em 8 (22/11).
  *  - corpos assentados (item 5b da auditoria): nenhum corpo resolvido
  *    está no GATE a FRIO — armado, camada ligada, e nem textura quente
  *    nem fetch em voo. Capturar assim fotografaria o ponto fingindo a

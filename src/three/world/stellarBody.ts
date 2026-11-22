@@ -2532,6 +2532,10 @@ export class StellarBody {
   private jdDaCena: number | null = null;
   /** o T em que o retrato publicado foi assado — a régua do re-bake */
   private cicloAssado = 0;
+  /** um retrato completo já foi publicado (o `prime`, o re-bake ou o bake
+   *  de 8 Hz); nada o desfaz, porque nenhum bake escreve no conjunto que
+   *  está na tela — o `assentado` lê isto */
+  private retratoPublicado = false;
   /**
    * O RE-BAKE FATIADO. Quando a data anda o bastante, o retrato da
    * cromosfera (e, com o relógio parado, o campo da granulação) precisa
@@ -3482,6 +3486,7 @@ ${glslDoGas(gas, rGas, kAch, true)}
     ctx.sunUniforms.uChromoFarP.value = set.c.texture;
     ctx.sunUniforms.uBakeMix.value = 1;
     this.cicloAssado = ctx.tempoDoCiclo;
+    this.retratoPublicado = true;
   }
 
   /**
@@ -3542,12 +3547,18 @@ ${glslDoGas(gas, rGas, kAch, true)}
   // cena antes do compileAsync do director e são cobertos por ele)
 
   /**
-   * O corpo tem um retrato COMPLETO publicado: nenhum bake fatiado a meio
-   * caminho (`bakeStep < 0` — as 8 fatias publicam de uma vez, e capturar
-   * no meio mostraria meia cromosfera nova sobre meia velha) e a coroa
-   * volumétrica já na primeira publicação (`cvolReady`, que o `prime` roda
-   * até acontecer justamente porque sob `?shot=` o delta é 0 e a máquina
-   * de fatias nunca giraria).
+   * O corpo tem um retrato COMPLETO publicado (`retratoPublicado`) e a
+   * coroa volumétrica já na primeira publicação (`cvolReady`, que o
+   * `prime` roda até acontecer justamente porque sob `?shot=` o delta é 0
+   * e a máquina de fatias nunca giraria). Um bake de 8 Hz a meio caminho
+   * NÃO tira o assentado: ele escreve em `bakeWrite`, o terceiro conjunto,
+   * que nunca é o `bakeCur` nem o `bakePrev` da tela, e as 8 fatias entram
+   * de uma vez na publicação. Esperar por `bakeStep < 0` deixava o sinal
+   * verdadeiro 1 quadro em 8 com o relógio andando, porque o ciclo
+   * seguinte começa logo depois da publicação. O Sol que sai do quadro e
+   * volta também não o tira: fora de quadro o `update` retorna antes de
+   * andar o `elapsed`, e o bake inteiro (passo, conjuntos, `bakeSwapT`,
+   * `bakeCycleDt`, `uBakeMix`) congela e retoma de onde estava.
    *
    * SOMENTE LEITURA, e isso é contrato: quem consulta é o sinal de
    * prontidão do harness de captura (`window.__director.captura`). Nenhum
@@ -3557,7 +3568,7 @@ ${glslDoGas(gas, rGas, kAch, true)}
   get assentado(): boolean {
     const ctx = this.ctx;
     return (
-      ctx.bakeStep < 0 &&
+      this.retratoPublicado &&
       // o re-bake pela data conta como retrato a meio caminho: capturar
       // no meio dele fotografaria a cromosfera da data ANTERIOR
       this.reassar === null &&
@@ -4001,6 +4012,7 @@ ${glslDoGas(gas, rGas, kAch, true)}
         // o que faz parar o relógio não disparar um catch-up para uma
         // fase que já está na tela
         this.cicloAssado = ctx.tempoDoCiclo;
+        this.retratoPublicado = true;
         ctx.sunUniforms.uChromoTex.value = ctx.bakeSets[ctx.bakeCur].s.texture;
         ctx.sunUniforms.uChromoFar.value = ctx.bakeSets[ctx.bakeCur].c.texture;
         ctx.sunUniforms.uChromoTexP.value = ctx.bakeSets[ctx.bakePrev].s.texture;
