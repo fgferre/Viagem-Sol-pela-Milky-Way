@@ -795,6 +795,21 @@ describe('a foto toda preta NÃO MEDE — nunca passa (22/11)', () => {
     expect(v.erros).toEqual([]);
     expect(julgarCorrida([v]).passa).toBe(true);
   });
+
+  it('CONTROLE NEGATIVO: o assentar que cai no teto de quadros com o sinal do app em pronto:false NÃO MEDE, e diz por quê', () => {
+    const quadros = percursoDePan(5);
+    const assento = { via: 'quadros', ms: 21000, quadros: 701, fase: 'free' };
+    const v = julgarFamilia({ nome: 'pan', passos: passosDe(quadros), piso: pisoDe(quadros), assento });
+    expect(v.naoMede).toContain('o app não deu pronto em 21 s');
+    expect(v.naoMede).not.toContain('máquina');
+    expect(julgarCorrida([v]).passa).toBe(false);
+    // o mesmo voo assentado pelo sinal mede, e passa
+    const pelo = julgarFamilia({
+      nome: 'pan', passos: passosDe(quadros), piso: pisoDe(quadros), assento: { ...assento, via: 'sinal' },
+    });
+    expect(pelo.naoMede).toBe(null);
+    expect(julgarCorrida([pelo]).passa).toBe(true);
+  });
 });
 
 describe('o que o juiz SUSPENDE em vez de reprovar', () => {

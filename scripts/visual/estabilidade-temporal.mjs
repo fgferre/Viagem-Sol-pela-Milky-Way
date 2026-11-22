@@ -971,9 +971,11 @@ export function casarFontes({
  * A regra 1 e a 2 ficam SUSPENSAS onde a paralaxe do passo passa de
  * `PARALAXE_CEGA_PX` ou onde o clarão comeu o quadro — e isso vai escrito no
  * veredito, nunca em silêncio. E a família com um quadro todo preto não tem
- * veredito: sai NÃO MEDE (`naoMede`), nunca passa.
+ * veredito: sai NÃO MEDE (`naoMede`), nunca passa. Nem a família cujo último
+ * assentar (`assento`, o retorno de `esperarAssentar`) caiu no teto de quadros
+ * com o sinal do app presente e `pronto:false`.
  */
-export function julgarFamilia({ nome, passos = [], piso = null, altura = null }) {
+export function julgarFamilia({ nome, passos = [], piso = null, altura = null, assento = null }) {
   const pisoResiduo = piso ? piso.residuoMedio : 0;
   const pisoBanda = piso ? piso.bandaAlta : 0;
   const erros = [];
@@ -1075,13 +1077,23 @@ export function julgarFamilia({ nome, passos = [], piso = null, altura = null })
   // veredito CONTADAS; a descalibração fica, porque a altura do quadro não depende da luz dele.
   const pretos = passos.reduce((m, p, i) => m + (p.pretaB ? 1 : 0) + (i === 0 && p.pretaA ? 1 : 0), 0)
     + (piso?.pretos ?? 0);
+  // O APP NÃO DEU PRONTO (22/11, destravar xxiii): `esperarAssentar` devolve `fase` só quando o sinal
+  // `window.__director.captura` existe, e `via:'quadros'` com ele presente é o teto de 700 quadros vencido
+  // com `pronto:false` — no D3D11 o 1º quadro do app chega nessa hora, e a foto era do canvas ainda não
+  // desenhado. Sem o sinal (`fase` null: build de produção) o teto é o critério legítimo e a família mede.
+  const semPronto = assento?.via === 'quadros' && assento.fase != null;
   let naoMede = null;
-  if (pretos) {
+  if (pretos || semPronto) {
     const fotos = passos.length + 1 + (piso?.pontas ? 2 : 0);
     const caladas = erros.length - (descalibrada ? 1 : 0);
     erros.splice(descalibrada ? 1 : 0);
-    naoMede = `${nome}: ${julgarFotoVazia({ pretas: pretos, fotos }).texto}`
-      + (caladas ? ` — ${caladas} acusação(ões) dos passos fora do veredito: medem a captura, não o app` : '');
+    naoMede = semPronto
+      ? `${nome}: o app não deu pronto em ${(assento.ms / 1000).toFixed(0)} s — o último assentar caiu no`
+        + ` teto de ${assento.quadros} quadros com o sinal do app presente (fase ${assento.fase}, pronto:false)`
+        + (pretos ? `; ${pretos} de ${fotos} foto(s) toda(s) preta(s)` : '')
+        + (caladas ? ` — ${caladas} acusação(ões) dos passos fora do veredito: medem a cena antes do pronto` : '')
+      : `${nome}: ${julgarFotoVazia({ pretas: pretos, fotos }).texto}`
+        + (caladas ? ` — ${caladas} acusação(ões) dos passos fora do veredito: medem a captura, não o app` : '');
   }
   return {
     nome, piso, altura, passos: passos.length, erros, suspensos, declaracoes, descalibrada,
@@ -1198,6 +1210,9 @@ async function novaSessao() {
   await s.send('Page.addScriptToEvaluateOnNewDocument', {
     source: "try{localStorage.setItem('viagem-prefs',JSON.stringify({conviteVisto:true}))}catch{}",
   });
+  // o ÚLTIMO assentar fica guardado: é ele que `julgarFamilia` lê (`assento`) para não medir o escuro
+  const assentar = s.assentar;
+  s.assentar = async () => (s.ultimoAssento = await assentar());
   return s;
 }
 
@@ -1377,6 +1392,7 @@ async function bandaDoSol(s) {
 async function familiaAproxSol(s) {
   await s.ir('pos=0,0,0.0014542&look=0,0,0&q=cinema&noorbitas=1');
   await s.js(SO_A_CENA);
+  await s.assentar();
   const poses = degraus(300 / UA_POR_PC, 6 / UA_POR_PC, 10).map((z) => pousar([0, 0, z], SOL));
   return medirPercurso(s, { nome: 'aproxSol', poses });
 }
@@ -1387,6 +1403,7 @@ async function familiaFronteiraSol(s, banda) {
   const ate = banda.de * 0.6;
   await s.ir(`pos=0,0,${de}&look=0,0,0&q=cinema&noorbitas=1`);
   await s.js(SO_A_CENA);
+  await s.assentar();
   // 8 degraus (eram 12, corte ii do item 113) — pontas e razão geométrica mantidas; sem vigia fica fervura estreita entre degraus da banda de promoção
   const poses = degraus(de, ate, 8).map((z) => pousar([0, 0, z], SOL));
   return medirPercurso(s, { nome: 'fronteiraSol', poses });
@@ -1407,7 +1424,8 @@ async function familiaPan(s) {
   const z = 40 / UA_POR_PC;
   await s.ir(`pos=0,0,${z}&look=0,0,0&q=cinema&noorbitas=1`);
   await s.js(SO_A_CENA);
-  const cam = JSON.parse(await s.js(LER_CAMERA));
+  await s.assentar();
+  const cam =JSON.parse(await s.js(LER_CAMERA));
   // o passo é escolhido para deslocar o CENTRO do quadro 4 px: a escala de um
   // quadro de voo real, e um deslocamento inteiro no centro deixa a
   // reamostragem bilinear quase exata (o resto do quadro paga a perspectiva)
@@ -1443,6 +1461,7 @@ async function familiaFov(s) {
   const z = 40 / UA_POR_PC;
   await s.ir(`pos=0,0,${z}&look=0,0,0&q=cinema&noorbitas=1`);
   await s.js(SO_A_CENA);
+  await s.assentar();
   // 8 degraus (eram 12, corte ii do item 113) — pontas e razão mantidas; sem vigia fica fervura estreita entre degraus da escada de lente
   const fovs = degraus(58, 46, 8);
   const poses = fovs.map((f) => async (sess) => {
@@ -1458,6 +1477,7 @@ async function familiaFov(s) {
 async function familiaAproxEstrela(s) {
   await s.ir('pos=0,0,0&look=0,0,0&q=cinema&noorbitas=1');
   await s.js(SO_A_CENA);
+  await s.assentar();
   // A MIRA É O PONTO DO CATÁLOGO, onde o app desenha a estrela (o piloto de
   // `estrelasNoQuadro.posicaoDe`, o mesmo lugar que a escada usa), e não o
   // da `nomeadas`: o nome vem arredondado e Sirius fica a 37 UA do ponto, o
@@ -1605,6 +1625,7 @@ async function correrFamilias(alvos) {
     if (alvos.includes('fronteiraSol') || alvos.includes('reversao')) {
       await s.ir('pos=0,0,0.00001&look=0,0,0&q=cinema&noorbitas=1');
       await s.js(SO_A_CENA);
+      await s.assentar();
       banda = await bandaDoSol(s);
       console.log(
         `banda do gate do Sol: ${(banda.de * UA_POR_PC).toFixed(3)} a `
@@ -1625,6 +1646,7 @@ async function correrFamilias(alvos) {
       else if (nome === 'zoomDeRoda') r = await familiaZoomDeRoda(s);
       else r = await familiaFronteiraTerra(s);
       r.segundos = (Date.now() - marca) / 1000;
+      r.assento = s.ultimoAssento ?? null;
       cruas.push(r);
       const pior = r.passos.reduce((m, p) => Math.max(m, p.residuoMedio), 0);
       console.log(
@@ -1731,6 +1753,7 @@ async function correr() {
         familias: cruas.map((r) => ({
           nome: r.nome,
           segundos: r.segundos,
+          assento: r.assento,
           piso: r.piso,
           alvo: r.alvo,
           passos: r.passos.map((p) => ({

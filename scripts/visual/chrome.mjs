@@ -135,7 +135,7 @@ export const NAO_DETERMINISTICA = 'a vista não é determinística';
  * juiz sai com `SAIDA_NAO_MEDE`. O critério é o canal de COR exatamente 0 em todo pixel: o alfa (255 na
  * captura opaca) fica fora, e um céu escuro de verdade, com estrelas de 1/255, segue medido.
  */
-export const NAO_MEDE = 'NÃO MEDE (máquina)';
+export const NAO_MEDE = 'NÃO MEDE (captura vazia)';
 /** o código de saída do juiz que não mediu: nem 0 (passa) nem 1 (reprova) */
 export const SAIDA_NAO_MEDE = 2;
 
