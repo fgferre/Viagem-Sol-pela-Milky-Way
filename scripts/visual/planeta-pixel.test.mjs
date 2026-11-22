@@ -290,6 +290,19 @@ describe('casarCorpos', () => {
     expect(j.erro).toBe(false);
   });
 
+  it('a Lua a 0,1 px da Terra: a Terra é MEDIDA e a Lua sai FUNDIDA-COM-TERRA, sem erro', () => {
+    const j = cena([alvo('earth', 60.5, 12.5), alvo('moon', 60.6, 12.5)], [MANCHA_LONGE]);
+    expect(j.linhas.map((l) => l.status)).toEqual(['MEDIDO', 'FUNDIDA-COM-TERRA']);
+    expect(j.linhas[0].caixaJulgada).toBe(true);
+    expect(j.erro).toBe(false);
+  });
+
+  it('a Lua separada da Terra é MEDIDA como os outros corpos', () => {
+    const j = cena([alvo('earth', 20.3, 30.7), alvo('moon', 60.5, 12.5)], [MANCHA_SOL, MANCHA_LONGE]);
+    expect(j.linhas.map((l) => l.status)).toEqual(['MEDIDO', 'MEDIDO']);
+    expect(j.erro).toBe(false);
+  });
+
   it('LUZ SEM DONO longe de todo corpo previsto REPROVA', () => {
     const j = cena([alvo('sun', 20.3, 30.7)], [MANCHA_SOL, MANCHA_LONGE]);
     const orfa = j.orfas.find((o) => Math.abs(o.cx - 60.5) < 1);

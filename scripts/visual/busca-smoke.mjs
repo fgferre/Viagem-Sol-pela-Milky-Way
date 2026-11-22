@@ -43,7 +43,7 @@
 // 10. O ATALHO DO TECLADO (item 8): "/" e Ctrl+K abrem a paleta; o "/"
 //     que abriu não vaza para o campo, e com ela aberta "/" é digitação.
 import { pathToFileURL } from 'node:url';
-import { abrirSessao, APP_PADRAO, dorme, esperarPor } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, LINGUA_DO_JUIZ, dorme, esperarPor } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const JANELA = process.env.JANELA || '1200x900';
@@ -105,12 +105,16 @@ export function distanciaDoBuracoOk(distanciaPc) {
 }
 
 /**
- * A TEMPERATURA DA FICHA, nas duas línguas: o app separa o milhar a partir
- * de quatro algarismos (`numeroDoIdioma`, `tempoDoAtlas.ts`) — "9.845 K" em
- * português, "9,845 K" em inglês —, com UM separador só no número.
+ * A TEMPERATURA DA FICHA, cobrada pelo PADRÃO DA LÍNGUA: o app separa o
+ * milhar a partir de quatro algarismos (`numeroDoIdioma`, `tempoDoAtlas.ts`)
+ * — PONTO em português ("9.845 K"), VÍRGULA em inglês ("9,845 K"). O outro
+ * separador, o misto e o milhar sem separador reprovam.
  */
-export function temperaturaEmK(valor) {
-  return /^\d{1,3}(?:(?:\.\d{3})+|(?:,\d{3})+)? K$/.test(valor);
+export function temperaturaEmK(valor, lingua) {
+  const milhar = String(lingua).toLowerCase().startsWith('pt')
+    ? /^\d{1,3}(?:\.\d{3})* K$/
+    : /^\d{1,3}(?:,\d{3})* K$/;
+  return milhar.test(valor);
 }
 
 /**
@@ -221,7 +225,7 @@ async function principal() {
         + `("${linhaDe('designação').valor}" · "${linhaDe('distância').valor}")`
     );
     conferir(
-      temperaturaEmK(linhaDe('temperatura').valor || '')
+      temperaturaEmK(linhaDe('temperatura').valor || '', LINGUA_DO_JUIZ)
         && linhaDe('temperatura').proc.startsWith('derivado')
         && linhaDe('catálogos').valor === 'HD 48915 · HIP 32349 · Gl 244A',
       `e a temperatura é derivada da cor, com os índices de catálogo ao lado `

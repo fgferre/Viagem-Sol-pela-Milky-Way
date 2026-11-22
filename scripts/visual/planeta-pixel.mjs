@@ -134,6 +134,10 @@
 //             PSF só arredonda para cima em faíscas soltas (Marte na `ua150`).
 // FUNDIDO     duas manchas previstas caíram na MESMA componente e não há como
 //             atribuir centroide. Declarado, não julgado.
+// FUNDIDA-COM-TERRA  a Lua (0,0026 UA da Terra) a menos de LUA_FUNDIDA_PX da Terra, ou na
+//             mesma componente dela: é parte do MESMO ponto de luz. A Terra segue
+//             medida como se a Lua não existisse; a Lua não é medida. Declarado,
+//             não julgado. A 40 UA ou mais (as três profundas) ela fica a ~0,1 px.
 // FORA-DA-TOLERÂNCIA / SEM-COMPONENTE / ÓRFÃ  são os três modos de REPROVAR:
 //             mancha no lugar errado, corpo que deveria acender e não acendeu,
 //             e luz que apareceu onde corpo nenhum foi previsto.
@@ -166,6 +170,9 @@ const READOUT = '&dbgplan=1';
 
 /** A janela do harness: 1800×1800 pedidos = 1800×1713 efetivos. */
 const JANELA = { largura: 1800, altura: 1800 };
+
+/** Lua a menos disto da Terra (px previstos) é o mesmo ponto de luz. */
+export const LUA_FUNDIDA_PX = 1;
 
 /** Delta de 8 bits que já conta como luz. 1 = qualquer degrau. */
 export const LIMIAR_DELTA = Math.max(1, Number(process.env.LIMIAR || 1));
@@ -477,6 +484,16 @@ export function casarCorpos({
     ocupantes.get(o.dentroDe).push(o.id);
   }
 
+  // A Lua e a Terra: a menos de LUA_FUNDIDA_PX ou na mesma componente, a Lua é
+  // parte do ponto da Terra — não conta como "outro corpo" para ela.
+  const terra = previstos.find((p) => p.id === 'earth');
+  const lua = previstos.find((p) => p.id === 'moon');
+  const compLua = caiuPorId.get('moon')?.dentroDe ?? -1;
+  const luaFundida = Boolean(terra && lua) && (
+    Math.hypot(lua.px - terra.px, lua.py - terra.py) < LUA_FUNDIDA_PX
+    || (compLua >= 0 && compLua === (caiuPorId.get('earth')?.dentroDe ?? -2))
+  );
+
   const reclamadas = new Set();
   const linhas = previstos.map((c) => {
     const o = caiuPorId.get(c.id);
@@ -485,6 +502,9 @@ export function casarCorpos({
       comp: null, dCentroide: null, dCaixa: null,
     };
     if (!o || !o.noQuadro) return { ...base, status: 'FORA-DO-QUADRO' };
+    if (luaFundida && c.id === 'moon') {
+      return { ...base, status: 'FUNDIDA-COM-TERRA', motivo: 'mesmo ponto de luz da Terra, não medida' };
+    }
     if (o.dentroDe < 0) {
       // sem mancha. Três motivos possíveis, e só um deles é defeito.
       if (o.jaSaturado) {
@@ -514,7 +534,7 @@ export function casarCorpos({
     // Sol, e a do corpo não cabe mais no byte. O Sol, esse, é julgado
     // normalmente: o que os vizinhos somam dentro do disco saturado é zero,
     // então o centroide dele não fica contaminado.
-    const outros = juntos.filter((n) => n !== c.id);
+    const outros = juntos.filter((n) => n !== c.id && !(luaFundida && c.id === 'earth' && n === 'moon'));
     if (outros.length && c.id !== 'sun') {
       return {
         ...base,
@@ -812,6 +832,9 @@ function imprimir({ nome, dbg, r, juizo }) {
       + (l.motivo ? `  (${l.motivo})` : '')
     );
   }
+  const lua = juizo.linhas.find((l) => l.id === 'moon');
+  console.log(lua && lua.status === 'FUNDIDA-COM-TERRA'
+    ? '  Lua: fundida com a Terra, não medida' : '  Lua: medida');
   if (juizo.orfas.length) {
     const longe = juizo.orfas.filter((o) => !o.halo);
     console.log(`  componentes sem dono: ${juizo.orfas.length}`
@@ -844,12 +867,14 @@ async function principal() {
   if (!lista.length) throw new Error(`vista desconhecida: ${so}`);
 
   const vias = [];
+  let luaMedida = false;
   let erro = false;
   let porta = 9800 + (process.pid % 100) * 4;
   for (const [nome, query] of lista) {
     const medida = await medirVista(nome, query, porta);
     porta += 4;
     imprimir(medida);
+    if (medida.juizo.linhas.some((l) => l.id === 'moon' && l.status !== 'FUNDIDA-COM-TERRA')) luaMedida = true;
     vias.push(...medida.vias);
     const nulo = medida.r.nulo;
     if (nulo.componentes !== 0 || nulo.acesos !== 0) erro = true;
@@ -859,6 +884,8 @@ async function principal() {
     }
     if (medida.juizo.erro) erro = true;
   }
+
+  if (!luaMedida) console.log('\na Lua não é medida em nenhuma vista');
 
   const prontidao = julgarProntidao({
     vias, appUrl: process.env.APP_URL, fallbackOk: process.env.FALLBACK_OK === '1',

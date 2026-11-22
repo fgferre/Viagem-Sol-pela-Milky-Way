@@ -50,15 +50,21 @@ describe('distanciaDoBuracoOk', () => {
 });
 
 describe('temperaturaEmK', () => {
-  it('aceita o milhar das duas línguas', () => {
-    expect(temperaturaEmK('9.850 K')).toBe(true);
-    expect(temperaturaEmK('9,850 K')).toBe(true);
-    expect(temperaturaEmK('850 K')).toBe(true);
+  it('cobra o padrão da língua: ponto em PT, vírgula em EN', () => {
+    expect(temperaturaEmK('9.845 K', 'pt-BR')).toBe(true);
+    expect(temperaturaEmK('9.845 K', 'en')).toBe(false);
+    expect(temperaturaEmK('9,845 K', 'en')).toBe(true);
+    expect(temperaturaEmK('9,845 K', 'pt-BR')).toBe(false);
+    expect(temperaturaEmK('850 K', 'pt-BR')).toBe(true);
+    expect(temperaturaEmK('850 K', 'en')).toBe(true);
   });
 
-  it('recusa separador misturado, número sem unidade e milhar sem separador', () => {
-    expect(temperaturaEmK('1.234,567 K')).toBe(false);
-    expect(temperaturaEmK('9.850')).toBe(false);
-    expect(temperaturaEmK('9850 K')).toBe(false);
+  it('recusa milhar sem separador, separador misturado e número sem unidade nas duas línguas', () => {
+    for (const l of ['pt-BR', 'en']) {
+      expect(temperaturaEmK('9845 K', l)).toBe(false);
+      expect(temperaturaEmK('1.234,567 K', l)).toBe(false);
+      expect(temperaturaEmK('1,234.567 K', l)).toBe(false);
+      expect(temperaturaEmK('9.850', l)).toBe(false);
+    }
   });
 });
