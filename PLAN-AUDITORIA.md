@@ -120,6 +120,24 @@ Conferência: tipos, lint e 4.209 testes verdes no commit exato que entrou; M10 
 - [ ] **1c.5** a hora/data da alça pode vazar? Números tabulares sim; pela conta a hora cabe (~51 de ~55 px). ABERTO: medir na tela a hora e a data mais largas.
 - [x] Sem tela: todos os 15 assuntos de beat têm raio na régua; nenhum leitor de endereço cru quebra com a recodificação.
 
+### Para a rodada da abertura a frio (D3D11) — medidas da rodada de destravar (22/11), a desenhar na conversa principal
+
+Chrome com Direct3D 11 (o do visitante do Windows), perfil novo a cada abertura (a frio, sem cache de shader), `?atlas=1`, RTX 3070. Medidas em `capturas/auditoria-gemini-rodada3/destravar/a0-medidas.md` (A0.3 e "Cargas a frio de 20/11 e do ar") e `a-diagnostico-a11y-poeira.md`. **Não é regressão:** o que está no ar (`f50fc1d3`) abre em 30,5 s, o de 20/11 (`54f4bbf6`) em 30,3 s e a ponta (`460efb5b`) em 31,1 s (29,8–32,6), com os mesmos trechos.
+
+| espera | D3D11 | Vulkan (mesma placa) | a tela durante a espera | onde |
+|---|---|---|---|---|
+| abertura inteira até o pronto | ~31–34 s | 9,8 s | ver as linhas abaixo | — |
+| catálogos | ~1,9 s | — | CONGELA (uma tarefa longa), ainda na tela de carga | `director.ts`, etapa `catalogs` |
+| galáxia no trabalhador | ~4–5 s | — | continua desenhando (60 qps), tela de carga | `carregamento.ts` |
+| aquecimento de shader (`compileAsync`) | ~11–12 s | — | continua desenhando (60 qps), tela de carga | `director.ts` ~2412 |
+| **trava depois de o Atlas aparecer** | **7,2–8,9 s** | — | **CONGELA com o Atlas já na tela**: o visitante vê a cena parada e nada responde | o assado da Nebulosa de Órion: três programas de ~16,2 mil caracteres (`orSuperficie` 448×512 ~1,3 s; `orCampo` miolo 112×128×76 ~2,7 s; `orCampo` nuvem 96×136×64 ~2,7 s), `assarOrionSePreciso` em `src/three/world/orionNaCena.ts` com `src/three/world/nebulosaDeOrion.ts`; suposto (não medido) que vem de `62bc74a3` (13/11) e escapa do `compileAsync` |
+| troca da poeira ao vivo (sintética → Gaia), até o pronto | 9,2 s | 2,1 s | não medido se congela ou segue desenhando a cena antiga | a pirâmide carrega em 1,5 s e o desenho dela compila até ~9 s, `nebula.ts:1481` |
+| troca de qualidade (cinema ↔ alta), até o mundo novo | 14–16 s | — | não medido se congela; o selo mostra o pedido na hora (9–12 ms) | `director.ts` `reassarMundo` |
+| a camada WebGPU da galáxia | ~10–12 s sem carga na placa, contra o prazo de 15 s | o WebGPU não sobe em Vulkan | com a placa disputada estoura e a página fica no WebGL até recarregar | `camadaWebgpu.ts:42` `PRAZO_DO_DISPOSITIVO_MS` (cobre dispositivo + quatro pipelines + a carga da galáxia), nota de 18/11 |
+
+- Perfil reusado (cache de shader quente): 19–21 s em três aberturas; a primeira reusada piorou (45,7 s, trava de 26 s). Para os juízes ficou o perfil novo (decisão de 22/11): o portão é a abertura a frio que o visitante tem.
+- O memoria e o poeira-shaders reprovavam por estas esperas (tetos de 700 quadros e 8 s); os tetos viraram tempo (90 s e 20 s) imprimindo os segundos.
+
 ### Onda 2 — depois de a onda 1 entrar no principal (a conversa principal manda)
 
 - [ ] **Juízes no código final** (M17): rodar os 15 uma vez cada, um por vez; para cada reprovação dizer se é defeito do app, juiz velho ou este PC, e consertar os dois primeiros lendo a mudança do juiz linha a linha. Conhecidos: `luz-do-quadro` (70 px > 68,9), `planeta-pixel` (11 × 12 linhas do `?dbgplan`), `atlas-smoke` (3 de 83), `memoria` (1 check), `estabilidade-temporal` (passo 4), `poeira-shaders`, `busca-smoke` (rodar de novo), os que derrubam o Chrome (`beira-*`, `dobra-*`, `colar-da-fita`) e os que congelam (`a11y*`). Juiz NOVO pede a palavra do dono. → rodados os 15 na ponta (`d39614c6`), `capturas/auditoria-gemini-rodada3/juizes-onda2/` (resumo e `diagnostico.md`). Nenhuma reprovação vem de hoje (base `e45d0a6e` falha igual). Aprovam: z-fighting, ponto-na-borda, voo-smoke, sky-capture. Este PC: fita ×3 (janelas enormes derrubam o Chrome sem tela), memoria, filme-smoke, atlas-smoke/busca-smoke "não assentou", estabilidade-temporal (quadro preto, varia a cada corrida). Juiz velho: planeta-pixel (11 × 12 linhas), busca-smoke (cartão, distância e milhar desde 12–14/11). App, achado a decidir: luz-do-quadro (o clarão do Sol não encolhe de 500 a 15.800 UA). Os dois juízes velhos NÃO foram consertados nesta rodada (decisão do dono de fechar sem abrir frente).
