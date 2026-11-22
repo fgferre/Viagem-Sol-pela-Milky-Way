@@ -817,10 +817,11 @@ export class EstrelasNoQuadro {
   }
 
   /**
-   * O LUGAR DE CADA UMA é o do PONTO do catálogo (float32 de `stars.bin`),
-   * não o do nome: a posição do nome vem arredondada a 1e-4 pc, e para
-   * Sirius isso punha o corpo a ~40 UA do próprio ponto — de perto, os
-   * dois apareciam em lugares diferentes. Uma vez, quando o catálogo
+   * O LUGAR DE CADA UMA é o do PONTO do catálogo (`stars.bin`), não o do
+   * nome: o nome traz o valor exato da fonte (AT-HYG v4.0), mas o binário
+   * guarda a posição em 16 bits e o ponto cai até ~43 UA dele no raio para
+   * Sirius (37,2 UA medidos em 22/11) — de perto, os dois apareciam em
+   * lugares diferentes, e é o ponto que o céu desenha. Uma vez, quando o catálogo
    * chega; escrito no MESMO vetor que `posicaoDe` entrega.
    */
   private resolverLugares(): boolean {
