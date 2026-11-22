@@ -371,6 +371,14 @@ const ALCANCE_DA_SONDA_NDC = 1.15;
  *  o grupo do clarão só é desenhado no passe principal). */
 const TAMANHO_DA_PISCINA_DE_SONDAS = 3;
 
+/** Quantos quadros (`atualizar`) a vaga que desenha espera a PRIMEIRA
+ *  resposta da sonda antes de desistir de contar como pendente. Medido na
+ *  rodada de destravar (`vi-tabela-e-pronto.md`): a resposta chega 1
+ *  quadro depois; 30 é folga. Sem o teto, uma sonda que nunca responde
+ *  (contexto perdido com consultas em voo, quadro sem o desenho dela)
+ *  prendia o pronto para sempre. */
+export const QUADROS_DE_ESPERA_DA_SONDA = 30;
+
 const SONDA_VERT = /* glsl */ `
 uniform float uMeiaPx;
 uniform float uScreenH;
@@ -942,6 +950,8 @@ export class ClaraoDeAsas {
   private readonly donoDaSonda: Int32Array;
   /** por vaga: a sonda já respondeu (à vista, tapada ou fora da tela) ao dono de agora */
   private readonly respondida: Uint8Array;
+  /** por vaga: quadros que a vaga já esperou a 1ª resposta (para em `QUADROS_DE_ESPERA_DA_SONDA`) */
+  private readonly esperaDaSonda: Uint8Array;
   private readonly vSonda = new THREE.Vector3();
   /** por vaga, deste quadro: magnitude, meia em px do buffer e o ganho
    *  ANTES da cessão (0 = não desenha) — o que `cederAoMaisForte` compara */
@@ -984,6 +994,7 @@ export class ClaraoDeAsas {
     this.visibilidade = new Float64Array(this.slots.length).fill(1);
     this.donoDaSonda = new Int32Array(this.slots.length).fill(-1);
     this.respondida = new Uint8Array(this.slots.length);
+    this.esperaDaSonda = new Uint8Array(this.slots.length);
     this.mDaVaga = new Float64Array(this.slots.length);
     this.meiaDaVaga = new Float64Array(this.slots.length);
     this.ganhoDaVaga = new Float64Array(this.slots.length);
@@ -1090,8 +1101,14 @@ export class ClaraoDeAsas {
       sonda.renderOrder = -1; // a PRIMEIRA da fila transparente: só o depth dos sólidos
       // a mecânica da consulta é a comum (`sondaDeOclusao.ts`); fora da
       // tela (sem resposta) conta como à vista, ver a seção da mecânica
-      const consultas = new SondaDeOclusao(TAMANHO_DA_PISCINA_DE_SONDAS, (visivel) =>
-        this.registrarOclusao(k, visivel === false)
+      // sem consulta possível, nenhuma resposta virá: não há o que esperar,
+      // e a oclusão fica como está
+      const consultas = new SondaDeOclusao(
+        TAMANHO_DA_PISCINA_DE_SONDAS,
+        (visivel) => this.registrarOclusao(k, visivel === false),
+        () => {
+          this.respondida[k] = 1;
+        }
       );
       consultas.ligar(sonda, (camera) => this.centroNaTela(sonda, camera));
       this.group.add(sonda);
@@ -1263,6 +1280,7 @@ export class ClaraoDeAsas {
         this.oculta[k] = 0;
         this.visibilidade[k] = 1;
         this.respondida[k] = 0;
+        this.esperaDaSonda[k] = 0;
         this.consultas[k].invalidar();
       }
       if (s.indice < 0 || s.ganho <= 0) {
@@ -1294,8 +1312,13 @@ export class ClaraoDeAsas {
       sonda.visible = true;
       // a PRIMEIRA resposta chega no desenho, depois deste passo: com o dt
       // cortado a rampa assenta antes dela. Sem o grupo (`?noclarao=1`) a
-      // sonda não desenha e nunca responde — aí não há o que esperar
-      if (!this.respondida[k] && this.group.visible) pendente = true;
+      // sonda não desenha e nunca responde — aí não há o que esperar. A
+      // espera tem teto: depois de `QUADROS_DE_ESPERA_DA_SONDA` sem
+      // resposta, a vaga deixa de prender
+      if (!this.respondida[k] && this.group.visible && this.esperaDaSonda[k] < QUADROS_DE_ESPERA_DA_SONDA) {
+        this.esperaDaSonda[k]++;
+        pendente = true;
+      }
       sonda.position.set(this.pos[i * 3], this.pos[i * 3 + 1], this.pos[i * 3 + 2]);
       const alvoDaVis = this.oculta[k] ? 0 : 1;
       const vis = (this.visibilidade[k] = stepRampToward(

@@ -37,10 +37,15 @@ export class SondaDeOclusao {
   private ultimoContextoGL: WebGL2RenderingContext | null = null;
   private readonly tamanhoDaPiscina: number;
   private readonly responder: (visivel: boolean | null) => void;
+  private readonly semConsulta: (() => void) | undefined;
 
-  constructor(tamanhoDaPiscina: number, responder: (visivel: boolean | null) => void) {
+  /** `semConsulta`: o draw não pôde abrir consulta nenhuma (sem WebGL2, ou
+   *  `createQuery` sem objeto) — nenhuma resposta virá, e quem espera a
+   *  primeira não deve esperar. A piscina cheia não conta: as em voo voltam. */
+  constructor(tamanhoDaPiscina: number, responder: (visivel: boolean | null) => void, semConsulta?: () => void) {
     this.tamanhoDaPiscina = tamanhoDaPiscina;
     this.responder = responder;
+    this.semConsulta = semConsulta;
   }
 
   /** Pendura a consulta no draw do mesh. `naTela` é perguntado a cada
@@ -63,7 +68,10 @@ export class SondaDeOclusao {
   ): void {
     this.ativa = null;
     const gl = renderer.getContext() as WebGL2RenderingContext;
-    if (typeof gl.createQuery !== 'function') return; // sem WebGL2: a última resposta fica como está
+    if (typeof gl.createQuery !== 'function') {
+      this.semConsulta?.(); // sem WebGL2: a última resposta fica como está
+      return;
+    }
     this.ultimoContextoGL = gl;
     this.consumirResultados(gl);
     // FORA DA TELA o ponto cairia fora da imagem e seria descartado —
@@ -77,7 +85,10 @@ export class SondaDeOclusao {
     let vaga = this.consultas.find((s) => !s.pendente);
     if (!vaga && this.consultas.length < this.tamanhoDaPiscina) {
       const query = gl.createQuery();
-      if (!query) return;
+      if (!query) {
+        this.semConsulta?.();
+        return;
+      }
       vaga = { query, pendente: false, id: 0 };
       this.consultas.push(vaga);
     }

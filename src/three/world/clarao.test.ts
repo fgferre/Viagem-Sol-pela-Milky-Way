@@ -29,6 +29,7 @@ import {
   FATOR_DE_ENCHIMENTO_DO_SOL,
   OCUPACAO_MAXIMA_DA_TELA,
   ORCAMENTO_DO_CLARAO,
+  QUADROS_DE_ESPERA_DA_SONDA,
   RAZAO_DE_TROCA,
   SOL_BV,
   deslocamentoDaCessao,
@@ -454,6 +455,47 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     expect(interna(escondido).slots.some((s) => s.indice === 0 && s.ganho === 1)).toBe(true);
     expect(escondido.mudancaPendente).toBe(false);
     escondido.dispose();
+  });
+
+  it('sem resposta nenhuma, a vaga espera QUADROS_DE_ESPERA_DA_SONDA quadros e não mais', () => {
+    // contexto perdido com consultas em voo, ou quadros sem o desenho da
+    // sonda: a resposta não vem, e o pronto não pode ficar preso nela
+    const lento = { ...quadroEmCasa(true), dtS: 0.1 };
+    const c = new ClaraoDeAsas([]);
+    const sondas = (c as unknown as { sondas: THREE.Mesh[] }).sondas;
+    let esperados = 0;
+    for (let quadro = 0; esperados < QUADROS_DE_ESPERA_DA_SONDA; quadro++) {
+      expect(quadro, 'a sonda do Sol nunca desenhou — a prova seria vazia').toBeLessThan(100);
+      c.atualizar(lento);
+      if (sondas.some((s) => s.visible)) esperados++;
+    }
+    expect(c.mudancaPendente, 'desistiu de esperar antes do teto').toBe(true);
+    c.atualizar(lento);
+    expect(c.mudancaPendente, 'o pronto ficou preso numa resposta que não vem').toBe(false);
+    c.dispose();
+  });
+
+  it('a sonda que não abre consulta (sem WebGL2) não deixa a vaga esperando a resposta', () => {
+    const lento = { ...quadroEmCasa(true), dtS: 0.1 };
+    const c = new ClaraoDeAsas([]);
+    const sondas = (c as unknown as { sondas: THREE.Mesh[] }).sondas;
+    const semWebGL2 = { getContext: () => ({}) } as unknown as THREE.WebGLRenderer;
+    const cena = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera();
+    // o desenho, como o passe principal o faz: só a sonda visível desenha
+    const desenhar = () => {
+      for (const s of sondas) {
+        if (s.visible) s.onBeforeRender(semWebGL2, cena, camera, s.geometry, s.material as THREE.Material, new THREE.Group());
+      }
+    };
+    for (let i = 0; i < 5; i++) {
+      c.atualizar(lento);
+      desenhar();
+    }
+    expect(sondas.some((s) => s.visible), 'a sonda do Sol não desenhou — a prova seria vazia').toBe(true);
+    c.atualizar(lento);
+    expect(c.mudancaPendente, 'a vaga espera uma resposta que nunca virá').toBe(false);
+    c.dispose();
   });
 
   it('um anel no caminho apaga clarão e halo pela opacidade DELE, no mesmo quadro: e^(−τ/μ)', () => {
