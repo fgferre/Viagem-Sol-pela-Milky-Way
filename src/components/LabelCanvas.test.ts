@@ -98,6 +98,7 @@ const {
   acentoDaSelecao,
   DURACAO_DO_ACENTO_MS,
 } = await import('./LabelCanvas');
+const { RampasDeRotulo, RAMPA_DO_DETALHE_S } = await import('../three/world/labels');
 
 /** o que o desenho escreveu: texto e onde ele pousou */
 interface Pintada {
@@ -742,6 +743,118 @@ describe('um lugar por nome — ou cabe ali, ou some', () => {
     const ultimoAceso = serie.filter((a) => a > 0).pop()!;
     expect(ultimoAceso).toBeLessThanOrEqual(limiar);
     for (let r = fronteira + passo; r <= fronteira + 10; r += passo) expect(alfaEm(r), `${r} px`).toBe(0);
+  });
+
+  it('A5: o nome que já não cabe não salta quando o disco passa a mandar no recuo', () => {
+    // um nome que nem com o recuo de base cabe inteiro: até o disco passar
+    // dos 18 px ele é empurrado e fica aceso; daí a rampa entra aos poucos
+    const nome = 'Hiperion de Saturno, lua';
+    const { rotulos, ctx } = bancada(390, 844);
+    const alfaEm = (raioPx: number) => {
+      const disco = { x: 0.5, y: 0.5, raio: raioPx / 844, alem: 1, chave: 'corpo:moon' };
+      const l: StarLabel = {
+        ...rotulo('corpo:moon', nome, 0.5, 0.5, 25), detalhe: 'lua', dirigido: true,
+        discos: [disco], raioDoAssunto: raioPx / 844,
+      };
+      rotulos.draw([l]);
+      return ctx.pintadas.find((p) => p.texto === nome.toUpperCase())?.alfa ?? 0;
+    };
+    const serie: number[] = [];
+    for (let r = 2; r <= 40; r += 0.5) serie.push(alfaEm(r));
+    expect(serie[0]).toBeCloseTo(0.95, 6);
+    expect(alfaEm(10)).toBeCloseTo(0.95, 6);
+    for (let i = 1; i < serie.length; i++) {
+      expect(Math.abs(serie[i] - serie[i - 1]), `passo ${i}`).toBeLessThanOrEqual(0.1);
+    }
+    expect(serie[serie.length - 1]).toBe(0);
+  });
+
+  /**
+   * O DETALHE DO DIRIGIDO NO TEMPO (B.0): um canvas e a rampa de PRODUÇÃO,
+   * quadro a quadro, com a realimentação do produtor — o `detalheCabe` que o
+   * desenho deixa num quadro vira o `alfaDoDetalhe` do seguinte. A Lua no
+   * meio de um retrato de 390 px, "LUA" (21 px) e o detalhe à direita: com o
+   * vão de 9 px o conteúdo cabe enquanto recuo + 30 + detalhe ≤ 182 px.
+   */
+  const DT = 1 / 60;
+  /** o maior degrau PINTADO de um quadro: a rampa vezes a opacidade 0,95 */
+  const DEGRAU = (0.95 * DT) / RAMPA_DO_DETALHE_S + 1e-9;
+  function filmeDoDetalhe() {
+    const { rotulos, ctx } = bancada(390, 844);
+    const rampas = new RampasDeRotulo();
+    let anterior: StarLabel | null = null;
+    return (raioPx: number, detalhe = 'lua · 106 mil km') => {
+      const disco = { x: 0.5, y: 0.5, raio: raioPx / 844, alem: 1, chave: 'corpo:moon' };
+      const l: StarLabel = {
+        ...rotulo('corpo:moon', 'Lua', 0.5, 0.5, 25), detalhe, dirigido: true,
+        discos: [disco], raioDoAssunto: raioPx / 844,
+      };
+      const cabe = new Map<string, boolean>();
+      if (anterior?.detalheCabe !== undefined) cabe.set(anterior.key, anterior.detalheCabe);
+      rampas.aplicarAoDetalhe([l], cabe, DT);
+      rotulos.draw([l]);
+      anterior = l;
+      const nome = ctx.pintadas.find((p) => p.texto === 'LUA')!;
+      return { nome, detalhe: ctx.pintadas.find((p) => p.texto === detalhe)?.alfa ?? 0, cabe: l.detalheCabe };
+    };
+  }
+
+  it('B.0: o detalhe que deixa de caber desce a zero em 300 ms, sem degrau, e o nome fica onde estaria sem ele', () => {
+    // 30 px de raio: recuo 38 e conteúdo de 142 px, cabe; 42 px: não cabe
+    const quadro = filmeDoDetalhe();
+    for (let i = 0; i < 5; i++) expect(quadro(30).detalhe).toBeCloseTo(0.95, 9);
+    const serie: number[] = [];
+    for (let i = 0; i < 30; i++) {
+      const { nome, detalhe } = quadro(42);
+      // o nome segue aceso e no lugar do nome sozinho: o detalhe que desce
+      // não o empurra
+      expect(nome.alfa, `quadro ${i}`).toBeCloseTo(0.95, 9);
+      expect(nome.x, `quadro ${i}`).toBe(195 + 42 + 8);
+      serie.push(detalhe);
+    }
+    // um quadro de latência (o veredito chega no seguinte), e 18 de 1/60 s
+    expect(serie[0]).toBeCloseTo(0.95, 9);
+    expect(serie.indexOf(0)).toBe(18);
+    for (let i = 1; i < serie.length; i++) {
+      expect(serie[i], `quadro ${i}`).toBeLessThanOrEqual(serie[i - 1]);
+      expect(serie[i - 1] - serie[i], `quadro ${i}`).toBeLessThanOrEqual(DEGRAU);
+    }
+    // e apagado fica apagado, com o quadro parado
+    expect(serie.slice(18).every((a) => a === 0)).toBe(true);
+  });
+
+  it('B.0: o detalhe que volta a caber sobe em 300 ms, do mesmo jeito', () => {
+    const quadro = filmeDoDetalhe();
+    for (let i = 0; i < 30; i++) quadro(42);
+    expect(quadro(42).detalhe).toBe(0);
+    const serie: number[] = [];
+    for (let i = 0; i < 30; i++) serie.push(quadro(30).detalhe);
+    expect(serie[0]).toBe(0);
+    expect(serie.findIndex((a) => Math.abs(a - 0.95) < 1e-9)).toBe(18);
+    for (let i = 1; i < serie.length; i++) {
+      expect(serie[i], `quadro ${i}`).toBeGreaterThanOrEqual(serie[i - 1]);
+      expect(serie[i] - serie[i - 1], `quadro ${i}`).toBeLessThanOrEqual(DEGRAU);
+    }
+  });
+
+  it('B.0: parado e cabendo com 2 px de folga (o caso de Titã), o detalhe fica aceso', () => {
+    const quadro = filmeDoDetalhe();
+    for (let i = 0; i < 60; i++) {
+      const { detalhe, cabe } = quadro(30);
+      expect(detalhe, `quadro ${i}`).toBeCloseTo(0.95, 9);
+      // o veredito sai TODO quadro, inclusive no que o atalho não repinta:
+      // sem ele o produtor esqueceria a rampa no meio do rótulo parado
+      expect(cabe, `quadro ${i}`).toBe(true);
+    }
+  });
+
+  it('B.0: a distância que perde um algarismo não mexe no alfa enquanto o conteúdo cabe', () => {
+    // 15 px de raio: "1.000 mil km" cabe com 3 px de folga, "999 mil km" com 17
+    const quadro = filmeDoDetalhe();
+    for (let i = 0; i < 40; i++) {
+      const detalhe = i % 2 === 0 ? 'lua · 1.000 mil km' : 'lua · 999 mil km';
+      expect(quadro(15, detalhe).detalhe, `quadro ${i}`).toBeCloseTo(0.95, 9);
+    }
   });
 
   it('o HUD ocupa PRIMEIRO, e não há segundo lugar para furá-lo', () => {

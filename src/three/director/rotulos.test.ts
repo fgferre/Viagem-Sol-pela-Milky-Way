@@ -1326,6 +1326,56 @@ describe('o corpo da casa como assunto do beat (viagem solar)', () => {
     expect(noAtlas(0.035).causaDoSumico).toBe('tamanho');
   });
 
+  it('B.0: o veredito do detalhe de um quadro vira, no seguinte, a rampa de 300 ms', () => {
+    const publicadas: StarLabel[][] = [];
+    const rotulos = new Rotulos({
+      onLabels: (l) => publicadas.push(l),
+      onDest: () => {},
+      onSol: () => {},
+      onLente: () => {},
+      onCamera: () => {},
+      beatDaViagem: () => ({ target: ['moon'], quiet: true }) as JourneyMeta,
+      raioFisicoDe: (id) => (id === 'moon' ? RAIO_DA_LUA : null),
+    });
+    const posicoes = new Float32Array(CORPOS_DO_SISTEMA.length * 3).fill(Number.NaN);
+    const planetas = { points: { visible: true }, posicoes } as unknown as Planetas;
+    rotulos.escreverPosicaoDeLua('moon', LUA_NA_CHEGADA);
+    const cam = cameraNaChegada(0.05);
+    const quadro = () => {
+      rotulos.tique(1 / 60);
+      rotulos.projetar(cam, {
+        fase: 'journey', named: [], dHome: 5, planetas, foco: null,
+        nomesEscondidos: false, iconesEscondidos: false, texto3d: false,
+      });
+      return publicadas.at(-1)!.find((l) => l.key === 'corpo:moon')!;
+    };
+    // sem veredito, a lei de antes; o primeiro veredito faz nascer no alvo
+    let lua = quadro();
+    expect(lua.alfaDoDetalhe).toBeUndefined();
+    // O QUE O `LabelCanvas` FAZ, encenado: ele escreve `detalheCabe` no nome
+    lua.detalheCabe = true;
+    lua = quadro();
+    expect(lua.alfaDoDetalhe).toBe(1);
+    const andar = (cabe: boolean) => {
+      const serie: number[] = [];
+      for (let i = 0; i < 24; i++) {
+        lua.detalheCabe = cabe;
+        lua = quadro();
+        serie.push(lua.alfaDoDetalhe!);
+      }
+      for (let i = 1; i < serie.length; i++) {
+        expect(Math.abs(serie[i] - serie[i - 1]), `quadro ${i}`).toBeLessThanOrEqual(1 / 60 / 0.3 + 1e-9);
+      }
+      return serie;
+    };
+    // 18 quadros de 1/60 s para descer, e outros 18 para subir
+    expect(andar(false).indexOf(0)).toBe(17);
+    expect(andar(true).indexOf(1)).toBe(17);
+    // o nome que fica sem veredito perde a memória
+    lua = quadro();
+    expect(lua.alfaDoDetalhe).toBeUndefined();
+  });
+
   it('sem target, o filme não escreve corpo nenhum — só a régua de sempre', () => {
     const { lista } = noFilme({ quiet: false });
     expect(lista.map((l) => l.key)).toEqual(['sol-home']);

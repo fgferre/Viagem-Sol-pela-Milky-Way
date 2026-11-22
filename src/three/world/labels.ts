@@ -139,6 +139,19 @@ export interface StarLabel {
    */
   perdeuAVaga?: boolean;
   /**
+   * O DETALHE DO DIRIGIDO CABE? (B.0) — escrito pelo `LabelCanvas` como o
+   * `perdeuAVaga`, e colhido pelo produtor no quadro seguinte, que anda a
+   * rampa de `alfaDoDetalhe`. `undefined` = não houve veredito (fora do
+   * filme, ou sem detalhe a escrever).
+   */
+  detalheCabe?: boolean;
+  /**
+   * O ALFA DO DETALHE do dirigido — a rampa de `RAMPA_DO_DETALHE_S` que o
+   * produtor anda sobre `detalheCabe`. Ausente = a lei de antes: o detalhe
+   * que cabe pinta inteiro, o que não cabe não pinta.
+   */
+  alfaDoDetalhe?: number;
+  /**
    * A CAIXA QUE A DISPUTA JULGOU (item 125, F3) — em px CSS do canvas dos
    * rótulos, escrita pelo `LabelCanvas` no mesmo objeto que o Director
    * guarda, como o `desenhado` e o `perdeuAVaga`.
@@ -643,6 +656,13 @@ export const RAMPA_DE_ENTRADA_S = 0.25;
 export const RAMPA_DE_SAIDA_S = 0.75;
 
 /**
+ * A RAMPA DO DETALHE DO DIRIGIDO (B.0) — 300 ms nos dois sentidos. Ela é
+ * no TEMPO, não na folga: uma rampa de 48 px na folga deixava o detalhe de
+ * Titã, que cabe com poucos px de sobra, a 0,07 o trecho todo.
+ */
+export const RAMPA_DO_DETALHE_S = 0.3;
+
+/**
  * A RAMPA TEMPORAL DOS NOMES (item 115, bloco B) — o COMO, nunca o QUEM.
  *
  * Até 31/08 a opacidade de cada rótulo era calculada do zero no quadro
@@ -683,6 +703,8 @@ export class RampasDeRotulo {
     string,
     { alfa: number; origem: number; alvo: number; t: number }
   >();
+  /** o alfa do detalhe do dirigido por chave (ver `aplicarAoDetalhe`) */
+  private readonly detalhe = new Map<string, number>();
 
   /**
    * Um passo de `dt` sobre a lista JÁ julgada pela régua: multiplica a
@@ -742,6 +764,29 @@ export class RampasDeRotulo {
         this.alfa.delete(key);
         this.dentro.delete(key);
       } else this.alfa.set(key, novo);
+    }
+  }
+
+  /**
+   * O DETALHE DO DIRIGIDO ESMAECE NO TEMPO (B.0): `cabe` é o veredito que
+   * o `LabelCanvas` deixou no quadro anterior (`detalheCabe`), e o alfa anda
+   * para 1 ou 0 em `RAMPA_DO_DETALHE_S`, com o mesmo `andar` e o mesmo piso
+   * de um quadro de `aplicar`. A chave NASCE NO ALVO do primeiro veredito
+   * (um corte não acende nem apaga o detalhe à toa), e quem ficou sem
+   * veredito perde a memória e volta à lei de antes (`alfaDoDetalhe`
+   * ausente).
+   */
+  aplicarAoDetalhe(lista: readonly StarLabel[], cabe: ReadonlyMap<string, boolean>, dt: number): void {
+    const passo = (dt > 0 ? dt : 1 / 60) / RAMPA_DO_DETALHE_S;
+    for (const key of this.detalhe.keys()) if (!cabe.has(key)) this.detalhe.delete(key);
+    for (const l of lista) {
+      const veredito = cabe.get(l.key);
+      if (!l.dirigido || veredito === undefined) continue;
+      const alvo = veredito ? 1 : 0;
+      const antes = this.detalhe.get(l.key);
+      const v = antes === undefined ? alvo : this.andar(antes, alvo, passo, passo);
+      this.detalhe.set(l.key, v);
+      l.alfaDoDetalhe = v;
     }
   }
 

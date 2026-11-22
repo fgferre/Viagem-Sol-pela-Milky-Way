@@ -286,6 +286,12 @@ export class Rotulos {
    * rampa de saída somada ao desempate total do P3, como no Eyes.
    */
   private perdedoresDaVaga = new Set<string>();
+  /**
+   * O VEREDITO DO DETALHE DE ONTEM (B.0) — o `detalheCabe` que o
+   * `LabelCanvas` escreveu nos dirigidos, colhido pelo mesmo caminho e com
+   * a mesma latência de um quadro que `perdedoresDaVaga`.
+   */
+  private readonly detalhesQueCabem = new Map<string, boolean>();
   private lastDest = '';
   private destTimer = 0;
   private lastSol = '';
@@ -715,7 +721,9 @@ export class Rotulos {
    * O FILME NÃO ENTRA: lá o assunto do beat não tem rampa — a estrela e
    * o lugar são etiqueta forçada, sem fades; o corpo da casa tira a
    * opacidade da geometria e cede só quando vira o retrato do quadro
-   * (A5) —, e os planos são pinados quadro a quadro.
+   * (A5) —, e os planos são pinados quadro a quadro. A exceção é o
+   * DETALHE do dirigido (B.0): ele esmaece em 300 ms quando deixa de caber
+   * e volta do mesmo jeito (`RampasDeRotulo.aplicarAoDetalhe`).
    */
   private publicar(labels: StarLabel[], dt: number, fase: Phase) {
     if (fase !== 'journey') {
@@ -738,6 +746,7 @@ export class Rotulos {
         l.alfaDoTexto = alfa;
         l.alfaDoIcone = alfa;
       }
+      this.rampas.aplicarAoDetalhe(labels, this.detalhesQueCabem, dt);
     }
     // O NOME OCLUÍDO SAI DA LISTA QUANDO A TINTA ACABA (item 125, F4).
     //
@@ -1047,9 +1056,16 @@ export class Rotulos {
     const { fase, named, dHome, planetas } = quadro;
     // O TEMPO DAS RAMPAS, consumido de uma vez (ver `dtDeRampa`). O FILME
     // NÃO ENTRA: lá o assunto do beat não tem rampa (ver `publicar`) — a
-    // rampa é do céu que o visitante navega.
+    // rampa é do céu que o visitante navega; no filme só o detalhe anda.
     const dtDaRampa = this.dtDeRampa;
     this.dtDeRampa = 0;
+    // O DETALHE DE ONTEM, colhido antes de qualquer ramo reescrever
+    // `lastLabels` — os dois ramos do filme (com e sem a camada de nomes)
+    // publicam dirigidos, e os dois andam a rampa dele em `publicar`.
+    this.detalhesQueCabem.clear();
+    for (const l of this.lastLabels) {
+      if (l.detalheCabe !== undefined) this.detalhesQueCabem.set(l.key, l.detalheCabe);
+    }
     // OS DISCOS DO QUADRO, antes de qualquer projeção: eles valem para
     // as estrelas e para os corpos, e a lista é a mesma nos dois ramos.
     this.montarOclusores(

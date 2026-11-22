@@ -689,6 +689,8 @@ export class LabelCanvas {
         // o LIMBO também (A5): o disco que cresce com o resto parado move o
         // nome e o esmaece — sem ele o quadro pareceria igual ao anterior
         `,${(limboDoDirigido(label) * this.height).toFixed(1)}` +
+        // e a rampa do detalhe (B.0), pelo mesmo motivo do alfa do texto
+        `,${label.alfaDoDetalhe?.toFixed(3) ?? ''}` +
         `,${label.corDoAnel ?? ''},${label.formaDoIcone ?? ''},${nome},${detalhe}`;
     }
     return assinatura;
@@ -737,6 +739,8 @@ export class LabelCanvas {
   private readonly caixas = new Map<string, CaixaDaDisputa>();
   /** a marca de cada candidato, pelo mesmo motivo (`StarLabel.caixaDaMarca`) */
   private readonly marcas = new Map<string, CaixaDaDisputa>();
+  /** o veredito do detalhe de cada dirigido, pelo mesmo motivo (`StarLabel.detalheCabe`) */
+  private readonly detalhesQueCabem = new Map<string, boolean>();
 
   /** o plano geométrico do quadro, na ordem da lista */
   private readonly plano: PlanoDoRotulo[] = [];
@@ -893,6 +897,7 @@ export class LabelCanvas {
       for (const label of labels) {
         label.desenhado = this.desenhadosAntes.has(label.key);
         label.perdeuAVaga = this.veredito.get(label.key) === true;
+        label.detalheCabe = this.detalhesQueCabem.get(label.key);
         label.caixaDaDisputa = this.caixas.get(label.key);
         label.caixaDaMarca = this.marcas.get(label.key);
         const lado = this.desenhadosAntes.get(label.key);
@@ -906,6 +911,7 @@ export class LabelCanvas {
     ctx.clearRect(0, 0, this.width, this.height);
     this.lastHadContent = labels.length > 0;
     this.desenhadosAntes.clear();
+    this.detalhesQueCabem.clear();
     if (labels.length === 0) {
       this.veredito.clear();
       this.caixas.clear();
@@ -988,6 +994,7 @@ export class LabelCanvas {
       const p = plano[i];
       const perdeu = this.veredito.get(label.key) === true;
       label.perdeuAVaga = perdeu;
+      label.detalheCabe = this.detalhesQueCabem.get(label.key);
       if (!p.candidato && !p.pintaSemVaga) continue;
       // A CAIXA QUE FOI JULGADA sai no objeto (item 125, F3): é a mesma
       // que a disputa usou, com a folga que a consulta aplica — não uma
@@ -1084,7 +1091,9 @@ export class LabelCanvas {
 
       // O DETALHE (classe · distância) só existe no corpo focado e no
       // filme desde a F5 — nos demais a string vem vazia de `planejar`,
-      // e pintar vazio não custa nem sujeita ninguém a um `if`.
+      // e pintar vazio não custa nem sujeita ninguém a um `if`. No dirigido
+      // ele leva a rampa do tempo (B.0); ausente = 1.
+      ctx.globalAlpha *= label.alfaDoDetalhe ?? 1;
       ctx.shadowBlur = 4;
       ctx.font = `400 ${p.peso.tamanhoDoDetalhe * k}px ${FAMILIA}`;
       ctx.fillStyle = p.peso.corDoDetalhe;
@@ -1258,7 +1267,13 @@ export class LabelCanvas {
       larguraDoDetalhe > 0 &&
       (ancoraX + recuo + larguraCompleta <= this.width - margem || ancoraX - recuo - larguraCompleta >= margem) &&
       !(naReserva(larguraCompleta) && !naReserva(larguraDoNome));
-    if (!comDetalhe) this.detalhes[i] = '';
+    // O DETALHE DO DIRIGIDO DESCE NO TEMPO (B.0): o veredito vai ao
+    // produtor (`detalheCabe`), que anda o `alfaDoDetalhe` em 300 ms. Enquanto
+    // ele desce o texto continua pintado, mas é IMAGEM e não ocupante: o
+    // lugar, o lado e a caixa abaixo são os do nome sozinho, e o detalhe sai
+    // depois do nome, do lado de fora, cortado pela borda da tela.
+    if (label.dirigido && larguraDoDetalhe > 0) this.detalhesQueCabem.set(label.key, comDetalhe);
+    if (!comDetalhe && !((label.alfaDoDetalhe ?? 0) > 0)) this.detalhes[i] = '';
     // SEM DETALHE, SEM VÃO: desde a F5 o detalhe é vazio na maioria dos
     // nomes, e somar o vão de 9 px a uma string vazia daria a cada nome
     // uma caixa mais larga do que o que ele escreve.
@@ -1290,10 +1305,13 @@ export class LabelCanvas {
       const inicio = esquerda ? ancoraX - recuo - larguraDoNome : ancoraX + recuo;
       return Math.min(inicio - margem, this.width - margem - inicio - larguraDoNome);
     };
-    const alfaDaFolga =
-      recuo > peso.recuoDoTexto * k
-        ? Math.min(1, Math.max(0, Math.max(folgaDe(false), folgaDe(true)) / (RAMPA_DA_FOLGA * k)))
-        : 1;
+    // A RAMPA ENTRA AOS POUCOS (auditoria do B.0): com o recuo de base o nome
+    // é empurrado e fica inteiro, como sempre; ela pesa à medida que o disco
+    // passa desse recuo, na mesma régua de 16·k px — senão o quadro em que o
+    // disco começa a mandar saltaria de 1 para a folga/16.
+    const entrada = Math.min(1, Math.max(0, (recuo - peso.recuoDoTexto * k) / (RAMPA_DA_FOLGA * k)));
+    const rampaDaFolga = Math.min(1, Math.max(0, Math.max(folgaDe(false), folgaDe(true)) / (RAMPA_DA_FOLGA * k)));
+    const alfaDaFolga = 1 - (1 - rampaDaFolga) * entrada;
     if (alfaDaFolga <= 0) return LabelCanvas.FORA;
     let ladoPreferido =
       desvioDe(ladoNatural) !== 0 &&
