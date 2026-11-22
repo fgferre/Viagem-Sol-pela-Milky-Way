@@ -12,7 +12,7 @@
 // (Importar o módulo ainda exige o Chrome instalado — `chrome.mjs` resolve o
 // binário no topo, de propósito. O import NÃO sobe captura nenhuma: a leva
 // mora atrás da guarda de `process.argv[1]`.)
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   LIMIAR_PICO,
   PROFUNDAS,
@@ -29,6 +29,11 @@ import {
   incertezaDoSintetico,
   manchaSaturada,
 } from './planeta-pixel.mjs';
+
+// Os casos da incerteza do centroide levam 1,3 a 2,3 s nesta bancada (22/11),
+// de um limite de 5 s; a máquina do GitHub é mais lenta — folga para não
+// reprovar a publicação por tempo.
+vi.setConfig({ testTimeout: 30_000 });
 
 const W = 80;
 const H = 60;
