@@ -603,11 +603,15 @@ export function casarCorpos({
         motivo: `dentro da mancha de ${outros.join(', ')}`,
       };
     }
-    // A TOLERÂNCIA DE CADA CORPO (22/11, decisão da conversa principal): os
-    // 0,5 px de sempre MAIS a incerteza que o sintético mede para o pico NA
-    // FOTO (`deltaMax`) e o tamanho (`sigma`) desta componente, separada para
-    // o centroide e para a caixa. Um corpo fraco não é liberado: é julgado na
-    // incerteza dele. Só quando a do centroide passa do teto o corpo não é
+    // A TOLERÂNCIA DE CADA CORPO (22/11, decisão da conversa principal): o
+    // MAIOR entre os 0,5 px da lei e a incerteza que o sintético mede para o
+    // pico NA FOTO (`deltaMax`) e o tamanho (`sigma`) desta componente,
+    // separada para o centroide e para a caixa. Não a soma: os 0,5 px já
+    // contêm o erro de grade, que o sintético também mede — somar contaria a
+    // grade duas vezes e chamaria ruído de MEDIDO. Um corpo brilhante fica na
+    // lei; um fraco é julgado na incerteza dele. O P99 deixa de fora as 2–3
+    // piores das 256 posições: corpo fraco fora por pouco é "a conferir", não
+    // defeito provado. Só quando a do centroide passa do teto o corpo não é
     // mensurável nesta foto; a caixa acima do teto sai do juízo, e o centroide
     // segue julgado. Memorizada por chamada: corpos iguais dão a mesma conta.
     const chave = `${comp.deltaMax}|${Math.round(comp.sigma * 10)}`;
@@ -615,10 +619,12 @@ export function casarCorpos({
       incertezas.set(chave, incertezaDoSintetico({ deltaMax: comp.deltaMax, sigma: comp.sigma }));
     }
     const inc = incertezas.get(chave);
-    const tolC = tolerancia + inc.centroide;
-    const tolB = tolerancia + inc.caixa;
+    const tolC = Math.max(tolerancia, inc.centroide);
+    const tolB = Math.max(tolerancia, inc.caixa);
+    const deOnde = (i) => (i > tolerancia ? `incerteza P99 = ${i.toFixed(2)}` : `lei ${tolerancia}`);
     const fotometria = {
       incC: inc.centroide, incB: inc.caixa, tolC, tolB,
+      origemC: deOnde(inc.centroide), origemB: deOnde(inc.caixa),
     };
     if (inc.centroide > tetoIncerteza) {
       return {
@@ -1099,6 +1105,7 @@ function imprimir({ nome, dbg, r, juizo }) {
       + `${(l.comp ? l.comp.sigma.toFixed(2) : '—').padStart(4)}  `
       + `${l.m.toFixed(2).padStart(6)}  ${l.pico.toExponential(2).padStart(9)}  ${l.status}`
       + (l.motivo ? `  (${l.motivo})` : '')
+      + (l.origemC ? `  [tol.C: ${l.origemC}; tol.B: ${l.origemB}]` : '')
     );
   }
   const lua = juizo.linhas.find((l) => l.id === 'moon');

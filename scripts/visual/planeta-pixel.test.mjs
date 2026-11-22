@@ -279,27 +279,33 @@ describe('casarCorpos', () => {
     expect(j.erro).toBe(false);
   });
 
-  // A TOLERÂNCIA DE CADA CORPO (22/11): 0,5 px MAIS a incerteza que o
-  // sintético mede para o pico na foto e o tamanho da componente. Um corpo
-  // FRACO (pico de 2 degraus na foto, pico LINEAR sob 1/255, o caso de Urano)
-  // não é liberado: é julgado na tolerância dele, que o teste LÊ do juiz.
+  // A TOLERÂNCIA DE CADA CORPO (22/11): o MAIOR entre os 0,5 px da lei e a
+  // incerteza que o sintético mede para o pico na foto e o tamanho da
+  // componente — não a soma, que contaria a grade duas vezes. Um corpo FRACO
+  // (pico de 2 degraus na foto, pico LINEAR sob 1/255, o caso de Urano) não é
+  // liberado: é julgado na tolerância dele, que o teste LÊ do juiz.
   const FRACA = { px: 60.5, py: 12.5, pico: 2 };
   const fraco = (x) => cena([alvo('sun', 20.3, 30.7), alvo('uranus', x, 12.5, LIMIAR_PICO / 10)], [MANCHA_SOL, FRACA]);
   const noLugar = fraco(60.5).linhas[1];
 
-  it('corpo FRACO no lugar certo: MEDIDO, com a tolerância alargada pela incerteza dele', () => {
+  it('corpo FRACO no lugar certo: MEDIDO; a tolerância é o maior entre a lei e a incerteza, e diz de onde veio', () => {
     expect(noLugar.comp.deltaMax).toBe(2);
     expect(noLugar.status).toBe('MEDIDO');
-    expect(noLugar.tolC).toBeGreaterThan(TOLERANCIA_PX);
-    expect(noLugar.tolC).toBeLessThan(TETO_DA_INCERTEZA_PX + TOLERANCIA_PX);
-    expect(noLugar.tolB).toBeGreaterThan(noLugar.tolC);
+    expect(noLugar.tolC).toBe(Math.max(TOLERANCIA_PX, noLugar.incC));
+    expect(noLugar.tolB).toBe(Math.max(TOLERANCIA_PX, noLugar.incB));
+    expect(noLugar.tolC).toBeLessThan(TETO_DA_INCERTEZA_PX);
+    // a caixa de um corpo fraco alarga: a incerteza dela passa da lei
+    expect(noLugar.tolB).toBeGreaterThan(TOLERANCIA_PX);
+    expect(noLugar.origemB).toContain('incerteza P99');
   });
 
-  it('corpo FRACO deslocado entre 0,5 px e a tolerância dele: MEDIDO — a tolerância alargou de fato', () => {
-    const j = fraco(60.5 + (TOLERANCIA_PX + noLugar.tolC) / 2);
-    expect(Math.abs(j.linhas[1].dxC)).toBeGreaterThan(TOLERANCIA_PX);
-    expect(j.linhas[1].status).toBe('MEDIDO');
-    expect(j.erro).toBe(false);
+  it('corpo BRILHANTE fica na lei de 0,5 px: a incerteza dele não soma à grade', () => {
+    const sol = fraco(60.5).linhas[0];
+    expect(sol.status).toBe('MEDIDO');
+    expect(sol.tolC).toBe(TOLERANCIA_PX);
+    expect(sol.origemC).toBe(`lei ${TOLERANCIA_PX}`);
+    // a caixa erra a grade (P99 ~0,52 px): com a SOMA ela iria a ~1,0
+    expect(sol.tolB).toBeLessThan(0.6);
   });
 
   it('CONTROLE NEGATIVO: corpo FRACO deslocado além da tolerância dele, com o px ainda na mancha, reprova', () => {
