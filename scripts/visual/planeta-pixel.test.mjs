@@ -277,6 +277,39 @@ describe('casarCorpos', () => {
     expect(j.erro).toBe(false);
   });
 
+  // A REGRA DO SOB-LIMIAR vale ANTES da posição, também com componente casada
+  // (22/11, `destravar/viii-planeta-pixel.md`: Júpiter ua500, Urano ua40 e
+  // Netuno ua150 eram julgados por manchas de ruído). Os dois primeiros põem o
+  // pico EXATAMENTE no degrau: é ali que `<` e `<=` se separam.
+  it('CONTROLE NEGATIVO: corpo no degrau, alvo deslocado 3 px, segue FORA-DA-TOLERÂNCIA e reprova', () => {
+    const j = cena([alvo('sun', 20.3, 30.7), alvo('jupiter', 63.5, 12.5, LIMIAR_PICO)], [MANCHA_SOL, MANCHA_LONGE]);
+    expect(j.linhas[1].status).toBe('FORA-DA-TOLERÂNCIA');
+    expect(j.erro).toBe(true);
+  });
+
+  it('CONTROLE NEGATIVO: corpo no degrau nunca cai em SOB-LIMIAR — no lugar, deslocado ou apagado', () => {
+    const casos = [
+      cena([alvo('jupiter', 60.5, 12.5, LIMIAR_PICO)], [MANCHA_LONGE]),
+      cena([alvo('jupiter', 63.5, 12.5, LIMIAR_PICO)], [MANCHA_LONGE]),
+      cena([alvo('sun', 20.3, 30.7), alvo('jupiter', 60.5, 12.5, LIMIAR_PICO)], [MANCHA_SOL]),
+    ];
+    expect(casos.map((j) => j.linhas.at(-1).status)).toEqual(['MEDIDO', 'FORA-DA-TOLERÂNCIA', 'SEM-COMPONENTE']);
+  });
+
+  it('corpo sob o degrau com mancha de ruído casada a 1 px: SOB-LIMIAR, não medido, sem erro', () => {
+    // a mancha cobre o px previsto (61, 12): a componente CASA com o corpo
+    const j = cena(
+      [alvo('sun', 20.3, 30.7), alvo('jupiter', 61.5, 12.5, LIMIAR_PICO / 7)],
+      [MANCHA_SOL, { px: 60.5, py: 12.5, pico: 3, sigma: 1 }]
+    );
+    expect(j.linhas[1].comp).not.toBeNull();
+    expect(j.linhas[1].status).toBe('SOB-LIMIAR');
+    expect(j.linhas[1].dxC).toBeUndefined();
+    expect(j.linhas[1].motivo).toContain('não medido');
+    expect(j.orfas).toHaveLength(0);
+    expect(j.erro).toBe(false);
+  });
+
   it('corpo DENTRO da mancha do Sol: SOB-GLARE, e o Sol segue julgado', () => {
     const j = cena([alvo('sun', 20.3, 30.7), alvo('mercury', 20.9, 31.2)], [MANCHA_SOL]);
     expect(j.linhas[0].status).toBe('MEDIDO');

@@ -126,9 +126,12 @@
 //             do corpo não se separa da do Sol). A camada só SOMA luz: onde o
 //             Sol já clipou, somar não muda byte nenhum. Declarado, não
 //             julgado — e não é defeito: é o que 150 UA do Sol fazem.
-// SOB-LIMIAR  não há mancha no pixel previsto, e o pico de PSF (que o
-//             `?dbgplan` publica, calculado pelo app com os uniformes
-//             verdadeiros) está abaixo de 1/255. O corpo está lá, com a
+// SOB-LIMIAR  o pico de PSF (que o `?dbgplan` publica, calculado pelo app
+//             com os uniformes verdadeiros) está abaixo de 1/255, e a posição
+//             NÃO é julgada — haja ou não mancha no pixel previsto: a que
+//             casar ali é ruído de arredondamento (desde 22/11; antes só valia
+//             sem mancha, e Júpiter ua500, Urano ua40 e Netuno ua150 saíam
+//             FORA julgados por ruído). O corpo está lá, com a
 //             magnitude certa, e a tela de 8 bits não tem degrau para ele. É
 //             a fotometria honesta — Urano/Netuno/Plutão a 150 UA são
 //             exatamente este caso. Quando ainda assim sobram pixels acesos
@@ -184,7 +187,13 @@ export const LIMIAR_DELTA = Math.max(1, Number(process.env.LIMIAR || 1));
 /** O que a D10 cobra dos dois estimadores de centro. */
 export const TOLERANCIA_PX = 0.5;
 
-/** Abaixo disto a tela de 8 bits não tem degrau — ver `SOB-LIMIAR`. */
+/**
+ * Abaixo disto a tela de 8 bits não tem degrau — ver `SOB-LIMIAR`: o corpo
+ * não é julgado em posição, com ou sem mancha no pixel previsto. Escala do
+ * `pico`: o buffer linear (já com o `expoM0`), antes da exposição do
+ * renderer, da curva de tom e do sRGB — 1/255 nele não é exatamente um
+ * degrau da foto.
+ */
 export const LIMIAR_PICO = 1 / 255;
 
 /**
@@ -549,6 +558,19 @@ export function casarCorpos({
         comp,
         status: juntos.includes('sun') ? 'SOB-GLARE' : 'FUNDIDO',
         motivo: `dentro da mancha de ${outros.join(', ')}`,
+      };
+    }
+    // SOB O DEGRAU, A POSIÇÃO NÃO SE MEDE — nem com componente casada (22/11,
+    // `destravar/viii-planeta-pixel.md`): um corpo de pico < 1/255 não forma
+    // mancha própria numa foto de 8 bits, e o que cai no pixel dele é ruído
+    // de arredondamento (Júpiter ua500, pico 5,6e-4: 6 px que PERDERAM 1/255).
+    // A componente fica reclamada por ele, para não virar órfã.
+    if (c.pico < limiarPico) {
+      return {
+        ...base,
+        comp,
+        status: 'SOB-LIMIAR',
+        motivo: `pico ${c.pico.toExponential(2)} < 1/255: ${comp.n} px casados, não medido em posição`,
       };
     }
     const dxC = comp.cx - c.px;

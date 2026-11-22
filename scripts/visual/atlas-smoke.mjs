@@ -26,6 +26,7 @@
 //     **três entradas, três vistas** — mais a prova que importa: a
 //     POSIÇÃO da câmera antes e depois do portal, e o fov no pino do
 //     Atlas (58° desde 29/08, item 86; era 35°).
+//     DESDE 22/11 o "diferente" é o TETO DE RUÍDO nas fotos cruas (`julgarPar`).
 //
 //     A POSIÇÃO É COBRADA CONTRA A TERRA VIVA DE CADA LADO, e não
 //     contra uma posição guardada antes de atravessar (item 119, a
@@ -291,14 +292,13 @@ async function principal() {
       const antesT = await sessao.js('window.__director.currentTime');
       const poseAntes = JSON.parse(await sessao.js(POSE));
       const fotoAntes = await fotoCrua(sessao);
-      const antes = fotoAntes.md5;
       conferir(antesFase === 'journey', `t=${T}: parte de 'journey' congelada em t=${antesT}`);
 
       await sessao.js('window.__director.entrarNoAtlas()');
       const dentro = await sessao.assentar();
       const faseDentro = await sessao.js('window.__director.captura.fase');
-      const md5Atlas = await sessao.md5();
-      doAtlas.set(T, md5Atlas);
+      const fotoAtlas = await fotoCrua(sessao);
+      doAtlas.set(T, fotoAtlas);
       const poseDepois = JSON.parse(await sessao.js(POSE));
       relogios.set(T, poseDepois.jd);
       degraus.set(T, await sessao.js('window.__director.escadaViva.degrau'));
@@ -326,7 +326,8 @@ async function principal() {
         dentro.via === 'sinal',
         `t=${T}: captura em 'atlas' por via=${dentro.via} em ${(dentro.ms / 1000).toFixed(1)}s`
       );
-      conferir(md5Atlas !== antes, `t=${T}: o Atlas é OUTRA vista (${md5Atlas} ≠ ${antes})`);
+      const outra = julgarFotos(`t=${T}: o Atlas é OUTRA vista`, 'diferente', fotoAntes, fotoAtlas);
+      conferir(outra.ok, outra.texto);
 
       await sessao.js('window.__director.partirDoAtlas()');
       await sessao.assentar();
@@ -348,12 +349,14 @@ async function principal() {
     );
     // TRÊS ENTRADAS, TRÊS VISTAS — o veredito invertido (ver a prova 3 no
     // cabeçalho). Enquanto o portal jogava a pose fora, este número era 1.
-    const vistas = [...new Set(doAtlas.values())];
-    const legenda = [...doAtlas].map(([t, h]) => `t=${t} ${h}`).join(' · ');
-    conferir(
-      vistas.length === 3,
-      `o portal leva a câmera: três entradas, ${vistas.length} vista(s) — ${legenda}`
-    );
+    // DESDE 22/11 cada PAR tem de diferir acima do teto (`julgarPar`): no
+    // md5, o pisca de 1/255 sozinho já dava três vistas a um portal parado.
+    for (const [a, b] of [[10, 100], [10, 250], [100, 250]]) {
+      const par = julgarFotos(
+        `o portal leva a câmera: a entrada em t=${a} × a de t=${b}`, 'diferente', doAtlas.get(a), doAtlas.get(b)
+      );
+      conferir(par.ok, par.texto);
+    }
     const degrausDoPouso = [...new Set(degraus.values())];
     conferir(
       degrausDoPouso.length === 3,

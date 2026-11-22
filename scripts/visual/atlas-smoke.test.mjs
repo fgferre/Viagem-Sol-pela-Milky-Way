@@ -56,7 +56,7 @@ describe('a prova 12: a troca viva dá a imagem do boot, e a camada desenha', ()
   });
 });
 
-describe('os pares de fotos das provas 1, 15b e 18, pelo teto de ruído', () => {
+describe('os pares de fotos das provas 1, 3, 15b e 18, pelo teto de ruído', () => {
   const par = (sentido, d) => julgarPar({ rotulo: 'par', sentido, total, ...d });
 
   it('"igual": o pisca de 1/255 em 173 px (t=250, medido) passa; uma diferença de verdade reprova', () => {
