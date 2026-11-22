@@ -189,12 +189,20 @@ function armarVigia() {
  * própria linha de comando), então o grupo compraria uma segunda faca ao preço
  * de perder o cinto que já existe de graça. Falso é o desenho com DUAS redes.
  */
+/**
+ * SEM ATUALIZADOR (22/11): todo perfil novo disparava o atualizador de
+ * componentes do Chrome pelo serviço de transferência do Windows (1.133
+ * eventos no registro do BITS desde 20/11, em rajadas a cada abertura) —
+ * rede, disco e um serviço do sistema trabalhando a cada juiz, para nada.
+ */
+export const SEM_ATUALIZADOR = ['--disable-component-update', '--disable-background-networking'];
+
 export function lancarChrome({ perfil, args, stdio = 'ignore' }) {
   if (args.some((a) => String(a).startsWith('--user-data-dir'))) {
     throw new Error('lancarChrome é quem põe o --user-data-dir: passe `perfil`, não a flag');
   }
   armarVigia();
-  const processo = spawn(CHROME, [`--user-data-dir=${perfil}`, ...flagsDoBinario(CHROME), ...args], { stdio });
+  const processo = spawn(CHROME, [`--user-data-dir=${perfil}`, ...flagsDoBinario(CHROME), ...SEM_ATUALIZADOR, ...args], { stdio });
   const sessao = { processo, perfil };
   sessoesVivas.add(sessao);
   return {
