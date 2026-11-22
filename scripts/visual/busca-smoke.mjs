@@ -81,7 +81,7 @@ export function indiceDoCartao(srcsDasPrevias, id) {
 }
 
 /**
- * A DISTÂNCIA DO CARTÃO DE SGR A✱, numa faixa FIXA (21/11/2026). Desde
+ * A DISTÂNCIA DE CHEGADA A SGR A✱, numa faixa FIXA (21/11/2026). Desde
  * `1d5291d5` (14/11) o cartão leva ao buraco DE PERTO — o degrau da prévia
  * dele (`raios: 0`) — e não mais à galáxia inteira a 6 kpc, nem aos ~29 pc
  * de dentro do bojo de antes de 08/09. De perto, a câmera fica entre:
@@ -102,6 +102,22 @@ export function distanciaDoBuracoOk(distanciaPc) {
     && distanciaPc >= FAIXA_DO_BURACO_PC[0]
     && distanciaPc <= FAIXA_DO_BURACO_PC[1]
   );
+}
+
+/**
+ * AS DUAS CHEGADAS A SGR A✱ na mesma faixa (22/11): o cartão e a consulta
+ * DIGITADA levam ao mesmo destino, e "mesmo alvo" não prova a distância —
+ * a busca digitada era a chegada julgada antes de `aa1b6c2e` e tinha ficado
+ * sem faixa. Um veredito por chegada, pela MESMA `distanciaDoBuracoOk`.
+ */
+export function julgarChegadasAoBuraco({ cartao = null, busca = null }) {
+  return [['cartão', 'pelo', cartao], ['busca digitada', 'pela', busca]].map(([via, por, pc]) => ({
+    via,
+    ok: distanciaDoBuracoOk(pc),
+    texto: `destino "sagittarius-a": ${por} ${via}, a câmera para a `
+      + `${typeof pc === 'number' ? (pc / RS_SGR_A_PC).toFixed(2) : '?'} RS do buraco`
+      + ' — o degrau de perto, entre o piso de 6 RS e a entrega de 24 RS',
+  }));
 }
 
 /**
@@ -417,6 +433,12 @@ async function principal() {
     // foco/nome/contexto: o mesmo "e/ou" que a prova pede — o centro
     // galáctico é um `lugar`, não uma estrela do catálogo, e pode não
     // deixar as três igualmente estáveis.
+    // a distância do rig (`atlas.distancia`), a mesma régua da foto
+    const lerDistancia = () => sessao.js(`(() => {
+      const d = window.__director;
+      const at = (d && d.escada && d.escada.atlas) || (d && d.atlas) || null;
+      return at && typeof at.distancia === 'number' ? at.distancia : null;
+    })()`);
     const medirAlvo = async () => JSON.parse(await sessao.js(`JSON.stringify({
       foco: new URLSearchParams(location.search).get('foco'),
       nome: (document.querySelector('.atlas-ficha-nome') || {}).textContent || '',
@@ -446,23 +468,12 @@ async function principal() {
       await sessao.js(`document.querySelectorAll('.atlas-destino')[${i}].click()`);
       await sessao.assentar();
       const porCartao = await medirAlvo();
-      // O CARTÃO DE SGR A✱ LEVA AO BURACO DE PERTO (`1d5291d5`, 14/11): a
-      // faixa e o porquê dela estão em `FAIXA_DO_BURACO_PC`. A distância
-      // vem do rig (`atlas.distancia`), a mesma régua da foto, lida logo
-      // depois do clique — é a chegada do CARTÃO que a faixa julga.
-      if (destino.id === 'sagittarius-a') {
-        const distanciaPc = await sessao.js(`(() => {
-          const d = window.__director;
-          const at = (d && d.escada && d.escada.atlas) || (d && d.atlas) || null;
-          return at && typeof at.distancia === 'number' ? at.distancia : null;
-        })()`);
-        conferir(
-          distanciaDoBuracoOk(distanciaPc),
-          `destino "sagittarius-a": o cartão para a `
-            + `${distanciaPc === null ? '?' : (distanciaPc / RS_SGR_A_PC).toFixed(2)} RS do buraco`
-            + ` — o degrau de perto, entre o piso de 6 RS e a entrega de 24 RS`
-        );
-      }
+      // SGR A✱ CHEGA AO BURACO DE PERTO (`1d5291d5`, 14/11) pelas DUAS
+      // portas: a faixa e o porquê dela estão em `FAIXA_DO_BURACO_PC`, e a
+      // distância é lida logo depois de cada chegada assentar — a do cartão
+      // aqui, a da busca digitada em (b) (`julgarChegadasAoBuraco`).
+      const buraco = destino.id === 'sagittarius-a';
+      const distanciaPorCartao = buraco ? await lerDistancia() : null;
 
       // (b) recarrega e chega à MESMA consulta, digitada na paleta
       await sessao.ir(`atlas=1&${PIN}`);
@@ -472,6 +483,13 @@ async function principal() {
       await sessao.teclar('Enter');
       await sessao.assentar();
       const porBusca = await medirAlvo();
+      if (buraco) {
+        const chegadas = julgarChegadasAoBuraco({
+          cartao: distanciaPorCartao,
+          busca: await lerDistancia(),
+        });
+        for (const c of chegadas) conferir(c.ok, c.texto);
+      }
 
       const mesmoAlvo =
         (porCartao.foco !== null && porCartao.foco === porBusca.foco)

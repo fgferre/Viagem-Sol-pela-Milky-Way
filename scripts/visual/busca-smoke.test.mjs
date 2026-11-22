@@ -1,6 +1,7 @@
 // Serve: chão — o smoke da busca reprova o cartão errado, Sgr A✱ fora do buraco de perto e a temperatura mal lida
 // As contas PURAS do smoke da busca, sem subir Chrome: qual cartão é o do
-// destino, a faixa de chegada do cartão de Sgr A✱ e a temperatura da ficha.
+// destino, a faixa de chegada a Sgr A✱ (pelo cartão E pela busca digitada) e a
+// temperatura da ficha.
 //
 // Cada uma com o CONTROLE NEGATIVO do jeito em que já falhou: o clique pela
 // posição que caía na Via Láctea (`bea3760e`), as distâncias de antes do
@@ -11,6 +12,7 @@ import {
   FAIXA_DO_BURACO_PC,
   distanciaDoBuracoOk,
   indiceDoCartao,
+  julgarChegadasAoBuraco,
   temperaturaEmK,
 } from './busca-smoke.mjs';
 
@@ -46,6 +48,27 @@ describe('distanciaDoBuracoOk', () => {
     expect(distanciaDoBuracoOk(25 * RS)).toBe(false);
     expect(distanciaDoBuracoOk(5 * RS)).toBe(false);
     expect(distanciaDoBuracoOk(null)).toBe(false);
+  });
+});
+
+describe('julgarChegadasAoBuraco', () => {
+  const RS = FAIXA_DO_BURACO_PC[0] / 6;
+
+  it('as duas chegadas no degrau de perto passam', () => {
+    const v = julgarChegadasAoBuraco({ cartao: 23.96 * RS, busca: 23.96 * RS });
+    expect(v.map((c) => [c.via, c.ok])).toEqual([['cartão', true], ['busca digitada', true]]);
+  });
+
+  it('a busca DIGITADA chegando a 29 pc REPROVA, mesmo com o cartão no degrau', () => {
+    const v = julgarChegadasAoBuraco({ cartao: 23.96 * RS, busca: 29 });
+    const busca = v.find((c) => c.via === 'busca digitada');
+    expect(busca.ok).toBe(false);
+    expect(busca.texto).toContain('busca digitada');
+    expect(v.find((c) => c.via === 'cartão').ok).toBe(true);
+  });
+
+  it('chegada sem leitura REPROVA, nas duas', () => {
+    expect(julgarChegadasAoBuraco({ cartao: null }).every((c) => !c.ok)).toBe(true);
   });
 });
 
