@@ -160,6 +160,11 @@ Chrome com Direct3D 11 (o do visitante do Windows), perfil novo a cada abertura 
   - um corpo girando pelo tempo de tela fora do modo de foto.
 
   Nas 77 vistas medidas (`destravar/iv-pronto-medida.md`) isso não aconteceu. Quem vir um "não assentou" novo olha primeiro a `clarao.mudancaPendente` e a `oculta` das vagas (`clarao.ts` ~1289–1300, `sondaDeOclusao.ts` ~102–111).
+- **EXPLICADO, SEM AÇÃO: a "luz perdida" de 2–5/255 colada aos planetas na curva de tom Neutral.** O `planeta-pixel` acusava 0/34/53 px perdendo luz nas vistas ua500/ua150/ua40, perto de Júpiter, Saturno, Mercúrio, Marte e Vênus. É igual no Vulkan e no ar.
+  - Não é ocultação: o disco físico tem no máximo 0,019 px de raio, e nenhum desses px cai dentro dele.
+  - Com `&tone=linear` nos dois lados, ficam 0 px perdendo luz, e 86 de 87 passam a ganhar luz nos três canais.
+  - É a curva que preserva o matiz fazendo o trabalho dela: ela escala os canais juntos pelo brilho do pixel, então somar luz num canal sobe o brilho e desce um pouco os outros. A curva é a que o dono aprovou na rodada do tom neutro, e a diferença é pequena demais para o olho, ao lado de um planeta.
+  - Medido em 22/11 (`destravar/x-terra-e-luz-perdida.md`). O juiz mede em linear desde então, assim como a Terra ua40, cujo erro de −0,34 px era a mesma curva. Não reabrir.
 - **A BRECHA QUE SOBRA no pronto que espera a oclusão (`65162503`, não consertada por decisão de 22/11).** O pronto espera a 1ª resposta da sonda depois de cada troca de dono. Há dois casos fora disso:
   - a estrela que sai da tela e volta com o MESMO dono segue marcada como respondida pelo `null` do "fora da tela", e o pronto pode subir com o "à vista" velho até chegar a 1ª resposta real;
   - um salto de câmera sem troca de dono tem a mesma janela, porque só a troca chama `invalidar` (`clarao.ts` ~1265).
