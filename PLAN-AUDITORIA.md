@@ -141,6 +141,17 @@ Chrome com Direct3D 11 (o do visitante do Windows), perfil novo a cada abertura 
 - **No link direto `?filme=solar&t=97` a capa de carga sai com o céu vazio, e a Lua (o assunto do quadro) só aparece segundos depois** (foto por quadros sem Lua; foto por sinal com Lua). Para quem chega por link, a tela de carga some antes de o assunto existir. Item do app, da família do "pronto cedo demais".
 - Perfil reusado (cache de shader quente): 19–21 s em três aberturas; a primeira reusada piorou (45,7 s, trava de 26 s). Para os juízes ficou o perfil novo (decisão de 22/11): o portão é a abertura a frio que o visitante tem.
 - O memoria e o poeira-shaders reprovavam por estas esperas (tetos de 700 quadros e 8 s); os tetos viraram tempo (90 s e 20 s) imprimindo os segundos.
+- **PESO: ~29 MB de heap ficam guardados depois da 1ª visita a Saturno**, pelo resto da sessão. É o assado dos pedaços do anel (`PedrasDoAnel`), feito uma vez, em fatias de 8 ms. Quem segura: Saturno no palco (`Director.noPalco`), pelo campo `pedras` (`gigante.ts:2303`). Os buffers, em `pedrasDoAnel.ts`:
+  - `campo` :443 (1+2+6 MiB);
+  - `FORMAS` :4244 (detalhe 19, 7,3 MiB; os detalhes 7 e 3 juntos, 1,5 MiB);
+  - `grao` :1096 (1 MiB);
+  - `longe` :3643 (0,28 MiB);
+  - mais `permutacao` (0,63 MiB) e as ordens da `montar` (:4920).
+
+  Medido em 22/11 (`destravar/iii-heap-memoria.md`). Não é vazamento: a 2ª rodada de focos soma ~1 MB, e o juiz `memoria` passou a medir por rodada.
+
+  A pergunta da rodada: vale soltar quando Saturno está longe há muito tempo, e quanto custa assar de novo na volta? Num telefone, 29 MB pesam mais.
+- **Uma galáxia vizinha pisca ±1/255 de quadro a quadro no D3D11** (`vizinhas.ts:108`, desde `7d56593b`, 12/11), com a cena parada: um conjunto fixo de ~236 px. No Vulkan sai idêntico. Causa não achada; hipótese: a soma aditiva de muitos pontos sobrepostos. Item pequeno do app. Enquanto isso, os juízes de foto aceitam esse ruído com um teto absoluto (nível ≤ 1/255 e ≤ 0,03 % dos px), medido em `destravar/i-diagnostico.md`.
 
 ### Onda 2 — depois de a onda 1 entrar no principal (a conversa principal manda)
 
