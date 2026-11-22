@@ -42,6 +42,7 @@
 //     ÓRBITA e o clique no rótulo faz o mesmo.
 // 10. O ATALHO DO TECLADO (item 8): "/" e Ctrl+K abrem a paleta; o "/"
 //     que abriu não vaza para o campo, e com ela aberta "/" é digitação.
+import { pathToFileURL } from 'node:url';
 import { abrirSessao, APP_PADRAO, dorme, esperarPor } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
@@ -66,6 +67,51 @@ const contexto = (s) =>
 
 /** pc → UA — o inverso do `AU_PARA_PC` da casa, num lugar só neste juiz. */
 const PC_EM_UA = 206264.80624548031;
+
+/**
+ * O CARTÃO PELO ID, não pela posição (21/11/2026): desde `bea3760e`
+ * (12/11) o 1º cartão da aba galáxia é a Via Láctea, e o clique pelo
+ * índice caía nele em vez de Sgr A✱. O cartão não tem atributo de id; o
+ * id mora na prévia dele (`previas/<id>.webp`, `PaletaDeBusca.tsx`).
+ * Recebe o `src` da prévia de cada cartão, na ordem da tela; −1 é "não há
+ * cartão deste destino na aba".
+ */
+export function indiceDoCartao(srcsDasPrevias, id) {
+  return srcsDasPrevias.findIndex((src) => String(src).endsWith(`/previas/${id}.webp`));
+}
+
+/**
+ * A DISTÂNCIA DO CARTÃO DE SGR A✱, numa faixa FIXA (21/11/2026). Desde
+ * `1d5291d5` (14/11) o cartão leva ao buraco DE PERTO — o degrau da prévia
+ * dele (`raios: 0`) — e não mais à galáxia inteira a 6 kpc, nem aos ~29 pc
+ * de dentro do bojo de antes de 08/09. De perto, a câmera fica entre:
+ *   - 6 RS, o piso do zoom do degrau (2 × 3 RS, fora da órbita estável
+ *     mais interna), e
+ *   - 24 RS, a entrega em que o buraco passa a ser desenhado em escala
+ *     real — além dela a vista não é mais a do buraco de perto.
+ * Medido a 1280×800, o pouso é 23,96 RS; este juiz roda a 1200×900, e por
+ * isso a faixa é a do degrau e não o número de uma tela. RS de Sgr A✱ com
+ * 4,30 milhões de M☉ (GRAVITY 2022): 0,0849 UA. A faixa: 0,51 a 2,04 UA,
+ * ou 2,47e-6 a 9,88e-6 pc.
+ */
+const RS_SGR_A_PC = (2.953250077 * 4.3e6) / 149597870.7 / PC_EM_UA;
+export const FAIXA_DO_BURACO_PC = [6 * RS_SGR_A_PC, 24 * RS_SGR_A_PC];
+export function distanciaDoBuracoOk(distanciaPc) {
+  return (
+    typeof distanciaPc === 'number'
+    && distanciaPc >= FAIXA_DO_BURACO_PC[0]
+    && distanciaPc <= FAIXA_DO_BURACO_PC[1]
+  );
+}
+
+/**
+ * A TEMPERATURA DA FICHA, nas duas línguas: o app separa o milhar a partir
+ * de quatro algarismos (`numeroDoIdioma`, `tempoDoAtlas.ts`) — "9.845 K" em
+ * português, "9,845 K" em inglês —, com UM separador só no número.
+ */
+export function temperaturaEmK(valor) {
+  return /^\d{1,3}(?:(?:\.\d{3})+|(?:,\d{3})+)? K$/.test(valor);
+}
 
 /**
  * A LEI DO ENQUADRAMENTO, lida do MESMO módulo puro que põe a câmera:
@@ -127,882 +173,895 @@ async function abrirPaleta(s) {
   await dorme(200);
 }
 
-const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
-if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu em ${APP}`);
+async function principal() {
+  const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
+  if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu em ${APP}`);
 
-const sessao = await abrirSessao({ janela: JANELA, app: APP, prefixo: 'busca-smoke' });
-try {
-  // ---- 1: a porta abre o modo, com a estrela em quadro -------------
-  const entrou = await sessao.ir(`foco=hd48915&${PIN}`);
-  conferir(entrou.via === 'sinal', `?foco= assentou por via=${entrou.via}`);
-  const fase = await sessao.js('window.__director.captura.fase');
-  conferir(fase === 'atlas', `?foco= sozinha ABRE o Atlas (fase '${fase}')`);
-  const alvo = await contexto(sessao);
-  conferir(alvo === 'Sirius', `?foco=hd48915 põe Sirius em quadro (em quadro: "${alvo}")`);
-  // a LINHA FECHADA do selo (item 61, 22/08): os dois eixos numa frase
-  // só, que é o que fica na tela sem ninguém abrir nada
-  const selo = await sessao.js(
-    "document.querySelector('.atlas-selo-resumo').innerText.replace(/\\n/g, ' ')"
-  );
-  // o eixo ESCALA sai da GEOMETRIA: enquadrar uma estrela a 2,6 pc tira
-  // o quadro do domínio profundo, e o selo tem de dizer isso sozinho —
-  // sem que a porta precise se declarar desvio (ela é neutra)
-  conferir(
-    selo.includes('FORA DE ESCALA'),
-    `e o selo conta a verdade da vista sem a porta se declarar ("${selo}")`
-  );
-
-  // ---- 1a: A FICHA DA ESTRELA (item 74, parte B, 22/08) ------------
-  // Até aqui escolher uma estrela abria a ficha só com o CABEÇALHO — o
-  // nome, a palavra "estrela" e o gesto de voltar. Agora ela diz o que o
-  // catálogo mede. A prova pede as três coisas que só existem com o dado
-  // NOVO atravessando: a designação de Bayer (a letra e a constelação
-  // eram lidas na construção do catálogo e jogadas fora quando havia
-  // nome próprio), a distância na escada da casa, e a temperatura, que é
-  // a primeira conta de `stellarPhysics` a chegar à TELA.
-  const daEstrela = JSON.parse(await sessao.js(`JSON.stringify(
-    [...document.querySelectorAll('.atlas-ficha-linha')].map((d) => ({
-      rotulo: d.querySelector('dt').textContent,
-      valor: d.querySelector('.atlas-ficha-valor').textContent,
-      proc: (d.querySelector('.atlas-ficha-proc') || {}).textContent || '',
-    })))`));
-  const linhaDe = (r) => daEstrela.find((l) => l.rotulo === r) || {};
-  conferir(
-    linhaDe('designação').valor === 'α Canis Majoris'
-      && linhaDe('distância').valor === '8,6 anos-luz',
-    `a ficha de Sirius diz a designação e a distância `
-      + `("${linhaDe('designação').valor}" · "${linhaDe('distância').valor}")`
-  );
-  conferir(
-    /^\d+ K$/.test(linhaDe('temperatura').valor || '')
-      && linhaDe('temperatura').proc.startsWith('derivado')
-      && linhaDe('catálogos').valor === 'HD 48915 · HIP 32349 · Gl 244A',
-    `e a temperatura é derivada da cor, com os índices de catálogo ao lado `
-      + `("${linhaDe('temperatura').valor}" ${linhaDe('temperatura').proc}; `
-      + `"${linhaDe('catálogos').valor}")`
-  );
-
-  // ---- 1b: a mesma porta duas vezes dá a MESMA vista ---------------
-  // O Atlas ENQUADRA (a câmera é posta, não voa), então o raio de
-  // enquadramento tem de ser propriedade do ALVO. Enquanto ele saía da
-  // distância à CÂMERA, o segundo clique no mesmo nome enquadrava metade
-  // do raio do primeiro (a câmera já se aproximara), e o link `?foco=`
-  // reproduzia a vista do primeiro clique, nunca a que estava na tela.
-  const camera = () =>
-    sessao.js('window.__director.engine.camera.position.toArray().join()');
-  const vista1 = await camera();
-  await sessao.js("window.__director.visitarEstrela(window.__director.nomeadas.find((s) => s.hd === 48915))");
-  await sessao.assentar();
-  const vista2 = await camera();
-  await sessao.js("window.__director.visitarEstrela(window.__director.nomeadas.find((s) => s.hd === 48915))");
-  await sessao.assentar();
-  const vista3 = await camera();
-  conferir(
-    vista1 === vista2 && vista2 === vista3,
-    `enquadrar a MESMA estrela três vezes dá a MESMA câmera (${vista1} · ${vista2} · ${vista3})`
-  );
-
-  // ---- 1c: o atalho do teclado abre a paleta (item 8) --------------
-  // `/` (e Ctrl+K) moram no useAtalhos, com as guardas: diálogo aberto
-  // fica com o teclado dele e alvo de texto não atalha. Aqui: o caminho
-  // feliz das duas teclas, a prova de que o "/" que ABRIU não vazou
-  // para o campo, e a de que com a paleta aberta "/" é digitação.
-  await sessao.digitar('/');
-  await dorme(200);
-  const abriuPorBarra = await sessao.js(`(() => {
-    const campo = document.querySelector('.atlas-busca-campo');
-    return JSON.stringify({
-      aberta: Boolean(document.querySelector('[data-dialogo="busca"]')),
-      focada: document.activeElement === campo,
-      valor: campo ? campo.value : null,
-    });
-  })()`);
-  const porBarra = JSON.parse(abriuPorBarra);
-  conferir(
-    porBarra.aberta && porBarra.focada && porBarra.valor === '',
-    `a tecla "/" abre a paleta com o campo focado e LIMPO (${abriuPorBarra})`
-  );
-  await sessao.digitar('/');
-  const barraDigitou = await sessao.js(
-    "document.querySelector('.atlas-busca-campo').value"
-  );
-  conferir(
-    barraDigitou === '/',
-    `com a paleta aberta, "/" é digitação, não atalho (campo "${barraDigitou}")`
-  );
-  await sessao.teclar('Escape');
-  await dorme(200);
-  const tecladoCtrlK = {
-    key: 'k', code: 'KeyK', windowsVirtualKeyCode: 75,
-    nativeVirtualKeyCode: 75, modifiers: 2,
-  };
-  await sessao.send('Input.dispatchKeyEvent', { ...tecladoCtrlK, type: 'rawKeyDown' });
-  await sessao.send('Input.dispatchKeyEvent', { ...tecladoCtrlK, type: 'keyUp' });
-  await dorme(200);
-  const porCtrlK = await sessao.js(
-    'Boolean(document.querySelector(\'[data-dialogo="busca"]\'))'
-  );
-  conferir(porCtrlK, 'Ctrl+K abre a paleta pelo mesmo caminho');
-  await sessao.teclar('Escape');
-  await dorme(200);
-
-  // ---- 2: porta que não acha não chuta -----------------------------
-  // Era "alfa cen" — o caso real do dado até 01/09, quando a designação
-  // de Bayer virou chave de TODA estrela (item 129/F5) e ela passou a
-  // achar Rigil Kentaurus de propósito. O vazio honesto agora se prova
-  // com o que não se parece com nada, nem por uma letra: "xkcd".
-  await sessao.ir(`foco=xkcd&${PIN}`);
-  const semPalpite = JSON.parse(await sessao.js(`JSON.stringify({
-    nome: (document.querySelector('.atlas-ficha-nome') || {}).textContent || '',
-    ficha: document.querySelector('.atlas-ficha') !== null,
-    degrau: window.__director.escadaViva.degrau,
-  })`));
-  conferir(
-    semPalpite.nome === '' && !semPalpite.ficha && semPalpite.degrau === 'sistema',
-    `?foco= sem correspondência NÃO chuta: fica no sistema e não abre ficha `
-      + `(degrau '${semPalpite.degrau}', ficha ${semPalpite.ficha})`
-  );
-
-  // ---- 3: ida e volta pelo escritor vivo ---------------------------
-  // Escolhe na paleta e deixa o APP reescrever a URL: a troca de
-  // qualidade espelha por `urlComMomento`, que é o mesmo texto que o
-  // botão "copiar link" entrega. Se a porta não sair de lá com a chave
-  // canônica, o link copiado cai noutro lugar e esta prova quebra.
-  await sessao.ir(`atlas=1&${PIN}`);
-  await abrirPaleta(sessao);
-  await sessao.digitar('sirius');
-  await dorme(300);
-  await sessao.teclar('Enter');
-  // espera por ESTADO (item 76): o fim do gesto é a paleta fechada e a
-  // ficha do escolhido aberta — era um dorme(400) medindo a máquina
-  await esperarPor(sessao, `(() => !document.querySelector('[data-dialogo="busca"]')
-    && Boolean((document.querySelector('.atlas-ficha-nome') || {}).textContent))()`);
-  const escolhido = await contexto(sessao);
-  conferir(escolhido === 'Sirius', `a paleta enquadra o que se escolhe ("${escolhido}")`);
-
-  await sessao.js(`(() => {
-    const sel = document.querySelector('.controls-bar select');
-    sel.value = 'alta';
-    sel.dispatchEvent(new Event('change', { bubbles: true }));
-  })()`);
-  await sessao.assentar();
-  const urlDaVolta = await sessao.js('location.search');
-  conferir(
-    urlDaVolta.includes('foco=hd48915'),
-    `o link vivo carrega a chave canônica do foco (${urlDaVolta})`
-  );
-  const depoisDaTroca = await contexto(sessao);
-  const faseDaVolta = await sessao.js('window.__director.captura.fase');
-  const mundoDaVolta = await sessao.js('window.__director.captura.tierDoMundo');
-  conferir(
-    faseDaVolta === 'atlas' && depoisDaTroca === escolhido && mundoDaVolta === 'alta',
-    `e o alvo SOBREVIVE à troca de tier, sem recarga (fase '${faseDaVolta}',`
-      + ` mundo '${mundoDaVolta}', em quadro "${depoisDaTroca}")`
-  );
-
-  // ---- 4: o estado vazio, honesto ----------------------------------
-  await sessao.ir(`atlas=1&${PIN}`);
-  await abrirPaleta(sessao);
-  await sessao.digitar('xkcd');
-  // espera por ESTADO: o aviso do vazio na tela é o fim da consulta —
-  // era um dorme(400); se ele nunca vier, o estouro reprova nas linhas
-  // de baixo, que é o veredito certo
-  await esperarPor(
-    sessao,
-    "/Nada com esse nome/.test((document.querySelector('.atlas-busca-aviso') || {}).textContent || '')"
-  );
-  const vazio = await sessao.js(`(() => ({
-    opcoes: document.querySelectorAll('[role="option"]').length,
-    aviso: (document.querySelector('.atlas-busca-aviso') || {}).textContent || '',
-  }))()`);
-  conferir(vazio.opcoes === 0, `"xkcd" não acende opção nenhuma (${vazio.opcoes})`);
-  conferir(
-    /Nada com esse nome/.test(vazio.aviso) && /Sírius/.test(vazio.aviso),
-    `e o vazio diz o que não achou E o que funciona: "${vazio.aviso}"`
-  );
-
-  // ---- 4a: "Limpar busca" devolve o campo ao estado inicial --------
-  // Só tinha conferência por leitura na matriz de preservação — ninguém
-  // clicava (lista aprovada pelo dono, 08/09/2026). Reaproveita o vazio
-  // de "xkcd" que a prova de cima já deixou na tela.
-  await sessao.js("document.querySelector('.atlas-busca-aviso + button').click()");
-  await esperarPor(sessao, "document.querySelectorAll('.atlas-destino').length > 0");
-  const depoisDeLimpar = JSON.parse(await sessao.js(`JSON.stringify({
-    valor: document.querySelector('.atlas-busca-campo').value,
-    focado: document.activeElement === document.querySelector('.atlas-busca-campo'),
-    destinos: document.querySelectorAll('.atlas-destino').length,
-  })`));
-  conferir(
-    depoisDeLimpar.valor === '' && depoisDeLimpar.focado,
-    `"Limpar busca" esvazia o campo e devolve o foco a ele `
-      + `(valor "${depoisDeLimpar.valor}", focado ${depoisDeLimpar.focado})`
-  );
-  conferir(
-    depoisDeLimpar.destinos > 0,
-    `e os cartões de destino voltam à tela (${depoisDeLimpar.destinos} cartões)`
-  );
-
-  // ---- 4b: os cartões de destino chegam ao MESMO alvo que a busca --
-  // Os dez cartões da busca vazia (Lote 6) só tinham conferência por
-  // leitura na matriz de preservação — nenhum clicado por este harness
-  // (lista aprovada pelo dono, 08/09/2026). Para cada um: o CLIQUE no
-  // cartão e a MESMA consulta digitada têm de abrir o MESMO alvo. As
-  // "consulta" abaixo são as do próprio `destinosDaBusca.ts`, na MESMA
-  // ordem — um destino que não resolvesse não apareceria, e não haveria
-  // cartão para clicar.
-  const DESTINOS_DA_BUSCA_VAZIA = [
-    { id: 'earth', categoria: 'sistema', consulta: 'earth' },
-    { id: 'moon', categoria: 'sistema', consulta: 'moon' },
-    { id: 'mars', categoria: 'sistema', consulta: 'mars' },
-    { id: 'jupiter', categoria: 'sistema', consulta: 'jupiter' },
-    { id: 'saturn', categoria: 'sistema', consulta: 'saturn' },
-    { id: 'pluto', categoria: 'sistema', consulta: 'pluto' },
-    { id: 'sirius', categoria: 'estrelas', consulta: 'Sirius' },
-    { id: 'betelgeuse', categoria: 'estrelas', consulta: 'Betelgeuse' },
-    { id: 'rigil-kentaurus', categoria: 'estrelas', consulta: 'Rigil Kentaurus' },
-    { id: 'sagittarius-a', categoria: 'galaxia', consulta: 'sagittarius-a' },
-  ];
-  const FILTRO_DA_CATEGORIA = { sistema: 0, estrelas: 1, galaxia: 2 };
-  // foco/nome/contexto: o mesmo "e/ou" que a prova pede — o centro
-  // galáctico é um `lugar`, não uma estrela do catálogo, e pode não
-  // deixar as três igualmente estáveis.
-  const medirAlvo = async () => JSON.parse(await sessao.js(`JSON.stringify({
-    foco: new URLSearchParams(location.search).get('foco'),
-    nome: (document.querySelector('.atlas-ficha-nome') || {}).textContent || '',
-    contexto: (document.querySelector('.atlas-contexto') || {}).innerText || '',
-  })`));
-  const indiceNaCategoria = {};
-  for (const destino of DESTINOS_DA_BUSCA_VAZIA) {
-    const i = indiceNaCategoria[destino.categoria] || 0;
-    indiceNaCategoria[destino.categoria] = i + 1;
-
-    // (a) o clique no cartão, na busca vazia
-    await sessao.ir(`atlas=1&${PIN}`);
-    await abrirPaleta(sessao);
-    const filtro = FILTRO_DA_CATEGORIA[destino.categoria];
-    if (filtro > 0) {
-      await sessao.js(
-        `document.querySelectorAll('[data-dialogo="busca"] .ajustes-seg button')[${filtro}].click()`
-      );
-      await dorme(150);
-    }
-    await sessao.js(`document.querySelectorAll('.atlas-destino')[${i}].click()`);
-    await sessao.assentar();
-    const porCartao = await medirAlvo();
-
-    // (b) recarrega e chega à MESMA consulta, digitada na paleta
-    await sessao.ir(`atlas=1&${PIN}`);
-    await abrirPaleta(sessao);
-    await sessao.digitar(destino.consulta);
-    await dorme(300);
-    await sessao.teclar('Enter');
-    await sessao.assentar();
-    const porBusca = await medirAlvo();
-
-    const mesmoAlvo =
-      (porCartao.foco !== null && porCartao.foco === porBusca.foco)
-      || (porCartao.nome !== '' && porCartao.nome === porBusca.nome)
-      || (porCartao.contexto !== '' && porCartao.contexto === porBusca.contexto);
-    conferir(
-      mesmoAlvo,
-      `destino "${destino.id}": o cartão e a busca chegam ao mesmo alvo `
-        + `(foco "${porCartao.foco}"/"${porBusca.foco}", ficha "${porCartao.nome}"/"${porBusca.nome}")`
+  const sessao = await abrirSessao({ janela: JANELA, app: APP, prefixo: 'busca-smoke' });
+  try {
+    // ---- 1: a porta abre o modo, com a estrela em quadro -------------
+    const entrou = await sessao.ir(`foco=hd48915&${PIN}`);
+    conferir(entrou.via === 'sinal', `?foco= assentou por via=${entrou.via}`);
+    const fase = await sessao.js('window.__director.captura.fase');
+    conferir(fase === 'atlas', `?foco= sozinha ABRE o Atlas (fase '${fase}')`);
+    const alvo = await contexto(sessao);
+    conferir(alvo === 'Sirius', `?foco=hd48915 põe Sirius em quadro (em quadro: "${alvo}")`);
+    // a LINHA FECHADA do selo (item 61, 22/08): os dois eixos numa frase
+    // só, que é o que fica na tela sem ninguém abrir nada
+    const selo = await sessao.js(
+      "document.querySelector('.atlas-selo-resumo').innerText.replace(/\\n/g, ' ')"
     );
-    // O CENTRO DA GALÁXIA PARA ANTES DO GÁS (decisão do dono, 08/09/2026):
-    // a lei estelar deixava a câmera a ~29 pc de Sgr A✱, dentro do bojo,
-    // e a vista era uma névoa bege; agora o lugar tem a própria esfera
-    // (`RAIO_DO_CENTRO_GALACTICO_PC`, escada.ts) e a câmera fica a
-    // dezenas de kpc, 30° acima do plano, com a galáxia no quadro. A
-    // distância vem do rig (`atlas.distancia`), a mesma régua da foto.
-    if (destino.id === 'sagittarius-a') {
-      const distanciaPc = await sessao.js(`(() => {
-        const d = window.__director;
-        const at = (d && d.escada && d.escada.atlas) || (d && d.atlas) || null;
-        return at && typeof at.distancia === 'number' ? at.distancia : null;
-      })()`);
-      conferir(
-        distanciaPc !== null && distanciaPc > 12000 && distanciaPc < 30000,
-        `destino "sagittarius-a": a câmera para a ${distanciaPc === null ? '?' : (distanciaPc / 1000).toFixed(1)} kpc`
-          + ' do centro — fora do gás do bojo, com a galáxia no quadro'
-      );
-    }
-  }
+    // o eixo ESCALA sai da GEOMETRIA: enquadrar uma estrela a 2,6 pc tira
+    // o quadro do domínio profundo, e o selo tem de dizer isso sozinho —
+    // sem que a porta precise se declarar desvio (ela é neutra)
+    conferir(
+      selo.includes('FORA DE ESCALA'),
+      `e o selo conta a verdade da vista sem a porta se declarar ("${selo}")`
+    );
 
-  // ---- 5: no VOO LIVRE, a mesma paleta VOA -------------------------
-  // O verbo é da fase, e a promessa está escrita no rótulo: no Atlas o
-  // Enter "enquadra", no voo livre ele "voa até lá". Sem esta prova a
-  // paleta poderia estar servindo a segunda fase só de enfeite — o
-  // botão prometendo um voo que ninguém dispara.
-  await sessao.ir(`pos=0,0,0.1&look=0,0,0&${PIN}`);
-  const faseDoVoo = await sessao.js('window.__director.captura.fase');
-  const antesDoVoo = await sessao.js(
-    'window.__director.engine.camera.position.toArray().join()'
-  );
-  await abrirPaleta(sessao);
-  await sessao.digitar('sirius');
-  await dorme(300);
-  // o rótulo se lê COM resultados na tela: sem eles a linha viva está
-  // ensinando o que se pode digitar, e não prometendo verbo nenhum
-  const rotulo = await sessao.js(
-    "(document.querySelector('.atlas-busca-aviso') || {}).textContent || ''"
-  );
-  await sessao.teclar('Enter');
-  await sessao.assentar();
-  const depoisDoVoo = await sessao.js(
-    'window.__director.engine.camera.position.toArray().join()'
-  );
-  conferir(
-    faseDoVoo === 'free' && antesDoVoo !== depoisDoVoo,
-    `no voo livre a escolha VOA: a câmera saiu de (${antesDoVoo}) para (${depoisDoVoo})`
-  );
-  conferir(
-    /voa at[ée] l[áa]/.test(rotulo),
-    `e o rótulo promete o verbo da fase, não o do Atlas ("${rotulo}")`
-  );
+    // ---- 1a: A FICHA DA ESTRELA (item 74, parte B, 22/08) ------------
+    // Até aqui escolher uma estrela abria a ficha só com o CABEÇALHO — o
+    // nome, a palavra "estrela" e o gesto de voltar. Agora ela diz o que o
+    // catálogo mede. A prova pede as três coisas que só existem com o dado
+    // NOVO atravessando: a designação de Bayer (a letra e a constelação
+    // eram lidas na construção do catálogo e jogadas fora quando havia
+    // nome próprio), a distância na escada da casa, e a temperatura, que é
+    // a primeira conta de `stellarPhysics` a chegar à TELA.
+    const daEstrela = JSON.parse(await sessao.js(`JSON.stringify(
+      [...document.querySelectorAll('.atlas-ficha-linha')].map((d) => ({
+        rotulo: d.querySelector('dt').textContent,
+        valor: d.querySelector('.atlas-ficha-valor').textContent,
+        proc: (d.querySelector('.atlas-ficha-proc') || {}).textContent || '',
+      })))`));
+    const linhaDe = (r) => daEstrela.find((l) => l.rotulo === r) || {};
+    conferir(
+      linhaDe('designação').valor === 'α Canis Majoris'
+        && linhaDe('distância').valor === '8,6 anos-luz',
+      `a ficha de Sirius diz a designação e a distância `
+        + `("${linhaDe('designação').valor}" · "${linhaDe('distância').valor}")`
+    );
+    conferir(
+      temperaturaEmK(linhaDe('temperatura').valor || '')
+        && linhaDe('temperatura').proc.startsWith('derivado')
+        && linhaDe('catálogos').valor === 'HD 48915 · HIP 32349 · Gl 244A',
+      `e a temperatura é derivada da cor, com os índices de catálogo ao lado `
+        + `("${linhaDe('temperatura').valor}" ${linhaDe('temperatura').proc}; `
+        + `"${linhaDe('catálogos').valor}")`
+    );
 
-  // ---- 6: a latência por tecla, das duas formas --------------------
-  // (a) A CONTA PURA sobre o índice COMPLETO, medida dentro da página
-  // com o mesmo módulo que a UI usa (o dev server serve o fonte, então
-  // não há segunda cópia da lib no caminho) e com as 1.726 nomeadas que
-  // o Director carregou. As consultas são as caras: uma letra só varre
-  // e casa em quase tudo.
-  //
-  // O import vem numa chamada à parte porque o `Runtime.evaluate` da
-  // sessão não espera promessa: a medição tem de ser SÍNCRONA quando
-  // roda, senão o que volta é um `Promise` vazio e o gate mede nada.
-  await sessao.js(
-    "(() => { import('/src/lib/buscaEstrelas.ts').then((m) => { window.__lib = m; }); })()"
-  );
-  await dorme(300);
-  const puro = await sessao.js(`(() => {
-    const m = window.__lib;
-    const nomeadas = window.__director.nomeadas;
-    const t0 = performance.now();
-    const indice = m.construirIndice(nomeadas);
-    const construcao = performance.now() - t0;
-    const medir = (q) => {
-      const N = 200;
-      const t = performance.now();
-      for (let i = 0; i < N; i++) m.buscar(q, indice, 8);
-      return (performance.now() - t) / N;
-    };
-    return {
-      estrelas: nomeadas.length,
-      chaves: indice.porChave.size,
-      construcao,
-      a: medir('a'), si: medir('si'), siri: medir('siri'), hd: medir('hd 48915'),
-    };
-  })()`);
-  const pior = Math.max(puro.a, puro.si, puro.siri, puro.hd);
-  process.stdout.write(
-    `  ·     índice: ${puro.estrelas} estrelas / ${puro.chaves} chaves`
-      + ` em ${puro.construcao.toFixed(1)} ms (uma vez só)\n`
-      + `  ·     por tecla: "a" ${puro.a.toFixed(3)} ms · "si" ${puro.si.toFixed(3)} ms`
-      + ` · "siri" ${puro.siri.toFixed(3)} ms · "hd 48915" ${puro.hd.toFixed(3)} ms\n`
-  );
-  // o teto é folgado de propósito: o que ele pega é uma REGRESSÃO de
-  // ordem de grandeza (a varredura das 206k chaves que a lib recusou
-  // custava 27-32 ms por tecla no doador), não a variação da máquina
-  conferir(pior < 5, `a conta por tecla fica abaixo de 5 ms (pior: ${pior.toFixed(3)} ms)`);
+    // ---- 1b: a mesma porta duas vezes dá a MESMA vista ---------------
+    // O Atlas ENQUADRA (a câmera é posta, não voa), então o raio de
+    // enquadramento tem de ser propriedade do ALVO. Enquanto ele saía da
+    // distância à CÂMERA, o segundo clique no mesmo nome enquadrava metade
+    // do raio do primeiro (a câmera já se aproximara), e o link `?foco=`
+    // reproduzia a vista do primeiro clique, nunca a que estava na tela.
+    const camera = () =>
+      sessao.js('window.__director.engine.camera.position.toArray().join()');
+    const vista1 = await camera();
+    await sessao.js("window.__director.visitarEstrela(window.__director.nomeadas.find((s) => s.hd === 48915))");
+    await sessao.assentar();
+    const vista2 = await camera();
+    await sessao.js("window.__director.visitarEstrela(window.__director.nomeadas.find((s) => s.hd === 48915))");
+    await sessao.assentar();
+    const vista3 = await camera();
+    conferir(
+      vista1 === vista2 && vista2 === vista3,
+      `enquadrar a MESMA estrela três vezes dá a MESMA câmera (${vista1} · ${vista2} · ${vista3})`
+    );
 
-  // (b) PONTA A PONTA: da tecla até a lista mudar na tela. Inclui o
-  // React, o `useDeferredValue` e a espera pelo quadro — e é por isso
-  // que ela é maior: no Atlas o quadro custa ~100 ms nesta janela, e a
-  // lista só aparece quando ele sai. É o número que o visitante sente.
-  await sessao.ir(`atlas=1&${PIN}`);
-  await abrirPaleta(sessao);
-  await sessao.js(`(() => {
-    window.__lat = [];
-    window.__t0 = 0;
-    const campo = document.querySelector('.atlas-busca-campo');
-    campo.addEventListener('keydown', () => { window.__t0 = performance.now(); }, true);
-    new MutationObserver(() => {
-      if (!window.__t0) return;
-      const t = window.__t0;
-      window.__t0 = 0;
-      // o quadro em que a mudança JÁ ESTÁ na tela
-      requestAnimationFrame(() => window.__lat.push(performance.now() - t));
-    }).observe(document.querySelector('[role="listbox"]'), {
-      childList: true, subtree: true, characterData: true,
-    });
-  })()`);
-  // "tau cet" e não "sirius" de propósito: cada tecla desta consulta
-  // MUDA o conjunto de resultados. Onde o conjunto não muda, o React não
-  // toca no DOM e não há mutação para observar — o que é a resposta
-  // certa (a tecla custou só a varredura), mas não dá medida. Por isso o
-  // gate compara as duas contas: teclas digitadas e mudanças de lista.
-  const CONSULTA = 'tau cet';
-  for (const ch of CONSULTA) {
-    await sessao.digitar(ch);
-    await dorme(250);
-  }
-  const lat = await sessao.js('window.__lat');
-  const ordenadas = [...lat].sort((x, y) => x - y);
-  const mediana = ordenadas[Math.floor(ordenadas.length / 2)] ?? Number.NaN;
-  process.stdout.write(
-    `  ·     ponta a ponta: ${lat.map((v) => v.toFixed(0)).join(' · ')} ms`
-      + ` (${CONSULTA.length} teclas, ${lat.length} mudanças de lista)\n`
-  );
-  conferir(
-    lat.length >= 4 && mediana < 250,
-    `a lista acompanha a digitação (mediana ${mediana.toFixed(0)} ms`
-      + ` em ${lat.length} mudanças de ${CONSULTA.length} teclas)`
-  );
-
-  // ---- 8: os overlays são da FASE que os hospeda -------------------
-  // A presença é `busca && hud.busca`: o `hud.*` some com a fase, e o
-  // estado de aberto NÃO sumia. Resultado medido antes do conserto: sair
-  // do voo livre com a paleta aberta e voltar a ele a fazia RENASCER —
-  // e, pior, `useDialogFocus` punha o foco na caixa de texto, onde a
-  // guarda de alvo de formulário do rig engole o WASD. O visitante
-  // entrava para voar e as teclas de voar viravam texto.
-  await sessao.ir(`pos=0,0,0.1&look=0,0,0&${PIN}`);
-  await abrirPaleta(sessao);
-  const abriuNoVoo = await sessao.js("Boolean(document.querySelector('.atlas-busca'))");
-  const clicar = (texto) =>
-    sessao.js(`(() => {
-      [...document.querySelectorAll('.controls-bar button')]
-        .find((b) => b.innerText.toUpperCase().includes(${JSON.stringify(texto.toUpperCase())}))
-        .click();
-    })()`);
-  await clicar('Reviver');
-  await dorme(300);
-  await clicar('Voo livre');
-  // espera por ESTADO: a fase é o que o clique promete — era dorme(400)
-  await esperarPor(sessao, "window.__director.captura.fase === 'free'");
-  const aoVoltar = await sessao.js(`JSON.stringify({
-    paleta: Boolean(document.querySelector('.atlas-busca')),
-    foco: document.activeElement ? document.activeElement.className : null,
-  })`);
-  const v = JSON.parse(aoVoltar);
-  conferir(
-    abriuNoVoo && !v.paleta && v.foco !== 'atlas-busca-campo',
-    `a paleta NÃO renasce ao reentrar na fase (${aoVoltar})`
-  );
-
-  // e o mesmo para a gaveta de camadas, que atravessava Atlas→filme→Atlas.
-  // Desde o item 61 (22/08) ela EXISTE nos dois modos — então o que a
-  // fecha não é mais "a fase nova não a hospeda", e sim a TRAVESSIA: véu,
-  // câmera reposta e outro HUD não podem carregar junto um modal com o
-  // foco preso dentro dele. A promessa medida é a mesma.
-  await sessao.ir(`atlas=1&${PIN}`);
-  await sessao.js("document.querySelector('[data-abre-dialogo=\"camadas\"]').click()");
-  await dorme(200);
-  const abriuNoAtlas = await sessao.js("Boolean(document.querySelector('.atlas-gaveta'))");
-  await sessao.js('window.__director.partirDoAtlas()');
-  await dorme(300);
-  await sessao.js('window.__director.entrarNoAtlas({ instantaneo: true })');
-  // espera por ESTADO: a travessia terminou quando a fase é atlas E o
-  // sinal de prontidão acendeu (o véu em curso derruba o `pronto`) —
-  // era dorme(400)
-  await esperarPor(
-    sessao,
-    "window.__director.captura.fase === 'atlas' && window.__director.captura.pronto"
-  );
-  const gaveta = await sessao.js("Boolean(document.querySelector('.atlas-gaveta'))");
-  conferir(
-    abriuNoAtlas && !gaveta,
-    `a gaveta NÃO renasce ao reentrar no Atlas (abriu=${abriuNoAtlas}, voltou=${gaveta})`
-  );
-
-  // ---- 9: OS DEZ CORPOS SÃO ALVO — rótulo, busca e deep-link -------
-  // Até a revisão de olhos frescos o "Atlas navegável do sistema solar"
-  // tinha os dez DESENHADOS e nenhum era alvo de nada: buscar "Netuno"
-  // caía no estado vazio, `?foco=terra` não resolvia e clicar num corpo
-  // não fazia coisa alguma. Três linhas da matriz do PLANO com destino
-  // nesta onda.
-  const emUA = () =>
-    sessao.js(`window.__director.engine.camera.position.length() * ${PC_EM_UA}`);
-
-  await sessao.ir(`foco=terra&${PIN}`);
-  const naTerra = await contexto(sessao);
-  const distTerra = Number(await emUA());
-  conferir(
-    naTerra === 'Terra',
-    `?foco=terra abre o Atlas com a Terra em quadro (em quadro: "${naTerra}")`
-  );
-  // ENQUADRA A ÓRBITA E NÃO O CORPO, e a régua é a LEI e não um número
-  // decorado — ver `leiDoEnquadramento`. Duas coisas de uma vez, porque
-  // uma sozinha não basta: o raio enquadrado é o da ÓRBITA (≈1 UA, e
-  // anda com a data entre 0,983 e 1,017 — o corpo tem 4,3e-5 UA, quatro
-  // ordens abaixo), e a distância é exatamente a que a lente VIGENTE
-  // pede para essa esfera. A margem é justa de propósito: os dois lados
-  // saem da MESMA função pura, então o que sobra é ruído de float, e uma
-  // folga larga aqui deixaria passar o rig enquadrando por outra conta.
-  const leiTerra = await leiDoEnquadramento(sessao);
-  conferir(
-    Math.abs(leiTerra.raioUA - 1) < 0.05
-      && Math.abs(leiTerra.distanciaUA / leiTerra.previstaUA - 1) < 1e-6,
-    `e enquadra a ÓRBITA dela (raio ${leiTerra.raioUA.toFixed(3)} UA) na distância que`
-      + ` a lente de ${leiTerra.fov}° pede: ${leiTerra.distanciaUA.toFixed(3)} UA do alvo`
-      + ` contra ${leiTerra.previstaUA.toFixed(3)} previstas`
-      + ` (${leiTerra.k.toFixed(3)} × o raio) — ${distTerra.toFixed(2)} UA do Sol`
-  );
-
-  // a paleta acha pelo nome pt-BR, sem acento, e a escolha ENQUADRA
-  await abrirPaleta(sessao);
-  await sessao.digitar('netuno');
-  await dorme(300);
-  const listaCorpo = await sessao.js(`(() => {
-    const o = document.querySelector('[role="option"]');
-    return o ? o.textContent : '';
-  })()`);
-  await sessao.teclar('Enter');
-  await sessao.assentar();
-  const emNetuno = await contexto(sessao);
-  const distNetuno = Number(await emUA());
-  conferir(
-    emNetuno === 'Netuno' && /planeta/.test(listaCorpo) && /UA/.test(listaCorpo),
-    `a paleta acha "netuno" e a escolha ENQUADRA ("${listaCorpo}" → "${emNetuno}")`
-  );
-  conferir(
-    distNetuno > distTerra * 20,
-    `e a órbita dele é outra escala: ${distNetuno.toFixed(0)} UA contra ${distTerra.toFixed(1)}`
-  );
-  const urlDoCorpo = await sessao.js('location.search');
-  await sessao.js(`(() => {
-    const sel = document.querySelector('.controls-bar select');
-    sel.value = 'alta';
-    sel.dispatchEvent(new Event('change', { bubbles: true }));
-  })()`);
-  await sessao.assentar();
-  const voltouNetuno = await contexto(sessao);
-  conferir(
-    voltouNetuno === 'Netuno'
-      && (await sessao.js('location.search')).includes('foco=netuno'),
-    `e o link vivo carrega o corpo e reabre nele (${urlDoCorpo} → "${voltouNetuno}")`
-  );
-
-  // ---- A FICHA ABRE COM O ALVO (item 74, 22/08) --------------------
-  // Escolher na paleta não anuncia mais o nome numa linha no alto: abre a
-  // FICHA daquele corpo, com o nome, a classe e os números vivos dele. A
-  // prova pede "Titã" de propósito — é uma LUA, o caso em que a ficha mede
-  // a distância ao PAI e a escada mostra o degrau da lua.
-  await abrirPaleta(sessao);
-  await sessao.digitar('tita');
-  await dorme(300);
-  await sessao.teclar('Enter');
-  await sessao.assentar();
-  const naFicha = JSON.parse(await sessao.js(`JSON.stringify({
-    nome: (document.querySelector('.atlas-ficha-nome') || {}).textContent || '',
-    classe: (document.querySelector('.atlas-ficha-classe') || {}).textContent || '',
-    corpoId: window.__director.escadaViva.corpoId,
-    secoes: [...document.querySelectorAll('.atlas-ficha-titulo button')]
-      .map((b) => b.innerText.trim().split(String.fromCharCode(10))[0]),
-    primeiraLinha: (document.querySelector('.atlas-ficha-linha dt') || {}).textContent || '',
-    valor: (document.querySelector('.atlas-ficha-valor') || {}).textContent || '',
-  })`));
-  conferir(
-    naFicha.nome === 'Titã' && naFicha.classe === 'lua' && naFicha.corpoId === 'titan',
-    `a paleta acha "tita" e a FICHA abre com ele ("${naFicha.nome}" · "${naFicha.classe}")`
-  );
-  conferir(
-    naFicha.secoes.length >= 3
-      && /SATURNO/i.test(naFicha.primeiraLinha)
-      && /km/.test(naFicha.valor),
-    `e a primeira seção é o AGORA, com a distância ao pai `
-      + `("${naFicha.primeiraLinha}" = "${naFicha.valor}"; seções: ${naFicha.secoes.join(', ')})`
-  );
-
-  // O CLIQUE. No enquadramento da órbita da Terra. Antes do conserto o
-  // clique ali não achava rótulo nenhum (não havia rótulo de corpo) e
-  // nada acontecia.
-  //
-  // O QUE ELE FAZ MUDOU DUAS VEZES EM 22/08 (item 73). Primeiro
-  // `?foco=terra` passou a pôr a TERRA no centro (e não o Sol com uma
-  // esfera do tamanho da órbita dela), então o clique no centro cai na
-  // própria Terra. Depois o clique simples passou a ESCOLHER sem mover,
-  // e quem desce é o DUPLO — o par do padrão da indústria. O veredito
-  // cobra os dois: o clique acha um corpo da lista única e a câmera
-  // fica parada; o duplo desce o degrau, órbita → corpo.
-  await sessao.ir(`foco=terra&${PIN}`);
-  const nomesDosCorpos = JSON.parse(
-    await sessao.js('JSON.stringify(window.__director.corpos.map((c) => c.nome))')
-  );
-  const tela = JSON.parse(
-    await sessao.js('JSON.stringify({ w: window.innerWidth, h: window.innerHeight })')
-  );
-  const degrau = () => sessao.js('window.__director.escadaViva.degrau');
-  const posDaCamera = async () =>
-    JSON.parse(await sessao.js(
-      'JSON.stringify(window.__director.engine.camera.position.toArray())'
-    ));
-  // a câmera "parada" se mede em FRAÇÃO do raio, não por igualdade de
-  // texto: a pose atravessa a conta fechada de `giroQueProduz` e
-  // volta com os últimos bits de float trocados (medido, 1e-11 do raio
-  // — micrômetros numa vista de unidades astronômicas)
-  const andou = (a, b) =>
-    Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) / Math.hypot(...b);
-  const antesDoClique = await degrau();
-  const cameraAntes = await posDaCamera();
-  // O PONTO NA TELA É LIDO DO APP, NUNCA DECORADO. Era (50%, 45%) fixo —
-  // onde a Terra costumava cair —, mas a ficha do objeto (que `?foco=`
-  // abre sozinha) reserva a faixa DIREITA da câmera para o painel
-  // (`retanguloUtil.direita`, hoje ≈ 0,33), e o enquadramento empurra o
-  // alvo para a esquerda: o ponto decorado errava a Terra sem nada de
-  // errado no app. A âncora vem da MESMA lista que o hit-test do clique
-  // lê (`Rotulos.alvos`, `alvos` de `director/rotulos.ts` — `private` só
-  // para o TypeScript; em runtime é a mesma instância do objeto que
-  // `window.__director` publica para este harness), então o clique mira
-  // onde o corpo REALMENTE está neste quadro, com a ficha aberta ou
-  // fechada.
-  const alvoDaTerra = JSON.parse(await sessao.js(`JSON.stringify(
-    window.__director.rotulos.alvos.find((a) => a.key === 'corpo:earth') || null
-  )`));
-  if (!alvoDaTerra) throw new Error('a âncora de corpo:earth não está na lista de rótulos');
-  const px = Math.round(tela.w * alvoDaTerra.x);
-  const py = Math.round(tela.h * alvoDaTerra.y);
-  await sessao.clicar(px, py);
-  await sessao.assentar();
-  const depoisDoClique = await contexto(sessao);
-  const degrauDepois = await degrau();
-  const cameraDepois = await posDaCamera();
-  conferir(
-    // 11 desde a F2b; 13 F3; 30 F5; 36 F6; 39 F7 (+ Vesta/Palas/Hígia);
-    // 48 S3 (+ as nove luas de Saturno, 02/09); 89 medido em 21/11/2026
-    // (o 48 tinha ficado para trás e reprovava este check sozinho, com o
-    // clique e a câmera certos: 5,6e-16 de movimento)
-    nomesDosCorpos.length === 89
-      && nomesDosCorpos.includes(depoisDoClique)
-      && degrauDepois === antesDoClique
-      && andou(cameraDepois, cameraAntes) < 1e-9,
-    `clicar num corpo ESCOLHE e a câmera não sai do lugar ("${naTerra}"/`
-      + `${antesDoClique} → "${depoisDoClique}"/${degrauDepois})`
-  );
-  // espera por ESTADO (item 76): o gesto COMEÇOU (a câmera saiu da pose)
-  // e depois a cena ASSENTOU (a rampa derruba o `pronto` até o fim) —
-  // era um dorme(1200) medindo a rampa pelo relógio de parede
-  await sessao.js(
-    'window.__poseAntesDoDuplo = window.__director.engine.camera.position.toArray().join()'
-  );
-  await sessao.duploClicar(px, py);
-  await esperarPor(
-    sessao,
-    "window.__director.engine.camera.position.toArray().join() !== window.__poseAntesDoDuplo",
-    5000
-  );
-  await sessao.assentar();
-  const noDuplo = await contexto(sessao);
-  const degrauDoDuplo = await degrau();
-  conferir(
-    degrauDoDuplo === 'corpo' && noDuplo === 'Terra'
-      && andou(await posDaCamera(), cameraDepois) > 1e-3,
-    `...e o DUPLO clique desce o degrau ("${noDuplo}"/${degrauDoDuplo})`
-  );
-
-  // ---- 9b: A LUA na busca (F2b, P-E10) -----------------------------
-  // A nota fala a régua do par lua↔pai — quilômetros, nunca "0,0026 UA"
-  // — e a escolha desce ao degrau "lua": a Lua em quadro COM a Terra
-  // (PARENT_FRAMING_BIAS ganhou o consumidor). O rUA vem da EFEMÉRIDE
-  // (o retrato não tem luas), então a prova espera a fonte viva.
-  await sessao.ir(`atlas=1&${PIN}`);
-  await abrirPaleta(sessao);
-  await sessao.digitar('lua');
-  // espera por ESTADO: a opção "Lua" na lista é o fim da consulta — era
-  // dorme(400); o estouro reprova na linha de baixo
-  await esperarPor(sessao, `[...document.querySelectorAll('[role="option"] .atlas-busca-nome')]
-    .some((n) => n.textContent === 'Lua')`);
-  const listaLua = await sessao.js(`(() => {
-    const ops = [...document.querySelectorAll('[role="option"]')];
-    const daLua = ops.find((o) => o.querySelector('.atlas-busca-nome').textContent === 'Lua');
-    return daLua ? daLua.textContent : '';
-  })()`);
-  conferir(
-    /mil km/.test(listaLua) && !/UA/.test(listaLua),
-    `a paleta acha a Lua com a nota em QUILÔMETROS ("${listaLua}")`
-  );
-  await sessao.teclar('Enter');
-  await sessao.assentar();
-  const naLua = await contexto(sessao);
-  conferir(naLua === 'Lua', `a escolha põe a LUA em quadro ("${naLua}")`);
-  // O LINK VIVO CARREGA A DISTÂNCIA: `foco=lua&d=…` (item 73, 22/08).
-  // Era `foco=lua&ver=corpo`, e o degrau deixou de ser a grandeza que
-  // descreve a vista quando a roda virou zoom contínuo — entre "no
-  // corpo" e "no corpo, a 2,4 raios dele" a porta velha não distingue.
-  // Aqui a roda anda ANTES do espelho, que é o que faz o link ter o que
-  // contar; `?ver=` some da escrita e continua valendo na leitura.
-  await sessao.js('window.__dAntesDaRoda = window.__director.atlas.distancia');
-  for (let i = 0; i < 3; i++) {
-    await sessao.js(`(() => document.querySelector('canvas').dispatchEvent(
-      new WheelEvent('wheel', { deltaY: -100, deltaMode: 0, bubbles: true, cancelable: true })))()`);
-  }
-  // a inércia da roda é curta (meia-vida 87 ms, zona morta em ~0,7 s), e
-  // ler a distância com o embalo andando compararia dois instantes. A
-  // espera é por ESTADO (item 76): o gesto COMEÇOU (a distância saiu do
-  // lugar — cada estalo consumido chama `perturbar`) e a cena ASSENTOU
-  // (o sinal de prontidão exige quadros parados: o embalo morreu) — era
-  // um dorme(1200) de relógio de parede
-  await esperarPor(sessao, 'window.__director.atlas.distancia !== window.__dAntesDaRoda');
-  await sessao.assentar();
-  const emRaios = () =>
-    sessao.js('window.__director.atlas.distancia / window.__director.atlas.raioDoAlvo');
-  const raiosNaLua = await emRaios();
-  await sessao.js(`(() => {
-    const sel = document.querySelector('.controls-bar select');
-    sel.value = 'alta';
-    sel.dispatchEvent(new Event('change', { bubbles: true }));
-  })()`);
-  await sessao.assentar();
-  const urlDaLua = await sessao.js('location.search');
-  // e agora o link é ABERTO: o veredito é a vista que ele reproduz, não
-  // o texto que ele carrega
-  await sessao.ir(urlDaLua.replace(/^\?/, ''));
-  await sessao.assentar();
-  const voltouLua = await contexto(sessao);
-  const raiosDeVolta = await emRaios();
-  conferir(
-    voltouLua === 'Lua'
-      && urlDaLua.includes('foco=lua')
-      && /[?&]d=/.test(urlDaLua)
-      // no degrau do corpo o link leva `ver=corpo` (20/11/2026: o link
-      // reproduz o que se vê); a distância segue no `d`
-      && urlDaLua.includes('ver=corpo')
-      && Math.abs(raiosDeVolta / raiosNaLua - 1) < 5e-4,
-    `a vista da Lua reproduz por URL com a DISTÂNCIA dentro (${urlDaLua} →`
-      + ` "${voltouLua}" a ${raiosDeVolta.toFixed(4)} raios, contra`
-      + ` ${raiosNaLua.toFixed(4)} medidos antes do link)`
-  );
-
-  // ---- 7: a paleta não vaza no ?shot=2 -----------------------------
-  // Invariante da onda: o `.bare-mode` só esconde FILHOS DIRETOS de
-  // `.hud-root`. Overlay novo aninhado (ou portalizado para o body)
-  // entraria nas 18 vistas oficiais e o filme perderia pixel. A leva
-  // não pega isto sozinha — lá o Atlas nem monta.
-  await sessao.ir('atlas=1&q=cinema&shot=2');
-  await sessao.js("document.querySelector('[data-abre-dialogo=\"busca\"]').click()");
-  await dorme(200);
-  const nua = await sessao.js(`(() => {
-    const e = document.querySelector('.atlas-busca');
-    return {
-      existe: Boolean(e),
-      filhaDireta: Boolean(e && e.parentElement.classList.contains('hud-root')),
-      desenhada: Boolean(e && e.getClientRects().length > 0),
-    };
-  })()`);
-  conferir(
-    nua.existe && nua.filhaDireta && !nua.desenhada,
-    `a paleta é filha direta de .hud-root e o ?shot=2 a esconde (${JSON.stringify(nua)})`
-  );
-
-  // ---- 10: A PALETA NUM APARELHO, PELO DEDO (item 62) ---------------
-  //
-  // Tudo acima abre a paleta pelo TECLADO — a tecla "/" e o Ctrl+K —,
-  // e num telefone não há nem uma nem outra. Lá a porta é a ALÇA ⌕
-  // Buscar, e o que a abre é um DEDO: `Input.dispatchTouchEvent` num
-  // aparelho vestido (`mobile: true` + toque emulado), que é o que
-  // produz `pointerType: 'touch'`. A digitação continua sendo do
-  // teclado de verdade (é o teclado do sistema no aparelho), e o que se
-  // cobra é a cadeia inteira do dedo: a alça abre a folha, a busca acha,
-  // a escolha enquadra e a FICHA do alvo sobe.
-  const APARELHO = { width: 390, height: 844, deviceScaleFactor: 1, mobile: true };
-  await sessao.send('Emulation.setDeviceMetricsOverride', APARELHO);
-  await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
-  await sessao.ir(`atlas=1&${PIN}`);
-  await dorme(300);
-  const alca = await sessao.js(`(() => {
-    const b = document.querySelector('.atlas-alcas [data-abre-dialogo="busca"]');
-    if (!b) return null;
-    const r = b.getBoundingClientRect();
-    return JSON.stringify({ x: Math.round(r.left + r.width / 2),
-      y: Math.round(r.top + r.height / 2), alto: Math.round(r.height) });
-  })()`);
-  if (!alca) {
-    conferir(false, 'toque: a alça ⌕ Buscar não existe a 390×844');
-  } else {
-    const p = JSON.parse(alca);
-    const dedo = (type, touchPoints) =>
-      sessao.send('Input.dispatchTouchEvent', { type, touchPoints });
-    // Um toque de dedo ANDA: 12 px de quarteirão, o caso que o limiar de
-    // mouse (6 px) reprovava. Os três eventos vão JUNTOS ao navegador —
-    // um `await` por evento custa uma ida e volta de CDP, e medido no
-    // `atlas-smoke` isso esticou o gesto sintético além de meio segundo,
-    // que o app classifica como "segurar". Na mesma fila da sessão eles
-    // chegam em ordem e o gesto dura microssegundos.
-    // `touchPoints` é a lista do que CONTINUA encostado, não a do que
-    // saiu: o fecho é a lista VAZIA. Ver a nota do `pincar` no
-    // `atlas-smoke` — a leitura errada wedgeia o emulador de toque da
-    // sessão inteira, calado.
-    await Promise.all([
-      dedo('touchStart', [{ x: p.x, y: p.y, id: 1 }]),
-      dedo('touchMove', [{ x: p.x + 6, y: p.y + 6, id: 1 }]),
-      dedo('touchEnd', []),
-    ]);
-    // espera por ESTADO: a folha aberta com o foco DENTRO dela é o fim do
-    // gesto — era dorme(400); o estouro reprova na leitura de baixo.
-    // O FOCO NÃO VAI AO CAMPO (Lote 6 da UI, PLAN-UI.md §3.4): abrir por
-    // TOQUE foca o contêiner da folha, porque campo focado é teclado
-    // virtual subindo sozinho e cobrindo metade da tela; só o toque
-    // DIRETO no campo o chama (provado logo abaixo). Até 07/09 a prova
-    // cobrava o contrário — "campo focado true".
-    await esperarPor(sessao, `(() => {
-      const f = document.querySelector('[data-dialogo="busca"]');
-      return Boolean(f) && f.contains(document.activeElement);
-    })()`);
-    const aberta = JSON.parse(await sessao.js(`JSON.stringify((() => {
+    // ---- 1c: o atalho do teclado abre a paleta (item 8) --------------
+    // `/` (e Ctrl+K) moram no useAtalhos, com as guardas: diálogo aberto
+    // fica com o teclado dele e alvo de texto não atalha. Aqui: o caminho
+    // feliz das duas teclas, a prova de que o "/" que ABRIU não vazou
+    // para o campo, e a de que com a paleta aberta "/" é digitação.
+    await sessao.digitar('/');
+    await dorme(200);
+    const abriuPorBarra = await sessao.js(`(() => {
       const campo = document.querySelector('.atlas-busca-campo');
-      const f = document.querySelector('[data-dialogo="busca"]');
-      const r = f ? f.getBoundingClientRect() : null;
-      const c = campo ? campo.getBoundingClientRect() : null;
-      return { aberta: Boolean(f), focada: document.activeElement === campo,
-        dentro: Boolean(f) && f.contains(document.activeElement),
-        folha: r ? [Math.round(r.left), Math.round(r.top),
-          Math.round(r.width), Math.round(r.height)] : null,
-        campo: c ? { x: Math.round(c.left + c.width / 2), y: Math.round(c.top + c.height / 2) } : null };
-    })())`));
-    // A FOLHA FLUTUA desde 13/09 (0d5b3db8, decisão do dono com as duas
-    // fotos na mão): 12 px de margem lateral em cada lado, não mais de
-    // borda a borda — daí a largura ser a do aparelho menos 24.
+      return JSON.stringify({
+        aberta: Boolean(document.querySelector('[data-dialogo="busca"]')),
+        focada: document.activeElement === campo,
+        valor: campo ? campo.value : null,
+      });
+    })()`);
+    const porBarra = JSON.parse(abriuPorBarra);
     conferir(
-      aberta.aberta && aberta.dentro && !aberta.focada && aberta.folha[2] === APARELHO.width - 24,
-      `o DEDO abre a paleta pela alça ⌕ (alvo de ${p.alto} px de alto):`
-        + ` folha [${aberta.folha ?? 'ausente'}] flutuante, 12 px de margem de cada lado, foco dentro da folha`
-        + ` (${aberta.dentro}) e FORA do campo — o teclado não sobe sozinho (campo focado ${aberta.focada})`
+      porBarra.aberta && porBarra.focada && porBarra.valor === '',
+      `a tecla "/" abre a paleta com o campo focado e LIMPO (${abriuPorBarra})`
     );
-    // ...E O TOQUE NO CAMPO É QUEM CHAMA O TECLADO: o mesmo dedo, agora
-    // sobre a caixa de texto, tem de deixá-la focada antes de digitar.
-    if (aberta.campo) {
-      await Promise.all([
-        dedo('touchStart', [{ x: aberta.campo.x, y: aberta.campo.y, id: 1 }]),
-        dedo('touchEnd', []),
-      ]);
-    }
-    await esperarPor(sessao, `(() => {
-      const c = document.querySelector('.atlas-busca-campo');
-      return Boolean(c) && document.activeElement === c;
-    })()`).catch(() => {});
-    const campoFocado = await sessao.js(
-      `document.activeElement === document.querySelector('.atlas-busca-campo')`
+    await sessao.digitar('/');
+    const barraDigitou = await sessao.js(
+      "document.querySelector('.atlas-busca-campo').value"
     );
     conferir(
-      campoFocado === true,
-      `...e o toque DIRETO no campo o foca (${campoFocado}) — é ele quem chama o teclado`
+      barraDigitou === '/',
+      `com a paleta aberta, "/" é digitação, não atalho (campo "${barraDigitou}")`
     );
-    await sessao.digitar('netuno');
-    await dorme(300);
-    await sessao.teclar('Enter');
-    await sessao.assentar();
-    const noAparelho = JSON.parse(await sessao.js(`JSON.stringify({
-      alvo: (document.querySelector('[data-abre-dialogo="ficha"]') || {}).textContent || '',
-      ficha: [...document.querySelectorAll('[data-dialogo]')]
-        .map((d) => d.getAttribute('data-dialogo')),
-      foco: window.__director.escada.focoCorpoId,
+    await sessao.teclar('Escape');
+    await dorme(200);
+    const tecladoCtrlK = {
+      key: 'k', code: 'KeyK', windowsVirtualKeyCode: 75,
+      nativeVirtualKeyCode: 75, modifiers: 2,
+    };
+    await sessao.send('Input.dispatchKeyEvent', { ...tecladoCtrlK, type: 'rawKeyDown' });
+    await sessao.send('Input.dispatchKeyEvent', { ...tecladoCtrlK, type: 'keyUp' });
+    await dorme(200);
+    const porCtrlK = await sessao.js(
+      'Boolean(document.querySelector(\'[data-dialogo="busca"]\'))'
+    );
+    conferir(porCtrlK, 'Ctrl+K abre a paleta pelo mesmo caminho');
+    await sessao.teclar('Escape');
+    await dorme(200);
+
+    // ---- 2: porta que não acha não chuta -----------------------------
+    // Era "alfa cen" — o caso real do dado até 01/09, quando a designação
+    // de Bayer virou chave de TODA estrela (item 129/F5) e ela passou a
+    // achar Rigil Kentaurus de propósito. O vazio honesto agora se prova
+    // com o que não se parece com nada, nem por uma letra: "xkcd".
+    await sessao.ir(`foco=xkcd&${PIN}`);
+    const semPalpite = JSON.parse(await sessao.js(`JSON.stringify({
+      nome: (document.querySelector('.atlas-ficha-nome') || {}).textContent || '',
+      ficha: document.querySelector('.atlas-ficha') !== null,
+      degrau: window.__director.escadaViva.degrau,
     })`));
     conferir(
-      noAparelho.foco === 'neptune'
-        && noAparelho.ficha.length === 1 && noAparelho.ficha[0] === 'ficha',
-      `...e a escolha enquadra e sobe a FICHA no lugar da paleta —`
-        + ` foco "${noAparelho.foco}", alça "${noAparelho.alvo}",`
-        + ` folhas: ${noAparelho.ficha.join(', ') || 'nenhuma'}`
+      semPalpite.nome === '' && !semPalpite.ficha && semPalpite.degrau === 'sistema',
+      `?foco= sem correspondência NÃO chuta: fica no sistema e não abre ficha `
+        + `(degrau '${semPalpite.degrau}', ficha ${semPalpite.ficha})`
     );
+
+    // ---- 3: ida e volta pelo escritor vivo ---------------------------
+    // Escolhe na paleta e deixa o APP reescrever a URL: a troca de
+    // qualidade espelha por `urlComMomento`, que é o mesmo texto que o
+    // botão "copiar link" entrega. Se a porta não sair de lá com a chave
+    // canônica, o link copiado cai noutro lugar e esta prova quebra.
+    await sessao.ir(`atlas=1&${PIN}`);
+    await abrirPaleta(sessao);
+    await sessao.digitar('sirius');
+    await dorme(300);
+    await sessao.teclar('Enter');
+    // espera por ESTADO (item 76): o fim do gesto é a paleta fechada e a
+    // ficha do escolhido aberta — era um dorme(400) medindo a máquina
+    await esperarPor(sessao, `(() => !document.querySelector('[data-dialogo="busca"]')
+      && Boolean((document.querySelector('.atlas-ficha-nome') || {}).textContent))()`);
+    const escolhido = await contexto(sessao);
+    conferir(escolhido === 'Sirius', `a paleta enquadra o que se escolhe ("${escolhido}")`);
+
+    await sessao.js(`(() => {
+      const sel = document.querySelector('.controls-bar select');
+      sel.value = 'alta';
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    })()`);
+    await sessao.assentar();
+    const urlDaVolta = await sessao.js('location.search');
+    conferir(
+      urlDaVolta.includes('foco=hd48915'),
+      `o link vivo carrega a chave canônica do foco (${urlDaVolta})`
+    );
+    const depoisDaTroca = await contexto(sessao);
+    const faseDaVolta = await sessao.js('window.__director.captura.fase');
+    const mundoDaVolta = await sessao.js('window.__director.captura.tierDoMundo');
+    conferir(
+      faseDaVolta === 'atlas' && depoisDaTroca === escolhido && mundoDaVolta === 'alta',
+      `e o alvo SOBREVIVE à troca de tier, sem recarga (fase '${faseDaVolta}',`
+        + ` mundo '${mundoDaVolta}', em quadro "${depoisDaTroca}")`
+    );
+
+    // ---- 4: o estado vazio, honesto ----------------------------------
+    await sessao.ir(`atlas=1&${PIN}`);
+    await abrirPaleta(sessao);
+    await sessao.digitar('xkcd');
+    // espera por ESTADO: o aviso do vazio na tela é o fim da consulta —
+    // era um dorme(400); se ele nunca vier, o estouro reprova nas linhas
+    // de baixo, que é o veredito certo
+    await esperarPor(
+      sessao,
+      "/Nada com esse nome/.test((document.querySelector('.atlas-busca-aviso') || {}).textContent || '')"
+    );
+    const vazio = await sessao.js(`(() => ({
+      opcoes: document.querySelectorAll('[role="option"]').length,
+      aviso: (document.querySelector('.atlas-busca-aviso') || {}).textContent || '',
+    }))()`);
+    conferir(vazio.opcoes === 0, `"xkcd" não acende opção nenhuma (${vazio.opcoes})`);
+    conferir(
+      /Nada com esse nome/.test(vazio.aviso) && /Sírius/.test(vazio.aviso),
+      `e o vazio diz o que não achou E o que funciona: "${vazio.aviso}"`
+    );
+
+    // ---- 4a: "Limpar busca" devolve o campo ao estado inicial --------
+    // Só tinha conferência por leitura na matriz de preservação — ninguém
+    // clicava (lista aprovada pelo dono, 08/09/2026). Reaproveita o vazio
+    // de "xkcd" que a prova de cima já deixou na tela.
+    await sessao.js("document.querySelector('.atlas-busca-aviso + button').click()");
+    await esperarPor(sessao, "document.querySelectorAll('.atlas-destino').length > 0");
+    const depoisDeLimpar = JSON.parse(await sessao.js(`JSON.stringify({
+      valor: document.querySelector('.atlas-busca-campo').value,
+      focado: document.activeElement === document.querySelector('.atlas-busca-campo'),
+      destinos: document.querySelectorAll('.atlas-destino').length,
+    })`));
+    conferir(
+      depoisDeLimpar.valor === '' && depoisDeLimpar.focado,
+      `"Limpar busca" esvazia o campo e devolve o foco a ele `
+        + `(valor "${depoisDeLimpar.valor}", focado ${depoisDeLimpar.focado})`
+    );
+    conferir(
+      depoisDeLimpar.destinos > 0,
+      `e os cartões de destino voltam à tela (${depoisDeLimpar.destinos} cartões)`
+    );
+
+    // ---- 4b: os cartões de destino chegam ao MESMO alvo que a busca --
+    // Os dez cartões da busca vazia (Lote 6) só tinham conferência por
+    // leitura na matriz de preservação — nenhum clicado por este harness
+    // (lista aprovada pelo dono, 08/09/2026). Para cada um: o CLIQUE no
+    // cartão e a MESMA consulta digitada têm de abrir o MESMO alvo. As
+    // "consulta" abaixo são as do próprio `destinosDaBusca.ts`. O cartão
+    // é achado pelo ID (`indiceDoCartao`), não pela posição na aba: um
+    // destino que não resolvesse não teria cartão, e isso REPROVA.
+    const DESTINOS_DA_BUSCA_VAZIA = [
+      { id: 'earth', categoria: 'sistema', consulta: 'earth' },
+      { id: 'moon', categoria: 'sistema', consulta: 'moon' },
+      { id: 'mars', categoria: 'sistema', consulta: 'mars' },
+      { id: 'jupiter', categoria: 'sistema', consulta: 'jupiter' },
+      { id: 'saturn', categoria: 'sistema', consulta: 'saturn' },
+      { id: 'pluto', categoria: 'sistema', consulta: 'pluto' },
+      { id: 'sirius', categoria: 'estrelas', consulta: 'Sirius' },
+      { id: 'betelgeuse', categoria: 'estrelas', consulta: 'Betelgeuse' },
+      { id: 'rigil-kentaurus', categoria: 'estrelas', consulta: 'Rigil Kentaurus' },
+      { id: 'sagittarius-a', categoria: 'galaxia', consulta: 'sagittarius-a' },
+    ];
+    const FILTRO_DA_CATEGORIA = { sistema: 0, estrelas: 1, galaxia: 2 };
+    // foco/nome/contexto: o mesmo "e/ou" que a prova pede — o centro
+    // galáctico é um `lugar`, não uma estrela do catálogo, e pode não
+    // deixar as três igualmente estáveis.
+    const medirAlvo = async () => JSON.parse(await sessao.js(`JSON.stringify({
+      foco: new URLSearchParams(location.search).get('foco'),
+      nome: (document.querySelector('.atlas-ficha-nome') || {}).textContent || '',
+      contexto: (document.querySelector('.atlas-contexto') || {}).innerText || '',
+    })`));
+    for (const destino of DESTINOS_DA_BUSCA_VAZIA) {
+      // (a) o clique no cartão, na busca vazia
+      await sessao.ir(`atlas=1&${PIN}`);
+      await abrirPaleta(sessao);
+      const filtro = FILTRO_DA_CATEGORIA[destino.categoria];
+      if (filtro > 0) {
+        await sessao.js(
+          `document.querySelectorAll('[data-dialogo="busca"] .ajustes-seg button')[${filtro}].click()`
+        );
+        await dorme(150);
+      }
+      const previas = JSON.parse(await sessao.js(`JSON.stringify(
+        [...document.querySelectorAll('.atlas-destino')].map((b) => {
+          const img = b.querySelector('.atlas-destino-imagem');
+          return img ? img.getAttribute('src') : '';
+        }))`));
+      const i = indiceDoCartao(previas, destino.id);
+      if (i < 0) {
+        conferir(false, `destino "${destino.id}": nenhum cartão da aba leva a ele`);
+        continue;
+      }
+      await sessao.js(`document.querySelectorAll('.atlas-destino')[${i}].click()`);
+      await sessao.assentar();
+      const porCartao = await medirAlvo();
+      // O CARTÃO DE SGR A✱ LEVA AO BURACO DE PERTO (`1d5291d5`, 14/11): a
+      // faixa e o porquê dela estão em `FAIXA_DO_BURACO_PC`. A distância
+      // vem do rig (`atlas.distancia`), a mesma régua da foto, lida logo
+      // depois do clique — é a chegada do CARTÃO que a faixa julga.
+      if (destino.id === 'sagittarius-a') {
+        const distanciaPc = await sessao.js(`(() => {
+          const d = window.__director;
+          const at = (d && d.escada && d.escada.atlas) || (d && d.atlas) || null;
+          return at && typeof at.distancia === 'number' ? at.distancia : null;
+        })()`);
+        conferir(
+          distanciaDoBuracoOk(distanciaPc),
+          `destino "sagittarius-a": o cartão para a `
+            + `${distanciaPc === null ? '?' : (distanciaPc / RS_SGR_A_PC).toFixed(2)} RS do buraco`
+            + ` — o degrau de perto, entre o piso de 6 RS e a entrega de 24 RS`
+        );
+      }
+
+      // (b) recarrega e chega à MESMA consulta, digitada na paleta
+      await sessao.ir(`atlas=1&${PIN}`);
+      await abrirPaleta(sessao);
+      await sessao.digitar(destino.consulta);
+      await dorme(300);
+      await sessao.teclar('Enter');
+      await sessao.assentar();
+      const porBusca = await medirAlvo();
+
+      const mesmoAlvo =
+        (porCartao.foco !== null && porCartao.foco === porBusca.foco)
+        || (porCartao.nome !== '' && porCartao.nome === porBusca.nome)
+        || (porCartao.contexto !== '' && porCartao.contexto === porBusca.contexto);
+      conferir(
+        mesmoAlvo,
+        `destino "${destino.id}": o cartão e a busca chegam ao mesmo alvo `
+          + `(foco "${porCartao.foco}"/"${porBusca.foco}", ficha "${porCartao.nome}"/"${porBusca.nome}")`
+      );
+    }
+
+    // ---- 5: no VOO LIVRE, a mesma paleta VOA -------------------------
+    // O verbo é da fase, e a promessa está escrita no rótulo: no Atlas o
+    // Enter "enquadra", no voo livre ele "voa até lá". Sem esta prova a
+    // paleta poderia estar servindo a segunda fase só de enfeite — o
+    // botão prometendo um voo que ninguém dispara.
+    await sessao.ir(`pos=0,0,0.1&look=0,0,0&${PIN}`);
+    const faseDoVoo = await sessao.js('window.__director.captura.fase');
+    const antesDoVoo = await sessao.js(
+      'window.__director.engine.camera.position.toArray().join()'
+    );
+    await abrirPaleta(sessao);
+    await sessao.digitar('sirius');
+    await dorme(300);
+    // o rótulo se lê COM resultados na tela: sem eles a linha viva está
+    // ensinando o que se pode digitar, e não prometendo verbo nenhum
+    const rotulo = await sessao.js(
+      "(document.querySelector('.atlas-busca-aviso') || {}).textContent || ''"
+    );
+    await sessao.teclar('Enter');
+    await sessao.assentar();
+    const depoisDoVoo = await sessao.js(
+      'window.__director.engine.camera.position.toArray().join()'
+    );
+    conferir(
+      faseDoVoo === 'free' && antesDoVoo !== depoisDoVoo,
+      `no voo livre a escolha VOA: a câmera saiu de (${antesDoVoo}) para (${depoisDoVoo})`
+    );
+    conferir(
+      /voa at[ée] l[áa]/.test(rotulo),
+      `e o rótulo promete o verbo da fase, não o do Atlas ("${rotulo}")`
+    );
+
+    // ---- 6: a latência por tecla, das duas formas --------------------
+    // (a) A CONTA PURA sobre o índice COMPLETO, medida dentro da página
+    // com o mesmo módulo que a UI usa (o dev server serve o fonte, então
+    // não há segunda cópia da lib no caminho) e com as 1.726 nomeadas que
+    // o Director carregou. As consultas são as caras: uma letra só varre
+    // e casa em quase tudo.
+    //
+    // O import vem numa chamada à parte porque o `Runtime.evaluate` da
+    // sessão não espera promessa: a medição tem de ser SÍNCRONA quando
+    // roda, senão o que volta é um `Promise` vazio e o gate mede nada.
+    await sessao.js(
+      "(() => { import('/src/lib/buscaEstrelas.ts').then((m) => { window.__lib = m; }); })()"
+    );
+    await dorme(300);
+    const puro = await sessao.js(`(() => {
+      const m = window.__lib;
+      const nomeadas = window.__director.nomeadas;
+      const t0 = performance.now();
+      const indice = m.construirIndice(nomeadas);
+      const construcao = performance.now() - t0;
+      const medir = (q) => {
+        const N = 200;
+        const t = performance.now();
+        for (let i = 0; i < N; i++) m.buscar(q, indice, 8);
+        return (performance.now() - t) / N;
+      };
+      return {
+        estrelas: nomeadas.length,
+        chaves: indice.porChave.size,
+        construcao,
+        a: medir('a'), si: medir('si'), siri: medir('siri'), hd: medir('hd 48915'),
+      };
+    })()`);
+    const pior = Math.max(puro.a, puro.si, puro.siri, puro.hd);
+    process.stdout.write(
+      `  ·     índice: ${puro.estrelas} estrelas / ${puro.chaves} chaves`
+        + ` em ${puro.construcao.toFixed(1)} ms (uma vez só)\n`
+        + `  ·     por tecla: "a" ${puro.a.toFixed(3)} ms · "si" ${puro.si.toFixed(3)} ms`
+        + ` · "siri" ${puro.siri.toFixed(3)} ms · "hd 48915" ${puro.hd.toFixed(3)} ms\n`
+    );
+    // o teto é folgado de propósito: o que ele pega é uma REGRESSÃO de
+    // ordem de grandeza (a varredura das 206k chaves que a lib recusou
+    // custava 27-32 ms por tecla no doador), não a variação da máquina
+    conferir(pior < 5, `a conta por tecla fica abaixo de 5 ms (pior: ${pior.toFixed(3)} ms)`);
+
+    // (b) PONTA A PONTA: da tecla até a lista mudar na tela. Inclui o
+    // React, o `useDeferredValue` e a espera pelo quadro — e é por isso
+    // que ela é maior: no Atlas o quadro custa ~100 ms nesta janela, e a
+    // lista só aparece quando ele sai. É o número que o visitante sente.
+    await sessao.ir(`atlas=1&${PIN}`);
+    await abrirPaleta(sessao);
+    await sessao.js(`(() => {
+      window.__lat = [];
+      window.__t0 = 0;
+      const campo = document.querySelector('.atlas-busca-campo');
+      campo.addEventListener('keydown', () => { window.__t0 = performance.now(); }, true);
+      new MutationObserver(() => {
+        if (!window.__t0) return;
+        const t = window.__t0;
+        window.__t0 = 0;
+        // o quadro em que a mudança JÁ ESTÁ na tela
+        requestAnimationFrame(() => window.__lat.push(performance.now() - t));
+      }).observe(document.querySelector('[role="listbox"]'), {
+        childList: true, subtree: true, characterData: true,
+      });
+    })()`);
+    // "tau cet" e não "sirius" de propósito: cada tecla desta consulta
+    // MUDA o conjunto de resultados. Onde o conjunto não muda, o React não
+    // toca no DOM e não há mutação para observar — o que é a resposta
+    // certa (a tecla custou só a varredura), mas não dá medida. Por isso o
+    // gate compara as duas contas: teclas digitadas e mudanças de lista.
+    const CONSULTA = 'tau cet';
+    for (const ch of CONSULTA) {
+      await sessao.digitar(ch);
+      await dorme(250);
+    }
+    const lat = await sessao.js('window.__lat');
+    const ordenadas = [...lat].sort((x, y) => x - y);
+    const mediana = ordenadas[Math.floor(ordenadas.length / 2)] ?? Number.NaN;
+    process.stdout.write(
+      `  ·     ponta a ponta: ${lat.map((v) => v.toFixed(0)).join(' · ')} ms`
+        + ` (${CONSULTA.length} teclas, ${lat.length} mudanças de lista)\n`
+    );
+    conferir(
+      lat.length >= 4 && mediana < 250,
+      `a lista acompanha a digitação (mediana ${mediana.toFixed(0)} ms`
+        + ` em ${lat.length} mudanças de ${CONSULTA.length} teclas)`
+    );
+
+    // ---- 8: os overlays são da FASE que os hospeda -------------------
+    // A presença é `busca && hud.busca`: o `hud.*` some com a fase, e o
+    // estado de aberto NÃO sumia. Resultado medido antes do conserto: sair
+    // do voo livre com a paleta aberta e voltar a ele a fazia RENASCER —
+    // e, pior, `useDialogFocus` punha o foco na caixa de texto, onde a
+    // guarda de alvo de formulário do rig engole o WASD. O visitante
+    // entrava para voar e as teclas de voar viravam texto.
+    await sessao.ir(`pos=0,0,0.1&look=0,0,0&${PIN}`);
+    await abrirPaleta(sessao);
+    const abriuNoVoo = await sessao.js("Boolean(document.querySelector('.atlas-busca'))");
+    const clicar = (texto) =>
+      sessao.js(`(() => {
+        [...document.querySelectorAll('.controls-bar button')]
+          .find((b) => b.innerText.toUpperCase().includes(${JSON.stringify(texto.toUpperCase())}))
+          .click();
+      })()`);
+    await clicar('Reviver');
+    await dorme(300);
+    await clicar('Voo livre');
+    // espera por ESTADO: a fase é o que o clique promete — era dorme(400)
+    await esperarPor(sessao, "window.__director.captura.fase === 'free'");
+    const aoVoltar = await sessao.js(`JSON.stringify({
+      paleta: Boolean(document.querySelector('.atlas-busca')),
+      foco: document.activeElement ? document.activeElement.className : null,
+    })`);
+    const v = JSON.parse(aoVoltar);
+    conferir(
+      abriuNoVoo && !v.paleta && v.foco !== 'atlas-busca-campo',
+      `a paleta NÃO renasce ao reentrar na fase (${aoVoltar})`
+    );
+
+    // e o mesmo para a gaveta de camadas, que atravessava Atlas→filme→Atlas.
+    // Desde o item 61 (22/08) ela EXISTE nos dois modos — então o que a
+    // fecha não é mais "a fase nova não a hospeda", e sim a TRAVESSIA: véu,
+    // câmera reposta e outro HUD não podem carregar junto um modal com o
+    // foco preso dentro dele. A promessa medida é a mesma.
+    await sessao.ir(`atlas=1&${PIN}`);
+    await sessao.js("document.querySelector('[data-abre-dialogo=\"camadas\"]').click()");
+    await dorme(200);
+    const abriuNoAtlas = await sessao.js("Boolean(document.querySelector('.atlas-gaveta'))");
+    await sessao.js('window.__director.partirDoAtlas()');
+    await dorme(300);
+    await sessao.js('window.__director.entrarNoAtlas({ instantaneo: true })');
+    // espera por ESTADO: a travessia terminou quando a fase é atlas E o
+    // sinal de prontidão acendeu (o véu em curso derruba o `pronto`) —
+    // era dorme(400)
+    await esperarPor(
+      sessao,
+      "window.__director.captura.fase === 'atlas' && window.__director.captura.pronto"
+    );
+    const gaveta = await sessao.js("Boolean(document.querySelector('.atlas-gaveta'))");
+    conferir(
+      abriuNoAtlas && !gaveta,
+      `a gaveta NÃO renasce ao reentrar no Atlas (abriu=${abriuNoAtlas}, voltou=${gaveta})`
+    );
+
+    // ---- 9: OS DEZ CORPOS SÃO ALVO — rótulo, busca e deep-link -------
+    // Até a revisão de olhos frescos o "Atlas navegável do sistema solar"
+    // tinha os dez DESENHADOS e nenhum era alvo de nada: buscar "Netuno"
+    // caía no estado vazio, `?foco=terra` não resolvia e clicar num corpo
+    // não fazia coisa alguma. Três linhas da matriz do PLANO com destino
+    // nesta onda.
+    const emUA = () =>
+      sessao.js(`window.__director.engine.camera.position.length() * ${PC_EM_UA}`);
+
+    await sessao.ir(`foco=terra&${PIN}`);
+    const naTerra = await contexto(sessao);
+    const distTerra = Number(await emUA());
+    conferir(
+      naTerra === 'Terra',
+      `?foco=terra abre o Atlas com a Terra em quadro (em quadro: "${naTerra}")`
+    );
+    // ENQUADRA A ÓRBITA E NÃO O CORPO, e a régua é a LEI e não um número
+    // decorado — ver `leiDoEnquadramento`. Duas coisas de uma vez, porque
+    // uma sozinha não basta: o raio enquadrado é o da ÓRBITA (≈1 UA, e
+    // anda com a data entre 0,983 e 1,017 — o corpo tem 4,3e-5 UA, quatro
+    // ordens abaixo), e a distância é exatamente a que a lente VIGENTE
+    // pede para essa esfera. A margem é justa de propósito: os dois lados
+    // saem da MESMA função pura, então o que sobra é ruído de float, e uma
+    // folga larga aqui deixaria passar o rig enquadrando por outra conta.
+    const leiTerra = await leiDoEnquadramento(sessao);
+    conferir(
+      Math.abs(leiTerra.raioUA - 1) < 0.05
+        && Math.abs(leiTerra.distanciaUA / leiTerra.previstaUA - 1) < 1e-6,
+      `e enquadra a ÓRBITA dela (raio ${leiTerra.raioUA.toFixed(3)} UA) na distância que`
+        + ` a lente de ${leiTerra.fov}° pede: ${leiTerra.distanciaUA.toFixed(3)} UA do alvo`
+        + ` contra ${leiTerra.previstaUA.toFixed(3)} previstas`
+        + ` (${leiTerra.k.toFixed(3)} × o raio) — ${distTerra.toFixed(2)} UA do Sol`
+    );
+
+    // a paleta acha pelo nome pt-BR, sem acento, e a escolha ENQUADRA
+    await abrirPaleta(sessao);
+    await sessao.digitar('netuno');
+    await dorme(300);
+    const listaCorpo = await sessao.js(`(() => {
+      const o = document.querySelector('[role="option"]');
+      return o ? o.textContent : '';
+    })()`);
+    await sessao.teclar('Enter');
+    await sessao.assentar();
+    const emNetuno = await contexto(sessao);
+    const distNetuno = Number(await emUA());
+    conferir(
+      emNetuno === 'Netuno' && /planeta/.test(listaCorpo) && /UA/.test(listaCorpo),
+      `a paleta acha "netuno" e a escolha ENQUADRA ("${listaCorpo}" → "${emNetuno}")`
+    );
+    conferir(
+      distNetuno > distTerra * 20,
+      `e a órbita dele é outra escala: ${distNetuno.toFixed(0)} UA contra ${distTerra.toFixed(1)}`
+    );
+    const urlDoCorpo = await sessao.js('location.search');
+    await sessao.js(`(() => {
+      const sel = document.querySelector('.controls-bar select');
+      sel.value = 'alta';
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    })()`);
+    await sessao.assentar();
+    const voltouNetuno = await contexto(sessao);
+    conferir(
+      voltouNetuno === 'Netuno'
+        && (await sessao.js('location.search')).includes('foco=netuno'),
+      `e o link vivo carrega o corpo e reabre nele (${urlDoCorpo} → "${voltouNetuno}")`
+    );
+
+    // ---- A FICHA ABRE COM O ALVO (item 74, 22/08) --------------------
+    // Escolher na paleta não anuncia mais o nome numa linha no alto: abre a
+    // FICHA daquele corpo, com o nome, a classe e os números vivos dele. A
+    // prova pede "Titã" de propósito — é uma LUA, o caso em que a ficha mede
+    // a distância ao PAI e a escada mostra o degrau da lua.
+    await abrirPaleta(sessao);
+    await sessao.digitar('tita');
+    await dorme(300);
+    await sessao.teclar('Enter');
+    await sessao.assentar();
+    const naFicha = JSON.parse(await sessao.js(`JSON.stringify({
+      nome: (document.querySelector('.atlas-ficha-nome') || {}).textContent || '',
+      classe: (document.querySelector('.atlas-ficha-classe') || {}).textContent || '',
+      corpoId: window.__director.escadaViva.corpoId,
+      secoes: [...document.querySelectorAll('.atlas-ficha-titulo button')]
+        .map((b) => b.innerText.trim().split(String.fromCharCode(10))[0]),
+      primeiraLinha: (document.querySelector('.atlas-ficha-linha dt') || {}).textContent || '',
+      valor: (document.querySelector('.atlas-ficha-valor') || {}).textContent || '',
+    })`));
+    conferir(
+      naFicha.nome === 'Titã' && naFicha.classe === 'lua' && naFicha.corpoId === 'titan',
+      `a paleta acha "tita" e a FICHA abre com ele ("${naFicha.nome}" · "${naFicha.classe}")`
+    );
+    conferir(
+      naFicha.secoes.length >= 3
+        && /SATURNO/i.test(naFicha.primeiraLinha)
+        && /km/.test(naFicha.valor),
+      `e a primeira seção é o AGORA, com a distância ao pai `
+        + `("${naFicha.primeiraLinha}" = "${naFicha.valor}"; seções: ${naFicha.secoes.join(', ')})`
+    );
+
+    // O CLIQUE. No enquadramento da órbita da Terra. Antes do conserto o
+    // clique ali não achava rótulo nenhum (não havia rótulo de corpo) e
+    // nada acontecia.
+    //
+    // O QUE ELE FAZ MUDOU DUAS VEZES EM 22/08 (item 73). Primeiro
+    // `?foco=terra` passou a pôr a TERRA no centro (e não o Sol com uma
+    // esfera do tamanho da órbita dela), então o clique no centro cai na
+    // própria Terra. Depois o clique simples passou a ESCOLHER sem mover,
+    // e quem desce é o DUPLO — o par do padrão da indústria. O veredito
+    // cobra os dois: o clique acha um corpo da lista única e a câmera
+    // fica parada; o duplo desce o degrau, órbita → corpo.
+    await sessao.ir(`foco=terra&${PIN}`);
+    const nomesDosCorpos = JSON.parse(
+      await sessao.js('JSON.stringify(window.__director.corpos.map((c) => c.nome))')
+    );
+    const tela = JSON.parse(
+      await sessao.js('JSON.stringify({ w: window.innerWidth, h: window.innerHeight })')
+    );
+    const degrau = () => sessao.js('window.__director.escadaViva.degrau');
+    const posDaCamera = async () =>
+      JSON.parse(await sessao.js(
+        'JSON.stringify(window.__director.engine.camera.position.toArray())'
+      ));
+    // a câmera "parada" se mede em FRAÇÃO do raio, não por igualdade de
+    // texto: a pose atravessa a conta fechada de `giroQueProduz` e
+    // volta com os últimos bits de float trocados (medido, 1e-11 do raio
+    // — micrômetros numa vista de unidades astronômicas)
+    const andou = (a, b) =>
+      Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) / Math.hypot(...b);
+    const antesDoClique = await degrau();
+    const cameraAntes = await posDaCamera();
+    // O PONTO NA TELA É LIDO DO APP, NUNCA DECORADO. Era (50%, 45%) fixo —
+    // onde a Terra costumava cair —, mas a ficha do objeto (que `?foco=`
+    // abre sozinha) reserva a faixa DIREITA da câmera para o painel
+    // (`retanguloUtil.direita`, hoje ≈ 0,33), e o enquadramento empurra o
+    // alvo para a esquerda: o ponto decorado errava a Terra sem nada de
+    // errado no app. A âncora vem da MESMA lista que o hit-test do clique
+    // lê (`Rotulos.alvos`, `alvos` de `director/rotulos.ts` — `private` só
+    // para o TypeScript; em runtime é a mesma instância do objeto que
+    // `window.__director` publica para este harness), então o clique mira
+    // onde o corpo REALMENTE está neste quadro, com a ficha aberta ou
+    // fechada.
+    const alvoDaTerra = JSON.parse(await sessao.js(`JSON.stringify(
+      window.__director.rotulos.alvos.find((a) => a.key === 'corpo:earth') || null
+    )`));
+    if (!alvoDaTerra) throw new Error('a âncora de corpo:earth não está na lista de rótulos');
+    const px = Math.round(tela.w * alvoDaTerra.x);
+    const py = Math.round(tela.h * alvoDaTerra.y);
+    await sessao.clicar(px, py);
+    await sessao.assentar();
+    const depoisDoClique = await contexto(sessao);
+    const degrauDepois = await degrau();
+    const cameraDepois = await posDaCamera();
+    conferir(
+      // 11 desde a F2b; 13 F3; 30 F5; 36 F6; 39 F7 (+ Vesta/Palas/Hígia);
+      // 48 S3 (+ as nove luas de Saturno, 02/09); 89 medido em 21/11/2026
+      // (o 48 tinha ficado para trás e reprovava este check sozinho, com o
+      // clique e a câmera certos: 5,6e-16 de movimento)
+      nomesDosCorpos.length === 89
+        && nomesDosCorpos.includes(depoisDoClique)
+        && degrauDepois === antesDoClique
+        && andou(cameraDepois, cameraAntes) < 1e-9,
+      `clicar num corpo ESCOLHE e a câmera não sai do lugar ("${naTerra}"/`
+        + `${antesDoClique} → "${depoisDoClique}"/${degrauDepois})`
+    );
+    // espera por ESTADO (item 76): o gesto COMEÇOU (a câmera saiu da pose)
+    // e depois a cena ASSENTOU (a rampa derruba o `pronto` até o fim) —
+    // era um dorme(1200) medindo a rampa pelo relógio de parede
+    await sessao.js(
+      'window.__poseAntesDoDuplo = window.__director.engine.camera.position.toArray().join()'
+    );
+    await sessao.duploClicar(px, py);
+    await esperarPor(
+      sessao,
+      "window.__director.engine.camera.position.toArray().join() !== window.__poseAntesDoDuplo",
+      5000
+    );
+    await sessao.assentar();
+    const noDuplo = await contexto(sessao);
+    const degrauDoDuplo = await degrau();
+    conferir(
+      degrauDoDuplo === 'corpo' && noDuplo === 'Terra'
+        && andou(await posDaCamera(), cameraDepois) > 1e-3,
+      `...e o DUPLO clique desce o degrau ("${noDuplo}"/${degrauDoDuplo})`
+    );
+
+    // ---- 9b: A LUA na busca (F2b, P-E10) -----------------------------
+    // A nota fala a régua do par lua↔pai — quilômetros, nunca "0,0026 UA"
+    // — e a escolha desce ao degrau "lua": a Lua em quadro COM a Terra
+    // (PARENT_FRAMING_BIAS ganhou o consumidor). O rUA vem da EFEMÉRIDE
+    // (o retrato não tem luas), então a prova espera a fonte viva.
+    await sessao.ir(`atlas=1&${PIN}`);
+    await abrirPaleta(sessao);
+    await sessao.digitar('lua');
+    // espera por ESTADO: a opção "Lua" na lista é o fim da consulta — era
+    // dorme(400); o estouro reprova na linha de baixo
+    await esperarPor(sessao, `[...document.querySelectorAll('[role="option"] .atlas-busca-nome')]
+      .some((n) => n.textContent === 'Lua')`);
+    const listaLua = await sessao.js(`(() => {
+      const ops = [...document.querySelectorAll('[role="option"]')];
+      const daLua = ops.find((o) => o.querySelector('.atlas-busca-nome').textContent === 'Lua');
+      return daLua ? daLua.textContent : '';
+    })()`);
+    conferir(
+      /mil km/.test(listaLua) && !/UA/.test(listaLua),
+      `a paleta acha a Lua com a nota em QUILÔMETROS ("${listaLua}")`
+    );
+    await sessao.teclar('Enter');
+    await sessao.assentar();
+    const naLua = await contexto(sessao);
+    conferir(naLua === 'Lua', `a escolha põe a LUA em quadro ("${naLua}")`);
+    // O LINK VIVO CARREGA A DISTÂNCIA: `foco=lua&d=…` (item 73, 22/08).
+    // Era `foco=lua&ver=corpo`, e o degrau deixou de ser a grandeza que
+    // descreve a vista quando a roda virou zoom contínuo — entre "no
+    // corpo" e "no corpo, a 2,4 raios dele" a porta velha não distingue.
+    // Aqui a roda anda ANTES do espelho, que é o que faz o link ter o que
+    // contar; `?ver=` some da escrita e continua valendo na leitura.
+    await sessao.js('window.__dAntesDaRoda = window.__director.atlas.distancia');
+    for (let i = 0; i < 3; i++) {
+      await sessao.js(`(() => document.querySelector('canvas').dispatchEvent(
+        new WheelEvent('wheel', { deltaY: -100, deltaMode: 0, bubbles: true, cancelable: true })))()`);
+    }
+    // a inércia da roda é curta (meia-vida 87 ms, zona morta em ~0,7 s), e
+    // ler a distância com o embalo andando compararia dois instantes. A
+    // espera é por ESTADO (item 76): o gesto COMEÇOU (a distância saiu do
+    // lugar — cada estalo consumido chama `perturbar`) e a cena ASSENTOU
+    // (o sinal de prontidão exige quadros parados: o embalo morreu) — era
+    // um dorme(1200) de relógio de parede
+    await esperarPor(sessao, 'window.__director.atlas.distancia !== window.__dAntesDaRoda');
+    await sessao.assentar();
+    const emRaios = () =>
+      sessao.js('window.__director.atlas.distancia / window.__director.atlas.raioDoAlvo');
+    const raiosNaLua = await emRaios();
+    await sessao.js(`(() => {
+      const sel = document.querySelector('.controls-bar select');
+      sel.value = 'alta';
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    })()`);
+    await sessao.assentar();
+    const urlDaLua = await sessao.js('location.search');
+    // e agora o link é ABERTO: o veredito é a vista que ele reproduz, não
+    // o texto que ele carrega
+    await sessao.ir(urlDaLua.replace(/^\?/, ''));
+    await sessao.assentar();
+    const voltouLua = await contexto(sessao);
+    const raiosDeVolta = await emRaios();
+    conferir(
+      voltouLua === 'Lua'
+        && urlDaLua.includes('foco=lua')
+        && /[?&]d=/.test(urlDaLua)
+        // no degrau do corpo o link leva `ver=corpo` (20/11/2026: o link
+        // reproduz o que se vê); a distância segue no `d`
+        && urlDaLua.includes('ver=corpo')
+        && Math.abs(raiosDeVolta / raiosNaLua - 1) < 5e-4,
+      `a vista da Lua reproduz por URL com a DISTÂNCIA dentro (${urlDaLua} →`
+        + ` "${voltouLua}" a ${raiosDeVolta.toFixed(4)} raios, contra`
+        + ` ${raiosNaLua.toFixed(4)} medidos antes do link)`
+    );
+
+    // ---- 7: a paleta não vaza no ?shot=2 -----------------------------
+    // Invariante da onda: o `.bare-mode` só esconde FILHOS DIRETOS de
+    // `.hud-root`. Overlay novo aninhado (ou portalizado para o body)
+    // entraria nas 18 vistas oficiais e o filme perderia pixel. A leva
+    // não pega isto sozinha — lá o Atlas nem monta.
+    await sessao.ir('atlas=1&q=cinema&shot=2');
+    await sessao.js("document.querySelector('[data-abre-dialogo=\"busca\"]').click()");
+    await dorme(200);
+    const nua = await sessao.js(`(() => {
+      const e = document.querySelector('.atlas-busca');
+      return {
+        existe: Boolean(e),
+        filhaDireta: Boolean(e && e.parentElement.classList.contains('hud-root')),
+        desenhada: Boolean(e && e.getClientRects().length > 0),
+      };
+    })()`);
+    conferir(
+      nua.existe && nua.filhaDireta && !nua.desenhada,
+      `a paleta é filha direta de .hud-root e o ?shot=2 a esconde (${JSON.stringify(nua)})`
+    );
+
+    // ---- 10: A PALETA NUM APARELHO, PELO DEDO (item 62) ---------------
+    //
+    // Tudo acima abre a paleta pelo TECLADO — a tecla "/" e o Ctrl+K —,
+    // e num telefone não há nem uma nem outra. Lá a porta é a ALÇA ⌕
+    // Buscar, e o que a abre é um DEDO: `Input.dispatchTouchEvent` num
+    // aparelho vestido (`mobile: true` + toque emulado), que é o que
+    // produz `pointerType: 'touch'`. A digitação continua sendo do
+    // teclado de verdade (é o teclado do sistema no aparelho), e o que se
+    // cobra é a cadeia inteira do dedo: a alça abre a folha, a busca acha,
+    // a escolha enquadra e a FICHA do alvo sobe.
+    const APARELHO = { width: 390, height: 844, deviceScaleFactor: 1, mobile: true };
+    await sessao.send('Emulation.setDeviceMetricsOverride', APARELHO);
+    await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+    await sessao.ir(`atlas=1&${PIN}`);
+    await dorme(300);
+    const alca = await sessao.js(`(() => {
+      const b = document.querySelector('.atlas-alcas [data-abre-dialogo="busca"]');
+      if (!b) return null;
+      const r = b.getBoundingClientRect();
+      return JSON.stringify({ x: Math.round(r.left + r.width / 2),
+        y: Math.round(r.top + r.height / 2), alto: Math.round(r.height) });
+    })()`);
+    if (!alca) {
+      conferir(false, 'toque: a alça ⌕ Buscar não existe a 390×844');
+    } else {
+      const p = JSON.parse(alca);
+      const dedo = (type, touchPoints) =>
+        sessao.send('Input.dispatchTouchEvent', { type, touchPoints });
+      // Um toque de dedo ANDA: 12 px de quarteirão, o caso que o limiar de
+      // mouse (6 px) reprovava. Os três eventos vão JUNTOS ao navegador —
+      // um `await` por evento custa uma ida e volta de CDP, e medido no
+      // `atlas-smoke` isso esticou o gesto sintético além de meio segundo,
+      // que o app classifica como "segurar". Na mesma fila da sessão eles
+      // chegam em ordem e o gesto dura microssegundos.
+      // `touchPoints` é a lista do que CONTINUA encostado, não a do que
+      // saiu: o fecho é a lista VAZIA. Ver a nota do `pincar` no
+      // `atlas-smoke` — a leitura errada wedgeia o emulador de toque da
+      // sessão inteira, calado.
+      await Promise.all([
+        dedo('touchStart', [{ x: p.x, y: p.y, id: 1 }]),
+        dedo('touchMove', [{ x: p.x + 6, y: p.y + 6, id: 1 }]),
+        dedo('touchEnd', []),
+      ]);
+      // espera por ESTADO: a folha aberta com o foco DENTRO dela é o fim do
+      // gesto — era dorme(400); o estouro reprova na leitura de baixo.
+      // O FOCO NÃO VAI AO CAMPO (Lote 6 da UI, PLAN-UI.md §3.4): abrir por
+      // TOQUE foca o contêiner da folha, porque campo focado é teclado
+      // virtual subindo sozinho e cobrindo metade da tela; só o toque
+      // DIRETO no campo o chama (provado logo abaixo). Até 07/09 a prova
+      // cobrava o contrário — "campo focado true".
+      await esperarPor(sessao, `(() => {
+        const f = document.querySelector('[data-dialogo="busca"]');
+        return Boolean(f) && f.contains(document.activeElement);
+      })()`);
+      const aberta = JSON.parse(await sessao.js(`JSON.stringify((() => {
+        const campo = document.querySelector('.atlas-busca-campo');
+        const f = document.querySelector('[data-dialogo="busca"]');
+        const r = f ? f.getBoundingClientRect() : null;
+        const c = campo ? campo.getBoundingClientRect() : null;
+        return { aberta: Boolean(f), focada: document.activeElement === campo,
+          dentro: Boolean(f) && f.contains(document.activeElement),
+          folha: r ? [Math.round(r.left), Math.round(r.top),
+            Math.round(r.width), Math.round(r.height)] : null,
+          campo: c ? { x: Math.round(c.left + c.width / 2), y: Math.round(c.top + c.height / 2) } : null };
+      })())`));
+      // A FOLHA FLUTUA desde 13/09 (0d5b3db8, decisão do dono com as duas
+      // fotos na mão): 12 px de margem lateral em cada lado, não mais de
+      // borda a borda — daí a largura ser a do aparelho menos 24.
+      conferir(
+        aberta.aberta && aberta.dentro && !aberta.focada && aberta.folha[2] === APARELHO.width - 24,
+        `o DEDO abre a paleta pela alça ⌕ (alvo de ${p.alto} px de alto):`
+          + ` folha [${aberta.folha ?? 'ausente'}] flutuante, 12 px de margem de cada lado, foco dentro da folha`
+          + ` (${aberta.dentro}) e FORA do campo — o teclado não sobe sozinho (campo focado ${aberta.focada})`
+      );
+      // ...E O TOQUE NO CAMPO É QUEM CHAMA O TECLADO: o mesmo dedo, agora
+      // sobre a caixa de texto, tem de deixá-la focada antes de digitar.
+      if (aberta.campo) {
+        await Promise.all([
+          dedo('touchStart', [{ x: aberta.campo.x, y: aberta.campo.y, id: 1 }]),
+          dedo('touchEnd', []),
+        ]);
+      }
+      await esperarPor(sessao, `(() => {
+        const c = document.querySelector('.atlas-busca-campo');
+        return Boolean(c) && document.activeElement === c;
+      })()`).catch(() => {});
+      const campoFocado = await sessao.js(
+        `document.activeElement === document.querySelector('.atlas-busca-campo')`
+      );
+      conferir(
+        campoFocado === true,
+        `...e o toque DIRETO no campo o foca (${campoFocado}) — é ele quem chama o teclado`
+      );
+      await sessao.digitar('netuno');
+      await dorme(300);
+      await sessao.teclar('Enter');
+      await sessao.assentar();
+      const noAparelho = JSON.parse(await sessao.js(`JSON.stringify({
+        alvo: (document.querySelector('[data-abre-dialogo="ficha"]') || {}).textContent || '',
+        ficha: [...document.querySelectorAll('[data-dialogo]')]
+          .map((d) => d.getAttribute('data-dialogo')),
+        foco: window.__director.escada.focoCorpoId,
+      })`));
+      conferir(
+        noAparelho.foco === 'neptune'
+          && noAparelho.ficha.length === 1 && noAparelho.ficha[0] === 'ficha',
+        `...e a escolha enquadra e sobe a FICHA no lugar da paleta —`
+          + ` foco "${noAparelho.foco}", alça "${noAparelho.alvo}",`
+          + ` folhas: ${noAparelho.ficha.join(', ') || 'nenhuma'}`
+      );
+    }
+    await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+    await sessao.send('Emulation.clearDeviceMetricsOverride');
+  } finally {
+    sessao.fechar();
   }
-  await sessao.send('Emulation.setTouchEmulationEnabled', { enabled: false });
-  await sessao.send('Emulation.clearDeviceMetricsOverride');
-} finally {
-  sessao.fechar();
+
+  if (falhas.length) {
+    process.stdout.write(`\nSMOKE DA BUSCA: ${falhas.length} falha(s)\n`);
+    process.exit(1);
+  }
+  process.stdout.write('\nSMOKE DA BUSCA: tudo verde\n');
 }
 
-if (falhas.length) {
-  process.stdout.write(`\nSMOKE DA BUSCA: ${falhas.length} falha(s)\n`);
-  process.exit(1);
+// Importável sem rodar: as contas puras do veredito (o cartão pelo ID, a
+// faixa do buraco, a temperatura) têm teste, e teste não sobe Chrome.
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  await principal();
 }
-process.stdout.write('\nSMOKE DA BUSCA: tudo verde\n');
