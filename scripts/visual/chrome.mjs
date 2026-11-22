@@ -509,9 +509,11 @@ export async function esperarAssentar({ send, cartografia, quadros = 700, teto =
  * app.
  *
  * POR QUE NENHUM JUIZ ADOECEU COM ISSO, e é o que explica os meses de
- * silêncio: todo consumidor de `capturarCDP` pina `?shot=2`
+ * silêncio: os consumidores de `capturarCDP` daquela época pinavam `?shot=2`
  * (`ab-identidade`, `luz-do-quadro`, `rodada`, `sky-capture`,
- * `planeta-pixel`), e sob `?shot=2` (`bareMode`) a capa NEM MONTA. Quem
+ * `planeta-pixel`), e sob `?shot=2` (`bareMode`) a capa NEM MONTA. (Hoje o
+ * `a11y`, o `busca-smoke` e o `filme-smoke` usam `?shot=1`, que também
+ * congela o relógio, mas com HUD.) Quem
  * sofria era a foto COM HUD — exatamente a que se tira para o dono ver.
  *
  * POR QUE AQUI E NÃO EM `esperarAssentar`: aquela responde "a cena
