@@ -56,12 +56,59 @@ let assadaPara: THREE.WebGLRenderer | null = null;
 let alvos: THREE.RenderTarget[] = [];
 
 /**
+ * Os três materiais do assado (superfície, núcleo, volume), um trio por
+ * renderer: o aquecimento sob o véu (director.init, grupo `comNormal`)
+ * compila ESTAS instâncias e o assado desenha com elas — descartar uma
+ * aquecida antes de assar soltaria o programa e o assado recompilaria
+ * síncrono. Por renderer porque dois Directors podem coexistir (o velho
+ * ainda desmontando): um não descarta o trio que o outro aquece.
+ */
+const materiaisPorRenderer = new WeakMap<THREE.WebGLRenderer, THREE.ShaderMaterial[]>();
+
+const materialDoAssado = (frag: string) =>
+  new THREE.ShaderMaterial({
+    vertexShader: ORION_ASSADO_VERT,
+    fragmentShader: frag,
+    uniforms: { uFatia: { value: 0 } },
+    depthTest: false,
+    depthWrite: false,
+  });
+
+/**
+ * O trio do assado deste renderer, criado na primeira pergunta (vazio com
+ * Órion desligada ou já assada para ele). Vive até o assado ou até
+ * `descartarMateriaisDoAssadoDeOrion`.
+ */
+export function materiaisDoAssadoDeOrion(renderer: THREE.WebGLRenderer): THREE.ShaderMaterial[] {
+  if (!ORION_LIGADA || assadaPara === renderer) return [];
+  let trio = materiaisPorRenderer.get(renderer);
+  if (!trio) {
+    trio = [
+      materialDoAssado(orionSuperficieFrag(GLSL_NOISE)),
+      materialDoAssado(orionAssadoFrag(CAIXA_DO_NUCLEO, GLSL_NOISE)),
+      materialDoAssado(orionAssadoFrag(CAIXA_DO_VOLUME, GLSL_NOISE)),
+    ];
+    materiaisPorRenderer.set(renderer, trio);
+  }
+  return trio;
+}
+
+/** solta o trio que não chegou a assar (dispose/desistência do Director) */
+export function descartarMateriaisDoAssadoDeOrion(renderer: THREE.WebGLRenderer) {
+  for (const m of materiaisPorRenderer.get(renderer) ?? []) m.dispose();
+  materiaisPorRenderer.delete(renderer);
+}
+
+/**
  * Assa as três grades se ainda não assou para este renderer — chamada pela
  * nebulosa antes do raymarch. Devolve true no quadro em que assou (o céu
  * de antes fica velho). ~140 desenhos pequenos, uma vez na vida do app.
  */
 export function assarOrionSePreciso(renderer: THREE.WebGLRenderer): boolean {
   if (assadaPara === renderer || !ORION_LIGADA) return false;
+  // o trio aquecido sob o véu (ou um novo, no `?shot=`): pegar ANTES de
+  // marcar o renderer como assado, que esvazia a pergunta
+  const [mSup, mNucleo, mVolume] = materiaisDoAssadoDeOrion(renderer);
   assadaPara = renderer;
   for (const a of alvos) a.dispose();
   const cena = new THREE.Scene();
@@ -71,37 +118,28 @@ export function assarOrionSePreciso(renderer: THREE.WebGLRenderer): boolean {
   quad.frustumCulled = false;
   cena.add(quad);
   const prev = renderer.getRenderTarget();
-  const material = (frag: string) =>
-    new THREE.ShaderMaterial({
-      vertexShader: ORION_ASSADO_VERT,
-      fragmentShader: frag,
-      uniforms: { uFatia: { value: 0 } },
-      depthTest: false,
-      depthWrite: false,
-    });
 
   const sup = new THREE.WebGLRenderTarget(...GRADE_DA_SUPERFICIE, opcoes);
-  quad.material = material(orionSuperficieFrag(GLSL_NOISE));
+  quad.material = mSup;
   renderer.setRenderTarget(sup);
   renderer.render(cena, camera);
-  (quad.material as THREE.ShaderMaterial).dispose();
 
-  const grade = (c: CaixaDeOrion) => {
+  const grade = (c: CaixaDeOrion, m: THREE.ShaderMaterial) => {
     const rt = new THREE.WebGL3DRenderTarget(...c.dims, opcoes);
-    const m = material(orionAssadoFrag(c, GLSL_NOISE));
     quad.material = m;
     for (let fatia = 0; fatia < c.dims[2]; fatia++) {
       m.uniforms.uFatia.value = fatia;
       renderer.setRenderTarget(rt, fatia);
       renderer.render(cena, camera);
     }
-    m.dispose();
     return rt;
   };
-  const nucleo = grade(CAIXA_DO_NUCLEO);
-  const volume = grade(CAIXA_DO_VOLUME);
+  const nucleo = grade(CAIXA_DO_NUCLEO, mNucleo);
+  const volume = grade(CAIXA_DO_VOLUME, mVolume);
   renderer.setRenderTarget(prev);
   quad.geometry.dispose();
+  // assado: o trio já cumpriu o papel e solta os programas
+  descartarMateriaisDoAssadoDeOrion(renderer);
 
   alvos = [sup, nucleo, volume];
   const u = UNIFORMES_DE_ORION;

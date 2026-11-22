@@ -57,6 +57,7 @@ import type { ParametrosDoContorno, RetanguloDoContorno } from './core/contornoD
 // vive na LEI §7.)
 import { StarField } from './world/stars';
 import { Nebula } from './world/nebula';
+import { descartarMateriaisDoAssadoDeOrion, materiaisDoAssadoDeOrion } from './world/orionNaCena';
 import { StellarBody } from './world/stellarBody';
 import { Dust } from './world/dust';
 import type { OclusorDeRotulo, StarLabel } from './world/labels';
@@ -2415,8 +2416,15 @@ export class Director {
       // "tela" quando nenhum render target está amarrado — e no frame real
       // tudo renderiza DENTRO do composer (linear). Compilar sem RT gera a
       // variante errada e o primeiro frame re-linka tudo (medido: 8,7 s).
+      // O assado de Órion (orionNaCena.ts) desenha um PlaneGeometry (com
+      // normal) em alvos half-float: qualquer alvo não-XR dá a mesma saída
+      // linear e sem tone mapping que o warmRt — mesma chave de programa.
+      // As instâncias são as que o assado usa no primeiro quadro.
       const { warm, warmRt, descartar } = montarCenaDeAquecimento({
-        comNormal: this.nebula.warmupMaterials,
+        comNormal: [
+          ...this.nebula.warmupMaterials,
+          ...materiaisDoAssadoDeOrion(this.engine.renderer),
+        ],
         semNormal: [
           ...(this.blackHole?.warmupMaterials ?? []),
           ...this.post.warmupMaterials,
@@ -5179,6 +5187,14 @@ export class Director {
     });
     for (const posto of this.noPalco) step(posto.id, () => posto.corpo.dispose());
     this.noPalco = [];
+    // o trio de Órion aquecido e não assado (o laço parou): como no
+    // `dispose`, espera o warm-up assentar — descartar no meio do polling
+    // do compileAsync estoura fora de qualquer try/catch
+    step('orion', () => {
+      const soltar = () => descartarMateriaisDoAssadoDeOrion(this.engine.renderer);
+      if (this.warmup) void this.warmup.catch(() => {}).then(soltar);
+      else soltar();
+    });
   }
 
   dispose() {
@@ -5264,6 +5280,8 @@ export class Director {
     step('palco', () => this.palco.dispose());
     step('dust', () => this.dust.dispose());
     step('nebula', () => this.nebula.dispose());
+    // o trio de Órion aquecido que não chegou a assar (o warm-up já assentou)
+    step('orion', () => descartarMateriaisDoAssadoDeOrion(this.engine.renderer));
     step('post', () => this.post.dispose());
     step('contorno', () => this.contorno.dispose()); // C6
     step('engine', () => this.engine.dispose());

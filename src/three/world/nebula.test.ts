@@ -17,7 +17,7 @@ import { CORTE_D2_DA_SEMENTE, MEDIA_DA_LANE } from '../shaders/common';
 import { sementeAlcancaOVolume } from '../director/nuvensSemente';
 import { GAL, helioGalacticoParaCena } from './baseGalactica';
 import type { VolumeDePoeira } from '../cartography/galacticAssets';
-import { CENA_DO_ASSADO_DE_ORION, DESENHOS_DO_ASSADO_DE_ORION } from './orionNaCena';
+import { CENA_DO_ASSADO_DE_ORION, DESENHOS_DO_ASSADO_DE_ORION, materiaisDoAssadoDeOrion } from './orionNaCena';
 import {
   CODIGO_OMITIDO,
   CONCORRENCIA_DE_BUSCA,
@@ -177,6 +177,27 @@ describe('o quadro congelado da nebulosa (item 144)', () => {
     nebula.setVariante('fino'); // já é a variante ativa: no-op
     nebula.render(renderer, camera);
     expect(desenhos()).toBe(261);
+  });
+
+  it('o assado de Órion desenha com o trio que o aquecimento compilou e só o solta depois de assar', () => {
+    const { renderer, camera, nebula } = bancada();
+    const trio = materiaisDoAssadoDeOrion(renderer);
+    const soltos = new Set<THREE.Material>();
+    for (const m of trio) m.addEventListener('dispose', () => soltos.add(m));
+    // o material de cada desenho do assado, e se já estava solto na hora
+    const usados: [THREE.Material, boolean][] = [];
+    (renderer.render as ReturnType<typeof vi.fn>).mockImplementation((cena: THREE.Object3D) => {
+      if (cena.name !== CENA_DO_ASSADO_DE_ORION) return;
+      const m = (cena.children[0] as THREE.Mesh).material as THREE.Material;
+      usados.push([m, soltos.has(m)]);
+    });
+    nebula.render(renderer, camera);
+    expect(usados).toHaveLength(DESENHOS_DO_ASSADO_DE_ORION);
+    expect(new Set(usados.map(([m]) => m))).toEqual(new Set(trio));
+    expect(usados.some(([, solto]) => solto)).toBe(false);
+    // depois do assado: os três soltos, e o renderer não pede outro trio
+    expect(soltos.size).toBe(3);
+    expect(materiaisDoAssadoDeOrion(renderer)).toEqual([]);
   });
 });
 
