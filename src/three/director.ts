@@ -2619,7 +2619,12 @@ export class Director {
       // fotografada no meio da travessia devolveria md5 diferente a cada
       // corrida. Mesmo papel de `atlas.animando` logo acima — cena
       // mudando por construção até assentar.
-      (this.orbitas?.animando ?? false);
+      (this.orbitas?.animando ?? false) ||
+      // O CLARÃO EM RAMPA (22/11/2026): a vaga que entra, sai ou some
+      // atrás de um corpo anda 300 ms, e a troca do orçamento espera o
+      // deslocado sair — a foto do juiz 2 quadros depois do pronto pegava
+      // o clarão a meio caminho. Mesmo papel do realce do foco logo acima
+      (this.clarao?.mudancaPendente ?? false);
     // CORPO NO GATE A FRIO (auditoria item 5b): o gate diz que o corpo
     // devia estar na tela e a textura não está quente — capturar agora
     // fotografaria o ponto (ou nada) fingindo a vista do globo. O

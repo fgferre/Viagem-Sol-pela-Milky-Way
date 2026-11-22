@@ -166,8 +166,9 @@ describe('1. o orçamento com histerese (§5.21)', () => {
     ]);
     assentar(slots, elegiveis(...cheios));
     const forte: [number, number] = [99, 100 * RAZAO_DE_TROCA * 1.01];
-    passoDoOrcamento(slots, elegiveis(...cheios, forte), DT);
-    // o mais fraco começou a SAIR, o entrante ainda não tem slot
+    // o mais fraco começou a SAIR, o entrante ainda não tem slot — e o
+    // passo diz que alguém espera vaga (a captura não pode soltar no meio)
+    expect(passoDoOrcamento(slots, elegiveis(...cheios, forte), DT)).toBe(true);
     expect(slots.find((s) => s.indice === 3)!.alvo).toBe(0);
     expect(slots.some((s) => s.indice === 99)).toBe(false);
     // a casa nunca tem N+1 clarões com ganho > 0 além do que a rampa cruza

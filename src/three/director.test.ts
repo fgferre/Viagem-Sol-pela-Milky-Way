@@ -22,6 +22,8 @@ import type { VolumeDePoeira } from './cartography/galacticAssets';
 import { MaquinaDoTempo } from './director/maquinaDoTempo';
 import { QUADROS_TENTANDO_FONTE, julgarProntidao } from './director/prontidao';
 import { Nebula } from './world/nebula';
+import { ClaraoDeAsas } from './world/clarao';
+import { EXPO_M0, SIGMA_PX } from './luzDaCasa';
 import {
   escreverLuzDaVisita,
   exposicaoDoQuadro,
@@ -1224,6 +1226,41 @@ describe('a troca de fonte da poeira em voo: a captura espera o volume novo', ()
     b.quadro();
     expect(b.uniforme('uPoeiraModo')).toBe(0);
     expect(b.d.captura.pronto).toBe(true);
+  });
+
+  // a foto do juiz 2 quadros depois do pronto pegava o clarão a meio da
+  // rampa de 300 ms (poeira-shaders, transição b, 22/11): o pronto espera
+  // a rampa do orçamento E a da oclusão assentarem
+  it('a captura espera a rampa do clarão: entrando e tapado por um corpo', async () => {
+    const b = await bootComTeste();
+    const clarao = new ClaraoDeAsas([]);
+    (b.d as unknown as { clarao: ClaraoDeAsas }).clarao = clarao;
+    const quadro = {
+      camPos: new THREE.Vector3(0, 0, 0.001),
+      screenH: 900,
+      dtS: 1 / 60,
+      solVisivel: true,
+      solturaDoSol: 1,
+      expoM0: EXPO_M0,
+      sigmaPx: SIGMA_PX,
+    };
+    clarao.atualizar(quadro);
+    const interna = clarao as unknown as {
+      slots: { indice: number }[];
+      registrarOclusao(vaga: number, oculto: boolean): void;
+    };
+    const k = interna.slots.findIndex((s) => s.indice === 0);
+    expect(k, 'o Sol de casa não ganhou vaga — a prova seria vazia').toBeGreaterThanOrEqual(0);
+    expect(b.d.captura.pronto, 'o pronto subiu com o clarão entrando').toBe(false);
+    for (let i = 0; i < 30; i++) clarao.atualizar(quadro);
+    expect(b.d.captura.pronto).toBe(true);
+
+    interna.registrarOclusao(k, true);
+    clarao.atualizar(quadro);
+    expect(b.d.captura.pronto, 'o pronto subiu com o clarão apagando atrás do corpo').toBe(false);
+    for (let i = 0; i < 30; i++) clarao.atualizar(quadro);
+    expect(b.d.captura.pronto).toBe(true);
+    clarao.dispose();
   });
 
   it('o selo recebe a bancada pelo estado VIVO: `teste` enquanto ela vale, a variante do menu depois que `forcarPoeira` a desarma', () => {

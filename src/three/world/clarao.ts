@@ -131,6 +131,10 @@ function picoDoIndice(elegiveis: readonly CandidatoAoClarao[], indice: number): 
  *     clarões, e a fronteira nunca troca em um quadro.
  *  3. as rampas andam; slot que zerou com alvo 0 vira vaga.
  *
+ * Devolve se algum entrante do conjunto ficou esperando vaga — a troca
+ * ainda não terminou, mesmo no quadro em que nenhuma rampa anda (o
+ * deslocado zerou na fase 3, depois de a fase 2 procurar vaga).
+ *
  * Custo: `dentro` tem ≤ orçamento entradas por quadro — a mesma ordem
  * de alocação dos 16 literais que a velha política de dominância pagava
  * (1,54 µs medidos por quadro, na época).
@@ -139,7 +143,7 @@ export function passoDoOrcamento(
   slots: SlotDoClarao[],
   elegiveis: readonly CandidatoAoClarao[],
   dtS: number
-): void {
+): boolean {
   // fase 1 — o conjunto desejado, mantido ordenado por pico DESC. Os
   // MEMBROS entram todos ANTES de qualquer entrante: capacidade "livre"
   // que um membro ainda ia ocupar não é porta de entrada sem folga — a
@@ -175,6 +179,7 @@ export function passoDoOrcamento(
   }
 
   // fase 2 — alvos e ocupação de vagas
+  let esperando = false;
   for (const s of slots) {
     if (s.indice < 0) continue;
     s.alvo = picoDoIndice(dentro, s.indice) >= 0 ? 1 : 0;
@@ -195,7 +200,10 @@ export function passoDoOrcamento(
         break;
       }
     }
-    if (!vago) continue;
+    if (!vago) {
+      esperando = true;
+      continue;
+    }
     vago.indice = c.indice;
     vago.alvo = 1;
     vago.ganho = 0;
@@ -206,6 +214,7 @@ export function passoDoOrcamento(
     s.ganho = stepRampToward(s.ganho, s.alvo, dtS, RAMP_DURATION_MS);
     if (s.indice >= 0 && s.alvo === 0 && s.ganho === 0) s.indice = -1;
   }
+  return esperando;
 }
 
 // ─── A COR — B−V medido onde há medição, sidecar onde não há ─────────────
@@ -942,6 +951,8 @@ export class ClaraoDeAsas {
    *  que a lei recompõe na magnitude deslocada */
   private readonly restoDaVaga: Float64Array;
   private readonly cedidaALente: Float64Array;
+  /** o último `atualizar` deixou rampa andando ou entrante sem vaga */
+  private pendente = false;
 
   // o cadastro de candidatos: 0 = Sol (na origem), 1.. = as nomeadas.
   // mBase = m − 5·log10(d_casa): a MESMA lei de recálculo do campo,
@@ -1229,7 +1240,7 @@ export class ClaraoDeAsas {
       }
     }
 
-    passoDoOrcamento(this.slots, el, q.dtS);
+    let pendente = passoDoOrcamento(this.slots, el, q.dtS);
     const veu = veuDaLente(q.lente);
 
     for (let k = 0; k < this.slots.length; k++) {
@@ -1240,6 +1251,8 @@ export class ClaraoDeAsas {
       if (gemeo) gemeo.visible = false;
       sonda.visible = false;
       this.ganhoDaVaga[k] = 0;
+      // a rampa do orçamento anda em toda vaga, todo quadro: assenta sempre
+      if (s.ganho !== s.alvo) pendente = true;
       // a vaga trocou de dono: as respostas em voo eram do anterior, e o
       // novo começa à vista (a mesma regra de "sem resposta")
       if (this.donoDaSonda[k] !== s.indice) {
@@ -1276,12 +1289,15 @@ export class ClaraoDeAsas {
       // reaparecer —, e a presença anda pela rampa de 300 ms do orçamento
       sonda.visible = true;
       sonda.position.set(this.pos[i * 3], this.pos[i * 3 + 1], this.pos[i * 3 + 2]);
+      const alvoDaVis = this.oculta[k] ? 0 : 1;
       const vis = (this.visibilidade[k] = stepRampToward(
         this.visibilidade[k],
-        this.oculta[k] ? 0 : 1,
+        alvoDaVis,
         q.dtS,
         RAMP_DURATION_MS
       ));
+      // só conta onde a rampa anda: a vaga que não desenha congela a dela
+      if (vis !== alvoDaVis) pendente = true;
       if (!(vis > 0)) {
         mesh.visible = false;
         continue;
@@ -1336,7 +1352,14 @@ export class ClaraoDeAsas {
         g.uScreenH.value = q.screenH + 2 * MARGEM_DO_CAMPO * pr;
       }
     }
+    this.pendente = pendente;
     this.cederAoMaisForte(q, radPorPx, cssH, sigma, pr);
+  }
+
+  /** alguma rampa (orçamento ou oclusão) ainda anda, ou um entrante
+   *  espera vaga: a imagem do clarão vai mudar sem nada mais mudar */
+  get mudancaPendente(): boolean {
+    return this.pendente;
   }
 
   /**
