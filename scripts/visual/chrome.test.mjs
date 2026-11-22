@@ -13,7 +13,7 @@
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import { describe, it, expect } from 'vitest';
-import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair, flagsDoBinario, lancarChrome, julgarFolgaDoLimite, folgaDoLimiteGb, julgarTetoDoRuido, diferencaPorPixel, TETO_DO_RUIDO, semBarraNoFim } from './chrome.mjs';
+import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair, flagsDoBinario, lancarChrome, julgarFolgaDoLimite, folgaDoLimiteGb, julgarTetoDoRuido, julgarDiferente, diferencaPorPixel, TETO_DO_RUIDO, semBarraNoFim } from './chrome.mjs';
 
 describe('o teto de ruído da foto (22/11)', () => {
   // a tela do par nulo do planeta-pixel (diagnóstico §1)
@@ -31,10 +31,30 @@ describe('o teto de ruído da foto (22/11)', () => {
     expect(julgarTetoDoRuido({ diferentes: Math.floor(total * 0.0003) + 1, maior: 1, total }).ok).toBe(false);
   });
 
-  it('diferencaPorPixel conta px que diferem em algum canal e a maior diferença', () => {
+  it('diferencaPorPixel conta px que diferem em algum canal, a maior diferença e os px acima do nível do teto', () => {
     const a = Uint8Array.from([10, 10, 10, 50, 50, 50, 0, 0, 0]);
     const b = Uint8Array.from([10, 11, 10, 50, 50, 53, 0, 0, 0]);
-    expect(diferencaPorPixel(a, b, 3)).toEqual({ diferentes: 2, maior: 3 });
+    expect(diferencaPorPixel(a, b, 3)).toEqual({ diferentes: 2, maior: 3, acima: 1 });
+  });
+});
+
+describe('o "diferente" pede mais de 10× o teto (22/11)', () => {
+  it('CONTROLE NEGATIVO: 1 px a 2/255 sai do teto, mas não é diferente', () => {
+    const total = 3026156;
+    expect(julgarTetoDoRuido({ diferentes: 1, maior: 2, total }).ok).toBe(false);
+    expect(julgarDiferente({ acima: 1, total }).ok).toBe(false);
+  });
+
+  it('exatamente 10× o teto reprova; um px a mais passa, e o texto diz o limiar em px', () => {
+    // 100.000 px: teto de 30 px, limiar de 300 — e 100000 × 0,0003 × 10 dá 299,99… em ponto flutuante
+    const total = 100000;
+    expect(julgarDiferente({ acima: 300, total }).ok).toBe(false);
+    const r = julgarDiferente({ acima: 301, total });
+    expect(r.ok).toBe(true);
+    expect(r.texto).toContain('301 px');
+    expect(r.texto).toContain('(300 px)');
+    expect(julgarDiferente({ acima: 9078, total: 3026156 }).ok).toBe(false);
+    expect(julgarDiferente({ acima: 9079, total: 3026156 }).ok).toBe(true);
   });
 });
 

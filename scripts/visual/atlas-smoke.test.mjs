@@ -7,16 +7,22 @@ import { julgarPar, julgarTrocaDaCamada } from './atlas-smoke.mjs';
 
 // a foto do juiz na janela 1200×900 (medida na corrida de 22/11)
 const total = 944756;
-const m = (diferentes, maior = 1) => ({ diferentes, maior });
+// `acima`: os px que passam de 1/255 (≤ `diferentes`); nas diferenças de verdade abaixo, todos
+const m = (diferentes, maior = 1, acima = 0) => ({ diferentes, maior, acima });
 const zero = m(0, 0);
 const MORTA = 'no modo partículas as lâminas do disco não acendem';
 const julgar = (o) => julgarTrocaDaCamada({ flag: 'nogdust', vista: 't=60', total, ...o });
 
 describe('a prova 12: a troca viva dá a imagem do boot, e a camada desenha', () => {
   it('passa com o pisca de 1/255 dentro do teto e a camada mudando 239.331 px (nogdust em t=60, medido)', () => {
-    const v = julgar({ ruido: m(16), bootVivo: m(9), limpoVivo: m(239331, 191) });
+    const v = julgar({ ruido: m(16), bootVivo: m(9), limpoVivo: m(239331, 191, 239331) });
     expect(v.provas.map((p) => p.ok)).toEqual([true, true]);
     expect(v.declaracao).toBe(null);
+  });
+
+  it('CONTROLE NEGATIVO: a camada que muda a vista fora do teto, mas não 10× acima dele, reprova', () => {
+    expect(julgar({ ruido: zero, bootVivo: zero, limpoVivo: m(1, 2, 1) }).provas[1].ok).toBe(false);
+    expect(julgar({ ruido: zero, bootVivo: zero, limpoVivo: m(2000, 40, 2000) }).provas[1].ok).toBe(false);
   });
 
   it('CONTROLE NEGATIVO: a troca viva diferente do boot reprova', () => {
@@ -67,6 +73,11 @@ describe('os pares de fotos das provas 1, 3, 15b e 18, pelo teto de ruído', () 
 
   it('CONTROLE NEGATIVO de "diferente": o pisca de 1/255 dentro do teto reprova; a diferença de verdade passa', () => {
     expect(par('diferente', m(173)).ok).toBe(false);
-    expect(par('diferente', m(5000, 40)).ok).toBe(true);
+    expect(par('diferente', m(5000, 40, 5000)).ok).toBe(true);
+  });
+
+  it('CONTROLE NEGATIVO: 1 px a 2/255 não é diferente, nem 2.000 px a 40/255 (fora do teto, abaixo de 10× ele)', () => {
+    expect(par('diferente', m(1, 2, 1)).ok).toBe(false);
+    expect(par('diferente', m(2000, 40, 2000)).ok).toBe(false);
   });
 });

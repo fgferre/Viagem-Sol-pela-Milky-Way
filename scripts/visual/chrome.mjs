@@ -126,20 +126,22 @@ export const TETO_DO_RUIDO = { nivel: 1, fracao: 0.0003 };
 /** a frase de quem reprova um par do MESMO estado acima do teto */
 export const NAO_DETERMINISTICA = 'a vista não é determinística';
 
-/** O diff-pixel de duas fotos cruas do mesmo tamanho: quantos px diferem em algum canal, e a maior
- *  diferença de um canal, em /255. */
+/** O diff-pixel de duas fotos cruas do mesmo tamanho: quantos px diferem em algum canal, a maior
+ *  diferença de um canal, em /255, e quantos px diferem ACIMA do nível do teto (`acima`). */
 export function diferencaPorPixel(a, b, canais) {
   let diferentes = 0;
   let maior = 0;
+  let acima = 0;
   for (let i = 0; i < a.length; i += canais) {
     let d = 0;
     for (let c = 0; c < canais; c++) d = Math.max(d, Math.abs(a[i + c] - b[i + c]));
     if (d > 0) {
       diferentes++;
       if (d > maior) maior = d;
+      if (d > TETO_DO_RUIDO.nivel) acima++;
     }
   }
-  return { diferentes, maior };
+  return { diferentes, maior, acima };
 }
 
 /** Cabe no teto de ruído? `{ diferentes, maior }` de `diferencaPorPixel` e o `total` de px da foto. */
@@ -150,6 +152,23 @@ export function julgarTetoDoRuido({ diferentes, maior, total }, teto = TETO_DO_R
     texto: `${diferentes} px de ${total} (${((100 * diferentes) / total).toFixed(4)} %), maior ${maior}/255;`
       + ` teto do ruído ≤ ${teto.nivel}/255 em ≤ ${(teto.fracao * 100).toFixed(2)} % dos px`
       + ` (${Math.floor(total * teto.fracao)} px)`,
+  };
+}
+
+/** Quantas vezes a fração do teto o "diferente" tem de passar: sair do teto não basta, 1 px a 2/255
+ *  já sai dele. O `nogdust` em t=60 deu 239 mil px, sobra. */
+export const DIFERENTE_VEZES_O_TETO = 10;
+
+/** Duas fotos que deveriam ser vistas DIFERENTES: mais de `DIFERENTE_VEZES_O_TETO` × a fração do teto em
+ *  px acima do nível dele. `{ acima }` de `diferencaPorPixel` e o `total` de px da foto. */
+export function julgarDiferente({ acima, total }, teto = TETO_DO_RUIDO) {
+  // o +1e-6 segura o produto em ponto flutuante: 100000 × 0,0003 × 10 dá 299,99…
+  const limiar = Math.floor(total * teto.fracao * DIFERENTE_VEZES_O_TETO + 1e-6);
+  return {
+    ok: acima > limiar,
+    texto: `${acima} px de ${total} (${((100 * acima) / total).toFixed(4)} %) acima de ${teto.nivel}/255;`
+      + ` diferente pede > ${DIFERENTE_VEZES_O_TETO}× o teto: > ${(teto.fracao * DIFERENTE_VEZES_O_TETO * 100).toFixed(2)} % dos px`
+      + ` (${limiar} px)`,
   };
 }
 

@@ -26,7 +26,7 @@
 //     **três entradas, três vistas** — mais a prova que importa: a
 //     POSIÇÃO da câmera antes e depois do portal, e o fov no pino do
 //     Atlas (58° desde 29/08, item 86; era 35°).
-//     DESDE 22/11 o "diferente" é o TETO DE RUÍDO nas fotos cruas (`julgarPar`).
+//     DESDE 22/11 o "diferente" é mais de 10× o TETO DE RUÍDO nas fotos cruas (`julgarPar`).
 //
 //     A POSIÇÃO É COBRADA CONTRA A TERRA VIVA DE CADA LADO, e não
 //     contra uma posição guardada antes de atravessar (item 119, a
@@ -80,7 +80,7 @@ import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import {
   abrirSessao, APP_PADRAO, dorme, esperarCapaSair, esperarPor,
-  diferencaPorPixel, julgarTetoDoRuido, NAO_DETERMINISTICA,
+  diferencaPorPixel, julgarTetoDoRuido, julgarDiferente, NAO_DETERMINISTICA,
 } from './chrome.mjs';
 
 /**
@@ -94,7 +94,8 @@ import {
  *  1. o par do MESMO estado acima do teto: a vista não é determinística, e
  *     nada mais se compara;
  *  2. boot × troca viva dentro do teto — a troca viva é a abertura;
- *  3. limpo × troca viva ACIMA do teto — a camada desenha algo nesta vista.
+ *  3. limpo × troca viva DIFERENTE, mais de 10× o teto (`julgarDiferente`)
+ *     — a camada desenha algo nesta vista.
  *     Sem isto, o 2 passaria comparando duas imagens que ninguém mudou.
  *     Camada que não desenha nada (`morta`, com o motivo) tem o 3 DECLARADO
  *     com o número medido; se ela mudar a vista, a declaração caducou e
@@ -119,9 +120,12 @@ export function julgarTrocaDaCamada({ flag, vista, ruido, bootVivo, limpoVivo, t
         + ` ${lv.texto}. O "boot = troca viva" acima compara duas imagens que a camada não mudou`,
     };
   }
-  provas.push(morta
-    ? { ok: false, texto: `${onde}: declarada sem desenho (${morta}), mas MUDOU a vista — a declaração caducou (limpo × desligada ${lv.texto})` }
-    : { ok: !lv.ok, texto: `e a camada REALMENTE muda a vista, acima do teto (limpo × desligada ${lv.texto})` });
+  if (morta) {
+    provas.push({ ok: false, texto: `${onde}: declarada sem desenho (${morta}), mas MUDOU a vista — a declaração caducou (limpo × desligada ${lv.texto})` });
+    return { provas, declaracao: null };
+  }
+  const muda = julgarDiferente({ ...limpoVivo, total });
+  provas.push({ ok: muda.ok, texto: `e a camada REALMENTE muda a vista (limpo × desligada ${muda.texto})` });
   return { provas, declaracao: null };
 }
 
@@ -130,14 +134,16 @@ export function julgarTrocaDaCamada({ flag, vista, ruido, bootVivo, limpoVivo, t
  * comparavam o md5 de um quadro, e o pisca de 1/255 deste PC (D3D11) as
  * reprovava com a cena parada (`destravar/vii-md5-ponta.txt`: 1, 173, 46 e
  * 5 px, maior 1/255). A régua é o TETO DE RUÍDO da casa, a mesma da prova
- * 12. `sentido` 'igual' cobra dentro do teto; 'diferente' cobra ACIMA dele
- * — o pisca sozinho não prova que duas vistas diferem.
+ * 12. `sentido` 'igual' cobra dentro do teto; 'diferente' cobra mais de 10×
+ * o teto (`julgarDiferente`) — sair do teto não basta: 1 px a 2/255 já sai.
  */
-export function julgarPar({ rotulo, sentido, diferentes, maior, total }) {
-  const r = julgarTetoDoRuido({ diferentes, maior, total });
-  return sentido === 'igual'
-    ? { ok: r.ok, texto: `${rotulo}: a MESMA imagem, dentro do teto (${r.texto})` }
-    : { ok: !r.ok, texto: `${rotulo}: imagens DIFERENTES, acima do teto (${r.texto})` };
+export function julgarPar({ rotulo, sentido, diferentes, maior, acima, total }) {
+  if (sentido === 'igual') {
+    const r = julgarTetoDoRuido({ diferentes, maior, total });
+    return { ok: r.ok, texto: `${rotulo}: a MESMA imagem, dentro do teto (${r.texto})` };
+  }
+  const d = julgarDiferente({ acima, total });
+  return { ok: d.ok, texto: `${rotulo}: imagens DIFERENTES (${d.texto})` };
 }
 
 /** A foto CRUA da sessão, depois do mesmo obturador do `md5` (a capa saiu). */
@@ -349,7 +355,7 @@ async function principal() {
     );
     // TRÊS ENTRADAS, TRÊS VISTAS — o veredito invertido (ver a prova 3 no
     // cabeçalho). Enquanto o portal jogava a pose fora, este número era 1.
-    // DESDE 22/11 cada PAR tem de diferir acima do teto (`julgarPar`): no
+    // DESDE 22/11 cada PAR tem de diferir mais de 10× o teto (`julgarPar`): no
     // md5, o pisca de 1/255 sozinho já dava três vistas a um portal parado.
     for (const [a, b] of [[10, 100], [10, 250], [100, 250]]) {
       const par = julgarFotos(
@@ -2073,7 +2079,7 @@ async function principal() {
     // vez de o Sol levar a culpa.
     //
     // DESDE 22/11 as duas metades são o TETO DE RUÍDO nas fotos cruas
-    // (`julgarPar`): (a) dentro dele, (b) ACIMA dele — no md5, o pisca de
+    // (`julgarPar`): (a) dentro dele, (b) mais de 10× ele — no md5, o pisca de
     // 1/255 sozinho já dava (b) a um Sol congelado.
     const noCorpoDoSol = async (t, jd) => {
       await sessao.ir(`t=${t}&${PIN}&jd=${jd}`);
