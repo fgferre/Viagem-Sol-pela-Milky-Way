@@ -1,9 +1,9 @@
-// Serve: chão — a prova 12 do smoke do Atlas (troca viva × boot das camadas da galáxia) reprova o que deve, sem subir Chrome
-// O veredito PURO da prova 12 (destravar, 22/11/2026). O juiz inteiro dirige
-// o Chrome e não roda aqui; o que decide a prova roda, com o CONTROLE
-// NEGATIVO de cada cobrança, no molde de `memoria.test.mjs`.
+// Serve: chão — as provas do smoke do Atlas que comparam fotos pelo teto de ruído (a 12 e os pares de 1, 15b e 18) reprovam o que devem, sem subir Chrome
+// Os vereditos PUROS da prova 12 e dos pares de fotos (destravar, 22/11/2026).
+// O juiz inteiro dirige o Chrome e não roda aqui; o que decide a prova roda,
+// com o CONTROLE NEGATIVO de cada cobrança, no molde de `memoria.test.mjs`.
 import { describe, it, expect } from 'vitest';
-import { julgarTrocaDaCamada } from './atlas-smoke.mjs';
+import { julgarPar, julgarTrocaDaCamada } from './atlas-smoke.mjs';
 
 // a foto do juiz na janela 1200×900 (medida na corrida de 22/11)
 const total = 944756;
@@ -53,5 +53,20 @@ describe('a prova 12: a troca viva dá a imagem do boot, e a camada desenha', ()
     expect(v.declaracao).toBe(null);
     expect(v.provas[1].ok).toBe(false);
     expect(v.provas[1].texto).toContain('caducou');
+  });
+});
+
+describe('os pares de fotos das provas 1, 15b e 18, pelo teto de ruído', () => {
+  const par = (sentido, d) => julgarPar({ rotulo: 'par', sentido, total, ...d });
+
+  it('"igual": o pisca de 1/255 em 173 px (t=250, medido) passa; uma diferença de verdade reprova', () => {
+    expect(par('igual', m(173)).ok).toBe(true);
+    expect(par('igual', m(5, 3)).ok).toBe(false);
+    expect(par('igual', m(400, 1)).ok).toBe(false);
+  });
+
+  it('CONTROLE NEGATIVO de "diferente": o pisca de 1/255 dentro do teto reprova; a diferença de verdade passa', () => {
+    expect(par('diferente', m(173)).ok).toBe(false);
+    expect(par('diferente', m(5000, 40)).ok).toBe(true);
   });
 });

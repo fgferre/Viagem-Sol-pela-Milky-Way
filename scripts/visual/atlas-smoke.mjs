@@ -12,6 +12,7 @@
 //     ANTES de entrar igual ao md5 DEPOIS de partir. O escalar sozinho
 //     não bastava: o `seek()` zera o olhar do pausar-e-olhar e o tick
 //     zera o latch do disco fora da viagem — o pixel é quem denuncia.
+//     DESDE 22/11 o "igual" é o TETO DE RUÍDO nas fotos cruas (`julgarPar`).
 //  2. PRONTIDÃO NA FASE NOVA. A captura dentro do Atlas tem de assentar
 //     por `via=sinal`. Se ela cair no teto de segurança (`via=quadros`),
 //     o getter `captura` não aprendeu a fase e todo gate futuro do Atlas
@@ -123,14 +124,33 @@ export function julgarTrocaDaCamada({ flag, vista, ruido, bootVivo, limpoVivo, t
   return { provas, declaracao: null };
 }
 
+/**
+ * O VEREDITO DE UM PAR DE FOTOS CRUAS, PURO (22/11): as provas 1, 15b e 18
+ * comparavam o md5 de um quadro, e o pisca de 1/255 deste PC (D3D11) as
+ * reprovava com a cena parada (`destravar/vii-md5-ponta.txt`: 1, 173, 46 e
+ * 5 px, maior 1/255). A régua é o TETO DE RUÍDO da casa, a mesma da prova
+ * 12. `sentido` 'igual' cobra dentro do teto; 'diferente' cobra ACIMA dele
+ * — o pisca sozinho não prova que duas vistas diferem.
+ */
+export function julgarPar({ rotulo, sentido, diferentes, maior, total }) {
+  const r = julgarTetoDoRuido({ diferentes, maior, total });
+  return sentido === 'igual'
+    ? { ok: r.ok, texto: `${rotulo}: a MESMA imagem, dentro do teto (${r.texto})` }
+    : { ok: !r.ok, texto: `${rotulo}: imagens DIFERENTES, acima do teto (${r.texto})` };
+}
+
 /** A foto CRUA da sessão, depois do mesmo obturador do `md5` (a capa saiu). */
 async function fotoCrua(sessao) {
-  await sessao.md5();
+  const md5 = await sessao.md5();
   const shot = await sessao.send('Page.captureScreenshot', { format: 'png' });
   const { data, info } = await sharp(Buffer.from(shot.data, 'base64')).removeAlpha().raw()
     .toBuffer({ resolveWithObject: true });
-  return { data, canais: info.channels, total: info.width * info.height };
+  return { md5, data, canais: info.channels, total: info.width * info.height };
 }
+
+/** `julgarPar` medido em duas fotos cruas da sessão. */
+const julgarFotos = (rotulo, sentido, a, b) =>
+  julgarPar({ rotulo, sentido, ...diferencaPorPixel(a.data, b.data, a.canais), total: a.total });
 
 /**
  * OS +3 PASSOS DA Q14 (item 91), LIDOS DA FONTE e não redigitados aqui.
@@ -270,7 +290,8 @@ async function principal() {
       const antesFase = await sessao.js('window.__director.captura.fase');
       const antesT = await sessao.js('window.__director.currentTime');
       const poseAntes = JSON.parse(await sessao.js(POSE));
-      const antes = await sessao.md5();
+      const fotoAntes = await fotoCrua(sessao);
+      const antes = fotoAntes.md5;
       conferir(antesFase === 'journey', `t=${T}: parte de 'journey' congelada em t=${antesT}`);
 
       await sessao.js('window.__director.entrarNoAtlas()');
@@ -311,10 +332,11 @@ async function principal() {
       await sessao.assentar();
       const depoisFase = await sessao.js('window.__director.captura.fase');
       const depoisT = await sessao.js('window.__director.currentTime');
-      const depois = await sessao.md5();
+      const depois = await fotoCrua(sessao);
       conferir(depoisFase === 'journey', `t=${T}: partiu — fase = '${depoisFase}'`);
       conferir(Object.is(antesT, depoisT), `t=${T}: journeyT EXATO na volta (${depoisT})`);
-      conferir(antes === depois, `t=${T}: pixel idêntico antes/depois — ${antes} vs ${depois}`);
+      const volta = julgarFotos(`t=${T}: antes × depois do portal`, 'igual', fotoAntes, depois);
+      conferir(volta.ok, volta.texto);
     }
     // o relógio PRIMEIRO: ele é a variável escondida que fazia o pixel
     // mentir, e um veredito só dele diz na hora se o pino saiu do lugar
@@ -1429,18 +1451,19 @@ async function principal() {
     // `?d=` a distância é a conta pura, e a conta pura é bit a bit a de
     // antes desta obra. O oráculo é o GESTO — descer ao corpo pela escada
     // — e o veredito é o md5, não um número de câmera.
+    // DESDE 22/11 o md5 virou o TETO DE RUÍDO nas fotos cruas (`julgarPar`).
     await sessao.ir(`atlas=1&foco=terra&ver=corpo&jd=EPOCA&${PIN}`);
     await sessao.assentar();
-    const porPortaLegada = await sessao.md5();
+    const porPortaLegada = await fotoCrua(sessao);
     const pinadoNaPorta = await sessao.js('window.__director.atlas.distanciaEstaPinada');
     await sessao.ir(`atlas=1&jd=EPOCA&${PIN}`);
     await sessao.js("window.__director.focarNoCorpo('earth', 'corpo')");
     await sessao.assentar();
-    const peloGesto = await sessao.md5();
+    const peloGesto = await fotoCrua(sessao);
+    const legado = julgarFotos('?ver=corpo legado × o gesto', 'igual', porPortaLegada, peloGesto);
     conferir(
-      porPortaLegada === peloGesto && pinadoNaPorta === false,
-      `?ver=corpo legado pousa no MESMO md5 do gesto, e sem pino de distância`
-        + ` (${porPortaLegada} vs ${peloGesto})`
+      legado.ok && pinadoNaPorta === false,
+      `${legado.texto}, e sem pino de distância (pino na porta: ${pinadoNaPorta})`
     );
 
     // O MESMO `?ver=corpo` COM UM CORPO QUE NÃO É A TERRA — e esta prova
@@ -2045,13 +2068,17 @@ async function principal() {
     // O VEREDITO DO RELÓGIO VEM ANTES DO VEREDITO DO PIXEL, como na prova
     // 3: se o pino do céu sair do lugar, é ele quem diz o que aconteceu em
     // vez de o Sol levar a culpa.
+    //
+    // DESDE 22/11 as duas metades são o TETO DE RUÍDO nas fotos cruas
+    // (`julgarPar`): (a) dentro dele, (b) ACIMA dele — no md5, o pisca de
+    // 1/255 sozinho já dava (b) a um Sol congelado.
     const noCorpoDoSol = async (t, jd) => {
       await sessao.ir(`t=${t}&${PIN}&jd=${jd}`);
       await sessao.js('window.__director.entrarNoAtlas()');
       await sessao.js("window.__director.focarNoCorpo('sun', 'corpo')");
       const pousou = await sessao.assentar();
       return {
-        md5: await sessao.md5(),
+        foto: await fotoCrua(sessao),
         via: pousou.via,
         jd: await sessao.js('window.__director.tempo.jd'),
         degrau: await sessao.js('window.__director.escadaViva.degrau'),
@@ -2074,16 +2101,14 @@ async function principal() {
       `o relógio do céu: as duas entradas na MESMA data (${de10.jd}) e a`
         + ` contraprova noutra (${outraData.jd})`
     );
-    conferir(
-      de10.md5 === de100.md5,
-      `mesma data, dois caminhos: t=10 e t=100 dão o MESMO Sol`
-        + ` (${de10.md5} vs ${de100.md5})`
+    const mesmaData = julgarFotos(
+      'mesma data, dois caminhos: o Sol por t=10 × por t=100', 'igual', de10.foto, de100.foto
     );
-    conferir(
-      de10.md5 !== outraData.md5,
-      `datas diferentes, Sóis diferentes — o Sol do Atlas tem calendário`
-        + ` (${de10.md5} vs ${outraData.md5})`
+    conferir(mesmaData.ok, mesmaData.texto);
+    const datas = julgarFotos(
+      'datas diferentes, Sóis diferentes — o Sol do Atlas tem calendário', 'diferente', de10.foto, outraData.foto
     );
+    conferir(datas.ok, datas.texto);
 
     // ---- 20: A PORTA DE DUAS VIAS DO BRILHO (itens 103 e 91/Q14) ------
     //
