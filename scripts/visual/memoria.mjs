@@ -171,14 +171,39 @@ export function julgarBoot({ via, ms }, teto = TETO_DO_BOOT_MS) {
   return via === 'sinal' && ms <= teto;
 }
 
+/** o que há em `depois` e não em `antes` (multiconjunto de rótulos) */
+export function novosNaLista(antes = [], depois = []) {
+  const resta = [...antes];
+  const novos = [];
+  for (const t of depois) {
+    const i = resta.indexOf(t);
+    if (i >= 0) resta.splice(i, 1);
+    else novos.push(t);
+  }
+  return novos;
+}
+
+/**
+ * Quantos mapas cada corpo DECLARA: os canais distintos de `entradas` do
+ * manifesto `data/atlas/texturas.json` (o mesmo que `texturas.ts` lê em
+ * `buscarManifestUmaVez`; as várias resoluções/formatos de um canal são UMA
+ * textura). Puro: o juiz o busca pela rede da página.
+ */
+export function contarDeclarados(manifest) {
+  const canais = {};
+  for (const e of manifest.entradas) (canais[e.corpo] ??= new Set()).add(e.canal);
+  return Object.fromEntries(Object.entries(canais).map(([c, v]) => [c, v.size]));
+}
+
 /**
  * O VEREDITO DOS FOCOS (lei de 21/11/2026) — "enquadrar não vaza", em três
  * contas sobre as amostras do protocolo, pelos rótulos que ele escreve:
  * `base focos`, `foco <id>` (1ª visita), `revisita <id>` e `volta focos`.
  *
- *   1. a 1ª visita aloca NO MÁXIMO uma textura (o mapa do corpo) contra a
- *      amostra anterior — menos é permitido: o mapa de quem saiu do foco
- *      pode ter vencido a carência no caminho;
+ *   1. a 1ª visita aloca NO MÁXIMO o CONJUNTO de mapas que o corpo DECLARA
+ *      (`declarados[id]`, contado do manifesto de texturas do próprio app:
+ *      `contarDeclarados`) contra a amostra anterior — menos é permitido: o
+ *      mapa de quem saiu do foco pode ter vencido a carência no caminho;
  *   2. a 2ª visita ao mesmo corpo, dentro da carência, aloca ZERO e não
  *      pede a textura de novo (`pedidos`, o grampo da régua E);
  *   3. com o foco fora e a carência vencida, a contagem VOLTA à base.
@@ -186,7 +211,7 @@ export function julgarBoot({ via, ms }, teto = TETO_DO_BOOT_MS) {
  * As geometrias ficam em delta ZERO nas três: enquadrar não cria malha.
  * Sem `base focos` (o braço M5) não há o que julgar e volta `null`.
  */
-export function julgarFocos(amostras) {
+export function julgarFocos(amostras, declarados = {}) {
   const iBase = amostras.findIndex((a) => a.rotulo === 'base focos');
   if (iBase < 0) return null;
   const base = amostras[iBase];
@@ -202,8 +227,13 @@ export function julgarFocos(amostras) {
       texturas: a.textures - antes.textures,
       geometrias: a.geometries - antes.geometries,
     };
-    if (tipo === 'foco') primeiras.push(delta);
-    else if (tipo === 'revisita') revisita = { ...delta, pedidos: a.pedidos };
+    if (tipo === 'foco') {
+      primeiras.push({
+        ...delta,
+        declarados: declarados[id],
+        subiram: novosNaLista(antes.lista, a.lista),
+      });
+    } else if (tipo === 'revisita') revisita = { ...delta, pedidos: a.pedidos };
     else if (a.rotulo === 'volta focos') {
       volta = {
         texturas: a.textures - base.textures,
@@ -212,7 +242,7 @@ export function julgarFocos(amostras) {
     }
   }
   const primeiraOk =
-    primeiras.length > 0 && primeiras.every((p) => p.texturas <= 1 && p.geometrias === 0);
+    primeiras.length > 0 && primeiras.every((p) => p.texturas <= p.declarados && p.geometrias === 0);
   const revisitaOk =
     revisita !== null && revisita.texturas === 0 && revisita.geometrias === 0
     && revisita.pedidos === 0;
@@ -340,6 +370,7 @@ const MEDIR_TEXELS = `(() => {
   const d = window.__director;
   const vistas = new Set();
   let bytes = 0, n = 0;
+  const lista = [];
   const cont = (t) => {
     if (!t || !t.isTexture || vistas.has(t)) return;
     vistas.add(t);
@@ -350,6 +381,7 @@ const MEDIR_TEXELS = `(() => {
     if (!w || !h) return;
     const mip = t.generateMipmaps !== false && t.minFilter !== 1003 && t.minFilter !== 1006;
     n++;
+    lista.push((t.name || 'sem-nome') + ' ' + w + 'x' + h);
     bytes += w * h * 4 * (mip ? 4 / 3 : 1);
   };
   const doMat = (m) => {
@@ -366,7 +398,7 @@ const MEDIR_TEXELS = `(() => {
   cont(d.engine.scene.background);
   cont(d.dustMapTexture);
   cont(d.structureMapTexture);
-  return { n, MiB: bytes / 1048576 };
+  return { n, MiB: bytes / 1048576, lista };
 })()`;
 
 async function principal() {
@@ -428,6 +460,7 @@ async function principal() {
         rotulo,
         textures: stats.memory.textures,
         texelMiB: texels.MiB,
+        lista: texels.lista,
         geometries: stats.memory.geometries,
         calls: stats.render.calls,
         triangles: stats.render.triangles,
@@ -616,6 +649,19 @@ async function principal() {
       return { marcas, repouso, pico: Math.max(...marcas), novosNaVoltaRapida };
     };
 
+    // o manifesto de texturas do app, lido pela rede da PÁGINA (mesma URL
+    // relativa à base que `texturas.ts` usa); só os corpos dos focos importam
+    let declarados = {};
+    const declaradosPelaPagina = async () => {
+      const r = await sessao.send('Runtime.evaluate', {
+        expression: "fetch(new URL('data/atlas/texturas.json', document.baseURI)).then((x) => x.json())",
+        awaitPromise: true,
+        returnByValue: true,
+      });
+      if (r.exceptionDetails) throw new Error('manifesto de texturas não lido pela página');
+      return contarDeclarados(r.result.value);
+    };
+
     const protocolo = async ({ sabotar, ciclos, trocas, focos }) => {
       const boot = await bootAteOSinal({
         ir: () => sessao.ir(BOOT),
@@ -672,6 +718,7 @@ async function principal() {
       };
       const sairParaOSistema = () => sessao.js("window.__director.focarNoCorpo('sun')");
       await estrearOFoco(focos[0]);
+      declarados = await declaradosPelaPagina();
       await dorme(ESPERA_DA_CARENCIA_S * 1000);
       amostras.push(await amostrar('base focos'));
       // A 2ª VISITA É LOGO DEPOIS DA 1ª, ao PRIMEIRO corpo: com a base sem
@@ -704,7 +751,7 @@ async function principal() {
     };
 
     /** Os vereditos do D9 sobre um conjunto de amostras, sem imprimir. */
-    const julgar = (amostras) => {
+    const julgar = (amostras, declarados) => {
       const ciclos = amostras.filter((a) => a.rotulo.startsWith('ciclo'));
       const base = ciclos[0];
       const deltaPortal = Math.max(
@@ -727,7 +774,7 @@ async function principal() {
           )
         : 0;
       // os focos têm veredito próprio, puro e testado (`julgarFocos`)
-      const focos = julgarFocos(amostras);
+      const focos = julgarFocos(amostras, declarados);
       const heaps = amostras.map((a) => a.heap);
       const janela = Math.max(1, Math.min(4, heaps.length >> 1));
       const inclinacao =
@@ -747,9 +794,15 @@ async function principal() {
       const delta = (d) => `${d.texturas} tex/${d.geometrias} geo`;
       conferir(
         f.primeiraOk,
-        `${FOCOS.length} focos, 1ª visita: no máximo UMA textura por corpo, geometrias`
-          + ` em delta ZERO (${f.primeiras.map((p) => `${p.id} ${delta(p)}`).join(' · ')})`
+        `${FOCOS.length} focos, 1ª visita: no máximo o conjunto DECLARADO de mapas por corpo,`
+          + ` geometrias em delta ZERO (${f.primeiras.map((p) => `${p.id} ${delta(p)} de ${p.declarados} declaradas`).join(' · ')})`
       );
+      if (!f.primeiraOk) {
+        for (const p of f.primeiras) {
+          process.stdout.write(`         subiu em ${p.id}: ${p.subiram.join(' | ') || '(o walker não viu nome novo)'}
+`);
+        }
+      }
       conferir(
         f.revisitaOk,
         `2ª visita a '${f.revisita?.id}' dentro da carência: aloca ZERO e não pede a`
@@ -770,7 +823,7 @@ async function principal() {
         sabotar: true, ciclos: CICLOS, trocas: TROCAS, focos: FOCOS,
       });
       tabela(amostras);
-      const v = julgar(amostras);
+      const v = julgar(amostras, declarados);
       conferir(v.deltaPortal === 0, `portal: delta ZERO em textures/geometries (max ${v.deltaPortal})`);
       conferir(v.deltaTrocas === 0, `trocas de tier: delta ZERO entre trocas (max ${v.deltaTrocas})`);
       conferirFocos(v.focos);
@@ -805,7 +858,7 @@ async function principal() {
 
       // ---- 2, 3 e 4: os números do D9 ----------------------------------
       tabela(amostras);
-      const v = julgar(amostras);
+      const v = julgar(amostras, declarados);
       conferir(
         v.deltaPortal === 0,
         `${CICLOS} ciclos do portal: textures/geometries voltam ao ciclo 1 com delta ZERO`
@@ -914,7 +967,7 @@ async function principal() {
       // sobe 1 por ciclo, heap sobe 16 MB por ciclo. Medidor que não vê o
       // vazamento que o juiz mesmo injetou reprova o JUIZ.
       const m5 = await protocolo({ sabotar: true, ciclos: 2, trocas: 0, focos: [] });
-      const vm5 = julgar(m5.amostras);
+      const vm5 = julgar(m5.amostras, declarados);
       const heapM5 =
         m5.amostras[m5.amostras.length - 1].heap - m5.amostras[0].heap;
       conferir(

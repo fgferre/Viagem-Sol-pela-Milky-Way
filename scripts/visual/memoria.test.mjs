@@ -6,7 +6,9 @@
 // conta tem o seu CONTROLE NEGATIVO — o app quebrado do jeito que ela existe
 // para pegar — e o caso bom ao lado, no molde de `luz-do-quadro.test.mjs`.
 import { describe, it, expect } from 'vitest';
-import { bootAteOSinal, julgarBoot, julgarFocos, TETO_DO_BOOT_MS } from './memoria.mjs';
+import {
+  bootAteOSinal, contarDeclarados, julgarBoot, julgarFocos, TETO_DO_BOOT_MS,
+} from './memoria.mjs';
 
 /** o protocolo dos focos como `memoria.mjs` o escreve, com as contas trocáveis */
 function protocolo({ primeira = 1, revisita = 0, pedidos = 0, volta = 0, geo = 0 } = {}) {
@@ -24,28 +26,55 @@ function protocolo({ primeira = 1, revisita = 0, pedidos = 0, volta = 0, geo = 0
   ];
 }
 
+const DECLARADOS = { earth: 1, jupiter: 1, saturn: 1 };
+
 describe('julgarFocos', () => {
   it('o app certo passa as três contas: um mapa por corpo, revisita zero, volta à base', () => {
-    const f = julgarFocos(protocolo());
+    const f = julgarFocos(protocolo(), DECLARADOS);
     expect([f.primeiraOk, f.revisitaOk, f.voltaOk]).toEqual([true, true, true]);
     expect(f.primeiras.map((p) => p.id)).toEqual(['earth', 'jupiter', 'saturn']);
   });
 
-  it('a 1ª visita alocando DUAS texturas num corpo REPROVA', () => {
-    expect(julgarFocos(protocolo({ primeira: 2 })).primeiraOk).toBe(false);
+  it('a 1ª visita alocando MAIS que o conjunto declarado REPROVA', () => {
+    expect(julgarFocos(protocolo({ primeira: 2 }), DECLARADOS).primeiraOk).toBe(false);
+  });
+
+  it('a Terra com 7 declarados e 7 subindo passa; com 8 reprova', () => {
+    const decl = { ...DECLARADOS, earth: 7 };
+    expect(julgarFocos(protocolo({ primeira: 7 }), decl).primeiraOk).toBe(true);
+    expect(julgarFocos(protocolo({ primeira: 8 }), decl).primeiraOk).toBe(false);
+  });
+
+  it('Júpiter com 1 declarado e 2 subindo reprova, e a lista do que subiu sai', () => {
+    const a = (rotulo, textures, lista = []) => ({ rotulo, textures, geometries: 44, lista });
+    const f = julgarFocos(
+      [a('base focos', 40, ['x 1x1']), a('foco jupiter', 42, ['x 1x1', 'map 8x4', 'map 8x4'])],
+      { jupiter: 1 }
+    );
+    expect(f.primeiraOk).toBe(false);
+    expect(f.primeiras[0].subiram).toEqual(['map 8x4', 'map 8x4']);
+  });
+
+  it('o conjunto declarado sai do manifesto: canais distintos por corpo', () => {
+    const e = (corpo, canal) => ({ corpo, canal });
+    expect(
+      contarDeclarados({
+        entradas: [e('earth', 'map'), e('earth', 'map'), e('earth', 'night'), e('jupiter', 'map')],
+      })
+    ).toEqual({ earth: 2, jupiter: 1 });
   });
 
   it('a 1ª visita que cria geometria REPROVA: enquadrar não faz malha', () => {
-    expect(julgarFocos(protocolo({ geo: 1 })).primeiraOk).toBe(false);
+    expect(julgarFocos(protocolo({ geo: 1 }), DECLARADOS).primeiraOk).toBe(false);
   });
 
   it('a 2ª visita alocando REPROVA, e também a que pede a textura de novo', () => {
-    expect(julgarFocos(protocolo({ revisita: 1 })).revisitaOk).toBe(false);
-    expect(julgarFocos(protocolo({ pedidos: 1 })).revisitaOk).toBe(false);
+    expect(julgarFocos(protocolo({ revisita: 1 }), DECLARADOS).revisitaOk).toBe(false);
+    expect(julgarFocos(protocolo({ pedidos: 1 }), DECLARADOS).revisitaOk).toBe(false);
   });
 
   it('a volta que não chega à base REPROVA', () => {
-    expect(julgarFocos(protocolo({ volta: 1 })).voltaOk).toBe(false);
+    expect(julgarFocos(protocolo({ volta: 1 }), DECLARADOS).voltaOk).toBe(false);
   });
 
   it('sem `base focos` (o braço M5) não há veredito de focos', () => {
