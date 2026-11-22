@@ -413,6 +413,49 @@ describe('3. a camada de verdade, com o sidecar real', () => {
     c.dispose();
   });
 
+  it('a vaga que desenha espera a PRIMEIRA resposta da sonda; a que não desenha não prende ninguém', () => {
+    // a resposta chega no desenho, DEPOIS do `atualizar`: numa placa lenta
+    // (dt cortado em 0,1 s) a rampa de 300 ms assenta em 3 quadros, antes
+    // de a GPU devolver a primeira consulta da vaga nova
+    const lento = { ...quadroEmCasa(true), dtS: 0.1 };
+    const interna = (c: ClaraoDeAsas) =>
+      c as unknown as {
+        registrarOclusao(vaga: number, oculto: boolean): void;
+        slots: { indice: number; ganho: number }[];
+        sondas: THREE.Mesh[];
+      };
+    const c = new ClaraoDeAsas([]);
+    for (let i = 0; i < 5; i++) c.atualizar(lento);
+    const k = interna(c).slots.findIndex((s) => s.indice === 0);
+    expect(k, 'o Sol de casa não ganhou vaga — a prova seria vazia').toBeGreaterThanOrEqual(0);
+    expect(interna(c).slots[k].ganho, 'a rampa do orçamento não assentou — a prova seria vazia').toBe(1);
+    expect(interna(c).sondas[k].visible).toBe(true);
+    expect(c.mudancaPendente, 'a rampa assentou sem resposta nenhuma e a mudança acabou').toBe(true);
+    // a resposta chega (tapado): a rampa da oclusão anda, e só ela segura
+    interna(c).registrarOclusao(k, true);
+    c.atualizar(lento);
+    expect(c.mudancaPendente).toBe(true);
+    for (let i = 0; i < 5; i++) c.atualizar(lento);
+    expect(c.mudancaPendente).toBe(false);
+    c.dispose();
+
+    // a vaga que deixa de desenhar (o Sol sai e a vaga esvazia) não espera
+    const saindo = new ClaraoDeAsas([]);
+    for (let i = 0; i < 5; i++) saindo.atualizar(lento);
+    for (let i = 0; i < 5; i++) saindo.atualizar({ ...lento, solVisivel: false });
+    expect(interna(saindo).slots.every((s) => s.indice < 0)).toBe(true);
+    expect(saindo.mudancaPendente).toBe(false);
+    saindo.dispose();
+
+    // `?noclarao=1` esconde o grupo: a sonda nunca desenha, nunca responde
+    const escondido = new ClaraoDeAsas([]);
+    escondido.group.visible = false;
+    for (let i = 0; i < 5; i++) escondido.atualizar(lento);
+    expect(interna(escondido).slots.some((s) => s.indice === 0 && s.ganho === 1)).toBe(true);
+    expect(escondido.mudancaPendente).toBe(false);
+    escondido.dispose();
+  });
+
   it('um anel no caminho apaga clarão e halo pela opacidade DELE, no mesmo quadro: e^(−τ/μ)', () => {
     // perfil sintético: α = 1 no meio da régua, 0,5 nas bordas — a lei do
     // `ANEL_FRAG` (τ = −ln(1 − α)·fatorTau, μ = |d·n|) e nada inventado

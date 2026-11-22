@@ -940,6 +940,8 @@ export class ClaraoDeAsas {
   private readonly visibilidade: Float64Array;
   /** por vaga: o candidato a quem as respostas da sonda pertencem */
   private readonly donoDaSonda: Int32Array;
+  /** por vaga: a sonda já respondeu (à vista, tapada ou fora da tela) ao dono de agora */
+  private readonly respondida: Uint8Array;
   private readonly vSonda = new THREE.Vector3();
   /** por vaga, deste quadro: magnitude, meia em px do buffer e o ganho
    *  ANTES da cessão (0 = não desenha) — o que `cederAoMaisForte` compara */
@@ -981,6 +983,7 @@ export class ClaraoDeAsas {
     this.oculta = new Uint8Array(this.slots.length);
     this.visibilidade = new Float64Array(this.slots.length).fill(1);
     this.donoDaSonda = new Int32Array(this.slots.length).fill(-1);
+    this.respondida = new Uint8Array(this.slots.length);
     this.mDaVaga = new Float64Array(this.slots.length);
     this.meiaDaVaga = new Float64Array(this.slots.length);
     this.ganhoDaVaga = new Float64Array(this.slots.length);
@@ -1259,6 +1262,7 @@ export class ClaraoDeAsas {
         this.donoDaSonda[k] = s.indice;
         this.oculta[k] = 0;
         this.visibilidade[k] = 1;
+        this.respondida[k] = 0;
         this.consultas[k].invalidar();
       }
       if (s.indice < 0 || s.ganho <= 0) {
@@ -1288,6 +1292,10 @@ export class ClaraoDeAsas {
       // PODERIA ter clarão — também tapada, senão nunca veria a estrela
       // reaparecer —, e a presença anda pela rampa de 300 ms do orçamento
       sonda.visible = true;
+      // a PRIMEIRA resposta chega no desenho, depois deste passo: com o dt
+      // cortado a rampa assenta antes dela. Sem o grupo (`?noclarao=1`) a
+      // sonda não desenha e nunca responde — aí não há o que esperar
+      if (!this.respondida[k] && this.group.visible) pendente = true;
       sonda.position.set(this.pos[i * 3], this.pos[i * 3 + 1], this.pos[i * 3 + 2]);
       const alvoDaVis = this.oculta[k] ? 0 : 1;
       const vis = (this.visibilidade[k] = stepRampToward(
@@ -1470,6 +1478,7 @@ export class ClaraoDeAsas {
    *  provar a rampa sem depender de um `WebGLRenderer` de verdade. */
   private registrarOclusao(vaga: number, oculto: boolean): void {
     this.oculta[vaga] = oculto ? 1 : 0;
+    this.respondida[vaga] = 1;
   }
 
   /** leitura para depuração/oráculos: quem ocupa os slots agora */

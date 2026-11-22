@@ -1252,6 +1252,7 @@ describe('a troca de fonte da poeira em voo: a captura espera o volume novo', ()
     const k = interna.slots.findIndex((s) => s.indice === 0);
     expect(k, 'o Sol de casa não ganhou vaga — a prova seria vazia').toBeGreaterThanOrEqual(0);
     expect(b.d.captura.pronto, 'o pronto subiu com o clarão entrando').toBe(false);
+    interna.registrarOclusao(k, false); // a primeira resposta da sonda (sem GPU nesta suíte)
     for (let i = 0; i < 30; i++) clarao.atualizar(quadro);
     expect(b.d.captura.pronto).toBe(true);
 
@@ -1259,6 +1260,64 @@ describe('a troca de fonte da poeira em voo: a captura espera o volume novo', ()
     clarao.atualizar(quadro);
     expect(b.d.captura.pronto, 'o pronto subiu com o clarão apagando atrás do corpo').toBe(false);
     for (let i = 0; i < 30; i++) clarao.atualizar(quadro);
+    expect(b.d.captura.pronto).toBe(true);
+    clarao.dispose();
+  });
+
+  // o quadro em que o deslocado zerou e virou vaga DEPOIS de a fase 2
+  // procurar uma: nenhuma rampa anda, e quem segura o pronto é só o
+  // entrante esperando (`passoDoOrcamento` devolve `esperando`)
+  it('a captura espera a troca do orçamento no quadro em que o deslocado zerou e nada anda', async () => {
+    const b = await bootComTeste();
+    const clarao = new ClaraoDeAsas([]);
+    (b.d as unknown as { clarao: ClaraoDeAsas }).clarao = clarao;
+    const interna = clarao as unknown as {
+      slots: { indice: number; ganho: number; alvo: number }[];
+      registrarOclusao(vaga: number, oculto: boolean): void;
+    };
+    // orçamento cheio de visitadas a 1 pc; a da vaga 31 é a mais fraca, e a
+    // da vaga 32 entra com folga de sobra sobre ela. Sem nomeadas, o
+    // cadastro é 0 = Sol, 1 + vaga = a visitada
+    const visitada = (vaga: number, mBase: number) => {
+      const a = (2 * Math.PI * vaga) / 40;
+      return { vaga, pos: { x: Math.cos(a), y: Math.sin(a), z: 0 }, mBase, cor: [1, 1, 1] as const, soltura: 1 };
+    };
+    const cheios = Array.from({ length: 32 }, (_, v) => visitada(v, v === 31 ? 2 : 0));
+    const quadro = (visitadas: ReturnType<typeof visitada>[]) => ({
+      camPos: new THREE.Vector3(0, 0, 0),
+      screenH: 900,
+      dtS: 1 / 60,
+      solVisivel: false,
+      solturaDoSol: 1,
+      expoM0: EXPO_M0,
+      sigmaPx: SIGMA_PX,
+      visitadas,
+    });
+    clarao.atualizar(quadro(cheios));
+    interna.slots.forEach((s, k) => s.indice >= 0 && interna.registrarOclusao(k, false));
+    for (let i = 0; i < 30; i++) clarao.atualizar(quadro(cheios));
+    expect(interna.slots.every((s) => s.indice >= 0), 'o orçamento não encheu — a prova seria vazia').toBe(true);
+    expect(b.d.captura.pronto).toBe(true);
+
+    const comEntrante = [...cheios, visitada(32, 0)];
+    const iFraca = 1 + 31;
+    const iEntrante = 1 + 32;
+    let viuOQuadro = false;
+    for (let i = 0; i < 40 && !viuOQuadro; i++) {
+      clarao.atualizar(quadro(comEntrante));
+      const fracaSaiu = !interna.slots.some((s) => s.indice === iFraca);
+      const entranteDentro = interna.slots.some((s) => s.indice === iEntrante);
+      if (!fracaSaiu || entranteDentro) continue;
+      viuOQuadro = true;
+      expect(interna.slots.every((s) => s.ganho === s.alvo), 'uma rampa ainda anda neste quadro').toBe(true);
+      expect(b.d.captura.pronto, 'o pronto subiu com o entrante ainda sem vaga').toBe(false);
+    }
+    expect(viuOQuadro, 'nenhum quadro com o deslocado fora e o entrante sem vaga — a prova seria vazia').toBe(true);
+    clarao.atualizar(quadro(comEntrante));
+    const kEntrante = interna.slots.findIndex((s) => s.indice === iEntrante);
+    expect(kEntrante, 'o entrante não ganhou a vaga').toBeGreaterThanOrEqual(0);
+    interna.registrarOclusao(kEntrante, false);
+    for (let i = 0; i < 30; i++) clarao.atualizar(quadro(comEntrante));
     expect(b.d.captura.pronto).toBe(true);
     clarao.dispose();
   });
