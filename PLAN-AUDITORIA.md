@@ -151,6 +151,15 @@ Chrome com Direct3D 11 (o do visitante do Windows), perfil novo a cada abertura 
   Medido em 22/11 (`destravar/iii-heap-memoria.md`). Não é vazamento: a 2ª rodada de focos soma ~1 MB, e o juiz `memoria` passou a medir por rodada.
 
   A pergunta da rodada: vale soltar quando Saturno está longe há muito tempo, e quanto custa assar de novo na volta? Num telefone, 29 MB pesam mais.
+- **ESTRELAS, a medir numa rodada futura: a precisão de 16 bits do `stars.bin`.** O binário grava a posição em 16 bits, e o ponto das estrelas próximas cai a dezenas de UA do valor da fonte:
+  - Sirius 37,2 UA (até ~43 no raio);
+  - Arcturus 55,3;
+  - Prócion 48,4;
+  - α Cen A 13,9;
+  - Barnard 25,3.
+
+  Medido em 22/11 (`destravar/xiv-epoca-das-nomeadas.md`); NÃO é época. O app desenha e nomeia pelo ponto, então o visitante não vê dois lugares.
+  A pergunta: as ESTRELAS DUPLAS próximas. Se a companheira é guardada como outro ponto do mesmo binário, o erro é do tamanho da separação de verdade (Sirius A–B ~20 UA, α Cen A–B ~23 UA), e o par visto de perto seria mais arredondamento do que órbita. Também conta para "qualquer estrela com corpo" chegando perto. Ainda não se sabe como o app posiciona as companheiras.
 - **Depois que o contexto gráfico é restaurado, a sonda de oclusão (do clarão e da lente) fica com a piscina cheia para sempre.** As consultas que estavam em voo quando o contexto caiu nunca respondem e ocupam as 3 vagas da piscina. A partir daí, o `iniciar` pula todo quadro (`sondaDeOclusao.ts:95`, "piscina cheia … pula este quadro") e a oclusão deixa de funcionar: a estrela atrás de um planeta não se esconde mais. É anterior a esta rodada. O pronto não fica preso por isso, porque desiste depois de 30 quadros (`cbec295c`). Achado em 22/11, sem ação por ora.
 - **Na faixa de 16 px em que a guarda da `entrada` do nome ainda sobe, o nome pode ficar sobre o próprio disco** (`LabelCanvas.ts` ~1312–1315). Isso vale para o nome que não cabe de lado nenhum: ele é empurrado e pode ficar sobre o disco com alfa parcial. É contínuo e só dura o esmaecer, mas reabre um pouco o "nunca por cima do disco". Achado da leitura independente de `c9cf2158..3fe004f1`, sem ação por ora.
 - **Enquanto desce, o detalhe é pintado fora da caixa, cortado pela borda.** É de propósito: em 0,3 s ele sai do lugar onde estava, sem empurrar o nome (B.0, `7cb8e3ec`).
