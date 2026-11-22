@@ -108,7 +108,7 @@
 // desde a letra D dos Ajustes nada troca sem escolha do visitante, e o tier
 // pedido é escolha explícita) e o SINAL de prontidão do próprio app no
 // lugar de espera cega.
-import { abrirSessao, APP_PADRAO, dorme, esperarCapaSair } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, dorme, esperarAssentar, esperarCapaSair } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const JANELA = process.env.JANELA || '1200x900';
@@ -135,6 +135,30 @@ const TIER = process.env.TIER || 'alta';
  */
 const JD_PINADO = 2460409.26395835;
 const BOOT = `atlas=1&jd=${JD_PINADO}&q=${TIER}`;
+/**
+ * O TETO DO BOOT É DE TEMPO, NÃO DE QUADROS (21/11/2026). A carga a frio
+ * leva ~34 s no Direct3D 11 desta máquina, e os 700 quadros do `ir()`
+ * (`chrome.mjs`) venciam aos ~20 s, antes do sinal: o juiz reprovava um
+ * boot que só era lento. O `ir()` continua o mesmo; se ele desiste pelos
+ * quadros, a espera segue SÓ pelo sinal até 90 s contados do `navigate`.
+ * Sinal que não chega em 90 s fica `via=quadros` e reprova como antes.
+ */
+const TETO_DO_BOOT_MS = 90000;
+async function bootAteOSinal({ ir, esperarSinal, teto = TETO_DO_BOOT_MS, agora = Date.now }) {
+  const t0 = agora();
+  let r = await ir();
+  if (r.via !== 'sinal') {
+    const resta = teto - (agora() - t0);
+    if (resta > 0) {
+      try {
+        r = await esperarSinal(resta);
+      } catch {
+        // o teto venceu sem sinal: fica o `via` do `ir()`, e o veredito reprova
+      }
+    }
+  }
+  return { ...r, ms: agora() - t0 };
+}
 /** a rede do `soltar` da tela de carga (`hospedeiro.ts`: `terminate` 1 s
  *  depois de a capa desmontar), com folga — ver a amostra do boot */
 const REDE_DO_WORKER_DA_CAPA_MS = 1200;
@@ -528,7 +552,13 @@ try {
   };
 
   const protocolo = async ({ sabotar, ciclos, trocas, focos }) => {
-    const boot = await sessao.ir(BOOT);
+    const boot = await bootAteOSinal({
+      ir: () => sessao.ir(BOOT),
+      // cartografia que nunca acende: sem base de quadros, a espera só
+      // termina pelo sinal ou pelo teto de tempo
+      esperarSinal: (teto) =>
+        esperarAssentar({ send: sessao.send, cartografia: () => false, teto }),
+    });
     const fase = await sessao.js('window.__director.captura.fase');
     if (fase !== 'atlas') throw new Error(`boot não abriu no Atlas (fase '${fase}')`);
     // A AMOSTRA DO BOOT ESPERA A CAPA SAIR (13/11/2026). A tela de carga
@@ -657,8 +687,9 @@ try {
     });
     const { amostras, boot, mundos } = primeira;
     conferir(
-      boot.via === 'sinal',
+      boot.via === 'sinal' && boot.ms <= TETO_DO_BOOT_MS,
       `boot no Atlas assentou por via=${boot.via} em ${(boot.ms / 1000).toFixed(1)}s`
+        + ` (teto ${TETO_DO_BOOT_MS / 1000} s)`
     );
     const a0 = amostras[0];
     conferir(
