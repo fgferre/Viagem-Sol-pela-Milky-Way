@@ -174,6 +174,22 @@ describe('julgarHeapPorRodada', () => {
     expect(julgarHeapPorRodada(heaps({ ciclo: 16 })).ok).toBe(false);
   });
 
+  it('um vazamento de 5 MB por rodada, que só por rodada passava, REPROVA pela soma', () => {
+    const h = julgarHeapPorRodada(heaps({ ciclo: 5, r2: 5 }));
+    expect(h.pior.crescimento).toBeLessThan(12);
+    expect(h.ok).toBe(false);
+  });
+
+  it('o que cresce DEPOIS do degrau de Saturno conta inteiro: 6 MB dentro da 1ª rodada e 7 na 2ª REPROVAM', () => {
+    const h = julgarHeapPorRodada(
+      heaps({ r2: 13.1 }).map((a) => (a.rotulo === 'volta focos' ? { ...a, heap: 160.0 } : a))
+    );
+    expect(h.pior.crescimento).toBeLessThan(12);
+    expect(h.soma).toBeLessThan(12);
+    expect(h.depoisDoDegrau).toBeCloseTo(13.0);
+    expect(h.ok).toBe(false);
+  });
+
   it('a 1ª rodada dos focos sem a 2ª REPROVA: sem ela carga única e vazamento são o mesmo número', () => {
     expect(julgarHeapPorRodada(heaps().filter((a) => a.rotulo !== 'volta focos 2')).ok).toBe(false);
   });

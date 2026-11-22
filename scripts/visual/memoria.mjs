@@ -336,8 +336,16 @@ export function julgarHeapPorRodada(amostras, limiar = LIMIAR_HEAP_MB) {
   const v2 = amostras.find((a) => a.rotulo === 'volta focos 2');
   if (v1 && v2) rodadas.push({ de: v1.rotulo, para: v2.rotulo, crescimento: v2.heap - v1.heap });
   const pior = rodadas.reduce((m, r) => (r.crescimento > m.crescimento ? r : m), rodadas[0] ?? null);
-  const ok = rodadas.length > 0 && !(v1 && !v2) && pior.crescimento < limiar;
-  return { rodadas, pior, ok };
+  // AS DUAS CONTAS DO TOTAL (22/11, leitura independente): só por rodada,
+  // um vazamento de quase 12 MB a cada uma passaria. A SOMA do que as
+  // rodadas cresceram e o total DEPOIS do degrau (da 1ª visita a Saturno,
+  // a carga única do anel, até a última janela) cobram o mesmo teto.
+  const soma = rodadas.reduce((t, r) => t + Math.max(0, r.crescimento), 0);
+  const iSaturno = amostras.findIndex((a) => a.rotulo === 'foco saturn');
+  const depoisDoDegrau = iSaturno >= 0 ? amostras.at(-1).heap - amostras[iSaturno].heap : null;
+  const ok = rodadas.length > 0 && !(v1 && !v2) && pior.crescimento < limiar
+    && soma < limiar && (depoisDoDegrau === null || depoisDoDegrau < limiar);
+  return { rodadas, pior, soma, depoisDoDegrau, ok };
 }
 
 /** a rede do `soltar` da tela de carga (`hospedeiro.ts`: `terminate` 1 s
@@ -911,7 +919,8 @@ async function principal() {
         h.ok,
         `heap pós-GC por rodada: o pior crescimento ${h.pior ? `${h.pior.crescimento.toFixed(1)} MB (${h.pior.de} → ${h.pior.para})` : '—'}`
           + ` < ${LIMIAR_HEAP_MB} MB; a 2ª rodada dos focos contra a 1ª:`
-          + ` ${focos ? `${focos.crescimento.toFixed(1)} MB` : 'AUSENTE'}`
+          + ` ${focos ? `${focos.crescimento.toFixed(1)} MB` : 'AUSENTE'}; a soma das rodadas ${h.soma.toFixed(1)} MB`
+          + `; depois do degrau de Saturno ${h.depoisDoDegrau === null ? '—' : `${h.depoisDoDegrau.toFixed(1)} MB`}`
       );
     };
 
