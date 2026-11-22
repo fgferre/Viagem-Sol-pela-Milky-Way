@@ -34,6 +34,7 @@
 // a mais aqui. Diálogo que nasça FORA do módulo não se declara e não é
 // julgado — e é por isso que todo diálogo do Atlas nasce nele.
 import { readFileSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { abrirSessao, APP_PADRAO, dorme, esperarPor, passosDoConvite } from './chrome.mjs';
 // A PERNA DO CELULAR mora em arquivo próprio desde 23/08 (§11 do AGENTS):
 // eram 546 linhas com seis partes e constantes próprias dentro deste juiz.
@@ -65,13 +66,112 @@ const N_CAMADAS = (() => {
 // QUANTOS CONTROLES A GAVETA "AVANÇADO" TEM, lido do mesmo arquivo que o app
 // monta: eram 7 escritos à mão, e ficaram velhos com a linha da Terra
 // (914c853b, 07/10) e a do relevo realçado (8c8fb17b, 08/10).
+//
+// SÓ AS LINHAS DO PRÓPRIO AVANÇADO, não as de uma sanfona aninhada nele.
+// A conta antiga (regex preguiçosa até o primeiro `</Sanfona>`) parava no
+// fecho do Laboratório da galáxia, aninhado no Avançado desde 3db136cd
+// (13/11), e contava o `<LinhaDeAjuste` do `.map` dele — um modelo que só
+// monta com o laboratório aberto. Dava 10 por acaso até dd26cb08 (18/11)
+// subir a escala de resolução para antes do laboratório; daí em diante a
+// conta dava 11 e o DOM 10. Agora conta só na profundidade 1.
+export function contarAvancadoNaFonte(fonte) {
+  const inicio = fonte.indexOf('<Sanfona id="ajustes-avancado"');
+  if (inicio < 0) return 0;
+  const marcas = /<Sanfona\b|<\/Sanfona>|<LinhaDeAjuste\b/g;
+  marcas.lastIndex = inicio;
+  let profundidade = 0;
+  let n = 0;
+  for (let m = marcas.exec(fonte); m; m = marcas.exec(fonte)) {
+    if (m[0] === '</Sanfona>') {
+      profundidade--;
+      if (profundidade === 0) return n;
+    } else if (m[0] === '<Sanfona') profundidade++;
+    else if (profundidade === 1) n++;
+  }
+  return 0; // o Avançado não fecha: a fonte não é a que o juiz conhece
+}
 const N_AVANCADO = (() => {
-  const bloco = readFileSync(new URL('../../src/components/Ajustes.tsx', import.meta.url), 'utf8')
-    .match(/<Sanfona id="ajustes-avancado"[\s\S]*?<\/Sanfona>/)?.[0];
-  const n = (bloco?.match(/<LinhaDeAjuste\b/g) || []).length;
+  const n = contarAvancadoNaFonte(
+    readFileSync(new URL('../../src/components/Ajustes.tsx', import.meta.url), 'utf8')
+  );
   if (n < 1) throw new Error('gaveta avançado não achada em Ajustes.tsx');
   return n;
 })();
+
+/** O veredito da gaveta Avançado: fechada monta 0, aberta monta os
+ *  `esperado` da fonte, recolhida volta a 0. */
+export function julgarAvancado(
+  { expandidoAntes, fechadoAntes, expandidoDepois, abertoDepois, fechadoDeNovo },
+  esperado = N_AVANCADO
+) {
+  return {
+    ok: expandidoAntes === 'false' && fechadoAntes === 0
+      && expandidoDepois === 'true' && abertoDepois === esperado
+      && fechadoDeNovo === 0,
+    texto: 'ajustes · avançado: fechado por padrão (0 controles em #ajustes-avancado),'
+      + ` abre os ${esperado} (achado ${abertoDepois}) e desmonta ao recolher (achado ${fechadoDeNovo})`,
+  };
+}
+
+// O REGISTRO DA TROCA DE TIER NO SELO (destravar, 21/11): uma corrida deu
+// 7995 ms e não se repetiu (9–12 ms em três medidas; causa sem prova).
+// A regra não muda; a próxima reprovação traz junto, medido DENTRO da
+// página, o tempo do `setQuality`, o instante em que o texto entrou no DOM
+// e as tarefas longas do período. Repetir a troca não serve: depois da
+// primeira ida a `alta` as variantes já estão compiladas.
+// Os observadores entram ANTES do pedido; sonda quebrada não vira falha
+// nova (o registro sai `null`).
+const PEDIR_ALTA_COM_REGISTRO = `(() => {
+  try {
+    const r = { t0: 0, depoisDoSet: null, domMs: null, longas: [] };
+    const anotar = (lista) => { for (const e of lista) r.longas.push([Math.round(e.startTime - r.t0), Math.round(e.duration)]); };
+    const lt = new PerformanceObserver((l) => anotar(l.getEntries()));
+    lt.observe({ type: 'longtask' });
+    const mo = new MutationObserver(() => {
+      if (r.domMs !== null) return;
+      const el = document.querySelector('.atlas-selo-detalhe');
+      if (el && el.innerText.includes('amostragem abaixo de cinema')) r.domMs = Math.round(performance.now() - r.t0);
+    });
+    mo.observe(document.body, { subtree: true, childList: true, characterData: true });
+    window.__registroDoSelo = { r, lt, mo, anotar };
+    r.t0 = performance.now();
+  } catch { window.__registroDoSelo = null; }
+  window.__director.setQuality('alta');
+  if (window.__registroDoSelo) {
+    const r = window.__registroDoSelo.r;
+    r.depoisDoSet = Math.round(performance.now() - r.t0);
+  }
+  return true;
+})()`;
+const LER_REGISTRO_DO_SELO = `(() => {
+  try {
+    const g = window.__registroDoSelo;
+    if (!g) return null;
+    g.anotar(g.lt.takeRecords());
+    g.lt.disconnect();
+    g.mo.disconnect();
+    delete window.__registroDoSelo;
+    return JSON.stringify(g.r);
+  } catch { return null; }
+})()`;
+
+/** O veredito da troca de tier no selo — a regra de sempre (< 1000 ms) —
+ *  com o registro da página no texto. `registro` é o que
+ *  `LER_REGISTRO_DO_SELO` devolveu, já lido, ou `null`. */
+export function julgarSelo(tierNaTela, registro) {
+  let pagina = 'registro da página indisponível';
+  if (registro) {
+    const longas = registro.longas.length
+      ? registro.longas.map(([ini, dur]) => `${dur} ms aos ${ini} ms`).join(', ')
+      : 'nenhuma';
+    pagina = `setQuality ${registro.depoisDoSet} ms, texto no DOM aos ${registro.domMs} ms`
+      + ` depois do pedido, tarefas longas: ${longas}`;
+  }
+  return {
+    ok: tierNaTela !== null && tierNaTela < 1000,
+    texto: `selo: a troca de tier aparece na tela no ato (${tierNaTela} ms; página: ${pagina})`,
+  };
+}
 
 const falhas = [];
 const conferir = (ok, texto) => {
@@ -1174,6 +1274,10 @@ async function julgarFerramentasDoAtlas(s) {
   await s.send('Emulation.clearDeviceMetricsOverride');
 }
 
+// O JUIZ INTEIRO, só na execução direta (guarda no fim do arquivo): as contas
+// puras do veredito (`julgarAvancado`, `julgarSelo`) têm teste, e teste não
+// sobe Chrome. O corpo fica sem reindentar para o diff mostrar só a moldura.
+async function principal() {
 const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
 if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu em ${APP}`);
 
@@ -1623,16 +1727,21 @@ try {
   // FIAÇÃO — um tier que mudasse a imagem sem mover o selo na tela
   // seria o selo mentindo por atraso, que é a doença do item. A gaveta
   // fica ABERTA durante ela: é lá que a lista de desvios mora agora.
-  await sessao.js("window.__director.setQuality('alta')");
+  await sessao.js(PEDIR_ALTA_COM_REGISTRO);
   const tierNaTela = await esperarPor(
     sessao,
     "document.querySelector('.atlas-selo-detalhe').innerText"
       + ".includes('amostragem abaixo de cinema')"
   );
-  conferir(
-    tierNaTela !== null && tierNaTela < 1000,
-    `selo: a troca de tier aparece na tela no ato (${tierNaTela} ms)`
-  );
+  let registroDoSelo = null;
+  try {
+    const json = await sessao.js(LER_REGISTRO_DO_SELO);
+    registroDoSelo = json ? JSON.parse(json) : null;
+  } catch {
+    // sem registro a cobrança segue a mesma; o texto diz "indisponível"
+  }
+  const selo = julgarSelo(tierNaTela, registroDoSelo);
+  conferir(selo.ok, selo.texto);
   await sessao.js("window.__director.setQuality('cinema')");
   const tierVoltou = await esperarPor(
     sessao,
@@ -1871,13 +1980,10 @@ try {
   await sessao.js("document.querySelector('.ajustes-titulo-secao button').click()");
   await dorme(150);
   const fechadoDeNovo = await contarAvancado();
-  conferir(
-    expandidoAntes === 'false' && fechadoAntes === 0
-      && expandidoDepois === 'true' && abertoDepois === N_AVANCADO
-      && fechadoDeNovo === 0,
-    'ajustes · avançado: fechado por padrão (0 controles em #ajustes-avancado),'
-      + ` abre os ${N_AVANCADO} (achado ${abertoDepois}) e desmonta ao recolher (achado ${fechadoDeNovo})`
-  );
+  const avancado = julgarAvancado({
+    expandidoAntes, fechadoAntes, expandidoDepois, abertoDepois, fechadoDeNovo,
+  });
+  conferir(avancado.ok, avancado.texto);
 
   // A MEDIDA DE QUALIDADE É `aria-live` DE VERDADE — muda sozinha quando
   // o tier muda, e quem está com o painel aberto ouve a troca sem
@@ -2079,6 +2185,7 @@ if (falhas.length) {
   process.exit(1);
 }
 process.stdout.write('\nJUIZ DE A11Y: tudo verde\n');
+}
 
 // ============================================================
 // A ÁREA DO SELO (item 61, 22/08) — a medida que faltava.
@@ -2808,4 +2915,9 @@ async function julgarEscalaDaUi(s) {
     }
   }
   await s.send('Emulation.clearDeviceMetricsOverride');
+}
+
+// Importável sem rodar — o mesmo jeito de `memoria.mjs` e `luz-do-quadro.mjs`.
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  await principal();
 }
