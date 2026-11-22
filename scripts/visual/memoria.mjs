@@ -1,5 +1,5 @@
 // Serve: chão — sair devolve o que entrar alocou: texturas, bytes de texel, geometrias e workers sem vazamento
-// Custo: ~5,9 min por tier (estimado: 4,4 medidos em 31/08 com a régua E, mais as duas esperas da carência dos focos de 21/11 e, de 22/11, a 2ª visita de Júpiter e Saturno: ~2 × (3 s de desvio + um assentar + uma amostra), 30–40 s não medidos)
+// Custo: ~7,5 min por tier (estimado: 4,4 medidos em 31/08 com a régua E, mais as duas esperas da carência dos focos de 21/11 e, de 22/11, a 2ª visita de Júpiter e Saturno: ~2 × (3 s de desvio + um assentar + uma amostra), 30–40 s não medidos; e, de 22/11, a 2ª rodada dos focos para o heap: ~1,6 min, estimado, não medido)
 // O AMOSTRADOR DE MEMÓRIA — o juiz que prova que sair DEVOLVE o que
 // entrar alocou (Onda 6, F8/D9).
 //
@@ -76,15 +76,29 @@
 //     descarga faz o repouso voltar a ser o pico e estourar o teto;
 //     zerar a carência faz a volta rápida recarregar.
 //
-// O HEAP: veredito por INCLINAÇÃO, não por igualdade — o heap de V8 oscila
+// O HEAP: veredito POR RODADA, não por igualdade — o heap de V8 oscila
 // por natureza (GC, caches do JIT). O juiz força GC (HeapProfiler.
-// collectGarbage) antes de CADA amostra e compara a MEDIANA da primeira
-// janela de 4 amostras com a da última: diferença < LIMIAR_HEAP_MB.
+// collectGarbage) antes de CADA amostra e compara cada rodada repetida com
+// a anterior do MESMO bloco: ciclo com ciclo, troca com troca, e a 2ª
+// rodada dos focos com a 1ª (`volta focos 2` contra `volta focos`). Cada
+// crescimento < LIMIAR_HEAP_MB (`julgarHeapPorRodada`).
+//   - POR QUE POR RODADA (22/11/2026, sonda iii): a inclinação entre a 1ª
+//     e a última janela de amostras cobrava como vazamento a CARGA ÚNICA
+//     dos pedaços do anel de Saturno — o assado de `PedrasDoAnel`
+//     (pedrasDoAnel.ts: o ladrilho das esteiras, o grão, a forma de longe
+//     e as formas das malhas, em cache do módulo, e a faixa montada no
+//     corpo que fica no palco), ~26 MB de backing store que nasce em fatias
+//     de 8 ms enquanto Saturno é o destino e NÃO se repete: medido em cinco
+//     rodadas, +20,7 MB na 1ª, +1,2 na 2ª, +8,0 na 3ª (o fim do mesmo
+//     assado, a `montar`), −0,1 e 0,0 na 4ª e na 5ª, sem malha refeita.
+//     O que se repete por rodada é o que vaza; o que nasce uma vez fica na
+//     1ª e sai da conta.
 //   - LIMIAR_HEAP_MB = 12: medido nesta máquina, amostras pós-GC do
 //     protocolo inteiro oscilam <1 MB (caches que aquecem uma vez);
 //     12 MB fica acima desse ruído com folga e ABAIXO de um único ciclo da
 //     sabotagem (16 MB retidos por ciclo) — um vazamento por ciclo que
-//     importe atravessa o limiar já no meio do protocolo.
+//     importe atravessa o limiar já no 2º ciclo. O resto do assado que a
+//     2ª rodada ainda pode pegar (a `montar`, ~8 MB) fica abaixo dele.
 //   - A RÉGUA do veredito é `usedSize + backingStorageSize` do
 //     `Runtime.getHeapUsage` (CDP), e o segundo termo NÃO é enfeite: a
 //     PRIMEIRA rodada do M5 reprovou o juiz por medidor cego — 32 MB de
@@ -265,6 +279,30 @@ export function julgarFocos(amostras, declarados = {}) {
   return { primeiras, revisitas, volta, primeiraOk, revisitaOk, voltaOk };
 }
 
+/**
+ * O VEREDITO DO HEAP, POR RODADA (22/11/2026) — ver o cabeçalho. Cada
+ * rodada repetida contra a anterior do mesmo bloco: `ciclo N` contra
+ * `ciclo N−1`, `troca q N` contra `troca q N−1`, e `volta focos 2` contra
+ * `volta focos`. Reprova se algum crescimento chega ao `limiar`, e se houve
+ * a 1ª rodada dos focos sem a 2ª (sem ela a carga única e o vazamento são o
+ * mesmo número).
+ */
+export function julgarHeapPorRodada(amostras, limiar = LIMIAR_HEAP_MB) {
+  const rodadas = [];
+  for (const bloco of ['ciclo ', 'troca q ']) {
+    const s = amostras.filter((a) => a.rotulo.startsWith(bloco));
+    for (let i = 1; i < s.length; i++) {
+      rodadas.push({ de: s[i - 1].rotulo, para: s[i].rotulo, crescimento: s[i].heap - s[i - 1].heap });
+    }
+  }
+  const v1 = amostras.find((a) => a.rotulo === 'volta focos');
+  const v2 = amostras.find((a) => a.rotulo === 'volta focos 2');
+  if (v1 && v2) rodadas.push({ de: v1.rotulo, para: v2.rotulo, crescimento: v2.heap - v1.heap });
+  const pior = rodadas.reduce((m, r) => (r.crescimento > m.crescimento ? r : m), rodadas[0] ?? null);
+  const ok = rodadas.length > 0 && !(v1 && !v2) && pior.crescimento < limiar;
+  return { rodadas, pior, ok };
+}
+
 /** a rede do `soltar` da tela de carga (`hospedeiro.ts`: `terminate` 1 s
  *  depois de a capa desmontar), com folga — ver a amostra do boot */
 const REDE_DO_WORKER_DA_CAPA_MS = 1200;
@@ -342,12 +380,6 @@ const falhas = [];
 const conferir = (ok, texto) => {
   process.stdout.write(`${ok ? '  OK  ' : '  FALHA '} ${texto}\n`);
   if (!ok) falhas.push(texto);
-};
-
-const mediana = (v) => {
-  const s = [...v].sort((a, b) => a - b);
-  const m = s.length >> 1;
-  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 };
 
 // O VAZAMENTO INJETADO (M5): real, pelo próprio app, visível aos TRÊS
@@ -744,24 +776,30 @@ async function principal() {
       // degrau, ver `estrearOFoco`) sem assentar, como o desvio do passeio,
       // e volta. O mapa do corpo ANTERIOR pode vencer a carência no meio da
       // conta; por isso `julgarFocos` conta o que NASCEU, e não o saldo.
-      for (const id of focos) {
-        await focar(id);
-        amostras.push(await amostrar(`foco ${id}`));
-        const antesDaRevisita = await pedidosDoCorpo(id);
+      // A 2ª RODADA (prefixo `r2 `, que `julgarFocos` não lê) repete tudo
+      // para o heap: `julgarHeapPorRodada` compara a volta dela com a da 1ª.
+      const rodadaDeFocos = async (prefixo, volta) => {
+        for (const id of focos) {
+          await focar(id);
+          amostras.push(await amostrar(`${prefixo}foco ${id}`));
+          const antesDaRevisita = await pedidosDoCorpo(id);
+          await sairParaOSistema();
+          await dorme(DESVIO_DA_VOLTA_S * 1000);
+          await focar(id);
+          amostras.push({
+            ...(await amostrar(`${prefixo}revisita ${id}`)),
+            pedidos: (await pedidosDoCorpo(id)) - antesDaRevisita,
+          });
+        }
+        // o foco sai e o tempo passa com a aba na frente: a carência de
+        // TODOS os mapas vence, e a contagem tem de voltar à base
         await sairParaOSistema();
-        await dorme(DESVIO_DA_VOLTA_S * 1000);
-        await focar(id);
-        amostras.push({
-          ...(await amostrar(`revisita ${id}`)),
-          pedidos: (await pedidosDoCorpo(id)) - antesDaRevisita,
-        });
-      }
-      // o foco sai e o tempo passa com a aba na frente: a carência de
-      // TODOS os mapas vence, e a contagem tem de voltar à base
-      await sairParaOSistema();
-      await sessao.assentar();
-      await dorme(ESPERA_DA_CARENCIA_S * 1000);
-      amostras.push(await amostrar('volta focos'));
+        await sessao.assentar();
+        await dorme(ESPERA_DA_CARENCIA_S * 1000);
+        amostras.push(await amostrar(volta));
+      };
+      await rodadaDeFocos('', 'volta focos');
+      await rodadaDeFocos('r2 ', 'volta focos 2');
       return { boot, amostras, mundos };
     };
 
@@ -790,16 +828,13 @@ async function principal() {
         : 0;
       // os focos têm veredito próprio, puro e testado (`julgarFocos`)
       const focos = julgarFocos(amostras, declarados);
-      const heaps = amostras.map((a) => a.heap);
-      const janela = Math.max(1, Math.min(4, heaps.length >> 1));
-      const inclinacao =
-        mediana(heaps.slice(-janela)) - mediana(heaps.slice(0, janela));
+      const heap = julgarHeapPorRodada(amostras);
       const picoTextures = Math.max(...amostras.map((a) => a.textures));
       const picoTexelMiB = Math.max(...amostras.map((a) => a.texelMiB));
       const picoGeometries = Math.max(...amostras.map((a) => a.geometries));
       const picoWorkers = Math.max(...amostras.map((a) => a.workers));
       return {
-        deltaPortal, deltaTrocas, focos, inclinacao,
+        deltaPortal, deltaTrocas, focos, heap,
         picoTextures, picoTexelMiB, picoGeometries, picoWorkers,
       };
     };
@@ -832,6 +867,17 @@ async function principal() {
       );
     };
 
+    /** O heap por rodada (`julgarHeapPorRodada`), o MESMO nos dois braços. */
+    const conferirHeap = (h) => {
+      const focos = h.rodadas.find((r) => r.para === 'volta focos 2');
+      conferir(
+        h.ok,
+        `heap pós-GC por rodada: o pior crescimento ${h.pior ? `${h.pior.crescimento.toFixed(1)} MB (${h.pior.de} → ${h.pior.para})` : '—'}`
+          + ` < ${LIMIAR_HEAP_MB} MB; a 2ª rodada dos focos contra a 1ª:`
+          + ` ${focos ? `${focos.crescimento.toFixed(1)} MB` : 'AUSENTE'}`
+      );
+    };
+
     if (SABOTAGEM) {
       // ---- o protocolo inteiro, sabidamente vazado ---------------------
       process.stdout.write('MODO --sabotagem: o veredito abaixo TEM de reprovar.\n\n');
@@ -843,10 +889,7 @@ async function principal() {
       conferir(v.deltaPortal === 0, `portal: delta ZERO em textures/geometries (max ${v.deltaPortal})`);
       conferir(v.deltaTrocas === 0, `trocas de tier: delta ZERO entre trocas (max ${v.deltaTrocas})`);
       conferirFocos(v.focos);
-      conferir(
-        v.inclinacao < LIMIAR_HEAP_MB,
-        `heap: inclinação ${v.inclinacao.toFixed(1)} MB < ${LIMIAR_HEAP_MB} MB`
-      );
+      conferirHeap(v.heap);
       conferir(v.picoWorkers === 0, `workers: ZERO vivo em toda amostra (pico ${v.picoWorkers})`);
     } else {
       // ---- 1: o contrato do getter -------------------------------------
@@ -891,11 +934,7 @@ async function principal() {
           + `geometries não crescem — delta ZERO entre trocas (max ${v.deltaTrocas})`
       );
       conferirFocos(v.focos);
-      conferir(
-        v.inclinacao < LIMIAR_HEAP_MB,
-        `heap pós-GC: inclinação ${v.inclinacao.toFixed(1)} MB entre medianas de janelas`
-          + ` < ${LIMIAR_HEAP_MB} MB`
-      );
+      conferirHeap(v.heap);
       conferir(
         v.picoTextures <= TETO_TEXTURAS,
         `teto residente: ${v.picoTextures} texturas ≤ ${TETO_TEXTURAS}`

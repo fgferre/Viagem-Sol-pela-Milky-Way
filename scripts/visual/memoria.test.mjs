@@ -7,7 +7,7 @@
 // para pegar — e o caso bom ao lado, no molde de `luz-do-quadro.test.mjs`.
 import { describe, it, expect } from 'vitest';
 import {
-  bootAteOSinal, contarDeclarados, julgarBoot, julgarFocos, TETO_DO_BOOT_MS,
+  bootAteOSinal, contarDeclarados, julgarBoot, julgarFocos, julgarHeapPorRodada, TETO_DO_BOOT_MS,
 } from './memoria.mjs';
 
 /** o protocolo dos focos como `memoria.mjs` o escreve, com as contas
@@ -123,6 +123,36 @@ describe('julgarFocos', () => {
 
   it('sem `base focos` (o braço M5) não há veredito de focos', () => {
     expect(julgarFocos([{ rotulo: 'ciclo 1', textures: 40, geometries: 44 }])).toBeNull();
+  });
+});
+
+describe('julgarHeapPorRodada', () => {
+  /** o heap das amostras, em MB, com a carga única do anel na 1ª rodada
+   *  dos focos (os números da sonda iii, 22/11) e `r2` o que a 2ª soma */
+  const heaps = ({ ciclo = 0, r2 = 1.2 } = {}) =>
+    [
+      ['boot', 125.7], ['ciclo 1', 128.0], ['ciclo 2', 128.2 + ciclo], ['ciclo 3', 128.3 + 2 * ciclo],
+      ['troca q 1', 127.6], ['troca q 2', 127.9], ['troca q 3', 128.0],
+      ['base focos', 130.9], ['foco saturn', 154.0], ['volta focos', 153.9],
+      ['r2 foco saturn', 156.7], ['volta focos 2', 153.9 + r2],
+    ].map(([rotulo, heap]) => ({ rotulo, heap }));
+
+  it('a carga única da 1ª rodada (+20,7 MB) passa: a 2ª rodada soma ~zero', () => {
+    const h = julgarHeapPorRodada(heaps());
+    expect(h.ok).toBe(true);
+    expect(h.rodadas.find((r) => r.para === 'volta focos 2').crescimento).toBeCloseTo(1.2);
+  });
+
+  it('a 2ª rodada dos focos crescendo 12,5 MB REPROVA: o teto é 12', () => {
+    expect(julgarHeapPorRodada(heaps({ r2: 12.5 })).ok).toBe(false);
+  });
+
+  it('um ciclo do portal retendo 16 MB REPROVA (a sabotagem do M5)', () => {
+    expect(julgarHeapPorRodada(heaps({ ciclo: 16 })).ok).toBe(false);
+  });
+
+  it('a 1ª rodada dos focos sem a 2ª REPROVA: sem ela carga única e vazamento são o mesmo número', () => {
+    expect(julgarHeapPorRodada(heaps().filter((a) => a.rotulo !== 'volta focos 2')).ok).toBe(false);
   });
 });
 
