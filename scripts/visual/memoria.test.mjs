@@ -82,6 +82,29 @@ describe('julgarFocos', () => {
     expect(f.primeiraOk).toBe(false);
   });
 
+  it('o que o corpo cria para si (PROPRIAS) passa na quantidade declarada; uma a mais do mesmo tamanho ou um tamanho fora da lista reprova', () => {
+    const a = (rotulo, lista) => ({ rotulo, textures: 39 + lista.length, geometries: 44, lista });
+    const saturno = (...extra) => julgarFocos(
+      [
+        a('base focos', ['fundo 4x2']),
+        a('foco saturn', ['fundo 4x2', 'sem-nome 2048x1024 #347', 'sem-nome 2048x1 #349',
+          'sem-nome 64x1 #351', 'sem-nome 2048x1 #350', ...extra]),
+      ],
+      { saturn: 1 }
+    ).primeiras[0];
+    expect(saturno()).toMatchObject({ proprias: 3, excesso: [] });
+    expect(julgarFocos([a('base focos', []), a('foco jupiter', ['m 2048x1024', 'd 1x1'])], { jupiter: 1 }).primeiraOk)
+      .toBe(true);
+    // a terceira 2048×1 reprova mesmo que o mapa do manifesto não tivesse subido
+    expect(saturno('sem-nome 2048x1 #352').excesso).toEqual(['3 de 2048x1 (declaradas 2)']);
+    // tamanho que não está em PROPRIAS conta contra o manifesto: 2 de 1
+    const fora = saturno('sem-nome 512x512 #353');
+    expect(fora.novas - fora.proprias).toBe(2);
+    // a PROPRIAS de um corpo não vale para outro: a 1×1 de Júpiter na Terra reprova
+    expect(julgarFocos([a('base focos', []), a('foco earth', ['m 8x4', 'd 1x1'])], { earth: 1 }).primeiraOk)
+      .toBe(false);
+  });
+
   it('textura que o walker não vê ainda conta: a contagem crua é o piso do que nasceu', () => {
     const a = (rotulo, textures) => ({ rotulo, textures, geometries: 44, lista: ['fundo 4x2'] });
     expect(julgarFocos([a('base focos', 40), a('foco jupiter', 42)], { jupiter: 1 }).primeiraOk).toBe(false);

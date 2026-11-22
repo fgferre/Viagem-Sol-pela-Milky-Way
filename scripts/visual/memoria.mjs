@@ -237,7 +237,38 @@ export function contarDeclarados(manifest) {
  * As geometrias ficam em delta ZERO nas três: enquadrar não cria malha.
  * Sem `base focos` (o braço M5) não há o que julgar e volta `null`.
  */
-export function julgarFocos(amostras, declarados = {}) {
+/**
+ * O QUE O CORPO CRIA PARA SI, fora do manifesto (22/11/2026, decisão da
+ * conversa principal): por tamanho e com a QUANTIDADE — uma a mais do mesmo
+ * tamanho reprova. Lido em `src/three/world/corpos/gigante.ts`.
+ */
+export const PROPRIAS = {
+  // a 1×1 vazia do anel (`dummyAnel`, gigante.ts:2190): Júpiter não tem
+  // anel e ela nunca é trocada (4 bytes; não vale mexer no gigante por isso)
+  jupiter: { '1x1': 1 },
+  saturn: {
+    // o perfil de τ do anel (gigante.ts:871) e o brilho medido em meia
+    // precisão (gigante.ts:834)
+    '2048x1': 2,
+    // a tabela do brilho do anel no globo, o ringshine (gigante.ts:700)
+    '64x1': 1,
+  },
+};
+
+/** casa o que nasceu com o que o corpo cria para si; o excesso de um
+ *  tamanho declarado sai em `excesso` (reprova sozinho) */
+function casarProprias(subiram, proprias = {}) {
+  let casadas = 0;
+  const excesso = [];
+  for (const [tamanho, quantas] of Object.entries(proprias)) {
+    const n = subiram.filter((s) => s.split(' ').includes(tamanho)).length;
+    casadas += Math.min(n, quantas);
+    if (n > quantas) excesso.push(`${n} de ${tamanho} (declaradas ${quantas})`);
+  }
+  return { casadas, excesso };
+}
+
+export function julgarFocos(amostras, declarados = {}, proprias = PROPRIAS) {
   const iBase = amostras.findIndex((a) => a.rotulo === 'base focos');
   if (iBase < 0) return null;
   const base = amostras[iBase];
@@ -260,7 +291,10 @@ export function julgarFocos(amostras, declarados = {}) {
       subiram,
       novas: Math.max(subiram.length, texturas),
     };
-    if (tipo === 'foco') primeiras.push({ ...delta, declarados: declarados[id] });
+    if (tipo === 'foco') {
+      const { casadas, excesso } = casarProprias(subiram, proprias[id]);
+      primeiras.push({ ...delta, declarados: declarados[id], proprias: casadas, excesso });
+    }
     else if (tipo === 'revisita') revisitas.push({ ...delta, pedidos: a.pedidos });
     else if (a.rotulo === 'volta focos') {
       volta = {
@@ -270,7 +304,10 @@ export function julgarFocos(amostras, declarados = {}) {
     }
   }
   const primeiraOk =
-    primeiras.length > 0 && primeiras.every((p) => p.novas <= p.declarados && p.geometrias === 0);
+    primeiras.length > 0
+    && primeiras.every(
+      (p) => p.novas - p.proprias <= p.declarados && p.excesso.length === 0 && p.geometrias === 0
+    );
   const revisitaOk =
     primeiras.length > 0
     && primeiras.every((p) => revisitas.some((r) => r.id === p.id))
@@ -844,14 +881,14 @@ async function principal() {
       const delta = (d) => `${d.texturas} tex/${d.geometrias} geo`;
       conferir(
         f.primeiraOk,
-        `${FOCOS.length} focos, 1ª visita: NASCEM no máximo os mapas DECLARADOS por corpo,`
-          + ` geometrias em delta ZERO (${f.primeiras.map((p) => `${p.id} ${p.novas} nascidas de ${p.declarados} declaradas, ${delta(p)}`).join(' · ')})`
+        `${FOCOS.length} focos, 1ª visita: NASCEM no máximo os mapas DECLARADOS por corpo (manifesto + PROPRIAS),`
+          + ` geometrias em delta ZERO (${f.primeiras.map((p) => `${p.id} ${p.novas} nascidas de ${p.declarados} declaradas + ${p.proprias} próprias${p.excesso.length ? `, A MAIS: ${p.excesso.join(', ')}` : ''}, ${delta(p)}`).join(' · ')})`
       );
-      if (!f.primeiraOk) {
-        for (const p of f.primeiras) {
-          process.stdout.write(`         subiu em ${p.id}: ${p.subiram.join(' | ') || '(o walker não viu nome novo)'}
+      // sempre, não só na reprovação: a lista PROPRIAS é lida do código e
+      // cada corrida mostra se o que nasceu bate com ela
+      for (const p of f.primeiras) {
+        process.stdout.write(`         subiu em ${p.id}: ${p.subiram.join(' | ') || '(o walker não viu nome novo)'}
 `);
-        }
       }
       conferir(
         f.revisitaOk,
