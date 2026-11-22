@@ -77,8 +77,10 @@
 //       o MESMO par com o alvo deslocado 3 px de propósito tem de REPROVAR.
 //       Instrumento que aprova alvo errado não mede — só concorda.
 //   (b) PAR NULO: `?noplan=1` × `?noplan=1`, duas capturas independentes da
-//       mesma URL, tem de dar ZERO componentes. É o piso de ruído medido, e
-//       não suposto.
+//       mesma URL, tem de caber no TETO DE RUÍDO da casa (`TETO_DO_RUIDO`,
+//       `chrome.mjs`: ≤ 1/255 em ≤ 0,03 % dos px — `julgarParNulo`). Até 22/11
+//       exigia ZERO, e neste PC (D3D11) 57–86 px de uma galáxia vizinha piscam
+//       1/255 de quadro a quadro com a cena parada: o zero reprovava a máquina.
 //
 // ------------------------------------------------------------
 // OS DOIS ESTIMADORES, E POR QUE O JUÍZO É POR EIXO
@@ -146,7 +148,9 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
-import { GPU_FLAGS, lancarChrome, capturarCDP, julgarProntidao, APP_PADRAO } from './chrome.mjs';
+import {
+  GPU_FLAGS, lancarChrome, capturarCDP, julgarProntidao, APP_PADRAO, julgarTetoDoRuido, NAO_DETERMINISTICA,
+} from './chrome.mjs';
 import { VISTAS, PIN } from './ab-identidade.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -609,6 +613,17 @@ export function casarCorpos({
  * A segunda é a que importa. Uma régua que só sabe achar concorda com
  * qualquer alvo, e o "casamento" vira tautologia.
  */
+/**
+ * O PAR NULO (M5b): `noplan×noplan`, a mesma URL em duas capturas, contra o
+ * teto de ruído da casa. Acima dele a vista não é determinística e a régua 3
+ * não mede nada — reprova dizendo isso, com os números. `acesos` são os px
+ * que diferem em algum canal; `maior`, o maior delta de canal, em /255.
+ */
+export function julgarParNulo({ acesos, maior, total }) {
+  const r = julgarTetoDoRuido({ diferentes: acesos, maior, total });
+  return { ok: r.ok, texto: r.ok ? `dentro do teto: ${r.texto}` : `${NAO_DETERMINISTICA}: ${r.texto}` };
+}
+
 export function autoTesteSintetico() {
   const W = 80;
   const H = 60;
@@ -699,7 +714,8 @@ ${manchaSaturada.toString()}
   const pa = px(a), pb = px(b), pa2 = px(a2);
   const alvos = ${JSON.stringify(alvos)};
   const par = componentesDoDiff({ a: pa, b: pb, W, H, limiar: ${LIMIAR_DELTA}, alvos });
-  const nulo = componentesDoDiff({ a: pa, b: pa2, W, H, limiar: ${LIMIAR_DELTA}, alvos: [] });
+  // o par nulo conta TODO px que difere (limiar 1), qualquer que seja o LIMIAR da régua: é o teto de ruído
+  const nulo = componentesDoDiff({ a: pa, b: pa2, W, H, limiar: 1, alvos: [] });
   // o disco saturado do Sol, MEDIDO na imagem com a camada: é a área em
   // que somar luz não muda byte nenhum, e é a definição operacional do
   // SOB-GLARE da tabela
@@ -707,7 +723,10 @@ ${manchaSaturada.toString()}
   document.getElementById('o').textContent = JSON.stringify({
     W, H,
     par,
-    nulo: { acesos: nulo.acesos, componentes: nulo.componentes.length },
+    nulo: {
+      acesos: nulo.acesos, componentes: nulo.componentes.length,
+      maior: nulo.componentes.reduce((m, c) => Math.max(m, c.deltaMax), 0),
+    },
     discoDoSol: sol ? manchaSaturada({ img: pb, W, H, x: sol.px, y: sol.py }) : null,
   });
 })();
@@ -787,9 +806,9 @@ async function medirVista(nome, query, porta) {
   if (r.W !== dbg.largura || r.H !== dbg.altura) {
     throw new Error(`${nome}: PNG ${r.W}×${r.H} contra tela ${dbg.largura}×${dbg.altura} do ?dbgplan`);
   }
-  // o par nulo já cumpriu o que tinha a cumprir; o PNG é byte a byte o do
-  // outro lado quando ele passa, e guardá-lo seria guardar duas vezes a
-  // mesma imagem (regra 5 do AGENTS)
+  // o par nulo já cumpriu o que tinha a cumprir; quando ele passa, o PNG é o
+  // do outro lado a menos do teto de ruído, e guardá-lo seria guardar duas
+  // vezes a mesma imagem (regra 5 do AGENTS)
   rmSync(nulo2, { force: true });
 
   const juizo = casarCorpos({
@@ -808,8 +827,9 @@ function imprimir({ nome, dbg, r, juizo }) {
     + ` (${((100 * s.acesos) / (r.W * r.H)).toFixed(4)}%) · ${s.subiram.toLocaleString('pt-BR')} SUBIRAM`
     + ` · ${s.desceram} desceram · soma +${s.somaGanho.toLocaleString('pt-BR')}`
     + ` / −${s.somaPerda.toLocaleString('pt-BR')} · ${s.componentes.length} componentes`);
-  console.log(`  par nulo (noplan×noplan): ${r.nulo.acesos} px, ${r.nulo.componentes} componentes`
-    + `  ${r.nulo.componentes === 0 && r.nulo.acesos === 0 ? '[M5 OK]' : '[M5 FALHOU]'}`);
+  const nulo = julgarParNulo({ ...r.nulo, total: r.W * r.H });
+  console.log(`  par nulo (noplan×noplan): ${r.nulo.componentes} componentes, ${nulo.texto}`
+    + `  ${nulo.ok ? '[M5 OK]' : '[M5 FALHOU]'}`);
   const d = r.discoDoSol;
   const pxSol = (s.ondeCaiu.find((o) => o.id === 'sun') || {}).plan;
   console.log(d
@@ -876,8 +896,7 @@ async function principal() {
     imprimir(medida);
     if (medida.juizo.linhas.some((l) => l.id === 'moon' && l.status !== 'FUNDIDA-COM-TERRA')) luaMedida = true;
     vias.push(...medida.vias);
-    const nulo = medida.r.nulo;
-    if (nulo.componentes !== 0 || nulo.acesos !== 0) erro = true;
+    if (!julgarParNulo({ ...medida.r.nulo, total: medida.r.W * medida.r.H }).ok) erro = true;
     if (medida.r.par.desceram !== 0) {
       console.error(`  !! ${nome}: ${medida.r.par.desceram} px PERDERAM luz — a camada é aditiva`);
       erro = true;

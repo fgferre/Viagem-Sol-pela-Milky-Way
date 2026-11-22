@@ -1,10 +1,10 @@
-// Serve: chão — o teto do pronto e o controle fora da cobertura do juiz da poeira reprovam o que devem, sem subir Chrome
+// Serve: chão — o teto do pronto, o controle fora da cobertura e a transição (b) do juiz da poeira reprovam o que devem, sem subir Chrome
 // As contas PURAS do juiz da poeira (destravar, 21/11/2026). O juiz inteiro
-// captura e não roda aqui; o que decide os dois vereditos roda. Cada um tem
+// captura e não roda aqui; o que decide os vereditos roda. Cada um tem
 // o seu CONTROLE NEGATIVO, no molde de `memoria.test.mjs`.
 import { describe, it, expect } from 'vitest';
 import {
-  diferencaPorPixel, julgarControle, julgarPronto, FOLGA_DO_RUIDO, TETO_PRONTO_MS,
+  julgarControle, julgarDepoisDaTroca, julgarPronto, TETO_PRONTO_MS,
 } from './poeira-shaders.mjs';
 
 describe('o teto do pronto', () => {
@@ -22,38 +22,49 @@ describe('o teto do pronto', () => {
   });
 });
 
-describe('diferencaPorPixel', () => {
-  it('conta px que diferem em algum canal e a maior diferença', () => {
-    const a = Uint8Array.from([10, 10, 10, 50, 50, 50, 0, 0, 0]);
-    const b = Uint8Array.from([10, 11, 10, 50, 50, 53, 0, 0, 0]);
-    expect(diferencaPorPixel(a, b, 3)).toEqual({ diferentes: 2, maior: 3 });
-  });
-});
-
-describe('o controle fora da cobertura', () => {
-  const ruido = (diferentes, maior = 1) => ({ diferentes, maior });
+describe('o controle fora da cobertura, pelo teto de ruído da casa (22/11)', () => {
+  // a foto do controle: 1280×720 em DPR 2
+  const total = 2560 * 1440;
+  const medida = (diferentes, maior = 1) => ({ diferentes, maior });
   const caso = (entre, ruidoOn, ruidoOff, md5On = ['a1', 'a2'], md5Off = ['b1', 'b2']) =>
-    julgarControle({ md5On, md5Off, entre, ruidoOn, ruidoOff });
+    julgarControle({ md5On, md5Off, entre, ruidoOn, ruidoOff, total });
 
   it('um md5 em comum entre os lados é IGUAL', () => {
-    const v = caso(ruido(8), ruido(0, 0), ruido(0, 0), ['a1', 'c'], ['c', 'b2']);
+    const v = caso(medida(8), medida(0, 0), medida(0, 0), ['a1', 'c'], ['c', 'b2']);
     expect([v.ok, v.veredito]).toEqual([true, 'IGUAL']);
   });
 
-  it('a diferença entre os lados dentro do ruído do mesmo lado passa', () => {
-    const v = caso(ruido(8), ruido(7), ruido(5));
-    expect([v.ok, v.veredito]).toEqual([true, 'DENTRO DO RUÍDO']);
+  it('a diferença entre os lados dentro do teto passa, mesmo com a mesma URL repetindo o md5', () => {
+    expect([caso(medida(8), medida(7), medida(5)).ok, caso(medida(8), medida(7), medida(5)).veredito])
+      .toEqual([true, 'DENTRO DO TETO']);
+    // o "piso zero ⇒ DIFERE" da folga de 2× saiu por decisão: 1 px de 1/255 cabe no teto
+    expect(caso(medida(1), medida(0, 0), medida(0, 0), ['a', 'a'], ['b', 'b']).ok).toBe(true);
   });
 
-  it('REPROVA quando a diferença passa do piso de ruído medido vezes a folga', () => {
-    expect(caso(ruido(7 * FOLGA_DO_RUIDO + 1), ruido(7), ruido(5)).ok).toBe(false);
-    // o nível também conta: ruído de 1/255, poeira de 3/255 num punhado de px
-    expect(caso(ruido(4, 3), ruido(7), ruido(5)).ok).toBe(false);
+  it('CONTROLE NEGATIVO: a poeira vazando acima do teto é DIFERE', () => {
+    // em nível: 3/255 num punhado de px
+    const nivel = caso(medida(4, 3), medida(7), medida(5));
+    expect([nivel.ok, nivel.veredito]).toEqual([false, 'DIFERE']);
+    // em área: 1/255 em mais de 0,03 % dos px
+    expect(caso(medida(Math.floor(total * 0.0003) + 1), medida(7), medida(5)).ok).toBe(false);
   });
 
-  it('lados que repetem o próprio md5 têm piso zero: qualquer diferença é DIFERE', () => {
-    const v = caso(ruido(1), ruido(0, 0), ruido(0, 0), ['a', 'a'], ['b', 'b']);
-    expect([v.ok, v.veredito]).toEqual([false, 'DIFERE']);
-    expect(v.texto).toContain('entre os lados 1 px');
+  it('CONTROLE NEGATIVO: a MESMA URL acima do teto reprova dizendo que a vista não é determinística', () => {
+    const v = caso(medida(0, 0), medida(9, 2), medida(5));
+    expect([v.ok, v.veredito]).toEqual([false, 'NÃO DETERMINÍSTICA']);
+    expect(v.texto).toContain('a vista não é determinística');
+    expect(v.texto).toContain('9 px de 3686400');
+  });
+});
+
+describe('a transição (b), depois da troca × do zero', () => {
+  const total = 640 * 360;
+  it('os 9 px a 1/255 medidos com o conserto do pronto passam', () => {
+    expect(julgarDepoisDaTroca({ diferentes: 9, maior: 1, total }).ok).toBe(true);
+  });
+
+  it('CONTROLE NEGATIVO: a foto do pronto cedo (11.832 px, 15/255) reprova, e 2/255 num px também', () => {
+    expect(julgarDepoisDaTroca({ diferentes: 11832, maior: 15, total }).ok).toBe(false);
+    expect(julgarDepoisDaTroca({ diferentes: 1, maior: 2, total }).ok).toBe(false);
   });
 });

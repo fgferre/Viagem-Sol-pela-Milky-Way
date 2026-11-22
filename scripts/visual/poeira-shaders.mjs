@@ -65,7 +65,10 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
-import { capturarCDP, APP_PADRAO, dorme, esperarPor, comLinguaDoJuizNaUrl } from './chrome.mjs';
+import {
+  capturarCDP, APP_PADRAO, dorme, esperarPor, comLinguaDoJuizNaUrl,
+  diferencaPorPixel, julgarTetoDoRuido, NAO_DETERMINISTICA,
+} from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 
@@ -421,57 +424,39 @@ async function cruaInteira(png) {
   return sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
 }
 
-/** O diff-pixel de dois recortes crus do mesmo tamanho: quantos px
- *  diferem em algum canal, e a maior diferença de um canal, em /255. */
-export function diferencaPorPixel(a, b, canais) {
-  let diferentes = 0;
-  let maior = 0;
-  for (let i = 0; i < a.length; i += canais) {
-    let d = 0;
-    for (let c = 0; c < canais; c++) d = Math.max(d, Math.abs(a[i + c] - b[i + c]));
-    if (d > 0) {
-      diferentes++;
-      if (d > maior) maior = d;
-    }
-  }
-  return { diferentes, maior };
-}
-
-/**
- * A FOLGA SOBRE O RUÍDO, multiplicativa e DECLARADA, não calibrada: a
- * diferença entre os lados pode chegar ao dobro do pior ruído medido dentro
- * de um mesmo lado (em px e em nível). Multiplicativa porque piso zero tem
- * de continuar zero: lados que repetem o próprio md5 e diferem entre si são
- * DIFERE, como no `ab-identidade`. Ninguém mediu ainda quantos px a mesma
- * URL varia neste controle (o diagnóstico de 21/11 viu só o md5 mudar).
- */
-export const FOLGA_DO_RUIDO = 2;
-
 /**
  * O VEREDITO DO CONTROLE FORA DA COBERTURA, no molde do `ab-identidade`
  * (`julgarVistas`): um md5 em comum entre os lados é IGUAL; sem md5 em
- * comum, a diferença entre os lados (`entre`, poeira=1 × poeira=0 da 1ª
- * captura) é julgada contra o RUÍDO medido dentro de cada lado (`ruidoOn`,
- * `ruidoOff`: 1ª × 2ª captura da mesma URL). Passa se couber no pior ruído
- * vezes a folga — DENTRO DO RUÍDO; senão DIFERE e reprova.
+ * comum, julga-se pelo TETO DE RUÍDO ABSOLUTO da casa (`TETO_DO_RUIDO`,
+ * `chrome.mjs`: ≤ 1/255 em ≤ 0,03 % dos px), e não mais pelo dobro do ruído
+ * medido (a folga de 2× saiu em 22/11). Primeiro a MESMA URL: `ruidoOn` e
+ * `ruidoOff` (1ª × 2ª captura de cada lado) acima do teto reprovam dizendo
+ * que a vista não é determinística — aí a comparação entre os lados não mede
+ * nada. Depois `entre` (poeira=1 × poeira=0, 1ª captura): dentro do teto
+ * passa; acima, DIFERE. `total` é o número de px da foto.
  */
-export function julgarControle({ md5On, md5Off, entre, ruidoOn, ruidoOff }, folga = FOLGA_DO_RUIDO) {
+export function julgarControle({ md5On, md5Off, entre, ruidoOn, ruidoOff, total }) {
   const curto = (hs) => [...new Set(hs)].map((h) => h.slice(0, 12)).join(',');
   const md5s = `md5 poeira=1 ${curto(md5On)} · poeira=0 ${curto(md5Off)}`;
   if (md5On.some((h) => md5Off.includes(h))) return { ok: true, veredito: 'IGUAL', texto: md5s };
-  const piso = {
-    diferentes: Math.max(ruidoOn.diferentes, ruidoOff.diferentes),
-    maior: Math.max(ruidoOn.maior, ruidoOff.maior),
-  };
-  const ok = entre.diferentes <= piso.diferentes * folga && entre.maior <= piso.maior * folga;
+  const on = julgarTetoDoRuido({ ...ruidoOn, total });
+  const off = julgarTetoDoRuido({ ...ruidoOff, total });
+  const ruidos = `mesma URL poeira=1 ${on.texto} · mesma URL poeira=0 ${off.texto}`;
+  if (!on.ok || !off.ok) {
+    return { ok: false, veredito: 'NÃO DETERMINÍSTICA', texto: `${md5s}; ${NAO_DETERMINISTICA}: ${ruidos}` };
+  }
+  const entreOsLados = julgarTetoDoRuido({ ...entre, total });
   return {
-    ok,
-    veredito: ok ? 'DENTRO DO RUÍDO' : 'DIFERE',
-    texto: `${md5s}; entre os lados ${entre.diferentes} px, maior ${entre.maior}/255;`
-      + ` ruído do mesmo lado poeira=1 ${ruidoOn.diferentes} px (maior ${ruidoOn.maior}/255),`
-      + ` poeira=0 ${ruidoOff.diferentes} px (maior ${ruidoOff.maior}/255);`
-      + ` aceita até ${folga}× o pior ruído (${piso.diferentes * folga} px, ${piso.maior * folga}/255)`,
+    ok: entreOsLados.ok,
+    veredito: entreOsLados.ok ? 'DENTRO DO TETO' : 'DIFERE',
+    texto: `${md5s}; entre os lados ${entreOsLados.texto}; ${ruidos}`,
   };
+}
+
+/** O veredito da transição (b), "depois da troca × do zero", com md5 diferente:
+ *  o teto de ruído da casa e só ele (22/11; era ≤ 1/255 em ≤ 0,01 % dos px). */
+export function julgarDepoisDaTroca(medida) {
+  return julgarTetoDoRuido(medida);
 }
 
 const PONTOS_FORA_DA_COBERTURA = [100, 153, 167];
@@ -486,8 +471,8 @@ const PONTOS_FORA_DA_COBERTURA = [100, 153, 167];
  * capturas de `poeira=1` deram md5 diferentes, e duas de `poeira=0`
  * também), então md5 diferente entre os lados não prova a poeira vazando.
  * A RE-MIRA do `ab-identidade`: uma captura por lado; md5 igual passa sem
- * custo novo; md5 diferente recaptura os dois lados e julga a diferença
- * entre eles contra o ruído de dentro de cada lado (`julgarControle`).
+ * custo novo; md5 diferente recaptura os dois lados e julga cada lado e a
+ * diferença entre eles pelo teto de ruído da casa (`julgarControle`).
  */
 async function testeControleForaDaCobertura(proximaPorta) {
   let falhou = false;
@@ -528,10 +513,11 @@ async function testeControleForaDaCobertura(proximaPorta) {
         entre: diferencaPorPixel(on.data, off.data, canais),
         ruidoOn: diferencaPorPixel(on.data, on2.data, canais),
         ruidoOff: diferencaPorPixel(off.data, off2.data, canais),
+        total: on.info.width * on.info.height,
       });
       if (!v.ok) falhou = true;
       process.stdout.write(
-        `${v.ok ? 'ok' : 'FALHA'} — ${v.veredito} (${on.info.width * on.info.height} px): ${v.texto}\n${urls}`
+        `${v.ok ? 'ok' : 'FALHA'} — ${v.veredito}: ${v.texto}\n${urls}`
       );
     } catch (e) {
       falhou = true;
@@ -677,27 +663,17 @@ async function testeTrocaDeFonte(proximaPorta) {
       // do caminho: a página "do zero" carrega tijolos em t = 60 antes de a
       // câmera ir para casa, e o mesmo tijolo cai noutra vaga; num atlas de
       // lado que não é potência de 2 a coordenada normalizada arredonda
-      // diferente por vaga (medido 28/09: 2 px de 230.400, 1/255). Aceita-se
-      // esse arredondamento e só ele — no máximo 1/255 em no máximo 0,01%
-      // dos pixels; uma fonte errada muda o quadro inteiro.
+      // diferente por vaga (medido 28/09: 2 px de 230.400, 1/255). Desde 22/11
+      // a régua é o TETO DE RUÍDO da casa (`julgarDepoisDaTroca`), que cobre
+      // esse arredondamento e o pisca de 1/255 do D3D11; uma fonte errada muda
+      // o quadro inteiro (21/11, com o pronto saindo cedo: 11.832 px, 15/255).
       const { data: a, info } = await cruaInteira(vivo.png);
       const { data: b } = await cruaInteira(zero.png);
-      let diferentes = 0;
-      let maior = 0;
-      for (let i = 0; i < a.length; i += info.channels) {
-        let d = 0;
-        for (let c = 0; c < info.channels; c++) d = Math.max(d, Math.abs(a[i + c] - b[i + c]));
-        if (d > 0) {
-          diferentes++;
-          if (d > maior) maior = d;
-        }
-      }
-      const total = info.width * info.height;
-      if (!(maior <= 1 && diferentes <= total * 1e-4)) falhou = true;
-      linhas.push(
-        `depois da troca × do zero: ${diferentes} px de ${total} diferem, maior ${maior}/255 ` +
-          '(aceita só o arredondamento das vagas: ≤ 1/255 em ≤ 0,01% dos px)'
-      );
+      const v = julgarDepoisDaTroca({
+        ...diferencaPorPixel(a, b, info.channels), total: info.width * info.height,
+      });
+      if (!v.ok) falhou = true;
+      linhas.push(`depois da troca × do zero: ${v.texto}`);
     }
     process.stdout.write(`${falhou ? 'FALHA' : 'ok'}\n    ${linhas.join('\n    ')}\n${urls}`);
     return falhou;

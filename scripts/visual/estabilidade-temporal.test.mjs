@@ -48,6 +48,8 @@ import {
   julgarFamilia,
   julgarCorrida,
   SIGMA_DA_PSF_PX,
+  DISTANCIA_SOB_LINHA_PX,
+  distanciaAteOrbitaPx,
 } from './estabilidade-temporal.mjs';
 import { censoDaAmplitude, pisoDeSobrevivencia, sigmaNaAltura } from './fase-da-grade.mjs';
 import { SIGMA_PX, ALTURA_DE_CALIBRACAO_DO_SIGMA_PX } from '../../src/three/luzDaCasa';
@@ -939,6 +941,94 @@ describe('a FAIXA DO INSTRUMENTO — o pedaço de linha de órbita (item 70)', (
     // medir de novo, isto quebra antes de a cegueira aparecer
     expect(RAIO_DA_LINHA_PX).toBe(1);
     expect(FRACAO_NA_LINHA).toBeGreaterThanOrEqual(0.9);
+  });
+});
+
+describe('a estrela SOB LINHA DE ÓRBITA — o SUMIU do zoomDeRoda (destravar, 22/11)', () => {
+  const cam = camera([0, 0, 0], [0, 0, -1]);
+  const laco = lacoDeBancada();
+  // a estrela do campo cai EXATAMENTE sobre o laço da camada
+  const naLinha = norm([0.25, 0, -1]);
+  const yA = fotografar(cam, [{ dir: naLinha, brilho: 0.9 }]);
+  // em B a estrela não é mais fonte própria. No app ela se funde com a linha
+  // que acende por cima (uma componente comprida só); a bancada não reproduz a
+  // fusão — o traço dela é fino demais —, então tira a estrela de B e deixa a
+  // linha na GEOMETRIA de B (`orbitasB`), que é o que o veredito consulta
+  const yB = new Float32Array(W * H).fill(0.02);
+  const passo = (sumidos) => [{
+    k: 4, paralaxePx: 0, fracaoValida: 1, residuoMedio: 0, bandaAlta: 0,
+    casados: [], sumidos, julgada: LIMIAR_JULGADA,
+  }];
+  const julgar = (sumidos) => julgarFamilia({
+    nome: 'zoomDeRoda', passos: passo(sumidos), piso: { residuoMedio: 0, bandaAlta: 0 },
+    altura: ALTURA_DE_CALIBRACAO_PX,
+  });
+
+  it('o teto sai do mecanismo: a faixa da linha mais 2σ da PSF', () => {
+    expect(DISTANCIA_SOB_LINHA_PX).toBeCloseTo(RAIO_DA_LINHA_PX + 2 * SIGMA_DA_PSF_PX, 12);
+    // a distância é ponto a segmento, exata: o centro do laço fica a um raio da linha
+    const centro = projetarPonto(cam, [0, 0, -1]);
+    const topo = projetarPonto(cam, [0, 0.25, -1]);
+    expect(distanciaAteOrbitaPx(cam, [laco], centro.x, centro.y))
+      .toBeCloseTo(Math.hypot(topo.x - centro.x, topo.y - centro.y), 0);
+    expect(distanciaAteOrbitaPx(cam, [], centro.x, centro.y)).toBe(Infinity);
+  });
+
+  it('a estrela engolida pela linha que acende é DECLARADA, com a distância, e não reprova', () => {
+    const r = casarFontes({
+      fontesA: fontesDoQuadro(yA, W, H), fontesB: fontesDoQuadro(yB, W, H),
+      camA: cam, camB: cam, orbitasB: [laco],
+    });
+    const s = r.sumidos.find((x) => !x.naBorda);
+    expect(s).toBeDefined();
+    expect(s.sobLinha).toBe(true);
+    expect(s.distLinhaPx).toBeLessThan(1);
+    const v = julgar(r.sumidos);
+    expect(v.erros).toEqual([]);
+    const d = v.declaracoes.find((x) => x.includes('SOB LINHA DE ÓRBITA'));
+    expect(d).toContain('px da linha de órbita desenhada mais perto');
+    expect(d).toContain(`teto ${DISTANCIA_SOB_LINHA_PX.toFixed(2)} px`);
+  });
+
+  it('CONTROLE NEGATIVO: a estrela que some LONGE de qualquer linha continua SUMIU, com a distância impressa', () => {
+    const longe = lacoDeBancada({ r: 0.09, centro: [-0.35, 0.25, -1] });
+    const r = casarFontes({
+      fontesA: fontesDoQuadro(yA, W, H), fontesB: fontesDoQuadro(yB, W, H),
+      camA: cam, camB: cam, orbitasB: [longe],
+    });
+    const s = r.sumidos.find((x) => !x.naBorda);
+    expect(s.sobLinha).toBe(false);
+    expect(s.distLinhaPx).toBeGreaterThan(DISTANCIA_SOB_LINHA_PX);
+    const v = julgar(r.sumidos);
+    expect(v.erros.some((e) => e.startsWith('zoomDeRoda passo 4: SUMIU') && e.includes('px da linha de órbita'))).toBe(true);
+    expect(v.declaracoes.some((x) => x.includes('SOB LINHA'))).toBe(false);
+    // e sem linha nenhuma no quadro, o juiz diz isso
+    const semLinha = casarFontes({
+      fontesA: fontesDoQuadro(yA, W, H), fontesB: fontesDoQuadro(yB, W, H), camA: cam, camB: cam,
+    });
+    expect(julgar(semLinha.sumidos).erros[0]).toContain('nenhuma linha de órbita desenhada');
+  });
+
+  it('CONTROLE NEGATIVO: a ÂNCORA sobre a própria elipse que some continua SUMIU', () => {
+    const p = projetarDirecaoMundo(cam, naLinha);
+    const ancora = { nome: 'venus', emA: { x: p.x, y: p.y, atras: false }, emB: { x: p.x, y: p.y, atras: false } };
+    const r = casarFontes({
+      fontesA: fontesDoQuadro(yA, W, H), fontesB: fontesDoQuadro(yB, W, H),
+      camA: cam, camB: cam, ancoras: [ancora], orbitasB: [laco],
+    });
+    const s = r.sumidos.find((x) => x.via === 'ancora:venus');
+    expect(s).toBeDefined();
+    expect(s.distLinhaPx).toBeLessThan(1);
+    expect(s.sobLinha).toBe(false);
+    expect(julgar(r.sumidos).erros.some((e) => e.includes('SUMIU'))).toBe(true);
+  });
+
+  it('A FIAÇÃO: `medirPar` mede contra as órbitas DE B — apagar o fio reprova', () => {
+    const passoReal = medirPar({ cam, y: yA, orbitas: [] }, { cam, y: yB, orbitas: [laco] }, 4);
+    expect(passoReal.sumidos.filter((x) => !x.naBorda && x.sobLinha)).toHaveLength(1);
+    // a linha só em A não serve: quem engole a estrela é a linha desenhada no quadro em que ela some
+    const soEmA = medirPar({ cam, y: yA, orbitas: [laco] }, { cam, y: yB, orbitas: [] }, 4);
+    expect(soEmA.sumidos.some((x) => x.sobLinha)).toBe(false);
   });
 });
 

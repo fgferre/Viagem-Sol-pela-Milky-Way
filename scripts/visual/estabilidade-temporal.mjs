@@ -742,6 +742,67 @@ export function recortarNoQuadro(ax, ay, bx, by, W, H, folga = 0) {
   return [ax + t0 * dx, ay + t0 * dy, ax + t1 * dx, ay + t1 * dy];
 }
 
+/** Os vértices de um laço da camada (`{ n, p, m }`, ver `LER_CAMERA`) projetados na tela de `cam`;
+ *  `null` quando o laço não tem vértices bastantes. */
+function projetarLaco(cam, o) {
+  const n = o.n | 0;
+  if (n < 2 || !o.p || o.p.length < n * 3) return null;
+  const e = o.m;
+  const proj = new Array(n);
+  for (let k = 0; k < n; k++) {
+    const x = o.p[k * 3];
+    const y = o.p[k * 3 + 1];
+    const z = o.p[k * 3 + 2];
+    proj[k] = projetarPonto(cam, [
+      e[0] * x + e[4] * y + e[8] * z + e[12],
+      e[1] * x + e[5] * y + e[9] * z + e[13],
+      e[2] * x + e[6] * y + e[10] * z + e[14],
+    ]);
+  }
+  return proj;
+}
+
+/**
+ * A QUE DISTÂNCIA, em px de tela, o ponto (x, y) está da linha de órbita
+ * DESENHADA mais perto: ponto a segmento, exato, sobre os laços das fitas
+ * acesas do quadro (`orbitas`) projetados por `cam`. Segmento com vértice
+ * atrás da câmera fica de fora, como na máscara. Sem linha nenhuma, `Infinity`.
+ */
+export function distanciaAteOrbitaPx(cam, orbitas, x, y) {
+  let melhor = Infinity;
+  for (const o of orbitas ?? []) {
+    const proj = projetarLaco(cam, o);
+    if (!proj) continue;
+    const n = proj.length;
+    for (let k = 0; k < n; k++) {
+      const a = proj[k];
+      const b = proj[(k + 1) % n];
+      if (a.atras || b.atras) continue;
+      const dx = b.x - a.x;
+      const dy = b.y - a.y;
+      const l2 = dx * dx + dy * dy;
+      const t = l2 > 0 ? Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / l2)) : 0;
+      const d = Math.hypot(x - (a.x + t * dx), y - (a.y + t * dy));
+      if (d < melhor) melhor = d;
+    }
+  }
+  return melhor;
+}
+
+/**
+ * QUÃO PERTO DA LINHA uma estrela que sumiu tem de estar para o sumiço ser
+ * "SOB LINHA DE ÓRBITA" e não defeito (rodada de destravar, 22/11). Derivado
+ * do mecanismo, não ajustado ao caso: a faixa da linha tem meio-lado
+ * `RAIO_DA_LINHA_PX` (1 px) e o núcleo da estrela vai a 2σ da PSF da casa
+ * (2 × `SIGMA_DA_PSF_PX` = 1,7 px). Com o centro previsto a ≤ 2,7 px do
+ * traçado, o núcleo encosta na linha e os dois viram UMA componente comprida
+ * — a estrela não sumiu, foi engolida pelo traço (diagnóstico (i) §3: nos
+ * PNGs do `zoomDeRoda` ela está lá, com pico ~250/255, debaixo da linha).
+ * Só vale para fonte do CAMPO: a âncora está sobre a própria elipse por
+ * construção, e calar o sumiço dela seria calar a fronteira de promoção.
+ */
+export const DISTANCIA_SOB_LINHA_PX = RAIO_DA_LINHA_PX + 2 * SIGMA_DA_PSF_PX;
+
 /** Risca um segmento de 1 px na máscara (Bresenham), já recortado. */
 function riscar(m, W, H, ax, ay, bx, by) {
   let x = Math.round(ax - 0.5);
@@ -843,20 +904,9 @@ export function mascaraDasOrbitas(cam, orbitas, raioPx = RAIO_DA_LINHA_PX) {
   // faria o censo publicar uma faixa que não existe.
   let riscadas = 0;
   for (const o of orbitas) {
-    const n = o.n | 0;
-    if (n < 2 || !o.p || o.p.length < n * 3) continue;
-    const e = o.m;
-    const proj = new Array(n);
-    for (let k = 0; k < n; k++) {
-      const x = o.p[k * 3];
-      const y = o.p[k * 3 + 1];
-      const z = o.p[k * 3 + 2];
-      proj[k] = projetarPonto(cam, [
-        e[0] * x + e[4] * y + e[8] * z + e[12],
-        e[1] * x + e[5] * y + e[9] * z + e[13],
-        e[2] * x + e[6] * y + e[10] * z + e[14],
-      ]);
-    }
+    const proj = projetarLaco(cam, o);
+    if (!proj) continue;
+    const n = proj.length;
     for (let k = 0; k < n; k++) {
       const a = proj[k];
       const b = proj[(k + 1) % n];
@@ -1108,7 +1158,7 @@ export function censoDaFaixa(fontes, mascaraLinha, cam, julgada, ancorasNaFaixa 
  * proíbe.
  */
 export function casarFontes({
-  fontesA, fontesB, camA, camB, ancoras = [], mascara = null, julgada = LIMIAR_JULGADA,
+  fontesA, fontesB, camA, camB, ancoras = [], mascara = null, julgada = LIMIAR_JULGADA, orbitasB = null,
 }) {
   // O FATOR DE FASE DESTA ALTURA, tirado da soleira que veio junto — as duas
   // são a mesma conta (`soleira = LIMIAR_FONTE / fator`), e derivar uma da
@@ -1262,7 +1312,13 @@ export function casarFontes({
         p.prev.y < MARGEM_DA_BORDA_PX ||
         p.prev.x > camB.W - MARGEM_DA_BORDA_PX ||
         p.prev.y > camB.H - MARGEM_DA_BORDA_PX;
-      sumidos.push({ de: p.a.id, prev: p.prev, pico: p.a.pico, naBorda, via: p.prev.via });
+      // A QUE DISTÂNCIA DA LINHA DESENHADA EM B ela foi prevista — medida para
+      // toda sumida, e "sob linha" só para fonte do campo (`DISTANCIA_SOB_LINHA_PX`)
+      const distLinhaPx = distanciaAteOrbitaPx(camB, orbitasB, p.prev.x, p.prev.y);
+      sumidos.push({
+        de: p.a.id, prev: p.prev, pico: p.a.pico, naBorda, via: p.prev.via, distLinhaPx,
+        sobLinha: p.prev.via === 'infinito' && distLinhaPx <= DISTANCIA_SOB_LINHA_PX,
+      });
     }
   }
   return { casados, sumidos, tracos, instrumentos, ancorasNaFaixa };
@@ -1282,7 +1338,9 @@ export function casarFontes({
  *  2. energia em banda alta acima de `piso + EXCESSO_BANDA_ALTA` — idem;
  *  3. fonte que salta mais que `TOLERANCIA_SALTO_PX + paralaxe` — re-semeadura
  *     (§5.20);
- *  4. fonte FORTE, longe da borda, que some sem deixar sucessora.
+ *  4. fonte FORTE, longe da borda, que some sem deixar sucessora — salvo a
+ *     fonte do campo prevista SOB uma linha de órbita desenhada
+ *     (`DISTANCIA_SOB_LINHA_PX`), que é DECLARADA, com a distância.
  * A regra 1 e a 2 ficam SUSPENSAS onde a paralaxe do passo passa de
  * `PARALAXE_CEGA_PX` ou onde o clarão comeu o quadro — e isso vai escrito no
  * veredito, nunca em silêncio.
@@ -1388,11 +1446,19 @@ export function julgarFamilia({ nome, passos = [], piso = null, altura = null })
     // quem chega aqui já passou pela soleira DA ALTURA do quadro: uma sólida que
     // desaparece sem sucessora, longe da borda, é o outro rosto do §5.20
     for (const s of p.sumidos ?? []) {
-      if (!s.naBorda) {
-        erros.push(
-          `${rotulo}: SUMIU — fonte de pico ${s.pico.toFixed(2)} desapareceu em `
-          + `(${s.prev.x.toFixed(0)}, ${s.prev.y.toFixed(0)}), longe da borda`
-        );
+      if (s.naBorda) continue;
+      const onde = `fonte de pico ${s.pico.toFixed(2)} prevista em (${s.prev.x.toFixed(1)}, ${s.prev.y.toFixed(1)})`;
+      const linha = Number.isFinite(s.distLinhaPx)
+        ? `a ${s.distLinhaPx.toFixed(2)} px da linha de órbita desenhada mais perto`
+        : 'nenhuma linha de órbita desenhada no quadro';
+      const teto = `teto ${DISTANCIA_SOB_LINHA_PX.toFixed(2)} px = faixa ${RAIO_DA_LINHA_PX} px + 2σ da PSF `
+        + `${(2 * SIGMA_DA_PSF_PX).toFixed(2)} px`;
+      // SOB LINHA DE ÓRBITA é declaração, não defeito: a estrela foi engolida
+      // pelo traço desenhado por cima (`DISTANCIA_SOB_LINHA_PX`)
+      if (s.sobLinha) {
+        declaracoes.push(`${rotulo}: SOB LINHA DE ÓRBITA — ${onde}, ${linha} (${teto}, via ${s.via})`);
+      } else {
+        erros.push(`${rotulo}: SUMIU — ${onde}, longe da borda; ${linha} (${teto}, via ${s.via})`);
       }
     }
   }
@@ -1432,7 +1498,7 @@ export function medirPar(a, b, k, ancoras = [], julgada = LIMIAR_JULGADA) {
   const fontesA = fontesDoQuadro(a.y, a.cam.W, a.cam.H, { mascaraLinha: linhaA });
   const fontesB = fontesDoQuadro(b.y, b.cam.W, b.cam.H);
   const { casados, sumidos, tracos, instrumentos, ancorasNaFaixa } = casarFontes({
-    fontesA, fontesB, camA: a.cam, camB: b.cam, ancoras: centros, mascara, julgada,
+    fontesA, fontesB, camA: a.cam, camB: b.cam, ancoras: centros, mascara, julgada, orbitasB: b.orbitas,
   });
   return {
     k,
@@ -2096,7 +2162,8 @@ async function correr() {
               .sort((a, b) => b.salto - a.salto)
               .slice(0, 5)
               .map((c) => ({ salto: c.salto, x: c.prev.x, y: c.prev.y, pico: c.pico, via: c.via })),
-            sumidos: p.sumidos.filter((x) => !x.naBorda).length,
+            sumidos: p.sumidos.filter((x) => !x.naBorda && !x.sobLinha).length,
+            sobLinha: p.sumidos.filter((x) => !x.naBorda && x.sobLinha).length,
             // AS EXCLUSÕES DO PASSO, no artefato que sobrevive à corrida. Elas
             // já saíam em stdout; stdout é da sessão, e o que o cabeçalho
             // promete ("achado que importa se REPETE") só se confere no

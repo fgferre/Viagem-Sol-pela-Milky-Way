@@ -13,7 +13,30 @@
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import { describe, it, expect } from 'vitest';
-import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair, flagsDoBinario, lancarChrome, julgarFolgaDoLimite, folgaDoLimiteGb } from './chrome.mjs';
+import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair, flagsDoBinario, lancarChrome, julgarFolgaDoLimite, folgaDoLimiteGb, julgarTetoDoRuido, diferencaPorPixel, TETO_DO_RUIDO } from './chrome.mjs';
+
+describe('o teto de ruído da foto (22/11)', () => {
+  // a tela do par nulo do planeta-pixel (diagnóstico §1)
+  const total = 3026156;
+  it('é 1/255 em 0,03 % dos px, e os 236 px que piscam no D3D11 cabem nele', () => {
+    expect(TETO_DO_RUIDO).toEqual({ nivel: 1, fracao: 0.0003 });
+    const r = julgarTetoDoRuido({ diferentes: 236, maior: 1, total });
+    expect(r.ok).toBe(true);
+    expect(r.texto).toContain('236 px de 3026156');
+    expect(julgarTetoDoRuido({ diferentes: 0, maior: 0, total }).ok).toBe(true);
+  });
+
+  it('CONTROLE NEGATIVO: 2/255 num px só reprova, e 1/255 em px demais também', () => {
+    expect(julgarTetoDoRuido({ diferentes: 1, maior: 2, total }).ok).toBe(false);
+    expect(julgarTetoDoRuido({ diferentes: Math.floor(total * 0.0003) + 1, maior: 1, total }).ok).toBe(false);
+  });
+
+  it('diferencaPorPixel conta px que diferem em algum canal e a maior diferença', () => {
+    const a = Uint8Array.from([10, 10, 10, 50, 50, 50, 0, 0, 0]);
+    const b = Uint8Array.from([10, 11, 10, 50, 50, 53, 0, 0, 0]);
+    expect(diferencaPorPixel(a, b, 3)).toEqual({ diferentes: 2, maior: 3 });
+  });
+});
 
 describe('a folga do limite de memória do Windows (22/11)', () => {
   const win = (gb) => ({ plataforma: 'win32', gb, erro: null });

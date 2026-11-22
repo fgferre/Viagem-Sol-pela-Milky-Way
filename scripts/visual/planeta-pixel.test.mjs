@@ -22,6 +22,7 @@ import {
   caixaDeMeiaAltura,
   casarCorpos,
   componentesDoDiff,
+  julgarParNulo,
   lerDbgPlan,
   manchaSaturada,
 } from './planeta-pixel.mjs';
@@ -373,6 +374,23 @@ describe('autoTesteSintetico', () => {
     expect(r.parNulo).toBe(true);
     expect(r.soAdicao).toBe(true);
     expect(r.passou).toBe(true);
+  });
+});
+
+describe('o par nulo da vista real (M5b), pelo teto de ruído da casa (22/11)', () => {
+  const total = 3026156;
+  it('o pisca de 1/255 medido no D3D11 (57–86 px por par) passa', () => {
+    const r = julgarParNulo({ acesos: 86, maior: 1, total });
+    expect(r.ok).toBe(true);
+    expect(r.texto).toContain('dentro do teto');
+    expect(julgarParNulo({ acesos: 0, maior: 0, total }).ok).toBe(true);
+  });
+
+  it('CONTROLE NEGATIVO: 2/255 num px, ou 1/255 em px demais, reprova dizendo que a vista não é determinística', () => {
+    const nivel = julgarParNulo({ acesos: 1, maior: 2, total });
+    expect(nivel.ok).toBe(false);
+    expect(nivel.texto).toContain('a vista não é determinística');
+    expect(julgarParNulo({ acesos: Math.floor(total * 0.0003) + 1, maior: 1, total }).ok).toBe(false);
   });
 });
 

@@ -115,6 +115,45 @@ export function julgarFolgaDoLimite({ plataforma, gb, erro }, pisoGb) {
 }
 
 /**
+ * O TETO DE RUÍDO DA FOTO, ABSOLUTO e num lugar só (rodada de destravar, 22/11): duas fotos que deveriam
+ * ser a mesma imagem podem diferir em até 1/255 de nível em até 0,03 % dos px. A origem é medida: neste PC,
+ * no ANGLE D3D11, 236 px fixos de uma galáxia vizinha (pontos aditivos de `vizinhas.ts:108`) piscam ±1/255
+ * de quadro a quadro com a cena parada — 57 a 86 px por par numa tela de 3.026.156, nunca mais que 1/255; no
+ * Vulkan a mesma URL repete bit a bit (`capturas/auditoria-gemini-rodada3/destravar/i-diagnostico.md`, §1).
+ * Acima do teto a vista NÃO é determinística, e quem compara fotos reprova dizendo isso, com os números.
+ */
+export const TETO_DO_RUIDO = { nivel: 1, fracao: 0.0003 };
+/** a frase de quem reprova um par do MESMO estado acima do teto */
+export const NAO_DETERMINISTICA = 'a vista não é determinística';
+
+/** O diff-pixel de duas fotos cruas do mesmo tamanho: quantos px diferem em algum canal, e a maior
+ *  diferença de um canal, em /255. */
+export function diferencaPorPixel(a, b, canais) {
+  let diferentes = 0;
+  let maior = 0;
+  for (let i = 0; i < a.length; i += canais) {
+    let d = 0;
+    for (let c = 0; c < canais; c++) d = Math.max(d, Math.abs(a[i + c] - b[i + c]));
+    if (d > 0) {
+      diferentes++;
+      if (d > maior) maior = d;
+    }
+  }
+  return { diferentes, maior };
+}
+
+/** Cabe no teto de ruído? `{ diferentes, maior }` de `diferencaPorPixel` e o `total` de px da foto. */
+export function julgarTetoDoRuido({ diferentes, maior, total }, teto = TETO_DO_RUIDO) {
+  const ok = maior <= teto.nivel && diferentes <= total * teto.fracao;
+  return {
+    ok,
+    texto: `${diferentes} px de ${total} (${((100 * diferentes) / total).toFixed(4)} %), maior ${maior}/255;`
+      + ` teto do ruído ≤ ${teto.nivel}/255 em ≤ ${(teto.fracao * 100).toFixed(2)} % dos px`
+      + ` (${Math.floor(total * teto.fracao)} px)`,
+  };
+}
+
+/**
  * A espera de todo harness. Eram DOZE cópias desta linha em
  * `scripts/visual/` — sete chamadas `sleep` e cinco `dorme`, idênticas —
  * e os doze arquivos já importam este módulo. Uma linha só, aqui.
