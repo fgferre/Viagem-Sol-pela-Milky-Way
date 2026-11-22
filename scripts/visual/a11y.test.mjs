@@ -34,7 +34,12 @@ describe('a conta do Avançado', () => {
     // ajuste apagado do Ajustes.tsx baixaria os dois lados juntos e passaria
     // lá. Quem acrescenta ou tira um ajuste de verdade muda este 10.
     const fonte = readFileSync(new URL('../../src/components/Ajustes.tsx', import.meta.url), 'utf8');
-    expect(contarAvancadoNaFonte(fonte)).toBe(10);
+    const n = contarAvancadoNaFonte(fonte);
+    expect(
+      n,
+      `o Avançado tem ${n} ajustes, o esperado era 10; se a mudança foi de propósito, ` +
+        'atualize o número aqui e diga no commit qual ajuste entrou ou saiu (regra do dono: nada some sem ser dito)'
+    ).toBe(10);
   });
 
   it('com 10 na fonte, o DOM com 10 passa e com 9 ou 11 reprova', () => {
