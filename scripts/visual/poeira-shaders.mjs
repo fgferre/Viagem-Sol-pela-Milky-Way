@@ -3,7 +3,10 @@
 // transições ao vivo acontecem dentro da página já aberta). Os controles
 // t=153 e t=167 com poeira=1 já assentam pelo sinal (~5,5 s cada): o teto
 // de ~60 s da rodada anterior sumiu com o termo "gás apagado" de
-// `Nebula.poeiraAssentada`.
+// `Nebula.poeiraAssentada`. Desde 21/11 (estimativa, não medida): o
+// controle que não repete o md5 entre os lados recaptura os dois (+2
+// páginas por ponto, até +6 nos três pontos, ~+15 s cada ponto), e a
+// troca de fonte no D3D11 espera o pronto até ~9 s em vez de reprovar aos 8.
 //
 // Onda E2/E3 (revisão independente, 27/09) e item 8 da revisão v2
 // (27/09): o bloco de poeira do Gaia perto do Sol entra pela mesma gaveta
@@ -60,7 +63,7 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { capturarCDP, APP_PADRAO, dorme, esperarPor, comLinguaDoJuizNaUrl } from './chrome.mjs';
 
@@ -217,7 +220,30 @@ async function esperarQuadros(send, n) {
   }
 }
 
-const TETO_PRONTO_MS = 8000;
+/**
+ * O TETO DO PRONTO É 20 s (destravar, 21/11): era 8 s, calibrado num driver
+ * que compila em décimos. No Direct3D 11 desta máquina a troca para a Gaia
+ * (transição b) só volta ao pronto aos ~9,2 s — os materiais "+pirâmide"
+ * compilando; no Vulkan da mesma placa, ~2,1 s. A cena não estava presa: o
+ * juiz é que desistia aos ~8,5 s. Vale para toda espera que lê este teto:
+ * o pronto (`esperarPronto`: depois de posicionar a câmera e nas transições
+ * a e b) e o primeiro bake da transição a. Os segundos que a cena levou
+ * saem no texto das transições.
+ */
+export const TETO_PRONTO_MS = 20000;
+
+/** O VEREDITO DO PRONTO: `ms` é o que `esperarPronto` devolveu (`null` no
+ *  teto). O texto diz os segundos nos dois casos. */
+export function julgarPronto(ms, teto = TETO_PRONTO_MS) {
+  const ok = ms !== null && ms <= teto;
+  return {
+    ok,
+    texto: ok
+      ? `pronto em ${(ms / 1000).toFixed(1)} s (teto ${teto / 1000} s)`
+      : `a cena não voltou a ficar pronta em ${teto / 1000} s`
+        + (ms === null ? '' : ` (levou ${(ms / 1000).toFixed(1)} s)`),
+  };
+}
 
 /**
  * Espera `captura.pronto` voltar — a câmera, o gás e a poeira trocados
@@ -395,24 +421,57 @@ async function cruaInteira(png) {
   return sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
 }
 
-/** O diff-pixel impresso quando o md5 de duas fotos diverge. */
-async function descreverDiferenca(pngA, pngB) {
-  const { data: a, info } = await cruaInteira(pngA);
-  const { data: b } = await cruaInteira(pngB);
+/** O diff-pixel de dois recortes crus do mesmo tamanho: quantos px
+ *  diferem em algum canal, e a maior diferença de um canal, em /255. */
+export function diferencaPorPixel(a, b, canais) {
   let diferentes = 0;
-  let maiorDiff = 0;
-  for (let i = 0; i < a.length; i += info.channels) {
+  let maior = 0;
+  for (let i = 0; i < a.length; i += canais) {
     let d = 0;
-    for (let c = 0; c < info.channels; c++) d = Math.max(d, Math.abs(a[i + c] - b[i + c]));
+    for (let c = 0; c < canais; c++) d = Math.max(d, Math.abs(a[i + c] - b[i + c]));
     if (d > 0) {
       diferentes++;
-      if (d > maiorDiff) maiorDiff = d;
+      if (d > maior) maior = d;
     }
   }
-  return (
-    `md5 diferem (${md5(pngA).slice(0, 12)} × ${md5(pngB).slice(0, 12)}); ` +
-    `${diferentes} px diferem de ${info.width * info.height}, maior diferença ${maiorDiff}/255`
-  );
+  return { diferentes, maior };
+}
+
+/**
+ * A FOLGA SOBRE O RUÍDO, multiplicativa e DECLARADA, não calibrada: a
+ * diferença entre os lados pode chegar ao dobro do pior ruído medido dentro
+ * de um mesmo lado (em px e em nível). Multiplicativa porque piso zero tem
+ * de continuar zero: lados que repetem o próprio md5 e diferem entre si são
+ * DIFERE, como no `ab-identidade`. Ninguém mediu ainda quantos px a mesma
+ * URL varia neste controle (o diagnóstico de 21/11 viu só o md5 mudar).
+ */
+export const FOLGA_DO_RUIDO = 2;
+
+/**
+ * O VEREDITO DO CONTROLE FORA DA COBERTURA, no molde do `ab-identidade`
+ * (`julgarVistas`): um md5 em comum entre os lados é IGUAL; sem md5 em
+ * comum, a diferença entre os lados (`entre`, poeira=1 × poeira=0 da 1ª
+ * captura) é julgada contra o RUÍDO medido dentro de cada lado (`ruidoOn`,
+ * `ruidoOff`: 1ª × 2ª captura da mesma URL). Passa se couber no pior ruído
+ * vezes a folga — DENTRO DO RUÍDO; senão DIFERE e reprova.
+ */
+export function julgarControle({ md5On, md5Off, entre, ruidoOn, ruidoOff }, folga = FOLGA_DO_RUIDO) {
+  const curto = (hs) => [...new Set(hs)].map((h) => h.slice(0, 12)).join(',');
+  const md5s = `md5 poeira=1 ${curto(md5On)} · poeira=0 ${curto(md5Off)}`;
+  if (md5On.some((h) => md5Off.includes(h))) return { ok: true, veredito: 'IGUAL', texto: md5s };
+  const piso = {
+    diferentes: Math.max(ruidoOn.diferentes, ruidoOff.diferentes),
+    maior: Math.max(ruidoOn.maior, ruidoOff.maior),
+  };
+  const ok = entre.diferentes <= piso.diferentes * folga && entre.maior <= piso.maior * folga;
+  return {
+    ok,
+    veredito: ok ? 'DENTRO DO RUÍDO' : 'DIFERE',
+    texto: `${md5s}; entre os lados ${entre.diferentes} px, maior ${entre.maior}/255;`
+      + ` ruído do mesmo lado poeira=1 ${ruidoOn.diferentes} px (maior ${ruidoOn.maior}/255),`
+      + ` poeira=0 ${ruidoOff.diferentes} px (maior ${ruidoOff.maior}/255);`
+      + ` aceita até ${folga}× o pior ruído (${piso.diferentes * folga} px, ${piso.maior * folga}/255)`,
+  };
 }
 
 const PONTOS_FORA_DA_COBERTURA = [100, 153, 167];
@@ -421,8 +480,14 @@ const PONTOS_FORA_DA_COBERTURA = [100, 153, 167];
  * O CONTROLE FORA DA COBERTURA (item c da revisão): em pontos da
  * viagem já bem longe de casa, `poeira=1` e `poeira=0` têm de desenhar
  * o MESMO quadro — a poeira medida (~1,2 kpc de alcance) não pode
- * pintar o que está fora dela. md5 diferente é falha, com o diff-pixel
- * impresso.
+ * pintar o que está fora dela.
+ *
+ * A MESMA URL NÃO REPETE O MD5 NESTE PC (diagnóstico de 21/11, t=153: duas
+ * capturas de `poeira=1` deram md5 diferentes, e duas de `poeira=0`
+ * também), então md5 diferente entre os lados não prova a poeira vazando.
+ * A RE-MIRA do `ab-identidade`: uma captura por lado; md5 igual passa sem
+ * custo novo; md5 diferente recaptura os dois lados e julga a diferença
+ * entre eles contra o ruído de dentro de cada lado (`julgarControle`).
  */
 async function testeControleForaDaCobertura(proximaPorta) {
   let falhou = false;
@@ -453,8 +518,21 @@ async function testeControleForaDaCobertura(proximaPorta) {
         process.stdout.write(`ok — md5 ${md5(pngOn).slice(0, 12)}, sem erro\n${urls}`);
         continue;
       }
-      falhou = true;
-      process.stdout.write(`FALHA — ${await descreverDiferenca(pngOn, pngOff)}\n${urls}`);
+      const pngOn2 = await capturar(urlOn, 'poeira=1, 2ª captura');
+      const pngOff2 = await capturar(urlOff, 'poeira=0, 2ª captura');
+      const [on, off, on2, off2] = await Promise.all([pngOn, pngOff, pngOn2, pngOff2].map(cruaInteira));
+      const canais = on.info.channels;
+      const v = julgarControle({
+        md5On: [md5(pngOn), md5(pngOn2)],
+        md5Off: [md5(pngOff), md5(pngOff2)],
+        entre: diferencaPorPixel(on.data, off.data, canais),
+        ruidoOn: diferencaPorPixel(on.data, on2.data, canais),
+        ruidoOff: diferencaPorPixel(off.data, off2.data, canais),
+      });
+      if (!v.ok) falhou = true;
+      process.stdout.write(
+        `${v.ok ? 'ok' : 'FALHA'} — ${v.veredito} (${on.info.width * on.info.height} px): ${v.texto}\n${urls}`
+      );
     } catch (e) {
       falhou = true;
       process.stdout.write(`FALHA — ${e.message}\n${urls}`);
@@ -498,19 +576,15 @@ async function testeGasAntigoParaFino(proximaPorta) {
         const depois = await lerPagina(send);
         exigirSemErro(depois, 'depois da troca');
         exigir(msBake !== null, 'depois da troca', `nenhum bake em ${TETO_PRONTO_MS / 1000} s`, depois);
-        exigir(
-          msPronto !== null,
-          'depois da troca',
-          `a cena não voltou a ficar pronta em ${TETO_PRONTO_MS / 1000} s — o laço parou?`,
-          depois
-        );
+        const pronto = julgarPronto(msPronto);
+        exigir(pronto.ok, 'depois da troca', `${pronto.texto} — o laço parou?`, depois);
         await esperarQuadros(send, 20);
         const adiante = await lerPagina(send);
         exigirSemErro(adiante, '20 quadros depois');
         exigir(adiante.quadros > depois.quadros, '20 quadros depois', 'a cena parou de desenhar', adiante);
         return (
-          `bakes ${antes.bakes} → ${depois.bakes} (primeiro bake em ${msBake} ms), pronto em ` +
-          `${msPronto} ms, quadros desenhados ${depois.quadros} → ${adiante.quadros}, sem véu, sem erro`
+          `bakes ${antes.bakes} → ${depois.bakes} (primeiro bake em ${msBake} ms), ${pronto.texto}, ` +
+          `quadros desenhados ${depois.quadros} → ${adiante.quadros}, sem véu, sem erro`
         );
       },
     });
@@ -580,7 +654,9 @@ async function testeTrocaDeFonte(proximaPorta) {
           `estadoDaPoeira não chegou a {ativa, gaia} em ${TETO_FONTE_MS / 1000} s`,
           depois
         );
-        exigir(msPronto !== null && depois.pronto === true, 'depois da troca', 'a cena não voltou a ficar pronta', depois);
+        const pronto = julgarPronto(msPronto);
+        exigir(pronto.ok, 'depois da troca', pronto.texto, depois);
+        exigir(depois.pronto === true, 'depois da troca', `${pronto.texto}, mas caiu de novo antes da leitura`, depois);
         return { fotoAntes, msFonte, msPronto };
       },
     });
@@ -590,7 +666,7 @@ async function testeTrocaDeFonte(proximaPorta) {
     const { fotoAntes, msFonte, msPronto } = vivo.mexeu;
     const diffAntes = diferencaMedia(await recorte(fotoAntes, CENTRO), await recorte(vivo.png, CENTRO));
     const linhas = [
-      `{ativa, gaia} ${msFonte} ms depois da troca, pronto em mais ${msPronto} ms, sem erro nas duas páginas`,
+      `{ativa, gaia} ${msFonte} ms depois da troca, ${julgarPronto(msPronto).texto} depois disso, sem erro nas duas páginas`,
       `centro antes × depois da troca: ${diffAntes.toFixed(2)}/255 (precisa > ${LIMIAR_CENTRO_MIN})`,
     ];
     let falhou = !(diffAntes > LIMIAR_CENTRO_MIN);
@@ -841,4 +917,9 @@ async function main() {
   process.exit(falhou ? 1 : 0);
 }
 
-main();
+// Importável sem rodar — o mesmo jeito de `memoria.mjs` e `luz-do-quadro.mjs`:
+// os vereditos puros (`julgarPronto`, `julgarControle`) têm teste, e teste
+// não sobe Chrome. Só a execução direta mede.
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  await main();
+}
