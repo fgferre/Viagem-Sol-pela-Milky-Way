@@ -695,7 +695,7 @@ describe('um lugar por nome — ou cabe ali, ou some', () => {
     expect(xFora(70 / 1080)).toBe(xFora());
   });
 
-  it('A5: no retrato, o nome dirigido que não cabe fora do disco não se desenha neste quadro', () => {
+  it('A5: no retrato, o nome dirigido que não cabe fora do disco sai — e com folga ele fica', () => {
     const desenhado = (raioPx: number) => {
       const disco = { x: 0.5, y: 0.5, raio: raioPx / 844, alem: 1, chave: 'corpo:moon' };
       const l: StarLabel = {
@@ -707,6 +707,41 @@ describe('um lugar por nome — ou cabe ali, ou some', () => {
     };
     expect(desenhado(60)).toBe(false);
     expect(desenhado(20)).toBe(true);
+  });
+
+  it('A5: o nome dirigido esmaece sem estalo ao deixar de caber fora do disco', () => {
+    // "esmaece sem estalo" (dono, 21/11): o disco cresce em passos de meio
+    // pixel no retrato de 390 px; o alfa pintado do nome desce sem salto e
+    // chega a zero onde ele deixa de caber — nunca some aceso
+    const nome = 'Hiperion de Saturno';
+    // a fronteira pela régua da bancada (7 px por letra): meia tela menos a
+    // margem de 13, os 8 px do limbo e o nome
+    const fronteira = 390 / 2 - 13 - 8 - 7 * nome.length;
+    // UM canvas só, como no app: o nome parado com o disco crescendo não
+    // pode cair no atalho do quadro que não mudou
+    const { rotulos, ctx } = bancada(390, 844);
+    const alfaEm = (raioPx: number) => {
+      const disco = { x: 0.5, y: 0.5, raio: raioPx / 844, alem: 1, chave: 'corpo:moon' };
+      const l: StarLabel = {
+        ...rotulo('corpo:moon', nome, 0.5, 0.5, 25), detalhe: 'lua', dirigido: true,
+        discos: [disco], raioDoAssunto: raioPx / 844,
+      };
+      rotulos.draw([l]);
+      return ctx.pintadas.find((p) => p.texto === nome.toUpperCase())?.alfa ?? 0;
+    };
+    const passo = 0.5;
+    const limiar = 0.05;
+    const serie: number[] = [];
+    for (let r = fronteira - 30; r <= fronteira + 10; r += passo) serie.push(alfaEm(r));
+    expect(serie[0]).toBeCloseTo(0.95, 6);
+    for (let i = 1; i < serie.length; i++) {
+      expect(serie[i], `passo ${i}`).toBeLessThanOrEqual(serie[i - 1] + 1e-9);
+      expect(serie[i - 1] - serie[i], `passo ${i}`).toBeLessThanOrEqual(limiar);
+    }
+    // o último quadro aceso já está quase apagado, e o que não cabe é zero
+    const ultimoAceso = serie.filter((a) => a > 0).pop()!;
+    expect(ultimoAceso).toBeLessThanOrEqual(limiar);
+    for (let r = fronteira + passo; r <= fronteira + 10; r += passo) expect(alfaEm(r), `${r} px`).toBe(0);
   });
 
   it('o HUD ocupa PRIMEIRO, e não há segundo lugar para furá-lo', () => {

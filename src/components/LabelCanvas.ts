@@ -231,6 +231,12 @@ interface PlanoDoRotulo {
   esquerda: boolean;
   larguraDoNome: number;
   peso: PesoDoRotulo;
+  /**
+   * O QUANTO O NOME DIRIGIDO AINDA CABE FORA DO DISCO (A5, regra do dono:
+   * "esmaece sem estalo") — 1 com folga, 0 onde não cabe; multiplica o alfa
+   * do nome, do detalhe e da marca. Só do quadro: sem estado, sem relógio.
+   */
+  alfaDaFolga: number;
 }
 
 /**
@@ -414,6 +420,24 @@ export function pesoVisual(label: StarLabel) {
   if (label.detalhe === 'estrela') return PESOS_DO_ROTULO.sol;
   return label.canalPrimario ? PESOS_DO_ROTULO.primario : PESOS_DO_ROTULO.base;
 }
+
+/**
+ * O LIMBO DO ASSUNTO DO FILME, em fração da altura — o maior entre o disco
+ * do próprio corpo e o raio do assunto inteiro (o anel que é disco). Zero
+ * fora do filme.
+ */
+function limboDoDirigido(label: StarLabel): number {
+  if (!label.dirigido) return 0;
+  const discoProprio = label.discos?.find((d) => d.chave === label.key);
+  return Math.max(discoProprio?.raio ?? 0, label.raioDoAssunto ?? 0);
+}
+
+/**
+ * A RAMPA DO NOME QUE DEIXA DE CABER FORA DO DISCO (A5), em px CSS na
+ * escala 1: o nome vai de inteiro a zero nos últimos 16 px de folga. Um
+ * pixel de tremor do disco mexe ~6 % do alfa, não acende nem apaga.
+ */
+const RAMPA_DA_FOLGA = 16;
 
 /**
  * O TAMANHO É DO DISPOSITIVO (T10) — a media query deles, em px CSS do
@@ -662,6 +686,9 @@ export class LabelCanvas {
         // a rampa de 250 ms subindo de 0,05 a 0,35 — e sem este campo o
         // atalho de repintura diria "já está na tela" e congelaria o fade.
         `,${(label.alfaDoTexto ?? 1).toFixed(3)}` +
+        // o LIMBO também (A5): o disco que cresce com o resto parado move o
+        // nome e o esmaece — sem ele o quadro pareceria igual ao anterior
+        `,${(limboDoDirigido(label) * this.height).toFixed(1)}` +
         `,${label.corDoAnel ?? ''},${label.formaDoIcone ?? ''},${nome},${detalhe}`;
     }
     return assinatura;
@@ -1034,7 +1061,7 @@ export class LabelCanvas {
       // possibilidade de desligar um sem o outro — que os separa.
       // Ausente = 1, e é assim que o ramo do FILME — que não passa pelas
       // rampas — continua pintando pixel a pixel o de sempre.
-      ctx.globalAlpha = label.opacity * (label.alfaDoTexto ?? 1);
+      ctx.globalAlpha = label.opacity * (label.alfaDoTexto ?? 1) * p.alfaDaFolga;
       ctx.textAlign = p.esquerda ? 'right' : 'left';
       // O ALINHAMENTO (0, 0.5) É VERTICALMENTE CENTRADO (F5 · T12): a
       // linha de base seguia a âncora, o que punha o nome meio corpo
@@ -1084,6 +1111,7 @@ export class LabelCanvas {
     esquerda: false,
     larguraDoNome: 0,
     peso: PESOS_DO_ROTULO.base,
+    alfaDaFolga: 0,
   };
 
   /**
@@ -1176,6 +1204,7 @@ export class LabelCanvas {
         esquerda: false,
         larguraDoNome: 0,
         peso,
+        alfaDaFolga: 1,
       };
     }
     // No céu geral, o lado continua sendo a ÚNICA liberdade. O roteiro
@@ -1206,8 +1235,7 @@ export class LabelCanvas {
     // ~1000 linhas CSS, ~4 px numa tela de 1440. O LIMBO É O DO ASSUNTO
     // INTEIRO (`raioDoAssunto`): em Saturno o disco próprio é só o planeta
     // e o nome caía sobre o anel.
-    const discoProprio = label.dirigido ? label.discos?.find((d) => d.chave === label.key) : undefined;
-    const limbo = label.dirigido ? Math.max(discoProprio?.raio ?? 0, label.raioDoAssunto ?? 0) : 0;
+    const limbo = limboDoDirigido(label);
     const recuo = Math.max(peso.recuoDoTexto * k, limbo > 0 ? limbo * this.height + 8 * k : 0);
     // A BORDA TEM FOLGA (crítica de 13/11): a mesma distância que o nome
     // guarda de um painel do HUD — os 5 px da caixa mais os 8 da disputa.
@@ -1251,12 +1279,22 @@ export class LabelCanvas {
       const inicio = inicioDoTexto(esquerda);
       return Math.min(Math.max(inicio, margem), Math.max(margem, this.width - conteudo - margem)) - inicio;
     };
-    // O NOME QUE NÃO CABE FORA DO DISCO NÃO SE DESENHA NESTE QUADRO: se o
-    // recuo veio do limbo e nenhum lado cabe, o empurrão o poria por cima do
-    // disco. `FORA` tira também a marca (ficaria no centro do disco).
-    if (recuo > peso.recuoDoTexto * k && desvioDe(false) !== 0 && desvioDe(true) !== 0) {
-      return LabelCanvas.FORA;
-    }
+    // O NOME QUE NÃO CABE FORA DO DISCO ESMAECE ATÉ SAIR (A5; regra do dono
+    // de 21/11, "esmaece sem estalo"): se o recuo veio do limbo, o alfa é a
+    // FOLGA do NOME no lado que mais sobra — px livres entre o limbo e a
+    // `margem` da borda — sobre `RAMPA_DA_FOLGA`. Zero onde `desvioDe` deixa
+    // de ser zero nos dois lados: lá o empurrão o poria sobre o disco, e
+    // `FORA` o tira com a marca (ficaria no centro do disco). Sem o detalhe,
+    // que cai antes e faria a folga saltar.
+    const folgaDe = (esquerda: boolean) => {
+      const inicio = esquerda ? ancoraX - recuo - larguraDoNome : ancoraX + recuo;
+      return Math.min(inicio - margem, this.width - margem - inicio - larguraDoNome);
+    };
+    const alfaDaFolga =
+      recuo > peso.recuoDoTexto * k
+        ? Math.min(1, Math.max(0, Math.max(folgaDe(false), folgaDe(true)) / (RAMPA_DA_FOLGA * k)))
+        : 1;
+    if (alfaDaFolga <= 0) return LabelCanvas.FORA;
     let ladoPreferido =
       desvioDe(ladoNatural) !== 0 &&
       Math.abs(desvioDe(!ladoNatural)) < Math.abs(desvioDe(ladoNatural))
@@ -1335,6 +1373,7 @@ export class LabelCanvas {
       esquerda,
       larguraDoNome,
       peso,
+      alfaDaFolga,
     };
   }
 
@@ -1486,7 +1525,7 @@ export class LabelCanvas {
     label: StarLabel
   ): void {
     const escala = label.apontado ? 1.2 : 1;
-    ctx.globalAlpha = label.opacity * (label.alfaDoIcone ?? 1);
+    ctx.globalAlpha = label.opacity * (label.alfaDoIcone ?? 1) * p.alfaDaFolga;
     ctx.shadowColor = 'rgba(0, 0, 0, 0.96)';
     ctx.shadowBlur = 5;
     ctx.beginPath();
@@ -1520,7 +1559,7 @@ export class LabelCanvas {
       const aberto = Math.sqrt(1 - this.intensidadeDoAcento);
       const afastamento =
         RAIO_INICIAL_DO_ACENTO + (RAIO_FINAL_DO_ACENTO - RAIO_INICIAL_DO_ACENTO) * aberto;
-      ctx.globalAlpha = label.opacity * (label.alfaDoIcone ?? 1) * this.intensidadeDoAcento;
+      ctx.globalAlpha = label.opacity * (label.alfaDoIcone ?? 1) * p.alfaDaFolga * this.intensidadeDoAcento;
       ctx.shadowColor = COR_DO_ACENTO;
       ctx.shadowBlur = 6 * k * this.intensidadeDoAcento;
       ctx.beginPath();
