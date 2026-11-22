@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import * as THREE from 'three';
+import type { WebGLExtensions } from 'three/src/renderers/webgl/WebGLExtensions.js';
+import { WebGLState } from 'three/src/renderers/webgl/WebGLState.js';
 import { alemDoFundo, foraDoAlcance, igualarAConvencao, ordemDosOpacos, ordemDosTransparentes, prepararAInvertida } from './profundidade';
 
 /** a câmera como o renderer a deixa depois do primeiro desenho com a invertida */
@@ -80,30 +82,69 @@ describe('a ordem de desenho sob a profundidade invertida', () => {
 });
 
 describe('prepararAInvertida', () => {
-  /** o pedaço do WebGLRenderer que a preparação toca, e o reset do three: desliga a invertida */
+  /**
+   * O pedaço do WebGLRenderer que a preparação toca, com o ESTADO DE VERDADE
+   * do three (`WebGLState`: o cache que decide o que chega ao GL e o `reset`
+   * que a ejeção do Sol chama) sobre um `gl` FALSO, que só anota o valor de
+   * limpeza e o controle de recorte. Nasce como o `WebGLRenderer` nasce
+   * (`setReversed(true)` logo depois do estado, quando há a extensão) e o
+   * `resetState` faz com a profundidade o que o dele faz (`state.reset()`).
+   */
   const renderer = (invertida: boolean) => {
-    const estado = { invertida, resets: 0 };
+    const anotado = { clearDepth: [] as number[], recorte: [] as string[] };
+    const constantes = new Map<string, number>();
+    const constante = (nome: string) => {
+      if (!constantes.has(nome)) constantes.set(nome, constantes.size + 1);
+      return constantes.get(nome)!;
+    };
+    const gl = new Proxy({}, {
+      get: (_, nome) => {
+        if (typeof nome !== 'string') return undefined;
+        if (nome === 'canvas') return { width: 4, height: 4 };
+        if (nome === 'clearDepth') return (v: number) => anotado.clearDepth.push(v);
+        if (nome === 'getParameter') {
+          return (p: number) =>
+            p === constante('VERSION') ? 'WebGL 2.0' : p === constante('MAX_COMBINED_TEXTURE_IMAGE_UNITS') ? 16 : [0, 0, 4, 4];
+        }
+        return /^[A-Z0-9_]+$/.test(nome) ? constante(nome) : () => null;
+      },
+    });
+    const clipControl = {
+      LOWER_LEFT_EXT: 1,
+      ZERO_TO_ONE_EXT: 2,
+      NEGATIVE_ONE_TO_ONE_EXT: 3,
+      clipControlEXT: (_origem: number, z: number) => anotado.recorte.push(z === 2 ? '0..1' : '-1..1'),
+    };
+    const state = new WebGLState(gl as WebGL2RenderingContext, { get: () => clipControl } as unknown as WebGLExtensions);
+    if (invertida) state.buffers.depth.setReversed(true);
     const r = {
       capabilities: { reversedDepthBuffer: invertida },
       setOpaqueSort: () => {},
       setTransparentSort: () => {},
-      resetState: () => {
-        estado.resets++;
-        estado.invertida = false;
-      },
-      state: { buffers: { depth: { setReversed: (v: boolean) => { estado.invertida = v; } } } },
+      resetState: () => state.reset(),
+      state,
     };
-    return { r: r as unknown as THREE.WebGLRenderer, estado };
+    return { r: r as unknown as THREE.WebGLRenderer, anotado };
   };
 
   it('a câmera nasce invertida e o reset do three (a ejeção do Sol o chama) não desliga a invertida', () => {
-    const { r, estado } = renderer(true);
+    const { r, anotado } = renderer(true);
     const cam = new THREE.PerspectiveCamera(58, 16 / 9, 0.001, 60000);
     prepararAInvertida(r, cam);
     expect(cam.reversedDepth).toBe(true);
     r.resetState();
-    expect(estado.resets).toBe(1);
-    expect(estado.invertida).toBe(true);
+    expect(r.state.buffers.depth.getReversed()).toBe(true);
+    expect(anotado.recorte.at(-1)).toBe('0..1');
+  });
+
+  it('depois do reset o GL limpa a profundidade em 0, o fundo da invertida (em 1 nada passa no teste e a cena apaga)', () => {
+    const { r, anotado } = renderer(true);
+    prepararAInvertida(r, new THREE.PerspectiveCamera(58, 16 / 9, 0.001, 60000));
+    expect(anotado.clearDepth.at(-1)).toBe(0);
+    r.resetState();
+    expect(anotado.clearDepth.at(-1)).toBe(0);
+    r.resetState();
+    expect(anotado.clearDepth.at(-1)).toBe(0);
   });
 
   it('a cópia da câmera (a larga do clarão) sai na convenção da original, não na de sempre', () => {

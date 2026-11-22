@@ -103,10 +103,14 @@ export function igualarAConvencao(copia: THREE.Camera, original: Pick<THREE.Came
  * `?dbgplan`) lia o `z` de `project()` na convenção de sempre — o juiz
  * `planeta-pixel` via dois blocos diferentes na mesma vista parada. (3) O
  * `resetState()` do three DESLIGA a invertida (`state.reset()` chama
- * `setReversed(false)`) e não a religa; a ejeção de massa do Sol
- * (`sol/cme.js`) o chama a cada passo da simulação, e daí em diante a
- * câmera invertida desenharia contra um buffer na convenção de sempre.
- * Religada logo depois de todo reset. Sem a invertida não faz nada.
+ * `setReversed(false)`), grava `clearDepth(1)` e esquece o valor de limpeza
+ * que tinha; a ejeção de massa do Sol (`sol/cme.js`) o chama a cada passo
+ * da simulação. Religar a invertida não basta: o `setReversed(true)` repõe
+ * o valor de limpeza que lembra, e ele já é nenhum, então o GL seguia
+ * limpando em 1 — o plano PRÓXIMO da invertida, onde nenhum fragmento passa
+ * no teste, e a cena apagava. Depois de todo reset a invertida é religada e
+ * o valor de limpeza regravado (o `setClear(1)` do three, que nela grava 0).
+ * Sem a invertida não faz nada.
  */
 export function prepararAInvertida(renderer: THREE.WebGLRenderer, camera: THREE.PerspectiveCamera): void {
   if (!renderer.capabilities.reversedDepthBuffer) return;
@@ -118,5 +122,6 @@ export function prepararAInvertida(renderer: THREE.WebGLRenderer, camera: THREE.
   renderer.resetState = () => {
     resetDoThree();
     renderer.state.buffers.depth.setReversed(true);
+    renderer.state.buffers.depth.setClear(1);
   };
 }
