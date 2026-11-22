@@ -476,14 +476,47 @@ export async function esperarCapaSair(send, teto = 8000) {
  * depois de ter terminado o trabalho). Fechar o socket REPROVA os
  * pendentes, que vira erro legível em vez de sono eterno; e é por isso
  * que `fechar` existe: quem mata o Chrome fecha o socket ANTES.
+ *
+ * SEM COMPRESSÃO. O `WebSocket` do Node (undici 7.24, Node 25.8) sempre
+ * oferece `permessage-deflate`, o Chrome aceita, e o undici derruba toda
+ * mensagem comprimida que passe de 4 MiB ao abrir (1006, sem motivo): a
+ * foto grande caía, com o Chrome vivo (medido em destravar/a0-medidas.md,
+ * A0.5). Não há opção para não oferecer, e um cabeçalho vazio vira
+ * ", permessage-deflate" que o Chrome recusa; o único ponto de entrada é
+ * o `dispatcher`, que aqui tira a oferta do pedido de upgrade. Se um dia
+ * a extensão voltar a ser negociada, `ligarSocketCDP` reprova na hora em
+ * vez de cair calado na primeira foto grande.
  */
+function despachanteSemCompressao() {
+  void globalThis.WebSocket; // carrega o undici, que só então põe o despachante global
+  const base = globalThis[Symbol.for('undici.globalDispatcher.1')];
+  if (!base) return undefined;
+  return {
+    dispatch(opcoes, tratador) {
+      const headers = { ...opcoes.headers };
+      delete headers['sec-websocket-extensions'];
+      return base.dispatch({ ...opcoes, headers }, tratador);
+    },
+  };
+}
+
 export async function ligarSocketCDP(alvo, aoEvento = () => {}) {
-  const ws = new WebSocket(alvo);
+  const dispatcher = despachanteSemCompressao();
+  const ws = new WebSocket(alvo, dispatcher ? { dispatcher } : undefined);
+  const textoDoErro = (e) => e?.message || e?.error?.message || '';
   await new Promise((r, j) => {
     const relogio = setTimeout(() => j(new Error('WebSocket do CDP não abriu em 30 s')), 30000);
     ws.addEventListener('open', () => { clearTimeout(relogio); r(); });
-    ws.addEventListener('error', () => { clearTimeout(relogio); j(new Error('WebSocket falhou')); });
+    ws.addEventListener('error', (e) => {
+      clearTimeout(relogio);
+      j(new Error(`WebSocket do CDP falhou ao abrir${textoDoErro(e) ? ': ' + textoDoErro(e) : ''}`));
+    });
   });
+  if (ws.extensions?.includes('permessage-deflate')) {
+    ws.close();
+    throw new Error('o WebSocket do CDP negociou permessage-deflate: o Node derruba toda mensagem comprimida acima '
+      + 'de 4 MiB (a foto grande cairia); a retirada da oferta em `despachanteSemCompressao` deixou de valer');
+  }
   let seq = 0;
   const esperando = new Map();
   ws.addEventListener('message', (e) => {
@@ -495,8 +528,12 @@ export async function ligarSocketCDP(alvo, aoEvento = () => {}) {
     for (const responder of esperando.values()) responder({ error: { message: porque } });
     esperando.clear();
   };
-  ws.addEventListener('close', () => derrubarPendentes('o WebSocket do CDP fechou'));
-  ws.addEventListener('error', () => derrubarPendentes('o WebSocket do CDP falhou'));
+  // o `error` vem ANTES do `close` e não traz código: só anota, e quem
+  // reprova os pendentes é o `close`, com código, motivo e o erro anotado
+  let erroVisto = '';
+  ws.addEventListener('error', (e) => { erroVisto = textoDoErro(e) || 'erro sem texto'; });
+  ws.addEventListener('close', (e) => derrubarPendentes(`o WebSocket do CDP fechou (código ${e.code ?? '?'}`
+    + `${e.reason ? ', motivo "' + e.reason + '"' : ''}${erroVisto ? ', erro: ' + erroVisto : ''})`));
   return {
     send: (method, params = {}) => new Promise((res, rej) => {
       const n = ++seq;

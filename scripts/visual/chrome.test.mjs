@@ -10,6 +10,8 @@
 // do `dist` servido NA PORTA PADRÃO, que é dev-por-endereço e produção-por-
 // bundle; aqui ficam as combinações restantes, incluindo as parciais, que
 // nenhum arranjo de servidor encena de propósito.
+import { createServer } from 'node:http';
+import { createHash } from 'node:crypto';
 import { describe, it, expect } from 'vitest';
 import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair, flagsDoBinario, lancarChrome } from './chrome.mjs';
 
@@ -149,6 +151,63 @@ describe('ligarSocketCDP', () => {
     ws.receber({ id: 1, result: {} });
     await pedido;
     expect(vistos.map((m) => m.method)).toEqual(['Runtime.consoleAPICalled']);
+  });
+
+  it('a queda diz o código e o erro: o `error` vem antes do `close` e não pode engolir o código', async () => {
+    const { send, ws } = await ligarFalso();
+    const pedido = send('Page.captureScreenshot');
+    const erro = new Event('error');
+    erro.message = 'Max decompressed size exceeded';
+    ws.dispatchEvent(erro);
+    const fim = new Event('close');
+    fim.code = 1006;
+    ws.dispatchEvent(fim);
+    await expect(pedido).rejects.toThrow(/fechou \(código 1006, erro: Max decompressed size exceeded\)/);
+  });
+
+  it('se o Chrome negociar permessage-deflate, reprova ao ligar em vez de cair na foto grande', async () => {
+    const original = globalThis.WebSocket;
+    globalThis.WebSocket = class extends SocketFalso {
+      extensions = 'permessage-deflate; client_max_window_bits=15';
+    };
+    try {
+      await expect(ligarSocketCDP('ws://falso')).rejects.toThrow(/negociou permessage-deflate/);
+    } finally {
+      globalThis.WebSocket = original;
+    }
+  });
+
+  it('com o WebSocket do Node, não oferece compressão e uma mensagem de 6 MiB chega inteira', async () => {
+    // servidor que aceita deflate se for oferecido, como o do Chrome; a
+    // mensagem vai sem compressão, que é o caminho sem o teto de 4 MiB
+    let oferta = null;
+    const servidor = createServer();
+    servidor.on('upgrade', (req, sock) => {
+      oferta = req.headers['sec-websocket-extensions'] ?? '';
+      const aceita = createHash('sha1').update(req.headers['sec-websocket-key'] + '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')
+        .digest('base64');
+      sock.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n'
+        + `Sec-WebSocket-Accept: ${aceita}\r\n`
+        + (oferta.includes('permessage-deflate') ? 'Sec-WebSocket-Extensions: permessage-deflate\r\n' : '') + '\r\n');
+      const corpo = Buffer.from(JSON.stringify({ method: 'Grande', params: { data: 'A'.repeat(6 * 1048576) } }));
+      const tamanho = Buffer.alloc(8);
+      tamanho.writeBigUInt64BE(BigInt(corpo.length));
+      sock.write(Buffer.concat([Buffer.from([0x81, 127]), tamanho, corpo]));
+      sock.on('error', () => {});
+    });
+    await new Promise((r) => servidor.listen(0, '127.0.0.1', r));
+    try {
+      let recebida = null;
+      const chegou = new Promise((r) => { recebida = r; });
+      const { fechar } = await ligarSocketCDP(`ws://127.0.0.1:${servidor.address().port}/`, (m) => recebida(m));
+      const m = await chegou;
+      fechar();
+      expect(oferta).not.toMatch(/permessage-deflate/);
+      expect(m.params.data.length).toBe(6 * 1048576);
+    } finally {
+      servidor.closeAllConnections();
+      servidor.close();
+    }
   });
 });
 
