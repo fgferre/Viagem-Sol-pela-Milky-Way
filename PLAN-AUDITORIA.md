@@ -1,4 +1,4 @@
-# Auditoria do Gemini Neon: conferir e consertar (19/11/2026) — rodadas 1 e 2 FEITAS; a RODADA 3 (21/11) está ABERTA, ver a seção dela
+# Auditoria do Gemini Neon: conferir e consertar (19/11/2026) — rodadas 1 e 2 FEITAS; a RODADA 3 FECHOU em 22/11 (`6d37aa56` NO AR); a RODADA 4 (22/11) está ABERTA, ver a seção dela
 
 O dono trouxe um relatório de 13 itens e pediu: "analisado e endereçado, coordene". O texto dele está em `.cache/revisoes/auditoria-gemini-neon-2026-11-19.md` (fora do git). Três revisores independentes conferiram cada afirmação contra o código (f5bad02e); os vereditos, com arquivo:linha, estão ao lado: `veredito-auditoria-A-shaders-gpu.md`, `-B-logica-estado.md`, `-C-interface-site-fichas.md`. Regra da rodada: só entra conserto de afirmação CONFIRMADA, o menor possível, com um teste por comportamento; nenhuma refatoração grande.
 
@@ -51,7 +51,7 @@ O dono trouxe um segundo relatório, de 12 itens (cerca de 25 afirmações), "pa
 - [ ] **4. Conferência junta** (`--maxWorkers=6`), guardar, backup. Nada disto publica.
 - [ ] **5. Antes e depois ao dono** do que mudou na imagem.
 
-## Rodada 3 (21/11/2026) — ABERTA
+## Rodada 3 (21/11/2026) — FECHADA em 22/11 (ver Rodada 4)
 
 O dono trouxe a terceira leitura do Gemini Neon, sobre os 47 commits de 20–21/11 (`cd3193e4..8371fb1a`): 5 pontos altos, 17 médios, 10 baixos e uma lista do que segue sem prova. Palavra dele: "tratar dos pontos que ele traz... o chefe do projeto é sempre a experiência de usuário, a gente não tem preguiça para resolver os problemas". O texto: `C:\Github Projects\Viagem-Sol-pela-Milky-Way\.cache\revisoes\gemini-neon-revisao-20-21-nov.md` (fora do git; os números A1–A5, M1–M17 e B1–B10 abaixo são os dele, na ordem em que aparecem em cada prioridade). Ponto de partida: `8371fb1a`.
 
@@ -209,6 +209,17 @@ Chrome com Direct3D 11 (o do visitante do Windows), perfil novo a cada abertura 
 - **Aparelhos sem `EXT_clip_control`** (~28 % dos Android, ~27 % dos Firefox): lá o defeito das estrelas por cima de Saturno continua. É a próxima rodada do motor ("o céu antes dos corpos" ou outro caminho), a desenhar na conversa principal.
 - **Celular de verdade, Safari e Firefox:** ninguém provou nada de 19–21/11 neles; pede as mãos do dono (não há Firefox neste PC). A conversa principal prepara a lista do que olhar.
 - **Faxina:** 12 planos na raiz, `BACKLOG.md` no teto, 14 ramos locais e as cópias irmãs. Apagar pede a palavra do dono; fica para o fim da rodada.
+
+## Rodada 4 (22/11/2026) — ABERTA: abertura lenta e memória no Windows
+
+**No ar desde 22/11: `6d37aa56`** (= `521817cf` + a folga de tempo do `planeta-pixel.test.mjs`); `origin/main` = `main` = `origin/backup`. Cópias fechadas em 22/11 (18): Mar-i-066, -0320, -927, -f50, Mar-r3, -1b, -1b3, -1c, -a, -b, -base, -c, -d, -e, -e2, -m, -pronto, -q; os ramos ficaram, e as provas que só existiam nelas estão em `capturas/copias/<cópia>/`. Ficam `Mar-r3-dest` (ramo `r4-abertura`, desta rodada) e `Mar-orion` (integração).
+
+**As nove decisões do dono (22/11, da página de decisões):** 1 publicar o principal (feito); 2 pernas de 60 s nos juízes: agora não (o olhar de 60 s com o tempo andando segue passo manual antes de qualquer "entrou"); 3 as cobranças novas dos juízes da rodada 3 ficam; 4 entra só a vista perto da Terra no `planeta-pixel`, para medir a Lua (a do nome acessível da alça NÃO); 5 Lâminas do disco: B, a caixa sai da gaveta enquanto a galáxia for a de partículas; 6 memória virtual do Windows no automático (ele avisa antes de reiniciar; depois, medir de novo o limite de reserva antes de acreditar nas quedas caladas antigas); 7 apagar as cópias da rodada (feito, acima); 8 esta rodada; 9 arquivar a conversa da Logitech (feito).
+
+Ordem, um commit por item:
+- [ ] **1. Lâminas do disco fora da gaveta** quando a galáxia viva não é a clássica (decisão 5).
+- [ ] **2. Vista perto da Terra no `planeta-pixel`** (decisão 4).
+- [ ] **3. A abertura a frio e a memória no D3D11**, na ordem da lista 3 de `destravar/xxii-tabela-final-v2.md`, começando pelo teto de 700 quadros só para app SEM sinal (`esperarAssentar`), com a fila inteira para conferir.
 
 ## Não entrou na rodada 1 (dito ao dono)
 
