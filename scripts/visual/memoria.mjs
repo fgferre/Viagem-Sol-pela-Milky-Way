@@ -1,5 +1,5 @@
 // Serve: chão — sair devolve o que entrar alocou: texturas, bytes de texel, geometrias e workers sem vazamento
-// Custo: ~5,3 min por tier (estimado: 4,4 medidos em 31/08 com a régua E, mais as duas esperas da carência dos focos de 21/11)
+// Custo: ~5,9 min por tier (estimado: 4,4 medidos em 31/08 com a régua E, mais as duas esperas da carência dos focos de 21/11 e, de 22/11, a 2ª visita de Júpiter e Saturno: ~2 × (3 s de desvio + um assentar + uma amostra), 30–40 s não medidos)
 // O AMOSTRADOR DE MEMÓRIA — o juiz que prova que sair DEVOLVE o que
 // entrar alocou (Onda 6, F8/D9).
 //
@@ -36,9 +36,11 @@
 //     Enquadrar não VAZA (lei de 21/11/2026, `julgarFocos`): o app sobe
 //     à GPU o mapa do corpo em foco assim que chega (rodada do peso,
 //     19/11) e o solta 15 s depois de o foco sair, então "delta ZERO"
-//     reprovava o app certo. As três contas: a 1ª visita aloca NO MÁXIMO
-//     uma textura por corpo; a 2ª visita, dentro da carência, aloca zero;
-//     e depois que o foco sai e a carência passa a contagem VOLTA à base.
+//     reprovava o app certo. As três contas: a 1ª visita faz NASCER no
+//     máximo os mapas que o corpo declara (contados pela lista do walker:
+//     uma textura solta não abate outra que sobe); a 2ª visita de CADA
+//     corpo, dentro da carência, faz nascer zero; e depois que o foco sai e
+//     a carência passa a contagem VOLTA à base.
 //     As geometrias seguem em delta ZERO nas três. A base NASCE com o
 //     episódico já contado (a fita da órbita de Mercúrio só acende no
 //     primeiro foco interno; ver `estrearOFoco`) e sem mapa de corpo.
@@ -200,12 +202,22 @@ export function contarDeclarados(manifest) {
  * contas sobre as amostras do protocolo, pelos rótulos que ele escreve:
  * `base focos`, `foco <id>` (1ª visita), `revisita <id>` e `volta focos`.
  *
- *   1. a 1ª visita aloca NO MÁXIMO o CONJUNTO de mapas que o corpo DECLARA
- *      (`declarados[id]`, contado do manifesto de texturas do próprio app:
- *      `contarDeclarados`) contra a amostra anterior — menos é permitido: o
- *      mapa de quem saiu do foco pode ter vencido a carência no caminho;
- *   2. a 2ª visita ao mesmo corpo, dentro da carência, aloca ZERO e não
- *      pede a textura de novo (`pedidos`, o grampo da régua E);
+ * O QUE NASCEU, e não o saldo (22/11): o mapa de quem saiu do foco vence a
+ * carência a qualquer momento, e no saldo uma textura solta abatia uma que
+ * subia — duas nascidas e uma solta davam +1 e passavam por "1 declarado".
+ * Por isso a conta é a `lista` do walker dos texels: `novas` são as da
+ * amostra que não estavam na de antes (`novosNaLista`), e soltas não
+ * abatem. A contagem crua do renderer fica como PISO (`novas` é o maior
+ * dos dois): textura fora da cena, que o walker não vê, ainda conta.
+ *
+ *   1. a 1ª visita faz nascer NO MÁXIMO o CONJUNTO de mapas que o corpo
+ *      DECLARA (`declarados[id]`, contado do manifesto de texturas do
+ *      próprio app: `contarDeclarados`) contra a amostra anterior;
+ *   2. a 2ª visita de CADA corpo visitado, dentro da carência, faz nascer
+ *      ZERO contra a 1ª dele e não pede a textura de novo (`pedidos`, o
+ *      grampo da régua E, que vê o MESMO objeto solto e subido de novo,
+ *      que a lista — rótulo com o id do three — não distingue); corpo sem
+ *      2ª visita reprova;
  *   3. com o foco fora e a carência vencida, a contagem VOLTA à base.
  *
  * As geometrias ficam em delta ZERO nas três: enquadrar não cria malha.
@@ -216,24 +228,26 @@ export function julgarFocos(amostras, declarados = {}) {
   if (iBase < 0) return null;
   const base = amostras[iBase];
   const primeiras = [];
-  let revisita = null;
+  const revisitas = [];
   let volta = null;
   for (let i = iBase + 1; i < amostras.length; i++) {
     const a = amostras[i];
-    const antes = amostras[i - 1];
     const [tipo, id] = a.rotulo.split(' ');
+    // a 1ª visita contra a amostra anterior; a 2ª contra a 1ª do MESMO corpo
+    const antes = (tipo === 'revisita'
+      && amostras.slice(iBase, i).findLast((x) => x.rotulo === `foco ${id}`))
+      || amostras[i - 1];
+    const subiram = novosNaLista(antes.lista, a.lista);
+    const texturas = a.textures - antes.textures;
     const delta = {
       id,
-      texturas: a.textures - antes.textures,
+      texturas,
       geometrias: a.geometries - antes.geometries,
+      subiram,
+      novas: Math.max(subiram.length, texturas),
     };
-    if (tipo === 'foco') {
-      primeiras.push({
-        ...delta,
-        declarados: declarados[id],
-        subiram: novosNaLista(antes.lista, a.lista),
-      });
-    } else if (tipo === 'revisita') revisita = { ...delta, pedidos: a.pedidos };
+    if (tipo === 'foco') primeiras.push({ ...delta, declarados: declarados[id] });
+    else if (tipo === 'revisita') revisitas.push({ ...delta, pedidos: a.pedidos });
     else if (a.rotulo === 'volta focos') {
       volta = {
         texturas: a.textures - base.textures,
@@ -242,12 +256,13 @@ export function julgarFocos(amostras, declarados = {}) {
     }
   }
   const primeiraOk =
-    primeiras.length > 0 && primeiras.every((p) => p.texturas <= p.declarados && p.geometrias === 0);
+    primeiras.length > 0 && primeiras.every((p) => p.novas <= p.declarados && p.geometrias === 0);
   const revisitaOk =
-    revisita !== null && revisita.texturas === 0 && revisita.geometrias === 0
-    && revisita.pedidos === 0;
+    primeiras.length > 0
+    && primeiras.every((p) => revisitas.some((r) => r.id === p.id))
+    && revisitas.every((r) => r.novas === 0 && r.geometrias === 0 && r.pedidos === 0);
   const voltaOk = volta !== null && volta.texturas === 0 && volta.geometrias === 0;
-  return { primeiras, revisita, volta, primeiraOk, revisitaOk, voltaOk };
+  return { primeiras, revisitas, volta, primeiraOk, revisitaOk, voltaOk };
 }
 
 /** a rede do `soltar` da tela de carga (`hospedeiro.ts`: `terminate` 1 s
@@ -261,8 +276,8 @@ const CICLOS = 3;
 const TROCAS = 3;
 // os corpos do foco — ids de `IDS_FOTOMETRIA` (o pouso do ?foco=).
 // ERAM 5 (…, 'neptune', 'mars') até 30/08 (corte iii do item 113): 3
-// focos provam as mesmas contas de `julgarFocos`, e o PRIMEIRO é o da
-// revisita. O que fica SEM VIGIA: alocação que só o foco de Netuno/Marte
+// focos provam as mesmas contas de `julgarFocos`, cada um com a 2ª visita
+// dele. O que fica SEM VIGIA: alocação que só o foco de Netuno/Marte
 // dispararia.
 const FOCOS = ['earth', 'jupiter', 'saturn'];
 const LIMIAR_HEAP_MB = 12;
@@ -381,7 +396,10 @@ const MEDIR_TEXELS = `(() => {
     if (!w || !h) return;
     const mip = t.generateMipmaps !== false && t.minFilter !== 1003 && t.minFilter !== 1006;
     n++;
-    lista.push((t.name || 'sem-nome') + ' ' + w + 'x' + h);
+    // o id do three entra no rótulo: os mapas dos corpos não têm nome, e
+    // sem ele a Terra solta e Júpiter do mesmo tamanho subindo eram o MESMO
+    // rótulo — a troca passava por zero nascidas em \`julgarFocos\`
+    lista.push((t.name || 'sem-nome') + ' ' + w + 'x' + h + ' #' + t.id);
     bytes += w * h * 4 * (mip ? 4 / 3 : 1);
   };
   const doMat = (m) => {
@@ -721,25 +739,22 @@ async function principal() {
       declarados = await declaradosPelaPagina();
       await dorme(ESPERA_DA_CARENCIA_S * 1000);
       amostras.push(await amostrar('base focos'));
-      // A 2ª VISITA É LOGO DEPOIS DA 1ª, ao PRIMEIRO corpo: com a base sem
-      // mapa nenhum, o único residente é o dele, e nada vence a carência
-      // no meio da conta — a revisita tem de dar ZERO exato. Sai pelo
-      // sistema (o mesmo corpo de novo DESCERIA um degrau, ver
-      // `estrearOFoco`) sem assentar, como o desvio do passeio.
-      const [primeiro, ...resto] = focos;
-      await focar(primeiro);
-      amostras.push(await amostrar(`foco ${primeiro}`));
-      const antesDaRevisita = await pedidosDoCorpo(primeiro);
-      await sairParaOSistema();
-      await dorme(DESVIO_DA_VOLTA_S * 1000);
-      await focar(primeiro);
-      amostras.push({
-        ...(await amostrar(`revisita ${primeiro}`)),
-        pedidos: (await pedidosDoCorpo(primeiro)) - antesDaRevisita,
-      });
-      for (const id of resto) {
+      // A 2ª VISITA DE CADA CORPO É LOGO DEPOIS DA 1ª DELE, dentro da
+      // carência: sai pelo sistema (o mesmo corpo de novo DESCERIA um
+      // degrau, ver `estrearOFoco`) sem assentar, como o desvio do passeio,
+      // e volta. O mapa do corpo ANTERIOR pode vencer a carência no meio da
+      // conta; por isso `julgarFocos` conta o que NASCEU, e não o saldo.
+      for (const id of focos) {
         await focar(id);
         amostras.push(await amostrar(`foco ${id}`));
+        const antesDaRevisita = await pedidosDoCorpo(id);
+        await sairParaOSistema();
+        await dorme(DESVIO_DA_VOLTA_S * 1000);
+        await focar(id);
+        amostras.push({
+          ...(await amostrar(`revisita ${id}`)),
+          pedidos: (await pedidosDoCorpo(id)) - antesDaRevisita,
+        });
       }
       // o foco sai e o tempo passa com a aba na frente: a carência de
       // TODOS os mapas vence, e a contagem tem de voltar à base
@@ -794,8 +809,8 @@ async function principal() {
       const delta = (d) => `${d.texturas} tex/${d.geometrias} geo`;
       conferir(
         f.primeiraOk,
-        `${FOCOS.length} focos, 1ª visita: no máximo o conjunto DECLARADO de mapas por corpo,`
-          + ` geometrias em delta ZERO (${f.primeiras.map((p) => `${p.id} ${delta(p)} de ${p.declarados} declaradas`).join(' · ')})`
+        `${FOCOS.length} focos, 1ª visita: NASCEM no máximo os mapas DECLARADOS por corpo,`
+          + ` geometrias em delta ZERO (${f.primeiras.map((p) => `${p.id} ${p.novas} nascidas de ${p.declarados} declaradas, ${delta(p)}`).join(' · ')})`
       );
       if (!f.primeiraOk) {
         for (const p of f.primeiras) {
@@ -805,9 +820,10 @@ async function principal() {
       }
       conferir(
         f.revisitaOk,
-        `2ª visita a '${f.revisita?.id}' dentro da carência: aloca ZERO e não pede a`
-          + ` textura de novo (${f.revisita ? delta(f.revisita) : '—'},`
-          + ` ${f.revisita?.pedidos} pedidos)`
+        `2ª visita de CADA corpo dentro da carência: nasce ZERO e não pede a textura de novo (`
+          + (f.revisitas.map((r) => `${r.id} ${r.novas} nascidas, ${delta(r)}, ${r.pedidos} pedidos`)
+            .join(' · ') || 'nenhuma')
+          + `; corpos visitados: ${f.primeiras.map((p) => p.id).join(', ')})`
       );
       conferir(
         f.voltaOk,

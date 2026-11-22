@@ -10,19 +10,32 @@ import {
   bootAteOSinal, contarDeclarados, julgarBoot, julgarFocos, TETO_DO_BOOT_MS,
 } from './memoria.mjs';
 
-/** o protocolo dos focos como `memoria.mjs` o escreve, com as contas trocáveis */
-function protocolo({ primeira = 1, revisita = 0, pedidos = 0, volta = 0, geo = 0 } = {}) {
-  const a = (rotulo, textures, extra = {}) => ({ rotulo, textures, geometries: 44, ...extra });
+/** o protocolo dos focos como `memoria.mjs` o escreve, com as contas
+ *  trocáveis. Cada amostra leva a `lista` do walker dos texels e a contagem
+ *  crua coerente com ela (`fundo` é o que já morava antes da base). */
+function protocolo({
+  primeira = 1, revisita = 0, revisitaJupiter = 0, pedidos = 0, volta = 0, geo = 0,
+} = {}) {
+  const mapas = (id, n) => Array.from({ length: n }, (_, k) => `${id}-${k} 8x4`);
+  const a = (rotulo, lista, extra = {}) => ({
+    rotulo, textures: 39 + lista.length, geometries: 44, lista, ...extra,
+  });
+  const fundo = ['fundo 4x2'];
+  const terra = mapas('earth', primeira);
+  const jupiter = mapas('jupiter', 1);
+  const saturno = mapas('saturn', 1);
   return [
-    a('troca q 3', 40),
-    a('base focos', 40),
-    a('foco earth', 40 + primeira),
-    a('revisita earth', 40 + primeira + revisita, { pedidos }),
-    // o mapa da Terra venceu a carência no caminho de Júpiter: a 1ª visita
-    // pode DESCER, e não é vazamento
-    a('foco jupiter', 40 + primeira + revisita, { geometries: 44 + geo }),
-    a('foco saturn', 41 + primeira + revisita),
-    a('volta focos', 40 + volta),
+    a('troca q 3', fundo),
+    a('base focos', fundo),
+    a('foco earth', [...fundo, ...terra]),
+    a('revisita earth', [...fundo, ...terra, ...mapas('earth-de-novo', revisita)], { pedidos }),
+    a('foco jupiter', [...fundo, ...terra, ...jupiter], { geometries: 44 + geo }),
+    // o mapa da Terra vence a carência DURANTE a 2ª visita de Júpiter: a
+    // contagem crua desce, e não é vazamento — e não pode abater o que nasce
+    a('revisita jupiter', [...fundo, ...jupiter, ...mapas('jupiter-de-novo', revisitaJupiter)], { pedidos: 0 }),
+    a('foco saturn', [...fundo, ...jupiter, ...saturno]),
+    a('revisita saturn', [...fundo, ...jupiter, ...saturno], { pedidos: 0 }),
+    a('volta focos', [...fundo, ...mapas('resto', volta)]),
   ];
 }
 
@@ -55,6 +68,25 @@ describe('julgarFocos', () => {
     expect(f.primeiras[0].subiram).toEqual(['map 8x4', 'map 8x4']);
   });
 
+  it('uma textura solta e duas nascidas na MESMA visita, com 1 declarado, REPROVA: soltas não abatem', () => {
+    const a = (rotulo, lista) => ({ rotulo, textures: 39 + lista.length, geometries: 44, lista });
+    const f = julgarFocos(
+      [
+        a('base focos', ['fundo 4x2', 'earth-0 8x4']),
+        a('foco jupiter', ['fundo 4x2', 'jupiter-0 8x4', 'jupiter-1 8x4']),
+      ],
+      { jupiter: 1 }
+    );
+    expect(f.primeiras[0].texturas).toBe(1);
+    expect(f.primeiras[0].novas).toBe(2);
+    expect(f.primeiraOk).toBe(false);
+  });
+
+  it('textura que o walker não vê ainda conta: a contagem crua é o piso do que nasceu', () => {
+    const a = (rotulo, textures) => ({ rotulo, textures, geometries: 44, lista: ['fundo 4x2'] });
+    expect(julgarFocos([a('base focos', 40), a('foco jupiter', 42)], { jupiter: 1 }).primeiraOk).toBe(false);
+  });
+
   it('o conjunto declarado sai do manifesto: canais distintos por corpo', () => {
     const e = (corpo, canal) => ({ corpo, canal });
     expect(
@@ -71,6 +103,18 @@ describe('julgarFocos', () => {
   it('a 2ª visita alocando REPROVA, e também a que pede a textura de novo', () => {
     expect(julgarFocos(protocolo({ revisita: 1 }), DECLARADOS).revisitaOk).toBe(false);
     expect(julgarFocos(protocolo({ pedidos: 1 }), DECLARADOS).revisitaOk).toBe(false);
+  });
+
+  it('a 2ª visita de Júpiter subindo 1 REPROVA, mesmo com a da Terra limpa e a contagem crua sem subir', () => {
+    const f = julgarFocos(protocolo({ revisitaJupiter: 1 }), DECLARADOS);
+    expect(f.revisitas.find((r) => r.id === 'earth').novas).toBe(0);
+    expect(f.revisitas.find((r) => r.id === 'jupiter').texturas).toBe(0);
+    expect(f.revisitaOk).toBe(false);
+  });
+
+  it('corpo visitado sem 2ª visita REPROVA: a 2ª visita é cobrada de TODOS', () => {
+    const semSaturno = protocolo().filter((a) => a.rotulo !== 'revisita saturn');
+    expect(julgarFocos(semSaturno, DECLARADOS).revisitaOk).toBe(false);
   });
 
   it('a volta que não chega à base REPROVA', () => {
