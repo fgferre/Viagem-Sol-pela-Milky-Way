@@ -13,7 +13,7 @@
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import { describe, it, expect } from 'vitest';
-import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair, flagsDoBinario, lancarChrome, julgarFolgaDoLimite, folgaDoLimiteGb, julgarTetoDoRuido, diferencaPorPixel, TETO_DO_RUIDO } from './chrome.mjs';
+import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair, flagsDoBinario, lancarChrome, julgarFolgaDoLimite, folgaDoLimiteGb, julgarTetoDoRuido, diferencaPorPixel, TETO_DO_RUIDO, semBarraNoFim } from './chrome.mjs';
 
 describe('o teto de ruído da foto (22/11)', () => {
   // a tela do par nulo do planeta-pixel (diagnóstico §1)
@@ -328,5 +328,14 @@ describe('lancarChrome', () => {
       '--disable-sync',
     ]);
     expect(flagsDoBinario('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome')).toEqual([]);
+  });
+});
+
+describe('a barra no fim do endereço do app', () => {
+  it('sai: com ela a página abria em `//?…` e o espelho da URL não escrevia', () => {
+    expect(semBarraNoFim('http://127.0.0.1:5191/')).toBe('http://127.0.0.1:5191');
+    expect(semBarraNoFim('http://127.0.0.1:5191//')).toBe('http://127.0.0.1:5191');
+    expect(semBarraNoFim('https://x.github.io/mar/')).toBe('https://x.github.io/mar');
+    expect(semBarraNoFim('http://127.0.0.1:5191')).toBe('http://127.0.0.1:5191');
   });
 });

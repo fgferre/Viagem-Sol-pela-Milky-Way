@@ -309,6 +309,17 @@ export async function esperarPor(s, expressao, teto = 3000) {
 export const APP_PADRAO = 'http://127.0.0.1:5173';
 
 /**
+ * A BARRA NO FIM do endereço do app sai (22/11/2026): os harnesses montam
+ * `${app}/?…`, e com `…:5191/` a página abria em `//?…` — o caminho `//` é
+ * lido como outro site e todo `replaceState` do espelho da URL lança, calado
+ * (`capturas/auditoria-gemini-rodada3/destravar/vii-espelho-da-url.md`). Os
+ * juízes leem `process.env.APP_URL` direto, então ela é corrigida aqui, ao
+ * importar este módulo, antes de qualquer um ler.
+ */
+export const semBarraNoFim = (url) => url.replace(/\/+$/, '');
+if (process.env.APP_URL) process.env.APP_URL = semBarraNoFim(process.env.APP_URL);
+
+/**
  * QUANTOS PASSOS TEM UM ROTEIRO DO CONVITE (`PASSOS_DO_CONVITE_DO_ATLAS`,
  * `..._TOQUE`), lido do MESMO arquivo que o app consome — o juiz cobrava
  * "4 de 4" escrito à mão e ficou velho em 08/10 (bfe3a929 pôs o passo da
@@ -642,6 +653,7 @@ export async function ligarSocketCDP(alvo, aoEvento = () => {}) {
 export async function abrirSessao({
   janela = '1200x900', app = APP_PADRAO, prefixo = 'sessao', dpr = 1, visivel = false,
 } = {}) {
+  app = semBarraNoFim(app);
   const [w, h] = String(janela).split('x');
   const perfil = resolve(tmpdir(), `${prefixo}-${process.pid}`);
   // ADITIVOS (régua de fps real): `dpr` só troca o `--force-device-scale-factor`
