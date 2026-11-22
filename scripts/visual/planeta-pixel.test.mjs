@@ -14,10 +14,10 @@
 // mora atrás da guarda de `process.argv[1]`.)
 import { describe, it, expect } from 'vitest';
 import {
-  LIMIAR_FOTO,
   LIMIAR_PICO,
   PROFUNDAS,
   RAIO_HALO_PX,
+  TETO_DA_INCERTEZA_PX,
   TOLERANCIA_PX,
   autoTesteSintetico,
   caixaDeMeiaAltura,
@@ -26,8 +26,8 @@ import {
   julgarDescarteDoRuido,
   julgarParNulo,
   lerDbgPlan,
+  incertezaDoSintetico,
   manchaSaturada,
-  medirLimiarDaFoto,
 } from './planeta-pixel.mjs';
 
 const W = 80;
@@ -279,46 +279,58 @@ describe('casarCorpos', () => {
     expect(j.erro).toBe(false);
   });
 
-  // A REGRA DO SOB-LIMIAR vale ANTES da posição, também com componente casada
-  // (22/11, `destravar/viii-planeta-pixel.md`: Júpiter ua500, Urano ua40 e
-  // Netuno ua150 eram julgados por manchas de ruído). Com componente, o portão
-  // é o pico NA FOTO (`deltaMax`, `LIMIAR_FOTO` degraus), não o `pico` linear:
-  // a mancha centrada em x,5 tem `deltaMax` EXATAMENTE igual ao pico pedido,
-  // e é ali que `<` e `<=` se separam.
-  const NO_DEGRAU_DA_FOTO = { px: 60.5, py: 12.5, pico: LIMIAR_FOTO };
+  // A TOLERÂNCIA DE CADA CORPO (22/11): 0,5 px MAIS a incerteza que o
+  // sintético mede para o pico na foto e o tamanho da componente. Um corpo
+  // FRACO (pico de 2 degraus na foto, pico LINEAR sob 1/255, o caso de Urano)
+  // não é liberado: é julgado na tolerância dele, que o teste LÊ do juiz.
+  const FRACA = { px: 60.5, py: 12.5, pico: 2 };
+  const fraco = (x) => cena([alvo('sun', 20.3, 30.7), alvo('uranus', x, 12.5, LIMIAR_PICO / 10)], [MANCHA_SOL, FRACA]);
+  const noLugar = fraco(60.5).linhas[1];
 
-  it('CONTROLE NEGATIVO: mancha no limiar da foto e pico LINEAR sob 1/255 (Urano), alvo deslocado 3 px, reprova', () => {
-    const j = cena(
-      [alvo('sun', 20.3, 30.7), alvo('uranus', 63.5, 12.5, LIMIAR_PICO / 10)],
-      [MANCHA_SOL, NO_DEGRAU_DA_FOTO]
-    );
-    expect(j.linhas[1].comp.deltaMax).toBe(LIMIAR_FOTO);
+  it('corpo FRACO no lugar certo: MEDIDO, com a tolerância alargada pela incerteza dele', () => {
+    expect(noLugar.comp.deltaMax).toBe(2);
+    expect(noLugar.status).toBe('MEDIDO');
+    expect(noLugar.tolC).toBeGreaterThan(TOLERANCIA_PX);
+    expect(noLugar.tolC).toBeLessThan(TETO_DA_INCERTEZA_PX + TOLERANCIA_PX);
+    expect(noLugar.tolB).toBeGreaterThan(noLugar.tolC);
+  });
+
+  it('corpo FRACO deslocado entre 0,5 px e a tolerância dele: MEDIDO — a tolerância alargou de fato', () => {
+    const j = fraco(60.5 + (TOLERANCIA_PX + noLugar.tolC) / 2);
+    expect(Math.abs(j.linhas[1].dxC)).toBeGreaterThan(TOLERANCIA_PX);
+    expect(j.linhas[1].status).toBe('MEDIDO');
+    expect(j.erro).toBe(false);
+  });
+
+  it('CONTROLE NEGATIVO: corpo FRACO deslocado além da tolerância dele, com o px ainda na mancha, reprova', () => {
+    const j = fraco(60.5 - (noLugar.tolC + 0.3));
+    expect(j.linhas[1].comp).not.toBeNull();
+    expect(Math.abs(j.linhas[1].dxC)).toBeGreaterThan(j.linhas[1].tolC);
     expect(j.linhas[1].status).toBe('FORA-DA-TOLERÂNCIA');
     expect(j.erro).toBe(true);
   });
 
-  it('CONTROLE NEGATIVO: mancha no limiar da foto nunca cai em SOB-LIMIAR; sem mancha, o pico linear no degrau reprova', () => {
-    const casos = [
-      cena([alvo('jupiter', 60.5, 12.5, LIMIAR_PICO / 10)], [NO_DEGRAU_DA_FOTO]),
-      cena([alvo('jupiter', 63.5, 12.5, LIMIAR_PICO / 10)], [NO_DEGRAU_DA_FOTO]),
-      cena([alvo('sun', 20.3, 30.7), alvo('jupiter', 60.5, 12.5, LIMIAR_PICO)], [MANCHA_SOL]),
-    ];
-    expect(casos.map((j) => j.linhas.at(-1).status)).toEqual(['MEDIDO', 'FORA-DA-TOLERÂNCIA', 'SEM-COMPONENTE']);
+  it('a mesma foto dá o mesmo veredito: duas contas do zero, mesmos números', () => {
+    const x = 60.5 + (TOLERANCIA_PX + noLugar.tolC) / 2;
+    const [a, b] = [fraco(x).linhas[1], fraco(x).linhas[1]];
+    expect([a.status, a.tolC, a.tolB]).toEqual([b.status, b.tolC, b.tolB]);
   });
 
-  it('mancha casada a 1 px com pico NA FOTO abaixo do limiar: SOB-LIMIAR, mesmo com pico linear acima de 1/255', () => {
-    // a mancha cobre o px previsto (61, 12): a componente CASA com o corpo
+  it('incerteza do centroide acima do teto: SOB-LIMIAR, impresso, sem erro; sem mancha, o pico linear no degrau reprova', () => {
+    // pico de 1 degrau numa mancha larga: o arredondamento a faz um disco chato
     const j = cena(
       [alvo('sun', 20.3, 30.7), alvo('jupiter', 61.5, 12.5, 1)],
-      [MANCHA_SOL, { px: 60.5, py: 12.5, pico: LIMIAR_FOTO - 1, sigma: 1 }]
+      [MANCHA_SOL, { px: 60.5, py: 12.5, pico: 1, sigma: 5 }]
     );
-    expect(j.linhas[1].comp.deltaMax).toBe(LIMIAR_FOTO - 1);
+    expect(j.linhas[1].comp.deltaMax).toBe(1);
+    expect(j.linhas[1].incC).toBeGreaterThan(TETO_DA_INCERTEZA_PX);
     expect(j.linhas[1].status).toBe('SOB-LIMIAR');
     expect(j.linhas[1].dxC).toBeUndefined();
-    expect(j.linhas[1].motivo).toContain(`pico na foto ${LIMIAR_FOTO - 1}/255`);
     expect(j.linhas[1].motivo).toContain('não medido');
     expect(j.orfas).toHaveLength(0);
     expect(j.erro).toBe(false);
+    const apagado = cena([alvo('sun', 20.3, 30.7), alvo('jupiter', 60.5, 12.5, LIMIAR_PICO)], [MANCHA_SOL]);
+    expect(apagado.linhas[1].status).toBe('SEM-COMPONENTE');
   });
 
   it('corpo DENTRO da mancha do Sol: SOB-GLARE, e o Sol segue julgado', () => {
@@ -459,13 +471,13 @@ describe('autoTesteSintetico', () => {
   });
 });
 
-describe('medirLimiarDaFoto', () => {
-  it('a medida devolve o `LIMIAR_FOTO`, e na unidade do portão (`deltaMax` da componente)', () => {
-    const r = medirLimiarDaFoto();
-    expect(r.limiar).toBe(LIMIAR_FOTO);
-    expect(r.deltaMax).toEqual([LIMIAR_FOTO, LIMIAR_FOTO]);
-    // um degrau abaixo, o ruído de arredondamento já desloca alguém
-    expect(r.tabela.at(-2).falhas).toBeGreaterThan(0);
+describe('incertezaDoSintetico', () => {
+  it('a incerteza do centroide cai com o pico na foto, e a mesma entrada dá o mesmo número', () => {
+    const fraca = incertezaDoSintetico({ deltaMax: 2, sigma: 1.5 });
+    const forte = incertezaDoSintetico({ deltaMax: 30, sigma: 1.5 });
+    expect(fraca.guardadas).toBeGreaterThan(0);
+    expect(forte.centroide).toBeLessThan(fraca.centroide);
+    expect(incertezaDoSintetico({ deltaMax: 2, sigma: 1.5 })).toEqual(fraca);
   });
 });
 

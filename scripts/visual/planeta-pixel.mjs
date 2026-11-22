@@ -1,4 +1,4 @@
-// Serve: lei — a luz dos planetas cai onde o ?dbgplan mandou, a ≤0,5 px, por dois estimadores
+// Serve: lei — a luz dos planetas cai onde o ?dbgplan mandou, a ≤0,5 px + a incerteza do sintético, por dois estimadores
 // Custo: ~1,1 min as três vistas (0,4 min por vista)
 // ============================================================
 // RÉGUA 3 da D10 (Onda 4) — O PIXEL.
@@ -120,18 +120,18 @@
 // ------------------------------------------------------------
 // COMO LER A COLUNA `status`
 // ------------------------------------------------------------
-// MEDIDO      a mancha existe e os centros batem com o previsto a ≤0,5 px por
-//             eixo (a caixa, quando julgável — ver acima).
+// MEDIDO      a mancha existe e os centros batem com o previsto, por eixo, a
+//             ≤0,5 px MAIS a incerteza que o sintético mede para o pico na foto
+//             e o tamanho daquela mancha (`incertezaDoSintetico`, desde 22/11),
+//             separada para o centroide e a caixa (esta quando julgável).
 // SOB-GLARE   o pixel previsto já está SATURADO no lado `plan` (ou a mancha
 //             do corpo não se separa da do Sol). A camada só SOMA luz: onde o
 //             Sol já clipou, somar não muda byte nenhum. Declarado, não
 //             julgado — e não é defeito: é o que 150 UA do Sol fazem.
-// SOB-LIMIAR  a posição NÃO é julgada. COM mancha no pixel previsto: o pico
-//             dela NA FOTO (`deltaMax`) fica abaixo de `LIMIAR_FOTO` degraus,
-//             onde o arredondamento tira a caixa de 0,5 px (desde 22/11;
-//             antes Júpiter ua500, Urano ua40 e Netuno ua150 saíam FORA
-//             julgados por ruído). SEM mancha: o pico de PSF do `?dbgplan`
-//             (buffer linear) está abaixo de `LIMIAR_PICO`. O corpo está lá, com a
+// SOB-LIMIAR  a posição NÃO é julgada. COM mancha no pixel previsto: a
+//             incerteza do centroide para aquela mancha passa de
+//             `TETO_DA_INCERTEZA_PX` (desde 22/11). SEM mancha: o pico de PSF
+//             do `?dbgplan` (buffer linear) está abaixo de `LIMIAR_PICO`. O corpo está lá, com a
 //             magnitude certa, e a tela de 8 bits não tem degrau para ele. É
 //             a fotometria honesta — Urano/Netuno/Plutão a 150 UA são
 //             exatamente este caso. Quando ainda assim sobram pixels acesos
@@ -170,8 +170,14 @@ export const PROFUNDAS = ['ua500', 'ua150', 'ua40'];
  */
 const PORTA_LIGA = '';
 const PORTA_DESLIGA = '&noplan=1';
-/** A lente da régua — ver o cabeçalho. Não é o look do app. */
-const FLAG_MEDICAO = '&nobloom=1&noclarao=1';
+/**
+ * A lente da régua — ver o cabeçalho. Não é o look do app. `&tone=linear`
+ * (22/11, `destravar/x-terra-e-luz-perdida.md`): a curva Neutral tira de todos
+ * os canais um deslocamento do mais escuro, e em fundo colorido isso andava a
+ * Terra ua40 ~0,48 px e criava "luz perdida" de 2–5/255; em linear a Terra cai
+ * a +0,136/+0,020 no centro e −0,050/−0,073 na caixa, e a camada só soma. O sintético mede na mesma lente.
+ */
+const FLAG_MEDICAO = '&nobloom=1&noclarao=1&tone=linear';
 /** O readout da D7, ligado nos DOIS lados para o diff não medir o readout. */
 const READOUT = '&dbgplan=1';
 
@@ -198,20 +204,29 @@ export const TOLERANCIA_PX = 0.5;
 export const LIMIAR_PICO = 1 / 255;
 
 /**
- * O corpo COM componente casada: abaixo deste pico NA FOTO (`deltaMax` da
- * componente, em degraus de 8 bits) é `SOB-LIMIAR` e a posição não se julga.
- * Medido por `medirLimiarDaFoto()` (semente 1, N = 256, σ = 1,5 px — o
- * perfil do Júpiter brilhante de `destravar/viii-mancha-ponta-d3d11.txt`,
- * linha 61: 273 → 183 → 67 a 0,45/1,45/2,45 px dá σ ≈ 1,44–1,54): alvos que
- * falham a ≤0,5 px nas 256 posições sorteadas, com o ±1/255 do arredondamento
- * por pixel e canal — P = 1: 123; P = 2: 112; P = 3: 15; P = 4: 0, todos com
- * `deltaMax` 4. Limiar = 4 degraus. Quem falha é a caixa de meia-altura (o
- * centroide só falha em P = 1). A conta se move: semente 1–5 × N 64/256 dá
- * 4 em 8 das 10, 3 em uma e 5 em uma; σ = 1,2 dá 4 e σ = 1,6 dá 6. Acima do
- * limiar a caixa ainda falha 0,5–4 % das posições em P = 5, 6, 8 e 10 — não é
- * falta de luz, e o "menor P em que as N localizam" não a conta.
+ * O fundo da foto no sintético, em degraus: sorteado em [0, 16) por pixel e
+ * canal — a faixa medida em volta dos corpos nos recortes do `destravar/viii`
+ * e do `x` (1–16 por canal). Ele decide em que trecho da curva sRGB a luz do
+ * corpo cai, e a parte fracionária dele é o que o arredondamento de 8 bits come.
  */
-export const LIMIAR_FOTO = 4;
+export const FUNDO_DO_SINTETICO = 16;
+
+/**
+ * A incerteza é o P99 do erro do sintético, e não o máximo: com ~1.000
+ * repetições guardadas, o máximo de 5 sementes anda 1,37–1,68 px na caixa
+ * (pico 2, σ 1,5) e 1,81–2,29 (pico 2, σ 2,5) — dos dois lados do teto, e o
+ * veredito dependeria da semente. O P99 das mesmas 5 sementes anda ≤0,13 px
+ * (1,16–1,23 e 1,44–1,55; centroide de pico 1, σ 1,5: 1,04–1,17). Isso vale
+ * para as manchas FRACAS; nas fortes sobram poucas repetições (40 em pico 100,
+ * σ 1,5; 1–15 perto de 255 com σ ≤ 1), e com menos de 100 o P99 é o máximo.
+ */
+export const PERCENTIL_DO_SINTETICO = 0.99;
+
+/**
+ * Acima disto (px) a incerteza não deixa medir: a do centroide põe o corpo
+ * em `SOB-LIMIAR`; a da caixa só tira a caixa do juízo.
+ */
+export const TETO_DA_INCERTEZA_PX = 1.5;
 
 /**
  * Raio em que uma componente órfã ainda é o HALO de um corpo já casado, e
@@ -330,6 +345,10 @@ export function componentesDoDiff({ a, b, W, H, limiar = 1, alvos = [] }) {
     let peso = 0;
     let sx = 0;
     let sy = 0;
+    // o segundo momento: o TAMANHO da mancha, que escolhe a incerteza do
+    // sintético (`incertezaDoSintetico`) — mesma conta no real e no sintético
+    let sxx = 0;
+    let syy = 0;
     let deltaMax = 0;
     let x0 = W;
     let y0 = H;
@@ -350,6 +369,8 @@ export function componentesDoDiff({ a, b, W, H, limiar = 1, alvos = [] }) {
       // régua, senão a régua inteira erra meio pixel em silêncio.
       sx += w * (x + 0.5);
       sy += w * (y + 0.5);
+      sxx += w * (x + 0.5) * (x + 0.5);
+      syy += w * (y + 0.5) * (y + 0.5);
       if (dMax[p] > deltaMax) deltaMax = dMax[p];
       meus.push(p);
       if (x < x0) x0 = x;
@@ -371,9 +392,12 @@ export function componentesDoDiff({ a, b, W, H, limiar = 1, alvos = [] }) {
     // ver `caixaDeMeiaAltura`. A caixa CRUA fica publicada ao lado
     // porque é ela que diz o quanto a componente inteira se espalha.
     const mh = caixaDeMeiaAltura(meus, dMax, deltaMax, W);
+    const cx = sx / peso;
+    const cy = sy / peso;
     componentes.push({
       id, n, peso, deltaMax,
-      cx: sx / peso, cy: sy / peso,
+      cx, cy,
+      sigma: Math.sqrt(Math.max(0, (sxx / peso - cx * cx + syy / peso - cy * cy) / 2)),
       x0, y0, x1, y1,
       nMeia: mh.n,
       cxCaixa: (mh.x0 + mh.x1 + 1) / 2, cyCaixa: (mh.y0 + mh.y1 + 1) / 2,
@@ -506,8 +530,10 @@ export function lerDbgPlan(bloco) {
  */
 export function casarCorpos({
   previstos, componentes, ondeCaiu,
-  tolerancia = TOLERANCIA_PX, limiarPico = LIMIAR_PICO, limiarFoto = LIMIAR_FOTO, raioHalo = RAIO_HALO_PX,
+  tolerancia = TOLERANCIA_PX, limiarPico = LIMIAR_PICO, tetoIncerteza = TETO_DA_INCERTEZA_PX,
+  raioHalo = RAIO_HALO_PX,
 }) {
+  const incertezas = new Map();
   const porId = new Map(componentes.map((c) => [c.id, c]));
   const caiuPorId = new Map(ondeCaiu.map((o) => [o.id, o]));
   // quantos corpos previstos caíram em cada componente: 2+ é `FUNDIDO`
@@ -577,20 +603,31 @@ export function casarCorpos({
         motivo: `dentro da mancha de ${outros.join(', ')}`,
       };
     }
-    // SOB O LIMIAR DA FOTO, A POSIÇÃO NÃO SE MEDE — nem com componente casada
-    // (22/11, `destravar/viii-planeta-pixel.md`). O juízo é sobre o PICO DA
-    // COMPONENTE no diff da foto (`deltaMax`, em degraus de 8 bits), e não
-    // sobre o `pico` linear do `?dbgplan`: 1/255 no buffer linear não é um
-    // degrau da foto (Urano ua40, pico linear 9,2e-4, acende 1–2/255). Abaixo
-    // de `LIMIAR_FOTO` o arredondamento tira a caixa de meia-altura de 0,5 px
-    // em parte das posições (ver `medirLimiarDaFoto`). A componente fica
-    // reclamada, para não virar órfã.
-    if (comp.deltaMax < limiarFoto) {
+    // A TOLERÂNCIA DE CADA CORPO (22/11, decisão da conversa principal): os
+    // 0,5 px de sempre MAIS a incerteza que o sintético mede para o pico NA
+    // FOTO (`deltaMax`) e o tamanho (`sigma`) desta componente, separada para
+    // o centroide e para a caixa. Um corpo fraco não é liberado: é julgado na
+    // incerteza dele. Só quando a do centroide passa do teto o corpo não é
+    // mensurável nesta foto; a caixa acima do teto sai do juízo, e o centroide
+    // segue julgado. Memorizada por chamada: corpos iguais dão a mesma conta.
+    const chave = `${comp.deltaMax}|${Math.round(comp.sigma * 10)}`;
+    if (!incertezas.has(chave)) {
+      incertezas.set(chave, incertezaDoSintetico({ deltaMax: comp.deltaMax, sigma: comp.sigma }));
+    }
+    const inc = incertezas.get(chave);
+    const tolC = tolerancia + inc.centroide;
+    const tolB = tolerancia + inc.caixa;
+    const fotometria = {
+      incC: inc.centroide, incB: inc.caixa, tolC, tolB,
+    };
+    if (inc.centroide > tetoIncerteza) {
       return {
         ...base,
         comp,
+        ...fotometria,
         status: 'SOB-LIMIAR',
-        motivo: `pico na foto ${comp.deltaMax}/255 < ${limiarFoto}/255: ${comp.n} px casados, não medido em posição`,
+        motivo: `pico na foto ${comp.deltaMax}/255, σ ${comp.sigma.toFixed(2)} px: incerteza do centroide`
+          + ` ${inc.centroide.toFixed(2)} px > teto ${tetoIncerteza} — não medido em posição`,
       };
     }
     const dxC = comp.cx - c.px;
@@ -601,8 +638,9 @@ export function casarCorpos({
     // numa grade de pixels, e ±0,5 px em CADA eixo é a resolução deles. Cobrar
     // a hipotenusa ≤0,5 seria cobrar 0,35 px por eixo — mais fino que a grade,
     // e o que reprovaria não seria a camada, seria a régua.
-    const okCentroide = Math.abs(dxC) <= tolerancia && Math.abs(dyC) <= tolerancia;
-    const okCaixa = Math.abs(dxB) <= tolerancia && Math.abs(dyB) <= tolerancia;
+    const okCentroide = Math.abs(dxC) <= tolC && Math.abs(dyC) <= tolC;
+    const okCaixa = Math.abs(dxB) <= tolB && Math.abs(dyB) <= tolB;
+    const caixaNoTeto = inc.caixa > tetoIncerteza;
     // A CAIXA NÃO É JULGADA quando outro corpo tem luz dentro da mesma
     // componente: a caixa envolvente é propriedade da componente INTEIRA, e o
     // vizinho a estica. O centroide não sofre disso — ele é ponderado pelo
@@ -611,15 +649,20 @@ export function casarCorpos({
     // e estica a caixa do Sol em 2 px de um lado só (Δcaixa 1,000) enquanto o
     // centroide fica a 0,003 px. Julgar a caixa ali mediria a Terra.
     const contaminada = outros.length > 0;
+    const caixaJulgada = !contaminada && !caixaNoTeto;
+    let motivo;
+    if (contaminada) motivo = `caixa não julgada: ${outros.join(', ')} dentro da mesma mancha`;
+    else if (caixaNoTeto) motivo = `caixa não julgada: incerteza ${inc.caixa.toFixed(2)} px > teto ${tetoIncerteza}`;
     return {
       ...base,
       comp,
+      ...fotometria,
       dxC, dyC, dxB, dyB,
       dCentroide: Math.hypot(dxC, dyC),
       dCaixa: Math.hypot(dxB, dyB),
-      caixaJulgada: !contaminada,
-      status: okCentroide && (contaminada || okCaixa) ? 'MEDIDO' : 'FORA-DA-TOLERÂNCIA',
-      motivo: contaminada ? `caixa não julgada: ${outros.join(', ')} dentro da mesma mancha` : undefined,
+      caixaJulgada,
+      status: okCentroide && (!caixaJulgada || okCaixa) ? 'MEDIDO' : 'FORA-DA-TOLERÂNCIA',
+      motivo,
     };
   });
 
@@ -745,25 +788,38 @@ export function autoTesteSintetico() {
 }
 
 /**
- * A MEDIDA DO `LIMIAR_FOTO`, pura e reproduzível. Roda no teste, não a cada
- * corrida do juiz. Um alvo gaussiano de pico `P` degraus (σ em px) cai numa
- * posição subpixel sorteada; os dois lados da foto são o mesmo fundo contínuo
- * arredondado para 8 bits, com a parte fracionária `f` sorteada por pixel e
- * por canal: `sem = round(8 + f)`, `com = round(8 + f + v)`. O diff carrega
- * então o erro de ±1/255 do arredondamento ONDE há luz, e zero onde não há —
- * como o par real, cujo par nulo difere em ≤0,03 % dos px. Cada repetição
- * passa por `componentesDoDiff` + `casarCorpos` com o portão desligado
- * (`limiarFoto: 0`) e anota o `deltaMax` da componente casada e se saiu MEDIDO.
+ * A INCERTEZA DO SINTÉTICO para uma componente de pico `deltaMax` (degraus da
+ * foto) e tamanho `sigma` (o segundo momento de `componentesDoDiff`).
  *
- * Devolve o MENOR `P` (1, 2, 3, …) em que as N repetições localizam a
- * ≤0,5 px, e o intervalo de `deltaMax` medido nele: é esse intervalo que diz
- * que o número vale na unidade em que o portão o compara (o `deltaMax` da
- * componente, não o pico verdadeiro). `tabela` traz as falhas por `P`.
+ * NA MESMA LENTE DO JUIZ (`&tone=linear`): a cena é linear, a luz do corpo
+ * SOMA no linear, e o caminho até a foto é a codificação sRGB e depois o
+ * arredondamento de 8 bits. Por pixel e canal, um fundo de foto contínuo `B`
+ * (`FUNDO_DO_SINTETICO`) dá `sem = round(B)` e
+ * `com = round(255·sRGB(sRGB⁻¹(B/255) + v))`, com `v` uma gaussiana LINEAR
+ * numa posição subpixel sorteada. O diff carrega o ±1/255 do arredondamento
+ * ONDE há luz e zero onde não há (o par nulo real difere em ≤0,03 % dos px),
+ * e a curva sRGB achata o topo da mancha forte como na foto. A exposição não
+ * entra: a amplitude é dita em degraus da foto sobre o fundo do meio.
+ *
+ * O pico verdadeiro que mostra um dado `deltaMax` não é ele (fora do centro
+ * do pixel o pico medido cai; o fundo muda a inclinação do sRGB; o ±1/255
+ * sobe ou desce um degrau), então a conta varre `niveis` picos de
+ * `0,7·(deltaMax − 1)` a `1,4·(deltaMax + 1)·e^(0,5/σ²)`, `repeticoes`
+ * posições por pico, e GUARDA só as repetições em que o alvo caiu numa
+ * componente com o MESMO `deltaMax` — a situação do corpo real (se nenhuma o
+ * mostrou, as do pico mais próximo, e `desvio` diz a distância). Em cada pico,
+ * o σ linear é o que dá, depois do sRGB, o segundo momento `sigma` na foto
+ * (o mesmo estimador de `componentesDoDiff`). O erro de cada repetição é o
+ * pior eixo, separado para o centroide e para a caixa de meia-altura, e a
+ * incerteza é o `PERCENTIL_DO_SINTETICO` dos guardados.
+ *
+ * Determinística: `semente` fixa a cada chamada (nunca um fluxo entre corpos)
+ * e o σ entra arredondado a 0,1 px — a mesma componente dá sempre o mesmo número.
  */
-export function medirLimiarDaFoto({
-  sigma = 1.5, repeticoes = 256, semente = 1, maxPico = 20,
-} = {}) {
-  // mulberry32: a semente fixa é o que torna a constante reproduzível
+export function incertezaDoSintetico({
+  deltaMax, sigma, repeticoes = 256, semente = 1, niveis = 16, percentil = PERCENTIL_DO_SINTETICO,
+}) {
+  // mulberry32
   let s = semente >>> 0;
   const acaso = () => {
     s = (s + 0x6d2b79f5) >>> 0;
@@ -772,47 +828,98 @@ export function medirLimiarDaFoto({
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
-  const W = 40;
-  const H = 40;
-  const tabela = [];
-  for (let P = 1; P <= maxPico; P++) {
-    let falhas = 0;
-    let dMin = Infinity;
-    let dMaxObs = 0;
+  // a codificação sRGB da saída (IEC 61966-2-1), de linear [0,1] para [0,1]
+  const cod = (x) => (x <= 0.0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - 0.055);
+  const dec = (y) => (y <= 0.04045 ? y / 12.92 : ((y + 0.055) / 1.055) ** 2.4);
+  const B0 = FUNDO_DO_SINTETICO / 2;
+  const L0 = dec(B0 / 255);
+  // amplitude LINEAR que põe `P` degraus de foto sobre o fundo do meio
+  const amplitude = (P) => dec(Math.min(255, B0 + P) / 255) - L0;
+  const sg = Math.max(0.3, Math.round(sigma * 10) / 10);
+  const W = 2 * Math.ceil(6 * sg + 3);
+  const H = W;
+  // o σ LINEAR cuja mancha, depois do sRGB, tem o segundo momento `sg` na foto
+  // (o sRGB achata o topo de uma mancha forte e a alarga): bissecção sobre o
+  // perfil contínuo, sem arredondamento, sobre o fundo do meio
+  const sigmaNaFoto = (sl, A) => {
+    let w0 = 0;
+    let w2 = 0;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const r2 = (x + 0.5 - W / 2) ** 2 + (y + 0.5 - H / 2) ** 2;
+        const w = cod(Math.min(1, L0 + A * Math.exp(-r2 / (2 * sl * sl)))) - cod(L0);
+        w0 += w;
+        w2 += w * r2;
+      }
+    }
+    return Math.sqrt(w2 / w0 / 2);
+  };
+  const sigmaLinear = (A) => {
+    let lo = 0.1;
+    let hi = sg;
+    for (let it = 0; it < 30; it++) {
+      const m = (lo + hi) / 2;
+      if (sigmaNaFoto(m, A) < sg) lo = m; else hi = m;
+    }
+    return (lo + hi) / 2;
+  };
+  const pLo = Math.max(0.25, 0.7 * (deltaMax - 1));
+  const pHi = 1.4 * (deltaMax + 1) * Math.exp(0.5 / (sg * sg));
+  // todas as repetições casadas, com o pico que mostraram; as guardadas são
+  // as do `deltaMax` pedido ou, se nenhuma o mostrou (um px só perto de 255),
+  // as do pico mais próximo — `desvio` diz quantos degraus longe
+  const casadas = [];
+  for (let nv = 0; nv < niveis; nv++) {
+    const A = amplitude(pLo + ((pHi - pLo) * nv) / (niveis - 1));
+    const sl = sigmaLinear(A);
     for (let r = 0; r < repeticoes; r++) {
-      const px = 20 + acaso();
-      const py = 20 + acaso();
+      const px = W / 2 + acaso();
+      const py = H / 2 + acaso();
       const a = new Uint8ClampedArray(W * H * 4);
       const b = new Uint8ClampedArray(W * H * 4);
       for (let y = 0; y < H; y++) {
         for (let x = 0; x < W; x++) {
           const dx = x + 0.5 - px;
           const dy = y + 0.5 - py;
-          const v = P * Math.exp(-(dx * dx + dy * dy) / (2 * sigma * sigma));
+          const v = A * Math.exp(-(dx * dx + dy * dy) / (2 * sl * sl));
           const i = (y * W + x) * 4;
           for (let k = 0; k < 3; k++) {
-            const f = acaso();
-            a[i + k] = Math.round(8 + f);
-            b[i + k] = Math.round(8 + f + v);
+            // o fundo da foto, contínuo, por pixel e canal: a parte
+            // fracionária dele é o que o arredondamento de 8 bits come
+            const B = FUNDO_DO_SINTETICO * acaso();
+            a[i + k] = Math.round(B);
+            b[i + k] = Math.round(255 * cod(Math.min(1, dec(B / 255) + v)));
           }
           a[i + 3] = 255;
           b[i + 3] = 255;
         }
       }
-      const previstos = [{ id: 'alvo', px, py, m: 0, pico: 1 }];
-      const d = componentesDoDiff({ a, b, W, H, limiar: 1, alvos: previstos });
-      const l = casarCorpos({
-        previstos, componentes: d.componentes, ondeCaiu: d.ondeCaiu, limiarFoto: 0,
-      }).linhas[0];
-      const deltaMax = l.comp ? l.comp.deltaMax : 0;
-      dMin = Math.min(dMin, deltaMax);
-      dMaxObs = Math.max(dMaxObs, deltaMax);
-      if (l.status !== 'MEDIDO') falhas++;
+      const d = componentesDoDiff({ a, b, W, H, limiar: 1, alvos: [{ id: 'alvo', px, py }] });
+      const k = d.ondeCaiu[0].dentroDe;
+      if (k < 0) continue;
+      const c = d.componentes[k];
+      casadas.push({
+        dm: c.deltaMax,
+        sigma: c.sigma,
+        eC: Math.max(Math.abs(c.cx - px), Math.abs(c.cy - py)),
+        eB: Math.max(Math.abs(c.cxCaixa - px), Math.abs(c.cyCaixa - py)),
+      });
     }
-    tabela.push({ P, falhas, deltaMax: [dMin, dMaxObs] });
-    if (!falhas) return { limiar: P, deltaMax: [dMin, dMaxObs], tabela };
   }
-  return { limiar: null, deltaMax: null, tabela };
+  // nenhuma repetição casou: o sintético não sabe a incerteza, e o que não se
+  // sabe não se mede (passa do teto)
+  if (!casadas.length) return { centroide: Infinity, caixa: Infinity, guardadas: 0, desvio: null, sigma: sg };
+  const desvio = Math.min(...casadas.map((e) => Math.abs(e.dm - deltaMax)));
+  const guardadas = casadas.filter((e) => Math.abs(e.dm - deltaMax) === desvio);
+  const p = (v) => v.sort((x, y) => x - y)[Math.ceil(percentil * v.length) - 1];
+  return {
+    centroide: p(guardadas.map((e) => e.eC)),
+    caixa: p(guardadas.map((e) => e.eB)),
+    guardadas: guardadas.length,
+    desvio,
+    sigma: sg,
+    sigmaNaFoto: guardadas.reduce((t, e) => t + e.sigma, 0) / guardadas.length,
+  };
 }
 
 // ------------------------------------------------------------
@@ -975,7 +1082,9 @@ function imprimir({ nome, dbg, r, juizo }) {
       + ` caixa ${d.larg}×${d.alt} em (${d.x0},${d.y0})`
     : `  disco saturado do Sol (3 canais em 255): NENHUM — o pixel central do Sol`
       + ` é (${(pxSol || []).join(', ')})`);
-  console.log('  corpo     previsto px            centroide medido      Δcentro x/y      Δcaixa x/y      n px   m       pico      status');
+  console.log('  corpo     previsto px            centroide medido      Δcentro x/y   tol.C      Δcaixa x/y   tol.B'
+    + '   n px  Δmax  σ px   m       pico      status');
+  const tol = (t) => (t === undefined ? '—' : t.toFixed(3)).padStart(6);
   for (const l of juizo.linhas) {
     const prev = `(${l.px.toFixed(3)}, ${l.py.toFixed(3)})`;
     const med = l.comp && l.dxC !== undefined
@@ -983,9 +1092,11 @@ function imprimir({ nome, dbg, r, juizo }) {
     const par = (a, b) => (a === undefined ? '—' : `${a >= 0 ? '+' : ''}${a.toFixed(3)}/${b >= 0 ? '+' : ''}${b.toFixed(3)}`);
     console.log(
       `  ${l.id.padEnd(9)} ${prev.padEnd(21)} ${med.padEnd(21)} `
-      + `${par(l.dxC, l.dyC).padStart(15)}  `
-      + `${(l.caixaJulgada === false ? '(não julgada)' : par(l.dxB, l.dyB)).padStart(15)}  `
+      + `${par(l.dxC, l.dyC).padStart(15)} ${tol(l.tolC)}  `
+      + `${(l.caixaJulgada === false ? '(não julgada)' : par(l.dxB, l.dyB)).padStart(15)} ${tol(l.tolB)}  `
       + `${(l.comp ? String(l.comp.n) : '—').padStart(5)}  `
+      + `${(l.comp ? String(l.comp.deltaMax) : '—').padStart(4)}  `
+      + `${(l.comp ? l.comp.sigma.toFixed(2) : '—').padStart(4)}  `
       + `${l.m.toFixed(2).padStart(6)}  ${l.pico.toExponential(2).padStart(9)}  ${l.status}`
       + (l.motivo ? `  (${l.motivo})` : '')
     );
