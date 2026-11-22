@@ -142,7 +142,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import {
-  abrirSessao, APP_PADRAO, dorme, fotoTodaPreta, julgarFotoVazia, NAO_MEDE, SAIDA_NAO_MEDE,
+  abrirSessao, APP_PADRAO, dorme, fotoTodaPreta, julgarFotoVazia, SAIDA_NAO_MEDE,
 } from './chrome.mjs';
 
 const UA_POR_PC = 206264.80624548031;
@@ -1425,7 +1425,7 @@ async function familiaPan(s) {
   await s.ir(`pos=0,0,${z}&look=0,0,0&q=cinema&noorbitas=1`);
   await s.js(SO_A_CENA);
   await s.assentar();
-  const cam =JSON.parse(await s.js(LER_CAMERA));
+  const cam = JSON.parse(await s.js(LER_CAMERA));
   // o passo é escolhido para deslocar o CENTRO do quadro 4 px: a escala de um
   // quadro de voo real, e um deslocamento inteiro no centro deixa a
   // reamostragem bilinear quase exata (o resto do quadro paga a perspectiva)
@@ -1831,7 +1831,7 @@ async function correr() {
   // tem veredito. Defeito medido nas outras reprova (saída 1); sem defeito, a corrida NÃO MEDE (saída
   // `SAIDA_NAO_MEDE`) e nunca passa
   if (veredito.naoMedidas.length) {
-    console.log(`\n>>> ${NAO_MEDE} — ${veredito.naoMedidas.length} família(s) sem veredito:`);
+    console.log(`\n>>> NÃO MEDE — ${veredito.naoMedidas.length} família(s) sem veredito:`);
     for (const n of veredito.naoMedidas) console.log('  · ' + n);
   }
   if (veredito.erros.length) {

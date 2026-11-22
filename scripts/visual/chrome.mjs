@@ -128,10 +128,10 @@ export const NAO_DETERMINISTICA = 'a vista não é determinística';
 
 /**
  * A FOTO TODA PRETA NÃO É MEDIDA (rodada de destravar, 22/11). Neste PC, de vez em quando, a captura volta
- * com TODO pixel exatamente 0 (causa aberta: a captura do Chrome ou o app; `destravar/xx-estrelas-pretas.md`),
+ * com TODO pixel exatamente 0 (no `estabilidade-temporal` era a foto tirada antes do 1º quadro do app: `destravar/xxiii-foto-preta.md`),
  * e o juiz que mede o nada aprova: o `estabilidade-temporal` passou o `aproxEstrela` com 9 quadros pretos e
  * 0 fontes. Zero fontes, o par "igual" de dois pretos, o "diferente" contra um preto, a luz que "não caiu"
- * porque já era zero — nada disso é medida. A foto assim sai NÃO MEDE (coluna MÁQUINA), nunca "passa", e o
+ * porque já era zero — nada disso é medida. A foto assim sai NÃO MEDE, sem afirmar causa, nunca "passa", e o
  * juiz sai com `SAIDA_NAO_MEDE`. O critério é o canal de COR exatamente 0 em todo pixel: o alfa (255 na
  * captura opaca) fica fora, e um céu escuro de verdade, com estrelas de 1/255, segue medido.
  */
