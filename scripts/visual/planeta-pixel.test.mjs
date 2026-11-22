@@ -306,6 +306,7 @@ describe('casarCorpos', () => {
 describe('lerDbgPlan', () => {
   const CORPOS = [
     'sun', 'mercury', 'venus', 'earth', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto',
+    'moon',
   ];
   const bloco = [
     '[dbgplan] época 2026-01-01T00:00:00Z = JD 2461041.5008692136 TDB · instante retrato · '
@@ -313,7 +314,9 @@ describe('lerDbgPlan', () => {
       + '(0.002372 anos-luz; 0.00072722 pc, régua interna) · tela 1800×1713 px · '
       + 'expoM0=3.5 · sigmaPx=0.85 · visível=true',
     ...CORPOS.map((id, i) =>
-      `[dbgplan] ${id.padEnd(8)} ecl=(0.000000000, 0.000000000, 0.000000000) UA · `
+      `[dbgplan] ${id.padEnd(8)} `
+      // a Lua não tem retrato: a linha dela diz isso no lugar do vetor
+      + (id === 'moon' ? 'ecl=(sem retrato) · ' : 'ecl=(0.000000000, 0.000000000, 0.000000000) UA · ')
       + 'cena=(0, 0, 0) pc[régua interna] · '
       + 'ndc=(0.000000000, 0.000000000, 0.000000000) · '
       + `px=(${(900 + i).toFixed(6)}, ${(856.5 - i).toFixed(6)}) · `
@@ -321,7 +324,7 @@ describe('lerDbgPlan', () => {
       + `E=1.234567e+${i} · pico=9.876543e-${i + 1}`),
   ].join('\n');
 
-  it('lê cabeçalho, os dez corpos, o px e o pico que o app calculou', () => {
+  it('lê cabeçalho, os onze corpos (a Lua por último), o px e o pico que o app calculou', () => {
     const d = lerDbgPlan(bloco);
     expect(d.cameraUA).toBe(150);
     expect(d.largura).toBe(1800);
@@ -333,6 +336,12 @@ describe('lerDbgPlan', () => {
     expect(d.corpos[0]).toMatchObject({ px: 900, py: 856.5, m: -15.84, pico: 9.876543e-1 });
     expect(d.corpos[9].px).toBe(909);
     expect(d.corpos[9].pico).toBe(9.876543e-10);
+    expect(d.corpos[10]).toMatchObject({ id: 'moon', px: 910, py: 846.5, m: -5.84 });
+  });
+
+  it('o bloco de antes da Lua (11 linhas) é ERRO: a régua não mede um corpo a menos calada', () => {
+    const semLua = bloco.split('\n').slice(0, 11).join('\n');
+    expect(() => lerDbgPlan(semLua)).toThrow(/11 linhas \(esperadas 12\)/);
   });
 
   it('bloco truncado é ERRO, não meia-tabela em silêncio', () => {

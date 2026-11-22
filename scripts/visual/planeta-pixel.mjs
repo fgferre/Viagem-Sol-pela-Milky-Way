@@ -412,16 +412,16 @@ export function manchaSaturada({ img, W, H, x, y }) {
 }
 
 /**
- * O BLOCO do `?dbgplan` virado em números. Onze linhas: o cabeçalho (época,
- * distância da câmera, tela, os dois uniformes da PSF) e os dez
+ * O BLOCO do `?dbgplan` virado em números. Doze linhas: o cabeçalho (época,
+ * distância da câmera, tela, os dois uniformes da PSF) e os onze
  * corpos, cada um com o px previsto e o pico de PSF que o APP calculou —
  * é de propósito que a régua não recalcula o pico: quem tem os uniformes
  * verdadeiros é a camada.
  */
 export function lerDbgPlan(bloco) {
   const linhas = String(bloco).split('\n').map((s) => s.trim()).filter((s) => s.startsWith('[dbgplan]'));
-  if (linhas.length !== 11) {
-    throw new Error(`bloco do ?dbgplan com ${linhas.length} linhas (esperadas 11)`);
+  if (linhas.length !== 12) {
+    throw new Error(`bloco do ?dbgplan com ${linhas.length} linhas (esperadas 12)`);
   }
   const num = (linha, chave) => {
     const m = linha.match(new RegExp(`${chave}=(-?[\\d.]+(?:e[+-]?\\d+)?)`, 'i'));
