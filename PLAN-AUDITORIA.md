@@ -157,6 +157,11 @@ Chrome com Direct3D 11 (o do visitante do Windows), perfil novo a cada abertura 
   - um corpo girando pelo tempo de tela fora do modo de foto.
 
   Nas 77 vistas medidas (`destravar/iv-pronto-medida.md`) isso não aconteceu. Quem vir um "não assentou" novo olha primeiro a `clarao.mudancaPendente` e a `oculta` das vagas (`clarao.ts` ~1289–1300, `sondaDeOclusao.ts` ~102–111).
+- **A BRECHA QUE SOBRA no pronto que espera a oclusão (`65162503`, não consertada por decisão de 22/11).** O pronto espera a 1ª resposta da sonda depois de cada troca de dono. Há dois casos fora disso:
+  - a estrela que sai da tela e volta com o MESMO dono segue marcada como respondida pelo `null` do "fora da tela", e o pronto pode subir com o "à vista" velho até chegar a 1ª resposta real;
+  - um salto de câmera sem troca de dono tem a mesma janela, porque só a troca chama `invalidar` (`clarao.ts` ~1265).
+
+  Fechar pede estado novo na `SondaDeOclusao`. A medida que decide se a brecha é teórica: os px que ainda mudam nos 8 quadros depois do pronto num `seek` do filme, num foco do Atlas trocado ao vivo e na volta de uma estrela à tela.
 - **Uma galáxia vizinha pisca ±1/255 de quadro a quadro no D3D11** (`vizinhas.ts:108`, desde `7d56593b`, 12/11), com a cena parada: um conjunto fixo de ~236 px. No Vulkan sai idêntico. Causa não achada; hipótese: a soma aditiva de muitos pontos sobrepostos. Item pequeno do app. Enquanto isso, os juízes de foto aceitam esse ruído com um teto absoluto (nível ≤ 1/255 e ≤ 0,03 % dos px), medido em `destravar/i-diagnostico.md`.
 
 ### Onda 2 — depois de a onda 1 entrar no principal (a conversa principal manda)
