@@ -149,7 +149,7 @@ import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import {
-  GPU_FLAGS, lancarChrome, capturarCDP, julgarProntidao, APP_PADRAO, julgarTetoDoRuido, NAO_DETERMINISTICA,
+  GPU_FLAGS, lancarChrome, capturarCDP, julgarProntidao, APP_PADRAO, julgarTetoDoRuido, NAO_DETERMINISTICA, TETO_DO_RUIDO,
 } from './chrome.mjs';
 import { VISTAS, PIN } from './ab-identidade.mjs';
 
@@ -268,6 +268,9 @@ export function componentesDoDiff({ a, b, W, H, limiar = 1, alvos = [] }) {
   let acesos = 0;
   let subiram = 0;
   let desceram = 0;
+  // a perda de EXATAMENTE 1/255 é o pisca do D3D11 (`TETO_DO_RUIDO`): fica
+  // fora de `desceram` e é contada à parte, para o teto julgar
+  let desceramNoRuido = 0;
   let somaGanho = 0;
   let somaPerda = 0;
   for (let p = 0, i = 0; p < total; p++, i += 4) {
@@ -283,6 +286,7 @@ export function componentesDoDiff({ a, b, W, H, limiar = 1, alvos = [] }) {
     // no vermelho e perde 1 no azul tem soma positiva e mesmo assim perdeu
     // luz em algum lugar — e a camada é AdditiveBlending, não pode.
     if (dr >= 0 && dg >= 0 && db >= 0) subiram++;
+    else if (m === 1) desceramNoRuido++;
     else desceram++;
     for (const v of [dr, dg, db]) { if (v > 0) somaGanho += v; else somaPerda -= v; }
   }
@@ -372,7 +376,7 @@ export function componentesDoDiff({ a, b, W, H, limiar = 1, alvos = [] }) {
     };
   });
 
-  return { W, H, acesos, subiram, desceram, somaGanho, somaPerda, componentes, ondeCaiu };
+  return { W, H, acesos, subiram, desceram, desceramNoRuido, somaGanho, somaPerda, componentes, ondeCaiu };
 }
 
 /**
@@ -581,8 +585,12 @@ export function casarCorpos({
   // já casado é o halo/espinho do mesmo sprite partido pelo arredondamento;
   // longe de todos é luz que a camada acendeu onde a régua 1 não previu
   // nada — e isso é defeito, não detalhe.
-  const orfas = componentes
-    .filter((c) => !reclamadas.has(c.id))
+  // a órfã que não passa de 1/255 é o pisca do D3D11, não luz da camada:
+  // sai da conta e seus px vão para o teto (`julgarDescarteDoRuido`)
+  const semDono = componentes.filter((c) => !reclamadas.has(c.id));
+  const pxOrfasNoRuido = semDono.filter((c) => c.deltaMax <= 1).reduce((t, c) => t + c.n, 0);
+  const orfas = semDono
+    .filter((c) => c.deltaMax > 1)
     .map((c) => {
       let dMin = Infinity;
       let dono = null;
@@ -600,6 +608,7 @@ export function casarCorpos({
   return {
     linhas,
     orfas,
+    pxOrfasNoRuido,
     conta,
     erro: linhas.some((l) => REPROVA.has(l.status)) || longe.length > 0,
   };
@@ -622,6 +631,22 @@ export function casarCorpos({
 export function julgarParNulo({ acesos, maior, total }) {
   const r = julgarTetoDoRuido({ diferentes: acesos, maior, total });
   return { ok: r.ok, texto: r.ok ? `dentro do teto: ${r.texto}` : `${NAO_DETERMINISTICA}: ${r.texto}` };
+}
+
+/**
+ * O DESCARTE DO RUÍDO (22/11/2026, decisão da conversa principal): a luz
+ * perdida e as órfãs de EXATAMENTE 1/255 não entram na conta delas, mas os
+ * px descartados cabem no teto (`TETO_DO_RUIDO.fracao`); acima, a régua
+ * reprova por "ruído acima do teto", com o número.
+ */
+export function julgarDescarteDoRuido({ descartados, total }) {
+  const teto = Math.floor(total * TETO_DO_RUIDO.fracao);
+  const ok = descartados <= teto;
+  return {
+    ok,
+    texto: `${descartados} px de 1/255 descartados da luz perdida e das órfãs`
+      + ` (teto ${teto} px, ${(TETO_DO_RUIDO.fracao * 100).toFixed(2)} %)${ok ? '' : ' — ruído acima do teto'}`,
+  };
 }
 
 export function autoTesteSintetico() {
@@ -897,6 +922,12 @@ async function principal() {
     if (medida.juizo.linhas.some((l) => l.id === 'moon' && l.status !== 'FUNDIDA-COM-TERRA')) luaMedida = true;
     vias.push(...medida.vias);
     if (!julgarParNulo({ ...medida.r.nulo, total: medida.r.W * medida.r.H }).ok) erro = true;
+    const descarte = julgarDescarteDoRuido({
+      descartados: medida.r.par.desceramNoRuido + medida.juizo.pxOrfasNoRuido,
+      total: medida.r.W * medida.r.H,
+    });
+    console.log(`  ${nome}: ${descarte.texto}`);
+    if (!descarte.ok) erro = true;
     if (medida.r.par.desceram !== 0) {
       console.error(`  !! ${nome}: ${medida.r.par.desceram} px PERDERAM luz — a camada é aditiva`);
       erro = true;

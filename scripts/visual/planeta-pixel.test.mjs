@@ -22,6 +22,7 @@ import {
   caixaDeMeiaAltura,
   casarCorpos,
   componentesDoDiff,
+  julgarDescarteDoRuido,
   julgarParNulo,
   lerDbgPlan,
   manchaSaturada,
@@ -104,6 +105,16 @@ describe('componentesDoDiff', () => {
     const r = componentesDoDiff({ a: b, b: a, W, H, limiar: 1, alvos: [] });
     expect(r.desceram).toBeGreaterThan(0);
     expect(r.subiram).toBe(0);
+  });
+
+  it('a perda de EXATAMENTE 1/255 é ruído contado à parte; a de 2/255 segue PERDENDO luz', () => {
+    const a = fundo();
+    const b = Uint8ClampedArray.from(a);
+    b[(10 * W + 10) * 4] -= 1; // o pisca do D3D11
+    b[(40 * W + 60) * 4 + 2] -= 2; // perda de verdade
+    const r = componentesDoDiff({ a, b, W, H, limiar: 1, alvos: [] });
+    expect(r.desceramNoRuido).toBe(1);
+    expect(r.desceram).toBe(1);
   });
 
   it('o limiar corta: com limiar 255 nada acende', () => {
@@ -311,6 +322,33 @@ describe('casarCorpos', () => {
     expect(orfa.dMin).toBeGreaterThan(RAIO_HALO_PX);
     expect(orfa.halo).toBe(false);
     expect(j.erro).toBe(true);
+  });
+
+  it('a órfã de 1/255 é ruído: sai da conta, sem erro, e os px dela vão para o teto', () => {
+    const a = fundo();
+    const b = comMancha(a, [MANCHA_SOL]);
+    b[(5 * W + 70) * 4] += 1; // um px que pisca longe de tudo
+    const alvos = [alvo('sun', 20.3, 30.7)];
+    const r = componentesDoDiff({ a, b, W, H, limiar: 1, alvos });
+    const j = casarCorpos({ previstos: alvos, componentes: r.componentes, ondeCaiu: r.ondeCaiu });
+    expect(j.orfas).toEqual([]);
+    expect(j.pxOrfasNoRuido).toBe(1);
+    expect(j.erro).toBe(false);
+  });
+});
+
+describe('julgarDescarteDoRuido', () => {
+  // a foto da régua 3: 1.512.000 px de 1800×840 → teto de 453 px
+  const total = 1512000;
+  it('o descarte dentro de 0,03 % passa e imprime o número', () => {
+    const v = julgarDescarteDoRuido({ descartados: 125, total });
+    expect(v.ok).toBe(true);
+    expect(v.texto).toContain('125 px de 1/255 descartados');
+  });
+  it('acima de 0,03 % reprova por "ruído acima do teto"', () => {
+    const v = julgarDescarteDoRuido({ descartados: 454, total });
+    expect(v.ok).toBe(false);
+    expect(v.texto).toContain('ruído acima do teto');
   });
 });
 
