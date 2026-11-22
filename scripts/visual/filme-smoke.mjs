@@ -1,5 +1,5 @@
 // Serve: dono — o roteiro na tela: legenda inteira nas margens, corte certo e o relógio andando
-// Custo: 1,4 min (medido 30/08, F5c do item 113: sentinela na 2ª largura + mesma sessão)
+// Custo: 2,9 min (medido 22/11 com a capa sem shot, que espera 40 s de relógio do Sol; era 1,4 em 30/08, F5c do item 113)
 // O JUIZ DO ROTEIRO NA TELA — texto, cortes, responsividade e movimento.
 //
 //   node scripts/visual/filme-smoke.mjs
@@ -19,6 +19,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
+import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import { abrirSessao, APP_PADRAO, esperarPor, folgaDoLimiteGb, julgarFolgaDoLimite } from './chrome.mjs';
 
@@ -514,38 +515,171 @@ async function julgarLargura(sessao, largura, altura, captura) {
   }
 }
 
-// A FOLGA ANTES DE ABRIR (22/11): no D3D11 o processo de GPU chega a ~10,4 GB
-// neste juiz (as duas larguras num documento só, como o visitante assiste);
-// sem folga no limite do Windows ele engasga e o juiz caía calado no prazo.
-const PISO_DA_FOLGA_GB = 14;
-const folga = julgarFolgaDoLimite(folgaDoLimiteGb(), PISO_DA_FOLGA_GB);
-console.log(folga.texto);
-if (!folga.ok) {
-  console.log('FALHA ' + folga.texto);
-  process.exit(1);
+/**
+ * A CAPA NÃO APAGA COM O TEMPO (22/11, rodada de destravar, item xvii).
+ * Todo `ir()` da abertura acima leva `shot=1`, que congela o relógio: o
+ * Sol da capa nunca chegava à 1ª ejeção de massa (~8,7 s de Sol), e foi
+ * ela que apagou a cena de vez na regressão de `8a054fbe` (o `resetState`
+ * da CME deixava a profundidade invertida limpando em 1; consertado em
+ * `c88ecf0a`). Aqui a capa abre SEM `shot`, o HUD sai por CSS (a mesma
+ * regra do `SO_A_CENA` do `estabilidade-temporal`) e o quadro é medido
+ * duas vezes: com 2 s de relógio do Sol e quando ele passa de 40 s.
+ *
+ * AS DUAS MEDIDAS (`medirQuadroDaCapa`), no quadro sem HUD:
+ *  - `luz`: a média de (R+G+B)/3 do quadro, 0..255;
+ *  - `estrelas`: os máximos locais (3×3) com pelo menos `PISO_DA_ESTRELA`
+ *    e `CONTRASTE_DA_ESTRELA` acima do mais claro do anel a 3 px, fora do
+ *    disco do Sol e da coroa (`FATOR_DA_COROA` × o raio projetado).
+ * MEDIDO em 22/11, a 1200×900, q=cinema, pt-BR, D3D11 (início → fim):
+ *  - com o conserto (c88ecf0a): luz 89,2 → 88,5; estrelas 96 → 138;
+ *  - sem ele (92740eaa): luz 89,2 → 9,0 (só a poeira); estrelas 96 → 0.
+ * O piso de metade (`FRACAO_QUE_FICA`) fica a 5× do escuro e a 2× do aceso.
+ */
+export const PISO_DA_ESTRELA = 30;
+export const CONTRASTE_DA_ESTRELA = 15;
+export const FATOR_DA_COROA = 1.15;
+/** o relógio do Sol (s) que a medida final espera, e o teto da espera */
+export const RELOGIO_DA_CAPA_S = 40;
+const TETO_DA_ESPERA_DA_CAPA_MS = 75000;
+/** a capa só cobra com o Sol grande na tela (o disco, em px de CSS) */
+export const SOL_GRANDE_PX = 100;
+/** a fração da luz e das estrelas do início que o quadro final tem de manter */
+export const FRACAO_QUE_FICA = 0.5;
+/** o mínimo de estrelas no quadro inicial: abaixo disso a medida não diz nada */
+export const ESTRELAS_NO_INICIO = 20;
+
+/** Mede um quadro cru (`data` com `canais` por pixel); `sol` = { x, y, raioPx } ou null. */
+export function medirQuadroDaCapa(data, largura, altura, canais, sol) {
+  const L = new Float32Array(largura * altura);
+  let soma = 0;
+  for (let p = 0, i = 0; p < L.length; p++, i += canais) {
+    L[p] = (data[i] + data[i + 1] + data[i + 2]) / 3;
+    soma += L[p];
+  }
+  const fora = sol ? sol.raioPx * FATOR_DA_COROA : 0;
+  const R = 3;
+  const anel = [[-R, -R], [0, -R], [R, -R], [-R, 0], [R, 0], [-R, R], [0, R], [R, R]];
+  let estrelas = 0;
+  for (let y = R; y < altura - R; y++) {
+    for (let x = R; x < largura - R; x++) {
+      const p = y * largura + x;
+      const v = L[p];
+      if (v < PISO_DA_ESTRELA) continue;
+      if (sol && Math.hypot(x - sol.x, y - sol.y) < fora) continue;
+      let pico = true;
+      for (let dy = -1; dy <= 1 && pico; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const q = p + dy * largura + dx;
+          // empate: fica só o primeiro na ordem de leitura
+          if (q !== p && (L[q] > v || (L[q] === v && q < p))) { pico = false; break; }
+        }
+      }
+      if (!pico) continue;
+      let fundo = 0;
+      for (const [dx, dy] of anel) fundo = Math.max(fundo, L[p + dy * largura + dx]);
+      if (v - fundo >= CONTRASTE_DA_ESTRELA) estrelas++;
+    }
+  }
+  return { luz: soma / L.length, estrelas };
 }
 
-// UMA sessão de Chrome para as duas larguras (F5c): a segunda largura é
-// override de métricas, e a abertura dela continua provada por recarga —
-// o `ir()` de cada largura boota o documento já no tamanho novo.
-const sessao = await abrirSessao({ janela: '1200x900', app: APP, prefixo: 'filme' });
-try {
-  await conferirControles(sessao);
-  const frames = await julgarLargura(sessao, 1200, 900, 'todas');
-  frames.push(...await julgarLargura(sessao, 820, 900, 'compacta'));
-  await salvarFolha(frames);
-  if (falhas.length === 0) conferir(true, 'gate completo (0 falhas)');
-  process.stdout.write(`\nFolha de contato: ${SAIDA}\n`);
-} catch (erro) {
-  falhas.push(erro instanceof Error ? erro.message : String(erro));
-  process.stderr.write(`\nFALHA INESPERADA: ${falhas.at(-1)}\n`);
-} finally {
-  sessao.fechar();
+/**
+ * O VEREDITO, puro: `inicio` e `fim` = { luz, estrelas, relogio, solPx }.
+ * Devolve as falhas (vazio = a capa ficou acesa). Relógio parado ou Sol
+ * pequeno reprovam: sem eles a cobrança passaria sem ter olhado.
+ */
+export function julgarCapaAcesa({ inicio, fim }) {
+  const f = [];
+  if (!(fim.relogio >= RELOGIO_DA_CAPA_S && fim.relogio > inicio.relogio)) {
+    f.push(`o relógio do Sol não andou até ${RELOGIO_DA_CAPA_S} s (${inicio.relogio} → ${fim.relogio})`);
+  }
+  if (!(Math.min(inicio.solPx, fim.solPx) >= SOL_GRANDE_PX)) {
+    f.push(`o Sol não está grande na tela (${inicio.solPx} → ${fim.solPx} px, piso ${SOL_GRANDE_PX})`);
+  }
+  if (!(inicio.estrelas >= ESTRELAS_NO_INICIO)) {
+    f.push(`o quadro inicial não tem estrelas para comparar (${inicio.estrelas}, piso ${ESTRELAS_NO_INICIO})`);
+  }
+  if (!(fim.luz >= FRACAO_QUE_FICA * inicio.luz)) {
+    f.push(`a luz do quadro caiu de ${inicio.luz.toFixed(1)} para ${fim.luz.toFixed(1)} (piso ${FRACAO_QUE_FICA} do início)`);
+  }
+  if (!(fim.estrelas >= FRACAO_QUE_FICA * inicio.estrelas)) {
+    f.push(`as estrelas caíram de ${inicio.estrelas} para ${fim.estrelas} (piso ${FRACAO_QUE_FICA} do início)`);
+  }
+  return f;
 }
 
-if (falhas.length) {
-  process.stderr.write(`\n${falhas.length} falha(s) no gate do filme.\n`);
-  process.exitCode = 1;
-} else {
-  process.stdout.write('\nFILME OK — texto, cortes, duas larguras e movimento conferidos.\n');
+const LER_SOL_DA_CAPA = `(() => {
+  const d = window.__director; const cam = d.engine.camera; const c = d.sun && d.sun.ctx;
+  const w = d.sun.group.getWorldPosition(new cam.position.constructor());
+  const dist = w.distanceTo(cam.position);
+  const solPx = 2 * Math.atan(d.solRaioPc / dist) * innerHeight / (2 * Math.tan(cam.fov * Math.PI / 360));
+  const v = w.clone().project(cam);
+  return JSON.stringify({ relogio: c ? c.elapsed : null, cme: c ? c.cmeCount : null, fase: d.phase, solPx,
+    x: (v.x + 1) / 2 * innerWidth, y: (1 - v.y) / 2 * innerHeight });
+})()`;
+
+async function medirCapa(sessao) {
+  const sol = JSON.parse(await sessao.js(LER_SOL_DA_CAPA));
+  const { data, info } = await sharp(await capturar(sessao)).raw().toBuffer({ resolveWithObject: true });
+  const m = medirQuadroDaCapa(data, info.width, info.height, info.channels, { x: sol.x, y: sol.y, raioPx: sol.solPx / 2 });
+  return { ...m, relogio: +Number(sol.relogio).toFixed(2), solPx: +sol.solPx.toFixed(1), cme: sol.cme, fase: sol.fase };
+}
+
+/** A cobrança no navegador: a capa sem `shot`, 40 s de Sol, as duas medidas. */
+export async function conferirCapaAcesa(sessao) {
+  await sessao.send('Emulation.setDeviceMetricsOverride', { width: 1200, height: 900, deviceScaleFactor: 1, mobile: false });
+  await sessao.ir(comLang('q=cinema'));
+  await sessao.js("(() => { const s = document.createElement('style');"
+    + " s.textContent = '.hud-root > *:not(.scene-canvas){display:none !important}';"
+    + ' document.head.appendChild(s); return true; })()');
+  // o pronto chega antes do 1º quadro da capa (o relógio do Sol ainda em 0 e
+  // o quadro preto): a medida inicial espera 2 s de Sol desenhado
+  await esperarPor(sessao, '(window.__director.sun.ctx.elapsed >= 2)', TETO_DA_ESPERA_DA_CAPA_MS);
+  const inicio = await medirCapa(sessao);
+  await esperarPor(sessao, `(window.__director.sun.ctx.elapsed >= ${RELOGIO_DA_CAPA_S + 0.5})`, TETO_DA_ESPERA_DA_CAPA_MS);
+  const fim = await medirCapa(sessao);
+  const f = julgarCapaAcesa({ inicio, fim });
+  const leitura = (m) => `relógio ${m.relogio} s · Sol ${m.solPx} px · luz ${m.luz.toFixed(1)} · ${m.estrelas} estrelas · CME ${m.cme} · fase ${m.fase}`;
+  conferir(f.length === 0, `capa sem shot depois de ${RELOGIO_DA_CAPA_S} s de Sol: a cena não apagou`
+    + ` — início: ${leitura(inicio)}; fim: ${leitura(fim)}${f.length ? ` — ${f.join('; ')}` : ''}`);
+  return { inicio, fim, falhas: f };
+}
+
+if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
+  // A FOLGA ANTES DE ABRIR (22/11): no D3D11 o processo de GPU chega a ~10,4 GB
+  // neste juiz (as duas larguras num documento só, como o visitante assiste);
+  // sem folga no limite do Windows ele engasga e o juiz caía calado no prazo.
+  const PISO_DA_FOLGA_GB = 14;
+  const folga = julgarFolgaDoLimite(folgaDoLimiteGb(), PISO_DA_FOLGA_GB);
+  console.log(folga.texto);
+  if (!folga.ok) {
+    console.log('FALHA ' + folga.texto);
+    process.exit(1);
+  }
+
+  // UMA sessão de Chrome para as duas larguras (F5c): a segunda largura é
+  // override de métricas, e a abertura dela continua provada por recarga —
+  // o `ir()` de cada largura boota o documento já no tamanho novo.
+  const sessao = await abrirSessao({ janela: '1200x900', app: APP, prefixo: 'filme' });
+  try {
+    await conferirControles(sessao);
+    await conferirCapaAcesa(sessao);
+    const frames = await julgarLargura(sessao, 1200, 900, 'todas');
+    frames.push(...await julgarLargura(sessao, 820, 900, 'compacta'));
+    await salvarFolha(frames);
+    if (falhas.length === 0) conferir(true, 'gate completo (0 falhas)');
+    process.stdout.write(`\nFolha de contato: ${SAIDA}\n`);
+  } catch (erro) {
+    falhas.push(erro instanceof Error ? erro.message : String(erro));
+    process.stderr.write(`\nFALHA INESPERADA: ${falhas.at(-1)}\n`);
+  } finally {
+    sessao.fechar();
+  }
+
+  if (falhas.length) {
+    process.stderr.write(`\n${falhas.length} falha(s) no gate do filme.\n`);
+    process.exitCode = 1;
+  } else {
+    process.stdout.write('\nFILME OK — texto, cortes, duas larguras e movimento conferidos.\n');
+  }
 }
