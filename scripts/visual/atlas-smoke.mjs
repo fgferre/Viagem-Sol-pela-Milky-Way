@@ -930,14 +930,17 @@ async function principal() {
     // fora `t=167` não muda com `nogdust` (0 px) — a extinção por partícula
     // vai para o `brightMat`, que desenha de DENTRO do disco. Em `t=60`
     // (dentro) ela muda 239.331 px (25 % da foto), até 191/255, e a vista assenta em ~9 s
-    // com o par do mesmo estado em 0 px. O `noglow` segue em `t=167`, onde
-    // muda 1.267 px até 82/255 (e em `t=60`, nada). As LÂMINAS (`nodisc`)
+    // com o par do mesmo estado em 0 px. O `noglow` vai para `t=153`, a vista
+    // `edgeon` (`destravar/xviii-noglow-e-estabilidade.md`): ele só apaga o
+    // halo de perfil e a anã de Sagitário, e no patamar de t=150–153 muda
+    // 29.708 px até 87/255 (3,1 %, 10,5× o "diferente"); em `t=167` eram só
+    // 1.267 px (0,13 %), abaixo dos 10× do teto. As LÂMINAS (`nodisc`)
     // não mudam NENHUMA das vistas medidas (t=30, 60, 100, 130, 145, 167):
     // no modo partículas elas não acendem (`galaxy.ts:1238`, `!soParticulas`,
     // e `:393` as apaga de vez). A cobrança "a camada muda" fica DECLARADA
     // para ela, com o número medido a cada corrida — e se um dia ela mudar a
     // vista, a declaração caducou e reprova.
-    const VISTA_DA_CAMADA = { nodisc: 't=60', nogdust: 't=60', noglow: 't=167' };
+    const VISTA_DA_CAMADA = { nodisc: 't=60', nogdust: 't=60', noglow: 't=153' };
     for (const flag of ['nodisc', 'nogdust', 'noglow']) {
       const vista = VISTA_DA_CAMADA[flag];
       await sessao.ir(`${vista}&${PIN}&${flag}=1`);
