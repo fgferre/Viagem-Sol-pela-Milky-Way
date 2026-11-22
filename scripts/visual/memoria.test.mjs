@@ -7,7 +7,8 @@
 // para pegar — e o caso bom ao lado, no molde de `luz-do-quadro.test.mjs`.
 import { describe, it, expect } from 'vitest';
 import {
-  bootAteOSinal, contarDeclarados, julgarBoot, julgarFocos, julgarHeapPorRodada, TETO_DO_BOOT_MS,
+  bootAteOSinal, contarDeclarados, esperarRepouso, julgarAssentarDoCiclo, julgarBoot, julgarFocos,
+  julgarHeapPorRodada, julgarRepouso, TETO_DO_BOOT_MS, TETO_DO_REPOUSO_MS,
 } from './memoria.mjs';
 
 /** o protocolo dos focos como `memoria.mjs` o escreve, com as contas
@@ -217,5 +218,47 @@ describe('julgarBoot', () => {
     });
     expect(boot).toEqual({ via: 'quadros', ms: TETO_DO_BOOT_MS });
     expect(julgarBoot(boot)).toBe(false);
+  });
+});
+
+describe('o pronto e o repouso dos ciclos', () => {
+  it('assentar por quadros com o sinal do app presente é o pronto morto, nomeado; sem sinal, não', () => {
+    const j = julgarAssentarDoCiclo({ ciclo: 2, passo: 'entrar', via: 'quadros', ms: 12400, fase: 'atlas' });
+    expect(j.ok).toBe(false);
+    expect(j.texto).toMatch(/^o pronto não acendeu no ciclo 2 /);
+    expect(julgarAssentarDoCiclo({ ciclo: 2, passo: 'entrar', via: 'quadros', ms: 70000, fase: null }).ok).toBe(true);
+    expect(julgarAssentarDoCiclo({ ciclo: 2, passo: 'entrar', via: 'sinal', ms: 1100, fase: 'atlas' }).ok).toBe(true);
+  });
+
+  /** o relógio e os quadros andam a cada espera; `leituras` dá o estado por tempo */
+  const repousar = (leitura) => {
+    let t = 0;
+    let f = 0;
+    return esperarRepouso({
+      ler: async () => ({ ...leitura(t), f }),
+      agora: () => t,
+      dormir: async (ms) => { t += ms; f += 3; },
+    });
+  };
+
+  it('o prazo vencido REPROVA nomeando o que não repousou: workers vivos, camada a caminho', async () => {
+    const vazado = await repousar(() => ({ workers: 1, camada: null }));
+    expect(vazado).toMatchObject({ ok: false, workers: 1 });
+    expect(vazado.ms).toBeGreaterThanOrEqual(TETO_DO_REPOUSO_MS);
+    expect(julgarRepouso({ ciclo: 2, ...vazado }).texto).toMatch(/ciclo 2: NÃO repousou .*1 worker\(s\) vivo\(s\)/);
+    const subindo = julgarRepouso({ ciclo: 1, ...(await repousar(() => ({ workers: 0, camada: 'subindo' }))) });
+    expect(subindo.ok).toBe(false);
+    expect(subindo.texto).toMatch(/camada WebGPU 'subindo'/);
+    expect(subindo.texto).not.toMatch(/worker/);
+    // galáxia ausente não passa por repouso
+    expect((await repousar(() => ({ workers: 0, camada: 'sem galáxia' }))).ok).toBe(false);
+  });
+
+  it('o repouso que chega no prazo passa e devolve o tempo até ele', async () => {
+    const r = await repousar((t) => (t < 7000 ? { workers: 2, camada: 'subindo' } : { workers: 0, camada: null }));
+    expect(r.ok).toBe(true);
+    expect(r.ms).toBeGreaterThanOrEqual(7000);
+    expect(r.ms).toBeLessThan(TETO_DO_REPOUSO_MS);
+    expect(julgarRepouso({ ciclo: 1, ...r }).ok).toBe(true);
   });
 });

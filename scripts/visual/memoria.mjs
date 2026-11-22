@@ -1,5 +1,5 @@
 // Serve: chão — sair devolve o que entrar alocou: texturas, bytes de texel, geometrias e workers sem vazamento
-// Custo: ~7,5 min por tier (estimado: 4,4 medidos em 31/08 com a régua E, mais as duas esperas da carência dos focos de 21/11 e, de 22/11, a 2ª visita de Júpiter e Saturno: ~2 × (3 s de desvio + um assentar + uma amostra), 30–40 s não medidos; e, de 22/11, a 2ª rodada dos focos para o heap: ~1,6 min, estimado, não medido)
+// Custo: ~7,5 min por tier (estimado: 4,4 medidos em 31/08 com a régua E, mais as duas esperas da carência dos focos de 21/11 e, de 22/11, a 2ª visita de Júpiter e Saturno: ~2 × (3 s de desvio + um assentar + uma amostra), 30–40 s não medidos; e, de 22/11, a 2ª rodada dos focos para o heap: ~1,6 min, estimado, não medido; e, de 22/11 (xxiii), o repouso de cada ciclo: ~6 s × 3, mais um prazo de 20 s no braço M5 e dois sob --sabotagem, estimado, não medido)
 // O AMOSTRADOR DE MEMÓRIA — o juiz que prova que sair DEVOLVE o que
 // entrar alocou (Onda 6, F8/D9).
 //
@@ -185,6 +185,68 @@ export async function bootAteOSinal({ ir, esperarSinal, teto = TETO_DO_BOOT_MS, 
 /** O VEREDITO DO BOOT: assentou pelo SINAL do app, dentro do teto de tempo. */
 export function julgarBoot({ via, ms }, teto = TETO_DO_BOOT_MS) {
   return via === 'sinal' && ms <= teto;
+}
+
+/**
+ * O PRONTO DOS CICLOS (22/11/2026, xxiii). Até aqui só o `via` do boot era
+ * impresso, e por isso ninguém viu que os ciclos assentavam pelo teto dos 700
+ * quadros (~12 s) antes de `67d307f8`: o verde vinha do teto, não do sinal.
+ * `via=quadros` com o sinal do app PRESENTE (`fase` não nula: `esperarAssentar`
+ * só a preenche quando `window.__director.captura` existe) é o pronto morto.
+ * Sem `fase` é o build sem `__director`, e ali cair nos quadros é o esperado.
+ */
+export function julgarAssentarDoCiclo({ ciclo, passo, via, ms, fase }) {
+  const quando = `via=${via} em ${(ms / 1000).toFixed(1)} s, fase '${fase ?? '—'}'`;
+  if (via === 'quadros' && fase != null) {
+    return { ok: false, texto: `o pronto não acendeu no ciclo ${ciclo} (${passo}: ${quando})` };
+  }
+  return { ok: true, texto: `ciclo ${ciclo}, ${passo}: assentou por ${quando}` };
+}
+
+/**
+ * A AMOSTRA DO CICLO EM REPOUSO (22/11/2026, xxiii). Cada `partirDoAtlas`
+ * põe a fase em `intro`, onde a galáxia pede de novo os dois assados WebGPU
+ * (`cargaEmWorker.ts`); o pronto do Atlas não os espera, de propósito, e eles
+ * vivem 6,6–7,8 s. Uns 5 s depois de entrar a camada é dispensada
+ * (`webgpuACaminho` 'subindo' → null) e uma textura 1×1×1 estreia uma vez.
+ * Repouso = ZERO worker vivo E a camada sem estar a caminho, visto por
+ * `quadros` quadros desenhados seguidos (a estreia sobe no quadro da
+ * dispensa), com prazo. Prazo vencido devolve `ok: false` e o que não
+ * repousou; quem chama amostra do mesmo jeito e julga.
+ */
+export const TETO_DO_REPOUSO_MS = 20000;
+export async function esperarRepouso({
+  ler, teto = TETO_DO_REPOUSO_MS, passo = 250, quadros = 2, agora = Date.now, dormir = dorme,
+}) {
+  const t0 = agora();
+  let desde = null;
+  for (;;) {
+    const e = await ler();
+    if (e.workers === 0 && e.camada === null) {
+      desde ??= e.f;
+      if (e.f - desde >= quadros) return { ...e, ok: true, ms: agora() - t0 };
+    } else desde = null;
+    if (agora() - t0 >= teto) return { ...e, ok: false, ms: agora() - t0 };
+    await dormir(passo);
+  }
+}
+/** O VEREDITO DO REPOUSO: o prazo vencido nomeia o que não repousou. */
+export function julgarRepouso({ ciclo, ok, ms, workers, camada }, teto = TETO_DO_REPOUSO_MS) {
+  if (ok) {
+    return {
+      ok,
+      texto: `ciclo ${ciclo}: em repouso ${(ms / 1000).toFixed(1)} s depois do assentar`
+        + ' (workers 0, camada WebGPU dispensada)',
+    };
+  }
+  const resto = [
+    workers !== 0 && `${workers} worker(s) vivo(s)`,
+    camada !== null && `camada WebGPU '${camada}'`,
+  ].filter(Boolean);
+  return {
+    ok,
+    texto: `ciclo ${ciclo}: NÃO repousou em ${teto / 1000} s — ${resto.join(' / ') || 'repouso visto sem os quadros de folga'}`,
+  };
 }
 
 /** o que há em `depois` e não em `antes` (multiconjunto de rótulos) */
@@ -542,6 +604,18 @@ async function principal() {
       return targetInfos.filter((t) => t.type === 'worker').length;
     };
 
+    /** O REPOUSO (ver `esperarRepouso`): os workers da régua D e a camada
+     *  WebGPU da galáxia VIVA (relida a cada leitura: `setQuality` a troca).
+     *  Galáxia ausente ou getter sumido NÃO é repouso: sai nomeado. */
+    const lerRepouso = async () => ({
+      workers: await workersVivos(),
+      ...JSON.parse(await sessao.js(`JSON.stringify((() => {
+        const g = window.__director && window.__director.galaxy;
+        const v = g ? g.webgpuACaminho : undefined;
+        return { camada: !g ? 'sem galáxia' : v === undefined ? 'sem leitura' : v, f: window.__f | 0 };
+      })())`)),
+    });
+
     /** GC forçado + uma amostra: stats do app, heap preciso do CDP
      *  (V8 + backing stores — ver o cabeçalho sobre o ponto cego) e os
      *  workers vivos, que nenhum dos dois primeiros enxerga. */
@@ -773,18 +847,35 @@ async function principal() {
       // `esperarCapaSair`); esse worker só fecha quando a capa desmonta. Com
       // o assentar em ~7 s a amostra caía nessa janela e contava a capa
       // como worker que sobreviveu à carga (o falso 1 de b0a4fe33 e de
-      // 9b28d710 em diante). Os workers da CARGA terminam antes do sinal
-      // (`assarCargaEmWorker`), e qualquer worker vivo depois da capa
-      // continua contado.
+      // 9b28d710 em diante). Qualquer worker vivo depois da capa continua
+      // contado. NOS CICLOS a premissa antiga ("os workers da carga terminam
+      // antes do sinal") é falsa desde `cd3193e4` (19/11): cada `partir`
+      // pede de novo os dois assados WebGPU, que vivem ~7 s e o pronto do
+      // Atlas não espera. Por isso a amostra do ciclo espera o REPOUSO
+      // (`esperarRepouso`), com prazo, e não o pronto só.
       await esperarCapaSair(sessao.send);
       await dorme(REDE_DO_WORKER_DA_CAPA_MS);
       const amostras = [await amostrar('boot')];
+      const assentos = [];
+      const repousos = [];
+      const assentarNoCiclo = async (ciclo, passo) => {
+        const a = { ciclo, passo, ...(await sessao.assentar()) };
+        assentos.push(a);
+        process.stdout.write(`         ${julgarAssentarDoCiclo(a).texto}\n`);
+      };
       for (let c = 1; c <= ciclos; c++) {
         await sessao.js('window.__director.partirDoAtlas()');
-        await sessao.assentar();
+        await assentarNoCiclo(c, 'partir');
         if (c === 1) await estrearOEpisodico();
         await sessao.js('window.__director.entrarNoAtlas()');
-        await sessao.assentar();
+        await assentarNoCiclo(c, 'entrar');
+        // o tempo até o repouso conta do fim do assentar do `entrar`, e
+        // mede o desperdício dos assados que ninguém aborta (M8/1b.5)
+        const r = { ciclo: c, ...(await esperarRepouso({ ler: lerRepouso })) };
+        repousos.push(r);
+        process.stdout.write(`         ${julgarRepouso(r).texto}\n`);
+        // a injeção vem DEPOIS do repouso: o worker vazado deste ciclo é
+        // contado na amostra, e o do ciclo anterior vence o prazo do seguinte
         if (sabotar) await sessao.js(INJETAR);
         amostras.push(await amostrar(`ciclo ${c}`));
       }
@@ -806,7 +897,7 @@ async function principal() {
       // primeiro foco, e a base só é tirada depois de a carência dele
       // vencer. Ela é a âncora de `julgarFocos`, e por isso a estreia vem
       // ANTES dela e depois da última troca de tier.
-      if (!focos.length) return { boot, amostras, mundos };
+      if (!focos.length) return { boot, amostras, mundos, assentos, repousos };
       const focar = async (id) => {
         await sessao.js(`window.__director.focarNoCorpo('${id}')`);
         await sessao.assentar();
@@ -845,7 +936,7 @@ async function principal() {
       };
       await rodadaDeFocos('', 'volta focos');
       await rodadaDeFocos('r2 ', 'volta focos 2');
-      return { boot, amostras, mundos };
+      return { boot, amostras, mundos, assentos, repousos };
     };
 
     /** Os vereditos do D9 sobre um conjunto de amostras, sem imprimir. */
@@ -912,6 +1003,23 @@ async function principal() {
       );
     };
 
+    /** O pronto e o repouso dos ciclos, os MESMOS nos dois braços: cada
+     *  falha sai com o nome dela. */
+    const conferirCiclos = ({ assentos, repousos }) => {
+      const ruins = assentos.map(julgarAssentarDoCiclo).filter((j) => !j.ok);
+      if (ruins.length) for (const j of ruins) conferir(false, j.texto);
+      else conferir(true, `o pronto acendeu pelo sinal do app nos ${assentos.length} assentar dos ciclos`);
+      const parados = repousos.map((r) => julgarRepouso(r)).filter((j) => !j.ok);
+      if (parados.length) for (const j of parados) conferir(false, j.texto);
+      else {
+        conferir(
+          repousos.length > 0,
+          `os ${repousos.length} ciclos amostraram em REPOUSO (workers 0, camada WebGPU dispensada),`
+            + ` ${repousos.map((r) => `${(r.ms / 1000).toFixed(1)} s`).join(' / ')} depois do assentar`
+        );
+      }
+    };
+
     /** O heap por rodada (`julgarHeapPorRodada`), o MESMO nos dois braços. */
     const conferirHeap = (h) => {
       const focos = h.rodadas.find((r) => r.para === 'volta focos 2');
@@ -927,10 +1035,12 @@ async function principal() {
     if (SABOTAGEM) {
       // ---- o protocolo inteiro, sabidamente vazado ---------------------
       process.stdout.write('MODO --sabotagem: o veredito abaixo TEM de reprovar.\n\n');
-      const { amostras } = await protocolo({
+      const sabotado = await protocolo({
         sabotar: true, ciclos: CICLOS, trocas: TROCAS, focos: FOCOS,
       });
+      const { amostras } = sabotado;
       tabela(amostras);
+      conferirCiclos(sabotado);
       const v = julgar(amostras, declarados);
       conferir(v.deltaPortal === 0, `portal: delta ZERO em textures/geometries (max ${v.deltaPortal})`);
       conferir(v.deltaTrocas === 0, `trocas de tier: delta ZERO entre trocas (max ${v.deltaTrocas})`);
@@ -963,6 +1073,7 @@ async function principal() {
 
       // ---- 2, 3 e 4: os números do D9 ----------------------------------
       tabela(amostras);
+      conferirCiclos(primeira);
       const v = julgar(amostras, declarados);
       conferir(
         v.deltaPortal === 0,
@@ -1082,6 +1193,13 @@ async function principal() {
       conferir(
         vm5.picoWorkers > 0,
         `M5: a régua de workers ACUSA o worker vazado por ciclo (pico ${vm5.picoWorkers})`
+      );
+      // o worker injetado no ciclo 1 nunca termina: o repouso do ciclo 2
+      // TEM de vencer o prazo nomeando-o
+      const acusou = m5.repousos.find((r) => !r.ok && r.workers > 0);
+      conferir(
+        Boolean(acusou),
+        `M5: a espera do repouso ACUSA o worker vazado (${acusou ? julgarRepouso(acusou).texto : 'nenhum ciclo venceu o prazo'})`
       );
     }
   } finally {
