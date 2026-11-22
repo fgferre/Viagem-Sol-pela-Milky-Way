@@ -1376,6 +1376,48 @@ describe('o corpo da casa como assunto do beat (viagem solar)', () => {
     expect(lua.alfaDoDetalhe).toBeUndefined();
   });
 
+  it('B.0: a rampa do detalhe não atravessa o corte — a mesma chave nasce no alvo do plano novo', () => {
+    const publicadas: StarLabel[][] = [];
+    const rotulos = new Rotulos({
+      onLabels: (l) => publicadas.push(l),
+      onDest: () => {},
+      onSol: () => {},
+      onLente: () => {},
+      onCamera: () => {},
+      beatDaViagem: () => ({ target: ['moon'], quiet: true }) as JourneyMeta,
+      raioFisicoDe: (id) => (id === 'moon' ? RAIO_DA_LUA : null),
+    });
+    const posicoes = new Float32Array(CORPOS_DO_SISTEMA.length * 3).fill(Number.NaN);
+    const planetas = { points: { visible: true }, posicoes } as unknown as Planetas;
+    rotulos.escreverPosicaoDeLua('moon', LUA_NA_CHEGADA);
+    const cam = cameraNaChegada(0.05);
+    let lua: StarLabel | undefined;
+    // `cabe` é o veredito que o `LabelCanvas` escreveu no quadro anterior
+    const quadro = (cabe: boolean, novoPlano = false) => {
+      if (lua) lua.detalheCabe = cabe;
+      rotulos.tique(1 / 60);
+      rotulos.projetar(cam, {
+        fase: 'journey', named: [], dHome: 5, planetas, foco: null, novoPlano,
+        nomesEscondidos: false, iconesEscondidos: false, texto3d: false,
+      });
+      lua = publicadas.at(-1)!.find((l) => l.key === 'corpo:moon')!;
+      return lua.alfaDoDetalhe;
+    };
+    quadro(true);
+    expect(quadro(true)).toBe(1);
+    // cabia → não cabe: no corte o veredito é do plano velho e não conta
+    // (a lei de antes decide na câmera nova); no quadro seguinte, 0 seco
+    expect(quadro(true, true)).toBeUndefined();
+    expect(quadro(false)).toBe(0);
+    // não cabia → cabe: o mesmo, no outro sentido
+    expect(quadro(false, true)).toBeUndefined();
+    expect(quadro(true)).toBe(1);
+    // sem corte a rampa continua a andar: 18 quadros de 1/60 s até o 0
+    const serie = Array.from({ length: 24 }, () => quadro(false)!);
+    expect(serie[0]).toBeCloseTo(1 - 1 / 60 / 0.3, 9);
+    expect(serie.indexOf(0)).toBe(17);
+  });
+
   it('sem target, o filme não escreve corpo nenhum — só a régua de sempre', () => {
     const { lista } = noFilme({ quiet: false });
     expect(lista.map((l) => l.key)).toEqual(['sol-home']);

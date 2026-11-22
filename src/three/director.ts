@@ -4217,6 +4217,7 @@ export class Director {
     const cam = this.engine.camera;
     let warp = 0;
     let luzDoRoteiro = 0;
+    let novoPlano = false;
 
     // UMA textura de corpo sobe à placa por quadro, antes de tudo: o lote
     // só é entregue quando a última dele subiu (`VezDaImagem`)
@@ -4252,6 +4253,7 @@ export class Director {
       // o CORTE SECO do roteiro salta a câmera neste quadro: a cessão
       // estala junto, como no seek (só o salto, pela mesma razão)
       if (r.corte) this.saltoDeCamera = true;
+      novoPlano = r.novoPlano;
       warp = r.warp;
       luzDoRoteiro =
         import.meta.env.DEV && this.luzDoRoteiroForcada !== null ? this.luzDoRoteiroForcada : r.luz;
@@ -4949,6 +4951,8 @@ export class Director {
       sistemaAtivo: this.exoplanetas?.ativo ?? null,
       alvoDoAtlas: this.atlas.alvo,
       jd: this.maquinaDoTempo.jdVivo,
+      // o primeiro quadro de um plano do filme (a junta ou o seek)
+      novoPlano,
       // a camada "Nomes na tela" (item 82, N2) — lida aqui com as
       // outras dezoito, e entregue pronta ao produtor
       nomesEscondidos: this.hide.has('nonomes'),

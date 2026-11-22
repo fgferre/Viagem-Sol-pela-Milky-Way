@@ -233,12 +233,14 @@ export class JourneyRig {
   }
 
   /** `corte`: este quadro abriu um plano com corte declarado — a câmera
-   *  saltou, e o director avisa os corpos (a cessão estala, não anima) */
+   *  saltou, e o director avisa os corpos (a cessão estala, não anima).
+   *  `novoPlano`: este quadro é o primeiro de um plano — a junta, o
+   *  primeiro quadro do filme ou o primeiro depois de `reset()` (seek) */
   apply(
     camera: THREE.PerspectiveCamera,
     t: number,
     dt: number
-  ): { warp: number; luz: number; corte: boolean } {
+  ): { warp: number; luz: number; corte: boolean; novoPlano: boolean } {
     const s = this.journey.at(t);
     // O OPERADOR SEGUE O ROTEIRO (item 225, 24/09). Até aqui mira e lente
     // passavam por um amortecedor exponencial (0,4 s e 0,2 s) em TODO
@@ -267,14 +269,15 @@ export class JourneyRig {
     // O CORTE SECO (F4): o plano que o roteiro abre num corte (`corte`)
     // não herda nada do anterior — o desvio zera como no salto do seek, e
     // o primeiro quadro depois da junta já é o plano novo, mira e lente.
-    const corte = s.plano !== this.plano && this.journey.abreNumCorte(s.plano);
+    const novoPlano = s.plano !== this.plano;
+    const corte = novoPlano && this.journey.abreNumCorte(s.plano);
     if (snap || corte) {
       this.first = false;
       this.desvio.set(0, 0, 0);
       this.desvioVel.set(0, 0, 0);
       this.desvioFov = 0;
       this.desvioFovVel = 0;
-    } else if (s.plano !== this.plano && dt > 0) {
+    } else if (novoPlano && dt > 0) {
       // A JUNTA, resolvida NO INSTANTE dela e não no quadro anterior (um
       // plano que termina freando forte daria a velocidade errada): o
       // desvio velho anda até a junta; ali, a câmera mostrada é o fim do
@@ -341,7 +344,7 @@ export class JourneyRig {
     camera.fov = fov;
     camera.updateProjectionMatrix();
 
-    return { warp: s.warp, luz: s.luz, corte };
+    return { warp: s.warp, luz: s.luz, corte, novoPlano };
   }
 
   /** a mola crítica leva os dois desvios (mira e lente) adiante por `dt` */

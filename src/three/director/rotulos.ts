@@ -87,6 +87,12 @@ export interface QuadroDeRotulos {
    *  ausente = nenhuma sonda (os quadros de teste antigos) */
   jd?: number;
   /**
+   * O PRIMEIRO QUADRO DE UM PLANO DO FILME (a junta ou o seek,
+   * `CameraRig.apply`): o veredito do detalhe que o `LabelCanvas` deixou é
+   * da câmera do plano velho, e a rampa dele não atravessa o corte.
+   */
+  novoPlano?: boolean;
+  /**
    * A CAMADA "NOMES NA TELA" ESTÁ DESLIGADA? (item 82, N2 — a flag
    * `nonomes` da tabela única `CAMADAS`.) É o gesto do visitante: as
    * órbitas tinham `noorbitas` e os nomes não tinham nada, e o único
@@ -1062,9 +1068,14 @@ export class Rotulos {
     // O DETALHE DE ONTEM, colhido antes de qualquer ramo reescrever
     // `lastLabels` — os dois ramos do filme (com e sem a camada de nomes)
     // publicam dirigidos, e os dois andam a rampa dele em `publicar`.
+    // NO CORTE (`novoPlano`) não se colhe nada: o veredito é do plano velho,
+    // e sem ele a rampa esquece a chave — neste quadro o detalhe segue a lei
+    // de antes, na câmera nova, e no seguinte nasce no alvo.
     this.detalhesQueCabem.clear();
-    for (const l of this.lastLabels) {
-      if (l.detalheCabe !== undefined) this.detalhesQueCabem.set(l.key, l.detalheCabe);
+    if (!quadro.novoPlano) {
+      for (const l of this.lastLabels) {
+        if (l.detalheCabe !== undefined) this.detalhesQueCabem.set(l.key, l.detalheCabe);
+      }
     }
     // OS DISCOS DO QUADRO, antes de qualquer projeção: eles valem para
     // as estrelas e para os corpos, e a lista é a mesma nos dois ramos.
