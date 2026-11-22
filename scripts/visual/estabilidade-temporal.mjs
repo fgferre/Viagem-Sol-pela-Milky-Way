@@ -1255,6 +1255,16 @@ const LER_CAMERA = `(() => {
         const c = posto.corpo && posto.corpo.estadoVivo && posto.corpo.estadoVivo.centroPc;
         if (c && Number.isFinite(c.x)) fora.push([posto.id, c.x, c.y, c.z]);
       }
+      // OS COMETAS ACESOS, pelo grupo que as caudas desenham (a matriz põe o
+      // núcleo onde \`posicaoDoCometaNaCena\` diz). Sem eles a cabeça de
+      // Pons–Brooks (0,82 UA do Sol no jd do zoomDeRoda) ia pela hipótese de
+      // infinito: no passo 6 a câmera desce e a paralaxe leva a cabeça de
+      // (453, 986) a (432, 1114), fora do quadro, e o juiz a dava por SUMIDA.
+      for (const [id, v] of (d.caudas && d.caudas.vivos) || []) {
+        if (!v.grupo.visible) continue;
+        const m = v.grupo.matrix.elements;
+        fora.push(['cometa:' + id, m[12], m[13], m[14]]);
+      }
       return fora;
     })(),
     cedeTerra: (() => {
