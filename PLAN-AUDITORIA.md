@@ -122,6 +122,8 @@ Conferência: tipos, lint e 4.209 testes verdes no commit exato que entrou; M10 
 
 ### Para a rodada da abertura a frio (D3D11) — medidas da rodada de destravar (22/11), a desenhar na conversa principal
 
+- [ ] **Primeiro desta lista: o teto de 700 quadros é a saída para app SEM sinal. Com o sinal presente e o 1º quadro ainda não desenhado, o teto não conta.** Conserto em `esperarAssentar` (`scripts/visual/chrome.mjs:540`), que serve a todos os juízes e ao `capturarCDP`; por isso pede a fila inteira para conferir. Risco a olhar antes: o juiz que navega de propósito para uma tela onde o app nunca desenha (falha de carga, desistência) e hoje sai pelo teto. Achado: no D3D11 o 1º render vem ~18–20 s depois do director, na hora em que o teto estoura, e o `estabilidade-temporal` fotografava o canvas preto (`destravar/xxiii-foto-preta.md`).
+
 Chrome com Direct3D 11 (o do visitante do Windows), perfil novo a cada abertura (a frio, sem cache de shader), `?atlas=1`, RTX 3070. Medidas em `capturas/auditoria-gemini-rodada3/destravar/a0-medidas.md` (A0.3 e "Cargas a frio de 20/11 e do ar") e `a-diagnostico-a11y-poeira.md`. **Não é regressão:** o que está no ar (`f50fc1d3`) abre em 30,5 s, o de 20/11 (`54f4bbf6`) em 30,3 s e a ponta (`460efb5b`) em 31,1 s (29,8–32,6), com os mesmos trechos.
 
 | espera | D3D11 | Vulkan (mesma placa) | a tela durante a espera | onde |
