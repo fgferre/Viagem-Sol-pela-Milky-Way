@@ -126,12 +126,12 @@
 //             do corpo não se separa da do Sol). A camada só SOMA luz: onde o
 //             Sol já clipou, somar não muda byte nenhum. Declarado, não
 //             julgado — e não é defeito: é o que 150 UA do Sol fazem.
-// SOB-LIMIAR  o pico de PSF (que o `?dbgplan` publica, calculado pelo app
-//             com os uniformes verdadeiros) está abaixo de 1/255, e a posição
-//             NÃO é julgada — haja ou não mancha no pixel previsto: a que
-//             casar ali é ruído de arredondamento (desde 22/11; antes só valia
-//             sem mancha, e Júpiter ua500, Urano ua40 e Netuno ua150 saíam
-//             FORA julgados por ruído). O corpo está lá, com a
+// SOB-LIMIAR  a posição NÃO é julgada. COM mancha no pixel previsto: o pico
+//             dela NA FOTO (`deltaMax`) fica abaixo de `LIMIAR_FOTO` degraus,
+//             onde o arredondamento tira a caixa de 0,5 px (desde 22/11;
+//             antes Júpiter ua500, Urano ua40 e Netuno ua150 saíam FORA
+//             julgados por ruído). SEM mancha: o pico de PSF do `?dbgplan`
+//             (buffer linear) está abaixo de `LIMIAR_PICO`. O corpo está lá, com a
 //             magnitude certa, e a tela de 8 bits não tem degrau para ele. É
 //             a fotometria honesta — Urano/Netuno/Plutão a 150 UA são
 //             exatamente este caso. Quando ainda assim sobram pixels acesos
@@ -188,13 +188,30 @@ export const LIMIAR_DELTA = Math.max(1, Number(process.env.LIMIAR || 1));
 export const TOLERANCIA_PX = 0.5;
 
 /**
- * Abaixo disto a tela de 8 bits não tem degrau — ver `SOB-LIMIAR`: o corpo
- * não é julgado em posição, com ou sem mancha no pixel previsto. Escala do
- * `pico`: o buffer linear (já com o `expoM0`), antes da exposição do
- * renderer, da curva de tom e do sRGB — 1/255 nele não é exatamente um
- * degrau da foto.
+ * O corpo SEM componente no pixel previsto: abaixo disto é `SOB-LIMIAR`,
+ * acima é `SEM-COMPONENTE` (reprova). Escala do `pico` do `?dbgplan`: o
+ * buffer linear (já com o `expoM0`), antes da exposição do renderer, da curva
+ * de tom e do sRGB — 1/255 nele vale ~13 degraus da foto só pela conta do
+ * sRGB (1/255 em sRGB é ~3,0e-4 linear), então um corpo entre ~3e-4 e 3,9e-3 que não acendeu sai
+ * desculpado. Sem componente não há `deltaMax`, e o `pico` é a única previsão.
  */
 export const LIMIAR_PICO = 1 / 255;
+
+/**
+ * O corpo COM componente casada: abaixo deste pico NA FOTO (`deltaMax` da
+ * componente, em degraus de 8 bits) é `SOB-LIMIAR` e a posição não se julga.
+ * Medido por `medirLimiarDaFoto()` (semente 1, N = 256, σ = 1,5 px — o
+ * perfil do Júpiter brilhante de `destravar/viii-mancha-ponta-d3d11.txt`,
+ * linha 61: 273 → 183 → 67 a 0,45/1,45/2,45 px dá σ ≈ 1,44–1,54): alvos que
+ * falham a ≤0,5 px nas 256 posições sorteadas, com o ±1/255 do arredondamento
+ * por pixel e canal — P = 1: 123; P = 2: 112; P = 3: 15; P = 4: 0, todos com
+ * `deltaMax` 4. Limiar = 4 degraus. Quem falha é a caixa de meia-altura (o
+ * centroide só falha em P = 1). A conta se move: semente 1–5 × N 64/256 dá
+ * 4 em 8 das 10, 3 em uma e 5 em uma; σ = 1,2 dá 4 e σ = 1,6 dá 6. Acima do
+ * limiar a caixa ainda falha 0,5–4 % das posições em P = 5, 6, 8 e 10 — não é
+ * falta de luz, e o "menor P em que as N localizam" não a conta.
+ */
+export const LIMIAR_FOTO = 4;
 
 /**
  * Raio em que uma componente órfã ainda é o HALO de um corpo já casado, e
@@ -489,7 +506,7 @@ export function lerDbgPlan(bloco) {
  */
 export function casarCorpos({
   previstos, componentes, ondeCaiu,
-  tolerancia = TOLERANCIA_PX, limiarPico = LIMIAR_PICO, raioHalo = RAIO_HALO_PX,
+  tolerancia = TOLERANCIA_PX, limiarPico = LIMIAR_PICO, limiarFoto = LIMIAR_FOTO, raioHalo = RAIO_HALO_PX,
 }) {
   const porId = new Map(componentes.map((c) => [c.id, c]));
   const caiuPorId = new Map(ondeCaiu.map((o) => [o.id, o]));
@@ -560,17 +577,20 @@ export function casarCorpos({
         motivo: `dentro da mancha de ${outros.join(', ')}`,
       };
     }
-    // SOB O DEGRAU, A POSIÇÃO NÃO SE MEDE — nem com componente casada (22/11,
-    // `destravar/viii-planeta-pixel.md`): um corpo de pico < 1/255 não forma
-    // mancha própria numa foto de 8 bits, e o que cai no pixel dele é ruído
-    // de arredondamento (Júpiter ua500, pico 5,6e-4: 6 px que PERDERAM 1/255).
-    // A componente fica reclamada por ele, para não virar órfã.
-    if (c.pico < limiarPico) {
+    // SOB O LIMIAR DA FOTO, A POSIÇÃO NÃO SE MEDE — nem com componente casada
+    // (22/11, `destravar/viii-planeta-pixel.md`). O juízo é sobre o PICO DA
+    // COMPONENTE no diff da foto (`deltaMax`, em degraus de 8 bits), e não
+    // sobre o `pico` linear do `?dbgplan`: 1/255 no buffer linear não é um
+    // degrau da foto (Urano ua40, pico linear 9,2e-4, acende 1–2/255). Abaixo
+    // de `LIMIAR_FOTO` o arredondamento tira a caixa de meia-altura de 0,5 px
+    // em parte das posições (ver `medirLimiarDaFoto`). A componente fica
+    // reclamada, para não virar órfã.
+    if (comp.deltaMax < limiarFoto) {
       return {
         ...base,
         comp,
         status: 'SOB-LIMIAR',
-        motivo: `pico ${c.pico.toExponential(2)} < 1/255: ${comp.n} px casados, não medido em posição`,
+        motivo: `pico na foto ${comp.deltaMax}/255 < ${limiarFoto}/255: ${comp.n} px casados, não medido em posição`,
       };
     }
     const dxC = comp.cx - c.px;
@@ -722,6 +742,77 @@ export function autoTesteSintetico() {
     bom,
     ruim,
   };
+}
+
+/**
+ * A MEDIDA DO `LIMIAR_FOTO`, pura e reproduzível. Roda no teste, não a cada
+ * corrida do juiz. Um alvo gaussiano de pico `P` degraus (σ em px) cai numa
+ * posição subpixel sorteada; os dois lados da foto são o mesmo fundo contínuo
+ * arredondado para 8 bits, com a parte fracionária `f` sorteada por pixel e
+ * por canal: `sem = round(8 + f)`, `com = round(8 + f + v)`. O diff carrega
+ * então o erro de ±1/255 do arredondamento ONDE há luz, e zero onde não há —
+ * como o par real, cujo par nulo difere em ≤0,03 % dos px. Cada repetição
+ * passa por `componentesDoDiff` + `casarCorpos` com o portão desligado
+ * (`limiarFoto: 0`) e anota o `deltaMax` da componente casada e se saiu MEDIDO.
+ *
+ * Devolve o MENOR `P` (1, 2, 3, …) em que as N repetições localizam a
+ * ≤0,5 px, e o intervalo de `deltaMax` medido nele: é esse intervalo que diz
+ * que o número vale na unidade em que o portão o compara (o `deltaMax` da
+ * componente, não o pico verdadeiro). `tabela` traz as falhas por `P`.
+ */
+export function medirLimiarDaFoto({
+  sigma = 1.5, repeticoes = 256, semente = 1, maxPico = 20,
+} = {}) {
+  // mulberry32: a semente fixa é o que torna a constante reproduzível
+  let s = semente >>> 0;
+  const acaso = () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const W = 40;
+  const H = 40;
+  const tabela = [];
+  for (let P = 1; P <= maxPico; P++) {
+    let falhas = 0;
+    let dMin = Infinity;
+    let dMaxObs = 0;
+    for (let r = 0; r < repeticoes; r++) {
+      const px = 20 + acaso();
+      const py = 20 + acaso();
+      const a = new Uint8ClampedArray(W * H * 4);
+      const b = new Uint8ClampedArray(W * H * 4);
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          const dx = x + 0.5 - px;
+          const dy = y + 0.5 - py;
+          const v = P * Math.exp(-(dx * dx + dy * dy) / (2 * sigma * sigma));
+          const i = (y * W + x) * 4;
+          for (let k = 0; k < 3; k++) {
+            const f = acaso();
+            a[i + k] = Math.round(8 + f);
+            b[i + k] = Math.round(8 + f + v);
+          }
+          a[i + 3] = 255;
+          b[i + 3] = 255;
+        }
+      }
+      const previstos = [{ id: 'alvo', px, py, m: 0, pico: 1 }];
+      const d = componentesDoDiff({ a, b, W, H, limiar: 1, alvos: previstos });
+      const l = casarCorpos({
+        previstos, componentes: d.componentes, ondeCaiu: d.ondeCaiu, limiarFoto: 0,
+      }).linhas[0];
+      const deltaMax = l.comp ? l.comp.deltaMax : 0;
+      dMin = Math.min(dMin, deltaMax);
+      dMaxObs = Math.max(dMaxObs, deltaMax);
+      if (l.status !== 'MEDIDO') falhas++;
+    }
+    tabela.push({ P, falhas, deltaMax: [dMin, dMaxObs] });
+    if (!falhas) return { limiar: P, deltaMax: [dMin, dMaxObs], tabela };
+  }
+  return { limiar: null, deltaMax: null, tabela };
 }
 
 // ------------------------------------------------------------

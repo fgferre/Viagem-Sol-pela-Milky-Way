@@ -14,6 +14,7 @@
 // mora atrás da guarda de `process.argv[1]`.)
 import { describe, it, expect } from 'vitest';
 import {
+  LIMIAR_FOTO,
   LIMIAR_PICO,
   PROFUNDAS,
   RAIO_HALO_PX,
@@ -26,6 +27,7 @@ import {
   julgarParNulo,
   lerDbgPlan,
   manchaSaturada,
+  medirLimiarDaFoto,
 } from './planeta-pixel.mjs';
 
 const W = 80;
@@ -279,32 +281,41 @@ describe('casarCorpos', () => {
 
   // A REGRA DO SOB-LIMIAR vale ANTES da posição, também com componente casada
   // (22/11, `destravar/viii-planeta-pixel.md`: Júpiter ua500, Urano ua40 e
-  // Netuno ua150 eram julgados por manchas de ruído). Os dois primeiros põem o
-  // pico EXATAMENTE no degrau: é ali que `<` e `<=` se separam.
-  it('CONTROLE NEGATIVO: corpo no degrau, alvo deslocado 3 px, segue FORA-DA-TOLERÂNCIA e reprova', () => {
-    const j = cena([alvo('sun', 20.3, 30.7), alvo('jupiter', 63.5, 12.5, LIMIAR_PICO)], [MANCHA_SOL, MANCHA_LONGE]);
+  // Netuno ua150 eram julgados por manchas de ruído). Com componente, o portão
+  // é o pico NA FOTO (`deltaMax`, `LIMIAR_FOTO` degraus), não o `pico` linear:
+  // a mancha centrada em x,5 tem `deltaMax` EXATAMENTE igual ao pico pedido,
+  // e é ali que `<` e `<=` se separam.
+  const NO_DEGRAU_DA_FOTO = { px: 60.5, py: 12.5, pico: LIMIAR_FOTO };
+
+  it('CONTROLE NEGATIVO: mancha no limiar da foto e pico LINEAR sob 1/255 (Urano), alvo deslocado 3 px, reprova', () => {
+    const j = cena(
+      [alvo('sun', 20.3, 30.7), alvo('uranus', 63.5, 12.5, LIMIAR_PICO / 10)],
+      [MANCHA_SOL, NO_DEGRAU_DA_FOTO]
+    );
+    expect(j.linhas[1].comp.deltaMax).toBe(LIMIAR_FOTO);
     expect(j.linhas[1].status).toBe('FORA-DA-TOLERÂNCIA');
     expect(j.erro).toBe(true);
   });
 
-  it('CONTROLE NEGATIVO: corpo no degrau nunca cai em SOB-LIMIAR — no lugar, deslocado ou apagado', () => {
+  it('CONTROLE NEGATIVO: mancha no limiar da foto nunca cai em SOB-LIMIAR; sem mancha, o pico linear no degrau reprova', () => {
     const casos = [
-      cena([alvo('jupiter', 60.5, 12.5, LIMIAR_PICO)], [MANCHA_LONGE]),
-      cena([alvo('jupiter', 63.5, 12.5, LIMIAR_PICO)], [MANCHA_LONGE]),
+      cena([alvo('jupiter', 60.5, 12.5, LIMIAR_PICO / 10)], [NO_DEGRAU_DA_FOTO]),
+      cena([alvo('jupiter', 63.5, 12.5, LIMIAR_PICO / 10)], [NO_DEGRAU_DA_FOTO]),
       cena([alvo('sun', 20.3, 30.7), alvo('jupiter', 60.5, 12.5, LIMIAR_PICO)], [MANCHA_SOL]),
     ];
     expect(casos.map((j) => j.linhas.at(-1).status)).toEqual(['MEDIDO', 'FORA-DA-TOLERÂNCIA', 'SEM-COMPONENTE']);
   });
 
-  it('corpo sob o degrau com mancha de ruído casada a 1 px: SOB-LIMIAR, não medido, sem erro', () => {
+  it('mancha casada a 1 px com pico NA FOTO abaixo do limiar: SOB-LIMIAR, mesmo com pico linear acima de 1/255', () => {
     // a mancha cobre o px previsto (61, 12): a componente CASA com o corpo
     const j = cena(
-      [alvo('sun', 20.3, 30.7), alvo('jupiter', 61.5, 12.5, LIMIAR_PICO / 7)],
-      [MANCHA_SOL, { px: 60.5, py: 12.5, pico: 3, sigma: 1 }]
+      [alvo('sun', 20.3, 30.7), alvo('jupiter', 61.5, 12.5, 1)],
+      [MANCHA_SOL, { px: 60.5, py: 12.5, pico: LIMIAR_FOTO - 1, sigma: 1 }]
     );
-    expect(j.linhas[1].comp).not.toBeNull();
+    expect(j.linhas[1].comp.deltaMax).toBe(LIMIAR_FOTO - 1);
     expect(j.linhas[1].status).toBe('SOB-LIMIAR');
     expect(j.linhas[1].dxC).toBeUndefined();
+    expect(j.linhas[1].motivo).toContain(`pico na foto ${LIMIAR_FOTO - 1}/255`);
     expect(j.linhas[1].motivo).toContain('não medido');
     expect(j.orfas).toHaveLength(0);
     expect(j.erro).toBe(false);
@@ -445,6 +456,16 @@ describe('autoTesteSintetico', () => {
     expect(r.parNulo).toBe(true);
     expect(r.soAdicao).toBe(true);
     expect(r.passou).toBe(true);
+  });
+});
+
+describe('medirLimiarDaFoto', () => {
+  it('a medida devolve o `LIMIAR_FOTO`, e na unidade do portão (`deltaMax` da componente)', () => {
+    const r = medirLimiarDaFoto();
+    expect(r.limiar).toBe(LIMIAR_FOTO);
+    expect(r.deltaMax).toEqual([LIMIAR_FOTO, LIMIAR_FOTO]);
+    // um degrau abaixo, o ruído de arredondamento já desloca alguém
+    expect(r.tabela.at(-2).falhas).toBeGreaterThan(0);
   });
 });
 
