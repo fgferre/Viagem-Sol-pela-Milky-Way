@@ -20,7 +20,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import sharp from 'sharp';
-import { abrirSessao, APP_PADRAO, esperarPor } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, esperarPor, folgaDoLimiteGb, julgarFolgaDoLimite } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 /**
@@ -512,6 +512,17 @@ async function julgarLargura(sessao, largura, altura, captura) {
     }
     return frames;
   }
+}
+
+// A FOLGA ANTES DE ABRIR (22/11): no D3D11 o processo de GPU chega a ~10,4 GB
+// neste juiz (as duas larguras num documento só, como o visitante assiste);
+// sem folga no limite do Windows ele engasga e o juiz caía calado no prazo.
+const PISO_DA_FOLGA_GB = 14;
+const folga = julgarFolgaDoLimite(folgaDoLimiteGb(), PISO_DA_FOLGA_GB);
+console.log(folga.texto);
+if (!folga.ok) {
+  console.log('FALHA ' + folga.texto);
+  process.exit(1);
 }
 
 // UMA sessão de Chrome para as duas larguras (F5c): a segunda largura é

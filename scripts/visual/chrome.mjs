@@ -79,6 +79,31 @@ export const GPU_FLAGS = [
 ];
 
 /**
+ * A FOLGA DO LIMITE DE MEMÓRIA DO WINDOWS (22/11) — limite total menos o
+ * comprometido (`FreeVirtualMemory`), não a RAM livre: em 21/11 a RAM livre
+ * estava em 14 GB e foi o LIMITE que acabou (arquivo de paginação fixo), e o
+ * `filme-smoke` caiu calado no prazo de 180 s. Fora do Windows, `null`.
+ */
+export function folgaDoLimiteGb() {
+  if (process.platform !== 'win32') return null;
+  const r = spawnSync('powershell', ['-NoProfile', '-Command',
+    '[math]::Floor((Get-CimInstance Win32_OperatingSystem).FreeVirtualMemory/1MB)'], { encoding: 'utf8' });
+  const gb = Number(String(r.stdout).trim());
+  return Number.isFinite(gb) ? gb : null;
+}
+
+/** Reprova na largada, dizendo o número e o que fechar, quando a folga fica abaixo do piso. */
+export function julgarFolgaDoLimite(gb, pisoGb) {
+  if (gb === null) return { ok: true, texto: 'folga do limite de memória: não medida (fora do Windows)' };
+  if (gb >= pisoGb) return { ok: true, texto: `folga do limite de memória do Windows: ${gb} GB (piso ${pisoGb} GB)` };
+  return {
+    ok: false,
+    texto: `folga do limite de memória do Windows: ${gb} GB, abaixo do piso de ${pisoGb} GB — feche outros Chromes ` +
+      'sem tela e programas pesados e rode de novo (sem folga o Chrome engasga e o juiz cai calado no prazo)',
+  };
+}
+
+/**
  * A espera de todo harness. Eram DOZE cópias desta linha em
  * `scripts/visual/` — sete chamadas `sleep` e cinco `dorme`, idênticas —
  * e os doze arquivos já importam este módulo. Uma linha só, aqui.

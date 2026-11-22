@@ -13,7 +13,18 @@
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import { describe, it, expect } from 'vitest';
-import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair, flagsDoBinario, lancarChrome } from './chrome.mjs';
+import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair, flagsDoBinario, lancarChrome, julgarFolgaDoLimite } from './chrome.mjs';
+
+describe('a folga do limite de memória do Windows (22/11)', () => {
+  it('abaixo do piso reprova dizendo o número e o que fechar; no piso ou acima passa; fora do Windows não mede', () => {
+    const baixo = julgarFolgaDoLimite(9, 14);
+    expect(baixo.ok).toBe(false);
+    expect(baixo.texto).toContain('9 GB');
+    expect(baixo.texto).toContain('feche outros Chromes');
+    expect(julgarFolgaDoLimite(14, 14).ok).toBe(true);
+    expect(julgarFolgaDoLimite(null, 14).ok).toBe(true);
+  });
+});
 
 const sinal = (n) => Array(n).fill('sinal');
 const quadros = (n) => Array(n).fill('quadros');
