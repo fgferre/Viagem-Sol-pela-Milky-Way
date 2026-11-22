@@ -152,6 +152,12 @@ Chrome com Direct3D 11 (o do visitante do Windows), perfil novo a cada abertura 
 
   A pergunta da rodada: vale soltar quando Saturno está longe há muito tempo, e quanto custa assar de novo na volta? Num telefone, 29 MB pesam mais.
 - **A CONFERIR: `shot=1&play=1` congela o tempo VISUAL, mas a viagem anda?** O `director.ts:4216` zera só o tempo visual no modo de foto (`const time = this.shotMode ? 0 : rawTime`). O avanço da viagem (`director.ts:4250`, `if (!this.freezeJourney) this.journeyT += dt * …`) só olha o `freezeJourney`. Se for isso, o `a11y` (l.1227, `t=192.5&play=1`) fotografa uma cena que se mexe. Leitura de 22/11 (`destravar/xix-juizes-tempo-andando.md`); falta a corrida curta.
+- **RECEITA: a captura que sai com TODO pixel exatamente 0, de vez em quando, neste PC (D3D11; nunca no Vulkan).** Ela não é o apagão da ejeção: aquele vai de aceso a escuro e deixa a poeira, com média ~10. Esta vai de escuro a aceso, com todo pixel 0.
+  - A marca, para reconhecer: cada passo leva 7–13 quadros em vez de ~30, e há um engasgo de 72–100 quadros quando a cena acende.
+  - É intermitente: 0 de 6 primeiras cargas em 22/11; corridas antigas com 14 de 16 passos pretos (`i-estabilidade-pan-zoom-1.json`).
+  - Quando voltar, rode `capturas/auditoria-gemini-rodada3/destravar/xx-sonda-familia.mjs`, que lê o buffer dentro do quadro preto. Buffer ACESO sob foto preta: é a captura do Chrome. Buffer PRETO: é o app.
+  - Desde 22/11, juiz nenhum aprova uma foto toda preta: ela sai "não mede".
+  - Relatório: `destravar/xx-estrelas-pretas.md`.
 - **Uma faixa preta de ~35 px no topo da capa, a 960×540.** Aparece igual antes e depois do conserto do apagão (`destravar/xvii-par-capa.png`) e está sem diagnóstico.
 - **ESTRELAS, a medir numa rodada futura: a precisão de 16 bits do `stars.bin`.** O binário grava a posição em 16 bits, e o ponto das estrelas próximas cai a dezenas de UA do valor da fonte:
   - Sirius 37,2 UA (até ~43 no raio);
