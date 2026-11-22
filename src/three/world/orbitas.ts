@@ -681,6 +681,8 @@ export function larguraVisivelDaFitaPx(
  * (`mascaraDasOrbitas`, em `estabilidade-temporal.mjs`) —, pedaço de linha
  * voltou a ser linha, e a corrida inteira fecha em ZERO sem afrouxar soleira
  * nenhuma. A decisão do dono ficou de pé; quem aprendeu foi o juiz.
+ * (22/11/2026: a máscara saiu — o juiz passou a medir as estrelas com
+ * `&noorbitas=1`, porque as órbitas não são assunto dele.)
  *
  * UMA RÉGUA SÓ, e ela é a do `gl_FragCoord`. O `Vector4` que
  * `escreverNucleos` escreve já sai em PIXEL DE BUFFER — centro E raio —, e o
