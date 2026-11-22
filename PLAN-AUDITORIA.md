@@ -151,6 +151,7 @@ Chrome com Direct3D 11 (o do visitante do Windows), perfil novo a cada abertura 
   Medido em 22/11 (`destravar/iii-heap-memoria.md`). Não é vazamento: a 2ª rodada de focos soma ~1 MB, e o juiz `memoria` passou a medir por rodada.
 
   A pergunta da rodada: vale soltar quando Saturno está longe há muito tempo, e quanto custa assar de novo na volta? Num telefone, 29 MB pesam mais.
+- **A CONFERIR: `shot=1&play=1` congela o tempo VISUAL, mas a viagem anda?** O `director.ts:4216` zera só o tempo visual no modo de foto (`const time = this.shotMode ? 0 : rawTime`). O avanço da viagem (`director.ts:4250`, `if (!this.freezeJourney) this.journeyT += dt * …`) só olha o `freezeJourney`. Se for isso, o `a11y` (l.1227, `t=192.5&play=1`) fotografa uma cena que se mexe. Leitura de 22/11 (`destravar/xix-juizes-tempo-andando.md`); falta a corrida curta.
 - **Uma faixa preta de ~35 px no topo da capa, a 960×540.** Aparece igual antes e depois do conserto do apagão (`destravar/xvii-par-capa.png`) e está sem diagnóstico.
 - **ESTRELAS, a medir numa rodada futura: a precisão de 16 bits do `stars.bin`.** O binário grava a posição em 16 bits, e o ponto das estrelas próximas cai a dezenas de UA do valor da fonte:
   - Sirius 37,2 UA (até ~43 no raio);
