@@ -13,16 +13,36 @@
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import { describe, it, expect } from 'vitest';
-import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair, flagsDoBinario, lancarChrome, julgarFolgaDoLimite } from './chrome.mjs';
+import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair, flagsDoBinario, lancarChrome, julgarFolgaDoLimite, folgaDoLimiteGb } from './chrome.mjs';
 
 describe('a folga do limite de memória do Windows (22/11)', () => {
+  const win = (gb) => ({ plataforma: 'win32', gb, erro: null });
   it('abaixo do piso reprova dizendo o número e o que fechar; no piso ou acima passa; fora do Windows não mede', () => {
-    const baixo = julgarFolgaDoLimite(9, 14);
+    const baixo = julgarFolgaDoLimite(win(9), 14);
     expect(baixo.ok).toBe(false);
     expect(baixo.texto).toContain('9 GB');
     expect(baixo.texto).toContain('feche outros Chromes');
-    expect(julgarFolgaDoLimite(14, 14).ok).toBe(true);
-    expect(julgarFolgaDoLimite(null, 14).ok).toBe(true);
+    expect(julgarFolgaDoLimite(win(14), 14).ok).toBe(true);
+    const fora = julgarFolgaDoLimite(folgaDoLimiteGb({ plataforma: 'linux' }), 14);
+    expect(fora).toEqual({ ok: true, texto: 'folga do limite de memória: não medida (fora do Windows)' });
+  });
+
+  it('a leitura que FALHA no Windows segue dizendo "folga não lida: <erro>", nunca "fora do Windows" nem 0 GB', () => {
+    const falhas = [
+      () => ({ error: new Error('spawn powershell ENOENT'), status: null, stdout: null, stderr: null }),
+      () => ({ status: 1, stdout: '', stderr: 'Get-CimInstance : acesso negado' }),
+      () => ({ status: 0, stdout: '\r\n', stderr: '' }),
+    ];
+    for (const rodar of falhas) {
+      const leitura = folgaDoLimiteGb({ plataforma: 'win32', rodar });
+      expect(leitura.gb).toBeNull();
+      const v = julgarFolgaDoLimite(leitura, 14);
+      expect(v.ok).toBe(true);
+      expect(v.texto).toMatch(/^folga não lida: \S/);
+      expect(v.texto).not.toContain('fora do Windows');
+    }
+    const lida = folgaDoLimiteGb({ plataforma: 'win32', rodar: () => ({ status: 0, stdout: '21\r\n', stderr: '' }) });
+    expect(lida).toEqual({ plataforma: 'win32', gb: 21, erro: null });
   });
 });
 

@@ -82,19 +82,30 @@ export const GPU_FLAGS = [
  * A FOLGA DO LIMITE DE MEMÓRIA DO WINDOWS (22/11) — limite total menos o
  * comprometido (`FreeVirtualMemory`), não a RAM livre: em 21/11 a RAM livre
  * estava em 14 GB e foi o LIMITE que acabou (arquivo de paginação fixo), e o
- * `filme-smoke` caiu calado no prazo de 180 s. Fora do Windows, `null`.
+ * `filme-smoke` caiu calado no prazo de 180 s.
+ *
+ * Devolve `{ plataforma, gb, erro }`: é a PLATAFORMA que diz "fora do
+ * Windows", e não um `null` — a leitura que falha NO Windows traz o `erro`
+ * e `gb: null`, e a saída vazia não vira 0 GB (`Number('')` é 0). A
+ * plataforma e o executor entram pela porta só para o teste.
  */
-export function folgaDoLimiteGb() {
-  if (process.platform !== 'win32') return null;
-  const r = spawnSync('powershell', ['-NoProfile', '-Command',
-    '[math]::Floor((Get-CimInstance Win32_OperatingSystem).FreeVirtualMemory/1MB)'], { encoding: 'utf8' });
-  const gb = Number(String(r.stdout).trim());
-  return Number.isFinite(gb) ? gb : null;
+export function folgaDoLimiteGb({ plataforma = process.platform, rodar = spawnSync } = {}) {
+  if (plataforma !== 'win32') return { plataforma, gb: null, erro: null };
+  const r = rodar('powershell', ['-NoProfile', '-Command',
+    '[math]::Floor((Get-CimInstance Win32_OperatingSystem).FreeVirtualMemory/1MB)'],
+  { encoding: 'utf8', timeout: 30000 });
+  const saida = String(r.stdout ?? '').trim();
+  if (!r.error && r.status === 0 && /^\d+$/.test(saida)) return { plataforma, gb: Number(saida), erro: null };
+  const erro = r.error?.message || String(r.stderr ?? '').trim()
+    || `powershell saiu com ${r.status} e a saída "${saida}"`;
+  return { plataforma, gb: null, erro };
 }
 
-/** Reprova na largada, dizendo o número e o que fechar, quando a folga fica abaixo do piso. */
-export function julgarFolgaDoLimite(gb, pisoGb) {
-  if (gb === null) return { ok: true, texto: 'folga do limite de memória: não medida (fora do Windows)' };
+/** Reprova na largada, dizendo o número e o que fechar, quando a folga fica abaixo do piso.
+ *  A leitura que falha no Windows SEGUE, dizendo por quê — nem reprova nem finge medida. */
+export function julgarFolgaDoLimite({ plataforma, gb, erro }, pisoGb) {
+  if (plataforma !== 'win32') return { ok: true, texto: 'folga do limite de memória: não medida (fora do Windows)' };
+  if (gb === null) return { ok: true, texto: `folga não lida: ${erro || 'sem número na saída'}` };
   if (gb >= pisoGb) return { ok: true, texto: `folga do limite de memória do Windows: ${gb} GB (piso ${pisoGb} GB)` };
   return {
     ok: false,
