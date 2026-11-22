@@ -151,6 +151,12 @@ Chrome com Direct3D 11 (o do visitante do Windows), perfil novo a cada abertura 
   Medido em 22/11 (`destravar/iii-heap-memoria.md`). Não é vazamento: a 2ª rodada de focos soma ~1 MB, e o juiz `memoria` passou a medir por rodada.
 
   A pergunta da rodada: vale soltar quando Saturno está longe há muito tempo, e quanto custa assar de novo na volta? Num telefone, 29 MB pesam mais.
+- **Com o relógio ao vivo, o app nunca se diz pronto.** Sem `jd` nem `shot`, a `maquinaDoTempo.aoVivo` segura o `andando` do `get captura` (`director.ts` ~2595). Medido em 22/11 em `atlas=1&foco=saturn&q=cinema&zzz=1`: 120 s sem pronto, antes e depois de `c9cf2158`. Para os juízes, basta escolher a URL. O visitante não é afetado: a capa de carga segue `loadStage`/`loaderState` (`App.tsx:1726-1731`), não o pronto, e o único leitor do pronto é o harness (`prontidao.ts:7`). Item do app, para decidir: o pronto deve ter um sentido ao vivo, por exemplo "assentou salvo o relógio"?
+- **RISCO CONHECIDO do pronto que espera o clarão (`c9cf2158`):** se a `oculta` de uma vaga alternar entre quadros com a cena parada, o pronto nunca assenta. Há duas condições em que isso pode acontecer:
+  - a sonda de oclusão desenhada em mais de um passe;
+  - um corpo girando pelo tempo de tela fora do modo de foto.
+
+  Nas 77 vistas medidas (`destravar/iv-pronto-medida.md`) isso não aconteceu. Quem vir um "não assentou" novo olha primeiro a `clarao.mudancaPendente` e a `oculta` das vagas (`clarao.ts` ~1289–1300, `sondaDeOclusao.ts` ~102–111).
 - **Uma galáxia vizinha pisca ±1/255 de quadro a quadro no D3D11** (`vizinhas.ts:108`, desde `7d56593b`, 12/11), com a cena parada: um conjunto fixo de ~236 px. No Vulkan sai idêntico. Causa não achada; hipótese: a soma aditiva de muitos pontos sobrepostos. Item pequeno do app. Enquanto isso, os juízes de foto aceitam esse ruído com um teto absoluto (nível ≤ 1/255 e ≤ 0,03 % dos px), medido em `destravar/i-diagnostico.md`.
 
 ### Onda 2 — depois de a onda 1 entrar no principal (a conversa principal manda)
