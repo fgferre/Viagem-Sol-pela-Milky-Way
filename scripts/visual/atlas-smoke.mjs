@@ -80,7 +80,7 @@ import { pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import {
   abrirSessao, APP_PADRAO, dorme, esperarCapaSair, esperarPor,
-  diferencaPorPixel, julgarTetoDoRuido, julgarDiferente, NAO_DETERMINISTICA,
+  diferencaPorPixel, julgarTetoDoRuido, julgarDiferente, NAO_DETERMINISTICA, NAO_MEDE, SAIDA_NAO_MEDE,
 } from './chrome.mjs';
 
 /**
@@ -103,6 +103,9 @@ import {
  */
 export function julgarTrocaDaCamada({ flag, vista, ruido, bootVivo, limpoVivo, total, morta = null }) {
   const onde = `?${flag}=1 em ${vista}`;
+  // um par com foto toda preta NÃO MEDE (`julgarFotoVazia`, chrome.mjs), e nada mais se compara
+  const preto = [ruido, bootVivo, limpoVivo].find((d) => d.pretas);
+  if (preto) return { provas: [{ ok: false, texto: `${onde}: ${julgarTetoDoRuido({ ...preto, total }).texto}` }], declaracao: null };
   const r = julgarTetoDoRuido({ ...ruido, total });
   if (!r.ok) {
     return {
@@ -137,7 +140,9 @@ export function julgarTrocaDaCamada({ flag, vista, ruido, bootVivo, limpoVivo, t
  * 12. `sentido` 'igual' cobra dentro do teto; 'diferente' cobra mais de 10×
  * o teto (`julgarDiferente`) — sair do teto não basta: 1 px a 2/255 já sai.
  */
-export function julgarPar({ rotulo, sentido, diferentes, maior, acima, total }) {
+export function julgarPar({ rotulo, sentido, diferentes, maior, acima, total, pretas = 0 }) {
+  // a foto toda preta NÃO MEDE nos dois sentidos (`julgarFotoVazia`, chrome.mjs)
+  if (pretas) return { ok: false, texto: `${rotulo}: ${julgarTetoDoRuido({ diferentes, maior, total, pretas }).texto}` };
   if (sentido === 'igual') {
     const r = julgarTetoDoRuido({ diferentes, maior, total });
     return { ok: r.ok, texto: `${rotulo}: a MESMA imagem, dentro do teto (${r.texto})` };
@@ -146,10 +151,13 @@ export function julgarPar({ rotulo, sentido, diferentes, maior, acima, total }) 
   return { ok: d.ok, texto: `${rotulo}: imagens DIFERENTES (${d.texto})` };
 }
 
-/** A foto CRUA da sessão, depois do mesmo obturador do `md5` (a capa saiu). */
-async function fotoCrua(sessao) {
-  const md5 = await sessao.md5();
-  const shot = await sessao.send('Page.captureScreenshot', { format: 'png' });
+/** A foto CRUA da sessão, depois do mesmo obturador do `md5` (a capa saiu).
+ *  `clip` ({x, y, width, height}, em px de CSS) recorta, como no `md5`. */
+async function fotoCrua(sessao, clip = null) {
+  const md5 = await sessao.md5(clip);
+  const shot = await sessao.send('Page.captureScreenshot', {
+    format: 'png', ...(clip ? { clip: { ...clip, scale: 1 } } : {}),
+  });
   const { data, info } = await sharp(Buffer.from(shot.data, 'base64')).removeAlpha().raw()
     .toBuffer({ resolveWithObject: true });
   return { md5, data, canais: info.channels, total: info.width * info.height };
@@ -403,22 +411,19 @@ async function principal() {
     // caindo no enquadramento de abertura, e é com o `?atlas=1` puro (o
     // outro endereço sem filme) que a porta tem de bater.
     await sessao.ir(`atlas=1&${PIN}`);
-    const daUrl = await sessao.md5();
+    const daUrl = await fotoCrua(sessao);
     await sessao.ir(PIN);
     await sessao.js("[...document.querySelectorAll('.veil-intro button')]"
       + ".find((b) => b.textContent.trim() === 'Explorar o Atlas').click()");
     await sessao.assentar();
     const faseDaPorta = await sessao.js('window.__director.captura.fase');
-    const daPorta = await sessao.md5();
+    const daPorta = await fotoCrua(sessao);
     conferir(
       faseDaPorta === 'atlas',
       `a porta da abertura entra no Atlas: fase = '${faseDaPorta}'`
     );
-    conferir(
-      daPorta === daUrl,
-      `a porta da abertura chega ao MESMO Atlas do \`?atlas=1\``
-        + ` (${daPorta} vs ${daUrl})`
-    );
+    const mesmoAtlas = julgarFotos('a porta da abertura chega ao MESMO Atlas do `?atlas=1`', 'igual', daUrl, daPorta);
+    conferir(mesmoAtlas.ok, mesmoAtlas.texto);
 
     // ---- 4: o deep-link e o "Partir" sem viagem anterior -------------
     await sessao.ir(`atlas=1&${PIN}`);
@@ -1025,14 +1030,14 @@ async function principal() {
     const p = document.querySelector('[data-dialogo="ajustes"]').getBoundingClientRect();
     return { x: 0, y: 0, width: Math.floor(p.left) - 2, height: innerHeight };
   })())`));
-    const telaDevolta = await sessao.md5(cena);
+    const telaDevolta = await fotoCrua(sessao, cena);
     await sessao.ir(devolta.url.replace(/^\?/, ''));
-    const recarregada = await sessao.md5(cena);
-    conferir(
-      telaDevolta === recarregada,
-      `e a URL sem ?exp= reproduz a CENA (à esquerda do painel, ${cena.width}×${cena.height}),`
-        + ` pixel a pixel (${telaDevolta} vs ${recarregada})`
+    const recarregada = await fotoCrua(sessao, cena);
+    const mesmaCena = julgarFotos(
+      `e a URL sem ?exp= reproduz a CENA (à esquerda do painel, ${cena.width}×${cena.height})`,
+      'igual', telaDevolta, recarregada
     );
+    conferir(mesmaCena.ok, mesmaCena.texto);
 
     // ---- 14: A QUALIDADE TROCA AO VIVO, IDA E VOLTA (Ajustes C) -------
     // A ÚLTIMA opção do painel que recarregava a página. Metade da
@@ -1098,22 +1103,18 @@ async function principal() {
     const bootDoTier = new Map();
     for (const q of ['performance', 'cinema']) {
       await sessao.ir(`t=167&shot=2&q=${q}`);
-      bootDoTier.set(q, await sessao.md5());
+      bootDoTier.set(q, await fotoCrua(sessao));
     }
-    conferir(
-      bootDoTier.get('performance') !== bootDoTier.get('cinema'),
-      `o tier REALMENTE muda a vista de fora (${bootDoTier.get('performance')}`
-        + ` vs ${bootDoTier.get('cinema')})`
-    );
+    const tierMuda = julgarFotos('o tier REALMENTE muda a vista de fora', 'diferente',
+      bootDoTier.get('performance'), bootDoTier.get('cinema'));
+    conferir(tierMuda.ok, tierMuda.texto);
     await sessao.ir('t=167&shot=2&q=performance');
     for (const q of ['cinema', 'performance']) {
       await sessao.js(`window.__director.setQuality('${q}')`);
       await sessao.assentar();
-      const aoVivo = await sessao.md5();
-      conferir(
-        aoVivo === bootDoTier.get(q),
-        `?q=${q}: boot e troca viva dão o MESMO pixel (${bootDoTier.get(q)} vs ${aoVivo})`
-      );
+      const aoVivo = await fotoCrua(sessao);
+      const mesmoPixel = julgarFotos(`?q=${q}: boot e troca viva dão o MESMO pixel`, 'igual', bootDoTier.get(q), aoVivo);
+      conferir(mesmoPixel.ok, mesmoPixel.texto);
     }
 
     // ---- 14b: O AUTO É O 4º ESTADO (Ajustes D) -----------------------
@@ -3369,8 +3370,10 @@ async function principal() {
   }
 
   if (falhas.length) {
-    process.stdout.write(`\nSMOKE DO ATLAS: ${falhas.length} falha(s)\n`);
-    process.exit(1);
+    // só fotos todas pretas: a corrida NÃO MEDE (`SAIDA_NAO_MEDE`); qualquer outra falha reprova
+    const soPretas = falhas.every((f) => f.includes(NAO_MEDE));
+    process.stdout.write(`\nSMOKE DO ATLAS: ${falhas.length} falha(s)${soPretas ? ` — ${NAO_MEDE}` : ''}\n`);
+    process.exit(soPretas ? SAIDA_NAO_MEDE : 1);
   }
   process.stdout.write('\nSMOKE DO ATLAS: tudo verde\n');
 }

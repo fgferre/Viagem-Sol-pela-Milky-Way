@@ -80,4 +80,24 @@ describe('os pares de fotos das provas 1, 3, 15b e 18, pelo teto de ruído', () 
     expect(par('diferente', m(1, 2, 1)).ok).toBe(false);
     expect(par('diferente', m(2000, 40, 2000)).ok).toBe(false);
   });
+
+  it('CONTROLE NEGATIVO: o par "igual" de duas fotos pretas e o "diferente" contra uma preta NÃO MEDEM', () => {
+    const igual = par('igual', { ...zero, pretas: 2 });
+    expect(igual.ok).toBe(false);
+    expect(igual.texto).toContain('NÃO MEDE');
+    const diferente = par('diferente', { ...m(944756, 90, 944756), pretas: 1 });
+    expect(diferente.ok).toBe(false);
+    expect(diferente.texto).toContain('NÃO MEDE');
+  });
+});
+
+describe('a prova 12 com foto toda preta', () => {
+  it('CONTROLE NEGATIVO: o ruído de duas fotos pretas NÃO MEDE, e nada mais se compara', () => {
+    const v = julgar({ ruido: { ...zero, pretas: 2 }, bootVivo: zero, limpoVivo: m(239331, 191, 239331) });
+    expect(v.provas).toHaveLength(1);
+    expect(v.provas[0].ok).toBe(false);
+    expect(v.provas[0].texto).toContain('NÃO MEDE');
+    // a foto preta é da captura: chamá-la de vista não determinística acusaria o app
+    expect(v.provas[0].texto).not.toContain('a vista não é determinística');
+  });
 });

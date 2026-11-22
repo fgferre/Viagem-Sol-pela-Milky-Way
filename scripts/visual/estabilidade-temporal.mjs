@@ -141,7 +141,9 @@ import { tmpdir } from 'node:os';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
-import { abrirSessao, APP_PADRAO, dorme } from './chrome.mjs';
+import {
+  abrirSessao, APP_PADRAO, dorme, fotoTodaPreta, julgarFotoVazia, NAO_MEDE, SAIDA_NAO_MEDE,
+} from './chrome.mjs';
 
 const UA_POR_PC = 206264.80624548031;
 
@@ -968,7 +970,8 @@ export function casarFontes({
  *  4. fonte FORTE, longe da borda, que some sem deixar sucessora.
  * A regra 1 e a 2 ficam SUSPENSAS onde a paralaxe do passo passa de
  * `PARALAXE_CEGA_PX` ou onde o clarão comeu o quadro — e isso vai escrito no
- * veredito, nunca em silêncio.
+ * veredito, nunca em silêncio. E a família com um quadro todo preto não tem
+ * veredito: sai NÃO MEDE (`naoMede`), nunca passa.
  */
 export function julgarFamilia({ nome, passos = [], piso = null, altura = null }) {
   const pisoResiduo = piso ? piso.residuoMedio : 0;
@@ -1066,9 +1069,23 @@ export function julgarFamilia({ nome, passos = [], piso = null, altura = null })
       );
     }
   }
+  // A FOTO TODA PRETA NÃO É MEDIDA (22/11, `fotoTodaPreta` em chrome.mjs): o passo que toca um quadro
+  // preto mede o nada (zero fontes, resíduo zero), e o que vai do preto ao aceso acusa fervura e sumiço
+  // que são da captura. A família inteira sai NÃO MEDE, com o número, e as acusações dela saem do
+  // veredito CONTADAS; a descalibração fica, porque a altura do quadro não depende da luz dele.
+  const pretos = passos.reduce((m, p, i) => m + (p.pretaB ? 1 : 0) + (i === 0 && p.pretaA ? 1 : 0), 0)
+    + (piso?.pretos ?? 0);
+  let naoMede = null;
+  if (pretos) {
+    const fotos = passos.length + 1 + (piso?.pontas ? 2 : 0);
+    const caladas = erros.length - (descalibrada ? 1 : 0);
+    erros.splice(descalibrada ? 1 : 0);
+    naoMede = `${nome}: ${julgarFotoVazia({ pretas: pretos, fotos }).texto}`
+      + (caladas ? ` — ${caladas} acusação(ões) dos passos fora do veredito: medem a captura, não o app` : '');
+  }
   return {
     nome, piso, altura, passos: passos.length, erros, suspensos, declaracoes, descalibrada,
-    tracos,
+    tracos, pretos, naoMede,
   };
 }
 
@@ -1104,6 +1121,9 @@ export function medirPar(a, b, k, ancoras = [], julgada = LIMIAR_JULGADA) {
     k,
     julgada,
     tracos,
+    // as fotos todas pretas do par (`fotoTodaPreta`): quem as conta é `julgarFamilia`
+    pretaA: fotoTodaPreta(a.y),
+    pretaB: fotoTodaPreta(b.y),
     paralaxePx: paralaxeMaximaPx(a.cam, b.cam),
     quadrosEntre: (b.cam.f ?? 0) - (a.cam.f ?? 0),
     solArmado: b.cam.solArmado,
@@ -1124,7 +1144,12 @@ export function julgarCorrida(familias) {
   // truncadas: é a única acusação que diz "o resto deste veredito não vale"
   const descalibradas = familias.map((f) => f.descalibrada).filter(Boolean);
   const declaracoes = familias.flatMap((f) => f.declaracoes ?? []);
-  return { familias, erros, suspensos, declaracoes, descalibradas, passa: erros.length === 0 };
+  // a família que NÃO MEDE nunca passa, e também nunca vira acusação ao app
+  const naoMedidas = familias.map((f) => f.naoMede).filter(Boolean);
+  return {
+    familias, erros, suspensos, declaracoes, descalibradas, naoMedidas,
+    passa: erros.length === 0 && naoMedidas.length === 0,
+  };
 }
 
 // ------------------------------------------------------------
@@ -1287,6 +1312,8 @@ async function medirPercurso(s, { nome, poses, ancorasDe = ancorasDaCasa }) {
   const piso = {
     residuoMedio: Math.max(...parados.map((p) => p.residuoMedio)),
     bandaAlta: Math.max(...parados.map((p) => p.bandaAlta)),
+    // os dois retratos que só o piso tem (`piso-de`, `piso-ate`); os outros lados já são passos
+    pretos: (parados[0].pretaA ? 1 : 0) + (parados[parados.length - 1].pretaB ? 1 : 0),
     pontas: parados.map((p) => ({
       residuoMedio: p.residuoMedio, bandaAlta: p.bandaAlta, quadrosEntre: p.quadrosEntre,
     })),
@@ -1719,6 +1746,7 @@ async function correr() {
             solArmado: p.solArmado,
             cedeTerra: p.cedeTerra,
             fontes: p.fontes,
+            pretaB: p.pretaB,
             exposicao: p.exposicao,
             casados: p.casados.length,
             mudaramDeBrilho: p.casados.filter((c) => c.mudouDeBrilho).length,
@@ -1739,7 +1767,9 @@ async function correr() {
           // e a soma da família, ao lado das declarações que o rodapé imprime
           tracos: familias.find((f) => f.nome === r.nome)?.tracos ?? 0,
           declaracoes: familias.find((f) => f.nome === r.nome)?.declaracoes ?? [],
+          naoMede: familias.find((f) => f.nome === r.nome)?.naoMede ?? null,
         })),
+        naoMedidas: veredito.naoMedidas,
         erros: veredito.erros,
         suspensos: veredito.suspensos,
         declaracoes: veredito.declaracoes,
@@ -1774,12 +1804,23 @@ async function correr() {
     if (veredito.suspensos.length > 10) console.log(`  · (+${veredito.suspensos.length - 10})`);
   }
   if (gritos.length) console.log(`gritos do app: ${gritos.length}\n  ` + gritos.slice(0, 5).join('\n  '));
+  // as famílias que NÃO MEDEM vêm INTEIRAS, como a descalibração: cada linha diz que uma família não
+  // tem veredito. Defeito medido nas outras reprova (saída 1); sem defeito, a corrida NÃO MEDE (saída
+  // `SAIDA_NAO_MEDE`) e nunca passa
+  if (veredito.naoMedidas.length) {
+    console.log(`\n>>> ${NAO_MEDE} — ${veredito.naoMedidas.length} família(s) sem veredito:`);
+    for (const n of veredito.naoMedidas) console.log('  · ' + n);
+  }
   if (veredito.erros.length) {
     console.log(`\n>>> REPROVA — ${veredito.erros.length} defeito(s) de estabilidade temporal:`);
     for (const e of veredito.erros.slice(0, 30)) console.log('  · ' + e);
     if (veredito.erros.length > 30) console.log(`  · (+${veredito.erros.length - 30} não listados)`);
     console.log(`\n  ${json}`);
     process.exit(1);
+  }
+  if (veredito.naoMedidas.length) {
+    console.log(`\n  ${json}`);
+    process.exit(SAIDA_NAO_MEDE);
   }
   console.log(`>>> PASSA — ${familias.length} famílias, nenhuma fervura nem re-semeadura\n  ${json}`);
 }

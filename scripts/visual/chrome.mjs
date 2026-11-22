@@ -126,8 +126,40 @@ export const TETO_DO_RUIDO = { nivel: 1, fracao: 0.0003 };
 /** a frase de quem reprova um par do MESMO estado acima do teto */
 export const NAO_DETERMINISTICA = 'a vista não é determinística';
 
+/**
+ * A FOTO TODA PRETA NÃO É MEDIDA (rodada de destravar, 22/11). Neste PC, de vez em quando, a captura volta
+ * com TODO pixel exatamente 0 (causa aberta: a captura do Chrome ou o app; `destravar/xx-estrelas-pretas.md`),
+ * e o juiz que mede o nada aprova: o `estabilidade-temporal` passou o `aproxEstrela` com 9 quadros pretos e
+ * 0 fontes. Zero fontes, o par "igual" de dois pretos, o "diferente" contra um preto, a luz que "não caiu"
+ * porque já era zero — nada disso é medida. A foto assim sai NÃO MEDE (coluna MÁQUINA), nunca "passa", e o
+ * juiz sai com `SAIDA_NAO_MEDE`. O critério é o canal de COR exatamente 0 em todo pixel: o alfa (255 na
+ * captura opaca) fica fora, e um céu escuro de verdade, com estrelas de 1/255, segue medido.
+ */
+export const NAO_MEDE = 'NÃO MEDE (máquina)';
+/** o código de saída do juiz que não mediu: nem 0 (passa) nem 1 (reprova) */
+export const SAIDA_NAO_MEDE = 2;
+
+/** Todo canal de cor é 0? `canais` 1 (luminância) ou 3 (RGB); com 2 ou 4 o último é o alfa, e fica fora. */
+export function fotoTodaPreta(dados, canais = 1) {
+  const cor = canais === 2 || canais === 4 ? canais - 1 : canais;
+  for (let i = 0; i < dados.length; i += canais) {
+    for (let c = 0; c < cor; c++) if (dados[i + c] !== 0) return false;
+  }
+  return true;
+}
+
+/** A frase de quem não mede, com o número: `pretas` fotos todas pretas de `fotos`. */
+export function julgarFotoVazia({ pretas, fotos }) {
+  return {
+    naoMede: pretas > 0,
+    texto: `${NAO_MEDE} — ${pretas} de ${fotos} foto(s) toda(s) preta(s), luz 0 em todo pixel:`
+      + ' o juiz não mede o nada',
+  };
+}
+
 /** O diff-pixel de duas fotos cruas do mesmo tamanho: quantos px diferem em algum canal, a maior
- *  diferença de um canal, em /255, e quantos px diferem ACIMA do nível do teto (`acima`). */
+ *  diferença de um canal, em /255, quantos px diferem ACIMA do nível do teto (`acima`) e quantas das
+ *  duas fotos são todas pretas (`pretas`, que os dois juízos abaixo recusam). */
 export function diferencaPorPixel(a, b, canais) {
   let diferentes = 0;
   let maior = 0;
@@ -141,11 +173,14 @@ export function diferencaPorPixel(a, b, canais) {
       if (d > TETO_DO_RUIDO.nivel) acima++;
     }
   }
-  return { diferentes, maior, acima };
+  const pretas = (fotoTodaPreta(a, canais) ? 1 : 0) + (fotoTodaPreta(b, canais) ? 1 : 0);
+  return { diferentes, maior, acima, pretas };
 }
 
-/** Cabe no teto de ruído? `{ diferentes, maior }` de `diferencaPorPixel` e o `total` de px da foto. */
-export function julgarTetoDoRuido({ diferentes, maior, total }, teto = TETO_DO_RUIDO) {
+/** Cabe no teto de ruído? `{ diferentes, maior, pretas }` de `diferencaPorPixel` e o `total` de px da
+ *  foto. Um par com foto toda preta não cabe nem sai dele: NÃO MEDE. */
+export function julgarTetoDoRuido({ diferentes, maior, total, pretas = 0 }, teto = TETO_DO_RUIDO) {
+  if (pretas) return { ok: false, ...julgarFotoVazia({ pretas, fotos: 2 }) };
   const ok = maior <= teto.nivel && diferentes <= total * teto.fracao;
   return {
     ok,
@@ -160,8 +195,10 @@ export function julgarTetoDoRuido({ diferentes, maior, total }, teto = TETO_DO_R
 export const DIFERENTE_VEZES_O_TETO = 10;
 
 /** Duas fotos que deveriam ser vistas DIFERENTES: mais de `DIFERENTE_VEZES_O_TETO` × a fração do teto em
- *  px acima do nível dele. `{ acima }` de `diferencaPorPixel` e o `total` de px da foto. */
-export function julgarDiferente({ acima, total }, teto = TETO_DO_RUIDO) {
+ *  px acima do nível dele. `{ acima, pretas }` de `diferencaPorPixel` e o `total` de px da foto; contra
+ *  uma foto toda preta tudo é "diferente", e o par NÃO MEDE. */
+export function julgarDiferente({ acima, total, pretas = 0 }, teto = TETO_DO_RUIDO) {
+  if (pretas) return { ok: false, ...julgarFotoVazia({ pretas, fotos: 2 }) };
   // o +1e-6 segura o produto em ponto flutuante: 100000 × 0,0003 × 10 dá 299,99…
   const limiar = Math.floor(total * teto.fracao * DIFERENTE_VEZES_O_TETO + 1e-6);
   return {

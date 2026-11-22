@@ -32,12 +32,13 @@
 //
 // Saídas: capturas/voo-<ida|volta>-<ua>ua<SUFIXO>.png por degrau e
 // capturas/voo-ida-e-volta<SUFIXO>.json com medidas + estado + veredito.
-// Exit ≠ 0 se houver assimetria fora da banda declarada ou tela cega.
+// Exit ≠ 0 se houver assimetria fora da banda declarada ou tela cega; e
+// `SAIDA_NAO_MEDE` (chrome.mjs) se, sem defeito, algum degrau saiu todo preto.
 // ============================================================
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import sharp from 'sharp';
-import { abrirSessao, dorme } from './chrome.mjs';
+import { abrirSessao, dorme, fotoTodaPreta, julgarFotoVazia, SAIDA_NAO_MEDE } from './chrome.mjs';
 import { tetoDeLavagem } from './luz-do-quadro.mjs';
 
 const RAIZ = resolve(new URL('.', import.meta.url).pathname, '..', '..');
@@ -105,6 +106,8 @@ async function medir(png) {
     luzMedia: soma / (W * H),
     acimaDeMeia: acima / (W * H),
     borrao,
+    // a foto toda preta não entra no ida × volta: dois pretos "contam a mesma história"
+    preta: fotoTodaPreta(data, C),
   };
 }
 
@@ -318,13 +321,17 @@ function margensDaBanda(linhas) {
 }
 
 const { linhas, gritos } = await voar();
-const erros = julgar(linhas);
+// os degraus de foto toda preta ficam FORA do julgamento (o par deles fica sem par) e a corrida, sem
+// defeito medido, NÃO MEDE em vez de passar (`julgarFotoVazia`, chrome.mjs)
+const erros = julgar(linhas.filter((l) => !l.preta));
+const vazia = julgarFotoVazia({ pretas: linhas.filter((l) => l.preta).length, fotos: linhas.length });
+const naoMede = vazia.naoMede ? vazia.texto : null;
 const margens = margensDaBanda(linhas);
 const json = resolve(CAPTURAS, `voo-ida-e-volta${SUF}.json`);
 writeFileSync(
   json,
   JSON.stringify(
-    { janela: JANELA, extra: EXTRA, bandaUa: BANDA_UA, margens, linhas, erros, gritos },
+    { janela: JANELA, extra: EXTRA, bandaUa: BANDA_UA, margens, linhas, erros, naoMede, gritos },
     null,
     1
   )
@@ -338,10 +345,15 @@ if (margens.margemMinimaUa !== null) {
   );
 }
 if (gritos.length) console.log(`gritos do app: ${gritos.length}\n  ` + gritos.slice(0, 5).join('\n  '));
+if (naoMede) console.log(`\n>>> ${naoMede}`);
 if (erros.length) {
   console.log(`\n>>> REPROVA — ${erros.length} assimetria(s)/cegueira(s):`);
   for (const e of erros) console.log('  · ' + e);
   console.log(`\n  ${json}`);
   process.exit(1);
+}
+if (naoMede) {
+  console.log(`\n  ${json}`);
+  process.exit(SAIDA_NAO_MEDE);
 }
 console.log(`>>> PASSA — ida e volta contam a mesma história em ${linhas.length / 2} degraus\n  ${json}`);

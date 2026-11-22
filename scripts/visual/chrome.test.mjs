@@ -13,7 +13,7 @@
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import { describe, it, expect } from 'vitest';
-import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair, flagsDoBinario, lancarChrome, julgarFolgaDoLimite, folgaDoLimiteGb, julgarTetoDoRuido, julgarDiferente, diferencaPorPixel, TETO_DO_RUIDO, semBarraNoFim } from './chrome.mjs';
+import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair, flagsDoBinario, lancarChrome, julgarFolgaDoLimite, folgaDoLimiteGb, julgarTetoDoRuido, julgarDiferente, diferencaPorPixel, TETO_DO_RUIDO, semBarraNoFim, fotoTodaPreta, julgarFotoVazia, NAO_MEDE, SAIDA_NAO_MEDE } from './chrome.mjs';
 
 describe('o teto de ruído da foto (22/11)', () => {
   // a tela do par nulo do planeta-pixel (diagnóstico §1)
@@ -34,7 +34,53 @@ describe('o teto de ruído da foto (22/11)', () => {
   it('diferencaPorPixel conta px que diferem em algum canal, a maior diferença e os px acima do nível do teto', () => {
     const a = Uint8Array.from([10, 10, 10, 50, 50, 50, 0, 0, 0]);
     const b = Uint8Array.from([10, 11, 10, 50, 50, 53, 0, 0, 0]);
-    expect(diferencaPorPixel(a, b, 3)).toEqual({ diferentes: 2, maior: 3, acima: 1 });
+    expect(diferencaPorPixel(a, b, 3)).toEqual({ diferentes: 2, maior: 3, acima: 1, pretas: 0 });
+  });
+});
+
+describe('a foto toda preta NÃO MEDE (22/11)', () => {
+  // a captura opaca do Chrome: RGBA com o alfa em 255 — o alfa não é luz
+  const W = 40;
+  const H = 30;
+  const total = W * H;
+  const preta = () => Uint8Array.from({ length: total * 4 }, (_, i) => (i % 4 === 3 ? 255 : 0));
+  // um céu escuro DE VERDADE: fundo 0 e três estrelas fracas de 1 a 3/255
+  const escura = () => {
+    const f = preta();
+    for (const [p, v] of [[37, 1], [410, 2], [1001, 3]]) f.fill(v, p * 4, p * 4 + 3);
+    return f;
+  };
+
+  it('CONTROLE NEGATIVO: a foto preta sintética (todo pixel 0, alfa 255) sai NÃO MEDE, com a frase e o número', () => {
+    expect(fotoTodaPreta(preta(), 4)).toBe(true);
+    expect(fotoTodaPreta(new Float32Array(total))).toBe(true);
+    const v = julgarFotoVazia({ pretas: 1, fotos: 1 });
+    expect(v.naoMede).toBe(true);
+    expect(v.texto).toContain(NAO_MEDE);
+    expect(v.texto).toContain('1 de 1 foto(s)');
+    expect(SAIDA_NAO_MEDE).not.toBe(0);
+    expect(SAIDA_NAO_MEDE).not.toBe(1);
+  });
+
+  it('a foto ESCURA de verdade (fundo 0, estrelas de 1–3/255) continua sendo medida', () => {
+    expect(fotoTodaPreta(escura(), 4)).toBe(false);
+    const d = diferencaPorPixel(escura(), escura(), 4);
+    expect(d.pretas).toBe(0);
+    const r = julgarTetoDoRuido({ ...d, total });
+    expect(r.ok).toBe(true);
+    expect(r.naoMede).toBeUndefined();
+  });
+
+  it('CONTROLE NEGATIVO: o par "igual" de duas fotos pretas não passa, e o "diferente" contra uma preta também não', () => {
+    const igual = julgarTetoDoRuido({ ...diferencaPorPixel(preta(), preta(), 4), total });
+    expect(igual.ok).toBe(false);
+    expect(igual.naoMede).toBe(true);
+    expect(igual.texto).toContain('2 de 2 foto(s)');
+    const acesa = Uint8Array.from({ length: total * 4 }, (_, i) => (i % 4 === 3 ? 255 : 90));
+    const diferente = julgarDiferente({ ...diferencaPorPixel(acesa, preta(), 4), total });
+    expect(diferente.ok).toBe(false);
+    expect(diferente.naoMede).toBe(true);
+    expect(diferente.texto).toContain('1 de 2 foto(s)');
   });
 });
 

@@ -67,7 +67,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import {
   capturarCDP, APP_PADRAO, dorme, esperarPor, comLinguaDoJuizNaUrl,
-  diferencaPorPixel, julgarTetoDoRuido, NAO_DETERMINISTICA,
+  diferencaPorPixel, julgarTetoDoRuido, NAO_DETERMINISTICA, fotoTodaPreta, julgarFotoVazia,
 } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
@@ -202,10 +202,15 @@ function exigirConsoleLimpo(captura, onde) {
   exigir(!captura.linhas.length, onde, `erro de shader/GL no console: ${captura.linhas.join(' | ')}`);
 }
 
-/** A foto no meio de uma transição — o mesmo obturador de `capturarCDP`. */
+/** A foto no meio de uma transição — o mesmo obturador de `capturarCDP`. A foto
+ *  toda preta NÃO MEDE (`julgarFotoVazia`, chrome.mjs): contra ela o "centro
+ *  mudou" das transições passaria sem ter medido nada. */
 async function fotografar(send) {
   const shot = await send('Page.captureScreenshot', { format: 'png' });
-  return Buffer.from(shot.data, 'base64');
+  const png = Buffer.from(shot.data, 'base64');
+  const { data, info } = await sharp(png).raw().toBuffer({ resolveWithObject: true });
+  if (fotoTodaPreta(data, info.channels)) throw new Error(julgarFotoVazia({ pretas: 1, fotos: 1 }).texto);
+  return png;
 }
 
 const md5 = (png) => createHash('md5').update(png).digest('hex');

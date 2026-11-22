@@ -758,6 +758,45 @@ describe('a fonte que SOME, e a que ferve', () => {
   });
 });
 
+describe('a foto toda preta NÃO MEDE — nunca passa (22/11)', () => {
+  const pisoDe = (quadros) => medirPar(quadros[0], { ...quadros[0] }, 'piso');
+
+  it('CONTROLE NEGATIVO: dez quadros pretos e zero fontes (o aproxEstrela de xx) saem NÃO MEDE, com o número', () => {
+    const quadros = percursoDePan(10).map((q) => ({ ...q, y: new Float32Array(W * H) }));
+    const passos = passosDe(quadros);
+    expect(passos.every((p) => p.fontes === 0)).toBe(true);
+    const v = julgarFamilia({ nome: 'aproxEstrela', passos, piso: pisoDe(quadros) });
+    expect(v.naoMede).toContain('NÃO MEDE');
+    expect(v.naoMede).toContain('10 de 10 foto(s)');
+    const corrida = julgarCorrida([v]);
+    expect(corrida.passa).toBe(false);
+    expect(corrida.naoMedidas).toEqual([v.naoMede]);
+    // e não vira acusação ao app
+    expect(corrida.erros).toEqual([]);
+  });
+
+  it('CONTROLE NEGATIVO: um quadro preto no meio do voo cala as acusações do passo, contadas, e a família não passa', () => {
+    const quadros = percursoDePan(7);
+    quadros[3] = { ...quadros[3], y: new Float32Array(W * H) };
+    const v = julgarFamilia({ nome: 'pan', passos: passosDe(quadros), piso: pisoDe(quadros) });
+    expect(v.naoMede).toContain('1 de 7 foto(s)');
+    expect(v.naoMede).toContain('acusação(ões) dos passos fora do veredito');
+    expect(v.erros).toEqual([]);
+    expect(julgarCorrida([v]).passa).toBe(false);
+  });
+
+  it('a foto ESCURA de verdade (fundo 0, estrelas de 1–3/255) continua sendo medida, e passa', () => {
+    const fracas = CEU.slice(0, 3).map((f, i) => ({ ...f, brilho: (i + 1) / 255 }));
+    const quadros = percursoDePan(6).map((q) => ({ ...q, y: fotografar(q.cam, fracas, { fundo: 0 }) }));
+    expect(quadros[0].y.some((v) => v === 0)).toBe(true);
+    const v = julgarFamilia({ nome: 'pan', passos: passosDe(quadros), piso: pisoDe(quadros) });
+    expect(v.pretos).toBe(0);
+    expect(v.naoMede).toBe(null);
+    expect(v.erros).toEqual([]);
+    expect(julgarCorrida([v]).passa).toBe(true);
+  });
+});
+
 describe('o que o juiz SUSPENDE em vez de reprovar', () => {
   it('paralaxe acima do teto tira o resíduo por pixel do veredito', () => {
     const passos = [{
