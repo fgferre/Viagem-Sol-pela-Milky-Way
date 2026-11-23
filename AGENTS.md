@@ -19,7 +19,7 @@ How to work
 * Tests go where the task asks, or where this repo already keeps tests for that kind of change. One focused test per behavior, sized like the neighbors.
 * If you can delegate (main session only): keep judgment (plan, decide, hard bugs, review) and hand execution (search, reading many files, tests, mechanical edits) to workers on a cheaper model, so your own context stays small. Each worker gets one task, the files, and what not to do; workers return a summary and never ask.
 * When done, say plainly what changed and what you did not do. If something failed, show the output.
-* One commit per task; the message says why, not what. Never push `main` (it publishes): back up with `git push origin main:backup`, or push a work branch by its own name (`git push -u origin <branch>`); the hook enforces this.
+* One commit per task; the message says why, not what. Never push `main` (it publishes): back up with `git push origin main:backup`, or push a work branch by its own name (`git push -u origin <branch>`); a hook enforces this in Claude Code only.
 
 When to ask
 Go ahead on your own with anything local and easy to undo. Stop and ask only when:
