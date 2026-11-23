@@ -83,6 +83,9 @@ Histórico: os doze planos antigos, com medidas e passos já feitos, estão no g
 - [dono] E5: a força k da cavidade dentro da poeira medida (por vídeo, 600–1250 pc). E6: o medido ensinando o inventado (quantis, depois carimbo; opção). E7: camada 2 de Vergely até ~5 kpc, só com termos de redistribuição verificáveis. E8: fecho (docs, créditos, linhas no BACKLOG, conferir no ar).
 - Decisões que valem: R16F linear; interior de 68,8 pc zero e declarado; a textura inventada por cima do medido é o padrão aprovado (a variante que preserva a média foi recusada); o modelo de hoje fica como comparação até ele mandar tirar.
 
+## Movimento da interface (antes: docs/PLANO-MOTION-UI.md, de setembro; histórico em `git show 61bc0050:docs/PLANO-MOTION-UI.md`)
+- Feito de C1 a C6; ficou do C7: a régua de interrupções reprova um caso a 1440×900 (folha saindo + redimensionar) e nada foi visto em iPhone, Safari, Firefox, Android nem com "reduzir movimento" ligado num aparelho. Os comentários do código que citam "PLANO-MOTION-UI §…" apontam para esse histórico.
+
 ## Fechado nesta condensação
 - Relógio do Atlas (antes: PLAN-RELOGIO.md): está no principal; o último passo, a sonda de movimento, foi convertido e roda até o fim (registrado no plano da auditoria).
 - Passagem da coordenação (antes: PLAN-COORDENACAO.md): era o bastão da troca de máquina; o que não tinha virado commit foi distribuído nas frentes acima.
