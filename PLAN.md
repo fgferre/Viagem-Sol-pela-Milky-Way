@@ -5,7 +5,7 @@ Histórico: os doze planos antigos, com medidas e passos já feitos, estão no g
 ## Auditoria do Gemini — rodada 4 e juízes (antes: PLAN-AUDITORIA.md)
 - [dono] A rodada 4 foi PARADA por ele, pelo custo. As mudanças das ferramentas (teto de 700 quadros só para app sem sinal em `esperarAssentar`, erro de prazo tipado, nova tentativa do `planeta-pixel`) estão no ramo `r4-revisao` (também no GitHub), NÃO no principal: ele decide se retoma.
 - A última fila de juízes terminou com 5 reprovações, 4 delas novas e não analisadas: classificar cada uma (app, juiz velho ou este PC) antes de consertar qualquer coisa.
-- Juízes velhos sem conserto: `planeta-pixel` (11 × 12 linhas do `?dbgplan`) e `busca-smoke` (cartão, distância e milhar). Os juízes que não olham o `via` podem fotografar antes do pronto: conferir um a um (lista no histórico).
+- Juiz velho sem conserto: `busca-smoke` (cartão, distância e milhar). Os juízes que não olham o `via` podem fotografar antes do pronto: conferir um a um (lista no histórico).
 - Rodada 2: o plano dizia "FEITA", mas os passos 1 a 5 (conferir no código, conferir na tela, consertar, conferência junta, antes e depois ao dono) ficaram sem marca — conferir. Rodada 3: 1c.1 (estrela com corpo herda o afastamento sem a cessão: olhar Aldebaran e Próxima e decidir), 1c.5 (medir a hora e a data mais largas na alça) e a varredura de 361–389 px e 375 px do topo com texto grande.
 - Decisões que valem: a "luz perdida" junto aos planetas é a curva Neutral (não reabrir); juiz que compara fotos sem `shot` usa tolerância (o grão anda); a cobrança do a11y "troca de tier na tela no ato" conta como defeito do app até o congelamento abaixo sair.
 
