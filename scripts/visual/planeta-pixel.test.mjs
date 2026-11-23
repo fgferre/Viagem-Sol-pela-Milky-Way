@@ -28,6 +28,7 @@ import {
   lerDbgPlan,
   incertezaDoSintetico,
   manchaSaturada,
+  julgarTamanhos,
 } from './planeta-pixel.mjs';
 
 // Os casos da incerteza do centroide levam 1,3 a 2,3 s nesta bancada (22/11),
@@ -512,5 +513,22 @@ describe('o par nulo da vista real (M5b), pelo teto de ruído da casa (22/11)', 
 describe('a lista de vistas', () => {
   it('a régua mede as TRÊS profundas da D9', () => {
     expect(PROFUNDAS).toEqual(['ua500', 'ua150', 'ua40']);
+  });
+});
+
+describe('as três capturas de uma vista com tamanhos diferentes (rodada 4)', () => {
+  it('iguais: mede', () => {
+    expect(julgarTamanhos(['1778×1702', '1778×1702', '1778×1702']).acao).toBe('medir');
+  });
+
+  it('CONTROLE NEGATIVO: diferentes repetem UMA vez, e de novo diferentes saem NÃO MEDE com os três tamanhos', () => {
+    const tamanhos = ['1778×1702', '1784×1705', '1778×1702'];
+    const primeira = julgarTamanhos(tamanhos, 1);
+    expect(primeira.acao).toBe('repetir');
+    expect(primeira.texto).toContain('noplan2 1784×1705');
+    const segunda = julgarTamanhos(tamanhos, 2);
+    expect(segunda.acao).toBe('naoMede');
+    expect(segunda.texto).toMatch(/^NÃO MEDE/);
+    expect(segunda.texto).toContain('noplan 1778×1702, noplan2 1784×1705, plan 1778×1702');
   });
 });

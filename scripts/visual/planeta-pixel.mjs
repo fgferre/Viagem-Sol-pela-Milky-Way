@@ -154,6 +154,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import {
   GPU_FLAGS, lancarChrome, capturarCDP, julgarProntidao, APP_PADRAO, julgarTetoDoRuido, NAO_DETERMINISTICA, TETO_DO_RUIDO,
+  NAO_MEDE, SAIDA_NAO_MEDE,
 } from './chrome.mjs';
 import { VISTAS, PIN } from './ab-identidade.mjs';
 
@@ -1032,7 +1033,23 @@ ${manchaSaturada.toString()}
 // ------------------------------------------------------------
 // A LEVA
 // ------------------------------------------------------------
-async function medirVista(nome, query, porta) {
+/**
+ * AS TRÊS CAPTURAS DE UMA VISTA TÊM DE TER O MESMO TAMANHO, e o Chrome sem tela
+ * não o garante (22/11, rodada 4: noplan e plan 1778×1702, noplan2 1784×1705
+ * num lançamento em ~26 contados; não reproduzido em 20 seguidos; causa
+ * desconhecida). Diferindo, a vista é repetida UMA vez; diferindo de novo, ela
+ * sai NÃO MEDE nomeada (saída 2), nunca trava o juiz. O tamanho segue sendo o da
+ * janela com a moldura: fixar a área (override) mudaria a geometria de todos.
+ */
+export function julgarTamanhos([noplan, noplan2, plan], tentativa = 1) {
+  if (noplan === noplan2 && noplan === plan) return { acao: 'medir' };
+  const texto = `tamanhos diferentes nas três capturas (noplan ${noplan}, noplan2 ${noplan2}, plan ${plan})`;
+  return tentativa === 1
+    ? { acao: 'repetir', texto: `${texto} — repetindo a vista uma vez` }
+    : { acao: 'naoMede', texto: `${NAO_MEDE}: ${texto}, de novo na repetição` };
+}
+
+async function medirVista(nome, query, porta, tentativa = 1) {
   const capturas = resolve(ROOT, 'capturas');
   mkdirSync(capturas, { recursive: true });
   const arquivo = (lado) => resolve(capturas, `regua3-${nome}-${lado}.png`);
@@ -1052,6 +1069,9 @@ async function medirVista(nome, query, porta) {
   });
   writeFileSync(arquivo('plan'), com.png);
   vias.push(com.via);
+  const tamanho = (png) => `${png.readUInt32BE(16)}×${png.readUInt32BE(20)}`;
+  const tamanhos = julgarTamanhos([sem.png, sem2.png, com.png].map(tamanho), tentativa);
+  if (tamanhos.acao !== 'medir') return { nome, vias, tamanhos };
 
   if (!com.linhas.length) throw new Error(`${nome}: o ?dbgplan não falou — a régua 2 não tem o que ler`);
   // O MESMO QUADRO: a câmera é fixa (`?pos=`) e as posições são estáticas
@@ -1162,10 +1182,23 @@ async function principal() {
   const vias = [];
   let luaMedida = false;
   let erro = false;
+  const naoMedidas = [];
   let porta = 9800 + (process.pid % 100) * 4;
   for (const [nome, query] of lista) {
-    const medida = await medirVista(nome, query, porta);
+    let medida = await medirVista(nome, query, porta);
     porta += 4;
+    if (medida.tamanhos?.acao === 'repetir') {
+      console.log(`\n  ${nome}: ${medida.tamanhos.texto}`);
+      vias.push(...medida.vias);
+      medida = await medirVista(nome, query, porta, 2);
+      porta += 4;
+    }
+    if (medida.tamanhos) {
+      console.log(`\n  ${nome}: ${medida.tamanhos.texto}`);
+      vias.push(...medida.vias);
+      naoMedidas.push(nome);
+      continue;
+    }
     imprimir(medida);
     if (medida.juizo.linhas.some((l) => l.id === 'moon' && l.status === 'MEDIDO')) luaMedida = true;
     vias.push(...medida.vias);
@@ -1184,7 +1217,7 @@ async function principal() {
   }
 
   if (!luaMedida) console.log('\na Lua não é medida em nenhuma vista');
-  if (!luaMedida && lista.includes(PERTO_DA_TERRA)) {
+  if (!luaMedida && lista.includes(PERTO_DA_TERRA) && !naoMedidas.includes(PERTO_DA_TERRA[0])) {
     console.error(`  !! ${PERTO_DA_TERRA[0]}: a vista existe para medir a Lua, e ela não foi medida`);
     erro = true;
   }
@@ -1193,8 +1226,15 @@ async function principal() {
     vias, appUrl: process.env.APP_URL, fallbackOk: process.env.FALLBACK_OK === '1',
   });
   if (prontidao.mensagem) process.stderr.write(prontidao.mensagem);
-  console.log(erro ? '\n>>> RÉGUA 3 REPROVOU' : '\n>>> RÉGUA 3 OK');
-  if (erro || prontidao.erro) process.exit(1);
+  if (erro || prontidao.erro) {
+    console.log('\n>>> RÉGUA 3 REPROVOU');
+    process.exit(1);
+  }
+  if (naoMedidas.length) {
+    console.log(`\n>>> ${NAO_MEDE}: ${naoMedidas.join(', ')} — as outras vistas passaram`);
+    process.exit(SAIDA_NAO_MEDE);
+  }
+  console.log('\n>>> RÉGUA 3 OK');
 }
 
 // SÓ a invocação por linha de comando mede. `planeta-pixel.test.mjs` importa
