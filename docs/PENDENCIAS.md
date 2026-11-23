@@ -14,9 +14,13 @@ Ele disse *"Ainda não"* para publicar: esperar a palavra dele. A cópia vai por
 **Ambiente de trabalho (23/11):** a medição mostrou que o gasto de cada passo é o tamanho da conversa, e que duas
 conversas longas levaram 87 % dos tokens de 18 a 23/11. Por isso: uma tarefa por conversa, curta; coordenador que fica
 aberto por dias, não. O diagnóstico e o plano estão fora do repositório, em
-`C:\Users\fgfer\.claude\plans\plano-ambiente-agentes.md` (as decisões dele sobre o plano estão pendentes). Piloto em
-curso até 30/11: `autoCompactWindow` 300000 em `.claude/settings.json` (`ddc4840e`); falta ver numa conversa nova se o
-aplicativo respeita.
+`C:\Users\fgfer\.claude\plans\plano-ambiente-agentes.md`; as respostas dele (23/11) estão na seção 8. Rodada de
+execução é uma conversa que ele abre em Opus; cartão de sessão para coordenar, por padrão, não. Pilotos até 30/11:
+resumo em 300 mil (`autoCompactWindow` em `.claude/settings.json`; falta ver se o aplicativo respeita) e ajudante que
+para em 120 passos (`maxTurns` em `.claude/agents/worker.md`). Até 07/12: o `PLAN.md` só muda ao passar o bastão
+(frase do `AGENTS.md`) e conserto com causa e receita escritas vai para Sonnet (shader, navegador, câmera e conferência
+seguem em Opus). Fim do prazo: medir pela seção 6 do plano e manter ou desfazer. `ponytail` e "equipes de agentes"
+saíram da configuração global (ele não lembra de ter ligado). Codex e Antigravity: praticamente só auditam.
 
 **Como trabalhar (palavra dele, 22/11):** conferência proporcional à mudança. Mudança pequena = os testes do que foi
 tocado e uma foto. Juiz, só o que olha exatamente aquilo. Fila inteira de juízes e revisor só antes de publicar um lote

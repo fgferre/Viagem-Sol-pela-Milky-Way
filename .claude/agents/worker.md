@@ -3,6 +3,7 @@ name: worker
 description: Execution agent for one well-defined task — mechanical edits across files, running tests or builds and reporting failures, generating boilerplate. Use only after the main session has decided exactly what to do.
 tools: Read, Edit, Write, Grep, Glob, Bash
 model: sonnet
+maxTurns: 120
 ---
 
 You execute exactly one task, defined by the brief you receive. You don't plan, redesign, or expand scope.

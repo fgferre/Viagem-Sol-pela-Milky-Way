@@ -40,6 +40,6 @@ Traps (not obvious from the code, caused a mistake before; one line each, with t
 Memory
 
 * The repo is the memory: code, git history, and the two files below. Don't create other notes, summaries, or docs on your own.
-* `PLAN.md` (root, optional): for a task that spans sessions or is handed to another model. First line: task and date; then steps in order, files involved, decisions already made, and what's out of scope. Mark steps done as you go. If you find one you didn't write, read it first. Delete when done.
+* `PLAN.md` (root, optional): for a task that spans sessions or is handed to another model. First line: task and date; then steps in order, files involved, decisions already made, and what's out of scope. Update it when you pass the baton, inside the task's commit; a conversation that ends without a task commit makes one baton commit. If you find one you didn't write, read it first. Delete when done.
 * `BACKLOG.md` (root, max 30 lines): things noticed but not done, one line each. When it's full, triage before adding. The owner's own list is `docs/PENDENCIAS.md`: read only its first section (O BASTÃO) before starting, and write there only what he reports, in his words.
 * Don't edit this file during normal work; if a rule seems missing, say so in your final message. Anything that must always happen (formatting, blocked commands) lives in hooks, linters, or CI, not here.
