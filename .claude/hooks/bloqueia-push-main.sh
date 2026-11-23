@@ -34,7 +34,8 @@ import sys
 PERMITIDO = (
     "Permitido sem perguntar: 'git push origin main:backup' e "
     "'git push [-u] origin <ramo>' (ou 'HEAD:<ramo>') para qualquer ramo que "
-    "não seja main. Push na main publica o site; peça ao dono."
+    "não seja main; e 'git push origin --delete <ramo>' para ramo que não "
+    "seja main nem backup. Push na main publica o site; peça ao dono."
 )
 FORCA = {"-f", "--force", "--delete", "-d", "--force-if-includes"}
 # opções que não mudam o destino; qualquer outra (--all, --tags, --mirror,
@@ -123,6 +124,19 @@ def main():
         if nome_de(tokens[0]) == "git" and "push" in tokens:
             i = tokens.index("push")
             args = sem_redirecoes(tokens[i + 1:])
+            # APAGAR RAMO NO REMOTO (pedido do dono, 22/11/2026, para a faxina de
+            # ramos já consumidos): `git push <remoto> --delete <ramo>…` passa
+            # quando a única opção é o --delete e nenhum ramo é a main nem o backup.
+            if any(a in {"--delete", "-d"} for a in args):
+                opcoes = [a for a in args if a.startswith("-")]
+                ramos = [a for a in args if not a.startswith("-")][1:]
+                if (
+                    ramos
+                    and all(o in {"--delete", "-d"} for o in opcoes)
+                    and all(NOME_DE_REF.match(r) and r not in {"main", "backup"} and not r.endswith("/main") for r in ramos)
+                ):
+                    continue
+                bloquear(f"apagar ramo no remoto só com --delete sozinho e nunca a main nem o backup -> '{seg}'")
             if any(a in FORCA or a.startswith("--force-with-lease") for a in args):
                 bloquear(f"push forçado ou apagando ramo -> '{seg}'")
             if any(a.startswith("+") for a in args):
