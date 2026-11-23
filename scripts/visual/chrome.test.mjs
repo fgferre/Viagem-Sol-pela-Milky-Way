@@ -349,7 +349,12 @@ describe('esperarAssentar: o teto de 700 quadros é só do app SEM sinal (rodada
   // cada leitura anda 800 quadros e a cartografia já falou: o teto venceria na 2ª
   const sendDeQuadros = (captura) => {
     let f = 0;
-    return async () => ({ result: { value: JSON.stringify({ f: (f += 800), c: captura }) } });
+    const send = async () => {
+      send.leituras++;
+      return { result: { value: JSON.stringify({ f: (f += 800), c: captura }) } };
+    };
+    send.leituras = 0;
+    return send;
   };
 
   it('sem sinal (build de produção) sai pelo teto, via=quadros', async () => {
@@ -358,10 +363,11 @@ describe('esperarAssentar: o teto de 700 quadros é só do app SEM sinal (rodada
   });
 
   it('CONTROLE NEGATIVO: com o sinal presente e sem pronto, o teto de quadros não conta — estoura o prazo e diz por quê', async () => {
-    const espera = esperarAssentar({
-      send: sendDeQuadros({ fase: 'loading', pronto: false, quadros: 0 }), cartografia: () => true, teto: 0,
-    });
-    const erro = await espera.catch((e) => e);
+    // o prazo (250 ms) só vence depois da 2ª leitura (a espera entre leituras é 100 ms), e na 2ª os
+    // quadros já passaram do teto: tirar o `!c` da guarda faria esta espera sair por 'quadros'
+    const send = sendDeQuadros({ fase: 'loading', pronto: false, quadros: 0 });
+    const erro = await esperarAssentar({ send, cartografia: () => true, teto: 250 }).catch((e) => e);
+    expect(send.leituras).toBeGreaterThanOrEqual(2);
     expect(erro).toBeInstanceOf(PrazoSemPronto);
     expect(erro.message).toContain('o app deu sinal e o pronto não acendeu');
     expect(erro.assento.fase).toBe('loading');
