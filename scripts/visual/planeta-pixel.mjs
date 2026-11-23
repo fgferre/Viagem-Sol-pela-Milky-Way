@@ -148,7 +148,7 @@
 //             mancha no lugar errado, corpo que deveria acender e não acendeu,
 //             e luz que apareceu onde corpo nenhum foi previsto.
 // ============================================================
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -1074,7 +1074,17 @@ async function medirVista(nome, query, porta, tentativa = 1) {
   vias.push(com.via);
   const tamanho = (png) => `${png.readUInt32BE(16)}×${png.readUInt32BE(20)}`;
   const tamanhos = julgarTamanhos([sem.png, sem2.png, com.png].map(tamanho), tentativa);
-  if (tamanhos.acao !== 'medir') return { nome, vias, tamanhos };
+  if (tamanhos.acao !== 'medir') {
+    // a prova do tropeço (raro, causa desconhecida) não pode ser sobrescrita pela repetição: as três
+    // capturas desta tentativa saem do nome da vista para um nome só delas, com o instante
+    const quando = new Date().toISOString().replace(/[:.]/g, '-');
+    const guardadas = ['noplan', 'noplan2', 'plan'].map((lado) => {
+      const destino = resolve(capturas, `regua3-${nome}-${lado}-tamanhos-t${tentativa}-${quando}.png`);
+      renameSync(arquivo(lado), destino);
+      return destino;
+    });
+    return { nome, vias, tamanhos: { ...tamanhos, texto: `${tamanhos.texto} (capturas guardadas: ${guardadas.join(', ')})` } };
+  }
 
   if (!com.linhas.length) throw new Error(`${nome}: o ?dbgplan não falou — a régua 2 não tem o que ler`);
   // O MESMO QUADRO: a câmera é fixa (`?pos=`) e as posições são estáticas
@@ -1234,7 +1244,9 @@ async function principal() {
     process.exit(1);
   }
   if (naoMedidas.length) {
-    console.log(`\n>>> ${TAMANHOS_DIFERENTES}: ${naoMedidas.join(', ')} — as outras vistas passaram`);
+    const medidas = lista.length - naoMedidas.length;
+    console.log(`\n>>> ${TAMANHOS_DIFERENTES}: ${naoMedidas.join(', ')} — `
+      + (medidas ? `${medidas} outra(s) vista(s) medida(s), sem reprovação` : 'nenhuma outra vista foi medida'));
     process.exit(SAIDA_NAO_MEDE);
   }
   console.log('\n>>> RÉGUA 3 OK');
