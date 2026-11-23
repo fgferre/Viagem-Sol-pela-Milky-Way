@@ -4,10 +4,19 @@ Lista viva do que está aberto, nas palavras do dono. Leia só a seção O BAST�
 Item resolvido sai da lista e vira commit; a história de cada número fica no git (`git log --all --grep="(NNN)"`).
 Número é identidade, não posição: item novo entra no fim da sua seção. **Próximo número livre: 234.**
 
-## O BASTÃO — onde a rodada parou (22/11, noite) — O QUE ESTÁ PRONTO ESTÁ NO AR; FAXINA FEITA
+## O BASTÃO — onde a rodada parou (23/11) — UMA TAREFA POR CONVERSA; ABERTURA MAIS RÁPIDA GUARDADA, SEM PUBLICAR
 
-**No ar:** `origin/main` = `49df9c52` (22/11). O `main` local está à frente só por commits de arrumação (planos, trava).
-A cópia vai por `git push origin main:backup`; push no `main` publica o site e só sai com a palavra dele.
+**No ar:** `origin/main` = `49df9c52` (22/11). O `main` local está à frente por arrumação e por UMA mudança do app:
+`07ac2c7b`, a abertura no Chrome do Windows de 26,4 para 19,2 s (medida em `capturas/abertura-windows/resultado.md`).
+Ele disse *"Ainda não"* para publicar: esperar a palavra dele. A cópia vai por `git push origin main:backup`; push no
+`main` publica o site.
+
+**Ambiente de trabalho (23/11):** a medição mostrou que o gasto de cada passo é o tamanho da conversa, e que duas
+conversas longas levaram 87 % dos tokens de 18 a 23/11. Por isso: uma tarefa por conversa, curta; coordenador que fica
+aberto por dias, não. O diagnóstico e o plano estão fora do repositório, em
+`C:\Users\fgfer\.claude\plans\plano-ambiente-agentes.md` (as decisões dele sobre o plano estão pendentes). Piloto em
+curso até 30/11: `autoCompactWindow` 300000 em `.claude/settings.json` (`ddc4840e`); falta ver numa conversa nova se o
+aplicativo respeita.
 
 **Como trabalhar (palavra dele, 22/11):** conferência proporcional à mudança. Mudança pequena = os testes do que foi
 tocado e uma foto. Juiz, só o que olha exatamente aquilo. Fila inteira de juízes e revisor só antes de publicar um lote
