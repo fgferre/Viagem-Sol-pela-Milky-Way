@@ -13,7 +13,7 @@
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import { describe, it, expect } from 'vitest';
-import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarCapaSair, flagsDoBinario, lancarChrome, julgarFolgaDoLimite, folgaDoLimiteGb, julgarTetoDoRuido, julgarDiferente, diferencaPorPixel, TETO_DO_RUIDO, semBarraNoFim, fotoTodaPreta, julgarFotoVazia, NAO_MEDE, SAIDA_NAO_MEDE } from './chrome.mjs';
+import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarAssentar, esperarCapaSair, flagsDoBinario, lancarChrome, julgarFolgaDoLimite, folgaDoLimiteGb, julgarTetoDoRuido, julgarDiferente, diferencaPorPixel, TETO_DO_RUIDO, semBarraNoFim, fotoTodaPreta, julgarFotoVazia, NAO_MEDE, SAIDA_NAO_MEDE } from './chrome.mjs';
 
 describe('o teto de ruído da foto (22/11)', () => {
   // a tela do par nulo do planeta-pixel (diagnóstico §1)
@@ -344,6 +344,26 @@ const sendDeCapa = (respostas) => {
   const fila = [...respostas];
   return async () => ({ result: { value: fila.length > 1 ? fila.shift() : fila[0] } });
 };
+
+describe('esperarAssentar: o teto de 700 quadros é só do app SEM sinal (rodada 4)', () => {
+  // cada leitura anda 800 quadros e a cartografia já falou: o teto venceria na 2ª
+  const sendDeQuadros = (captura) => {
+    let f = 0;
+    return async () => ({ result: { value: JSON.stringify({ f: (f += 800), c: captura }) } });
+  };
+
+  it('sem sinal (build de produção) sai pelo teto, via=quadros', async () => {
+    const r = await esperarAssentar({ send: sendDeQuadros(null), cartografia: () => true, teto: 5000 });
+    expect(r.via).toBe('quadros');
+  });
+
+  it('CONTROLE NEGATIVO: com o sinal presente e sem pronto, o teto de quadros não conta — estoura o prazo e diz por quê', async () => {
+    const espera = esperarAssentar({
+      send: sendDeQuadros({ fase: 'loading', pronto: false, quadros: 0 }), cartografia: () => true, teto: 0,
+    });
+    await expect(espera).rejects.toThrow('o app deu sinal e o pronto não acendeu');
+  });
+});
 
 describe('esperarCapaSair', () => {
   it('sem capa no documento: `ausente`, e o obturador não espera nada', async () => {

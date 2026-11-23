@@ -536,14 +536,18 @@ export async function esperarAssentar({ send, cartografia, quadros = 700, teto =
     if (c && c.pronto) {
       return { via: 'sinal', ms: Date.now() - t0, quadros: c.quadros, fase: c.fase };
     }
-    // o teto de segurança é o método antigo INTEIRO, não uma aproximação
-    if (base !== null && f - base > quadros) {
-      return { via: 'quadros', ms: Date.now() - t0, quadros: f - base, fase: c?.fase ?? null };
+    // o teto de segurança é o método antigo INTEIRO, não uma aproximação, e
+    // é a saída do app SEM sinal (build de produção, versão anterior ao
+    // sinal). Com o sinal presente quem decide é o `pronto`: no D3D11 o 1º
+    // quadro vem ~18–20 s depois do director, e os 700 quadros da tela de
+    // carga estouravam antes dele (`destravar/xxiii-foto-preta.md`, rodada 4)
+    if (!c && base !== null && f - base > quadros) {
+      return { via: 'quadros', ms: Date.now() - t0, quadros: f - base, fase: null };
     }
     if (Date.now() - t0 > teto) {
-      throw new Error(
-        `não assentou (cart=${cartografia()}, f=${f}, sinal=${c ? JSON.stringify(c) : 'ausente'})`
-      );
+      throw new Error(c
+        ? `não assentou: o app deu sinal e o pronto não acendeu em ${Math.round(teto / 1000)} s (sinal=${JSON.stringify(c)})`
+        : `não assentou (cart=${cartografia()}, f=${f}, sinal=ausente)`);
     }
     await dorme(100);
   }
