@@ -29,206 +29,40 @@ concluir que algo se perdeu. A memória do assistente fica no PC, fora deste rep
 **151. Ilustrações por IA para os seis corpos sem foto de superfície**
 (pedido dele, 03/09: *"fale os fatos conhecidos se não houver nenhuma
 textura para fornecer, explique qual o objeto e suas características para
-que o modelo crie o asset"*). Hígia, Palas, Haumea, Makemake, Éris e
-Quaoar: nenhuma sonda os visitou; hoje são procedurais (e Hígia usa um
-gráfico, item 150). Obra: um operário barato gera no ChatGPT do dono, pelo
-Chrome dele, um mapa por corpo a partir dos fatos conhecidos (tamanho,
-albedo, cor, crateras vistas de longe), nível casado com o albedo
-declarado, entra como fonte local, ficha confessa "ilustração por IA, não
-há foto". Pacote pronto no scratchpad da sessão; despacha depois do 149
-(um operário por vez, §12). Fecha o 150.
-- **FEITO em 03/09, à noite.** Um chat por corpo no ChatGPT do dono
-  (Chrome dele, receita do item 148), pedido só com os fatos publicados —
-  sem imagem de referência, para não ensinar a IA a copiar o gráfico
-  errado ou o cinza procedural. Seis mapas 1774×887, fonte LOCAL
-  (`scripts/data/atlas/fonte/<corpo>-ia.png`). NÍVEL casado ao albedo: um
-  passo novo do pipeline (`bake: 'ilustracao-ia'`, `baixa-texturas.mjs`)
-  mede a média do mapa em linear e escala por um ganho até bater no
-  albedo geométrico — Hígia 0,0296→×2,367→0,07; Palas 0,1991→×0,804→0,16;
-  Haumea 0,5744→×1,219→0,70; Makemake 0,2172→×3,683→0,80; Éris
-  0,8178→×1,101→0,90 (grampeado do medido 0,96); Quaoar 0,0570→×1,931→
-  0,11. `rochoso.ts`: as cinco saíram de `superficie: 'procedural'`
-  (agora usam mapa, como as irmãs); a tabela `ALBEDO_PROCEDURAL` ficou
-  sem leitor e saiu (§6) — os shaders procedurais continuam (testados em
-  `rochoso.test.ts`), só não são mais alcançados por nenhum corpo hoje.
-  Origem no manifesto credita a imagem ao autor (Felipe Ferreira, gerada
-  com IA); ficha confessa nas duas línguas que nada é medida. `data:verify`
-  verde, eslint limpo, `tsc -b` verde. Fotos
-  `capturas/item151-<corpo>-{antes,depois}.png` (higia, palas, haumea,
-  makemake, eris, quaoar) — o antes de Hígia mostra o gráfico do 150
-  (grade e "90°"/"180°" por cima), o antes dos outros cinco mostra o cinza
-  procedural liso; todas conferidas por olho (luz de um lado, sombra do
-  outro, tom coerente com o albedo). Fecha o 150.
-- **Sobra (auditoria do coordenador, §13):** o ramo `superficie: 'procedural'`
-  de `rochoso.ts` (dois shaders e o interruptor) ficou sem consumidor — nenhum
-  corpo o usa desde o 151; `rochoso.test.ts` ainda o exercita. Remover na
-  próxima passada em `rochoso.ts`, com o ajuste do teste na lista do §19.
-
-**149. Plutão e Caronte com mapa de 720 px sem detalhe** (censo de
-03/09, pergunta dele: *"tem mais algum corpo que precisa melhorar a
-textura?"*). Os mapas da NASA 3D têm 720×360 e detalhe zero acima disso; a
-New Horizons fotografou os dois a 300 m/px e a NASA/USGS publica os
-mosaicos globais (domínio público). Obra: trocar os dois pela fonte
-primária, reamostrada ao teto da casa, orientação conferida contra o mapa
-atual, origem/licença/confissão, `data:verify`, fotos. Delegado ao
-operário (Opus) em 03/09, à noite.
-- **FEITO em 03/09, à noite, nos dois.** Plutão pelo `PIA11707`, o mapa
-  global EM COR da Ralph/MVIC (5926×2963, domínio público NASA/APL/SwRI);
-  Caronte pelo `Charon_NewHorizons_Global_Mosaic_300m_Jul2017` do USGS
-  (12693×6347, um canal, reamostrado a 8192) — **não existe mapa global em
-  cor de Caronte**, e ele entra em cinza em vez de matiz inventado. Os dois
-  entram por URL, sem arquivo vendorizado. Os mapas que saíram eram
-  ANTERIORES ao sobrevoo de 2015: correlacionam 0,31 e 0,09 com os mosaicos
-  reais, ou seja não tinham geografia nenhuma (era o `2k_ceres_fictional`
-  outra vez, sem a confissão da fonte). Orientação decidida pela
-  georreferência do GeoTIFF, não por eles (Plutão gira 180°, Caronte 0° —
-  régua em `capturas/item149-orientacao.txt`). Confessado: o polo sul dos
-  dois estava em noite polar no sobrevoo, e 30 % (Plutão) e 34 % (Caronte)
-  do mapa entraram lisos com o tom médio do que a sonda viu; Caronte
-  confessa também que é pancromático. `data:verify` verde, eslint limpo.
-  Fotos `capturas/item149-{pluto,charon}-{antes,depois-v2}.png` e
-  `item149-pluto-sputnik.png` (meia rotação depois, para a Sputnik
-  Planitia aparecer).
+que o modelo crie o asset"*).
+- **Aberto:** o ramo `superficie: 'procedural'` de `rochoso.ts` (dois
+  shaders e o interruptor) ficou sem consumidor; remover na próxima passada
+  em `rochoso.ts`, com o ajuste de `rochoso.test.ts` na lista do §19.
 
 **150. Hígia entra na esfera com um GRÁFICO como textura** (censo de
-03/09): o "mapa" do ESO/Wikimedia é uma figura científica — metade preta,
-grade de latitude, números e barra de cores desenhados por cima. Não
-existe foto de superfície de Hígia. Obra mínima: sair o gráfico, entrar a
-superfície procedural declarada (como Palas), ficha confessando; a forma
-irregular do DAMIT (CC BY, já anotada no ASSETS) fica para depois, com o
-pipeline de malha. Depois do 149.
-- **FEITO em 03/09, à noite, pelo item 151**: o gráfico saiu; Hígia entra
-  com a ilustração por IA (`hygiea/map`), não com o procedural que este
-  item cogitava — texto e fotos no 151. A forma irregular do DAMIT segue
-  pendente, com o pipeline de malha.
+03/09).
+- **Aberto:** a forma irregular do DAMIT (CC BY, já anotada no ASSETS)
+  segue pendente, com o pipeline de malha.
 
 **148. As luas de Urano e Tritão com o hemisfério nunca visto
 reconstruído** (decisão dele, 03/09: *"eu quero"*; *"não quero montagem,
 use a que gerei"*; *"faça o uso do computador e acesse meu ChatGPT"*).
-- **FEITO em 03/09, à noite, nas seis.** O mapa inteiro de cada uma é a
-  imagem gerada por IA na conta dele: Miranda pela mão dele; Ariel,
-  Umbriel, Titânia, Oberon e Tritão geradas pelo Chrome dele com amostras
-  melhores (mosaicos de Schenk/LPI 2020 e o mapa NASA/LPI de Tritão a
-  600 m, vazio tapado em tom liso por `amostra-para-ia.mjs`). Celestia
-  medido e descartado (tom liso em 45–56 % e menos detalhe que a NASA 3D);
-  os mapas pintados do `atlas-orbital` sem origem não entram. Fontes locais
-  em `scripts/data/atlas/fonte/<lua>-ia.png`; ficha confessa "redesenho por
-  IA, nada é medida" nas duas línguas; `data:verify` verde. Fotos
-  `capturas/item148-<lua>-ia.png`. Fecha o **116** e o resto do **147**.
-  Espera a palavra dele sobre o visual; **lista do §19:** nada novo
-  (nenhum teste novo; a suíte cheia não rodou nesta janela).
+- **Aberto:** espera a palavra dele sobre o visual dos mapas gerados por IA.
 
 **147. "Precisamos revisar as luas de Urano... algo estranho está
-acontecendo."** (Palavras dele, 03/09.) Miranda, Ariel, Umbriel, Titânia
-e Oberon saem como um **disco preto** no degrau `lua` do Atlas (Tritão
-também — é o item 116, mesma causa); as duas mais distantes nem se
-distinguem do céu. Medido em 03/09 com a cena viva: a câmera está no lado
-do dia (70° do Sol), a luz chega certa, a textura está carregada — e o
-mapa é que é preto: **57–62 % de cada mapa da NASA 3D é preto puro**
-(hemisfério norte, que a Voyager 2 não viu em 1986; Tritão 80 %), e em
-2026 o Sol ilumina justamente o norte de Urano. Em `?jd=2446454.5`
-(a passagem da Voyager) o sul de Miranda aparece com a textura real e o
-norte é um buraco de borda dentada. Obra: preencher o vazio na linha de
-produção das texturas com o tom médio do hemisfério fotografado (o
-precedente do polo sul de Ceres), declarado na ficha; fotos antes/depois.
-- **FEITO em 03/09, espera a palavra dele.** `preencherVazioSemDado`
-  (lib-texturas.mjs, passo `preencher-vazio` da aquisição) tapa o vazio
-  GRANDE (vizinhança 15×15, >35 % sem dado, núcleo crescido meio raio)
-  com o tom médio do que foi fotografado; sombra de cratera fica. Os seis
-  mapas foram regerados (escada + webp + manifesto), `data:verify` verde,
-  a ficha confessa ("só o hemisfério sul foi fotografado…"). Fotos
-  `capturas/item147-<lua>-antes/depois.png` e a régua
-  `capturas/item147-vazio-dos-mapas.txt`. O que ele vê agora: as seis
-  luas cinzas e lisas no lado que nunca foi fotografado, com a textura
-  real onde há foto — se quiser relevo/crateras inventadas ali (o que o
+acontecendo."** (Palavras dele, 03/09.)
+- **Aberto:** espera a palavra dele. As luas saem cinzas e lisas no lado
+  nunca fotografado; se quiser relevo/crateras inventadas ali (o que o
   SpaceEngine faz), é obra nova e decisão dele.
 
 **145. "Porque não deixamos isso como um toggle então... se a pessoa
 quiser ela desliga isso, mas como eu não tenho hoje o toggle não consigo
 nem entender direito em tempo real qual é o impacto em performance e em
 qualidade visual."** (Palavras dele, 03/09, sobre o MSAA do item 144.)
-A gaveta **Avançado** do menu de gráficos — presets na frente,
-controles individuais atrás — tem TRÊS controles, cada um com o mesmo
-desenho: quatro estados começando em "Do preset", troca na hora sem
-recarregar, os quadros/s do próprio painel logo acima servindo de
-régua, e o rótulo do seletor de qualidade passando a dizer
-"Personalizado" quando qualquer um deles sai do preset.
-- **FEITO em 03/09** (MSAA) e ampliado no mesmo dia com a nebulosa e a
-  escala de resolução (*"pode adicionar também a nebulosa e a escala de
-  resolução no Avançado"*):
-  - **Suavização de bordas (MSAA)** — Do preset / Desligada / 2× / 4×.
-    Override no `Post` (`forcarAmostras`, que reaplica pelo mesmo
-    `aplicarAmostras` — é ele que dispõe os dois alvos e faz a troca
-    valer). Espelho `?msaa=`.
-  - **Nebulosa (raymarch)** — Do preset / Baixa / Média / Alta. Os três
-    níveis são os pares que os presets já usavam, agora numa tabela só
-    (`NEBULOSA_POR_NIVEL`, no engine: 30/0,35 · 44/0,5 · 56/0,5) que o
-    preset APONTA em vez de redigitar — os passos moravam no preset e a
-    escala era um ternário solto no Director. Override no Director
-    (`forcarNebulosa` → `aplicarNebulosa`, o mesmo caminho do
-    `onQuality`). Espelho `?nebula=`. `?nebsteps=` continua vencendo
-    tudo, dentro da própria `Nebula`: é bancada, não controle.
-  - **Escala de resolução** — Do preset / 50% / 75% / 100%, em fração
-    da densidade NATIVA da tela (100% = `devicePixelRatio`). Override no
-    Engine (`forcarEscala` → o mesmo `aplicarNitidez` do preset e do
-    vigia de DPR). Espelho `?escala=`.
-  Os três se publicam no `EstadoDaQualidade` e o selo declara os três
-  pelo estado VIVO, nunca pela presença da porta; a URL é ESPELHO —
-  escrita só fora do preset, apagada na volta. "Personalizado" sai de
-  `foraDoPreset`, que olha os três.
-- **Medido depois do conserto do 144** (Retina, cena conferida, modo
-  cru, Atlas 2560×1500 cinema 12,3 fps de partida): `?msaa=0` bate no
-  teto de 60 em 1200×900, a escala 50% é a alavanca maior; os fps que o
-  agente contou ao construir a gaveta eram de cena preta e não valem
-  (`capturas/desempenho-m1-03-09.txt`). Fotos em
-  `capturas/item145-ajustes-{gaveta,escala-50}.png`.
 - **Aberto:** próximos controles candidatos (população da galáxia,
   grão) e o orçamento de pixels / Auto aplicando na 1ª visita — decisão
   dele.
 
 **144. "O app está um pouco pesado nessa máquina."** (Palavras dele,
-03/09, ao trazer o relatório de desempenho de outra IA.) Medido no M1
-dele, Atlas de abertura, janela 2560×1500, modo cru do `gpu-profile`:
-**cinema 5,3–5,6 fps, alta 8,3, performance 24**; em janela 1200×900,
-cinema dá 19. Números e ablações em `capturas/desempenho-m1-03-09.txt`.
-- A causa maior é o **MSAA do item 120/F1** (31/08): o código de 24/08,
-  no mesmo Chrome e na mesma vista, faz 10,5 fps onde hoje faz 5,3, e o
-  filme (`?t=100`, 1200×900) 15,8 onde hoje faz 9,1 — com `?msaa=0`
-  o filme volta a 15,3. O preço não é a beira suavizada: é o composer
-  escrevendo QUATRO vezes no `renderTarget1` multiamostrado (cena, blend
-  do bloom, soma do `ClaraoDoCampo`, `OutputPass`), e o three resolve o
-  alvo de 15 MP ao fim de cada `render()`. Com os cobertores desligados o
-  MSAA custa 24 ms; com eles, 67 (37% do quadro).
-- Depois dele: a nebulosa (25–30%, `Nebula.render` sem uniform de tempo —
-  parada, o quadro é bit-idêntico e é recalculado a 60 Hz mesmo assim) e
-  os 4,02 M pontos da galáxia (16%; disco, brilho e poeira custam ~0).
-  Estrelas do catálogo, as 16 estrelas-herói, órbitas e nomes: abaixo da
-  resolução da medida.
-- Fora do MSAA, sobra +6 ms desde 24/08 no Atlas 1200×900 (33,4 → 27,6
-  fps com `?msaa=0`); Saturno S5 declarou +1,9; o resto não atribuído.
-- O instrumento por passe (timer query por draw) **mente no chip da
-  Apple**: apontava as 16 estrelas-herói como 41% do quadro e a ablação
-  deu zero. Ranking só por ablação em modo cru.
-**FEITO em 03/09 (duas obras, commit desta linha):** (1) o composer
-resolve o MSAA UMA vez — a cena cai num alvo multiamostrado próprio que
-COMPARTILHA a textura do `renderTarget1` (`CenaResolvidaUmaVez`), zero
-cópia; (3) a nebulosa congela com a câmera parada (`Nebula.render`,
-chave da câmera + `sujo` nos setters), bit-idêntica. Medido depois:
-Atlas 2560×1500 cinema **5,3 → 12,3 fps** (alta 8,3 → 18,3;
-performance 24 → 46,9); Atlas 1200×900 cinema 19 → 40,3; filme t=100
-dpr 1 9,1 → 15,0, dpr 2 9,8 → 12,1. Pixel: ≤ 1 nível em ≤ 0,02% dos pixels nas 4 sentinelas
-(ULP). **Regressão pega e consertada no mesmo dia:** em Retina o alvo
-da cena ficava com tamanho diferente do buffer do composer (textura
-compartilhada, redimensionamento transitório do `EffectComposer` com
-alvo próprio) — cena preta e um lençol cinza crescendo; agora o alvo
-sincroniza o tamanho com o destino a cada quadro e o composer nasce em
-px de CSS. Os fps em dpr 2 medidos antes do conserto eram de cena preta
-e foram substituídos. **Sobra:** o MSAA da própria cena ainda custa ~26 ms em 1200×900
-Retina (`?msaa=0` bate no teto de 60) — (2) MSAA só nas fases com linha
-de órbita (o filme não tem) segue **esperando a palavra dele**; (4) o
-orçamento de pixels e o menu de gráficos, **idem**. Fora desta obra:
-`npm run lint` está vermelho em `Spotlight.tsx` (react-refresh, vem do
-130/F1), não deste item.
+03/09, ao trazer o relatório de desempenho de outra IA.)
+- **Aberto, esperando a palavra dele:** (2) MSAA só nas fases com linha de
+  órbita (o filme não tem); (4) o orçamento de pixels e o menu de gráficos.
+  O MSAA da própria cena ainda custa ~26 ms em 1200×900 Retina.
 
 **114. O censo do sistema solar: todas as luas e os objetos interessantes.**
 Pedido do dono em 30/08, palavras dele: *"quero expandir nosso projeto
@@ -270,82 +104,13 @@ Saturno/luas e o afastamento final, ciência e unidades revisadas, gate
 visual e exibição completa aprovada pelo dono. *(Era a fila ativa do
 plano do cinema, arquivado — `git show 923dc20:docs/PLANO-CINEMA.md`.)*
 
-**229. Melhorar com IA a cor borrada e de baixa resolução do lado de trás.**
-Palavras dele, 02/10: *"acho que podemos enhance com AI tudo que estiver
-borrado ou com baixa resolucao para criar uma uniformidade e falar que foi
-baseado em todos esses dados como subsidio para a Ai gerar os assets que
-vamos usar.... o que acha? será que esse agente conseguiria fazer isso com a
-ajuda do chatgpt que gera imagens muito boas?"* Combinado na conversa:
-primeiro o relevo (item 144, ramo `relevo-inventado`), depois a cor, numa
-rodada própria — o ChatGPT dele pelo Chrome (com o sim dele antes de mandar
-qualquer imagem), guiado pela foto borrada, pelo mapa geológico e pelo
-relevo inventado, para a cor e a sombra não se desencontrarem; cuidados já
-conhecidos: emenda com a metade fotografada, polos (a IA estica), tamanho
-(montar por pedaços), tom igual ao da metade real (regra do 151).
-- **02/10, noite, ao ver as fotos do app com o relevo assado:** *"foto 4 de
-  caronte ficou um emenda reta estranha, como podemos resolver isso?"*;
-  medido: a linha é a borda do tapa-buraco do sul nunca fotografado no mapa
-  de COR (item 149), não o relevo. Palavra dele: *"hyperion nao tem esse
-  problema... quero que resolva de forma que fique lindo, com embasamento
-  cientifico, sem esse defeito e com relevo. como vc vai fazer é contigo..."*
-  EM OBRA no ramo `cor-inventada` (plano em `PLAN-COR.md`): transferência de
-  textura na esfera guiada pelo relevo inventado e pelo Sol assado das fotos
-  (medido: NNO, ~45° de elevação), pedaços da cor real do mesmo terreno,
-  tom de grande escala continuado da borda fotografada; a pintura por IA
-  fica de reserva, se a textura não convencer por foto.
-- **02/10, noite, por prancha:** o sul de Caronte — *"Sim, aprovado"*; o sul
-  de Plutão, entre três opções de gosto (leopardo, calma, serena) — *"C —
-  serena"* (fundo uniforme, crateras pela sombra do relevo, mosqueado de
-  albedo pela metade), que vale também como o grau de mosqueado do lado de
-  trás borrado na etapa seguinte.
-- **FEITO em 02–03/10 (ramo `cor-inventada`; no `main` em 03/10 com a
-  palavra dele, *"pode seguir com as fotos finais e o merge"*):** o sul
-  nunca fotografado dos dois corpos e o lado de trás borrado ganharam cor
-  inventada por transferência de textura na esfera, guiada pelo relevo
-  inventado e pelo Sol assado das fotos (medido), com pedaços da cor real
-  do mesmo terreno e de tom parecido, o tom de grande escala continuado da
-  borda fotografada e, no lado de trás, a foto mantida na escala em que a
-  sonda a resolveu (só o detalhe mais fino é inventado); lado de trás
-  aprovado por prancha (*"Sim, os dois aprovados"*); gerador travado por
-  hash com a palavra dele; confissão nas duas línguas na ficha; a pintura
-  por IA não foi precisa. Sobras no `BACKLOG.md`. Prancha final do app:
-  `capturas/relevo-e-cor-final-app-prancha.jpg`.
-
 **230. Os assets fracos do Sistema Solar vão para a fila de melhoria.**
-Palavras dele, 05/10, ao decidir o roteiro da viagem solar (seis minutos,
-todos os lugares, Urano inclusive): *"vamos incluir todos, ainda vamos
-melhorar esse asset, se houver mais algum asset que precise ser melhorado
-também vamos colocar isso no pipeline"*. O inventário de 05/10 (feito para
-o roteiro) aponta, do mais fraco ao menos: Urano (mapa derivado, sem feições; os anéis
-SÃO desenhados, tênues — visto no Ato IV em 06/10), Netuno (mapa derivado),
-Vesta e Deimos (elipsoides sem forma), Tritão (metade reconstruída por IA
-sobre a Voyager 2), Ariel (norte inventado), Titã (só a névoa, 720×360),
-Vênus (só o topo das nuvens — correto visto de fora; a superfície é radar),
-Jápeto (altura sintética na crista; a crista real é o que o filme mostra).
-Acrescentada em 05/10, vista na prova do Ato II do filme solar: Europa (o
-mapa é monocromático — as rachaduras saem pretas, não avermelhadas).
-Jápeto, visto no Ato III (05/10): o relevo sintético desenha a crista do
-equador de 332°L a 136°L, meia volta fora do lugar da crista real da foto
-(227–303°L); em 1º/01 a real estaria no lado do dia (ponto subsolar a
-9,2°S 244,7°L) e a desenhada cai na noite — o filme mostra as duas caras e
-deixa a crista como fato na legenda. Conserto provável: girar o mapa de
-altura 180° ou refazê-lo pela foto. **Decisão dele em 06/10: *"Priorizar
-Europa e Jápeto"* — os dois sobem para o topo desta fila.**
-Obra a desenhar quando chegar a vez, pela receita das rodadas de Plutão,
-Caronte e Hipérion (fonte com licença, extrapolação confessada, prova por
-foto); o filme solar (roteiro em `docs/ROTEIRO-VIAGEM-SOLAR.md`) é quem
-cobra a ordem. **FEITOS em 07/10 (ramo `europa-japeto`, `PLAN-EUROPA-JAPETO.md`):
-Europa (cor real inferida da Galileo sobre o mosaico USGS de 500 m, 4096 px,
-tom meio-termo dele) e Jápeto (relevo gerado: crista no lugar com 20 km,
-55 crateras com nome, as demais pela foto). Ficam na fila: Urano, Netuno,
-Vesta, Deimos, Tritão (pausado), Ariel, Titã, Vênus.**
-**Tritão sai da pausa (18/11).** Ele perguntou: *"Você poderia avaliar se Tritão está no padrão bom mesmo?"*.
-Olhado no app, não está: quase todo branco, pouco para ver, ao lado de Plutão a diferença é clara
-(`capturas/tritao/olhar/tritao-hoje-18-11-contra-plutao.jpg`). Resposta dele: *"Sim, na fila"*. É o próximo corpo,
-DEPOIS das duplicidades. Parte do ramo `tritao` (plano e leitor dos relevos medidos) e da segunda tentativa anotada
-nele, pela linha `completar-corpo`; os dados de outubro ficaram na máquina antiga e se baixam de novo com o sim dele.
-A régua é a de sempre: nenhuma vista pode sair pior que a de hoje, e ele decide pela prancha.
-(Vesta e Deimos saíram desta fila em 16/10, feitos.)
+Palavras dele, 05/10: *"vamos incluir todos, ainda vamos melhorar esse
+asset, se houver mais algum asset que precise ser melhorado também vamos
+colocar isso no pipeline"*; em 06/10: *"Priorizar Europa e Jápeto"*.
+- **Aberto, na fila:** Urano, Netuno, Ariel, Titã, Vênus e Tritão (próximo
+  corpo; ele disse *"Sim, na fila"* a *"Você poderia avaliar se Tritão está
+  no padrão bom mesmo?"*; ramo `tritao`, ele decide pela prancha).
 
 ## MÉDIA — afeta o produto, não salta aos olhos
 
@@ -375,55 +140,11 @@ relevo real onde houver mapa de altura.** Palavras dele, 03/09, ao encerrar:
 *"acabo de perceber outros objetos que estao com o mesmo problema, triton
 lua de netuno, parece ser um deles, quais outros? acho que temos que desfazer
 isso, mas nao nessa sessao... se tiver mapa de alturas aplicamos o relevo
-assim, senao deixamos sem o relevo."* Censo (mecanico, 03/09; tabela em
-scratchpad da sessão, resumo aqui): com o bump da cor LIGADO hoje — Fobos,
-Deimos, Ganimedes, Calisto, Miranda, Ariel, Umbriel, Titânia, Oberon, Tritão,
-Plutão, Caronte, Palas, Hígia, Haumea, Makemake, Éris, Quaoar (18 — desde
-01/10, 16: Plutão e Caronte ganharam o relevo real, abaixo).
-- **Relevo real pronto (aplicar como no 141):** Plutão e Caronte — DEM da
-  New Horizons (Schenk et al. 2018, USGS Astropedia, 300 m/px). CORRIGIDO
-  em 01/10 lendo os arquivos de verdade: o dado cobre ~45 % de Plutão
-  (o hemisfério do sobrevoo e a calota norte) e ~44 % de Caronte (o lado
-  voltado para Plutão) — "quase global" estava errado; é o mesmo caso de
-  Tritão, abaixo. Ele aprovou a obra em 01/10 (*"8 vamos fazer"*) e, para
-  a metade sem dado, escolheu o relevo INVENTADO com base científica
-  (*"vamos de B e deixamos especificado"*): primeiro o relevo real na
-  metade medida (bola lisa no resto, confessada); depois, rodada à parte,
-  campo de crateras e terrenos gerados por código na metade sem dado,
-  calibrados pelo lado medido e confessados na ficha como invenção — a
-  receita de Reia e Jápeto. Vale como regra para Tritão e os demais.
-  FEITA a primeira metade em 01/10: ele assou os dois mapas (guarda 0,31
-  contra −0,006 e 0,31 contra 0,09 na meia-volta, pico em 0°; 53,6 % e
-  54,4 % de texels sem dado saem lisos; inclinação RMS 7,3° e 8,5°, máxima
-  57° e 61°, sem muro na borda), `data:verify` verde, relevo ligado nos
-  dois (`NORMAL_MEDIDA`, bump da cor zerado), Marte idêntico por md5;
-  prancha `capturas/plutao-caronte-relevo-prancha.jpg`. Visto na prova e
-  não consertado: a planície Sputnik tem grão fino de ruído estéreo do
-  DEM (RMS ~5° numa planície que é lisa) e faixas de baixa amplitude
-  junto do vazio, só visíveis no mapa de diferença ×8. A segunda metade
-  (o inventado científico na metade sem dado) é rodada à parte. FEITA a
-  segunda metade em 02/10 (ramo `relevo-inventado`, à espera do merge e da
-  publicação): a metade sem dado ganhou relevo inventado por código — colcha
-  de retalhos do terreno medido do mesmo tipo, posta onde o mapa geológico
-  das fotos da aproximação põe cada terreno (Plutão: Stern et al. 2021;
-  Caronte: palpite guiado por Beyer et al. 2021), as crateras reais do
-  catálogo de Robbins no lugar (Simonelli com o perfil medido da Burney), as
-  menores sorteadas, as feições dos artigos traçadas, o sul por palpite; no
-  medido, emendas e dado ruim refeitos só no detalhe fino. Ele escolheu por
-  prancha completar o borrado e alisar a Sputnik (o grão de ruído saiu). O
-  gerador só grava o mapa com o hash aprovado, e a ficha confessa tudo nas
-  duas línguas. Prancha do app: `capturas/relevo-final-app-prancha.jpg`. A
-  cor borrada do lado de trás é o item 229.
-- **Real por FORMA (malha, não normais):** Fobos (Gaskell/SPC, PDS) e Deimos
-  (PDS) — caminho do esculpido com dado real, fase própria.
-- **Parcial, decisão dele:** Tritão tem DEM real (Schenk/LPI) em ~40 % da
-  superfície — aceitar meio globo sem dado, ou zerar.
-- **Sem dado (zerar o bump, como Europa/Io):** Ganimedes, Calisto, as cinco
-  luas de Urano, Palas, Hígia, Haumea, Makemake, Éris, Quaoar (13).
-Ordem sugerida: Plutão+Caronte → zerar os 13 → Fobos+Deimos → Tritão
-(com a palavra dele). NA FILA, sem obra nesta janela (ordem dele).
-
-**No mesmo item, sem obra (auditoria 03/09):** as mensagens de commit do 139b (`e24237f`, `c3b89a1`) dizem que o `nearPlanePc` sem o registro do anel dava **192,9 km** (192,858, medido no app), e o teste `corpos.test.ts` cobra **198,9 km** no mesmo caso ("APAGADO o registro do anel"). Os dois números são de palcos diferentes — o do app e o sintético do teste — e nenhum dos dois está errado; fica registrado para que a próxima leitura não trate a diferença como regressão. Nada a consertar.
+assim, senao deixamos sem o relevo."*
+- **Aberto:** Fobos e Deimos (relevo real por FORMA/malha, PDS); Tritão
+  (DEM real em ~40 %, decisão dele: meio globo sem dado ou zerar); zerar o
+  bump nos 13 sem dado (Ganimedes, Calisto, as cinco de Urano, Palas, Hígia,
+  Haumea, Makemake, Éris, Quaoar). NA FILA, sem obra (ordem dele).
 
 **12.** Nenhuma foto de referência mora entre 1 UA e 40 UA — onde a tela
 lava. A régua de luz e as vistas `ua2`…`ua2000` já enxergam a faixa.
@@ -462,45 +183,9 @@ morta. A UNIFICAÇÃO segue sendo a pauta 1 do NORTE — obra própria, que
 muda pixel e volta com foto para o dono a cada mudança.
 
 **116.** (Suspeita a medir, achada em 31/08 fechando o item 84.)
-`?foco=tritao` devolve o disco de Tritão **inteiramente escuro**, com e
-sem `?d=`, no jd pinado do gate (2460409.26) — silhueta preta sobre a
-Via Láctea. Pode ser geometria honesta (a noite virada para a câmera
-naquele instante) ou defeito do degrau `lua` de Netuno (enquadramento
-ou luz). Antes de tocar qualquer linha: par de capturas em dois jd
-diferentes e a conta do terminador (onde o Sol está em relação à
-câmera). A vista foi DESCARTADA do gate do 84 por isso; se for
-geometria honesta, vira candidata de novo com outro jd.
-- **Causa achada em 03/09 (item 147):** não é geometria nem o degrau —
-  o mapa de Tritão da NASA 3D é 80 % preto (só a faixa que a Voyager 2
-  fotografou tem dado). Preenchido junto com o 147 (FEITO em 03/09, espera a palavra dele).
-
-**VEREDITO (medido em 31/08 — luz e enquadramento INOCENTES; culpado é o
-MAPA).** A câmera está no lado do DIA: ângulo de fase 70,00° no jd
-pinado (67% do disco iluminado) — e é 70,00° exato porque
-`MAX_SOLAR_DEVIATION_GRAUS` de `direcaoDaLua`
-(`src/three/cinematic/enquadramento.ts`) grampeia ali. O censo das 13
-luas no mesmo jd dá fase ≤ 70° em TODAS (Lua 6,7° … Calisto/Ariel/
-Oberon/Caronte 70,0°): o degrau `lua` sempre escolhe o lado do dia, e
-Tritão não é azarado. Sem eclipse (Sol↔Netuno visto de Tritão: 34,7°,
-contra 4,0° de raio angular de Netuno), `uLuzGanho`=1 e `uEclipseAtivo`=0
-como em Ganimedes. O preto é a TEXTURA: `public/textures/atlas/triton/
-map.webp` é mosaico parcial da Voyager 2 com **76,0% da área esférica em
-preto puro** (Ganimedes: 0,16%), e o shader usa o mapa como albedo cru
-(`albedo = texture2D(uMapaDia, vUv)` em `ROCHOSO_LS_FRAG`/`LAMBERT`,
-`src/three/world/corpos/rochoso.ts`) — albedo 0 × luz = 0. Em 24
-instantes (uma órbita de 5,88 d e um ano) o sub-ponto da câmera cai
-SEMPRE no vazio do mosaico (amostra da textura: média 0, máx 0), porque
-Tritão é síncrono e o enquadramento vai para o lado oposto a Netuno.
-Prova por gesto do produto: 4 arrastos de 400 px no MESMO jd levam o
-sub-ponto a uv (0,634 / 0,829), dentro do trecho fotografado, e o miolo
-do quadro sobe de 2,7/4,3 para 11,8/101,6 — o globo acende
-(`capturas/item116-tritao-girado-4x400px.png`). **A família é maior que
-Tritão**: Titânia 68%, Ariel 66%, Oberon 66%, Umbriel 63%, Miranda 61%,
-Hígia 59%, Jápeto 30% de área preta no mapa. **Conserto proposto (não
-implementado):** preencher o vazio dos mosaicos parciais na origem —
-albedo médio do corpo, com a costura suavizada — em vez de servir preto
-puro como albedo. Fotos `capturas/item116-*.png`, rastro com ângulos,
-distâncias e a receita de recomputo em `capturas/item116-tritao.json`.
+`?foco=tritao` devolvia o disco de Tritão inteiramente escuro.
+- **Aberto:** causa achada (o mapa de Tritão era 80 % preto) e preenchida
+  junto com o 147, que espera a palavra dele.
 
 **211. Camada de fatos relacionais na ficha do objeto** (idade da luz, o
 Sol visto de lá, a Lua conferível hoje à noite). A ficha do objeto já é a
@@ -518,37 +203,12 @@ esperam) — decisão do dono pendente; libera o dado, não a busca.
 pousaria igual em Betelgeuse e em Proxima.
 
 **226. Hipérion com a forma medida e os poços da pintura: as melhorias que
-faltam, sem perder desempenho.** Palavras dele, 22/09, ao ver a quarta
-versão do piloto: *"ficou muito bom, não achou?"* e *"ok então, mas guarde
-essas melhorias no pipeline (quero fazê-las sem perder performance)"*. O
-piloto mora no ramo local `piloto-hiperion`; no app desde 23/09 (`3fc49d2`):
-forma medida no mapa de altura, poços nos mapas de altura e de normais,
-cor da pintura. Fotos: `capturas/hiperion-app-prancha-*.jpg`.
-- **FEITO em 29/09 (custo igual, medido no mesmo minuto: 4,06 ms contra
-  4,09 ms por quadro no desenho do Hipérion):** (1) a sombra de parede
-  dentro dos poços e da bacia — um MAPA DE HORIZONTE assado fora do app
-  (`gera-horizonte.mjs`: seis azimutes em dois mapas RGB de 2048×1024,
-  sem alfa porque o Safari do iPhone estraga a cor onde o alfa é zero);
-  na GPU são duas leituras de textura: a luz direta apaga onde o relevo
-  tapa o Sol, e a lanterna de leitura enfraquece onde o céu é fechado. As
-  meias-luas acesas no lado escuro (bordas de poço iluminadas depois do
-  terminador) somem; Mimas e Tétis ficam byte a byte iguais. (2) A borda
-  clara da bacia: a cor clareia com o declive da forma medida sobre o
-  elipsoide ajustado a ela (até +35 %; a constante `BRILHO_DA_ENCOSTA` na
-  receita, ele ajusta por foto). (3) A mancha em estrela do alto (texel
-  900,333) coberta por um pedaço limpo da própria pintura, da mesma
-  latitude. Pranchas: `capturas/hiperion-horizonte-*.jpg` (antes | depois
-  do horizonte) e `capturas/hiperion-final-*.jpg` (antes | horizonte |
-  final). Sem relação: o passe que tapa o clarão das estrelas segue sem o
-  relevo (`BACKLOG.md`).
-- **Aberto — dele:** (a) o interruptor dos poços — custaria um segundo jogo
-  de mapas (altura, normais, horizonte, ~5 MB) e um lugar na gaveta; hoje
-  os poços ficam sempre ligados, confessados na ficha; (b) o detalhe
-  colado na superfície: o grão de perto da casa (±6 %) já está ligado no
-  Hipérion, mas de muito perto (d = 1,2) a pintura fica macia — se
-  incomodar, um grão mais forte só para ele, sob o mesmo portão; (c) o
-  quanto a encosta clareia (0,35) e se as outras "flores" de raios da
-  pintura, menores, também saem.
+faltam, sem perder desempenho.** Palavras dele, 22/09: *"ficou muito bom, não
+achou?"* e *"ok então, mas guarde essas melhorias no pipeline (quero fazê-las
+sem perder performance)"*.
+- **Aberto — dele:** (a) interruptor dos poços (segundo jogo de mapas, ~5 MB);
+  (b) grão mais forte só para o Hipérion se de muito perto a pintura incomodar;
+  (c) quanto a encosta clareia (0,35) e se as outras "flores" de raios saem.
 
 **227. Todas as estrelas com a tecnologia do Sol.** Vontade dele, 23/09,
 para uma rodada futura: *"o Sol quando aproxima vira uma estrela procedural
