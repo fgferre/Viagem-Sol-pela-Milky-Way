@@ -7,8 +7,8 @@
 // para pegar — e o caso bom ao lado, no molde de `luz-do-quadro.test.mjs`.
 import { describe, it, expect } from 'vitest';
 import {
-  bootAteOSinal, contarDeclarados, esperarRepouso, julgarAssentarDoCiclo, julgarBoot, julgarFocos,
-  julgarHeapPorRodada, julgarRepouso, TETO_DO_BOOT_MS, TETO_DO_REPOUSO_MS,
+  contarDeclarados, esperarRepouso, falhasDoPronto, julgarAssentarDoCiclo, julgarBoot, julgarFocos,
+  julgarHeapPorRodada, julgarPrazoForaDoCiclo, julgarRepouso, TETO_DO_BOOT_MS, TETO_DO_REPOUSO_MS,
 } from './memoria.mjs';
 
 /** o protocolo dos focos como `memoria.mjs` o escreve, com as contas
@@ -209,15 +209,9 @@ describe('julgarBoot', () => {
     expect(julgarBoot({ via: 'sinal', ms: TETO_DO_BOOT_MS + 1 })).toBe(false);
   });
 
-  it('o sinal que não chega até o teto deixa o `via` dos quadros, e o veredito reprova', async () => {
-    let t = 0;
-    const boot = await bootAteOSinal({
-      ir: async () => { t = 20000; return { via: 'quadros' }; },
-      esperarSinal: async (resta) => { t += resta; throw new Error('teto'); },
-      agora: () => t,
-    });
-    expect(boot).toEqual({ via: 'quadros', ms: TETO_DO_BOOT_MS });
-    expect(julgarBoot(boot)).toBe(false);
+  it('CONTROLE NEGATIVO: o pronto morto fora dos ciclos (PrazoSemPronto no boot) sai nomeado com a etapa', () => {
+    expect(julgarPrazoForaDoCiclo('M5, boot', { ms: 180300, fase: 'loading' }))
+      .toBe("o pronto não acendeu em M5, boot (o app deu sinal e o prazo de 180 s estourou, fase 'loading')");
   });
 });
 
@@ -229,6 +223,11 @@ describe('o pronto e o repouso dos ciclos', () => {
     expect(j.texto).toBe("o pronto não acendeu no ciclo 2 (entrar: o app deu sinal e o prazo de 180 s estourou, fase 'intro')");
     expect(julgarAssentarDoCiclo({ ciclo: 2, passo: 'entrar', via: 'quadros', ms: 70000, fase: null }).ok).toBe(true);
     expect(julgarAssentarDoCiclo({ ciclo: 2, passo: 'entrar', via: 'sinal', ms: 1100, fase: 'atlas' }).ok).toBe(true);
+    // a lista que os dois braços E o M5 cobram: só as falhas, com o texto
+    expect(falhasDoPronto([
+      { ciclo: 1, passo: 'partir', via: 'sinal', ms: 900, fase: 'intro' },
+      { ciclo: 2, passo: 'entrar', prazo },
+    ])).toEqual([j.texto]);
   });
 
   /** o relógio e os quadros andam a cada espera; `leituras` dá o estado por tempo */

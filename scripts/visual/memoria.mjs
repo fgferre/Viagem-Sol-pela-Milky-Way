@@ -131,7 +131,7 @@
 // pedido é escolha explícita) e o SINAL de prontidão do próprio app no
 // lugar de espera cega.
 import { pathToFileURL } from 'node:url';
-import { abrirSessao, APP_PADRAO, dorme, esperarAssentar, esperarCapaSair, PrazoSemPronto } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, dorme, esperarCapaSair, PrazoSemPronto } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const JANELA = process.env.JANELA || '1200x900';
@@ -160,28 +160,14 @@ const JD_PINADO = 2460409.26395835;
 const BOOT = `atlas=1&jd=${JD_PINADO}&q=${TIER}`;
 /**
  * O TETO DO BOOT É DE TEMPO, NÃO DE QUADROS (21/11/2026). A carga a frio
- * leva ~34 s no Direct3D 11 desta máquina, e os 700 quadros do `ir()`
- * (`chrome.mjs`) venciam aos ~20 s, antes do sinal: o juiz reprovava um
- * boot que só era lento. O `ir()` continua o mesmo; se ele desiste pelos
- * quadros, a espera segue SÓ pelo sinal até 90 s contados do `navigate`.
- * Sinal que não chega em 90 s fica `via=quadros` e reprova como antes.
+ * leva ~34 s no Direct3D 11 desta máquina. Desde a rodada 4 o `ir()` espera o
+ * pronto pelo sinal (o teto de 700 quadros é só do app sem sinal), e o boot
+ * reprova nomeado em três casos: pelo sinal depois de 90 s contados do
+ * `navigate`; por `via=quadros` (app sem `__director`, build de produção); ou
+ * pelo pronto que não acende no prazo do `ir()` (`PrazoSemPronto`, nomeado
+ * no fim por `julgarPrazoForaDoCiclo`, com a etapa).
  */
 export const TETO_DO_BOOT_MS = 90000;
-export async function bootAteOSinal({ ir, esperarSinal, teto = TETO_DO_BOOT_MS, agora = Date.now }) {
-  const t0 = agora();
-  let r = await ir();
-  if (r.via !== 'sinal') {
-    const resta = teto - (agora() - t0);
-    if (resta > 0) {
-      try {
-        r = await esperarSinal(resta);
-      } catch {
-        // o teto venceu sem sinal: fica o `via` do `ir()`, e o veredito reprova
-      }
-    }
-  }
-  return { ...r, ms: agora() - t0 };
-}
 /** O VEREDITO DO BOOT: assentou pelo SINAL do app, dentro do teto de tempo. */
 export function julgarBoot({ via, ms }, teto = TETO_DO_BOOT_MS) {
   return via === 'sinal' && ms <= teto;
@@ -204,6 +190,21 @@ export function julgarAssentarDoCiclo({ ciclo, passo, via, ms, fase, prazo = nul
     };
   }
   return { ok: true, texto: `ciclo ${ciclo}, ${passo}: assentou por via=${via} em ${(ms / 1000).toFixed(1)} s, fase '${fase ?? '—'}'` };
+}
+
+/** As falhas de pronto de uma lista de assentar dos ciclos (os dois braços e o M5). */
+export function falhasDoPronto(assentos) {
+  return assentos.map(julgarAssentarDoCiclo).filter((j) => !j.ok).map((j) => j.texto);
+}
+
+/**
+ * O PRONTO MORTO FORA DOS CICLOS (boot, estreias, trocas de tier, focos,
+ * passeio): o `PrazoSemPronto` que escapa do apanhador por ciclo termina no
+ * `principal()` como falha nomeada, com a etapa em que o juiz estava.
+ */
+export function julgarPrazoForaDoCiclo(etapa, { ms, fase }) {
+  return `o pronto não acendeu em ${etapa} (o app deu sinal e o prazo de ${(ms / 1000).toFixed(0)} s`
+    + ` estourou, fase '${fase ?? '—'}')`;
 }
 
 /**
@@ -566,6 +567,10 @@ async function principal() {
   if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu em ${APP}`);
 
   const sessao = await abrirSessao({ janela: JANELA, app: APP, prefixo: 'memoria' });
+  // ONDE O JUIZ ESTÁ: é o nome que o `PrazoSemPronto` fora dos ciclos leva ao resumo
+  let braco = 'protocolo';
+  let etapa = 'início';
+  const onde = (passo) => { etapa = `${braco}, ${passo}`; };
   try {
     // domínio extra do CDP, uma vez por sessão (sobrevive à navegação)
     await sessao.send('HeapProfiler.enable');
@@ -695,6 +700,7 @@ async function principal() {
      *    subir, porque é o primeiro quadro desenhado que registra.
      */
     const estrearOEpisodico = async () => {
+      onde('estreia do episódico');
       const conta = () =>
         sessao.js('window.__director.engine.renderer.info.memory.geometries');
       const antes = await conta();
@@ -753,6 +759,7 @@ async function principal() {
      * e o MESMO caminho do bloco, e o que se desfaz é só o degrau.
      */
     const estrearOFoco = async (id) => {
+      onde(`estreia do foco ${id}`);
       const conta = () =>
         sessao.js('window.__director.engine.renderer.info.memory.geometries');
       const antes = await conta();
@@ -790,6 +797,8 @@ async function principal() {
      * não só as marcas daqui — o pico de uma sessão é o da sessão.
      */
     const passeio = async (picoDoProtocolo) => {
+      braco = 'passeio';
+      onde(`foco ${PASSEIO[0]} e volta`);
       const texels = async () => (await sessao.js(MEDIR_TEXELS)).MiB;
       const pedidos = () => pedidosDoCorpo(PASSEIO[0]);
       const focar = async (id) => {
@@ -835,13 +844,9 @@ async function principal() {
     };
 
     const protocolo = async ({ sabotar, ciclos, trocas, focos }) => {
-      const boot = await bootAteOSinal({
-        ir: () => sessao.ir(BOOT),
-        // cartografia que nunca acende: sem base de quadros, a espera só
-        // termina pelo sinal ou pelo teto de tempo
-        esperarSinal: (teto) =>
-          esperarAssentar({ send: sessao.send, cartografia: () => false, teto }),
-      });
+      onde('boot');
+      const t0Boot = Date.now();
+      const boot = { ...(await sessao.ir(BOOT)), ms: Date.now() - t0Boot };
       const fase = await sessao.js('window.__director.captura.fase');
       if (fase !== 'atlas') throw new Error(`boot não abriu no Atlas (fase '${fase}')`);
       // A AMOSTRA DO BOOT ESPERA A CAPA SAIR (13/11/2026). A tela de carga
@@ -895,6 +900,7 @@ async function principal() {
         // a ida é sempre a 'performance' e a VOLTA é ao tier da medida —
         // com TIER=cinema os focos são medidos onde os texels dobram
         for (const q of ['performance', TIER]) {
+          onde(`troca de tier ${t} (${q})`);
           await sessao.js(`window.__director.setQuality('${q}')`);
           await sessao.assentar();
           mundos.push(await sessao.js('window.__director.captura.tierDoMundo'));
@@ -908,6 +914,7 @@ async function principal() {
       // ANTES dela e depois da última troca de tier.
       if (!focos.length) return { boot, amostras, mundos, assentos, repousos };
       const focar = async (id) => {
+        onde(`foco ${id}`);
         await sessao.js(`window.__director.focarNoCorpo('${id}')`);
         await sessao.assentar();
       };
@@ -1015,8 +1022,8 @@ async function principal() {
     /** O pronto e o repouso dos ciclos, os MESMOS nos dois braços: cada
      *  falha sai com o nome dela. */
     const conferirCiclos = ({ assentos, repousos }) => {
-      const ruins = assentos.map(julgarAssentarDoCiclo).filter((j) => !j.ok);
-      if (ruins.length) for (const j of ruins) conferir(false, j.texto);
+      const ruins = falhasDoPronto(assentos);
+      if (ruins.length) for (const texto of ruins) conferir(false, texto);
       else conferir(true, `o pronto acendeu pelo sinal do app nos ${assentos.length} assentar dos ciclos`);
       const parados = repousos.map((r) => julgarRepouso(r)).filter((j) => !j.ok);
       if (parados.length) for (const j of parados) conferir(false, j.texto);
@@ -1044,6 +1051,7 @@ async function principal() {
     if (SABOTAGEM) {
       // ---- o protocolo inteiro, sabidamente vazado ---------------------
       process.stdout.write('MODO --sabotagem: o veredito abaixo TEM de reprovar.\n\n');
+      braco = 'sabotagem';
       const sabotado = await protocolo({
         sabotar: true, ciclos: CICLOS, trocas: TROCAS, focos: FOCOS,
       });
@@ -1165,8 +1173,11 @@ async function principal() {
           + 'if(e.startTime>=window.__marca)window.__longs.push(Math.round(e.duration));'
           + '}).observe({entryTypes:["longtask"]});',
       });
+      braco = 'troca medida';
+      onde('boot');
       await sessao.ir(BOOT);
       for (const q of ['cinema', 'alta']) {
+        onde(q);
         await sessao.js('window.__longs=[];window.__marca=performance.now();'
           + `window.__t0=performance.now();window.__director.setQuality('${q}')`);
         await sessao.assentar();
@@ -1187,7 +1198,11 @@ async function principal() {
       // verdade. Os mesmos medidores do veredito têm de acusar: textures
       // sobe 1 por ciclo, heap sobe 16 MB por ciclo. Medidor que não vê o
       // vazamento que o juiz mesmo injetou reprova o JUIZ.
+      braco = 'M5';
       const m5 = await protocolo({ sabotar: true, ciclos: 2, trocas: 0, focos: [] });
+      // o pronto dos ciclos do M5 também é cobrado: sem isto, um PrazoSemPronto num partir/entrar
+      // do M5 virava só linha de andamento, e a corrida podia terminar verde
+      for (const texto of falhasDoPronto(m5.assentos)) conferir(false, `M5: ${texto}`);
       const vm5 = julgar(m5.amostras, declarados);
       const heapM5 =
         m5.amostras[m5.amostras.length - 1].heap - m5.amostras[0].heap;
@@ -1211,6 +1226,11 @@ async function principal() {
         `M5: a espera do repouso ACUSA o worker vazado (${acusou ? julgarRepouso(acusou).texto : 'nenhum ciclo venceu o prazo'})`
       );
     }
+  } catch (e) {
+    // o pronto morto FORA dos ciclos (que têm apanhador próprio) acaba aqui, nomeado no resumo
+    // e com saída 1; o resto relança
+    if (!(e instanceof PrazoSemPronto)) throw e;
+    conferir(false, julgarPrazoForaDoCiclo(etapa, e.assento));
   } finally {
     sessao.fechar();
   }
