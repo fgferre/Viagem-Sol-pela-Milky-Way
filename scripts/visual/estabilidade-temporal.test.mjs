@@ -808,6 +808,12 @@ describe('a foto toda preta NÃO MEDE — nunca passa (22/11)', () => {
     expect(medida.naoMede).toBe(null);
     expect(julgarCorrida([medida]).passa).toBe(true);
   });
+
+  it('CONTROLE NEGATIVO: a reversão cuja fronteiraSol não foi medida NÃO MEDE, e diz de quem depende', () => {
+    const v = julgarFamilia({ nome: 'reversao', semDependencia: 'fronteiraSol' });
+    expect(v.naoMede).toBe('reversao: depende da fronteiraSol, que não foi medida');
+    expect(julgarCorrida([v]).passa).toBe(false);
+  });
 });
 
 describe('o que o juiz SUSPENDE em vez de reprovar', () => {

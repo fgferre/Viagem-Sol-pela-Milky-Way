@@ -974,7 +974,7 @@ export function casarFontes({
  * veredito: sai NÃO MEDE (`naoMede`), nunca passa. Nem a família em que o app
  * deu sinal e o pronto não acendeu no prazo (`prazo`, de `PrazoSemPronto`).
  */
-export function julgarFamilia({ nome, passos = [], piso = null, altura = null, prazo = null }) {
+export function julgarFamilia({ nome, passos = [], piso = null, altura = null, prazo = null, semDependencia = null }) {
   const pisoResiduo = piso ? piso.residuoMedio : 0;
   const pisoBanda = piso ? piso.bandaAlta : 0;
   const erros = [];
@@ -1083,6 +1083,10 @@ export function julgarFamilia({ nome, passos = [], piso = null, altura = null, p
   if (prazo) {
     naoMede = `${nome}: o app deu sinal e o pronto não acendeu em ${(prazo.ms / 1000).toFixed(0)} s`
       + ` (fase ${prazo.fase}) — a família não foi medida`;
+  } else if (semDependencia) {
+    // a reversão anda de volta da página que a fronteira deixou; sem a ida medida, a volta mediria
+    // uma página não pronta ou uma volta sem ida
+    naoMede = `${nome}: depende da ${semDependencia}, que não foi medida`;
   } else if (pretos) {
     const fotos = passos.length + 1 + (piso?.pontas ? 2 : 0);
     const caladas = erros.length - (descalibrada ? 1 : 0);
@@ -1626,6 +1630,7 @@ async function correrFamilias(alvos) {
     // (a banda é lida na primeira família que a usa, dentro do `try` dela: um
     // prazo estourado na leitura é NÃO MEDE dessa família, não do juiz)
     let banda = null;
+    let fronteiraMedida = false;
     const lerBanda = async () => {
       await s.ir('pos=0,0,0.00001&look=0,0,0&q=cinema&noorbitas=1');
       await s.js(SO_A_CENA);
@@ -1642,10 +1647,18 @@ async function correrFamilias(alvos) {
       try {
         if ((nome === 'fronteiraSol' || nome === 'reversao') && !banda) await lerBanda();
         if (nome === 'aproxSol') r = await familiaAproxSol(s);
-        else if (nome === 'fronteiraSol') r = await familiaFronteiraSol(s, banda);
-        else if (nome === 'reversao') {
-          if (!alvos.includes('fronteiraSol')) await familiaFronteiraSol(s, banda);
-          r = await familiaReversao(s, banda);
+        else if (nome === 'fronteiraSol') {
+          r = await familiaFronteiraSol(s, banda);
+          fronteiraMedida = true;
+        } else if (nome === 'reversao') {
+          if (!alvos.includes('fronteiraSol')) {
+            await familiaFronteiraSol(s, banda);
+            fronteiraMedida = true;
+          }
+          // a reversão não navega: anda de volta a partir da página que a fronteira deixou
+          r = fronteiraMedida
+            ? await familiaReversao(s, banda)
+            : { nome, passos: [], piso: null, altura: null, semDependencia: 'fronteiraSol' };
         } else if (nome === 'pan') r = await familiaPan(s);
         else if (nome === 'fov') r = await familiaFov(s);
         else if (nome === 'aproxEstrela') r = await familiaAproxEstrela(s);
@@ -1658,7 +1671,8 @@ async function correrFamilias(alvos) {
       }
       r.segundos = (Date.now() - marca) / 1000;
       cruas.push(r);
-      if (r.prazo) continue;
+      if (r.semDependencia) console.log(`${nome.padEnd(15)} NÃO MEDE — depende da ${r.semDependencia}, que não foi medida`);
+      if (r.prazo || r.semDependencia) continue;
       const pior = r.passos.reduce((m, p) => Math.max(m, p.residuoMedio), 0);
       console.log(
         `${nome.padEnd(15)} ${String(r.passos.length).padStart(2)} passos  `
