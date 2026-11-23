@@ -1546,6 +1546,7 @@ export default function App() {
         onFechar={() => fecharGaveta('camadas')}
         escondidas={escondidas}
         onCamada={alternarCamada}
+        galaxiaViva={quality.galaxiaViva}
         celular={celular}
       />
 

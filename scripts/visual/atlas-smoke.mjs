@@ -818,8 +818,11 @@ async function principal() {
       .map((e) => e.textContent.trim())
   )`));
     // a conta SAI da tabela única (`N_CAMADAS`, lido de atlasConfig.ts).
-    // Pino decorado de 17/18/19 era a deriva que o item 99 nomeia.
-    conferir(camadas.length === N_CAMADAS, `a gaveta oferece ${camadas.length} camadas (tabela: ${N_CAMADAS})`);
+    // Pino decorado de 17/18/19 era a deriva que o item 99 nomeia. Menos
+    // as Lâminas do disco fora da galáxia clássica (decisão 5, 22/11).
+    const classica = await sessao.js("window.__director.galaxy?.caminhoNoPainel === 'classica'");
+    const naGaveta = N_CAMADAS - (classica ? 0 : 1);
+    conferir(camadas.length === naGaveta, `a gaveta oferece ${camadas.length} camadas (tabela: ${N_CAMADAS}, esperadas ${naGaveta})`);
     // AS TRÊS FAMÍLIAS, com a contagem que cada uma mostra: é o resumo do
     // grupo, e ele tem de bater com as caixas ligadas de verdade — um
     // número decorado seria a gaveta contando outra coisa que não a cena.
@@ -836,7 +839,7 @@ async function principal() {
     conferir(
       familias.length === 3
         && familias.every((f) => f.conta === `${f.ligadas}/${f.linhas}`)
-        && familias.reduce((n, f) => n + f.linhas, 0) === N_CAMADAS,
+        && familias.reduce((n, f) => n + f.linhas, 0) === naGaveta,
       `as três famílias e a contagem de cada uma — `
         + familias.map((f) => `${f.rotulo} (${f.conta})`).join(' · ')
     );

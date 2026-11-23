@@ -709,6 +709,7 @@ async function julgarGavetaDeCamadas(s, onde) {
     if (!d) return null;
     const linha = '.atlas-gaveta-linha';
     return {
+      classica: window.__director?.galaxy?.caminhoNoPainel === 'classica',
       caixas: d.querySelectorAll(linha + ' input[type=checkbox]').length,
       semNome: [...d.querySelectorAll(linha)]
         .filter((l) => !l.textContent.trim()).length,
@@ -726,13 +727,15 @@ async function julgarGavetaDeCamadas(s, onde) {
     conferir(false, `${onde} · camadas: a gaveta não abriu`);
     return;
   }
+  // as Lâminas do disco (`nodisc`) só aparecem na galáxia clássica (decisão 5, 22/11)
+  const esperadas = N_CAMADAS - (g.classica ? 0 : 1);
   conferir(
-    g.caixas === N_CAMADAS && g.semNome === 0,
-    `${onde} · camadas: ${g.caixas} caixas na gaveta, ${g.semNome} sem rótulo`
+    g.caixas === esperadas && g.semNome === 0,
+    `${onde} · camadas: ${g.caixas} caixas na gaveta (esperadas ${esperadas}), ${g.semNome} sem rótulo`
   );
   const soma = g.familias.reduce((n, f) => n + f.linhas, 0);
   conferir(
-    g.familias.length === 3 && soma === N_CAMADAS
+    g.familias.length === 3 && soma === esperadas
       && g.familias.every((f) => f.papel === 'group' && f.rotulo),
     `${onde} · camadas: três famílias repartem as ${soma}`
       + ` — ${g.familias.map((f) => f.rotulo || '(sem nome)').join(' · ')}`

@@ -32,6 +32,7 @@ import type { NomeDoIcone } from './Icone';
 import { estadoDoSelo, legendaDaProcedencia } from '../three/selo';
 import type { EstadoDaPoeira, EstadoDaVista } from '../three/selo';
 import type { EstadoDoTempo } from '../three/tempoDoAtlas';
+import type { CaminhoDaGalaxia } from '../three/core/engine';
 import {
   DEGRAUS_DE_TEMPO,
   formatarEtapa,
@@ -96,7 +97,20 @@ const ORDEM_GALAXIA_DEPOIS_DO_MESTRE: readonly string[] = [
   'nowrap',
 ];
 
-function camadasParaExibir(camadas: readonly Camada[]): readonly Camada[] {
+/**
+ * AS LÂMINAS SÓ EXISTEM NA CLÁSSICA (decisão 5 do dono, 22/11: "a caixa
+ * sai do painel enquanto a galáxia for a de partículas"). Nas partículas
+ * elas não acendem (`galaxy.ts`, `!soParticulas`), e a caixa era controle
+ * morto. O critério é o caminho VIVO (`galaxiaViva`, depois das quedas),
+ * não a URL: a clássica abre pelo controle da galáxia em Ajustes e é o
+ * último degrau da cadeia. A tabela, o selo, o Director e a porta
+ * `?nodisc=1` seguem intactos; só a gaveta deixa de mostrar a linha, e a
+ * contagem "ligadas/total" conta o que a gaveta mostra.
+ */
+const SO_NA_CLASSICA = 'nodisc';
+
+function camadasParaExibir(camadas: readonly Camada[], galaxiaViva: CaminhoDaGalaxia): readonly Camada[] {
+  if (galaxiaViva !== 'classica') camadas = camadas.filter((c) => c.flag !== SO_NA_CLASSICA);
   // A família é reconhecida pela sua camada-mestre, não pelo nome que
   // aparece na tela: o juiz `idioma.semSobra` proíbe literal acentuado
   // fora das tabelas de idioma, e o nome da família É um desses literais.
@@ -115,6 +129,7 @@ export function GavetaDeCamadas({
   onFechar,
   escondidas,
   onCamada,
+  galaxiaViva,
   celular = false,
 }: {
   aberta: boolean;
@@ -126,6 +141,8 @@ export function GavetaDeCamadas({
   onFechar: () => void;
   escondidas: ReadonlySet<string>;
   onCamada: (flag: string, ligar: boolean) => void;
+  /** a galáxia que ESTÁ desenhando — decide se as lâminas aparecem */
+  galaxiaViva: CaminhoDaGalaxia;
   /** alça de arrasto no cabeçalho (`CabecalhoDoPainel`) — só na folha do
    *  celular (Lote 2a, piloto do cabeçalho único, PLAN-UI.md §3.2) */
   celular?: boolean;
@@ -156,7 +173,8 @@ export function GavetaDeCamadas({
         rotuloFechar={t('atlas.fecharCamadas')}
         celular={celular}
       />
-      {CAMADAS_POR_FAMILIA.map(({ familia, camadas, previa }, i) => {
+      {CAMADAS_POR_FAMILIA.map(({ familia, camadas: todas, previa }, i) => {
+        const camadas = camadasParaExibir(todas, galaxiaViva);
         const ligadas = camadas.filter((c) => !escondidas.has(c.flag)).length;
         const expandida = familiaAberta === familia;
         const id = `atlas-camadas-familia-${i}`;
@@ -188,7 +206,7 @@ export function GavetaDeCamadas({
               </button>
             </h3>
             <div id={id} hidden={!expandida}>
-              {camadasParaExibir(camadas).map((c) => {
+              {camadas.map((c) => {
                 const ligada = !escondidas.has(c.flag);
                 return (
                   <label key={c.flag} className="atlas-gaveta-linha">
