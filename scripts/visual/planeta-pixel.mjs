@@ -1,9 +1,9 @@
 // Serve: lei — a luz dos planetas cai onde o ?dbgplan mandou, a ≤0,5 px + a incerteza do sintético, por dois estimadores
-// Custo: ~1,1 min as três vistas (0,4 min por vista)
+// Custo: ~1,5 min as quatro vistas (0,4 min por vista)
 // ============================================================
 // RÉGUA 3 da D10 (Onda 4) — O PIXEL.
 //
-//   node scripts/visual/planeta-pixel.mjs             # as 3 vistas profundas
+//   node scripts/visual/planeta-pixel.mjs             # as 3 vistas profundas e a terra01 (a Lua)
 //   node scripts/visual/planeta-pixel.mjs ua150       # uma só
 //   LIMIAR=2 node scripts/visual/planeta-pixel.mjs    # outro limiar de delta
 //
@@ -142,7 +142,8 @@
 // FUNDIDA-COM-TERRA  a Lua (0,0026 UA da Terra) a menos de LUA_FUNDIDA_PX da Terra, ou na
 //             mesma componente dela: é parte do MESMO ponto de luz. A Terra segue
 //             medida como se a Lua não existisse; a Lua não é medida. Declarado,
-//             não julgado. A 40 UA ou mais (as três profundas) ela fica a ~0,1 px.
+//             não julgado. Nas três profundas a Lua não tem posição (sem instante,
+//             fica no centro do Sol com pico 0); quem a mede é a `terra01`.
 // FORA-DA-TOLERÂNCIA / SEM-COMPONENTE / ÓRFÃ  são os três modos de REPROVAR:
 //             mancha no lugar errado, corpo que deveria acender e não acendeu,
 //             e luz que apareceu onde corpo nenhum foi previsto.
@@ -161,6 +162,22 @@ const APP = process.env.APP_URL || APP_PADRAO;
 
 /** As três vistas do domínio profundo (D9) — a lista vem do harness. */
 export const PROFUNDAS = ['ua500', 'ua150', 'ua40'];
+
+/**
+ * A VISTA PERTO DA TERRA (rodada 4, decisão 4 do dono, 22/11): a única em que
+ * a Lua é medida. Nas profundas não há Lua a medir: sem instante (`retrato`)
+ * o ponto dela fica no centro do Sol com pico 0. Aqui o `jd` é o da época do
+ * retrato (2026-01-01), que dá à Lua a efeméride viva, e a câmera fica a
+ * 0,1 UA da Terra, na normal do plano Sol–Terra–Lua, olhando para a Terra:
+ * Terra e Lua (0,0024 UA) são dois pontos separados, com disco abaixo da
+ * cessão, e o Sol a ~84° do eixo, fora do quadro. As coordenadas vêm da
+ * sonda `r4-laminas/sonda-terra-lua.mjs` (fora do git).
+ */
+export const PERTO_DA_TERRA = [
+  'terra01',
+  '?jd=2461041.5&pos=-7.70231349203e-7,0.00000450756852616,0.00000143205679956'
+    + '&look=-8.44942803724e-7,0.00000430478166891,0.00000186603836028&shot=2',
+];
 
 /**
  * O A/B da camada, com o MESMO binário dos dois lados. O lado LIGADO
@@ -1109,8 +1126,7 @@ function imprimir({ nome, dbg, r, juizo }) {
     );
   }
   const lua = juizo.linhas.find((l) => l.id === 'moon');
-  console.log(lua && lua.status === 'FUNDIDA-COM-TERRA'
-    ? '  Lua: fundida com a Terra, não medida' : '  Lua: medida');
+  console.log(lua && lua.status === 'MEDIDO' ? '  Lua: medida' : `  Lua: não medida (${lua ? lua.status : 'ausente'})`);
   if (juizo.orfas.length) {
     const longe = juizo.orfas.filter((o) => !o.halo);
     console.log(`  componentes sem dono: ${juizo.orfas.length}`
@@ -1139,7 +1155,8 @@ async function principal() {
   const ping = await fetch(APP).then((r) => r.text()).catch(() => '');
   if (!ping.includes('<div id="root"')) throw new Error(`dev server não respondeu em ${APP}`);
 
-  const lista = VISTAS.filter(([n]) => (so ? n === so : PROFUNDAS.includes(n)));
+  const lista = [...VISTAS, PERTO_DA_TERRA]
+    .filter(([n]) => (so ? n === so : [...PROFUNDAS, PERTO_DA_TERRA[0]].includes(n)));
   if (!lista.length) throw new Error(`vista desconhecida: ${so}`);
 
   const vias = [];
@@ -1150,7 +1167,7 @@ async function principal() {
     const medida = await medirVista(nome, query, porta);
     porta += 4;
     imprimir(medida);
-    if (medida.juizo.linhas.some((l) => l.id === 'moon' && l.status !== 'FUNDIDA-COM-TERRA')) luaMedida = true;
+    if (medida.juizo.linhas.some((l) => l.id === 'moon' && l.status === 'MEDIDO')) luaMedida = true;
     vias.push(...medida.vias);
     if (!julgarParNulo({ ...medida.r.nulo, total: medida.r.W * medida.r.H }).ok) erro = true;
     const descarte = julgarDescarteDoRuido({
@@ -1167,6 +1184,10 @@ async function principal() {
   }
 
   if (!luaMedida) console.log('\na Lua não é medida em nenhuma vista');
+  if (!luaMedida && lista.includes(PERTO_DA_TERRA)) {
+    console.error(`  !! ${PERTO_DA_TERRA[0]}: a vista existe para medir a Lua, e ela não foi medida`);
+    erro = true;
+  }
 
   const prontidao = julgarProntidao({
     vias, appUrl: process.env.APP_URL, fallbackOk: process.env.FALLBACK_OK === '1',
