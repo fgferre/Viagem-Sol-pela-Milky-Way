@@ -154,7 +154,7 @@ import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import {
   GPU_FLAGS, lancarChrome, capturarCDP, julgarProntidao, APP_PADRAO, julgarTetoDoRuido, NAO_DETERMINISTICA, TETO_DO_RUIDO,
-  NAO_MEDE, SAIDA_NAO_MEDE,
+  SAIDA_NAO_MEDE,
 } from './chrome.mjs';
 import { VISTAS, PIN } from './ab-identidade.mjs';
 
@@ -1033,6 +1033,9 @@ ${manchaSaturada.toString()}
 // ------------------------------------------------------------
 // A LEVA
 // ------------------------------------------------------------
+/** o rótulo diz o que foi VISTO, não uma causa: a captura não está vazia */
+export const TAMANHOS_DIFERENTES = 'NÃO MEDE (tamanhos diferentes)';
+
 /**
  * AS TRÊS CAPTURAS DE UMA VISTA TÊM DE TER O MESMO TAMANHO, e o Chrome sem tela
  * não o garante (22/11, rodada 4: noplan e plan 1778×1702, noplan2 1784×1705
@@ -1046,7 +1049,7 @@ export function julgarTamanhos([noplan, noplan2, plan], tentativa = 1) {
   const texto = `tamanhos diferentes nas três capturas (noplan ${noplan}, noplan2 ${noplan2}, plan ${plan})`;
   return tentativa === 1
     ? { acao: 'repetir', texto: `${texto} — repetindo a vista uma vez` }
-    : { acao: 'naoMede', texto: `${NAO_MEDE}: ${texto}, de novo na repetição` };
+    : { acao: 'naoMede', texto: `${TAMANHOS_DIFERENTES}: ${texto}, de novo na repetição` };
 }
 
 async function medirVista(nome, query, porta, tentativa = 1) {
@@ -1231,7 +1234,7 @@ async function principal() {
     process.exit(1);
   }
   if (naoMedidas.length) {
-    console.log(`\n>>> ${NAO_MEDE}: ${naoMedidas.join(', ')} — as outras vistas passaram`);
+    console.log(`\n>>> ${TAMANHOS_DIFERENTES}: ${naoMedidas.join(', ')} — as outras vistas passaram`);
     process.exit(SAIDA_NAO_MEDE);
   }
   console.log('\n>>> RÉGUA 3 OK');

@@ -528,7 +528,8 @@ describe('as três capturas de uma vista com tamanhos diferentes (rodada 4)', ()
     expect(primeira.texto).toContain('noplan2 1784×1705');
     const segunda = julgarTamanhos(tamanhos, 2);
     expect(segunda.acao).toBe('naoMede');
-    expect(segunda.texto).toMatch(/^NÃO MEDE/);
+    expect(segunda.texto.startsWith('NÃO MEDE (tamanhos diferentes): ')).toBe(true);
+    expect(segunda.texto).not.toContain('captura vazia');
     expect(segunda.texto).toContain('noplan 1778×1702, noplan2 1784×1705, plan 1778×1702');
   });
 });
