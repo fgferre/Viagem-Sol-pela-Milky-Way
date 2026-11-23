@@ -2181,6 +2181,32 @@ export class Director {
     this.dustPyramidManifesto = cartOn && galactic ? galactic.piramide ?? null : null;
     this.cartResolvido = true;
     this.tentarCarregarPoeira();
+    // O AQUECIMENTO COMEÇA CEDO (abertura a frio, 22/11): os programas que
+    // não dependem da galáxia (nebulosa, assado de Órion, buraco negro,
+    // pós) compilam nas threads do driver ENQUANTO o worker monta a carga —
+    // no D3D11 eram ~13 s de espera depois dela. O bloco do `shaders` lá
+    // embaixo não muda e os pede de novo: o mesmo programa vem do cache do
+    // three, e o material que mudar neste meio-tempo compila ali.
+    this.blackHole = new BlackHolePass();
+    this.blackHole.setQuality(this.engine.quality);
+    if (!this.shotMode) {
+      const { warm, warmRt, descartar } = montarCenaDeAquecimento({
+        comNormal: [
+          ...this.nebula.warmupMaterials,
+          ...materiaisDoAssadoDeOrion(this.engine.renderer),
+        ],
+        semNormal: [...this.blackHole.warmupMaterials, ...this.post.warmupMaterials],
+      });
+      // o alvo só conta no `compile()` síncrono do começo do compileAsync
+      // (é ali que a chave do programa é lida); a espera fica sem ele
+      const alvo = this.engine.renderer.getRenderTarget();
+      this.engine.renderer.setRenderTarget(warmRt);
+      // guardado em `warmup` desde já: o dispose espera por ele (ver abaixo)
+      this.warmup = this.engine.renderer
+        .compileAsync(warm, this.engine.camera)
+        .finally(descartar);
+      this.engine.renderer.setRenderTarget(alvo);
+    }
     // O CHECK DEPOIS DE CADA `stage` — e não só depois dos três awaits que
     // já o tinham. Cada `stage` cede a thread por um `setTimeout(0)`, e um
     // `dispose()` que caia nessa janela (Fast Refresh em dev, unmount no
@@ -2304,10 +2330,8 @@ export class Director {
     });
     this.engine.scene.add(this.wrappedStars.points);
     // Sagittarius A* — passe de pós que só liga perto do centro
-    // (custo ZERO desligado: o composer o pula; shader compila na
-    // primeira aproximação). Ver blackHole.ts.
-    this.blackHole = new BlackHolePass();
-    this.blackHole.setQuality(this.engine.quality);
+    // (custo ZERO desligado: o composer o pula). Nasce lá em cima, antes
+    // da carga, para o aquecimento cedo. Ver blackHole.ts.
     this.post.addBlackHole(this.blackHole);
     this.estrelasS = new EstrelasS();
     this.passeDasEstrelasS = this.post.addSobreOBuraco(this.estrelasS.cena, this.engine.camera, this.blackHole);
@@ -2440,6 +2464,7 @@ export class Director {
         this.warmup = Promise.all([
           this.engine.renderer.compileAsync(this.engine.scene, this.engine.camera),
           this.engine.renderer.compileAsync(warm, this.engine.camera),
+          this.warmup,
         ]);
         await this.warmup;
       } finally {
