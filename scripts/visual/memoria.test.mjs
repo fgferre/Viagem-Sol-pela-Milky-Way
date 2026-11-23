@@ -222,10 +222,11 @@ describe('julgarBoot', () => {
 });
 
 describe('o pronto e o repouso dos ciclos', () => {
-  it('assentar por quadros com o sinal do app presente é o pronto morto, nomeado; sem sinal, não', () => {
-    const j = julgarAssentarDoCiclo({ ciclo: 2, passo: 'entrar', via: 'quadros', ms: 12400, fase: 'atlas' });
+  it('CONTROLE NEGATIVO: o prazo estourado com o sinal (PrazoSemPronto) é o pronto morto, nomeado; assentado, não', () => {
+    const prazo = { ms: 180200, fase: 'intro', sinal: { fase: 'intro', pronto: false } };
+    const j = julgarAssentarDoCiclo({ ciclo: 2, passo: 'entrar', prazo });
     expect(j.ok).toBe(false);
-    expect(j.texto).toMatch(/^o pronto não acendeu no ciclo 2 /);
+    expect(j.texto).toBe("o pronto não acendeu no ciclo 2 (entrar: o app deu sinal e o prazo de 180 s estourou, fase 'intro')");
     expect(julgarAssentarDoCiclo({ ciclo: 2, passo: 'entrar', via: 'quadros', ms: 70000, fase: null }).ok).toBe(true);
     expect(julgarAssentarDoCiclo({ ciclo: 2, passo: 'entrar', via: 'sinal', ms: 1100, fase: 'atlas' }).ok).toBe(true);
   });

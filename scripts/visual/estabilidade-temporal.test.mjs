@@ -796,19 +796,17 @@ describe('a foto toda preta NÃO MEDE — nunca passa (22/11)', () => {
     expect(julgarCorrida([v]).passa).toBe(true);
   });
 
-  it('CONTROLE NEGATIVO: o assentar que cai no teto de quadros com o sinal do app em pronto:false NÃO MEDE, e diz por quê', () => {
-    const quadros = percursoDePan(5);
-    const assento = { via: 'quadros', ms: 21000, quadros: 701, fase: 'free' };
-    const v = julgarFamilia({ nome: 'pan', passos: passosDe(quadros), piso: pisoDe(quadros), assento });
-    expect(v.naoMede).toContain('o app não deu pronto em 21 s');
-    expect(v.naoMede).not.toContain('máquina');
+  it('CONTROLE NEGATIVO: a família cujo pronto não acendeu no prazo (PrazoSemPronto) NÃO MEDE, com o nome, e a corrida não passa', () => {
+    const prazo = { ms: 180400, fase: 'free', sinal: { fase: 'free', pronto: false, quadros: 3 } };
+    const v = julgarFamilia({ nome: 'pan', prazo });
+    expect(v.naoMede).toBe('pan: o app deu sinal e o pronto não acendeu em 180 s (fase free) — a família não foi medida');
+    expect(v.erros).toEqual([]);
     expect(julgarCorrida([v]).passa).toBe(false);
-    // o mesmo voo assentado pelo sinal mede, e passa
-    const pelo = julgarFamilia({
-      nome: 'pan', passos: passosDe(quadros), piso: pisoDe(quadros), assento: { ...assento, via: 'sinal' },
-    });
-    expect(pelo.naoMede).toBe(null);
-    expect(julgarCorrida([pelo]).passa).toBe(true);
+    // o mesmo voo, medido, passa
+    const quadros = percursoDePan(5);
+    const medida = julgarFamilia({ nome: 'pan', passos: passosDe(quadros), piso: pisoDe(quadros) });
+    expect(medida.naoMede).toBe(null);
+    expect(julgarCorrida([medida]).passa).toBe(true);
   });
 });
 

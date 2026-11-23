@@ -13,7 +13,7 @@
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import { describe, it, expect } from 'vitest';
-import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarAssentar, esperarCapaSair, flagsDoBinario, lancarChrome, julgarFolgaDoLimite, folgaDoLimiteGb, julgarTetoDoRuido, julgarDiferente, diferencaPorPixel, TETO_DO_RUIDO, semBarraNoFim, fotoTodaPreta, julgarFotoVazia, NAO_MEDE, SAIDA_NAO_MEDE } from './chrome.mjs';
+import { julgarProntidao, APP_PADRAO, ligarSocketCDP, esperarAssentar, PrazoSemPronto, esperarCapaSair, flagsDoBinario, lancarChrome, julgarFolgaDoLimite, folgaDoLimiteGb, julgarTetoDoRuido, julgarDiferente, diferencaPorPixel, TETO_DO_RUIDO, semBarraNoFim, fotoTodaPreta, julgarFotoVazia, NAO_MEDE, SAIDA_NAO_MEDE } from './chrome.mjs';
 
 describe('o teto de ruído da foto (22/11)', () => {
   // a tela do par nulo do planeta-pixel (diagnóstico §1)
@@ -361,7 +361,17 @@ describe('esperarAssentar: o teto de 700 quadros é só do app SEM sinal (rodada
     const espera = esperarAssentar({
       send: sendDeQuadros({ fase: 'loading', pronto: false, quadros: 0 }), cartografia: () => true, teto: 0,
     });
-    await expect(espera).rejects.toThrow('o app deu sinal e o pronto não acendeu');
+    const erro = await espera.catch((e) => e);
+    expect(erro).toBeInstanceOf(PrazoSemPronto);
+    expect(erro.message).toContain('o app deu sinal e o pronto não acendeu');
+    expect(erro.assento.fase).toBe('loading');
+  });
+
+  it('sem sinal, o prazo estourado é erro comum, não PrazoSemPronto', async () => {
+    const erro = await esperarAssentar({ send: sendDeQuadros(null), cartografia: () => false, teto: 0 })
+      .catch((e) => e);
+    expect(erro).toBeInstanceOf(Error);
+    expect(erro).not.toBeInstanceOf(PrazoSemPronto);
   });
 });
 

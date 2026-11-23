@@ -131,7 +131,7 @@
 // pedido é escolha explícita) e o SINAL de prontidão do próprio app no
 // lugar de espera cega.
 import { pathToFileURL } from 'node:url';
-import { abrirSessao, APP_PADRAO, dorme, esperarAssentar, esperarCapaSair } from './chrome.mjs';
+import { abrirSessao, APP_PADRAO, dorme, esperarAssentar, esperarCapaSair, PrazoSemPronto } from './chrome.mjs';
 
 const APP = process.env.APP_URL || APP_PADRAO;
 const JANELA = process.env.JANELA || '1200x900';
@@ -191,16 +191,19 @@ export function julgarBoot({ via, ms }, teto = TETO_DO_BOOT_MS) {
  * O PRONTO DOS CICLOS (22/11/2026, xxiii). Até aqui só o `via` do boot era
  * impresso, e por isso ninguém viu que os ciclos assentavam pelo teto dos 700
  * quadros (~12 s) antes de `67d307f8`: o verde vinha do teto, não do sinal.
- * `via=quadros` com o sinal do app PRESENTE (`fase` não nula: `esperarAssentar`
- * só a preenche quando `window.__director.captura` existe) é o pronto morto.
- * Sem `fase` é o build sem `__director`, e ali cair nos quadros é o esperado.
+ * Desde a rodada 4 o teto de quadros não vale com o sinal presente, e o pronto
+ * morto chega como `PrazoSemPronto` (`chrome.mjs`); `assentarNoCiclo` o apanha
+ * e o ciclo vem com `prazo` = o assento do estouro.
  */
-export function julgarAssentarDoCiclo({ ciclo, passo, via, ms, fase }) {
-  const quando = `via=${via} em ${(ms / 1000).toFixed(1)} s, fase '${fase ?? '—'}'`;
-  if (via === 'quadros' && fase != null) {
-    return { ok: false, texto: `o pronto não acendeu no ciclo ${ciclo} (${passo}: ${quando})` };
+export function julgarAssentarDoCiclo({ ciclo, passo, via, ms, fase, prazo = null }) {
+  if (prazo) {
+    return {
+      ok: false,
+      texto: `o pronto não acendeu no ciclo ${ciclo} (${passo}: o app deu sinal e o prazo de`
+        + ` ${(prazo.ms / 1000).toFixed(0)} s estourou, fase '${prazo.fase ?? '—'}')`,
+    };
   }
-  return { ok: true, texto: `ciclo ${ciclo}, ${passo}: assentou por ${quando}` };
+  return { ok: true, texto: `ciclo ${ciclo}, ${passo}: assentou por via=${via} em ${(ms / 1000).toFixed(1)} s, fase '${fase ?? '—'}'` };
 }
 
 /**
@@ -859,7 +862,13 @@ async function principal() {
       const assentos = [];
       const repousos = [];
       const assentarNoCiclo = async (ciclo, passo) => {
-        const a = { ciclo, passo, ...(await sessao.assentar()) };
+        let a;
+        try {
+          a = { ciclo, passo, ...(await sessao.assentar()) };
+        } catch (e) {
+          if (!(e instanceof PrazoSemPronto)) throw e;
+          a = { ciclo, passo, prazo: e.assento };
+        }
         assentos.push(a);
         process.stdout.write(`         ${julgarAssentarDoCiclo(a).texto}\n`);
       };

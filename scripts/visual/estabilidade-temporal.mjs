@@ -142,7 +142,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import sharp from 'sharp';
 import {
-  abrirSessao, APP_PADRAO, dorme, fotoTodaPreta, julgarFotoVazia, SAIDA_NAO_MEDE,
+  abrirSessao, APP_PADRAO, dorme, fotoTodaPreta, julgarFotoVazia, PrazoSemPronto, SAIDA_NAO_MEDE,
 } from './chrome.mjs';
 
 const UA_POR_PC = 206264.80624548031;
@@ -971,11 +971,10 @@ export function casarFontes({
  * A regra 1 e a 2 ficam SUSPENSAS onde a paralaxe do passo passa de
  * `PARALAXE_CEGA_PX` ou onde o clarão comeu o quadro — e isso vai escrito no
  * veredito, nunca em silêncio. E a família com um quadro todo preto não tem
- * veredito: sai NÃO MEDE (`naoMede`), nunca passa. Nem a família cujo último
- * assentar (`assento`, o retorno de `esperarAssentar`) caiu no teto de quadros
- * com o sinal do app presente e `pronto:false`.
+ * veredito: sai NÃO MEDE (`naoMede`), nunca passa. Nem a família em que o app
+ * deu sinal e o pronto não acendeu no prazo (`prazo`, de `PrazoSemPronto`).
  */
-export function julgarFamilia({ nome, passos = [], piso = null, altura = null, assento = null }) {
+export function julgarFamilia({ nome, passos = [], piso = null, altura = null, prazo = null }) {
   const pisoResiduo = piso ? piso.residuoMedio : 0;
   const pisoBanda = piso ? piso.bandaAlta : 0;
   const erros = [];
@@ -1077,23 +1076,19 @@ export function julgarFamilia({ nome, passos = [], piso = null, altura = null, a
   // veredito CONTADAS; a descalibração fica, porque a altura do quadro não depende da luz dele.
   const pretos = passos.reduce((m, p, i) => m + (p.pretaB ? 1 : 0) + (i === 0 && p.pretaA ? 1 : 0), 0)
     + (piso?.pretos ?? 0);
-  // O APP NÃO DEU PRONTO (22/11, destravar xxiii): `esperarAssentar` devolve `fase` só quando o sinal
-  // `window.__director.captura` existe, e `via:'quadros'` com ele presente é o teto de 700 quadros vencido
-  // com `pronto:false` — no D3D11 o 1º quadro do app chega nessa hora, e a foto era do canvas ainda não
-  // desenhado. Sem o sinal (`fase` null: build de produção) o teto é o critério legítimo e a família mede.
-  const semPronto = assento?.via === 'quadros' && assento.fase != null;
   let naoMede = null;
-  if (pretos || semPronto) {
+  // O APP NÃO DEU PRONTO (rodada 4): `esperarAssentar` lança `PrazoSemPronto` quando o sinal
+  // `window.__director.captura` existe e o `pronto` não acende no prazo — no `ir()` ou no `assentar()`.
+  // `correrFamilias` o apanha e a família chega aqui sem passos, com `prazo` = o assento do estouro.
+  if (prazo) {
+    naoMede = `${nome}: o app deu sinal e o pronto não acendeu em ${(prazo.ms / 1000).toFixed(0)} s`
+      + ` (fase ${prazo.fase}) — a família não foi medida`;
+  } else if (pretos) {
     const fotos = passos.length + 1 + (piso?.pontas ? 2 : 0);
     const caladas = erros.length - (descalibrada ? 1 : 0);
     erros.splice(descalibrada ? 1 : 0);
-    naoMede = semPronto
-      ? `${nome}: o app não deu pronto em ${(assento.ms / 1000).toFixed(0)} s — o último assentar caiu no`
-        + ` teto de ${assento.quadros} quadros com o sinal do app presente (fase ${assento.fase}, pronto:false)`
-        + (pretos ? `; ${pretos} de ${fotos} foto(s) toda(s) preta(s)` : '')
-        + (caladas ? ` — ${caladas} acusação(ões) dos passos fora do veredito: medem a cena antes do pronto` : '')
-      : `${nome}: ${julgarFotoVazia({ pretas: pretos, fotos }).texto}`
-        + (caladas ? ` — ${caladas} acusação(ões) dos passos fora do veredito: medem a captura, não o app` : '');
+    naoMede = `${nome}: ${julgarFotoVazia({ pretas: pretos, fotos }).texto}`
+      + (caladas ? ` — ${caladas} acusação(ões) dos passos fora do veredito: medem a captura, não o app` : '');
   }
   return {
     nome, piso, altura, passos: passos.length, erros, suspensos, declaracoes, descalibrada,
@@ -1210,9 +1205,6 @@ async function novaSessao() {
   await s.send('Page.addScriptToEvaluateOnNewDocument', {
     source: "try{localStorage.setItem('viagem-prefs',JSON.stringify({conviteVisto:true}))}catch{}",
   });
-  // o ÚLTIMO assentar fica guardado: é ele que `julgarFamilia` lê (`assento`) para não medir o escuro
-  const assentar = s.assentar;
-  s.assentar = async () => (s.ultimoAssento = await assentar());
   return s;
 }
 
@@ -1631,8 +1623,10 @@ async function correrFamilias(alvos) {
   try {
     // a fronteira e a reversão andam a MESMA escada, e a reversão tem de ser na
     // MESMA sessão (histerese não sobrevive a um reload)
+    // (a banda é lida na primeira família que a usa, dentro do `try` dela: um
+    // prazo estourado na leitura é NÃO MEDE dessa família, não do juiz)
     let banda = null;
-    if (alvos.includes('fronteiraSol') || alvos.includes('reversao')) {
+    const lerBanda = async () => {
       await s.ir('pos=0,0,0.00001&look=0,0,0&q=cinema&noorbitas=1');
       await s.js(SO_A_CENA);
       await s.assentar();
@@ -1641,23 +1635,30 @@ async function correrFamilias(alvos) {
         `banda do gate do Sol: ${(banda.de * UA_POR_PC).toFixed(3)} a `
         + `${(banda.ate * UA_POR_PC).toFixed(3)} UA (4 px arma, 2 px desarma)`
       );
-    }
+    };
     for (const nome of alvos) {
       const marca = Date.now();
       let r;
-      if (nome === 'aproxSol') r = await familiaAproxSol(s);
-      else if (nome === 'fronteiraSol') r = await familiaFronteiraSol(s, banda);
-      else if (nome === 'reversao') {
-        if (!alvos.includes('fronteiraSol')) await familiaFronteiraSol(s, banda);
-        r = await familiaReversao(s, banda);
-      } else if (nome === 'pan') r = await familiaPan(s);
-      else if (nome === 'fov') r = await familiaFov(s);
-      else if (nome === 'aproxEstrela') r = await familiaAproxEstrela(s);
-      else if (nome === 'zoomDeRoda') r = await familiaZoomDeRoda(s);
-      else r = await familiaFronteiraTerra(s);
+      try {
+        if ((nome === 'fronteiraSol' || nome === 'reversao') && !banda) await lerBanda();
+        if (nome === 'aproxSol') r = await familiaAproxSol(s);
+        else if (nome === 'fronteiraSol') r = await familiaFronteiraSol(s, banda);
+        else if (nome === 'reversao') {
+          if (!alvos.includes('fronteiraSol')) await familiaFronteiraSol(s, banda);
+          r = await familiaReversao(s, banda);
+        } else if (nome === 'pan') r = await familiaPan(s);
+        else if (nome === 'fov') r = await familiaFov(s);
+        else if (nome === 'aproxEstrela') r = await familiaAproxEstrela(s);
+        else if (nome === 'zoomDeRoda') r = await familiaZoomDeRoda(s);
+        else r = await familiaFronteiraTerra(s);
+      } catch (e) {
+        if (!(e instanceof PrazoSemPronto)) throw e;
+        r = { nome, passos: [], piso: null, altura: null, prazo: e.assento };
+        console.log(`${nome.padEnd(15)} NÃO MEDE — ${e.message}`);
+      }
       r.segundos = (Date.now() - marca) / 1000;
-      r.assento = s.ultimoAssento ?? null;
       cruas.push(r);
+      if (r.prazo) continue;
       const pior = r.passos.reduce((m, p) => Math.max(m, p.residuoMedio), 0);
       console.log(
         `${nome.padEnd(15)} ${String(r.passos.length).padStart(2)} passos  `
@@ -1750,20 +1751,20 @@ async function correr() {
         // a altura MEDIDA em cada família (o quadro que a captura devolveu),
         // nunca a pedida: é dela que sai a soleira, e publicar a declarada
         // seria publicar a intenção no lugar do fato
-        alturasMedidas: [...new Set(cruas.map((r) => r.altura))],
+        alturasMedidas: [...new Set(cruas.filter((r) => r.altura != null).map((r) => r.altura))],
         minutos,
         tolerancias: {
           EXCESSO_RESIDUO, EXCESSO_BANDA_ALTA, TOLERANCIA_SALTO_PX,
           D_MIN_PC, PARALAXE_CEGA_PX, LIMIAR_FONTE, QUADROS_ENTRE,
           // a soleira de fase é DESTA corrida (depende da altura do quadro),
           // e o número de calibração vai ao lado para se ver a diferença
-          soleiraDeFase: [...new Set(cruas.map((r) => soleiraJulgada(r.altura)))],
+          soleiraDeFase: [...new Set(cruas.filter((r) => r.altura != null).map((r) => soleiraJulgada(r.altura)))],
           LIMIAR_JULGADA,
         },
         familias: cruas.map((r) => ({
           nome: r.nome,
           segundos: r.segundos,
-          assento: r.assento,
+          prazo: r.prazo ?? null,
           piso: r.piso,
           alvo: r.alvo,
           passos: r.passos.map((p) => ({

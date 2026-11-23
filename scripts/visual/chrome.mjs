@@ -502,6 +502,21 @@ export async function portaDoPerfil(perfil, teto = 30000) {
 }
 
 /**
+ * O PRAZO ESTOURADO COM O SINAL PRESENTE: o app existe e o `pronto` não acendeu.
+ * Continua sendo erro (ninguém fotografa cena não pronta por descuido); só quem
+ * dá veredito por unidade o apanha, pela classe, e põe a unidade em NÃO MEDE
+ * (`estabilidade-temporal`, `memoria`). `assento` = { ms, fase, sinal }.
+ */
+export class PrazoSemPronto extends Error {
+  constructor(assento) {
+    super(`não assentou: o app deu sinal e o pronto não acendeu em ${(assento.ms / 1000).toFixed(0)} s`
+      + ` (fase ${assento.fase}, sinal=${JSON.stringify(assento.sinal)})`);
+    this.name = 'PrazoSemPronto';
+    this.assento = assento;
+  }
+}
+
+/**
  * ESPERA A CENA ASSENTAR, com o SINAL do app na frente e o método antigo
  * como teto de segurança.
  *
@@ -545,9 +560,8 @@ export async function esperarAssentar({ send, cartografia, quadros = 700, teto =
       return { via: 'quadros', ms: Date.now() - t0, quadros: f - base, fase: null };
     }
     if (Date.now() - t0 > teto) {
-      throw new Error(c
-        ? `não assentou: o app deu sinal e o pronto não acendeu em ${Math.round(teto / 1000)} s (sinal=${JSON.stringify(c)})`
-        : `não assentou (cart=${cartografia()}, f=${f}, sinal=ausente)`);
+      if (c) throw new PrazoSemPronto({ ms: Date.now() - t0, fase: c.fase ?? null, sinal: c });
+      throw new Error(`não assentou (cart=${cartografia()}, f=${f}, sinal=ausente)`);
     }
     await dorme(100);
   }
